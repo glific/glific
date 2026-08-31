@@ -8,15 +8,13 @@ defmodule Glific.AIEvaluationsTest do
   alias Glific.{
     AIEvaluations,
     AIEvaluations.AIEvaluation,
-    AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
+    Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
-    Assistants.KnowledgeBase,
-    Assistants.KnowledgeBaseVersion,
+    Fixtures,
     Notifications,
     Notifications.Notification,
-    Partners,
     Repo
   }
 
@@ -129,7 +127,14 @@ defmodule Glific.AIEvaluationsTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+            data: %{
+              status: "completed",
+              score: %{
+                summary_scores: summary_scores,
+                traces: [],
+                overall: %{verdict: "Needs Refinement", overall_score: 3.84}
+              }
+            }
           }
         }
       end)
@@ -144,6 +149,8 @@ defmodule Glific.AIEvaluationsTest do
       assert length(updated.results["summary_scores"]) == 1
       assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
       assert hd(updated.results["summary_scores"])["avg"] == 0.74
+      assert updated.results["verdict"] == "Needs Refinement"
+      assert updated.results["overall_score"] == 3.84
 
       assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
                notification_count + 1
@@ -167,7 +174,12 @@ defmodule Glific.AIEvaluationsTest do
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :completed
-      assert updated.results == %{"summary_scores" => []}
+
+      assert updated.results == %{
+               "summary_scores" => [],
+               "verdict" => nil,
+               "overall_score" => nil
+             }
     end
 
     test "updates evaluation to failed when Kaapi returns failed with reason", %{
@@ -282,60 +294,115 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  defp create_config_version(organization_id) do
-    {:ok, assistant} =
-      %Assistant{}
-      |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
-      |> Repo.insert()
+  describe "poll_and_update/1 - updates assistant's last_evaluation_run_id" do
+    setup %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      config_version = create_config_version(organization_id)
+      %{config_version: config_version}
+    end
 
-    {:ok, config_version} =
-      %AssistantConfigVersion{}
-      |> AssistantConfigVersion.changeset(%{
-        assistant_id: assistant.id,
-        prompt: "You are a helpful assistant.",
-        provider: "openai",
-        model: "gpt-4o",
-        settings: %{"temperature" => 1.0},
-        status: :ready,
-        organization_id: organization_id
-      })
-      |> Repo.insert()
+    test "sets last_evaluation_run_id when the evaluation completes against the assistant's active config version",
+         %{organization_id: organization_id, config_version: config_version} do
+      unsaved_assistant = Repo.get!(Assistant, config_version.assistant_id)
 
-    config_version
+      {:ok, assistant} =
+        unsaved_assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      assert {:ok, %{last_evaluation_summary: nil}} = Assistants.get_assistant(assistant.id)
+
+      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      summary_scores = [
+        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+          }
+        }
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated_assistant} = Repo.fetch_by(Assistant, %{id: assistant.id})
+      assert updated_assistant.last_evaluation_run_id == evaluation.id
+
+      assert {:ok,
+              %{
+                last_evaluation_summary: %{
+                  "summary_scores" => [%{"name" => "Cosine Similarity"}]
+                }
+              }} = Assistants.get_assistant(assistant.id)
+    end
+
+    test "does not set last_evaluation_run_id when the evaluation completes against a non-active config version",
+         %{organization_id: organization_id, config_version: config_version} do
+      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "completed"}}}
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged_assistant} = Repo.fetch_by(Assistant, %{id: config_version.assistant_id})
+      assert unchanged_assistant.active_config_version_id != config_version.id
+      assert unchanged_assistant.last_evaluation_run_id == nil
+
+      {:ok, updated_evaluation} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated_evaluation.status == :completed
+    end
+
+    test "does not set last_evaluation_run_id when the evaluation fails",
+         %{organization_id: organization_id, config_version: config_version} do
+      unsaved_assistant = Repo.get!(Assistant, config_version.assistant_id)
+
+      {:ok, assistant} =
+        unsaved_assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "failed", error_message: "Kaapi evaluation failed"}}
+        }
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged_assistant} = Repo.fetch_by(Assistant, %{id: assistant.id})
+      assert unchanged_assistant.last_evaluation_run_id == nil
+    end
   end
 
-  defp create_golden_qa(organization_id) do
-    {:ok, golden_qa} =
-      %GoldenQA{}
-      |> GoldenQA.changeset(%{
-        name: "test_golden_qa_#{System.unique_integer([:positive])}",
-        dataset_id: 1,
-        organization_id: organization_id
-      })
-      |> Repo.insert()
+  defp create_config_version(organization_id) do
+    assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
 
-    golden_qa
+    Fixtures.assistant_config_version_fixture(%{
+      assistant_id: assistant.id,
+      organization_id: organization_id
+    })
   end
 
   defp create_evaluation(organization_id, config_version_id, attrs \\ %{}) do
-    golden_qa_id =
-      Map.get_lazy(attrs, :golden_qa_id, fn -> create_golden_qa(organization_id).id end)
-
-    base = %{
-      name: "test_eval_#{System.unique_integer([:positive])}",
-      status: :processing,
-      golden_qa_id: golden_qa_id,
-      kaapi_evaluation_id: 404,
-      assistant_config_version_id: config_version_id,
-      organization_id: organization_id
-    }
-
-    {:ok, evaluation} =
-      %AIEvaluation{}
-      |> AIEvaluation.changeset(Map.merge(base, attrs))
-      |> Repo.insert()
-
-    evaluation
+    Fixtures.ai_evaluation_fixture(
+      Map.merge(
+        %{organization_id: organization_id, assistant_config_version_id: config_version_id},
+        attrs
+      )
+    )
   end
 
   describe "request_eval_access/1" do
@@ -407,15 +474,8 @@ defmodule Glific.AIEvaluationsTest do
   end
 
   defp enable_kaapi(organization_id) do
-    Partners.create_credential(%{
-      organization_id: organization_id,
-      shortcode: "kaapi",
-      keys: %{},
-      secrets: %{"api_key" => "sk_test_key"},
-      is_active: true
-    })
-
-    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
+    Fixtures.kaapi_credential_fixture(%{organization_id: organization_id})
+    :ok
   end
 
   describe "request_improve_prompt/2" do
@@ -469,7 +529,7 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  describe "handle_improve_prompt_callback/1" do
+  describe "handle_improve_prompt_callback/2" do
     setup %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       config_version = create_config_version(organization_id)
@@ -484,6 +544,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "success callback builds a new :ready config version entirely from the payload", %{
+      organization_id: organization_id,
       assistant: assistant,
       config_version: config_version
     } do
@@ -520,7 +581,7 @@ defmodule Glific.AIEvaluationsTest do
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
       assert {:ok, new_config_version} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before + 1
       refute new_config_version.id == config_version.id
@@ -538,7 +599,73 @@ defmodule Glific.AIEvaluationsTest do
       assert new_config_version.settings == %{"temperature" => 0.4}
     end
 
+    test "success callback publishes improve_prompt_updated with the new config version", %{
+      organization_id: organization_id,
+      assistant: assistant
+    } do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "config_blob" => %{
+              "completion" => %{
+                "provider" => "openai",
+                "params" => %{"model" => "gpt-5.6-luna", "instructions" => "Be helpful."}
+              }
+            }
+          }
+        }
+      }
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert {:ok, new_config_version} =
+                 AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
+        assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
+        assert payload.status == "success"
+        assert payload.config_version.id == new_config_version.id
+        assert payload.error == nil
+        assert topic == "#{organization_id}"
+      end
+    end
+
+    test "returns an error and publishes nothing when config_id belongs to another organization",
+         %{organization_id: organization_id, assistant: assistant} do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "config_blob" => %{
+              "completion" => %{"params" => %{"instructions" => "Be helpful."}}
+            }
+          }
+        }
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      assert {:error, _reason} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id + 1, params)
+
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
+    end
+
     test "success callback for a reasoning model carries effort, not temperature", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -562,7 +689,7 @@ defmodule Glific.AIEvaluationsTest do
       }
 
       assert {:ok, new_config_version} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert new_config_version.model == "gpt-5.6-luna"
       assert new_config_version.prompt == "You are a helpful assistant."
@@ -589,7 +716,7 @@ defmodule Glific.AIEvaluationsTest do
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
       assert {:ok, :acknowledged} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
 
@@ -597,7 +724,42 @@ defmodule Glific.AIEvaluationsTest do
                notification_count
     end
 
-    test "returns error when config_id in the payload matches no assistant" do
+    test "failure callback publishes improve_prompt_updated when given an organization_id", %{
+      organization_id: organization_id
+    } do
+      params = %{
+        "data" => %{
+          "status" => "FAILED",
+          "config_version" => nil,
+          "error_message" => "Judge scores unavailable"
+        }
+      }
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert {:ok, :acknowledged} =
+                 AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
+        assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
+        assert payload.status == "failed"
+        assert payload.config_version == nil
+        assert payload.error == "Judge scores unavailable"
+        assert topic == "#{organization_id}"
+      end
+    end
+
+    test "returns error when config_id in the payload matches no assistant", %{
+      organization_id: organization_id
+    } do
       params = %{
         "data" => %{
           "status" => "SUCCESS",
@@ -611,20 +773,26 @@ defmodule Glific.AIEvaluationsTest do
       }
 
       assert {:error, [_, "Resource not found"]} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
     end
 
-    test "malformed payload is reported and does not crash" do
+    test "malformed payload is reported and does not crash", %{organization_id: organization_id} do
       assert {:error, _reason} =
-               AIEvaluations.handle_improve_prompt_callback(%{"unexpected" => "shape"})
+               AIEvaluations.handle_improve_prompt_callback(organization_id, %{
+                 "unexpected" => "shape"
+               })
     end
 
-    test "non-terminal status is acknowledged without creating a config version" do
+    test "non-terminal status is acknowledged without creating a config version", %{
+      organization_id: organization_id
+    } do
       params = %{"data" => %{"status" => "PENDING", "job_id" => "job-uuid-pending"}}
 
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
-      assert {:ok, :acknowledged} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:ok, :acknowledged} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
     end
 
@@ -632,7 +800,11 @@ defmodule Glific.AIEvaluationsTest do
       organization_id: organization_id,
       assistant: assistant
     } do
-      knowledge_base_version = create_knowledge_base_version(organization_id, "llm-service-abc")
+      knowledge_base_version =
+        Fixtures.knowledge_base_version_fixture(%{
+          organization_id: organization_id,
+          llm_service_id: "llm-service-abc"
+        })
 
       params = %{
         "data" => %{
@@ -655,7 +827,8 @@ defmodule Glific.AIEvaluationsTest do
         }
       }
 
-      assert {:ok, new_config_version} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:ok, new_config_version} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.all(
                from(link in "assistant_config_version_knowledge_base_versions",
@@ -666,6 +839,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "rolls back the config version when no knowledge base matches the llm_service_id", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -689,12 +863,15 @@ defmodule Glific.AIEvaluationsTest do
 
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
-      assert {:error, reason} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:error, reason} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
       assert reason =~ "No matching knowledge base found"
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
     end
 
     test "returns the changeset error when the config version data is invalid", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -708,7 +885,8 @@ defmodule Glific.AIEvaluationsTest do
         }
       }
 
-      assert {:error, %Ecto.Changeset{}} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:error, %Ecto.Changeset{}} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
     end
   end
 
@@ -726,7 +904,7 @@ defmodule Glific.AIEvaluationsTest do
       %{evaluation: evaluation}
     end
 
-    test "completed status re-fetches full scores from Kaapi, updates the evaluation, and publishes ai_evaluation_updated",
+    test "completed status re-fetches full scores from Kaapi and updates the evaluation",
          %{organization_id: organization_id, evaluation: evaluation} do
       summary_scores = [
         %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
@@ -741,31 +919,14 @@ defmodule Glific.AIEvaluationsTest do
         }
       end)
 
-      test_pid = self()
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "data" => %{"id" => 767, "status" => "completed"}
+               })
 
-      with_mocks([
-        {Absinthe.Subscription, [],
-         [
-           publish: fn _endpoint, payload, opts ->
-             send(test_pid, {:published, payload, opts})
-             :ok
-           end
-         ]}
-      ]) do
-        assert :ok =
-                 AIEvaluations.handle_evaluation_run_callback(organization_id, %{
-                   "data" => %{"id" => 767, "status" => "completed"}
-                 })
-
-        {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-        assert updated.status == :completed
-        assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
-
-        assert_receive {:published, payload, [{:ai_evaluation_updated, topic}]}, 1000
-        assert payload.id == evaluation.id
-        assert payload.status == :completed
-        assert topic == "#{organization_id}"
-      end
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :completed
+      assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
     end
 
     test "failed status re-fetches from Kaapi and updates the evaluation to failed", %{
@@ -876,28 +1037,5 @@ defmodule Glific.AIEvaluationsTest do
       assert unchanged.status == :completed
       assert unchanged.results == %{"summary_scores" => []}
     end
-  end
-
-  defp create_knowledge_base_version(organization_id, llm_service_id) do
-    {:ok, knowledge_base} =
-      %KnowledgeBase{}
-      |> KnowledgeBase.changeset(%{
-        name: "test_kb_#{System.unique_integer([:positive])}",
-        organization_id: organization_id
-      })
-      |> Repo.insert()
-
-    {:ok, knowledge_base_version} =
-      %KnowledgeBaseVersion{}
-      |> KnowledgeBaseVersion.changeset(%{
-        knowledge_base_id: knowledge_base.id,
-        organization_id: organization_id,
-        files: %{},
-        status: :completed,
-        llm_service_id: llm_service_id
-      })
-      |> Repo.insert()
-
-    knowledge_base_version
   end
 end
