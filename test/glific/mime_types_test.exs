@@ -1,35 +1,48 @@
 defmodule Glific.MimeTypesTest do
   @moduledoc """
-  mime reads `config :mime, :types` through `Application.compile_env/3`, so the
-  mapping only exists if the dep was compiled after the config was set. These
-  assertions fail on a stale `_build` rather than letting media upload silently
-  as application/octet-stream.
+  Guards media classification end to end.
+
+  Two things can break it independently: the extension lists in
+  `Glific.Messages.get_media_type_from_url/2`, and mime's own type table, which is
+  read at compile time from `config :mime, :types`.
   """
 
   use ExUnit.Case, async: true
 
-  test "every media format Glific accepts resolves to its real content type" do
-    expected = %{
-      "png" => "image/png",
-      "jpg" => "image/jpeg",
-      "jpeg" => "image/jpeg",
-      "webp" => "image/webp",
-      "mp4" => "video/mp4",
-      "3gp" => "video/3gpp",
-      "3gpp" => "video/3gpp",
-      "mp3" => "audio/mpeg",
-      "wav" => "audio/wav",
-      "aac" => "audio/aac",
-      "amr" => "audio/amr",
-      "m4a" => "audio/mp4",
-      "ogg" => "audio/ogg",
-      "oga" => "audio/ogg",
-      "pdf" => "application/pdf"
-    }
+  alias Glific.Messages
 
-    for {extension, type} <- expected do
-      assert MIME.from_path("file.#{extension}") == type,
-             "#{extension} resolved to #{MIME.from_path("file.#{extension}")}, expected #{type}. "
+  @media %{
+    "png" => {:image, "image/png"},
+    "jpg" => {:image, "image/jpeg"},
+    "jpeg" => {:image, "image/jpeg"},
+    "webp" => {:sticker, "image/webp"},
+    "mp4" => {:video, "video/mp4"},
+    "3gp" => {:video, "video/3gpp"},
+    "3gpp" => {:video, "video/3gpp"},
+    "mp3" => {:audio, "audio/mpeg"},
+    "wav" => {:audio, "audio/wav"},
+    "aac" => {:audio, "audio/aac"},
+    "ogg" => {:audio, "audio/ogg"},
+    "pdf" => {:document, "application/pdf"},
+    "docx" =>
+      {:document, "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    "xlsx" => {:document, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+  }
+
+  test "Glific classifies every media format it accepts" do
+    for {extension, {kind, _type}} <- @media do
+      url = "https://example.com/file.#{extension}"
+
+      assert Messages.get_media_type_from_url(url, log_error: false) == {kind, url},
+             ".#{extension} classified as " <>
+               "#{inspect(Messages.get_media_type_from_url(url, log_error: false))}, " <>
+               "expected #{inspect({kind, url})}"
+    end
+  end
+
+  test "mime resolves the content type each of those is stored and sent with" do
+    for {extension, {_kind, type}} <- @media do
+      assert MIME.from_path("file.#{extension}") == type
     end
   end
 end
