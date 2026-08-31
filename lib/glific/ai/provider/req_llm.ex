@@ -10,32 +10,35 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   @behaviour Glific.AI.Provider
 
-  require Logger
+  alias Glific.AI.{ChatMessage, Provider}
 
   @failure_message "The AI provider could not complete the request"
 
   @default_max_tokens 4_096
   @default_receive_timeout 60_000
 
-  alias Glific.AI.{ChatMessage, Provider}
+  @doc """
+  Sends a conversation to the provider.
 
+  Pass `model:` to override the configured default for this call.
+  """
   @impl Glific.AI.Provider
   @spec generate([ChatMessage.t()], keyword()) ::
           {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
           | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
+    started = System.monotonic_time(:millisecond)
+
     case model(opts) do
       nil -> {:error, {:not_configured, "No model is configured for Glific AI"}}
-      spec -> call(spec, messages, opts)
+      spec -> call(spec, messages, opts, started)
     end
   end
 
-  @spec call(String.t(), [ChatMessage.t()], keyword()) ::
+  @spec call(String.t(), [ChatMessage.t()], keyword(), integer()) ::
           {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
           | {:error, Glific.AI.Provider.failure()}
-  defp call(spec, messages, opts) do
-    started = System.monotonic_time(:millisecond)
-
+  defp call(spec, messages, opts, started) do
     case ReqLLM.generate_text(spec, Enum.map(messages, &to_req_llm/1), request_opts(opts)) do
       {:ok, response} ->
         record(spec, "succeeded", started)
@@ -46,11 +49,12 @@ defmodule Glific.AI.Provider.ReqLLM do
     end
   rescue
     exception ->
+      record(spec, "failed", started)
       Glific.log_exception(exception)
       {:error, {:provider_error, @failure_message}}
   catch
     :exit, reason ->
-      failed(spec, System.monotonic_time(:millisecond), Glific.SafeLog.safe_inspect(reason))
+      failed(spec, started, Glific.SafeLog.safe_inspect(reason))
   end
 
   @spec failed(String.t(), integer(), String.t()) :: {:error, Provider.failure()}
@@ -72,9 +76,7 @@ defmodule Glific.AI.Provider.ReqLLM do
     )
   end
 
-  @spec request_opts(keyword()) :: keyword()
   # max_tokens and receive_timeout are req_llm's own option names, so the mapping
-  # from our config stays here rather than in the behaviour.
   @spec request_opts(keyword()) :: keyword()
   defp request_opts(opts) do
     [
@@ -102,7 +104,8 @@ defmodule Glific.AI.Provider.ReqLLM do
   defp to_req_llm(%ChatMessage{role: :assistant, content: content}),
     do: ReqLLM.Context.assistant(content || "")
 
-  defp to_req_llm(%ChatMessage{content: content}), do: ReqLLM.Context.user(content || "")
+  defp to_req_llm(%ChatMessage{role: :user, content: content}),
+    do: ReqLLM.Context.user(content || "")
 
   @spec usage(struct()) :: Glific.AI.Provider.usage()
   defp usage(response) do
