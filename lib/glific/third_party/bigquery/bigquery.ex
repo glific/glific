@@ -79,6 +79,8 @@ defmodule Glific.BigQuery do
     Connection
   }
 
+  alias GoogleApi.Gax.Response
+
   @bigquery_tables %{
     "contacts" => :contact_schema,
     "contact_histories" => :contact_history_schema,
@@ -1074,7 +1076,7 @@ defmodule Glific.BigQuery do
           body: %{query: sql, useLegacySql: false, timeoutMs: 120_000},
           opts: [adapter: [recv_timeout: 130_000]]
         )
-        |> GoogleApi.Gax.Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
+        |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
