@@ -58,33 +58,43 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
     handle_error_response(%{body: Jason.encode!(default_error)}, message)
   end
 
-  @spec handle_success_response(Tesla.Env.t(), WAMessage.t()) :: {:ok, WAMessage.t()}
+  @spec handle_success_response(Tesla.Env.t(), WAMessage.t()) ::
+          {:ok, WAMessage.t()} | {:error, String.t()}
   defp handle_success_response(response, message) do
-    message_id =
-      response.body
-      |> Jason.decode!()
-      |> Map.get("data")
-      |> Map.get("msgId")
+    case Jason.decode(response.body) do
+      {:ok, decoded} ->
+        message_id =
+          decoded
+          |> Map.get("data")
+          |> Map.get("msgId")
 
-    {:ok, message} =
-      message
-      |> Poison.encode!()
-      |> Poison.decode!(as: %WAMessage{})
-      |> WAMessages.update_message(%{
-        bsp_id: message_id,
-        bsp_status: :enqueued,
-        status: :sent,
-        sent_at: DateTime.truncate(DateTime.utc_now(), :second)
-      })
+        {:ok, message} =
+          message
+          |> Poison.encode!()
+          |> Poison.decode!(as: %WAMessage{})
+          |> WAMessages.update_message(%{
+            bsp_id: message_id,
+            bsp_status: :enqueued,
+            status: :sent,
+            sent_at: DateTime.truncate(DateTime.utc_now(), :second)
+          })
 
-    message
-    |> Repo.preload([:contact])
-    |> Communications.publish_data(
-      :update_wa_message_status,
-      message.organization_id
-    )
+        message
+        |> Repo.preload([:contact])
+        |> Communications.publish_data(
+          :update_wa_message_status,
+          message.organization_id
+        )
 
-    {:ok, message}
+        {:ok, message}
+
+      {:error, _} ->
+        Glific.log_error(
+          "Maytapi non-JSON 2xx response: #{Glific.SafeLog.safe_inspect(response.body)}"
+        )
+
+        handle_error_response(response, message)
+    end
   end
 
   @spec handle_error_response(Tesla.Env.t() | map(), WAMessage.t()) :: {:error, String.t()}
@@ -99,7 +109,14 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
         errors: build_error(response.body)
       })
 
-    error_msg = Jason.decode!(response.body)
+    # Maytapi (or an intermediary like Cloudflare) can return a non-JSON
+    # plaintext body on infra-level failures (e.g. "error code: 522"),
+    # so decode leniently instead of crashing the Oban job.
+    error_msg =
+      case Jason.decode(response.body) do
+        {:ok, decoded} -> decoded
+        {:error, _} -> %{"message" => Glific.SafeLog.safe_inspect(response.body)}
+      end
 
     Notifications.create_notification(%{
       category: "WA Group",

@@ -3,8 +3,11 @@ defmodule Glific.Providers.Maytapi.ResponseHandlerTest do
   # persist and reload a WAMessage. `phone_level_error?/1` stays pure.
   use Glific.DataCase
 
+  import Ecto.Query
+
   alias Glific.{
     Fixtures,
+    Notifications.Notification,
     Providers.Maytapi.ResponseHandler,
     Repo,
     WAGroup.WAMessage
@@ -23,6 +26,13 @@ defmodule Glific.Providers.Maytapi.ResponseHandlerTest do
   end
 
   defp reload(message), do: Repo.get!(WAMessage, message["id"])
+
+  defp critical_notification_exists?(ctx, substring) do
+    Notification
+    |> where([n], n.organization_id == ^ctx.organization_id)
+    |> Repo.all()
+    |> Enum.any?(fn n -> n.severity == "Critical" and String.contains?(n.message, substring) end)
+  end
 
   describe "phone_level_error?/1" do
     test "returns true for any 5xx response" do
@@ -118,6 +128,57 @@ defmodule Glific.Providers.Maytapi.ResponseHandlerTest do
                )
 
       assert reload(message).bsp_status == :error
+    end
+
+    # Regression for AppSignal incident #363: Maytapi (or an intermediary like
+    # Cloudflare) can return a non-JSON plaintext body on infra-level failures,
+    # which used to crash the WAWorker Oban job with a Jason.DecodeError.
+    test "4xx with a non-JSON (plaintext) body does not crash and still notifies", attrs do
+      message = send_message(attrs)
+      body = "error code: 522\n"
+
+      assert :ok =
+               ResponseHandler.handle_response(
+                 {:ok, %Tesla.Env{status: 400, body: body}},
+                 message
+               )
+
+      assert reload(message).bsp_status == :error
+      assert critical_notification_exists?(attrs, "error code: 522")
+    end
+
+    test "non-2xx/4xx (catch-all) with a non-JSON (plaintext) body does not crash and still notifies",
+         attrs do
+      message = send_message(attrs)
+      body = "error code: 522\n"
+
+      assert {:error, ^body} =
+               ResponseHandler.handle_response(
+                 {:ok, %Tesla.Env{status: 522, body: body}},
+                 message
+               )
+
+      assert reload(message).bsp_status == :error
+      assert critical_notification_exists?(attrs, "error code: 522")
+    end
+
+    # Regression for AppSignal incident #363 (round 2): Maytapi can also send
+    # a non-JSON plaintext 2xx body (e.g. after an infra-level hiccup), which
+    # used to crash handle_success_response/2 with a Jason.DecodeError. It now
+    # falls back to the same error path as a real error response.
+    test "2xx with a non-JSON (plaintext) body does not crash and falls back to the error path",
+         attrs do
+      message = send_message(attrs)
+      body = "error code: 522\n"
+
+      assert {:error, ^body} =
+               ResponseHandler.handle_response(
+                 {:ok, %Tesla.Env{status: 200, body: body}},
+                 message
+               )
+
+      assert reload(message).bsp_status == :error
+      assert critical_notification_exists?(attrs, "error code: 522")
     end
   end
 
