@@ -1035,7 +1035,7 @@ defmodule Glific.Templates do
          {:ok, source_language} <- Repo.fetch_by(Language, %{id: anchor_template.language_id}),
          :ok <- validate_distinct_languages(source_language, language),
          {:ok, translated} <-
-           GoogleTranslate.translate(texts, source_language.locale, language.locale,
+           GoogleTranslate.translate(texts, source_language.label, language.label,
              org_id: organization_id
            ) do
       [translated_body, translated_footer | translated_buttons] = translated
