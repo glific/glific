@@ -159,6 +159,31 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "make_job_to_remove_duplicate/2 should override Hackney's default recv_timeout",
+       attrs do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      Tesla.Mock.mock(fn %{method: :post} = env ->
+        assert env.opts[:adapter][:recv_timeout] == 130_000
+        assert env.url =~ "/queries"
+        assert Jason.decode!(env.body)["timeoutMs"] == 120_000
+
+        %Tesla.Env{status: 200}
+      end)
+
+      assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    end
+  end
+
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(

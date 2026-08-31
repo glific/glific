@@ -1061,10 +1061,20 @@ defmodule Glific.BigQuery do
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 
-        ## timeout takes some time to delete the old records. So increasing the timeout limit.
-        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+        ## `timeoutMs` below only bounds how long BigQuery's own server is allowed to keep
+        ## running the query - it has no effect on how long our own HTTP client waits for
+        ## the response. `Api.Jobs.bigquery_jobs_query/4` never forwards an `opts:` you pass
+        ## it to the actual request (its own `opts` param only reaches response decoding),
+        ## so we call the connection's Tesla `request/2` directly here - the same connection
+        ## and middleware `bigquery_jobs_query/4` uses internally - to set an explicit
+        ## `recv_timeout` that actually covers the 120s we're asking BigQuery for.
+        Connection.request(conn,
+          url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
+          method: :post,
+          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000},
+          opts: [adapter: [recv_timeout: 130_000]]
         )
+        |> GoogleApi.Gax.Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
