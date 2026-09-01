@@ -35,7 +35,7 @@ jobs:
         id: elixir-mix-cache
         with:
           path: deps
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Install Mix Dependencies if not Cached
         if: steps.elixir-mix-cache.outputs.cache-hit != 'true'
@@ -52,9 +52,9 @@ jobs:
         id: elixir-build-cache
         with:
           path: _build
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
+            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
 
       - name: Compile dependencies
         if: steps.elixir-build-cache.outputs.cache-hit != 'true'
@@ -65,7 +65,7 @@ jobs:
         id: elixir-plt-cache
         with:
           path: priv/plts
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Create PLTs
         if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
@@ -99,21 +99,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: deps
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
         uses: actions/cache@v4
         with:
           path: _build
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
+            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
 
       - name: Retrieve PLT Cache
         uses: actions/cache@v4
         with:
           path: priv/plts
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Run check
         run: mix check
@@ -156,15 +156,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: deps
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
         uses: actions/cache@v4
         with:
           path: _build
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
+            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
 
       - name: Run tests with coverage
         run: mix coveralls.json --max-cases 2
@@ -202,15 +202,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: deps
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
         uses: actions/cache@v4
         with:
           path: _build
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
+            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
 
       - name: Compile
         run: mix compile --warnings-as-errors

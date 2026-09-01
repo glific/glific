@@ -34,7 +34,7 @@ jobs:
         id: mix-cache
         with:
           path: deps
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Install Mix Dependencies if not Cached
         if: steps.mix-cache.outputs.cache-hit != 'true'
@@ -50,9 +50,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: _build
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
+            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
 
       - name: Compile
         run: mix compile --warnings-as-errors
