@@ -2800,10 +2800,10 @@ defmodule Glific.TemplatesTest do
     target_language = language_fixture()
     anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
 
+    test_pid = self()
+
     Tesla.Mock.mock_global(fn env ->
-      decoded = Jason.decode!(env.body)
-      assert decoded["source"] == source_language.locale
-      assert decoded["target"] == target_language.locale
+      send(test_pid, {:translate_request, Jason.decode!(env.body)})
 
       %Tesla.Env{
         status: 200,
@@ -2823,6 +2823,10 @@ defmodule Glific.TemplatesTest do
 
     assert result.body == "translated"
     assert result.source_language.id == source_language.id
+
+    assert_receive {:translate_request, request}
+    assert request["source"] == source_language.locale
+    assert request["target"] == target_language.locale
   end
 
   test "translate_session_template/2 returns an error when the anchor template belongs to another organization",
