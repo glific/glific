@@ -386,14 +386,14 @@ defmodule Glific.ThirdParty.KaapiTest do
 
       assert {:ok, models} = Kaapi.list_models_with_metadata(1)
 
-      assert Enum.map(models, & &1.model_name) == [
-               "gpt-5.6-luna",
-               "gpt-5-mini",
-               "gpt-5.4",
-               "gpt-5.2-pro",
-               "o3",
-               "gpt-4o",
-               "gpt-4o-mini"
+      assert Enum.map(models, &{&1.model_name, &1.category, &1.badge}) == [
+               {"gpt-5.6-luna", "recommended", "Best value"},
+               {"gpt-5-mini", "recommended", "Budget"},
+               {"gpt-5.4", "recommended", "All-rounder"},
+               {"gpt-5.2-pro", "all", nil},
+               {"o3", "all", nil},
+               {"gpt-4o", "to_be_deprecated", "Deprecating"},
+               {"gpt-4o-mini", "to_be_deprecated", "Deprecating"}
              ]
     end
 
@@ -551,6 +551,51 @@ defmodule Glific.ThirdParty.KaapiTest do
       }
 
       assert {:ok, %{success: true, data: %{id: "asst_3", version: %{version: 1}}}} =
+               Kaapi.create_assistant_config(params, 1)
+    end
+
+    test "falls back to the default model when the caller supplies none" do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+
+      mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{
+                data: [
+                  %{
+                    provider: "openai",
+                    model_name: Kaapi.default_model(),
+                    config: %{temperature: %{default: 1}}
+                  }
+                ]
+              }
+            }
+          }
+
+        %Tesla.Env{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["completion"]["params"]["model"] ==
+                   Kaapi.default_model()
+
+          %Tesla.Env{
+            status: 200,
+            body: %{success: true, data: %{id: "asst_6", version: %{version: 1}}, metadata: %{}}
+          }
+      end)
+
+      params = %{
+        name: "Default Model Assistant",
+        model: nil,
+        prompt: "You are a helpful assistant",
+        description: "Assistant configuration",
+        knowledge_base_ids: [],
+        settings: %{}
+      }
+
+      assert {:ok, %{success: true, data: %{id: "asst_6", version: %{version: 1}}}} =
                Kaapi.create_assistant_config(params, 1)
     end
 

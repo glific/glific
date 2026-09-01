@@ -321,7 +321,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec build_config_blob(map(), list(String.t()), non_neg_integer()) :: map()
   defp build_config_blob(params, knowledge_base_ids, organization_id) do
-    model = params.model || "gpt-4o"
+    model = params.model || default_model()
 
     base_params = %{
       "model" => model,
@@ -989,8 +989,7 @@ defmodule Glific.ThirdParty.Kaapi do
   def default_model, do: @default_model
 
   @doc """
-  List active Kaapi models annotated with `category` and `badge`, ordered recommended first,
-  then the rest alphabetically, then the ones NGOs should migrate off.
+  List active Kaapi models annotated with `category` and `badge`, in dropdown display order.
   """
   @spec list_models_with_metadata(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
   def list_models_with_metadata(organization_id) do
@@ -1021,7 +1020,7 @@ defmodule Glific.ThirdParty.Kaapi do
     Enum.sort_by(models, fn %{model_name: model_name, category: category} ->
       case category do
         "recommended" ->
-          {0, Enum.find_index(@recommended_models, &(elem(&1, 0) == model_name)), ""}
+          {0, recommended_index(model_name), ""}
 
         "all" ->
           {1, 0, model_name}
@@ -1030,6 +1029,12 @@ defmodule Glific.ThirdParty.Kaapi do
           {2, 0, model_name}
       end
     end)
+  end
+
+  @spec recommended_index(String.t()) :: non_neg_integer()
+  defp recommended_index(model_name) do
+    Enum.find_index(@recommended_models, &(elem(&1, 0) == model_name)) ||
+      length(@recommended_models)
   end
 
   @spec fetch_and_cache_models(non_neg_integer(), tuple()) :: {:ok, list(map())} | {:error, any()}
