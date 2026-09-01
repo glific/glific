@@ -54,6 +54,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   input_object :ai_evaluation_filter do
     field :name, :string
+    field :golden_qa_id, :id
   end
 
   input_object :golden_qa_filter do
