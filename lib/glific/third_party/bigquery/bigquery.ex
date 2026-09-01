@@ -1074,7 +1074,7 @@ defmodule Glific.BigQuery do
           url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
           method: :post,
           body: %{query: sql, useLegacySql: false, timeoutMs: 120_000},
-          opts: [adapter: [recv_timeout: 130_000]]
+          opts: [adapter: [recv_timeout: bigquery_dedup_recv_timeout_ms()]]
         )
         |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
@@ -1085,6 +1085,10 @@ defmodule Glific.BigQuery do
         :ok
     end
   end
+
+  @spec bigquery_dedup_recv_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_recv_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 120_000)
 
   @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
