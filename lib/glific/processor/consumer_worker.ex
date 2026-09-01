@@ -91,10 +91,22 @@ defmodule Glific.Processor.ConsumerWorker do
 
   @spec handle_common(any, any, any) :: any
   defp handle_common(message, process_state, state) do
+    organization_id = message.organization_id
+    start_time = System.monotonic_time()
+
     handle_process_state(process_state)
 
-    state = reload(state, message.organization_id)
-    message = process_message(message, state.organizations[message.organization_id])
+    state = reload(state, organization_id)
+    message = process_message(message, state.organizations[organization_id])
+
+    # Timed around the whole handle_call/handle_cast body (not just the tagger/flow pipeline)
+    # so this reflects the full time the GenServer — and thus the pool worker — was occupied by
+    # this message, not just the flow-engine portion of it.
+    Appsignal.add_distribution_value(
+      "flow_processing_duration",
+      duration_ms(start_time),
+      %{organization_id: organization_id}
+    )
 
     {message, state}
   end
@@ -114,4 +126,11 @@ defmodule Glific.Processor.ConsumerWorker do
     |> elem(0)
     |> Repo.preload(:tags)
   end
+
+  @spec duration_ms(integer) :: non_neg_integer
+  defp duration_ms(start_time),
+    do:
+      System.monotonic_time()
+      |> Kernel.-(start_time)
+      |> System.convert_time_unit(:native, :millisecond)
 end
