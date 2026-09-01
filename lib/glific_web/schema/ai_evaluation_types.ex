@@ -24,7 +24,8 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   object :ai_eval_config_version do
     field :id, :id
-    field :version_number, :integer
+    field :major_version, :integer
+    field :minor_version, :integer
     field :assistant, :ai_eval_assistant
   end
 
@@ -53,6 +54,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   input_object :ai_evaluation_filter do
     field :name, :string
+    field :golden_qa_id, :id
   end
 
   input_object :golden_qa_filter do

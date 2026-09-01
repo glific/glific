@@ -37,6 +37,18 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, evaluations} = AIEvaluations.list_ai_evaluations(nil, args, resolution)
       assert Enum.any?(evaluations, fn e -> e.id == evaluation.id end)
     end
+
+    test "filters by golden_qa_id", %{staff: user, evaluation: evaluation} do
+      resolution = %{context: %{current_user: user}}
+      args = %{filter: %{golden_qa_id: to_string(evaluation.golden_qa_id)}}
+
+      assert {:ok, evaluations} = AIEvaluations.list_ai_evaluations(nil, args, resolution)
+      assert Enum.any?(evaluations, fn e -> e.id == evaluation.id end)
+
+      other_args = %{filter: %{golden_qa_id: evaluation.golden_qa_id + 1}}
+
+      assert {:ok, []} = AIEvaluations.list_ai_evaluations(nil, other_args, resolution)
+    end
   end
 
   describe "count_ai_evaluations/3" do

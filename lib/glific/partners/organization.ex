@@ -205,6 +205,9 @@ defmodule Glific.Partners.Organization do
     # A virtual field to conditionally enable the Template Library button for an organization
     field(:is_template_library_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field to conditionally enable Glific AI for an organization
+    field(:glific_ai_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 

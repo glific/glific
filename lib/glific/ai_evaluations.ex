@@ -284,6 +284,9 @@ defmodule Glific.AIEvaluations do
     Enum.reduce(filter, query, fn
       {:name, name}, query ->
         where(query, [e], ilike(e.name, ^"%#{name}%"))
+
+      {:golden_qa_id, golden_qa_id}, query ->
+        where(query, [e], e.golden_qa_id == ^golden_qa_id)
     end)
   end
 
