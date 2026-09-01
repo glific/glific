@@ -18,6 +18,7 @@ query organizationServices {
     template_v2_enabled
     template_library_enabled
     glific_ai_enabled
+    web_channel_enabled
     errors {
       key
       message
