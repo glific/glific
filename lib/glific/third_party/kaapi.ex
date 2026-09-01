@@ -321,7 +321,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec build_config_blob(map(), list(String.t()), non_neg_integer()) :: map()
   defp build_config_blob(params, knowledge_base_ids, organization_id) do
-    model = params.model || "gpt-4o"
+    model = params.model || default_model()
 
     base_params = %{
       "model" => model,
@@ -966,6 +966,75 @@ defmodule Glific.ThirdParty.Kaapi do
       _ ->
         fetch_and_cache_models(organization_id, cache_key)
     end
+  end
+
+  @recommended_models [
+    {"gpt-5.6-luna", "Best value"},
+    {"gpt-5-nano", "Fastest"},
+    {"gpt-5-mini", "Budget"},
+    {"gpt-5.6-terra", "All-rounder"},
+    {"gpt-5.4", "All-rounder"}
+  ]
+  @to_be_deprecated_models ~w(gpt-4o gpt-4o-mini)
+
+  # Deliberately still gpt-4o. Moving the default to gpt-5.6-luna changes the model every
+  # assistant created without an explicit one is persisted with, so it is held back from
+  # the dropdown categorisation change.
+  @default_model "gpt-4o"
+
+  @doc """
+  The model an assistant is created with when the caller supplies none.
+  """
+  @spec default_model() :: String.t()
+  def default_model, do: @default_model
+
+  @doc """
+  List active Kaapi models annotated with `category` and `badge`, in dropdown display order.
+  """
+  @spec list_models_with_metadata(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_models_with_metadata(organization_id) do
+    with {:ok, models} <- list_models(organization_id) do
+      {:ok, models |> Enum.map(&annotate_model/1) |> sort_models()}
+    end
+  end
+
+  @spec annotate_model(map()) :: map()
+  defp annotate_model(%{model_name: model_name} = model) do
+    metadata =
+      cond do
+        entry = List.keyfind(@recommended_models, model_name, 0) ->
+          %{category: "recommended", badge: elem(entry, 1)}
+
+        model_name in @to_be_deprecated_models ->
+          %{category: "to_be_deprecated", badge: "Deprecating"}
+
+        true ->
+          %{category: "all", badge: nil}
+      end
+
+    Map.merge(model, metadata)
+  end
+
+  @spec sort_models(list(map())) :: list(map())
+  defp sort_models(models) do
+    Enum.sort_by(models, fn %{model_name: model_name, category: category} ->
+      case category do
+        "recommended" ->
+          {0, recommended_index(model_name), ""}
+
+        "all" ->
+          {1, 0, model_name}
+
+        _ ->
+          {2, 0, model_name}
+      end
+    end)
+  end
+
+  @spec recommended_index(String.t()) :: non_neg_integer()
+  defp recommended_index(model_name) do
+    Enum.find_index(@recommended_models, &(elem(&1, 0) == model_name)) ||
+      length(@recommended_models)
   end
 
   @spec fetch_and_cache_models(non_neg_integer(), tuple()) :: {:ok, list(map())} | {:error, any()}
