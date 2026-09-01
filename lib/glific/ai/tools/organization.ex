@@ -93,8 +93,6 @@ defmodule Glific.AI.Tools.Organization do
      }}
   end
 
-  # Only the shape of each credential, never `keys` or `secrets`: those hold the
-  # provider's API tokens and must not reach a model.
   def run("platform_health", args) do
     providers =
       Credential

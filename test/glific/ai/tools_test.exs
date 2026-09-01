@@ -240,6 +240,26 @@ defmodule Glific.AI.ToolsTest do
       end
     end
 
+    test "phone numbers leave masked, never in full", %{user: user, contact: contact} do
+      assert {:ok, described} = Tools.run("get_contact", %{"contact_id" => contact.id}, user)
+
+      refute described.phone == contact.phone
+      assert described.phone =~ "******"
+      assert String.starts_with?(described.phone, String.slice(contact.phone, 0, 4))
+
+      assert {:ok, [_ | _] = contacts} = Tools.run("list_contacts", %{}, user)
+      for one <- contacts, is_binary(one.phone), do: assert(one.phone =~ "******")
+    end
+
+    test "a contact is still findable by full phone, and by the id it returns", %{
+      user: user,
+      contact: contact
+    } do
+      assert {:ok, found} = Tools.run("get_contact", %{"phone" => contact.phone}, user)
+      assert found.id == contact.id
+      assert {:ok, _} = Tools.run("get_contact", %{"contact_id" => found.id}, user)
+    end
+
     test "get_contact returns the contact's own field values", %{user: user, contact: contact} do
       assert {:ok, described} = Tools.run("get_contact", %{"contact_id" => contact.id}, user)
       assert Map.has_key?(described, :fields)

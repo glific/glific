@@ -34,6 +34,9 @@ defmodule Glific.AI.Tools.Contacts do
         Looks up one contact by id or phone number, with their opt-in status,
         WhatsApp session status and when they were last active.
 
+        Phone numbers come back partially masked, so quote them only as shown and
+        refer to a contact by `contact_id` rather than by phone.
+
         On its own this answers "who is this". Add `include` to explain how they
         got into the state they are in, asking only for what the question needs:
 
@@ -65,7 +68,8 @@ defmodule Glific.AI.Tools.Contacts do
         description: """
         Searches this organisation's contacts by name or phone, with their
         opt-in and WhatsApp session status. Use this when a question names a
-        person but gives no id.
+        person but gives no id. Searching by phone still takes a full number;
+        only the numbers returned are masked.
 
         Pass `collection_id` or `tag_id` to answer who is in a collection or
         carries a tag.
@@ -105,7 +109,7 @@ defmodule Glific.AI.Tools.Contacts do
       described = %{
         id: contact.id,
         name: contact.name,
-        phone: contact.phone,
+        phone: masked_phone(contact),
         status: contact.status,
         bsp_status: contact.bsp_status,
         optin_status: contact.optin_status,
@@ -113,8 +117,6 @@ defmodule Glific.AI.Tools.Contacts do
         optout_time: contact.optout_time,
         last_message_at: contact.last_message_at,
         language_id: contact.language_id,
-        # The values this organisation records against the contact, keyed by
-        # shortcode. list_reference kind "contact_fields" says what they mean.
         fields: contact.fields
       }
 
@@ -138,7 +140,7 @@ defmodule Glific.AI.Tools.Contacts do
         &%{
           id: &1.id,
           name: &1.name,
-          phone: &1.phone,
+          phone: masked_phone(&1),
           status: &1.status,
           bsp_status: &1.bsp_status,
           optin_status: &1.optin_status,
@@ -149,8 +151,6 @@ defmodule Glific.AI.Tools.Contacts do
     {:ok, contacts}
   end
 
-  # Queried directly rather than through `Tickets.list_tickets/1`: that orders by
-  # a `label` column the tickets table does not have, so any ordered call raises.
   def run("list_tickets", args) do
     tickets =
       Ticket
@@ -172,7 +172,6 @@ defmodule Glific.AI.Tools.Contacts do
     {:ok, tickets}
   end
 
-  # Each extra is its own query, so looking someone up costs nothing more.
   @spec include(String.t(), map(), Contact.t(), pos_integer()) :: map()
   defp include("history", described, contact, limit),
     do: Map.put(described, :history, history(contact.id, limit))
@@ -262,6 +261,10 @@ defmodule Glific.AI.Tools.Contacts do
 
   defp truncate(text) when is_binary(text),
     do: if(String.length(text) > @body, do: String.slice(text, 0, @body) <> "…", else: text)
+
+  @spec masked_phone(Contact.t()) :: String.t() | nil
+  defp masked_phone(%Contact{phone: phone}) when phone in [nil, ""], do: nil
+  defp masked_phone(%Contact{} = contact), do: Contact.populate_masked_phone(contact).masked_phone
 
   @spec maybe_with_status(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Queryable.t()
   defp maybe_with_status(query, nil), do: query

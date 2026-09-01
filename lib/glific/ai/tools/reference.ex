@@ -106,7 +106,6 @@ defmodule Glific.AI.Tools.Reference do
     |> Enum.map(&%{id: &1.id, label: &1.label, description: &1.description, url: &1.url})
   end
 
-  # No `order`: this context orders by a `name` column the table lacks.
   defp list("global_fields", limit) do
     %{filter: %{}, opts: %{limit: limit, offset: 0}}
     |> Partners.list_organization_data()

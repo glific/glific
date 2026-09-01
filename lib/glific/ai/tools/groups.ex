@@ -83,7 +83,6 @@ defmodule Glific.AI.Tools.Groups do
 
   @impl Glific.AI.Tool
   def run("list_group_chats", args) do
-    # No `order`: this context orders by a `name` column the table lacks.
     groups =
       %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0}}
       |> WAGroups.list_wa_groups()

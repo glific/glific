@@ -84,9 +84,6 @@ defmodule Glific.AI.Tools.Assistants do
     ]
   end
 
-  # Queried directly rather than through `Assistants.list_assistants/1`: that
-  # builds a legacy shape which raises on an assistant with no active config
-  # version, which is the normal state of a newly created one.
   @impl Glific.AI.Tool
   def run("list_assistants", args) do
     assistants =

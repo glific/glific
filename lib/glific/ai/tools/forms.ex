@@ -39,7 +39,6 @@ defmodule Glific.AI.Tools.Forms do
 
   @impl Glific.AI.Tool
   def run("list_forms", args) do
-    # No `order`: this context orders by a `label` column the table lacks.
     forms =
       %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0}}
       |> WhatsappForms.list_whatsapp_forms()

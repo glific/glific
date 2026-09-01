@@ -209,8 +209,6 @@ defmodule Glific.AI.Tools.Flows do
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
   end
 
-  # Each extra is its own query, so a question that only needs the structure pays
-  # for nothing more.
   @spec include(String.t(), map(), Flows.Flow.t()) :: map()
   defp include("contacts", described, flow),
     do: Map.put(described, :contacts, contact_status(flow.id))
@@ -269,8 +267,6 @@ defmodule Glific.AI.Tools.Flows do
     end
   end
 
-  # A flow that exists but has never been published is a different answer from a
-  # flow that does not exist, and the model needs to be told which it is.
   @spec definition(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp definition(flow_id, status) do
     FlowRevision
