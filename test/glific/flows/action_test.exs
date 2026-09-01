@@ -1736,11 +1736,12 @@ defmodule Glific.Flows.ActionTest do
   end
 
   describe "validate/3 — call_webhook wait_time cap" do
-    test "warns when the node asks to wait longer than the 5 minute cap" do
+    test "warns with both the configured and the allowed wait time" do
       action = %Action{type: "call_webhook", url: "filesearch-gpt", wait_time: 600}
 
       assert [{Webhook, message, "Warning"}] = Action.validate(action, [], %{})
-      assert message =~ "at most 5 minutes"
+      assert message =~ "wait_time of 600 seconds"
+      assert message =~ "allowed wait time of 300 seconds"
     end
 
     test "stays quiet at or below the cap, and when no wait_time is set" do

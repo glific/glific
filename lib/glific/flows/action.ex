@@ -576,7 +576,7 @@ defmodule Glific.Flows.Action do
       when is_integer(wait_time) and wait_time > @max_webhook_wait_time do
     [
       {Webhook,
-       "A webhook can wait at most #{div(@max_webhook_wait_time, 60)} minutes; this node will wait that long instead.",
+       "You've configured a wait_time of #{wait_time} seconds which exceeds the allowed wait time of #{@max_webhook_wait_time} seconds. We will use the allowed wait time only.",
        "Warning"}
       | errors
     ]
