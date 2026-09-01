@@ -406,7 +406,8 @@ defmodule Glific.Communications.Message do
   defp publish_simulator(message, _type), do: message
 
   # how long to wait for a free worker from the poolboy pool before giving up
-  @poolboy_checkout_timeout 25_000
+  defp poolboy_checkout_timeout,
+    do: Application.get_env(:glific, Poolboy)[:checkout_timeout]
 
   # time budget for the genserver worker to process a single message through its flow
   # steps; chained flows via enter_flow can legitimately take more than a few seconds
@@ -464,7 +465,7 @@ defmodule Glific.Communications.Message do
           fn pid ->
             GenServer.call(pid, {message, process_state, self}, @genserver_call_timeout)
           end,
-          @poolboy_checkout_timeout
+          poolboy_checkout_timeout()
         )
       catch
         # A poolboy checkout timeout means every worker was busy — the pool is the bottleneck.
