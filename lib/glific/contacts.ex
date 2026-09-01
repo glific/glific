@@ -415,11 +415,18 @@ defmodule Glific.Contacts do
       language_id: attrs[:language_id] || Partners.organization_language_id(organization_id)
     }
 
+    # Drop :phone from the conflict set so an incoming raw variant can never overwrite the
+    # canonical phone already stored on the matched row.
+    on_conflict_set =
+      attrs
+      |> Map.delete(:phone)
+      |> Enum.map(fn {key, value} -> {key, value} end)
+
     contact =
       Repo.insert!(
         change_contact(%Contact{}, Map.merge(other_attrs, attrs)),
         returning: true,
-        on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
+        on_conflict: [set: on_conflict_set],
         conflict_target: [:phone, :organization_id]
       )
 
@@ -1083,6 +1090,19 @@ defmodule Glific.Contacts do
     case Repo.fetch(Contact, contact_id) do
       {:ok, contact} -> contact |> Repo.preload(:language)
       {:error, error} -> error
+    end
+  end
+
+  @doc """
+  Canonicalize a phone to E.164 without the leading +, leaving simulator and unparseable numbers as they are.
+  """
+  @spec normalize_phone(String.t()) :: String.t()
+  def normalize_phone(phone) when is_binary(phone) do
+    with false <- simulator_contact?(phone),
+         {:ok, canonical} <- parse_phone_number(phone) do
+      canonical
+    else
+      _ -> phone
     end
   end
 

@@ -46,6 +46,17 @@ defmodule Glific.ContactsTest do
     :ok
   end
 
+  # bypasses changeset/2, the only way to get a non-canonical phone in now
+  @spec legacy_contact!(String.t(), non_neg_integer()) :: Contact.t()
+  defp legacy_contact!(phone, organization_id) do
+    Repo.insert!(%Contact{
+      name: "legacy contact",
+      phone: phone,
+      language_id: 1,
+      organization_id: organization_id
+    })
+  end
+
   defp get_tmp_path(name \\ "fixture.csv") do
     System.tmp_dir!()
     |> Path.join(name)
@@ -1201,6 +1212,95 @@ defmodule Glific.ContactsTest do
          %{organization_id: _organization_id} = attrs do
       contact_fixture(Map.merge(attrs, @valid_attrs))
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(Map.merge(attrs, @valid_attrs))
+    end
+
+    test "create_contact/1 normalizes the phone to canonical form",
+         %{organization_id: _organization_id} = attrs do
+      {:ok, contact} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "+919917443992", name: "plus form"}))
+
+      assert contact.phone == "919917443992"
+    end
+
+    test "differently-formatted variants of one number resolve to a single contact",
+         %{organization_id: organization_id} = attrs do
+      {:ok, canonical} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "+919917443992", name: "plus form"}))
+
+      assert canonical.phone == "919917443992"
+
+      {:ok, plain} =
+        Contacts.upsert(%{
+          phone: "919917443992",
+          name: "plain form",
+          organization_id: organization_id
+        })
+
+      assert plain.id == canonical.id
+      assert plain.phone == "919917443992"
+
+      {:ok, spaced} =
+        Contacts.upsert(%{
+          phone: "91 99174 43992",
+          name: "spaced form",
+          organization_id: organization_id
+        })
+
+      assert spaced.id == canonical.id
+      assert spaced.phone == "919917443992"
+
+      assert Contacts.count_contacts(%{filter: %{phone: "919917443992"}}) == 1
+    end
+
+    test "create_contact/1 leaves simulator numbers unchanged",
+         %{organization_id: _organization_id} = attrs do
+      simulator_phone = "9876543210_7"
+
+      {:ok, contact} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: simulator_phone, name: "simulator"}))
+
+      assert contact.phone == simulator_phone
+    end
+
+    test "create_contact/1 leaves unparseable numbers untouched",
+         %{organization_id: _organization_id} = attrs do
+      {:ok, contact} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "not a number", name: "junk"}))
+
+      assert contact.phone == "not a number"
+    end
+
+    test "upsert/1 does not overwrite the canonical phone with an incoming variant",
+         %{organization_id: organization_id} = attrs do
+      {:ok, canonical} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "+919917443992", name: "plus form"}))
+
+      {:ok, upserted} =
+        Contacts.upsert(%{
+          phone: "+919917443992",
+          name: "updated",
+          organization_id: organization_id
+        })
+
+      assert upserted.id == canonical.id
+      assert upserted.phone == "919917443992"
+    end
+
+    test "contacts created before canonicalization keep their phone when updated",
+         %{organization_id: organization_id} do
+      legacy = legacy_contact!("+919917443992", organization_id)
+
+      {:ok, updated} = Contacts.update_contact(legacy, %{name: "new name"})
+
+      assert updated.phone == "+919917443992"
+    end
+
+    test "normalize_phone/1 canonicalizes variants and leaves simulator/unparseable untouched" do
+      assert Contacts.normalize_phone("+919917443992") == "919917443992"
+      assert Contacts.normalize_phone("91 99174 43992") == "919917443992"
+      assert Contacts.normalize_phone("919917443992") == "919917443992"
+      assert Contacts.normalize_phone("9876543210_1") == "9876543210_1"
+      assert Contacts.normalize_phone("not a number") == "not a number"
     end
 
     test "ensure that contact returns the valid state for sending the message",
