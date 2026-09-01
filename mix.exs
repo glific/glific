@@ -135,7 +135,7 @@ defmodule Glific.MixProject do
       {:fun_with_flags, "~> 1.9"},
       {:fun_with_flags_ui, "~> 1.0"},
       {:passwordless_auth, "~> 0.3.0"},
-      {:appsignal_phoenix, "~> 2.3"},
+      {:appsignal_phoenix, "~> 2.8"},
       {:poolboy, "~> 1.5"},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
