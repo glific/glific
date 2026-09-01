@@ -1092,7 +1092,7 @@ defmodule Glific.BigQuery do
 
   @spec bigquery_dedup_recv_timeout_ms() :: pos_integer()
   defp bigquery_dedup_recv_timeout_ms,
-    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 15_000)
+    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 150_000)
 
   @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do

@@ -81,7 +81,7 @@ config :glific, :bigquery_dedup_timeout_ms, env!("BIGQUERY_DEDUP_TIMEOUT_MS", :i
 
 config :glific,
        :bigquery_dedup_recv_timeout_ms,
-       env!("BIGQUERY_DEDUP_RECV_TIMEOUT_MS", :integer, 15_000)
+       env!("BIGQUERY_DEDUP_RECV_TIMEOUT_MS", :integer, 150_000)
 
 # AppSignal configs
 config :appsignal, :config,
