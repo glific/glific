@@ -407,7 +407,7 @@ defmodule Glific.Communications.Message do
 
   # how long to wait for a free worker from the poolboy pool before giving up
   defp poolboy_checkout_timeout,
-    do: Application.get_env(:glific, Poolboy)[:checkout_timeout] || 30_000
+    do: Application.get_env(:glific, Poolboy)[:checkout_timeout]
 
   # time budget for the genserver worker to process a single message through its flow
   # steps; chained flows via enter_flow can legitimately take more than a few seconds
