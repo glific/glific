@@ -94,7 +94,7 @@ config :appsignal, :config,
   ecto_repos: [],
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
   instrument_oban: false,
-  log_level: env!("APPSIGNAL_LOG_LEVEL", :string!)
+  log_level: env!("APPSIGNAL_LOG_LEVEL", :string!, "info")
 
 config :glific, Glific.Vault,
   ciphers: [
