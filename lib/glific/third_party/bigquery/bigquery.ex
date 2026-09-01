@@ -1069,11 +1069,11 @@ defmodule Glific.BigQuery do
         ## it to the actual request (its own `opts` param only reaches response decoding),
         ## so we call the connection's Tesla `request/2` directly here - the same connection
         ## and middleware `bigquery_jobs_query/4` uses internally - to set an explicit
-        ## `recv_timeout` that actually covers the 120s we're asking BigQuery for.
+        ## `recv_timeout`.
         Connection.request(conn,
           url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
           method: :post,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000},
+          body: %{query: sql, useLegacySql: false, timeoutMs: bigquery_dedup_query_timeout_ms()},
           opts: [adapter: [recv_timeout: bigquery_dedup_recv_timeout_ms()]]
         )
         |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
@@ -1086,9 +1086,13 @@ defmodule Glific.BigQuery do
     end
   end
 
+  @spec bigquery_dedup_query_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_query_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_timeout_ms, 120_000)
+
   @spec bigquery_dedup_recv_timeout_ms() :: pos_integer()
   defp bigquery_dedup_recv_timeout_ms,
-    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 120_000)
+    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 15_000)
 
   @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do

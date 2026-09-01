@@ -173,9 +173,9 @@ defmodule Glific.BigQueryTest do
       }
     ]) do
       Tesla.Mock.mock(fn %{method: :post} = env ->
-        assert env.opts[:adapter][:recv_timeout] == 120_000
-        assert env.url =~ "/queries"
+        assert env.opts[:adapter][:recv_timeout] == 15_000
         assert Jason.decode!(env.body)["timeoutMs"] == 120_000
+        assert env.url =~ "/queries"
 
         %Tesla.Env{status: 200}
       end)
