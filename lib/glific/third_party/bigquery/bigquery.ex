@@ -79,6 +79,8 @@ defmodule Glific.BigQuery do
     Connection
   }
 
+  alias GoogleApi.Gax.Response
+
   @bigquery_tables %{
     "contacts" => :contact_schema,
     "contact_histories" => :contact_history_schema,
@@ -1061,10 +1063,20 @@ defmodule Glific.BigQuery do
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 
-        ## timeout takes some time to delete the old records. So increasing the timeout limit.
-        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+        ## `timeoutMs` below only bounds how long BigQuery's own server is allowed to keep
+        ## running the query - it has no effect on how long our own HTTP client waits for
+        ## the response. `Api.Jobs.bigquery_jobs_query/4` never forwards an `opts:` you pass
+        ## it to the actual request (its own `opts` param only reaches response decoding),
+        ## so we call the connection's Tesla `request/2` directly here - the same connection
+        ## and middleware `bigquery_jobs_query/4` uses internally - to set an explicit
+        ## `recv_timeout`.
+        Connection.request(conn,
+          url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
+          method: :post,
+          body: %{query: sql, useLegacySql: false, timeoutMs: bigquery_dedup_query_timeout_ms()},
+          opts: [adapter: [recv_timeout: bigquery_dedup_recv_timeout_ms()]]
         )
+        |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
@@ -1073,6 +1085,14 @@ defmodule Glific.BigQuery do
         :ok
     end
   end
+
+  @spec bigquery_dedup_query_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_query_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_timeout_ms, 120_000)
+
+  @spec bigquery_dedup_recv_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_recv_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 150_000)
 
   @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do

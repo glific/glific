@@ -77,6 +77,12 @@ config :glific,
 
 config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
 
+config :glific, :bigquery_dedup_timeout_ms, env!("BIGQUERY_DEDUP_TIMEOUT_MS", :integer, 120_000)
+
+config :glific,
+       :bigquery_dedup_recv_timeout_ms,
+       env!("BIGQUERY_DEDUP_RECV_TIMEOUT_MS", :integer, 150_000)
+
 # AppSignal configs
 config :appsignal, :config,
   otp_app: :glific,
