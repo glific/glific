@@ -12,7 +12,7 @@ defmodule Glific.AI.Tools.Assistants do
 
   import Ecto.Query
 
-  alias Glific.{AIEvaluations, Assistants.Assistant, Repo}
+  alias Glific.{AIEvaluations, Assistants, Assistants.Assistant, Repo}
 
   @behaviour Glific.AI.Tool
 
@@ -43,15 +43,21 @@ defmodule Glific.AI.Tools.Assistants do
       %{
         name: "get_assistant",
         description: """
-        Describes one assistant, including its active configuration version.
-        Use this to explain how an assistant is set up or why it answers the way
-        it does.
+        Describes one assistant. Add `include: ["config"]` for the active
+        configuration version — the instructions and model actually behind its
+        answers, which is what a question about why it replied a certain way
+        needs.
         """,
         parameters: [
           assistant_id: [
             type: :pos_integer,
             required: true,
             doc: "The assistant's id, from list_assistants"
+          ],
+          include: [
+            type: {:list, {:in, ["config"]}},
+            default: [],
+            doc: ~s(Add "config" for the active configuration version behind its answers)
           ]
         ]
       },
@@ -61,20 +67,18 @@ defmodule Glific.AI.Tools.Assistants do
         Lists evaluation runs for this organisation's assistants, with their
         status and scores. Use this to answer whether a change to an assistant
         made it better or worse.
+
+        Add `include: ["datasets"]` for the golden question-and-answer sets the
+        runs score against, and how many items each holds.
         """,
         parameters: [
           status: [type: :string, doc: ~s(Only runs with this status, e.g. "completed")],
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
-        ]
-      },
-      %{
-        name: "list_golden_qas",
-        description: """
-        Lists the golden question-and-answer datasets an evaluation runs against,
-        with how many items each holds.
-        """,
-        parameters: [
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"],
+          include: [
+            type: {:list, {:in, ["datasets"]}},
+            default: [],
+            doc: ~s(Add "datasets" for the golden question-and-answer sets runs score against)
+          ]
         ]
       }
     ]
@@ -96,14 +100,14 @@ defmodule Glific.AI.Tools.Assistants do
     {:ok, assistants}
   end
 
-  def run("get_assistant", %{assistant_id: id}) do
+  def run("get_assistant", %{assistant_id: id} = args) do
     Assistant
     |> where([a], a.id == ^id)
     |> select([a], ^@fields)
     |> Repo.one()
     |> case do
       nil -> {:error, "No assistant with id #{id} exists in this organisation."}
-      assistant -> {:ok, assistant}
+      assistant -> {:ok, with_config(assistant, args[:include])}
     end
   end
 
@@ -126,24 +130,48 @@ defmodule Glific.AI.Tools.Assistants do
         }
       )
 
-    {:ok, evaluations}
+    {:ok, with_datasets(evaluations, args[:include])}
   end
 
-  def run("list_golden_qas", args) do
-    datasets =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0, order: :desc}}
-      |> AIEvaluations.list_golden_qas()
-      |> Enum.map(
-        &%{
-          id: &1.id,
-          name: &1.name,
-          file_name: &1.file_name,
-          total_items: &1.total_items,
-          inserted_at: &1.inserted_at
-        }
-      )
+  @spec with_config(map(), [String.t()]) :: map()
+  defp with_config(assistant, include) do
+    if "config" in include,
+      do: Map.put(assistant, :config, config_version(assistant.active_config_version_id)),
+      else: assistant
+  end
 
-    {:ok, datasets}
+  @spec config_version(non_neg_integer() | nil) :: map() | nil
+  defp config_version(nil), do: nil
+
+  defp config_version(id) do
+    Assistants.list_assistant_config_versions()
+    |> Enum.find(&(&1.id == id))
+    |> case do
+      nil -> nil
+      version -> Map.take(version, [:id, :version, :status, :inserted_at])
+    end
+  end
+
+  @spec with_datasets([map()], [String.t()]) :: [map()] | map()
+  defp with_datasets(evaluations, include) do
+    if "datasets" in include,
+      do: %{evaluations: evaluations, datasets: datasets()},
+      else: evaluations
+  end
+
+  @spec datasets() :: [map()]
+  defp datasets do
+    %{filter: %{}, opts: %{limit: 100, offset: 0, order: :desc}}
+    |> AIEvaluations.list_golden_qas()
+    |> Enum.map(
+      &%{
+        id: &1.id,
+        name: &1.name,
+        file_name: &1.file_name,
+        total_items: &1.total_items,
+        inserted_at: &1.inserted_at
+      }
+    )
   end
 
   @spec maybe_named(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Queryable.t()

@@ -21,20 +21,17 @@ defmodule Glific.AI.Tools.Forms do
         description: """
         Lists this organisation's forms with their approval status from Meta.
         Check the status first when a form will not open for contacts.
+
+        Add `include: ["responses"]` to see what contacts submitted, and whether
+        submissions are arriving at all.
         """,
         parameters: [
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
-        ]
-      },
-      %{
-        name: "form_responses",
-        description: """
-        Lists what contacts submitted through a form, newest first. Use this to
-        check whether submissions are arriving at all, and what they contain.
-        """,
-        parameters: [
-          form_id: [type: :pos_integer, doc: "Only responses to this form, from list_forms"],
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"],
+          include: [
+            type: {:list, {:in, ["responses"]}},
+            default: [],
+            doc: ~s(Add "responses" to see what contacts submitted)
+          ]
         ]
       }
     ]
@@ -57,27 +54,31 @@ defmodule Glific.AI.Tools.Forms do
         }
       )
 
-    {:ok, forms}
+    {:ok, with_responses(forms, args[:include])}
   end
 
-  def run("form_responses", args) do
-    responses =
-      WhatsappFormResponse
-      |> maybe_for_form(args[:form_id])
-      |> order_by([r], desc: r.submitted_at)
-      |> limit(^min(args[:limit], 100))
-      |> select([r], %{
-        whatsapp_form_id: r.whatsapp_form_id,
-        contact_id: r.contact_id,
-        raw_response: r.raw_response,
-        submitted_at: r.submitted_at
-      })
-      |> Repo.all()
-
-    {:ok, responses}
+  @spec with_responses([map()], [String.t()]) :: [map()]
+  defp with_responses(forms, include) do
+    if "responses" in include do
+      submissions = responses(Enum.map(forms, & &1.id))
+      Enum.map(forms, &Map.put(&1, :responses, Map.get(submissions, &1.id, [])))
+    else
+      forms
+    end
   end
 
-  @spec maybe_for_form(Ecto.Queryable.t(), non_neg_integer() | nil) :: Ecto.Queryable.t()
-  defp maybe_for_form(query, nil), do: query
-  defp maybe_for_form(query, id), do: where(query, [r], r.whatsapp_form_id == ^id)
+  @spec responses([non_neg_integer()]) :: map()
+  defp responses(form_ids) do
+    WhatsappFormResponse
+    |> where([r], r.whatsapp_form_id in ^form_ids)
+    |> order_by([r], desc: r.submitted_at)
+    |> limit(100)
+    |> select(
+      [r],
+      {r.whatsapp_form_id,
+       %{contact_id: r.contact_id, raw_response: r.raw_response, submitted_at: r.submitted_at}}
+    )
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+  end
 end

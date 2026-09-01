@@ -13,12 +13,12 @@ defmodule Glific.AI.Tools.Flows do
     Flows,
     Flows.FlowContext,
     Flows.FlowCount,
-    Flows.FlowLabel,
     Flows.FlowResult,
     Flows.FlowRevision,
     Flows.WebhookLog,
     Repo,
-    Sheets
+    Sheets,
+    Sheets.SheetData
   }
 
   @behaviour Glific.AI.Tool
@@ -43,10 +43,19 @@ defmodule Glific.AI.Tools.Flows do
       %{
         name: "get_flow",
         description: """
-        Describes one flow's structure: each node, the messages it sends, the
-        questions it asks and where its exits lead. Use it to explain what a flow
-        does or to find where it might go wrong. Call list_flows first if you only
-        know the flow's name.
+        Describes one flow: each node, the messages it sends, the questions it
+        asks and where its exits lead. Call list_flows first if you only know the
+        flow's name.
+
+        On its own this answers "what does this flow do". Add `include` to answer
+        why it is misbehaving, asking only for the parts the question needs:
+
+          * "contacts" — how many sit at each node, completed, or were stopped and why
+          * "counts" — how often each node and exit was taken, which is where drop-off shows
+          * "results" — the answers the flow collected from contacts
+          * "webhooks" — the webhook calls this flow made, with status codes and errors
+
+        For "why is my flow not working", ask for all four.
         """,
         parameters: [
           flow_id: [type: :pos_integer, required: true, doc: "The flow's id, from list_flows"],
@@ -54,53 +63,12 @@ defmodule Glific.AI.Tools.Flows do
             type: {:in, ["published", "draft"]},
             default: "published",
             doc: "Which revision to describe"
+          ],
+          include: [
+            type: {:list, {:in, ["contacts", "counts", "results", "webhooks"]}},
+            default: [],
+            doc: "Extra detail to return alongside the structure"
           ]
-        ]
-      },
-      %{
-        name: "flow_status",
-        description: """
-        Shows where contacts currently are inside a flow: how many are waiting at
-        each node, how many completed, and how many were stopped and why. Use this
-        to diagnose a flow that is not behaving as expected. Pair the node uuids
-        with get_flow to see which message each one corresponds to.
-        """,
-        parameters: [
-          flow_id: [type: :pos_integer, required: true, doc: "The flow's id, from list_flows"]
-        ]
-      },
-      %{
-        name: "flow_results",
-        description: """
-        Lists what a flow collected from contacts: the answers saved against each
-        result name. Use this to check whether a question in a flow is actually
-        capturing what it should.
-        """,
-        parameters: [
-          flow_id: [type: :pos_integer, required: true, doc: "The flow's id, from list_flows"],
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
-        ]
-      },
-      %{
-        name: "flow_counts",
-        description: """
-        Counts how many times each node and each exit of a flow has been taken.
-        Use this to find where contacts drop off: a node with far fewer counts
-        than the one before it is where they are being lost.
-        """,
-        parameters: [
-          flow_id: [type: :pos_integer, required: true, doc: "The flow's id, from list_flows"]
-        ]
-      },
-      %{
-        name: "list_flow_labels",
-        description: """
-        Lists the flow labels defined in this organisation. Flows tag messages
-        with these, and message_history reports them, so this is how a label
-        named in a question is checked against what exists.
-        """,
-        parameters: [
-          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
         ]
       },
       %{
@@ -109,9 +77,17 @@ defmodule Glific.AI.Tools.Flows do
         Lists the Google Sheets this organisation reads from or writes to in
         flows, with their sync status and any failure reason. A flow that reads
         stale or missing sheet data usually shows up here first.
+
+        Add `include: ["rows"]` to see the synced rows themselves, which is how
+        you check whether the data a flow looks up is actually there.
         """,
         parameters: [
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"],
+          include: [
+            type: {:list, {:in, ["rows"]}},
+            default: [],
+            doc: ~s(Add "rows" for the synced sheet data)
+          ]
         ]
       },
       %{
@@ -154,21 +130,16 @@ defmodule Glific.AI.Tools.Flows do
   def run("get_flow", %{flow_id: flow_id} = args) do
     with {:ok, flow} <- fetch_flow(flow_id),
          {:ok, definition} <- definition(flow_id, args[:status]) do
-      {:ok,
-       %{
-         id: flow.id,
-         name: flow.name,
-         keywords: flow.keywords,
-         is_active: flow.is_active,
-         revision: args[:status],
-         nodes: Enum.map(Map.get(definition, "nodes", []), &node_summary/1)
-       }}
-    end
-  end
+      described = %{
+        id: flow.id,
+        name: flow.name,
+        keywords: flow.keywords,
+        is_active: flow.is_active,
+        revision: args[:status],
+        nodes: Enum.map(Map.get(definition, "nodes", []), &node_summary/1)
+      }
 
-  def run("flow_status", %{flow_id: flow_id}) do
-    with {:ok, flow} <- fetch_flow(flow_id) do
-      {:ok, %{flow: %{id: flow.id, name: flow.name}, contacts: status(flow_id)}}
+      {:ok, Enum.reduce(args[:include], described, &include(&1, &2, flow))}
     end
   end
 
@@ -196,52 +167,6 @@ defmodule Glific.AI.Tools.Flows do
     {:ok, logs}
   end
 
-  def run("flow_results", %{flow_id: flow_id} = args) do
-    with {:ok, _flow} <- fetch_flow(flow_id) do
-      results =
-        FlowResult
-        |> where([r], r.flow_id == ^flow_id)
-        |> order_by([r], desc: r.inserted_at)
-        |> limit(^min(args[:limit], 100))
-        |> select([r], %{
-          contact_id: r.contact_id,
-          flow_version: r.flow_version,
-          results: r.results,
-          inserted_at: r.inserted_at
-        })
-        |> Repo.all()
-
-      {:ok, results}
-    end
-  end
-
-  def run("flow_counts", %{flow_id: flow_id}) do
-    with {:ok, flow} <- fetch_flow(flow_id) do
-      counts =
-        flow.uuid
-        |> FlowCount.get_flow_count_list()
-        |> Enum.map(
-          &%{
-            uuid: &1.uuid,
-            type: &1.type,
-            count: &1.count,
-            destination_uuid: &1.destination_uuid
-          }
-        )
-
-      {:ok, %{flow: %{id: flow.id, name: flow.name}, counts: counts}}
-    end
-  end
-
-  def run("list_flow_labels", args) do
-    labels =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 200), offset: 0, order: :asc}}
-      |> FlowLabel.list_flow_labels()
-      |> Enum.map(&%{id: &1.id, name: &1.name, type: &1.type})
-
-    {:ok, labels}
-  end
-
   def run("list_sheets", args) do
     sheets =
       %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0, order: :asc}}
@@ -260,7 +185,80 @@ defmodule Glific.AI.Tools.Flows do
         }
       )
 
-    {:ok, sheets}
+    {:ok, with_rows(sheets, args[:include])}
+  end
+
+  @spec with_rows([map()], [String.t()]) :: [map()]
+  defp with_rows(sheets, include) do
+    if "rows" in include do
+      rows = sheet_rows(Enum.map(sheets, & &1.id))
+      Enum.map(sheets, &Map.put(&1, :rows, Map.get(rows, &1.id, [])))
+    else
+      sheets
+    end
+  end
+
+  @spec sheet_rows([non_neg_integer()]) :: map()
+  defp sheet_rows(sheet_ids) do
+    SheetData
+    |> where([d], d.sheet_id in ^sheet_ids)
+    |> order_by([d], asc: d.key)
+    |> limit(200)
+    |> select([d], {d.sheet_id, %{key: d.key, row_data: d.row_data}})
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+  end
+
+  # Each extra is its own query, so a question that only needs the structure pays
+  # for nothing more.
+  @spec include(String.t(), map(), Flows.Flow.t()) :: map()
+  defp include("contacts", described, flow),
+    do: Map.put(described, :contacts, contact_status(flow.id))
+
+  defp include("counts", described, flow), do: Map.put(described, :counts, counts(flow))
+  defp include("results", described, flow), do: Map.put(described, :results, results(flow.id))
+
+  defp include("webhooks", described, flow),
+    do: Map.put(described, :webhooks, webhook_logs(flow.id))
+
+  @spec counts(Flows.Flow.t()) :: [map()]
+  defp counts(flow) do
+    flow.uuid
+    |> FlowCount.get_flow_count_list()
+    |> Enum.map(
+      &%{uuid: &1.uuid, type: &1.type, count: &1.count, destination_uuid: &1.destination_uuid}
+    )
+  end
+
+  @spec results(non_neg_integer()) :: [map()]
+  defp results(flow_id) do
+    FlowResult
+    |> where([r], r.flow_id == ^flow_id)
+    |> order_by([r], desc: r.inserted_at)
+    |> limit(25)
+    |> select([r], %{
+      contact_id: r.contact_id,
+      flow_version: r.flow_version,
+      results: r.results,
+      inserted_at: r.inserted_at
+    })
+    |> Repo.all()
+  end
+
+  @spec webhook_logs(non_neg_integer()) :: [map()]
+  defp webhook_logs(flow_id) do
+    WebhookLog
+    |> where([l], l.flow_id == ^flow_id)
+    |> order_by([l], desc: l.inserted_at)
+    |> limit(20)
+    |> select([l], %{
+      url: l.url,
+      method: l.method,
+      status_code: l.status_code,
+      error: l.error,
+      inserted_at: l.inserted_at
+    })
+    |> Repo.all()
   end
 
   @spec fetch_flow(non_neg_integer()) :: {:ok, Flows.Flow.t()} | {:error, String.t()}
@@ -292,8 +290,8 @@ defmodule Glific.AI.Tools.Flows do
     end
   end
 
-  @spec status(non_neg_integer()) :: map()
-  defp status(flow_id) do
+  @spec contact_status(non_neg_integer()) :: map()
+  defp contact_status(flow_id) do
     %{
       waiting_at_node: waiting(flow_id),
       completed: count(flow_id, dynamic([c], not is_nil(c.completed_at))),

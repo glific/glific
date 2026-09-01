@@ -1,7 +1,7 @@
 defmodule Glific.AI.ToolsTest do
   use Glific.DataCase
 
-  alias Glific.{AI.Tools, Fixtures, Flows.Flow, Repo}
+  alias Glific.{AI.Tools, AI.Tools.Reference, Fixtures, Flows.Flow, Repo}
 
   defmodule Misbehaving do
     @moduledoc false
@@ -138,15 +138,51 @@ defmodule Glific.AI.ToolsTest do
       assert unpublished =~ "exists but has no published revision"
     end
 
-    test "flow_status reports where contacts are", %{user: user, flow: flow} do
-      assert {:ok, result} = Tools.run("flow_status", %{"flow_id" => flow.id}, user)
-      assert result.flow.name == "Registration flow"
-      assert %{waiting_at_node: _, completed: _, stopped: _} = result.contacts
+    test "get_flow returns only the structure unless more is asked for", %{
+      user: user,
+      flow: flow
+    } do
+      assert {:ok, described} =
+               Tools.run("get_flow", %{"flow_id" => flow.id, "status" => "draft"}, user)
+
+      for extra <- [:contacts, :counts, :results, :webhooks],
+          do: refute(Map.has_key?(described, extra))
     end
 
-    test "flow_status explains an unknown id", %{user: user} do
-      assert {:error, message} = Tools.run("flow_status", %{"flow_id" => 999_999}, user)
-      assert message == "No flow with id 999999 exists in this organisation."
+    test "get_flow includes only the extras asked for", %{user: user, flow: flow} do
+      assert {:ok, described} =
+               Tools.run(
+                 "get_flow",
+                 %{"flow_id" => flow.id, "status" => "draft", "include" => ["contacts"]},
+                 user
+               )
+
+      assert %{waiting_at_node: _, completed: _, stopped: _} = described.contacts
+      refute Map.has_key?(described, :counts)
+    end
+
+    test "get_flow answers the whole diagnostic in one call", %{user: user, flow: flow} do
+      assert {:ok, described} =
+               Tools.run(
+                 "get_flow",
+                 %{
+                   "flow_id" => flow.id,
+                   "status" => "draft",
+                   "include" => ["contacts", "counts", "results", "webhooks"]
+                 },
+                 user
+               )
+
+      assert %{contacts: _, counts: _, results: _, webhooks: _} = described
+      assert is_list(described.nodes)
+    end
+
+    test "an unknown include value is refused rather than ignored", %{user: user, flow: flow} do
+      assert {:error, message} =
+               Tools.run("get_flow", %{"flow_id" => flow.id, "include" => ["nope"]}, user)
+
+      assert message =~ ~s(invalid list in :include option)
+      assert message =~ ~s(got: "nope")
     end
 
     test "list_webhook_logs returns the calls a flow made", %{user: user} do
@@ -168,12 +204,9 @@ defmodule Glific.AI.ToolsTest do
 
       args = %{
         "get_contact" => %{"contact_id" => contact.id},
-        "contact_history" => %{"contact_id" => contact.id},
-        "message_history" => %{"contact_id" => contact.id},
         "get_flow" => %{"flow_id" => flow.id, "status" => "draft"},
-        "flow_status" => %{"flow_id" => flow.id},
-        "flow_results" => %{"flow_id" => flow.id},
-        "flow_counts" => %{"flow_id" => flow.id},
+        "list_reference" => %{"kind" => "tags"},
+        "get_group_chat" => %{"wa_group_id" => 1},
         "get_assistant" => %{"assistant_id" => assistant.id}
       }
 
@@ -207,8 +240,36 @@ defmodule Glific.AI.ToolsTest do
       end
     end
 
-    test "provider_status never returns credential values", %{user: user} do
-      assert {:ok, providers} = Tools.run("provider_status", %{}, user)
+    test "get_contact returns the contact's own field values", %{user: user, contact: contact} do
+      assert {:ok, described} = Tools.run("get_contact", %{"contact_id" => contact.id}, user)
+      assert Map.has_key?(described, :fields)
+    end
+
+    test "list_reference covers every kind it advertises", %{user: user} do
+      for kind <- Reference.kinds() do
+        assert {:ok, rows} = Tools.run("list_reference", %{"kind" => kind}, user)
+        assert is_list(rows), "kind #{kind} did not return a list"
+      end
+
+      assert {:error, message} = Tools.run("list_reference", %{"kind" => "nope"}, user)
+      assert message =~ "invalid value for :kind option"
+    end
+
+    test "get_group_chat reads a group's messages and members", %{user: user} do
+      assert {:ok, described} =
+               Tools.run(
+                 "get_group_chat",
+                 %{"wa_group_id" => 1, "include" => ["messages", "members"]},
+                 user
+               )
+
+      assert is_list(described.messages)
+      assert is_list(described.members)
+    end
+
+    test "platform_health never returns credential values", %{user: user} do
+      assert {:ok, %{providers: providers, notifications: _, bigquery: _}} =
+               Tools.run("platform_health", %{}, user)
 
       for provider <- providers do
         refute Map.has_key?(provider, :keys)

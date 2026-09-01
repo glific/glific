@@ -1,79 +1,44 @@
 defmodule Glific.AI.Tools.Messages do
   @moduledoc """
-  Reads the conversation with a contact: what was sent, what came back, and
-  which of it failed to deliver.
+  Reads about broadcasts — messages sent to a whole collection at once.
 
-  Delivery errors live on the message row, so this is where *"they say they
-  never got it"* is settled. Broadcasts are here too: a broadcast that never
-  started is a different problem from one whose messages failed.
+  A broadcast that never started is a different problem from one whose messages
+  failed, and only the first is visible here. One contact's conversation is read
+  through `get_contact` instead, since it is almost always asked about a person.
   """
 
   import Ecto.Query
 
-  alias Glific.{Flows.MessageBroadcast, Messages, Repo}
+  alias Glific.{Flows.MessageBroadcast, Flows.MessageBroadcastContact, Repo}
 
   @behaviour Glific.AI.Tool
-
-  @body 300
 
   @impl Glific.AI.Tool
   def specs do
     [
-      %{
-        name: "message_history",
-        description: """
-        Lists the messages exchanged with one contact, newest first, with their
-        direction, delivery status and any error. Use this to check whether a
-        message was actually delivered, or to see what a contact replied.
-        """,
-        parameters: [
-          contact_id: [type: :pos_integer, required: true, doc: "The contact's id"],
-          limit: [
-            type: :pos_integer,
-            default: 25,
-            doc: "How many messages to return, at most 100"
-          ]
-        ]
-      },
       %{
         name: "list_broadcasts",
         description: """
         Lists the broadcasts this organisation has sent, with the flow and
         collection each targeted and whether it started and completed. A
         broadcast with no completed_at is one that stalled.
+
+        Add `include: ["contacts"]` for who it actually reached, which is how
+        "some people did not get it" is answered.
         """,
         parameters: [
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"],
+          include: [
+            type: {:list, {:in, ["contacts"]}},
+            default: [],
+            doc: ~s(Add "contacts" for who each broadcast reached and who it failed for)
+          ]
         ]
       }
     ]
   end
 
   @impl Glific.AI.Tool
-  def run("message_history", %{contact_id: contact_id} = args) do
-    messages =
-      %{
-        filter: %{contact_id: contact_id},
-        opts: %{limit: min(args[:limit], 100), offset: 0, order: :desc}
-      }
-      |> Messages.list_messages()
-      |> Enum.map(
-        &%{
-          id: &1.id,
-          body: truncate(&1.body),
-          type: &1.type,
-          flow: &1.flow,
-          status: &1.status,
-          bsp_status: &1.bsp_status,
-          errors: &1.errors,
-          is_hsm: &1.is_hsm,
-          sent_at: &1.sent_at,
-          inserted_at: &1.inserted_at
-        }
-      )
-
-    {:ok, messages}
-  end
 
   def run("list_broadcasts", args) do
     broadcasts =
@@ -91,13 +56,30 @@ defmodule Glific.AI.Tools.Messages do
       })
       |> Repo.all()
 
-    {:ok, broadcasts}
+    {:ok, with_contacts(broadcasts, args[:include])}
   end
 
-  @spec truncate(String.t() | nil) :: String.t() | nil
-  defp truncate(nil), do: nil
+  @spec with_contacts([map()], [String.t()]) :: [map()]
+  defp with_contacts(broadcasts, include) do
+    if "contacts" in include do
+      reached = recipients(Enum.map(broadcasts, & &1.id))
+      Enum.map(broadcasts, &Map.put(&1, :contacts, Map.get(reached, &1.id, [])))
+    else
+      broadcasts
+    end
+  end
 
-  defp truncate(text) when is_binary(text) do
-    if String.length(text) > @body, do: String.slice(text, 0, @body) <> "…", else: text
+  @spec recipients([non_neg_integer()]) :: map()
+  defp recipients(broadcast_ids) do
+    MessageBroadcastContact
+    |> where([c], c.message_broadcast_id in ^broadcast_ids)
+    |> limit(500)
+    |> select(
+      [c],
+      {c.message_broadcast_id,
+       %{contact_id: c.contact_id, status: c.status, processed_at: c.processed_at}}
+    )
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
   end
 end

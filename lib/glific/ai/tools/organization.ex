@@ -11,14 +11,11 @@ defmodule Glific.AI.Tools.Organization do
   import Ecto.Query
 
   alias Glific.{
-    Certificates.CertificateTemplate,
     Jobs,
     Notifications,
     Partners,
     Partners.Credential,
     Repo,
-    Searches,
-    Settings,
     Stats,
     Users
   }
@@ -38,26 +35,22 @@ defmodule Glific.AI.Tools.Organization do
         parameters: []
       },
       %{
-        name: "provider_status",
+        name: "platform_health",
         description: """
-        Lists the third-party providers configured for this organisation — the
-        WhatsApp BSP, storage, analytics and so on — and whether each is active
-        and its credentials still valid. Start here when a whole service has
-        stopped working rather than one flow. Credential values are never shown.
-        """,
-        parameters: []
-      },
-      %{
-        name: "list_notifications",
-        description: """
-        Lists the platform's own warnings and errors for this organisation,
-        newest first. Use this when something is failing and the cause is not in
-        a flow — a credential problem or a provider outage shows up here.
+        Why the platform itself is unhealthy, when a whole service has stopped
+        rather than one flow. Returns three things together, because the cause is
+        usually in one of them and checking one at a time wastes turns:
+
+          * the third-party providers configured here and whether each is active
+            with valid credentials — the WhatsApp BSP, storage, analytics
+          * the platform's own recent warnings and errors
+          * how far the BigQuery export has got per table
+
+        Credential values are never returned, only whether they are valid.
         """,
         parameters: [
-          severity: [type: :string, doc: ~s(Only this severity, e.g. "Critical" or "Warning")],
-          category: [type: :string, doc: ~s(Only this category, e.g. "Message" or "Flow")],
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          severity: [type: :string, doc: ~s(Only notifications of this severity, e.g. "Critical")],
+          limit: [type: :pos_integer, default: 25, doc: "How many notifications, at most 100"]
         ]
       },
       %{
@@ -79,47 +72,6 @@ defmodule Glific.AI.Tools.Organization do
         """,
         parameters: [
           limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
-        ]
-      },
-      %{
-        name: "list_languages",
-        description: """
-        Lists the languages available on the platform. Templates and contacts
-        carry a language_id, and this is what turns that id into a name.
-        """,
-        parameters: []
-      },
-      %{
-        name: "organization_data",
-        description: """
-        Lists this organisation's global fields — the shared values flows read
-        by key. A flow substituting an empty global is usually a key that does
-        not exist here.
-        """,
-        parameters: [
-          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
-        ]
-      },
-      %{
-        name: "sync_jobs",
-        description: """
-        Reports how far this organisation's BigQuery export has got, per table.
-        A table whose last update is stale is a sync that has stopped.
-        """,
-        parameters: []
-      },
-      %{
-        name: "list_saved_searches",
-        description: "Lists the saved searches staff use in the chat inbox.",
-        parameters: [
-          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
-        ]
-      },
-      %{
-        name: "list_certificate_templates",
-        description: "Lists the certificate templates this organisation can issue from flows.",
-        parameters: [
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
         ]
       }
     ]
@@ -143,7 +95,7 @@ defmodule Glific.AI.Tools.Organization do
 
   # Only the shape of each credential, never `keys` or `secrets`: those hold the
   # provider's API tokens and must not reach a model.
-  def run("provider_status", _args) do
+  def run("platform_health", args) do
     providers =
       Credential
       |> preload(:provider)
@@ -158,29 +110,12 @@ defmodule Glific.AI.Tools.Organization do
         }
       )
 
-    {:ok, providers}
-  end
-
-  def run("list_notifications", args) do
-    filter =
-      %{}
-      |> maybe_put(:severity, args[:severity])
-      |> maybe_put(:category, args[:category])
-
-    notifications =
-      %{filter: filter, opts: %{limit: min(args[:limit], 100), offset: 0, order: :desc}}
-      |> Notifications.list_notifications()
-      |> Enum.map(
-        &%{
-          category: &1.category,
-          severity: &1.severity,
-          message: &1.message,
-          is_read: &1.is_read,
-          inserted_at: &1.inserted_at
-        }
-      )
-
-    {:ok, notifications}
+    {:ok,
+     %{
+       providers: providers,
+       notifications: notifications(args),
+       bigquery: bigquery_jobs()
+     }}
   end
 
   def run("daily_stats", args) do
@@ -223,51 +158,28 @@ defmodule Glific.AI.Tools.Organization do
     {:ok, users}
   end
 
-  def run("list_languages", _args) do
-    languages =
-      Settings.list_languages()
-      |> Enum.map(&%{id: &1.id, label: &1.label, locale: &1.locale, is_active: &1.is_active})
+  @spec notifications(map()) :: [map()]
+  defp notifications(args) do
+    filter = maybe_put(%{}, :severity, args[:severity])
 
-    {:ok, languages}
+    %{filter: filter, opts: %{limit: min(args[:limit], 100), offset: 0, order: :desc}}
+    |> Notifications.list_notifications()
+    |> Enum.map(
+      &%{
+        category: &1.category,
+        severity: &1.severity,
+        message: &1.message,
+        is_read: &1.is_read,
+        inserted_at: &1.inserted_at
+      }
+    )
   end
 
-  def run("organization_data", args) do
-    # No `order`: this context orders by a `name` column the table lacks.
-    data =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 200), offset: 0}}
-      |> Partners.list_organization_data()
-      |> Enum.map(&%{key: &1.key, description: &1.description, text: &1.text, json: &1.json})
-
-    {:ok, data}
-  end
-
-  def run("sync_jobs", _args) do
-    jobs =
-      Repo.get_organization_id()
-      |> Jobs.get_bigquery_jobs()
-      |> Enum.map(&%{table: &1.table, last_updated_at: &1.last_updated_at})
-
-    {:ok, %{bigquery: jobs}}
-  end
-
-  def run("list_saved_searches", args) do
-    searches =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 200), offset: 0, order: :asc}}
-      |> Searches.list_saved_searches()
-      |> Enum.map(
-        &%{id: &1.id, label: &1.label, shortcode: &1.shortcode, is_reserved: &1.is_reserved}
-      )
-
-    {:ok, searches}
-  end
-
-  def run("list_certificate_templates", args) do
-    templates =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0, order: :asc}}
-      |> CertificateTemplate.list_certificate_templates()
-      |> Enum.map(&%{id: &1.id, label: &1.label, description: &1.description, url: &1.url})
-
-    {:ok, templates}
+  @spec bigquery_jobs() :: [map()]
+  defp bigquery_jobs do
+    Repo.get_organization_id()
+    |> Jobs.get_bigquery_jobs()
+    |> Enum.map(&%{table: &1.table, last_updated_at: &1.last_updated_at})
   end
 
   @spec maybe_put(map(), atom(), term()) :: map()

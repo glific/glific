@@ -31,6 +31,7 @@ defmodule Glific.AI.Tools do
     Glific.AI.Tools.Contacts,
     Glific.AI.Tools.Messages,
     Glific.AI.Tools.Organization,
+    Glific.AI.Tools.Reference,
     Glific.AI.Tools.Triggers,
     Glific.AI.Tools.Assistants,
     Glific.AI.Tools.Groups,

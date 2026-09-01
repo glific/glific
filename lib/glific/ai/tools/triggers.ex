@@ -22,20 +22,17 @@ defmodule Glific.AI.Tools.Triggers do
         Lists the scheduled triggers that start flows, with the flow each one
         starts and when it next fires. Use this to explain why a flow started on
         its own, or why an expected one did not.
+
+        Add `include: ["logs"]` to see when each one actually fired: a trigger
+        that is active but has no recent firing never ran.
         """,
         parameters: [
-          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
-        ]
-      },
-      %{
-        name: "trigger_logs",
-        description: """
-        Lists when triggers actually fired, newest first. Compare this with
-        list_triggers: a trigger that is active but absent here never ran.
-        """,
-        parameters: [
-          trigger_id: [type: :pos_integer, doc: "Only firings of this trigger"],
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"],
+          include: [
+            type: {:list, {:in, ["logs"]}},
+            default: [],
+            doc: ~s(Add "logs" to see when each trigger actually fired)
+          ]
         ]
       }
     ]
@@ -60,22 +57,27 @@ defmodule Glific.AI.Tools.Triggers do
         }
       )
 
-    {:ok, triggers}
+    {:ok, with_logs(triggers, args[:include])}
   end
 
-  def run("trigger_logs", args) do
-    logs =
-      TriggerLog
-      |> maybe_for_trigger(args[:trigger_id])
-      |> order_by([l], desc: l.started_at)
-      |> limit(^min(args[:limit], 100))
-      |> select([l], %{trigger_id: l.trigger_id, started_at: l.started_at})
-      |> Repo.all()
-
-    {:ok, logs}
+  @spec with_logs([map()], [String.t()]) :: [map()]
+  defp with_logs(triggers, include) do
+    if "logs" in include do
+      logs = firings(Enum.map(triggers, & &1.id))
+      Enum.map(triggers, &Map.put(&1, :fired_at, Map.get(logs, &1.id, [])))
+    else
+      triggers
+    end
   end
 
-  @spec maybe_for_trigger(Ecto.Queryable.t(), non_neg_integer() | nil) :: Ecto.Queryable.t()
-  defp maybe_for_trigger(query, nil), do: query
-  defp maybe_for_trigger(query, id), do: where(query, [l], l.trigger_id == ^id)
+  @spec firings([non_neg_integer()]) :: map()
+  defp firings(trigger_ids) do
+    TriggerLog
+    |> where([l], l.trigger_id in ^trigger_ids)
+    |> order_by([l], desc: l.started_at)
+    |> limit(200)
+    |> select([l], {l.trigger_id, l.started_at})
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+  end
 end

@@ -14,13 +14,12 @@ defmodule Glific.AI.Tools.Contacts do
   import Ecto.Query
 
   alias Glific.{
+    Certificates.IssuedCertificate,
     Contacts,
     Contacts.Contact,
-    Flows.ContactField,
-    Groups,
+    Messages,
     Profiles,
     Repo,
-    Tags,
     Tickets.Ticket
   }
 
@@ -33,12 +32,32 @@ defmodule Glific.AI.Tools.Contacts do
         name: "get_contact",
         description: """
         Looks up one contact by id or phone number, with their opt-in status,
-        WhatsApp session status and when they were last active. Use this before
-        contact_history so you have the contact's id.
+        WhatsApp session status and when they were last active.
+
+        On its own this answers "who is this". Add `include` to explain how they
+        got into the state they are in, asking only for what the question needs:
+
+          * "history" — flows started, contact fields set, status changes, in order
+          * "messages" — the conversation, newest first, with delivery status and errors
+          * "profiles" — the profiles on this contact, when a flow acted as the wrong one
+          * "tickets" — support tickets raised for them
+          * "certificates" — certificates issued to them, and any failure
+
+        For "why did this person stop getting messages", ask for history and messages.
         """,
         parameters: [
           contact_id: [type: :pos_integer, doc: "The contact's id"],
-          phone: [type: :string, doc: "The contact's phone number, if the id is unknown"]
+          phone: [type: :string, doc: "The contact's phone number, if the id is unknown"],
+          include: [
+            type: {:list, {:in, ["history", "messages", "profiles", "tickets", "certificates"]}},
+            default: [],
+            doc: "Extra detail to return alongside the contact"
+          ],
+          limit: [
+            type: :pos_integer,
+            default: 25,
+            doc: "How many of each included list to return, at most 100"
+          ]
         ]
       },
       %{
@@ -47,45 +66,22 @@ defmodule Glific.AI.Tools.Contacts do
         Searches this organisation's contacts by name or phone, with their
         opt-in and WhatsApp session status. Use this when a question names a
         person but gives no id.
+
+        Pass `collection_id` or `tag_id` to answer who is in a collection or
+        carries a tag.
         """,
         parameters: [
           term: [type: :string, doc: "Match against name or phone number"],
           status: [type: :string, doc: ~s(Only contacts with this status, e.g. "valid")],
+          collection_id: [
+            type: :pos_integer,
+            doc: "Only contacts in this collection, from list_reference kind \"collections\""
+          ],
+          tag_id: [
+            type: :pos_integer,
+            doc: "Only contacts carrying this tag, from list_reference kind \"tags\""
+          ],
           limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
-        ]
-      },
-      %{
-        name: "list_profiles",
-        description: """
-        Lists the profiles attached to contacts. One phone number can carry
-        several profiles, and a flow acting on the wrong one is a common cause
-        of "it answered for the wrong person".
-        """,
-        parameters: [
-          contact_id: [type: :pos_integer, doc: "Only profiles for this contact"],
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
-        ]
-      },
-      %{
-        name: "list_collections",
-        description: """
-        Lists this organisation's collections — the named sets contacts belong
-        to. Triggers and broadcasts target collections, so this is how one named
-        in a question is resolved to an id.
-        """,
-        parameters: [
-          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
-        ]
-      },
-      %{
-        name: "list_tags",
-        description: """
-        Lists the tags defined in this organisation. Messages and contacts are
-        tagged with these, so this is how a tag named in a question is checked
-        against what exists.
-        """,
-        parameters: [
-          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
         ]
       },
       %{
@@ -99,29 +95,6 @@ defmodule Glific.AI.Tools.Contacts do
           status: [type: :string, doc: ~s(Only tickets with this status, e.g. "open")],
           limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
         ]
-      },
-      %{
-        name: "contact_history",
-        description: """
-        Lists what has happened to one contact in order: flows started, contact
-        fields set, and status changes. Use this to explain why a contact is in
-        the state they are in.
-        """,
-        parameters: [
-          contact_id: [type: :pos_integer, required: true, doc: "The contact's id"],
-          limit: [type: :pos_integer, default: 25, doc: "How many events to return, at most 100"]
-        ]
-      },
-      %{
-        name: "list_contact_fields",
-        description: """
-        Lists the contact fields defined in this organisation, with their
-        shortcodes and value types. Use this before referring to a contact field
-        by name, rather than assuming one exists.
-        """,
-        parameters: [
-          limit: [type: :pos_integer, default: 50, doc: "How many to return, at most 200"]
-        ]
       }
     ]
   end
@@ -129,19 +102,24 @@ defmodule Glific.AI.Tools.Contacts do
   @impl Glific.AI.Tool
   def run("get_contact", args) do
     with {:ok, contact} <- find(args) do
-      {:ok,
-       %{
-         id: contact.id,
-         name: contact.name,
-         phone: contact.phone,
-         status: contact.status,
-         bsp_status: contact.bsp_status,
-         optin_status: contact.optin_status,
-         optin_time: contact.optin_time,
-         optout_time: contact.optout_time,
-         last_message_at: contact.last_message_at,
-         language_id: contact.language_id
-       }}
+      described = %{
+        id: contact.id,
+        name: contact.name,
+        phone: contact.phone,
+        status: contact.status,
+        bsp_status: contact.bsp_status,
+        optin_status: contact.optin_status,
+        optin_time: contact.optin_time,
+        optout_time: contact.optout_time,
+        last_message_at: contact.last_message_at,
+        language_id: contact.language_id,
+        # The values this organisation records against the contact, keyed by
+        # shortcode. list_reference kind "contact_fields" says what they mean.
+        fields: contact.fields
+      }
+
+      limit = min(args[:limit], 100)
+      {:ok, Enum.reduce(args[:include], described, &include(&1, &2, contact, limit))}
     end
   end
 
@@ -150,6 +128,8 @@ defmodule Glific.AI.Tools.Contacts do
       %{}
       |> maybe_put(:term, args[:term])
       |> maybe_put(:status, args[:status])
+      |> maybe_put(:include_groups, args[:collection_id] && [args[:collection_id]])
+      |> maybe_put(:include_tags, args[:tag_id] && [args[:tag_id]])
 
     contacts =
       %{filter: filter, opts: %{limit: min(args[:limit], 100), offset: 0, order: :asc}}
@@ -167,47 +147,6 @@ defmodule Glific.AI.Tools.Contacts do
       )
 
     {:ok, contacts}
-  end
-
-  def run("list_profiles", args) do
-    filter = if args[:contact_id], do: %{contact_id: args[:contact_id]}, else: %{}
-
-    profiles =
-      %{filter: filter, opts: %{limit: min(args[:limit], 100), offset: 0, order: :asc}}
-      |> Profiles.list_profiles()
-      |> Enum.map(
-        &%{
-          id: &1.id,
-          name: &1.name,
-          type: &1.type,
-          contact_id: &1.contact_id,
-          is_default: &1.is_default
-        }
-      )
-
-    {:ok, profiles}
-  end
-
-  def run("list_collections", args) do
-    collections =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 200), offset: 0, order: :asc}}
-      |> Groups.list_groups()
-      |> Enum.map(
-        &%{id: &1.id, label: &1.label, description: &1.description, group_type: &1.group_type}
-      )
-
-    {:ok, collections}
-  end
-
-  def run("list_tags", args) do
-    tags =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 200), offset: 0, order: :asc}}
-      |> Tags.list_tags()
-      |> Enum.map(
-        &%{id: &1.id, label: &1.label, shortcode: &1.shortcode, parent_id: &1.parent_id}
-      )
-
-    {:ok, tags}
   end
 
   # Queried directly rather than through `Tickets.list_tickets/1`: that orders by
@@ -233,35 +172,96 @@ defmodule Glific.AI.Tools.Contacts do
     {:ok, tickets}
   end
 
-  def run("contact_history", %{contact_id: contact_id} = args) do
-    history =
-      %{
-        filter: %{contact_id: contact_id},
-        opts: %{limit: min(args[:limit], 100), offset: 0, order: :desc}
+  # Each extra is its own query, so looking someone up costs nothing more.
+  @spec include(String.t(), map(), Contact.t(), pos_integer()) :: map()
+  defp include("history", described, contact, limit),
+    do: Map.put(described, :history, history(contact.id, limit))
+
+  defp include("messages", described, contact, limit),
+    do: Map.put(described, :messages, messages(contact.id, limit))
+
+  defp include("profiles", described, contact, limit),
+    do: Map.put(described, :profiles, profiles(contact.id, limit))
+
+  defp include("tickets", described, contact, limit),
+    do: Map.put(described, :tickets, tickets_for(contact.id, limit))
+
+  defp include("certificates", described, contact, limit),
+    do: Map.put(described, :certificates, certificates(contact.id, limit))
+
+  @spec history(non_neg_integer(), pos_integer()) :: [map()]
+  defp history(contact_id, limit) do
+    %{filter: %{contact_id: contact_id}, opts: %{limit: limit, offset: 0, order: :desc}}
+    |> Contacts.list_contact_history()
+    |> Enum.map(
+      &%{
+        event_type: &1.event_type,
+        event_label: &1.event_label,
+        event_datetime: &1.event_datetime,
+        event_meta: &1.event_meta
       }
-      |> Contacts.list_contact_history()
-      |> Enum.map(
-        &%{
-          event_type: &1.event_type,
-          event_label: &1.event_label,
-          event_datetime: &1.event_datetime,
-          event_meta: &1.event_meta
-        }
-      )
-
-    {:ok, history}
+    )
   end
 
-  def run("list_contact_fields", args) do
-    fields =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 200), offset: 0, order: :asc}}
-      |> ContactField.list_contacts_fields()
-      |> Enum.map(
-        &%{name: &1.name, shortcode: &1.shortcode, value_type: &1.value_type, scope: &1.scope}
-      )
-
-    {:ok, fields}
+  @spec messages(non_neg_integer(), pos_integer()) :: [map()]
+  defp messages(contact_id, limit) do
+    %{filter: %{contact_id: contact_id}, opts: %{limit: limit, offset: 0, order: :desc}}
+    |> Messages.list_messages()
+    |> Enum.map(
+      &%{
+        id: &1.id,
+        body: truncate(&1.body),
+        type: &1.type,
+        flow: &1.flow,
+        status: &1.status,
+        bsp_status: &1.bsp_status,
+        errors: &1.errors,
+        is_hsm: &1.is_hsm,
+        sent_at: &1.sent_at,
+        inserted_at: &1.inserted_at
+      }
+    )
   end
+
+  @spec profiles(non_neg_integer(), pos_integer()) :: [map()]
+  defp profiles(contact_id, limit) do
+    %{filter: %{contact_id: contact_id}, opts: %{limit: limit, offset: 0, order: :asc}}
+    |> Profiles.list_profiles()
+    |> Enum.map(&%{id: &1.id, name: &1.name, type: &1.type, is_default: &1.is_default})
+  end
+
+  @spec certificates(non_neg_integer(), pos_integer()) :: [map()]
+  defp certificates(contact_id, limit) do
+    IssuedCertificate
+    |> where([c], c.contact_id == ^contact_id)
+    |> order_by([c], desc: c.inserted_at)
+    |> limit(^limit)
+    |> select([c], %{
+      certificate_template_id: c.certificate_template_id,
+      gcs_url: c.gcs_url,
+      errors: c.errors,
+      inserted_at: c.inserted_at
+    })
+    |> Repo.all()
+  end
+
+  @spec tickets_for(non_neg_integer(), pos_integer()) :: [map()]
+  defp tickets_for(contact_id, limit) do
+    Ticket
+    |> where([t], t.contact_id == ^contact_id)
+    |> order_by([t], desc: t.inserted_at)
+    |> limit(^limit)
+    |> select([t], %{id: t.id, body: t.body, topic: t.topic, status: t.status})
+    |> Repo.all()
+  end
+
+  @body 300
+
+  @spec truncate(String.t() | nil) :: String.t() | nil
+  defp truncate(nil), do: nil
+
+  defp truncate(text) when is_binary(text),
+    do: if(String.length(text) > @body, do: String.slice(text, 0, @body) <> "…", else: text)
 
   @spec maybe_with_status(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Queryable.t()
   defp maybe_with_status(query, nil), do: query

@@ -9,7 +9,16 @@ defmodule Glific.AI.Tools.Groups do
   by `message_history`.
   """
 
-  alias Glific.{Groups.WAGroups, WAManagedPhones, WaPoll}
+  import Ecto.Query
+
+  alias Glific.{
+    Groups.ContactWAGroup,
+    Groups.WAGroups,
+    Repo,
+    WAGroup.WAMessage,
+    WAManagedPhones,
+    WaPoll
+  }
 
   @behaviour Glific.AI.Tool
 
@@ -21,20 +30,45 @@ defmodule Glific.AI.Tools.Groups do
         description: """
         Lists the group chats this organisation manages, with the managed phone
         each one belongs to and when it last saw traffic.
+
+        Add `include: ["phones"]` for the managed numbers and their connection
+        status: a group that has gone quiet usually has a disconnected phone.
         """,
         parameters: [
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"],
+          include: [
+            type: {:list, {:in, ["phones"]}},
+            default: [],
+            doc: ~s(Add "phones" for the managed numbers and their connection status)
+          ]
         ]
       },
       %{
-        name: "list_managed_phones",
+        name: "get_group_chat",
         description: """
-        Lists the phone numbers this organisation manages group chats through,
-        with their connection status. A group that has gone quiet usually has a
-        managed phone that is disconnected.
+        Reads one group chat: who is in it and what was said. Group messages go
+        out over a different path from ordinary ones, so a question about a group
+        is not answered by get_contact.
+
+          * "messages" — what was sent in the group, newest first. A reply to a
+            poll is a message carrying its answer, so this is where poll
+            responses are.
+          * "members" — the contacts in the group, and which are admins
+
+        Call list_group_chats first if you only know the group's name.
         """,
         parameters: [
-          limit: [type: :pos_integer, default: 25, doc: "How many to return, at most 100"]
+          wa_group_id: [
+            type: :pos_integer,
+            required: true,
+            doc: "The group's id, from list_group_chats"
+          ],
+          include: [
+            type: {:list, {:in, ["messages", "members"]}},
+            default: ["messages"],
+            doc: "What to return about the group"
+          ],
+          limit: [type: :pos_integer, default: 25, doc: "How many of each, at most 100"]
         ]
       },
       %{
@@ -63,24 +97,19 @@ defmodule Glific.AI.Tools.Groups do
         }
       )
 
-    {:ok, groups}
+    {:ok, with_phones(groups, args[:include])}
   end
 
-  def run("list_managed_phones", args) do
-    phones =
-      %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0, order: :asc}}
-      |> WAManagedPhones.list_wa_managed_phones()
-      |> Enum.map(
-        &%{
-          id: &1.id,
-          label: &1.label,
-          phone: &1.phone,
-          status: &1.status,
-          last_status_checked_at: &1.last_status_checked_at
-        }
-      )
+  def run("get_group_chat", %{wa_group_id: id} = args) do
+    limit = min(args[:limit], 100)
 
-    {:ok, phones}
+    described =
+      Enum.reduce(args[:include], %{wa_group_id: id}, fn
+        "messages", acc -> Map.put(acc, :messages, group_messages(id, limit))
+        "members", acc -> Map.put(acc, :members, members(id, limit))
+      end)
+
+    {:ok, described}
   end
 
   def run("list_polls", args) do
@@ -90,5 +119,55 @@ defmodule Glific.AI.Tools.Groups do
       |> Enum.map(&%{id: &1.id, label: &1.label, poll_content: &1.poll_content})
 
     {:ok, polls}
+  end
+
+  @spec group_messages(non_neg_integer(), pos_integer()) :: [map()]
+  defp group_messages(wa_group_id, limit) do
+    WAMessage
+    |> where([m], m.wa_group_id == ^wa_group_id)
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> select([m], %{
+      id: m.id,
+      body: m.body,
+      type: m.type,
+      flow: m.flow,
+      status: m.status,
+      errors: m.errors,
+      contact_id: m.contact_id,
+      poll_id: m.poll_id,
+      poll_content: m.poll_content,
+      inserted_at: m.inserted_at
+    })
+    |> Repo.all()
+  end
+
+  @spec members(non_neg_integer(), pos_integer()) :: [map()]
+  defp members(wa_group_id, limit) do
+    ContactWAGroup
+    |> where([c], c.wa_group_id == ^wa_group_id)
+    |> limit(^limit)
+    |> select([c], %{contact_id: c.contact_id, is_admin: c.is_admin})
+    |> Repo.all()
+  end
+
+  @spec with_phones([map()], [String.t()]) :: [map()] | map()
+  defp with_phones(groups, include) do
+    if "phones" in include, do: %{groups: groups, managed_phones: managed_phones()}, else: groups
+  end
+
+  @spec managed_phones() :: [map()]
+  defp managed_phones do
+    %{filter: %{}, opts: %{limit: 100, offset: 0, order: :asc}}
+    |> WAManagedPhones.list_wa_managed_phones()
+    |> Enum.map(
+      &%{
+        id: &1.id,
+        label: &1.label,
+        phone: &1.phone,
+        status: &1.status,
+        last_status_checked_at: &1.last_status_checked_at
+      }
+    )
   end
 end
