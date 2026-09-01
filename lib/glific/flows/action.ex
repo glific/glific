@@ -82,6 +82,11 @@ defmodule Glific.Flows.Action do
     "nmt_tts_with_bhasini" => "text_to_speech"
   }
 
+  # Upper bound on how long an async webhook node may park the flow. A parked contact sits in
+  # silence until the callback arrives or the window expires, so authors cannot push this past
+  # 5 minutes however long their webhook takes.
+  @max_webhook_wait_time 5 * 60
+
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
   @template_type ["send_msg", "send_broadcast"]
@@ -116,8 +121,8 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
-          ## this is a custom delay in minutes for wait for time nodes.
-          ## Currently we use this only for the wait for time node.
+          ## seconds to wait at this node: how long a wait for time/result node parks the
+          ## flow, or how long an async webhook node awaits its callback.
           wait_time: integer() | nil,
 
           # Google sheet node specific fields
@@ -343,7 +348,8 @@ defmodule Glific.Flows.Action do
       method: json["method"],
       result_name: json["result_name"],
       body: json["body"],
-      headers: json["headers"]
+      headers: json["headers"],
+      wait_time: webhook_wait_time(json["body"])
     })
   end
 
@@ -566,6 +572,16 @@ defmodule Glific.Flows.Action do
     ]
   end
 
+  def validate(%{type: "call_webhook", wait_time: wait_time}, errors, _flow)
+      when is_integer(wait_time) and wait_time > @max_webhook_wait_time do
+    [
+      {Webhook,
+       "You've configured a wait_time of #{wait_time} seconds which exceeds the allowed wait time of #{@max_webhook_wait_time} seconds. We will use the allowed wait time only.",
+       "Warning"}
+      | errors
+    ]
+  end
+
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
@@ -663,6 +679,32 @@ defmodule Glific.Flows.Action do
     # in case any of the uuids don't exist, we just trap the exception
     _ -> :unknown
   end
+
+  ## The await window rides in the webhook body the author already edits, so no flow-editor
+  ## change is needed to expose it. Every webhook implementation allowlists the fields it
+  ## forwards, so this key never reaches Kaapi. Read at compile time, hence literals only --
+  ## an expression here would not have been substituted yet.
+  @spec webhook_wait_time(String.t() | nil) :: non_neg_integer() | nil
+  defp webhook_wait_time(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"wait_time" => value}} -> parse_wait_time(value)
+      _ -> nil
+    end
+  end
+
+  defp webhook_wait_time(_body), do: nil
+
+  @spec parse_wait_time(any()) :: non_neg_integer() | nil
+  defp parse_wait_time(value) when is_integer(value) and value > 0, do: value
+
+  defp parse_wait_time(value) when is_binary(value) do
+    case Integer.parse(String.trim(value)) do
+      {seconds, ""} when seconds > 0 -> seconds
+      _ -> nil
+    end
+  end
+
+  defp parse_wait_time(_value), do: nil
 
   ## Label formatter so that we can apply the dynamic label to the message
   @spec process_labels(list() | nil) :: list() | nil
@@ -1081,9 +1123,11 @@ defmodule Glific.Flows.Action do
 
   @spec do_park(Action.t(), FlowContext.t(), non_neg_integer()) :: FlowContext.t()
   defp do_park(action, context, default_wait_time) do
+    wait_time = min(action.wait_time || default_wait_time, @max_webhook_wait_time)
+
     {:ok, context} =
       FlowContext.update_flow_context(context, %{
-        wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time || default_wait_time),
+        wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
         is_background_flow: context.flow.is_background,
         is_await_result: true
       })
