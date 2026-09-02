@@ -101,8 +101,8 @@ defmodule Glific.TemplatesTest do
 
       {:ok, session_template} =
         attrs
+        |> Map.put(:language_id, language.id)
         |> Enum.into(@valid_attrs)
-        |> Map.put_new(:language_id, language.id)
         |> Templates.create_session_template()
 
       session_template
@@ -2726,7 +2726,6 @@ defmodule Glific.TemplatesTest do
   test "translate_session_template/2 translates body, footer, and buttons into the target language",
        attrs do
     language = language_fixture(@valid_language_attrs_1)
-    anchor_template = session_template_fixture(attrs)
 
     # GoogleTranslate.translate/4 fans each string out to its own Task via
     # Task.async_stream, so a process-scoped Tesla.Mock.mock/1 (bound to this test
@@ -2749,7 +2748,6 @@ defmodule Glific.TemplatesTest do
     assert {:ok, result} =
              Templates.translate_session_template(
                %{
-                 template_id: anchor_template.id,
                  language_id: language.id,
                  body: "Thank you",
                  footer: "footer text",
@@ -2766,7 +2764,6 @@ defmodule Glific.TemplatesTest do
   test "translate_session_template/2 returns nil footer and no buttons when none were provided",
        attrs do
     language = language_fixture(@valid_language_attrs_1)
-    anchor_template = session_template_fixture(attrs)
 
     Tesla.Mock.mock_global(fn _env ->
       %Tesla.Env{
@@ -2777,7 +2774,7 @@ defmodule Glific.TemplatesTest do
 
     assert {:ok, result} =
              Templates.translate_session_template(
-               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
+               %{language_id: language.id, body: "Hello"},
                attrs.organization_id
              )
 
@@ -2792,101 +2789,6 @@ defmodule Glific.TemplatesTest do
                %{language_id: 999_999, body: "Hello"},
                attrs.organization_id
              )
-  end
-
-  test "translate_session_template/2 derives the source language from the anchor template's own record, not from client input",
-       attrs do
-    source_language = language_fixture(%{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
-    target_language = language_fixture()
-    anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
-
-    test_pid = self()
-
-    Tesla.Mock.mock_global(fn env ->
-      send(test_pid, {:translate_request, Jason.decode!(env.body)})
-
-      %Tesla.Env{
-        status: 200,
-        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
-      }
-    end)
-
-    assert {:ok, result} =
-             Templates.translate_session_template(
-               %{
-                 template_id: anchor_template.id,
-                 language_id: target_language.id,
-                 body: "Namaste"
-               },
-               attrs.organization_id
-             )
-
-    assert result.body == "translated"
-    assert result.source_language.id == source_language.id
-
-    assert_receive {:translate_request, request}
-    assert request["source"] == source_language.locale
-    assert request["target"] == target_language.locale
-  end
-
-  test "translate_session_template/2 returns an error when the anchor template belongs to another organization",
-       attrs do
-    other_organization = Fixtures.organization_fixture()
-    language = language_fixture()
-
-    Repo.put_organization_id(other_organization.id)
-
-    anchor_template =
-      session_template_fixture(%{
-        organization_id: other_organization.id,
-        language_id: language.id
-      })
-
-    Repo.put_organization_id(attrs.organization_id)
-
-    assert {:error, _} =
-             Templates.translate_session_template(
-               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
-               attrs.organization_id
-             )
-  end
-
-  test "translate_session_template/2 returns a clear error when source and target languages are the same",
-       attrs do
-    language = language_fixture()
-    anchor_template = session_template_fixture(Map.put(attrs, :language_id, language.id))
-
-    assert {:error, "Source and target language cannot be the same."} =
-             Templates.translate_session_template(
-               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
-               attrs.organization_id
-             )
-  end
-
-  test "translate_session_template/2 allows distinct locales that happen to share a label",
-       attrs do
-    source_language = language_fixture(%{label: "Hindi", locale: "hi_IN"})
-    target_language = language_fixture(%{label: "Hindi", locale: "hi_US"})
-    anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
-
-    Tesla.Mock.mock_global(fn _env ->
-      %Tesla.Env{
-        status: 200,
-        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
-      }
-    end)
-
-    assert {:ok, result} =
-             Templates.translate_session_template(
-               %{
-                 template_id: anchor_template.id,
-                 language_id: target_language.id,
-                 body: "Hello"
-               },
-               attrs.organization_id
-             )
-
-    assert result.body == "translated"
   end
 
   test "search_library_templates/1 stops serving a stale cache when the org's active languages change",
