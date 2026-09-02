@@ -16,6 +16,11 @@ defmodule Glific.AI.ToolsTest do
           parameters: []
         },
         %{
+          name: "whoami_tool",
+          description: "reports the identity the read ran as",
+          parameters: []
+        },
+        %{
           name: "raising_tool",
           description: "raises, to prove the gateway catches it",
           parameters: []
@@ -35,6 +40,16 @@ defmodule Glific.AI.ToolsTest do
     end
 
     def run("raising_tool", _args), do: raise("something went wrong deep inside")
+
+    # The inbound guarantee is only observable during the call, now that the
+    # gateway restores the caller's identity on the way out.
+    def run("whoami_tool", _args) do
+      {:ok,
+       %{
+         user_id: Glific.Repo.get_current_user().id,
+         organization_id: Glific.Repo.get_organization_id()
+       }}
+    end
   end
 
   setup do
@@ -45,8 +60,21 @@ defmodule Glific.AI.ToolsTest do
     user = Fixtures.user_fixture(%{organization_id: 1})
     flow = Fixtures.flow_fixture(%{organization_id: 1, name: "Registration flow"})
     contact = Fixtures.contact_fixture(%{organization_id: 1})
+
+    phone = Fixtures.wa_managed_phone_fixture(%{organization_id: 1})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{organization_id: 1, wa_managed_phone_id: phone.id})
+
     assistant = Fixtures.assistant_fixture(%{organization_id: 1})
-    %{user: user, flow: flow, contact: contact, assistant: assistant}
+
+    %{
+      user: user,
+      flow: flow,
+      contact: contact,
+      assistant: assistant,
+      wa_group: wa_group
+    }
   end
 
   describe "the gateway's guarantees" do
@@ -62,8 +90,22 @@ defmodule Glific.AI.ToolsTest do
       assert missing =~ "required :flow_id option not found"
     end
 
-    test "an argument name that is not a known atom does not crash", %{user: user} do
-      assert {:ok, _} = Tools.run("list_flows", %{"definitely_not_an_argument_name" => 1}, user)
+    test "a misspelt argument is reported, not silently dropped", %{user: user} do
+      assert {:error, message} = Tools.run("get_contact", %{"inclde" => ["history"]}, user)
+
+      assert message =~ ~s(get_contact has no argument "inclde")
+      assert message =~ "Valid arguments:"
+      assert message =~ "include"
+    end
+
+    test "an argument name that is not a known atom does not grow the atom table", %{user: user} do
+      # The point of to_existing_atom: the name is refused without being created.
+      assert {:error, _} =
+               Tools.run("list_flows", %{"definitely_not_an_argument_name" => 1}, user)
+
+      assert_raise ArgumentError, fn ->
+        String.to_existing_atom("definitely_not_an_argument_name")
+      end
     end
 
     test "an exception inside a tool comes back as a result", %{user: user} do
@@ -79,11 +121,30 @@ defmodule Glific.AI.ToolsTest do
       assert Repo.get(Flow, original.id).name == original.name
     end
 
+    test "the caller keeps its own identity after a lookup", %{user: user} do
+      before_user = Repo.get_current_user()
+      before_org = Repo.get_organization_id()
+      refute before_user.id == user.id
+
+      assert {:ok, _} = Tools.run("list_flows", %{}, user)
+
+      assert Repo.get_current_user().id == before_user.id
+      assert Repo.get_organization_id() == before_org
+    end
+
+    test "the caller keeps its identity even when a tool raises", %{user: user} do
+      before_user = Repo.get_current_user()
+
+      assert {:error, _} = Tools.run("raising_tool", %{}, user)
+      assert Repo.get_current_user().id == before_user.id
+    end
+
     test "the read runs as the given user, whatever the process state said", %{user: user} do
       Repo.put_current_user(Fixtures.user_fixture(%{organization_id: 1, phone: "919876500011"}))
 
-      assert {:ok, _} = Tools.run("list_flows", %{}, user)
-      assert Repo.get_current_user().id == user.id
+      assert {:ok, ran_as} = Tools.run("whoami_tool", %{}, user)
+      assert ran_as.user_id == user.id
+      assert ran_as.organization_id == user.organization_id
     end
 
     test "a tool cannot see another organisation's data", %{user: user} do
@@ -198,7 +259,8 @@ defmodule Glific.AI.ToolsTest do
       user: user,
       contact: contact,
       flow: flow,
-      assistant: assistant
+      assistant: assistant,
+      wa_group: wa_group
     } do
       Fixtures.contacts_field_fixture(%{organization_id: 1, name: "Age", shortcode: "age"})
 
@@ -206,7 +268,7 @@ defmodule Glific.AI.ToolsTest do
         "get_contact" => %{"contact_id" => contact.id},
         "get_flow" => %{"flow_id" => flow.id, "status" => "draft"},
         "list_reference" => %{"kind" => "tags"},
-        "get_group_chat" => %{"wa_group_id" => 1},
+        "get_group_chat" => %{"wa_group_id" => wa_group.id},
         "get_assistant" => %{"assistant_id" => assistant.id}
       }
 
@@ -275,16 +337,25 @@ defmodule Glific.AI.ToolsTest do
       assert message =~ "invalid value for :kind option"
     end
 
-    test "get_group_chat reads a group's messages and members", %{user: user} do
+    test "get_group_chat reads a group's messages and members", %{
+      user: user,
+      wa_group: group
+    } do
       assert {:ok, described} =
                Tools.run(
                  "get_group_chat",
-                 %{"wa_group_id" => 1, "include" => ["messages", "members"]},
+                 %{"wa_group_id" => group.id, "include" => ["messages", "members"]},
                  user
                )
 
+      assert described.label == group.label
       assert is_list(described.messages)
       assert is_list(described.members)
+    end
+
+    test "get_group_chat says so when the group does not exist", %{user: user} do
+      assert {:error, message} = Tools.run("get_group_chat", %{"wa_group_id" => 999_999}, user)
+      assert message == "No group chat with id 999999 exists in this organisation."
     end
 
     test "platform_health never returns credential values", %{user: user} do

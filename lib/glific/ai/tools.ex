@@ -20,7 +20,8 @@ defmodule Glific.AI.Tools do
       convention.
     * **Failure is data, not a crash.** Unknown tools, invalid arguments and
       exceptions all come back as `{:error, message}` for the model to read.
-    * **Results are bounded**, so one query cannot exhaust the context window.
+    * **Results are bounded by each tool**, which clamps its own `limit`, rather
+      than by a cap here. The agent's step and cost ceilings bound a run.
   """
 
   alias Glific.{AI.Tool, Repo, SafeLog, Users.User}
@@ -37,8 +38,6 @@ defmodule Glific.AI.Tools do
     Glific.AI.Tools.Groups,
     Glific.AI.Tools.Forms
   ]
-
-  @max_result_bytes 20_000
 
   @doc """
   Every feature module Glific AI may read through.
@@ -91,14 +90,34 @@ defmodule Glific.AI.Tools do
 
   @spec validate(Tool.spec(), map()) :: {:ok, map()} | {:error, String.t()}
   defp validate(spec, args) do
-    args
-    |> Enum.map(fn {key, value} -> {to_atom(key), value} end)
-    |> Enum.reject(fn {key, _} -> is_nil(key) end)
-    |> NimbleOptions.validate(spec.parameters)
-    |> case do
-      {:ok, validated} -> {:ok, Map.new(validated)}
-      {:error, error} -> {:error, Exception.message(error)}
+    with {:ok, keyword} <- to_keyword(spec, args),
+         {:ok, validated} <- NimbleOptions.validate(keyword, spec.parameters) do
+      {:ok, Map.new(validated)}
+    else
+      {:error, %NimbleOptions.ValidationError{} = error} -> {:error, Exception.message(error)}
+      {:error, message} -> {:error, message}
     end
+  end
+
+  @spec to_keyword(Tool.spec(), map()) :: {:ok, keyword()} | {:error, String.t()}
+  defp to_keyword(spec, args) do
+    {known, unknown} =
+      args
+      |> Enum.map(fn {key, value} -> {to_atom(key), key, value} end)
+      |> Enum.split_with(fn {atom, _given, _value} -> not is_nil(atom) end)
+
+    case unknown do
+      [] -> {:ok, Enum.map(known, fn {atom, _given, value} -> {atom, value} end)}
+      _ -> {:error, unknown_arguments(spec, unknown)}
+    end
+  end
+
+  @spec unknown_arguments(Tool.spec(), [{nil, term(), term()}]) :: String.t()
+  defp unknown_arguments(spec, unknown) do
+    named = Enum.map_join(unknown, ", ", fn {_atom, given, _value} -> ~s("#{given}") end)
+    valid = spec.parameters |> Keyword.keys() |> Enum.map_join(", ", &to_string/1)
+
+    "#{spec.name} has no argument #{named}. Valid arguments: #{valid}."
   end
 
   # Only atoms that already exist, so a model naming a nonsense argument cannot
@@ -114,16 +133,31 @@ defmodule Glific.AI.Tools do
 
   @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   defp execute(module, name, args, user) do
+    caller = {Repo.get_organization_id(), Repo.get_current_user()}
+
     Repo.put_organization_id(user.organization_id)
     Repo.put_current_user(user)
 
+    try do
+      read(module, name, args)
+    rescue
+      exception ->
+        Glific.log_exception(exception)
+        {:error, "The lookup failed: #{Exception.message(exception)}"}
+    after
+      restore(caller)
+    end
+  end
+
+  @spec read(module(), String.t(), map()) :: {:ok, term()} | {:error, String.t()}
+  defp read(module, name, args) do
     Repo.transaction(fn ->
       Repo.query!("SET LOCAL transaction_read_only = on")
       module.run(name, args)
     end)
     |> case do
       {:ok, {:ok, result}} ->
-        {:ok, limit(result)}
+        {:ok, result}
 
       {:ok, {:error, message}} ->
         {:error, message}
@@ -131,36 +165,12 @@ defmodule Glific.AI.Tools do
       {:error, reason} ->
         {:error, "The lookup could not be completed: #{SafeLog.safe_inspect(reason)}"}
     end
-  rescue
-    exception ->
-      Glific.log_exception(exception)
-      {:error, "The lookup failed: #{Exception.message(exception)}"}
   end
 
-  # Bounds any result, not just a top-level list: `get_flow` returns a map whose
-  # node list is the part that can run away.
-  @spec limit(term()) :: term()
-  defp limit(result) do
-    if byte_size(SafeLog.safe_inspect(result)) > @max_result_bytes,
-      do: trim(result),
-      else: result
+  @spec restore({non_neg_integer() | nil, User.t() | nil}) :: :ok
+  defp restore({organization_id, user}) do
+    if organization_id, do: Repo.put_organization_id(organization_id)
+    if user, do: Repo.put_current_user(user)
+    :ok
   end
-
-  @spec trim(term()) :: term()
-  defp trim(result) when is_list(result),
-    do: %{truncated: true, showing: Enum.take(result, 20), of: length(result)}
-
-  defp trim(result) when is_map(result) and not is_struct(result) do
-    {key, list} =
-      result
-      |> Enum.filter(fn {_k, v} -> is_list(v) end)
-      |> Enum.max_by(fn {_k, v} -> length(v) end, fn -> {nil, []} end)
-
-    case key do
-      nil -> %{truncated: true, result: SafeLog.safe_inspect(result) |> String.slice(0, 2_000)}
-      key -> Map.put(result, key, trim(list))
-    end
-  end
-
-  defp trim(result), do: result
 end
