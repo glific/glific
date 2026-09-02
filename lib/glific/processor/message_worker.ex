@@ -3,9 +3,9 @@ defmodule Glific.Processor.MessageWorker do
   Oban worker that runs a single inbound message through the tagger and the flow
   engine, on the `gupshup_inbound` queue.
 
-  This is the Oban replacement for the poolboy `:message_pool` + `ConsumerWorker`
-  GenServer pipeline: the queue's global limit is partitioned by organization, so
-  a traffic surge from one org queues behind its own allowance instead of
+  Replaces the former poolboy `:message_pool` + `ConsumerWorker` GenServer
+  pipeline: the queue's global limit is partitioned by organization, so a
+  traffic surge from one org queues behind its own allowance instead of
   exhausting the shared pool for every other org.
   """
 
@@ -13,12 +13,13 @@ defmodule Glific.Processor.MessageWorker do
     queue: :gupshup_inbound,
     max_attempts: 1
 
+  use Publicist
+
   alias Glific.{
     Flows.Node,
     Messages.Message,
     Processor.ConsumerFlow,
     Processor.ConsumerTagger,
-    Processor.ConsumerWorker,
     Repo
   }
 
@@ -41,9 +42,16 @@ defmodule Glific.Processor.MessageWorker do
 
     Message
     |> Repo.get!(message_id)
-    |> process_message(ConsumerWorker.load_state(organization_id))
+    |> process_message(load_state(organization_id))
 
     :ok
+  end
+
+  @spec load_state(non_neg_integer()) :: map()
+  defp load_state(organization_id) do
+    %{organization_id: organization_id}
+    |> Map.merge(ConsumerTagger.load_state(organization_id))
+    |> Map.merge(ConsumerFlow.load_state(organization_id))
   end
 
   # chained flows can legitimately take a while (a measured 4-flow chain took ~11s,
