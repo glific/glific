@@ -1,7 +1,7 @@
 defmodule Glific.AI.ToolsTest do
   use Glific.DataCase
 
-  alias Glific.{AI.Tools, AI.Tools.Reference, Fixtures, Flows.Flow, Repo}
+  alias Glific.{AI.Tools, AI.Tools.Reference, Fixtures, Flows.Flow, Flows.FlowRevision, Repo}
 
   defmodule Misbehaving do
     @moduledoc false
@@ -267,6 +267,38 @@ defmodule Glific.AI.ToolsTest do
 
       assert %{contacts: _, counts: _, results: _, webhooks: _} = described
       assert is_list(described.nodes)
+    end
+
+    test "a flow larger than the limit says so instead of returning a slice", %{
+      user: user,
+      flow: flow
+    } do
+      definition = %{
+        "nodes" =>
+          Enum.map(1..30, fn i ->
+            %{"uuid" => "node-#{i}", "actions" => [], "exits" => []}
+          end)
+      }
+
+      FlowRevision
+      |> Ecto.Query.where([r], r.flow_id == ^flow.id)
+      |> Repo.update_all(set: [definition: definition, status: "draft"])
+
+      assert {:ok, whole} =
+               Tools.run("get_flow", %{"flow_id" => flow.id, "status" => "draft"}, user)
+
+      assert is_list(whole.nodes)
+      assert length(whole.nodes) == 30
+
+      assert {:ok, part} =
+               Tools.run(
+                 "get_flow",
+                 %{"flow_id" => flow.id, "status" => "draft", "limit" => 10},
+                 user
+               )
+
+      assert %{truncated: true, of: 30} = part.nodes
+      assert length(part.nodes.showing) == 10
     end
 
     test "an unknown include value is refused rather than ignored", %{

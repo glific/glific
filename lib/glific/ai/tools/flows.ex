@@ -24,6 +24,7 @@ defmodule Glific.AI.Tools.Flows do
   @behaviour Glific.AI.Tool
 
   @snippet 120
+  @max_nodes 500
 
   @doc "Every flow lookup this module offers."
   @impl Glific.AI.Tool
@@ -58,6 +59,10 @@ defmodule Glific.AI.Tools.Flows do
           * "webhooks" — the webhook calls this flow made, with status codes and errors
 
         For "why is my flow not working", ask for all four.
+
+        A flow larger than `limit` comes back with its nodes marked as truncated,
+        so raise the limit before concluding anything about a flow you have only
+        partly seen.
         """,
         parameters: [
           flow_id: [type: :pos_integer, required: true, doc: "The flow's id, from list_flows"],
@@ -70,6 +75,11 @@ defmodule Glific.AI.Tools.Flows do
             type: {:list, {:in, ["contacts", "counts", "results", "webhooks"]}},
             default: [],
             doc: "Extra detail to return alongside the structure"
+          ],
+          limit: [
+            type: :pos_integer,
+            default: 100,
+            doc: "How many nodes to describe, at most 500"
           ]
         ]
       },
@@ -140,7 +150,7 @@ defmodule Glific.AI.Tools.Flows do
         keywords: flow.keywords,
         is_active: flow.is_active,
         revision: args[:status],
-        nodes: Enum.map(Map.get(definition, "nodes", []), &node_summary/1)
+        nodes: nodes(definition, min(args[:limit], @max_nodes))
       }
 
       {:ok, args[:include] |> Enum.uniq() |> Enum.reduce(described, &include(&1, &2, flow))}
@@ -326,6 +336,19 @@ defmodule Glific.AI.Tools.Flows do
     |> where([c], c.flow_id == ^flow_id)
     |> where(^condition)
     |> Repo.aggregate(:count)
+  end
+
+  @spec nodes(map(), pos_integer()) :: [map()] | map()
+  defp nodes(definition, limit) do
+    all = Map.get(definition, "nodes", [])
+
+    if length(all) > limit,
+      do: %{
+        truncated: true,
+        showing: Enum.map(Enum.take(all, limit), &node_summary/1),
+        of: length(all)
+      },
+      else: Enum.map(all, &node_summary/1)
   end
 
   @spec node_summary(map()) :: map()

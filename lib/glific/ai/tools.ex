@@ -4,9 +4,7 @@ defmodule Glific.AI.Tools do
 
   Every tool call goes through `run/4`, the only entry point: authorisation,
   read-only enforcement and error handling are applied here rather than repeated
-  in each tool, so a new tool cannot forget them. If these reads are ever exposed
-  over a transport such as MCP, the transport calls this function and the
-  guarantees below still hold.
+  in each tool, so a new tool cannot forget them.
 
   What `run/4` guarantees:
 
@@ -15,9 +13,6 @@ defmodule Glific.AI.Tools do
       state happens to exist. Background jobs in Glific normally install the
       organisation's *root user*, which would let the assistant read past the
       asker's permissions.
-    * **Nothing can write.** The call runs inside a transaction marked
-      `transaction_read_only`, so a write is refused by Postgres rather than by
-      convention.
     * **Failure is data, not a crash.** Unknown tools, invalid arguments and
       exceptions all come back as `{:error, message}` for the model to read.
     * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
