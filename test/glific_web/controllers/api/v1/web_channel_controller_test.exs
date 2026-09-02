@@ -43,14 +43,14 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
       add_branding(organization_id, %{
         theme: "violet",
         logo_url: "https://cdn.example.org/logo.svg",
-        display_name: "Reap Benefit"
+        display_name: "Example NGO"
       })
 
       assert %{
                "data" => %{
                  "theme" => "violet",
                  "logo_url" => "https://cdn.example.org/logo.svg",
-                 "display_name" => "Reap Benefit"
+                 "display_name" => "Example NGO"
                }
              } = conn |> get(@theme_path) |> json_response(200)
     end
@@ -93,16 +93,16 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
     test "resolves the organization from the request host", %{organization_id: organization_id} do
       enable_web_channel(organization_id)
-      add_branding(organization_id, %{theme: "violet", display_name: "Glific NGO"})
+      add_branding(organization_id, %{theme: "violet", display_name: "First NGO"})
 
-      other = Fixtures.organization_fixture(%{shortcode: "other_ngo", name: "Other NGO"})
+      other = Fixtures.organization_fixture(%{shortcode: "other_ngo", name: "Second NGO"})
       enable_web_channel(other.id)
-      add_branding(other.id, %{theme: "amber", display_name: "Other NGO"})
+      add_branding(other.id, %{theme: "amber", display_name: "Second NGO"})
 
-      assert %{"data" => %{"theme" => "violet", "display_name" => "Glific NGO"}} =
+      assert %{"data" => %{"theme" => "violet", "display_name" => "First NGO"}} =
                "glific.glific.test" |> theme_for_host() |> json_response(200)
 
-      assert %{"data" => %{"theme" => "amber", "display_name" => "Other NGO"}} =
+      assert %{"data" => %{"theme" => "amber", "display_name" => "Second NGO"}} =
                "other_ngo.glific.test" |> theme_for_host() |> json_response(200)
     end
   end

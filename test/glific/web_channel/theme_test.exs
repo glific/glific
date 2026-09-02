@@ -31,14 +31,14 @@ defmodule Glific.WebChannel.ThemeTest do
         organization(%{
           "theme" => "violet",
           "logo_url" => "https://cdn.example.org/logo.svg",
-          "display_name" => "Reap Benefit"
+          "display_name" => "Example NGO"
         })
         |> Theme.for_organization()
 
       assert theme == %{
                theme: "violet",
                logo_url: "https://cdn.example.org/logo.svg",
-               display_name: "Reap Benefit"
+               display_name: "Example NGO"
              }
     end
 
