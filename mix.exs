@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "8.10.3",
+      version: "8.11.0",
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -155,7 +155,9 @@ defmodule Glific.MixProject do
       {:stripe_mock, "~> 0.1", only: @test_envs},
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
-      {:dotenvy, "~> 0.1"},
+      {:dotenvy, "~> 1.1"},
+      {:mime, "~> 2.0", override: true},
+      {:finch, "~> 0.23"},
       {:tailwind, "~> 0.1", runtime: Mix.env() == :dev},
       {:phoenix_swoosh, "~> 1.2"},
       {:gen_smtp, "~> 1.1"},
@@ -170,7 +172,8 @@ defmodule Glific.MixProject do
       {:tarams, "~> 1.8"},
       {:mix_test_watch, "~> 1.2", only: @test_envs},
       {:ex_audit, "~> 0.10"},
-      {:req, "~> 0.5.0"}
+      {:req, "~> 0.7"},
+      {:req_llm, "~> 1.21"}
     ]
   end
 

@@ -206,6 +206,9 @@ defmodule Glific.Partners.Organization do
     # A virtual field to conditionally enable Glific AI for an organization
     field(:glific_ai_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field to conditionally enable the web channel for an organization
+    field(:web_channel_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 

@@ -224,6 +224,18 @@ config :ex_audit,
 # Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
 config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
 
+config :mime, :types, %{
+  "audio/amr" => ["amr"],
+  "audio/mp4" => ["m4a"],
+  "audio/ogg" => ["oga", "ogg"],
+  "video/3gpp" => ["3gp", "3gpp"]
+}
+
+config :glific, Glific.AI,
+  model: "anthropic:claude-haiku-4-5",
+  max_tokens: 4_096,
+  receive_timeout: 60_000
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
