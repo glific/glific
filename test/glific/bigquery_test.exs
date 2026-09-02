@@ -702,6 +702,103 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "queue_table_data/3 encodes structured profile field values", %{
+    organization_id: organization_id
+  } do
+    field_inserted_at = "2026-09-02T12:34:56Z"
+
+    profile =
+      profile_fixture(%{
+        "fields" => %{
+          "interests" => %{
+            "label" => "Interests",
+            "inserted_at" => field_inserted_at,
+            "type" => "array",
+            "value" => ["health", "education"]
+          },
+          "preferences" => %{
+            "label" => "Preferences",
+            "inserted_at" => field_inserted_at,
+            "type" => "object",
+            "value" => %{"enabled" => true, "level" => 3}
+          },
+          "nickname" => %{
+            "label" => "Nickname",
+            "inserted_at" => field_inserted_at,
+            "type" => "string",
+            "value" => "Max"
+          }
+        }
+      })
+
+    test_pid = self()
+
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/profiles/insertAll"
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^url} = env ->
+          send(test_pid, {:profiles_insert_body, Jason.decode!(env.body)})
+
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: nil
+              })
+          }
+      end)
+
+      assert :ok ==
+               BigQueryWorker.queue_table_data("profiles", organization_id, %{
+                 some_attr: "value"
+               })
+
+      assert_receive {:profiles_insert_body, body}
+
+      profile_payload =
+        Enum.find(body["rows"], fn row -> row["json"]["id"] == profile.id end)["json"]
+
+      fields = Map.new(profile_payload["fields"], &{&1["label"], &1})
+      formatted_inserted_at = BigQuery.format_date(field_inserted_at, organization_id)
+
+      assert fields["Interests"] == %{
+               "inserted_at" => formatted_inserted_at,
+               "label" => "Interests",
+               "type" => "array",
+               "value" => ~s(["health","education"])
+             }
+
+      assert fields["Preferences"]["inserted_at"] == formatted_inserted_at
+      assert fields["Preferences"]["type"] == "object"
+      assert is_binary(fields["Preferences"]["value"])
+
+      assert Jason.decode!(fields["Preferences"]["value"]) == %{
+               "enabled" => true,
+               "level" => 3
+             }
+
+      assert fields["Nickname"] == %{
+               "inserted_at" => formatted_inserted_at,
+               "label" => "Nickname",
+               "type" => "string",
+               "value" => "Max"
+             }
+    end
+  end
+
   test "queue_table_data/3 should process and skip simulator contacts, ensuring table_id should be updated for flow_results table" do
     with_mocks([
       {
