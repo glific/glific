@@ -310,3 +310,10 @@ unless config_env() == :test do
     username: env!("SUPERSET_USERNAME", :string, "this_is_not_a_username"),
     password: env!("SUPERSET_PASSWORD", :string, "this_is_not_a_password")
 end
+
+# Provider credentials for Glific AI. Secrets: environment only, never committed.
+# req_llm resolves these itself; nil simply means no provider is configured, which
+# Glific.AI reports as a failure rather than crashing at boot.
+config :req_llm,
+  anthropic_api_key: env!("ANTHROPIC_API_KEY", :string, nil),
+  openai_api_key: env!("OPENAI_API_KEY", :string, nil)

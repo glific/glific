@@ -20,9 +20,7 @@ defmodule Glific.Repo.Migrations.AddSemanticVersioningToAssistantConfigVersions 
         comment: "Whether this insert should bump the major or minor version"
     end
 
-    execute(
-      "ALTER TABLE assistant_config_versions ALTER COLUMN bump_type SET DEFAULT 'minor';"
-    )
+    execute("ALTER TABLE assistant_config_versions ALTER COLUMN bump_type SET DEFAULT 'minor';")
 
     execute("""
     COMMENT ON COLUMN assistant_config_versions.major_version
