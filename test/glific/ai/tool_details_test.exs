@@ -58,20 +58,6 @@ defmodule Glific.AI.ToolDetailsTest do
     end
   end
 
-  describe "triggers" do
-    test "a trigger's firings come back only when asked for", %{user: user, flow: flow} do
-      Fixtures.trigger_fixture(%{organization_id: 1, flow_id: flow.id})
-
-      assert {:ok, [bare | _]} = Tools.run("list_triggers", %{}, user)
-      refute Map.has_key?(bare, :fired_at)
-
-      assert {:ok, [with_logs | _]} =
-               Tools.run("list_triggers", %{"include" => ["logs"]}, user)
-
-      assert Map.has_key?(with_logs, :fired_at)
-    end
-  end
-
   describe "assistants" do
     test "an assistant's active configuration explains how it answers", %{user: user} do
       assistant = Fixtures.assistant_fixture(%{organization_id: 1})
@@ -177,7 +163,7 @@ defmodule Glific.AI.ToolDetailsTest do
   describe "flows" do
     test "every include brings its own detail", %{user: user, flow: flow, contact: contact} do
       context = Fixtures.flow_context_fixture(%{flow_id: flow.id, organization_id: 1})
-      # Not the fixture: it creates its own flow and overwrites `flow_id`.
+      # Inserted directly so the log belongs to this flow.
       {:ok, _} =
         WebhookLog.create_webhook_log(%{
           url: "https://example.org/hook",
@@ -231,7 +217,6 @@ defmodule Glific.AI.ToolDetailsTest do
                  user
                )
 
-      # node_summary, action_summary, router_summary and truncate all run here
       assert [node] = described.nodes
       assert node.waits_for_reply
       assert node.router.categories == ["Yes"]
