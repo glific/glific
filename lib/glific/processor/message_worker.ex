@@ -33,7 +33,11 @@ defmodule Glific.Processor.MessageWorker do
     |> Oban.insert()
   end
 
+  @doc """
+  Process one inbound message through the tagger and flow pipeline.
+  """
   @impl Oban.Worker
+  @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{
         args: %{"message_id" => message_id, "organization_id" => organization_id}
       }) do
@@ -54,10 +58,13 @@ defmodule Glific.Processor.MessageWorker do
     |> Map.merge(ConsumerFlow.load_state(organization_id))
   end
 
-  # chained flows can legitimately take a while (a measured 4-flow chain took ~11s,
-  # and the old genserver budget was 20s), but a runaway flow should not hold a
-  # queue slot forever
+  @doc """
+  Cap how long one message may spend in flow processing, so a runaway flow does
+  not hold a queue slot forever. Chained flows can legitimately take a while (a
+  measured 4-flow chain took ~11s, and the old genserver budget was 20s).
+  """
   @impl Oban.Worker
+  @spec timeout(Oban.Job.t()) :: pos_integer()
   def timeout(_job), do: :timer.minutes(1)
 
   @spec process_message(Message.t(), map()) :: Message.t()

@@ -1,11 +1,11 @@
 defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
-  alias Glific.Contacts
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
   use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     Communications.GroupMessage,
+    Contacts,
     Groups.WAGroup,
     Groups.WAGroupPhone,
     Groups.WAGroups,

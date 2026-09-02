@@ -182,7 +182,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.flow == :inbound
 
       # ensure the message has been enqueued for processing
-      assert_enqueued(worker: MessageWorker, prefix: "global")
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -214,7 +218,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.flow == :inbound
 
       # ensure the message has been enqueued for processing
-      assert_enqueued(worker: MessageWorker, prefix: "global")
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -249,7 +257,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.flow == :inbound
 
       # ensure the message has been enqueued for processing
-      assert_enqueued(worker: MessageWorker, prefix: "global")
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
