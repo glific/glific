@@ -8,7 +8,6 @@ defmodule Glific.Flows.WakeupWorker do
 
   use Oban.Worker,
     queue: :flow_wakeup,
-    max_attempts: 3,
     unique: [
       period: :infinity,
       fields: [:args, :worker],
