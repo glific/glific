@@ -1,7 +1,16 @@
 defmodule Glific.AI.ToolsTest do
   use Glific.DataCase
 
-  alias Glific.{AI.Tools, AI.Tools.Reference, Fixtures, Flows.Flow, Flows.FlowRevision, Repo}
+  alias Glific.{
+    AI.Tools,
+    AI.Tools.Reference,
+    Fixtures,
+    Flows.Flow,
+    Flows.FlowRevision,
+    Repo,
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse
+  }
 
   defmodule Misbehaving do
     @moduledoc false
@@ -443,6 +452,48 @@ defmodule Glific.AI.ToolsTest do
                Tools.run("get_group_chat", %{"wa_group_id" => 999_999}, user)
 
       assert message == "No group chat with id 999999 exists in this organisation."
+    end
+
+    defp form(name) do
+      %WhatsappForm{}
+      |> WhatsappForm.changeset(%{
+        name: name,
+        organization_id: 1,
+        status: "published",
+        meta_flow_id: "meta_#{System.unique_integer([:positive])}"
+      })
+      |> Repo.insert!()
+    end
+
+    defp responses(form, contact, n) do
+      for i <- 1..n do
+        %WhatsappFormResponse{}
+        |> WhatsappFormResponse.changeset(%{
+          whatsapp_form_id: form.id,
+          contact_id: contact.id,
+          organization_id: 1,
+          raw_response: %{"answer" => "n#{i}"},
+          submitted_at: DateTime.add(~U[2026-01-01 00:00:00Z], i, :second)
+        })
+        |> Repo.insert!()
+      end
+    end
+
+    test "a busy form does not starve a quiet one, and totals are truthful" do
+      user = Fixtures.user_fixture(%{organization_id: 1})
+      contact = Fixtures.contact_fixture(%{organization_id: 1})
+
+      busy = form("Busy form")
+      quiet = form("Quiet form")
+      responses(busy, contact, 30)
+      responses(quiet, contact, 3)
+
+      {:ok, forms} = Tools.run("list_forms", %{"include" => ["responses"]}, user)
+      by_name = Map.new(forms, &{&1.name, &1.responses})
+
+      assert %{truncated: true, of: 30} = by_name["Busy form"]
+      assert length(by_name["Busy form"].showing) == 25
+      assert length(by_name["Quiet form"]) == 3
     end
 
     test "platform_health never returns credential values", %{user: user} do

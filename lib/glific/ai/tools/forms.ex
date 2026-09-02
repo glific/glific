@@ -7,9 +7,7 @@ defmodule Glific.AI.Tools.Forms do
   not published, which is the first thing to check here.
   """
 
-  import Ecto.Query
-
-  alias Glific.{Repo, WhatsappForms, WhatsappForms.WhatsappFormResponse}
+  alias Glific.{AI.History, WhatsappForms, WhatsappForms.WhatsappFormResponse}
 
   @behaviour Glific.AI.Tool
 
@@ -74,28 +72,13 @@ defmodule Glific.AI.Tools.Forms do
 
   @spec responses([non_neg_integer()]) :: map()
   defp responses(form_ids) do
-    WhatsappFormResponse
-    |> where([r], r.whatsapp_form_id in ^form_ids)
-    |> order_by([r], desc: r.submitted_at)
-    |> select(
-      [r],
-      {r.whatsapp_form_id,
-       %{contact_id: r.contact_id, raw_response: r.raw_response, submitted_at: r.submitted_at}}
+    History.newest_per_parent(
+      WhatsappFormResponse,
+      :whatsapp_form_id,
+      [:contact_id, :raw_response, :submitted_at],
+      [desc: :submitted_at, desc: :id],
+      form_ids,
+      @per_form
     )
-    |> per_parent(@per_form)
-  end
-
-  @spec per_parent(Ecto.Queryable.t(), pos_integer()) :: map()
-  defp per_parent(query, take) do
-    query
-    |> Repo.all()
-    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-    |> Map.new(fn {parent, rows} ->
-      {parent,
-       if(length(rows) > take,
-         do: %{truncated: true, showing: Enum.take(rows, take), of: length(rows)},
-         else: rows
-       )}
-    end)
   end
 end

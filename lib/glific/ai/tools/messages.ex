@@ -9,7 +9,7 @@ defmodule Glific.AI.Tools.Messages do
 
   import Ecto.Query
 
-  alias Glific.{Flows.MessageBroadcast, Flows.MessageBroadcastContact, Repo}
+  alias Glific.{AI.History, Flows.MessageBroadcast, Flows.MessageBroadcastContact, Repo}
 
   @behaviour Glific.AI.Tool
 
@@ -76,28 +76,13 @@ defmodule Glific.AI.Tools.Messages do
 
   @spec recipients([non_neg_integer()]) :: map()
   defp recipients(broadcast_ids) do
-    MessageBroadcastContact
-    |> where([c], c.message_broadcast_id in ^broadcast_ids)
-    |> order_by([c], desc: c.processed_at)
-    |> select(
-      [c],
-      {c.message_broadcast_id,
-       %{contact_id: c.contact_id, status: c.status, processed_at: c.processed_at}}
+    History.newest_per_parent(
+      MessageBroadcastContact,
+      :message_broadcast_id,
+      [:contact_id, :status, :processed_at],
+      [desc: :processed_at, desc: :id],
+      broadcast_ids,
+      @per_broadcast
     )
-    |> per_parent(@per_broadcast)
-  end
-
-  @spec per_parent(Ecto.Queryable.t(), pos_integer()) :: map()
-  defp per_parent(query, take) do
-    query
-    |> Repo.all()
-    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-    |> Map.new(fn {parent, rows} ->
-      {parent,
-       if(length(rows) > take,
-         do: %{truncated: true, showing: Enum.take(rows, take), of: length(rows)},
-         else: rows
-       )}
-    end)
   end
 end

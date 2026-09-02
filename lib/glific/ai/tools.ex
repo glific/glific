@@ -8,11 +8,8 @@ defmodule Glific.AI.Tools do
 
   What `run/4` guarantees:
 
-    * **The read runs as the person who asked.** The organisation and current
-      user are set from the caller's user, not inherited from whatever process
-      state happens to exist. Background jobs in Glific normally install the
-      organisation's *root user*, which would let the assistant read past the
-      asker's permissions.
+    * **The read runs as the person who asked.** The caller's `organization_id`
+        and `user` are put into the Repo.
     * **Failure is data, not a crash.** Unknown tools, invalid arguments and
       exceptions all come back as `{:error, message}` for the model to read.
     * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
@@ -153,8 +150,8 @@ defmodule Glific.AI.Tools do
 
   @spec restore({non_neg_integer() | nil, User.t() | nil}) :: :ok
   defp restore({organization_id, user}) do
-    if organization_id, do: Repo.put_organization_id(organization_id)
-    if user, do: Repo.put_current_user(user)
+    Repo.put_organization_id(organization_id)
+    Repo.put_current_user(user)
     :ok
   end
 end

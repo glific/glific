@@ -7,9 +7,7 @@ defmodule Glific.AI.Tools.Triggers do
   usual answer to *"why did the reminder not go out"*.
   """
 
-  import Ecto.Query
-
-  alias Glific.{Repo, Triggers, Triggers.TriggerLog}
+  alias Glific.{AI.History, Triggers, Triggers.TriggerLog}
 
   @behaviour Glific.AI.Tool
 
@@ -78,24 +76,13 @@ defmodule Glific.AI.Tools.Triggers do
 
   @spec firings([non_neg_integer()]) :: map()
   defp firings(trigger_ids) do
-    TriggerLog
-    |> where([l], l.trigger_id in ^trigger_ids)
-    |> order_by([l], desc: l.started_at)
-    |> select([l], {l.trigger_id, l.started_at})
-    |> per_parent(@per_trigger)
-  end
-
-  @spec per_parent(Ecto.Queryable.t(), pos_integer()) :: map()
-  defp per_parent(query, take) do
-    query
-    |> Repo.all()
-    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-    |> Map.new(fn {parent, rows} ->
-      {parent,
-       if(length(rows) > take,
-         do: %{truncated: true, showing: Enum.take(rows, take), of: length(rows)},
-         else: rows
-       )}
-    end)
+    History.newest_per_parent(
+      TriggerLog,
+      :trigger_id,
+      [:started_at],
+      [desc: :started_at, desc: :id],
+      trigger_ids,
+      @per_trigger
+    )
   end
 end
