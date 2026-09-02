@@ -13,7 +13,7 @@ defmodule Glific.Flows.WakeupWorker do
       period: :infinity,
       fields: [:args, :worker],
       keys: [:organization_id],
-      states: [:available, :scheduled, :executing]
+      states: [:available, :scheduled, :executing, :retryable]
     ]
 
   import Ecto.Query
