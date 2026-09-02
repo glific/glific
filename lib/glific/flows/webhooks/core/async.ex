@@ -6,7 +6,8 @@ defmodule Glific.Flows.Webhooks.Async do
 
   Authors write `call/2`; the parsed callback is merged into the flow context by
   `Glific.Flows.Webhook` on resume. Override `wait_time_default/0` if the default 60s await
-  window doesn't fit.
+  window doesn't fit; a flow author can also set `wait_time` on the node itself, which wins over
+  this default. Either way `Glific.Flows.Action` caps the actual park at 5 minutes.
   """
 
   @doc """

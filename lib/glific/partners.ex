@@ -598,6 +598,7 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:is_template_v2_enabled)
       |> Flags.set_flag_enabled(:is_template_library_enabled)
       |> Flags.set_flag_enabled(:glific_ai_enabled)
+      |> Flags.set_flag_enabled(:web_channel_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1502,7 +1503,8 @@ defmodule Glific.Partners do
       "template_v2_enabled" => Flags.get_flag_enabled(:is_template_v2_enabled, organization),
       "template_library_enabled" =>
         Flags.get_flag_enabled(:is_template_library_enabled, organization),
-      "glific_ai_enabled" => Flags.get_flag_enabled(:glific_ai_enabled, organization)
+      "glific_ai_enabled" => Flags.get_flag_enabled(:glific_ai_enabled, organization),
+      "web_channel_enabled" => Flags.get_flag_enabled(:web_channel_enabled, organization)
     }
   end
 

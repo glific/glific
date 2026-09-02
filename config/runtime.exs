@@ -58,6 +58,11 @@ config :glific, Glific.RepoReplica,
 
 config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
+config :glific, Poolboy,
+  size: env!("MESSAGE_POOL_SIZE", :integer, 10),
+  max_overflow: env!("MESSAGE_POOL_MAX_OVERFLOW", :integer, 20),
+  checkout_timeout: env!("MESSAGE_POOL_CHECKOUT_TIMEOUT", :integer, 30_000)
+
 check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
 # Glific endpoint configs
@@ -77,6 +82,12 @@ config :glific,
 
 config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
 
+config :glific, :bigquery_dedup_timeout_ms, env!("BIGQUERY_DEDUP_TIMEOUT_MS", :integer, 120_000)
+
+config :glific,
+       :bigquery_dedup_recv_timeout_ms,
+       env!("BIGQUERY_DEDUP_RECV_TIMEOUT_MS", :integer, 150_000)
+
 # AppSignal configs
 config :appsignal, :config,
   otp_app: :glific,
@@ -87,7 +98,8 @@ config :appsignal, :config,
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
   ecto_repos: [],
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
-  instrument_oban: false
+  instrument_oban: false,
+  log_level: env!("APPSIGNAL_LOG_LEVEL", :string!, "info")
 
 config :glific, Glific.Vault,
   ciphers: [
