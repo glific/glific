@@ -58,11 +58,6 @@ config :glific, Glific.RepoReplica,
 
 config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
-config :glific, Poolboy,
-  size: env!("MESSAGE_POOL_SIZE", :integer, 10),
-  max_overflow: env!("MESSAGE_POOL_MAX_OVERFLOW", :integer, 20),
-  checkout_timeout: env!("MESSAGE_POOL_CHECKOUT_TIMEOUT", :integer, 30_000)
-
 check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
 # Glific endpoint configs

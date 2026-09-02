@@ -76,7 +76,15 @@ oban_queues = [
   ],
   contact_import: 10,
   gupshup_high_tps: 10,
-  clone_assistant: 5
+  clone_assistant: 5,
+  gupshup_inbound: [
+    local_limit: 30,
+    global_limit: [
+      allowed: 10,
+      burst: true,
+      partition: [args: :organization_id]
+    ]
+  ]
 ]
 
 oban_crontab = [

@@ -13,19 +13,10 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo,
     WhatsappFormsResponses
   }
-
-  defmodule FlowProcessingError do
-    @moduledoc """
-    Raised when handing an inbound message to a poolboy worker fails — a poolboy checkout
-    timeout (pool exhausted) or a GenServer.call timeout while a flow was being processed.
-    Reported as its own AppSignal error type so these are observable separately from the
-    generic ErlangError bucket that string errors collapse into.
-    """
-    defexception [:message, :reason, :organization_id]
-  end
 
   @doc false
   defmacro __using__(_opts \\ []) do
@@ -405,15 +396,6 @@ defmodule Glific.Communications.Message do
 
   defp publish_simulator(message, _type), do: message
 
-  # how long to wait for a free worker from the poolboy pool before giving up
-  defp poolboy_checkout_timeout,
-    do: Application.get_env(:glific, Poolboy)[:checkout_timeout]
-
-  # time budget for the genserver worker to process a single message through its flow
-  # steps; chained flows via enter_flow can legitimately take more than a few seconds
-  # (a measured 4-flow chain took ~11s to settle), so keep some headroom over that
-  @genserver_call_timeout 20_000
-
   @spec error(String.t(), any(), any()) :: nil
   defp error(error, e, r \\ nil) do
     "#{error}: #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
@@ -422,79 +404,14 @@ defmodule Glific.Communications.Message do
     nil
   end
 
-  # A poolboy checkout timeout (pool exhausted) or a GenServer.call timeout while the flow was
-  # being processed. Reported as FlowProcessingError so it gets its own AppSignal error type,
-  # tagged with the org, instead of the generic ErlangError bucket string errors collapse into.
-  @spec report_flow_processing_error(atom(), any(), non_neg_integer()) :: :ok
-  defp report_flow_processing_error(kind, reason, organization_id) do
-    formatted_reason =
-      "#{Glific.SafeLog.safe_inspect(kind)}, #{Glific.SafeLog.safe_inspect(reason)}"
-
-    Glific.log_exception(
-      %FlowProcessingError{
-        message:
-          "Poolboy caught error while processing the message for flow: #{formatted_reason}",
-        reason: formatted_reason,
-        organization_id: organization_id
-      },
-      namespace: "message_processing",
-      tags: %{organization_id: organization_id}
-    )
-
-    :ok
-  end
-
   @spec process_message(Message.t() | nil) :: any
   defp process_message(nil), do: :ok
 
   defp process_message(message) do
-    # lets transfer the organization id and current user to the poolboy worker
-    organization_id = Repo.get_organization_id()
-    process_state = {organization_id, Repo.get_current_user()}
-
-    self = self()
-
-    # We don't want to block the input pipeline, and we are unsure how long the consumer worker
-    # will take. So we run it as a separate task. Wrapping the whole transaction lets us report a
-    # poolboy checkout timeout (all workers busy) with org context too, not just a genserver call
-    # timeout — poolboy still checks the worker back in via its own `after` clause on either exit.
-    Task.start(fn ->
-      try do
-        :poolboy.transaction(
-          Glific.Application.message_poolname(),
-          fn pid ->
-            GenServer.call(pid, {message, process_state, self}, @genserver_call_timeout)
-          end,
-          poolboy_checkout_timeout()
-        )
-      catch
-        # A poolboy checkout timeout means every worker was busy — the pool is the bottleneck.
-        # It surfaces as an Erlang :gen_server call timeout (poolboy is pure Erlang), distinct
-        # from a worker-processing timeout which is an Elixir GenServer call timeout.
-        :exit, {:timeout, {:gen_server, :call, _}} = reason ->
-          Appsignal.increment_counter(
-            "message_poolboy_checkout_timeout",
-            1,
-            %{organization_id: organization_id}
-          )
-
-          report_flow_processing_error(:exit, reason, organization_id)
-
-        # A worker-processing timeout: a worker was obtained but the flow step exceeded the
-        # budget. Surfaces as an Elixir GenServer call timeout.
-        :exit, {:timeout, {GenServer, :call, _}} = reason ->
-          Appsignal.increment_counter(
-            "message_flow_processing_timeout",
-            1,
-            %{organization_id: organization_id}
-          )
-
-          report_flow_processing_error(:exit, reason, organization_id)
-
-        kind, reason ->
-          report_flow_processing_error(kind, reason, organization_id)
-      end
-    end)
+    case MessageWorker.make_job(message) do
+      {:ok, _job} -> :ok
+      {:error, err} -> error("Enqueue message processing error", err)
+    end
   end
 
   @spec process_errors(Message.t(), map(), integer | nil) :: any
