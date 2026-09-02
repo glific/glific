@@ -7,8 +7,8 @@ defmodule Glific.AI.Tools.Contacts do
   which is how a question like *"why did this person stop receiving messages"*
   gets answered.
 
-  Collections and tags live here too: both exist to group and label contacts,
-  and other tools refer to them by id.
+  A search can be narrowed to a collection or a tag; the names and ids of those
+  come from `Glific.AI.Tools.Reference`.
   """
 
   import Ecto.Query

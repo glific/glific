@@ -1,11 +1,12 @@
 defmodule Glific.AI.Tools.Reference do
   @moduledoc """
-  The organisation's named things: tags, labels, contact fields, languages,
-  collections, saved searches, certificate templates and global fields.
+  The organisation's named things: tags, flow labels, contact fields, languages,
+  collections, saved searches, certificate templates, global fields and roles.
 
-  These were one tool each, which spent eight tool slots on a single intent —
-  *what exists, and what is it called*. One tool with a `kind` answers all of
-  them, and the model picks the kind from the question.
+  All nine answer one question — *what exists, and what is it called* — so they
+  share a tool and the model picks the `kind`. Keeping them apart would spend
+  nine of the assistant's tool slots on a single intent, and tool selection gets
+  harder as the set grows.
   """
 
   alias Glific.{

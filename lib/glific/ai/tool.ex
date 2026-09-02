@@ -9,7 +9,7 @@ defmodule Glific.AI.Tool do
 
   A module declares its operations with `specs/0` and answers them in `run/2`.
   It never receives a user or an organisation: both come from the process state
-  that `Glific.AI.Tools.run/3` establishes before calling it, so a tool cannot
+  that `Glific.AI.Tools.run/4` establishes before calling it, so a tool cannot
   read outside the caller's tenant even by mistake.
   """
 

@@ -4,9 +4,9 @@ defmodule Glific.AI.Tools.Groups do
   manages them through, and the polls sent into them.
 
   These are group conversations, not the contact collections that
-  `list_collections` returns. They go out over a different provider path from
-  ordinary messages, so a group that has stopped receiving is rarely explained
-  by `message_history`.
+  `Glific.AI.Tools.Reference` lists. They go out over a different provider path
+  from ordinary messages, so a group that has gone quiet is rarely explained by
+  a contact's own conversation.
   """
 
   import Ecto.Query

@@ -41,8 +41,8 @@ defmodule Glific.AI.ToolsTest do
 
     def run("raising_tool", _args), do: raise("something went wrong deep inside")
 
-    # The inbound guarantee is only observable during the call, now that the
-    # gateway restores the caller's identity on the way out.
+    # The gateway restores the caller's identity on the way out, so which user a
+    # read ran as can only be observed from inside the read itself.
     def run("whoami_tool", _args) do
       {:ok,
        %{
@@ -52,11 +52,11 @@ defmodule Glific.AI.ToolsTest do
     end
   end
 
-  setup do
-    original = Application.get_env(:glific, Tools, [])
-    Application.put_env(:glific, Tools, modules: Tools.modules() ++ [Misbehaving])
-    on_exit(fn -> Application.put_env(:glific, Tools, original) end)
+  # The gateway's guarantees cannot be proved with the real tools, since every one
+  # of them is a well-behaved read. These attempt a write, and raise.
+  defp modules, do: Tools.modules() ++ [Misbehaving]
 
+  setup do
     user = Fixtures.user_fixture(%{organization_id: 1})
     flow = Fixtures.flow_fixture(%{organization_id: 1, name: "Registration flow"})
     contact = Fixtures.contact_fixture(%{organization_id: 1})
@@ -84,22 +84,28 @@ defmodule Glific.AI.ToolsTest do
     end
 
     test "invalid arguments are reported, not raised", %{user: user} do
-      assert {:error, message} = Tools.run("get_flow", %{"flow_id" => "not a number"}, user)
+      assert {:error, message} =
+               Tools.run("get_flow", %{"flow_id" => "not a number"}, user)
+
       assert message =~ "invalid value for :flow_id option"
       assert {:error, missing} = Tools.run("get_flow", %{}, user)
       assert missing =~ "required :flow_id option not found"
     end
 
     test "a misspelt argument is reported, not silently dropped", %{user: user} do
-      assert {:error, message} = Tools.run("get_contact", %{"inclde" => ["history"]}, user)
+      assert {:error, message} =
+               Tools.run("get_contact", %{"inclde" => ["history"]}, user)
 
       assert message =~ ~s(get_contact has no argument "inclde")
       assert message =~ "Valid arguments:"
       assert message =~ "include"
     end
 
-    test "an argument name that is not a known atom does not grow the atom table", %{user: user} do
-      # The point of to_existing_atom: the name is refused without being created.
+    test "an argument name that is not a known atom does not grow the atom table", %{
+      user: user
+    } do
+      # The name is refused without being added to the atom table, which is never
+      # garbage collected.
       assert {:error, _} =
                Tools.run("list_flows", %{"definitely_not_an_argument_name" => 1}, user)
 
@@ -109,14 +115,14 @@ defmodule Glific.AI.ToolsTest do
     end
 
     test "an exception inside a tool comes back as a result", %{user: user} do
-      assert {:error, message} = Tools.run("raising_tool", %{}, user)
+      assert {:error, message} = Tools.run("raising_tool", %{}, user, modules())
       assert message =~ "something went wrong deep inside"
     end
 
     test "a write inside a tool is refused by the database", %{user: user} do
       original = Flow |> Repo.all() |> hd()
 
-      assert {:error, message} = Tools.run("writing_tool", %{}, user)
+      assert {:error, message} = Tools.run("writing_tool", %{}, user, modules())
       assert message =~ "cannot execute UPDATE in a read-only transaction"
       assert Repo.get(Flow, original.id).name == original.name
     end
@@ -135,14 +141,16 @@ defmodule Glific.AI.ToolsTest do
     test "the caller keeps its identity even when a tool raises", %{user: user} do
       before_user = Repo.get_current_user()
 
-      assert {:error, _} = Tools.run("raising_tool", %{}, user)
+      assert {:error, _} = Tools.run("raising_tool", %{}, user, modules())
       assert Repo.get_current_user().id == before_user.id
     end
 
-    test "the read runs as the given user, whatever the process state said", %{user: user} do
+    test "the read runs as the given user, whatever the process state said", %{
+      user: user
+    } do
       Repo.put_current_user(Fixtures.user_fixture(%{organization_id: 1, phone: "919876500011"}))
 
-      assert {:ok, ran_as} = Tools.run("whoami_tool", %{}, user)
+      assert {:ok, ran_as} = Tools.run("whoami_tool", %{}, user, modules())
       assert ran_as.user_id == user.id
       assert ran_as.organization_id == user.organization_id
     end
@@ -178,9 +186,17 @@ defmodule Glific.AI.ToolsTest do
       assert [%{name: "Registration flow"} | _] = flows
     end
 
-    test "get_flow describes the nodes of a revision that exists", %{user: user, flow: flow} do
+    test "get_flow describes the nodes of a revision that exists", %{
+      user: user,
+      flow: flow
+    } do
       assert {:ok, described} =
-               Tools.run("get_flow", %{"flow_id" => flow.id, "status" => "draft"}, user)
+               Tools.run(
+                 "get_flow",
+                 %{"flow_id" => flow.id, "status" => "draft"},
+                 user,
+                 modules()
+               )
 
       assert described.name == "Registration flow"
       assert described.revision == "draft"
@@ -195,7 +211,9 @@ defmodule Glific.AI.ToolsTest do
       assert {:error, unknown} = Tools.run("get_flow", %{"flow_id" => 999_999}, user)
       assert unknown == "No flow with id 999999 exists in this organisation."
 
-      assert {:error, unpublished} = Tools.run("get_flow", %{"flow_id" => flow.id}, user)
+      assert {:error, unpublished} =
+               Tools.run("get_flow", %{"flow_id" => flow.id}, user)
+
       assert unpublished =~ "exists but has no published revision"
     end
 
@@ -204,25 +222,37 @@ defmodule Glific.AI.ToolsTest do
       flow: flow
     } do
       assert {:ok, described} =
-               Tools.run("get_flow", %{"flow_id" => flow.id, "status" => "draft"}, user)
+               Tools.run(
+                 "get_flow",
+                 %{"flow_id" => flow.id, "status" => "draft"},
+                 user,
+                 modules()
+               )
 
       for extra <- [:contacts, :counts, :results, :webhooks],
           do: refute(Map.has_key?(described, extra))
     end
 
-    test "get_flow includes only the extras asked for", %{user: user, flow: flow} do
+    test "get_flow includes only the extras asked for", %{
+      user: user,
+      flow: flow
+    } do
       assert {:ok, described} =
                Tools.run(
                  "get_flow",
                  %{"flow_id" => flow.id, "status" => "draft", "include" => ["contacts"]},
-                 user
+                 user,
+                 modules()
                )
 
       assert %{waiting_at_node: _, completed: _, stopped: _} = described.contacts
       refute Map.has_key?(described, :counts)
     end
 
-    test "get_flow answers the whole diagnostic in one call", %{user: user, flow: flow} do
+    test "get_flow answers the whole diagnostic in one call", %{
+      user: user,
+      flow: flow
+    } do
       assert {:ok, described} =
                Tools.run(
                  "get_flow",
@@ -231,16 +261,25 @@ defmodule Glific.AI.ToolsTest do
                    "status" => "draft",
                    "include" => ["contacts", "counts", "results", "webhooks"]
                  },
-                 user
+                 user,
+                 modules()
                )
 
       assert %{contacts: _, counts: _, results: _, webhooks: _} = described
       assert is_list(described.nodes)
     end
 
-    test "an unknown include value is refused rather than ignored", %{user: user, flow: flow} do
+    test "an unknown include value is refused rather than ignored", %{
+      user: user,
+      flow: flow
+    } do
       assert {:error, message} =
-               Tools.run("get_flow", %{"flow_id" => flow.id, "include" => ["nope"]}, user)
+               Tools.run(
+                 "get_flow",
+                 %{"flow_id" => flow.id, "include" => ["nope"]},
+                 user,
+                 modules()
+               )
 
       assert message =~ ~s(invalid list in :include option)
       assert message =~ ~s(got: "nope")
@@ -283,8 +322,12 @@ defmodule Glific.AI.ToolsTest do
       assert failures == []
     end
 
-    test "get_assistant and the id-only tools explain a missing id", %{user: user} do
-      assert {:error, message} = Tools.run("get_assistant", %{"assistant_id" => 999_999}, user)
+    test "get_assistant and the id-only tools explain a missing id", %{
+      user: user
+    } do
+      assert {:error, message} =
+               Tools.run("get_assistant", %{"assistant_id" => 999_999}, user)
+
       assert message == "No assistant with id 999999 exists in this organisation."
     end
 
@@ -302,8 +345,12 @@ defmodule Glific.AI.ToolsTest do
       end
     end
 
-    test "phone numbers leave masked, never in full", %{user: user, contact: contact} do
-      assert {:ok, described} = Tools.run("get_contact", %{"contact_id" => contact.id}, user)
+    test "phone numbers leave masked, never in full", %{
+      user: user,
+      contact: contact
+    } do
+      assert {:ok, described} =
+               Tools.run("get_contact", %{"contact_id" => contact.id}, user)
 
       refute described.phone == contact.phone
       assert described.phone =~ "******"
@@ -322,8 +369,13 @@ defmodule Glific.AI.ToolsTest do
       assert {:ok, _} = Tools.run("get_contact", %{"contact_id" => found.id}, user)
     end
 
-    test "get_contact returns the contact's own field values", %{user: user, contact: contact} do
-      assert {:ok, described} = Tools.run("get_contact", %{"contact_id" => contact.id}, user)
+    test "get_contact returns the contact's own field values", %{
+      user: user,
+      contact: contact
+    } do
+      assert {:ok, described} =
+               Tools.run("get_contact", %{"contact_id" => contact.id}, user)
+
       assert Map.has_key?(described, :fields)
     end
 
@@ -345,7 +397,8 @@ defmodule Glific.AI.ToolsTest do
                Tools.run(
                  "get_group_chat",
                  %{"wa_group_id" => group.id, "include" => ["messages", "members"]},
-                 user
+                 user,
+                 modules()
                )
 
       assert described.label == group.label
@@ -354,7 +407,9 @@ defmodule Glific.AI.ToolsTest do
     end
 
     test "get_group_chat says so when the group does not exist", %{user: user} do
-      assert {:error, message} = Tools.run("get_group_chat", %{"wa_group_id" => 999_999}, user)
+      assert {:error, message} =
+               Tools.run("get_group_chat", %{"wa_group_id" => 999_999}, user)
+
       assert message == "No group chat with id 999999 exists in this organisation."
     end
 

@@ -2,13 +2,13 @@ defmodule Glific.AI.Tools do
   @moduledoc """
   The single route by which Glific AI reads an organisation's data.
 
-  Every tool call goes through `run/3`, which is deliberately the only entry
-  point: authorisation, read-only enforcement, result limits and error handling
-  are applied here rather than repeated in each tool, so a new tool cannot
-  forget them. If these reads are ever exposed over a transport such as MCP, the
-  transport calls this function and the guarantees below still hold.
+  Every tool call goes through `run/4`, the only entry point: authorisation,
+  read-only enforcement and error handling are applied here rather than repeated
+  in each tool, so a new tool cannot forget them. If these reads are ever exposed
+  over a transport such as MCP, the transport calls this function and the
+  guarantees below still hold.
 
-  What `run/3` guarantees:
+  What `run/4` guarantees:
 
     * **The read runs as the person who asked.** The organisation and current
       user are set from the caller's user, not inherited from whatever process
@@ -20,8 +20,8 @@ defmodule Glific.AI.Tools do
       convention.
     * **Failure is data, not a crash.** Unknown tools, invalid arguments and
       exceptions all come back as `{:error, message}` for the model to read.
-    * **Results are bounded by each tool**, which clamps its own `limit`, rather
-      than by a cap here. The agent's step and cost ceilings bound a run.
+    * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
+      step and cost ceilings bound a whole run.
   """
 
   alias Glific.{AI.Tool, Repo, SafeLog, Users.User}
@@ -39,27 +39,18 @@ defmodule Glific.AI.Tools do
     Glific.AI.Tools.Forms
   ]
 
-  @doc """
-  Every feature module Glific AI may read through.
-
-  Configurable so a deployment can withhold an area without a code change, and
-  so a later skill can be given a narrower set than the default.
-  """
+  @doc "Every feature module Glific AI reads through."
   @spec modules() :: [module()]
-  def modules do
-    :glific
-    |> Application.get_env(__MODULE__, [])
-    |> Keyword.get(:modules, @modules)
-  end
+  def modules, do: @modules
 
   @doc "Every operation, flattened across the feature modules, as the model sees them."
   @spec all() :: [Tool.spec()]
   def all, do: Enum.flat_map(modules(), & &1.specs())
 
   @doc "Looks an operation up by the name the model uses."
-  @spec fetch(String.t()) :: {:ok, {module(), Tool.spec()}} | :error
-  def fetch(name) do
-    Enum.find_value(modules(), :error, fn module ->
+  @spec fetch(String.t(), [module()]) :: {:ok, {module(), Tool.spec()}} | :error
+  def fetch(name, modules \\ modules()) do
+    Enum.find_value(modules, :error, fn module ->
       case Enum.find(module.specs(), &(&1.name == name)) do
         nil -> nil
         spec -> {:ok, {module, spec}}
@@ -72,17 +63,17 @@ defmodule Glific.AI.Tools do
 
   Always returns a tuple; it does not raise.
   """
-  @spec run(String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
-  def run(name, args, %User{} = user) do
-    with {:ok, {module, spec}} <- lookup(name),
+  @spec run(String.t(), map(), User.t(), [module()]) :: {:ok, term()} | {:error, String.t()}
+  def run(name, args, %User{} = user, modules \\ modules()) do
+    with {:ok, {module, spec}} <- lookup(name, modules),
          {:ok, validated} <- validate(spec, args) do
       execute(module, name, validated, user)
     end
   end
 
-  @spec lookup(String.t()) :: {:ok, {module(), Tool.spec()}} | {:error, String.t()}
-  defp lookup(name) do
-    case fetch(name) do
+  @spec lookup(String.t(), [module()]) :: {:ok, {module(), Tool.spec()}} | {:error, String.t()}
+  defp lookup(name, modules) do
+    case fetch(name, modules) do
       {:ok, found} -> {:ok, found}
       :error -> {:error, ~s(There is no tool called "#{name}".)}
     end
@@ -120,8 +111,6 @@ defmodule Glific.AI.Tools do
     "#{spec.name} has no argument #{named}. Valid arguments: #{valid}."
   end
 
-  # Only atoms that already exist, so a model naming a nonsense argument cannot
-  # grow the atom table.
   @spec to_atom(atom() | String.t()) :: atom() | nil
   defp to_atom(key) when is_atom(key), do: key
 
