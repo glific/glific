@@ -26,7 +26,9 @@ defmodule Glific.AI.Tools.Assistants do
     :inserted_at
   ]
 
+  @doc "Every assistant lookup this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -84,7 +86,9 @@ defmodule Glific.AI.Tools.Assistants do
     ]
   end
 
+  @doc "Reads one assistant lookup: the assistants, one assistant's configuration, or the evaluations scoring them."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("list_assistants", args) do
     assistants =
       Assistant
@@ -144,8 +148,21 @@ defmodule Glific.AI.Tools.Assistants do
     Assistants.list_assistant_config_versions()
     |> Enum.find(&(&1.id == id))
     |> case do
-      nil -> nil
-      version -> Map.take(version, [:id, :version, :status, :inserted_at])
+      nil ->
+        nil
+
+      version ->
+        Map.take(version, [
+          :id,
+          :major_version,
+          :minor_version,
+          :status,
+          :prompt,
+          :provider,
+          :model,
+          :settings,
+          :inserted_at
+        ])
     end
   end
 

@@ -8,7 +8,9 @@ defmodule Glific.AI.Tools.Templates do
 
   @behaviour Glific.AI.Tool
 
+  @doc "The template lookups this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -42,7 +44,16 @@ defmodule Glific.AI.Tools.Templates do
     ]
   end
 
+  @doc "Reads the session or interactive templates this organisation has."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
+  def run("list_templates", %{kind: "interactive"} = args)
+      when is_map_key(args, :is_hsm) or is_map_key(args, :status) do
+    {:error,
+     "is_hsm and status apply only to session templates. " <>
+       ~s(Drop them, or use kind: "session".)}
+  end
+
   def run("list_templates", %{kind: "interactive"} = args) do
     filter = maybe_put(%{}, :label, args[:label])
 

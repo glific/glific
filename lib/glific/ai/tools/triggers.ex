@@ -13,7 +13,11 @@ defmodule Glific.AI.Tools.Triggers do
 
   @behaviour Glific.AI.Tool
 
+  @per_trigger 20
+
+  @doc "The trigger lookups this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -38,7 +42,9 @@ defmodule Glific.AI.Tools.Triggers do
     ]
   end
 
+  @doc "Reads the scheduled triggers, and optionally when each one actually fired."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("list_triggers", args) do
     triggers =
       %{filter: %{}, opts: %{limit: min(args[:limit], 200), offset: 0, order: :asc}}
@@ -75,9 +81,21 @@ defmodule Glific.AI.Tools.Triggers do
     TriggerLog
     |> where([l], l.trigger_id in ^trigger_ids)
     |> order_by([l], desc: l.started_at)
-    |> limit(200)
     |> select([l], {l.trigger_id, l.started_at})
+    |> per_parent(@per_trigger)
+  end
+
+  @spec per_parent(Ecto.Queryable.t(), pos_integer()) :: map()
+  defp per_parent(query, take) do
+    query
     |> Repo.all()
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+    |> Map.new(fn {parent, rows} ->
+      {parent,
+       if(length(rows) > take,
+         do: %{truncated: true, showing: Enum.take(rows, take), of: length(rows)},
+         else: rows
+       )}
+    end)
   end
 end

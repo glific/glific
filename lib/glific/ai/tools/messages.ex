@@ -13,7 +13,11 @@ defmodule Glific.AI.Tools.Messages do
 
   @behaviour Glific.AI.Tool
 
+  @per_broadcast 25
+
+  @doc "The broadcast lookups this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -38,8 +42,9 @@ defmodule Glific.AI.Tools.Messages do
     ]
   end
 
+  @doc "Reads the broadcasts sent, and optionally who each one reached."
   @impl Glific.AI.Tool
-
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("list_broadcasts", args) do
     broadcasts =
       MessageBroadcast
@@ -73,13 +78,26 @@ defmodule Glific.AI.Tools.Messages do
   defp recipients(broadcast_ids) do
     MessageBroadcastContact
     |> where([c], c.message_broadcast_id in ^broadcast_ids)
-    |> limit(500)
+    |> order_by([c], desc: c.processed_at)
     |> select(
       [c],
       {c.message_broadcast_id,
        %{contact_id: c.contact_id, status: c.status, processed_at: c.processed_at}}
     )
+    |> per_parent(@per_broadcast)
+  end
+
+  @spec per_parent(Ecto.Queryable.t(), pos_integer()) :: map()
+  defp per_parent(query, take) do
+    query
     |> Repo.all()
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+    |> Map.new(fn {parent, rows} ->
+      {parent,
+       if(length(rows) > take,
+         do: %{truncated: true, showing: Enum.take(rows, take), of: length(rows)},
+         else: rows
+       )}
+    end)
   end
 end

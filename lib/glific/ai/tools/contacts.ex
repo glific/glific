@@ -25,7 +25,9 @@ defmodule Glific.AI.Tools.Contacts do
 
   @behaviour Glific.AI.Tool
 
+  @doc "Every contact lookup this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -103,7 +105,9 @@ defmodule Glific.AI.Tools.Contacts do
     ]
   end
 
+  @doc "Reads one contact lookup: a search, one contact and its history, or the tickets raised for them."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("get_contact", args) do
     with {:ok, contact} <- find(args) do
       described = %{
@@ -121,7 +125,11 @@ defmodule Glific.AI.Tools.Contacts do
       }
 
       limit = min(args[:limit], 100)
-      {:ok, Enum.reduce(args[:include], described, &include(&1, &2, contact, limit))}
+
+      {:ok,
+       args[:include]
+       |> Enum.uniq()
+       |> Enum.reduce(described, &include(&1, &2, contact, limit))}
     end
   end
 

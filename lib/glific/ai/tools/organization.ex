@@ -22,7 +22,9 @@ defmodule Glific.AI.Tools.Organization do
 
   @behaviour Glific.AI.Tool
 
+  @doc "Every organisation-level lookup this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -77,7 +79,9 @@ defmodule Glific.AI.Tools.Organization do
     ]
   end
 
+  @doc "Reads one organisation lookup: who it is, whether the platform is healthy, its staff or its daily volume."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("organization_info", _args) do
     organization = Partners.organization(Repo.get_organization_id())
 

@@ -13,6 +13,7 @@ defmodule Glific.AI.Tools.Groups do
 
   alias Glific.{
     Groups.ContactWAGroup,
+    Groups.WAGroup,
     Groups.WAGroups,
     Repo,
     WAGroup.WAMessage,
@@ -22,7 +23,9 @@ defmodule Glific.AI.Tools.Groups do
 
   @behaviour Glific.AI.Tool
 
+  @doc "Every group-chat lookup this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -81,7 +84,9 @@ defmodule Glific.AI.Tools.Groups do
     ]
   end
 
+  @doc "Reads one group-chat lookup: the groups, one group's messages and members, or the polls."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("list_group_chats", args) do
     groups =
       %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0}}
@@ -100,15 +105,21 @@ defmodule Glific.AI.Tools.Groups do
   end
 
   def run("get_group_chat", %{wa_group_id: id} = args) do
-    limit = min(args[:limit], 100)
+    # Checked first: without it an unknown id, or one in another organisation,
+    # answers with empty lists and the model reports a quiet group.
+    with {:ok, group} <- fetch_group(id) do
+      limit = min(args[:limit], 100)
 
-    described =
-      Enum.reduce(args[:include], %{wa_group_id: id}, fn
-        "messages", acc -> Map.put(acc, :messages, group_messages(id, limit))
-        "members", acc -> Map.put(acc, :members, members(id, limit))
-      end)
+      described =
+        args[:include]
+        |> Enum.uniq()
+        |> Enum.reduce(%{wa_group_id: group.id, label: group.label}, fn
+          "messages", acc -> Map.put(acc, :messages, group_messages(id, limit))
+          "members", acc -> Map.put(acc, :members, members(id, limit))
+        end)
 
-    {:ok, described}
+      {:ok, described}
+    end
   end
 
   def run("list_polls", args) do
@@ -118,6 +129,14 @@ defmodule Glific.AI.Tools.Groups do
       |> Enum.map(&%{id: &1.id, label: &1.label, poll_content: &1.poll_content})
 
     {:ok, polls}
+  end
+
+  @spec fetch_group(non_neg_integer()) :: {:ok, WAGroup.t()} | {:error, String.t()}
+  defp fetch_group(id) do
+    case Repo.fetch_by(WAGroup, %{id: id}) do
+      {:ok, group} -> {:ok, group}
+      {:error, _} -> {:error, "No group chat with id #{id} exists in this organisation."}
+    end
   end
 
   @spec group_messages(non_neg_integer(), pos_integer()) :: [map()]

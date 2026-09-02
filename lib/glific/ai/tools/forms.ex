@@ -13,7 +13,11 @@ defmodule Glific.AI.Tools.Forms do
 
   @behaviour Glific.AI.Tool
 
+  @per_form 25
+
+  @doc "The form lookups this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -37,7 +41,9 @@ defmodule Glific.AI.Tools.Forms do
     ]
   end
 
+  @doc "Reads the forms and their approval status, and optionally what contacts submitted."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("list_forms", args) do
     forms =
       %{filter: %{}, opts: %{limit: min(args[:limit], 100), offset: 0}}
@@ -71,13 +77,25 @@ defmodule Glific.AI.Tools.Forms do
     WhatsappFormResponse
     |> where([r], r.whatsapp_form_id in ^form_ids)
     |> order_by([r], desc: r.submitted_at)
-    |> limit(100)
     |> select(
       [r],
       {r.whatsapp_form_id,
        %{contact_id: r.contact_id, raw_response: r.raw_response, submitted_at: r.submitted_at}}
     )
+    |> per_parent(@per_form)
+  end
+
+  @spec per_parent(Ecto.Queryable.t(), pos_integer()) :: map()
+  defp per_parent(query, take) do
+    query
     |> Repo.all()
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+    |> Map.new(fn {parent, rows} ->
+      {parent,
+       if(length(rows) > take,
+         do: %{truncated: true, showing: Enum.take(rows, take), of: length(rows)},
+         else: rows
+       )}
+    end)
   end
 end

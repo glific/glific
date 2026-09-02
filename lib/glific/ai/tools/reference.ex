@@ -26,7 +26,9 @@ defmodule Glific.AI.Tools.Reference do
   @kinds ~w(tags flow_labels contact_fields languages collections saved_searches
             certificate_templates global_fields roles)
 
+  @doc "The reference lookup this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -55,7 +57,9 @@ defmodule Glific.AI.Tools.Reference do
     ]
   end
 
+  @doc "Reads one kind of the organisation's named things, so a name can be resolved to an id."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("list_reference", %{kind: kind} = args), do: {:ok, list(kind, min(args[:limit], 200))}
 
   @spec list(String.t(), pos_integer()) :: [map()]
@@ -79,8 +83,11 @@ defmodule Glific.AI.Tools.Reference do
     )
   end
 
-  defp list("languages", _limit) do
+  # These two contexts take no limit, so it is applied after the fact rather than
+  # returning every row when a caller asked for a few.
+  defp list("languages", limit) do
     Settings.list_languages()
+    |> Enum.take(limit)
     |> Enum.map(&%{id: &1.id, label: &1.label, locale: &1.locale, is_active: &1.is_active})
   end
 
@@ -112,9 +119,10 @@ defmodule Glific.AI.Tools.Reference do
     |> Enum.map(&%{key: &1.key, description: &1.description, text: &1.text, json: &1.json})
   end
 
-  defp list("roles", _limit) do
+  defp list("roles", limit) do
     %{organization_id: Repo.get_organization_id()}
     |> AccessControl.list_roles()
+    |> Enum.take(limit)
     |> Enum.map(
       &%{id: &1.id, label: &1.label, description: &1.description, is_reserved: &1.is_reserved}
     )

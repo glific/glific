@@ -25,7 +25,9 @@ defmodule Glific.AI.Tools.Flows do
 
   @snippet 120
 
+  @doc "Every flow lookup this module offers."
   @impl Glific.AI.Tool
+  @spec specs() :: [Glific.AI.Tool.spec()]
   def specs do
     [
       %{
@@ -106,7 +108,9 @@ defmodule Glific.AI.Tools.Flows do
     ]
   end
 
+  @doc "Reads one flow lookup: the list, one flow's structure, its sheets or its webhook calls."
   @impl Glific.AI.Tool
+  @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("list_flows", args) do
     filter = if args[:name], do: %{name: args[:name]}, else: %{}
 
@@ -139,7 +143,7 @@ defmodule Glific.AI.Tools.Flows do
         nodes: Enum.map(Map.get(definition, "nodes", []), &node_summary/1)
       }
 
-      {:ok, Enum.reduce(args[:include], described, &include(&1, &2, flow))}
+      {:ok, args[:include] |> Enum.uniq() |> Enum.reduce(described, &include(&1, &2, flow))}
     end
   end
 
