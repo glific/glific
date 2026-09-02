@@ -29,8 +29,6 @@ defmodule Glific.Assistants do
     defexception [:message, :reason, :organization_id]
   end
 
-  @default_model "gpt-4o"
-
   @timeout_hours 1
 
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
@@ -838,7 +836,7 @@ defmodule Glific.Assistants do
 
     config = %{
       settings: build_settings(user_params),
-      model: user_params[:model] || @default_model,
+      model: user_params[:model] || Kaapi.default_model(),
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
       description: description,

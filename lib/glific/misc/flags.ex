@@ -528,7 +528,8 @@ defmodule Glific.Flags do
       :is_prompt_generator_enabled,
       :is_template_v2_enabled,
       :is_template_library_enabled,
-      :glific_ai_enabled
+      :glific_ai_enabled,
+      :web_channel_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

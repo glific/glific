@@ -13,6 +13,7 @@ defmodule Glific.AssistantsTest do
   alias Glific.Notifications.Notification
   alias Glific.Partners
   alias Glific.Repo
+  alias Glific.ThirdParty.Kaapi
 
   defp enable_kaapi(attrs) do
     Fixtures.kaapi_credential_fixture(%{organization_id: attrs.organization_id})
@@ -1354,7 +1355,7 @@ defmodule Glific.AssistantsTest do
                })
 
       assert String.starts_with?(assistant.name, "Assistant-")
-      assert config_version.model == "gpt-4o"
+      assert config_version.model == Kaapi.default_model()
       assert config_version.prompt == "You are a helpful assistant"
       assert config_version.description == "Assistant configuration"
 
