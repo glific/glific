@@ -41,11 +41,14 @@ defmodule Glific.Repo.Seeds.AddWebChannelProvider do
               position: 1
             },
             logo_url: %{
-              type: :string,
-              label: "Logo URL (https)",
+              type: :upload,
+              label: "Logo",
               default: nil,
               view_only: false,
-              position: 2
+              position: 2,
+              max_size_kb: 200,
+              accept: "image/png,image/jpeg,image/webp,image/svg+xml",
+              helper_text: "PNG, JPEG, WEBP or SVG up to 200KB. Landscape works best."
             },
             theme: %{
               type: :select,
