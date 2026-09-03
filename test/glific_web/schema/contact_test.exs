@@ -5,8 +5,8 @@ defmodule GlificWeb.Schema.ContactTest do
 
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Contacts.BulkImportWorker,
+    Contacts.Contact,
     Fixtures,
     Flows,
     Messages.Message,

@@ -3,10 +3,11 @@ defmodule Glific.Contacts.BulkImportTest do
   Covers the batched import path end to end, through the same entry point the UI uses.
   These mirror the manual scenarios in import_test/harness.exs.
   """
-  use Glific.DataCase, async: true
+  use Glific.DataCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     Contacts.Contact,
@@ -129,6 +130,32 @@ defmodule Glific.Contacts.BulkImportTest do
       )
 
       assert in_group?("919876500004", "batch_a")
+    end
+  end
+
+  describe "atomicity" do
+    test "a failure on the last write rolls back the contact and its history" do
+      # link_collections/4 is the final write inside the transaction, after the contact
+      # upsert and the history insert have already run
+      result =
+        with_mock Glific.Groups, [:passthrough],
+          get_or_create_group_by_label: fn _label, _org -> raise "collection write failed" end do
+          Import.import_contacts(
+            org_id(),
+            %{user: admin(), collection: "rollback", type: :import_contact},
+            data: "name,phone,language,city\nRollback,+919876570001,english,Pune\n"
+          )
+
+          Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+        end
+
+      assert %{success: 0, failure: 1} = result
+
+      refute exists?("919876570001")
+
+      assert ContactHistory
+             |> where([h], like(h.event_label, "%city%"))
+             |> Repo.aggregate(:count, :id) == 0
     end
   end
 

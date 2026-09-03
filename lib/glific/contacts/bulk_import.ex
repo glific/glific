@@ -30,10 +30,7 @@ defmodule Glific.Contacts.BulkImport do
   @default_language "english"
   @field_type "string"
 
-  @doc """
-  Import one chunk of CSV rows, returning a map of phone => error message for the rows
-  that could not be processed.
-  """
+  @doc "Import one chunk of csv rows, returning a map of phone => error message."
   @spec process_chunk([map()], map()) :: map()
   def process_chunk(rows, params) do
     {errors, rows} = Import.validate_contacts(rows)
@@ -53,13 +50,22 @@ defmodule Glific.Contacts.BulkImport do
       |> Enum.map(&prepare(&1, existing, languages, params))
       |> dedupe()
 
+    {:ok, _} = Repo.transaction(fn -> write(prepared, params, now) end)
+
+    errors
+  end
+
+  # one transaction so a chunk that dies half way cannot leave the history rows behind:
+  # the contact, field and collection writes are idempotent on retry, the history insert
+  # is not. The user job progress deliberately stays outside this, since it takes a
+  # FOR UPDATE lock on a single row that every worker shares.
+  @spec write([map()], map(), DateTime.t()) :: :ok
+  defp write(prepared, params, now) do
     saved = upsert_contacts(prepared, params, now)
 
     upsert_field_registry(prepared, params, now)
     insert_histories(prepared, saved, params, now)
     link_collections(prepared, saved, params, now)
-
-    errors
   end
 
   @spec load_existing([map()]) :: map()

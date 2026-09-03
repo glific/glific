@@ -102,10 +102,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @doc """
-  Validate a chunk of raw CSV rows, returning the errors and the rows whose phone
-  number parsed cleanly. Shared by every contact import worker.
-  """
+  @doc "Validate a chunk of raw csv rows, returning the errors and the rows that parsed."
   @spec validate_contacts([map()]) :: {map(), [map()]}
   def validate_contacts(contacts) do
     {errors, valid} =
@@ -121,9 +118,7 @@ defmodule Glific.Contacts.Import do
     {errors, Enum.reverse(valid)}
   end
 
-  @doc """
-  Validate one CSV row's phone number and name.
-  """
+  @doc "Validate one csv row's phone number and name."
   @spec validate_contact(map()) :: {:ok, String.t()} | {:error, map()}
   def validate_contact(%{"phone" => phone}) when phone in [nil, ""],
     do: {:error, %{"phone" => "Phone number is missing."}}
@@ -143,10 +138,7 @@ defmodule Glific.Contacts.Import do
 
   defp validate_name(_name, phone), do: {:ok, phone}
 
-  @doc """
-  Rebuild the worker params from the JSON serialized Oban args, where atoms have
-  become strings.
-  """
+  @doc "Rebuild the worker params from the json serialized Oban args."
   @spec parse_worker_params(map(), non_neg_integer()) :: map()
   def parse_worker_params(params, organization_id) do
     %{
@@ -160,9 +152,7 @@ defmodule Glific.Contacts.Import do
     }
   end
 
-  @doc """
-  Record one finished chunk against the user job, merging in any row level errors.
-  """
+  @doc "Record one finished chunk against the user job, merging in any row level errors."
   @spec update_user_job_progress(non_neg_integer(), map()) :: :ok
   def update_user_job_progress(user_job_id, errors) do
     errors = if errors == %{}, do: %{}, else: %{errors: errors}

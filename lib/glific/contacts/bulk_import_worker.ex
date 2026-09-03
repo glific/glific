@@ -17,9 +17,7 @@ defmodule Glific.Contacts.BulkImportWorker do
     Repo
   }
 
-  @doc """
-  Creating new job for each chunk of contacts.
-  """
+  @doc "Creating new job for each chunk of contacts."
   @spec make_job(list(), map(), non_neg_integer(), non_neg_integer()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def make_job(chunk, params, user_job_id, delay) do
@@ -35,10 +33,9 @@ defmodule Glific.Contacts.BulkImportWorker do
     |> Oban.insert()
   end
 
-  @doc """
-  Standard perform method to use Oban worker.
-  """
+  @doc "Standard perform method to use Oban worker."
   @impl Oban.Worker
+  @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{
         args: %{
           "contacts" => contacts,

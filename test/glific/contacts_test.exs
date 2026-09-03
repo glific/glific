@@ -8,9 +8,9 @@ defmodule Glific.ContactsTest do
 
   alias Glific.{
     Contacts,
+    Contacts.BulkImportWorker,
     Contacts.Contact,
     Contacts.Import,
-    Contacts.BulkImportWorker,
     Contacts.ImportWorker,
     Jobs.UserJob,
     Partners,
@@ -592,7 +592,6 @@ defmodule Glific.ContactsTest do
 
       {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329293"})
 
-      # the later row wins on a repeated field, and a field only on the first row survives
       assert get_in(contact.fields, ["city", "value"]) == "Mumbai"
       assert get_in(contact.fields, ["age", "value"]) == "30"
     end
@@ -618,11 +617,8 @@ defmodule Glific.ContactsTest do
 
       {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329299"})
 
-      # a field only in the first csv survives the second import
       assert get_in(contact.fields, ["city", "value"]) == "Pune"
-      # a field in both csvs takes the newer value
       assert get_in(contact.fields, ["age", "value"]) == "31"
-      # a field only in the second csv is added
       assert get_in(contact.fields, ["state", "value"]) == "MH"
     end
 
