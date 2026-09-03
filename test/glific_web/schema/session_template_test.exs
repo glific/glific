@@ -10,6 +10,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     Partners,
     Repo,
     Seeds.SeedsDev,
+    Settings.Language,
     Templates,
     Templates.SessionTemplate,
     Templates.TemplateWorker
@@ -40,6 +41,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/session_templates/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/session_templates/delete.gql")
   load_gql(:sync, GlificWeb.Schema, "assets/gql/session_templates/sync.gql")
+  load_gql(:translate, GlificWeb.Schema, "assets/gql/session_templates/translate.gql")
 
   load_gql(
     :create_from_message,
@@ -672,5 +674,87 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert {:ok, query_data} = result
     message = get_in(query_data, [:errors, Access.at(0), :message])
     assert message =~ "not enabled"
+  end
+
+  test "translate_session_template returns the translation and the anchor template's language",
+       %{staff: user} do
+    {:ok, english} = Repo.fetch_by(Language, %{locale: "en"})
+    {:ok, hindi} = Repo.fetch_by(Language, %{locale: "hi"})
+
+    anchor_template =
+      Fixtures.session_template_fixture(%{
+        label: "Translate Anchor",
+        shortcode: "translate_anchor",
+        language_id: english.id
+      })
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "अनुवादित"}]}}
+      }
+    end)
+
+    result =
+      auth_query_gql_by(:translate, user,
+        variables: %{
+          "templateId" => anchor_template.id,
+          "languageId" => hindi.id,
+          "body" => "Hello"
+        }
+      )
+
+    assert {:ok, query_data} = result
+    translation = get_in(query_data, [:data, "translateSessionTemplate"])
+
+    assert translation["body"] == "अनुवादित"
+    assert translation["sourceLanguage"]["locale"] == english.locale
+  end
+
+  test "translate_session_template reports an unknown language as a single error message",
+       %{staff: user} do
+    anchor_template =
+      Fixtures.session_template_fixture(%{
+        label: "Translate Missing Language",
+        shortcode: "translate_missing_language"
+      })
+
+    result =
+      auth_query_gql_by(:translate, user,
+        variables: %{
+          "templateId" => anchor_template.id,
+          "languageId" => 999_999,
+          "body" => "Hello"
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert [%{message: message}] = query_data.errors
+    assert message == "Resource not found"
+  end
+
+  test "translate_session_template passes a plain string error through untouched",
+       %{staff: user} do
+    {:ok, english} = Repo.fetch_by(Language, %{locale: "en"})
+
+    anchor_template =
+      Fixtures.session_template_fixture(%{
+        label: "Translate Same Language",
+        shortcode: "translate_same_language",
+        language_id: english.id
+      })
+
+    result =
+      auth_query_gql_by(:translate, user,
+        variables: %{
+          "templateId" => anchor_template.id,
+          "languageId" => english.id,
+          "body" => "Hello"
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert [%{message: message}] = query_data.errors
+    assert message == "Source and target language cannot be the same."
   end
 end
