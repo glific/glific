@@ -69,7 +69,7 @@ defmodule Glific.Contacts.BulkImport do
     upsert_field_registry(prepared, params, now)
     insert_histories(prepared, saved, params, now)
     link_collections(prepared, saved, params, now)
-    sync_profiles(prepared, saved)
+    sync_profiles(prepared, saved, now)
   end
 
   @spec load_existing([map()]) :: map()
@@ -87,6 +87,7 @@ defmodule Glific.Contacts.BulkImport do
       optin_time: c.optin_time,
       optout_time: c.optout_time,
       last_message_at: c.last_message_at,
+      fields: c.fields,
       status: c.status,
       active_profile_id: c.active_profile_id
     })
@@ -155,6 +156,7 @@ defmodule Glific.Contacts.BulkImport do
       fields: build_fields(row["contact_fields"], now),
       collections: collections(row["collection"]),
       previous_language_id: contact && contact.language_id,
+      previous_fields: (contact && contact.fields) || %{},
       active_profile_id: contact && contact.active_profile_id,
       optin?: optin?(params, contact),
       bsp_status: bsp_status(contact)
@@ -346,16 +348,26 @@ defmodule Glific.Contacts.BulkImport do
     )
   end
 
-  @spec sync_profiles([map()], map()) :: :ok
-  defp sync_profiles(prepared, saved) do
-    prepared
-    |> Enum.filter(&(is_integer(&1.active_profile_id) and &1.fields != %{}))
-    |> Enum.each(fn row ->
-      with %{fields: fields} <- Map.get(saved, row.phone),
-           {:ok, profile} <- Repo.fetch_by(Profiles.Profile, %{id: row.active_profile_id}) do
-        Profiles.update_profile(profile, %{fields: fields})
-      end
-    end)
+  @spec sync_profiles([map()], map(), DateTime.t()) :: :ok
+  defp sync_profiles(prepared, saved, now) do
+    contact_ids =
+      prepared
+      |> Enum.filter(&(is_integer(&1.active_profile_id) and &1.fields != %{}))
+      |> Enum.map(&Map.get(saved, &1.phone))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(& &1.id)
+
+    if contact_ids != [] do
+      from(p in Profiles.Profile,
+        join: c in Contact,
+        on: c.active_profile_id == p.id,
+        where: c.id in ^contact_ids,
+        update: [set: [fields: c.fields, updated_at: ^DateTime.truncate(now, :second)]]
+      )
+      |> Repo.update_all([])
+    end
+
+    :ok
   end
 
   @spec upsert_field_registry([map()], map(), DateTime.t()) :: :ok
@@ -397,32 +409,33 @@ defmodule Glific.Contacts.BulkImport do
         []
 
       %{id: contact_id} ->
-        [
-          fields_history(row, contact_id, params, now),
-          language_history(row, contact_id, params, now),
-          optin_history(row, contact_id, params, now)
-        ]
-        |> Enum.reject(&is_nil/1)
+        fields_history(row, contact_id, params, now) ++
+          Enum.reject(
+            [
+              language_history(row, contact_id, params, now),
+              optin_history(row, contact_id, params, now)
+            ],
+            &is_nil/1
+          )
     end
   end
 
-  @spec fields_history(map(), non_neg_integer(), map(), DateTime.t()) :: map() | nil
-  defp fields_history(%{fields: fields}, _contact_id, _params, _now) when map_size(fields) == 0,
-    do: nil
-
+  @spec fields_history(map(), non_neg_integer(), map(), DateTime.t()) :: [map()]
   defp fields_history(row, contact_id, params, now) do
-    shortcodes = Map.keys(row.fields)
-
-    history(contact_id, params, now, "contact_fields_updated", %{
-      event_label:
-        "Updated #{length(shortcodes)} fields via import: #{Enum.join(shortcodes, ", ")}",
-      event_meta: %{
-        fields:
-          Map.new(row.fields, fn {shortcode, field} ->
-            {shortcode, %{label: field.label, value: field.value}}
-          end)
-      }
-    })
+    Enum.map(row.fields, fn {shortcode, field} ->
+      history(contact_id, params, now, "contact_fields_updated", %{
+        event_label: "Value for #{field.label} is updated to #{field.value}",
+        event_meta: %{
+          field: %{
+            data: shortcode,
+            label: field.label,
+            value: field.value,
+            old_value: Map.get(row.previous_fields, shortcode),
+            new_value: field.value
+          }
+        }
+      })
+    end)
   end
 
   @spec language_history(map(), non_neg_integer(), map(), DateTime.t()) :: map() | nil
@@ -518,11 +531,25 @@ defmodule Glific.Contacts.BulkImport do
           Map.put(errors, phone, "Contact does not exist")
 
         contact ->
-          {:ok, _contact} = Contacts.delete_contact(contact)
-          errors
+          delete_one(contact, phone, errors)
       end
     else
       Map.put(errors, phone, "This user #{params.user.name} doesn't have enough permission")
     end
+  end
+  @spec delete_one(Contact.t(), String.t(), map()) :: map()
+  defp delete_one(contact, phone, errors) do
+    case Contacts.delete_contact(contact) do
+      {:ok, _contact} -> errors
+      {:error, reason} -> Map.put(errors, phone, to_string(reason))
+    end
+  catch
+    kind, reason ->
+      Glific.log_error(
+        "Deleting #{phone} during import failed: " <>
+          Glific.SafeLog.safe_inspect({kind, reason})
+      )
+
+      Map.put(errors, phone, "Could not delete this contact, please retry it on its own")
   end
 end

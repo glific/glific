@@ -101,7 +101,7 @@ defmodule Glific.Contacts.BulkImportTest do
       assert field(contact, "name") == "Wide"
     end
 
-    test "writes one history row per contact, not one per field" do
+    test "writes one history row per field, in the shape the history ui reads" do
       headers = Enum.map_join(1..15, ",", &"field_#{&1}")
       values = Enum.map_join(1..15, ",", &"value_#{&1}")
 
@@ -112,9 +112,36 @@ defmodule Glific.Contacts.BulkImportTest do
       rows =
         ContactHistory
         |> where([h], h.contact_id == ^contact.id and h.event_type == "contact_fields_updated")
-        |> Repo.aggregate(:count, :id)
+        |> Repo.all()
 
-      assert rows == 1
+      # 15 field_n columns plus name, which cleanup_contact_data/3 does not drop
+      assert length(rows) == 16
+
+      row = Enum.find(rows, &(&1.event_meta["field"]["data"] == "field_1"))
+
+      # contactHistory.tsx reads eventMeta.field.label / .new_value / .old_value.value
+      assert row.event_meta["field"]["label"] == "field_1"
+      assert row.event_meta["field"]["new_value"] == "value_1"
+      assert row.event_meta["field"]["old_value"] == nil
+      assert row.event_label == "Value for field_1 is updated to value_1"
+    end
+
+    test "a second import records the previous value as old_value" do
+      run("name,phone,language,city\nOld,+919876500009,english,Pune\n")
+      run("name,phone,language,city\nOld,+919876500009,english,Mumbai\n")
+
+      contact = fetch("919876500009")
+
+      row =
+        ContactHistory
+        |> where([h], h.contact_id == ^contact.id)
+        |> where([h], fragment("event_meta -> 'field' ->> 'data' = 'city'"))
+        |> order_by([h], desc: h.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert row.event_meta["field"]["new_value"] == "Mumbai"
+      assert row.event_meta["field"]["old_value"]["value"] == "Pune"
     end
 
     test "opts in a new contact and sets bsp_status" do

@@ -179,7 +179,7 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec merge_errors(map() | nil, map()) :: map()
-  defp merge_errors(existing, errors) when errors == %{}, do: existing || %{}
+  defp merge_errors(existing, errors) when map_size(errors) == 0, do: existing || %{}
 
   defp merge_errors(existing, errors) do
     existing = existing || %{}
