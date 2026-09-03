@@ -10,13 +10,18 @@ defmodule Glific.Contacts.BulkImportTest do
   import Mock
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
     Contacts.ContactsField,
     Contacts.Import,
+    Flows.ContactField,
+    Groups,
     Groups.ContactGroup,
     Groups.Group,
+    Jobs.UserJob,
     Partners,
+    Profiles,
     Repo,
     Seeds.SeedsDev,
     Settings.Language,
@@ -133,12 +138,171 @@ defmodule Glific.Contacts.BulkImportTest do
     end
   end
 
+  describe "columns insert_all does not get for free" do
+    test "sets contact_type so the contact is visible in chats and search" do
+      run("name,phone,language,city\nType,+919876580101,english,Pune\n")
+
+      contact = fetch("919876580101")
+
+      assert contact.contact_type == "WABA"
+      assert contact.contact_type in ["WABA", "WABA+WA"]
+    end
+
+    test "does not downgrade an existing contact_type on re-import" do
+      run("name,phone,language,city\nType,+919876580102,english,Pune\n")
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919876580102"})
+      Contacts.update_contact(contact, %{contact_type: "WABA+WA"})
+
+      run("name,phone,language,city\nType,+919876580102,english,Mumbai\n")
+
+      assert fetch("919876580102").contact_type == "WABA+WA"
+      assert field(fetch("919876580102"), "city") == "Mumbai"
+    end
+
+    test "sets last_communication_at so imports do not sort above real conversations" do
+      run("name,phone,language,city\nComm,+919876580103,english,Pune\n")
+
+      assert fetch("919876580103").last_communication_at != nil
+    end
+
+    test "does not bump last_communication_at on re-import" do
+      run("name,phone,language,city\nComm,+919876580104,english,Pune\n")
+      before = fetch("919876580104").last_communication_at
+
+      run("name,phone,language,city\nComm,+919876580104,english,Mumbai\n")
+
+      assert fetch("919876580104").last_communication_at == before
+    end
+  end
+
+  describe "blocked contacts" do
+    setup do
+      run("name,phone,language,city\nBlocked,+919876580201,english,Pune\n")
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919876580201"})
+
+      {:ok, _} =
+        Contacts.update_contact(contact, %{
+          status: :blocked,
+          optin_time: nil,
+          optin_status: false
+        })
+
+      :ok
+    end
+
+    test "an import does not unblock or optin a blocked contact" do
+      run("name,phone,language,city\nBlocked,+919876580201,english,Mumbai\n")
+
+      contact = fetch("919876580201")
+
+      assert contact.status == :blocked
+      assert contact.optin_time == nil
+      refute contact.optin_status
+    end
+
+    test "the contact's fields are still updated" do
+      run("name,phone,language,city\nBlocked,+919876580201,english,Mumbai\n")
+
+      assert field(fetch("919876580201"), "city") == "Mumbai"
+    end
+  end
+
+  describe "active profiles" do
+    test "writes the merged fields to the active profile" do
+      run("name,phone,language,city,age\nProf,+919876580301,english,Pune,30\n")
+      contact = fetch("919876580301")
+
+      {:ok, profile} =
+        Profiles.create_profile(%{
+          name: "Profile One",
+          type: "student",
+          contact_id: contact.id,
+          language_id: contact.language_id,
+          organization_id: org_id()
+        })
+
+      {:ok, _} = Contacts.update_contact(contact, %{active_profile_id: profile.id})
+
+      run("name,phone,language,school\nProf,+919876580301,english,SchoolA\n")
+
+      updated = Repo.get!(Profiles.Profile, profile.id)
+
+      # switch_profile/2 copies profile.fields over contact.fields, so anything missing
+      # here is silently discarded on the next profile switch
+      assert get_in(updated.fields, ["school", "value"]) == "SchoolA"
+      assert get_in(updated.fields, ["city", "value"]) == "Pune"
+    end
+  end
+
+  describe "error accounting" do
+    test "accumulates errors across chunks instead of keeping only the first" do
+      user_job =
+        UserJob.create_user_job(%{
+          status: "pending",
+          type: "contact_import",
+          total_tasks: 2,
+          tasks_done: 0,
+          organization_id: org_id(),
+          errors: %{}
+        })
+
+      Import.update_user_job_progress(user_job.id, %{"111" => "chunk one failed"})
+      Import.update_user_job_progress(user_job.id, %{"222" => "chunk two failed"})
+
+      reloaded = Repo.get!(UserJob, user_job.id)
+
+      assert reloaded.tasks_done == 2
+      assert reloaded.errors["errors"]["111"] == "chunk one failed"
+      assert reloaded.errors["errors"]["222"] == "chunk two failed"
+      assert map_size(reloaded.errors) == 1, "an atom :errors key alongside \"errors\" loses one"
+    end
+
+    test "a clean chunk leaves the accumulated errors alone" do
+      user_job =
+        UserJob.create_user_job(%{
+          status: "pending",
+          type: "contact_import",
+          total_tasks: 2,
+          tasks_done: 0,
+          organization_id: org_id(),
+          errors: %{}
+        })
+
+      Import.update_user_job_progress(user_job.id, %{"111" => "chunk one failed"})
+      Import.update_user_job_progress(user_job.id, %{})
+
+      reloaded = Repo.get!(UserJob, user_job.id)
+
+      assert reloaded.tasks_done == 2
+      assert reloaded.errors["errors"]["111"] == "chunk one failed"
+    end
+  end
+
+  describe "delete flag" do
+    test "removes the contact and reports a missing one" do
+      run("name,phone,language,city\nGone,+919876580401,english,Pune\n")
+      assert exists?("919876580401")
+
+      run("""
+      name,phone,language,delete
+      Gone,+919876580401,english,1
+      Never,+919876580402,english,1
+      """)
+
+      refute exists?("919876580401")
+
+      [user_job | _] = UserJob.list_user_jobs(%{}) |> Enum.sort_by(& &1.id, :desc)
+      assert user_job.errors["errors"]["919876580402"] == "Contact does not exist"
+    end
+  end
+
   describe "atomicity" do
     test "a failure on the last write rolls back the contact and its history" do
       # link_collections/4 is the final write inside the transaction, after the contact
       # upsert and the history insert have already run
       result =
-        with_mock Glific.Groups, [:passthrough],
+        with_mock Groups, [:passthrough],
           get_or_create_group_by_label: fn _label, _org -> raise "collection write failed" end do
           Import.import_contacts(
             org_id(),
@@ -211,6 +375,30 @@ defmodule Glific.Contacts.BulkImportTest do
       assert in_group?("919876520001", "moved")
     end
 
+    test "overwrites the name when the csv carries a different one" do
+      assert fetch("919876520001").name == "Move"
+
+      run(
+        "name,phone,language,collection,attendance\nRenamed,+919876520001,english,moved,80%\n",
+        :move_contact,
+        nil
+      )
+
+      assert fetch("919876520001").name == "Renamed"
+    end
+
+    test "rejects a row whose name is blank, so the name is never nulled" do
+      run(
+        "name,phone,language,collection,attendance\n,+919876520001,english,moved,80%\n",
+        :move_contact,
+        nil
+      )
+
+      contact = fetch("919876520001")
+      assert contact.name == "Move"
+      refute field(contact, "attendance")
+    end
+
     test "does not change the optin time" do
       before = fetch("919876520001").optin_time
 
@@ -240,7 +428,7 @@ defmodule Glific.Contacts.BulkImportTest do
         nil
       )
 
-      [user_job | _] = Glific.Jobs.UserJob.list_user_jobs(%{}) |> Enum.sort_by(& &1.id, :desc)
+      [user_job | _] = UserJob.list_user_jobs(%{}) |> Enum.sort_by(& &1.id, :desc)
 
       assert user_job.errors["errors"]["919876529999"] =~ "was not found"
     end
@@ -312,7 +500,7 @@ defmodule Glific.Contacts.BulkImportTest do
   describe "contacts_fields registry" do
     test "does not overwrite an existing human label with the snake_case header" do
       {:ok, existing} =
-        Glific.Flows.ContactField.create_contact_field(%{
+        ContactField.create_contact_field(%{
           name: "Date Of Birth",
           shortcode: "date_of_birth",
           organization_id: org_id(),

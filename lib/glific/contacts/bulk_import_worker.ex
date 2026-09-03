@@ -17,6 +17,8 @@ defmodule Glific.Contacts.BulkImportWorker do
     Repo
   }
 
+  @chunk_failed "Import failed for this batch, please retry these rows"
+
   @doc "Creating new job for each chunk of contacts."
   @spec make_job(list(), map(), non_neg_integer(), non_neg_integer()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
@@ -36,18 +38,37 @@ defmodule Glific.Contacts.BulkImportWorker do
   @doc "Standard perform method to use Oban worker."
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
-  def perform(%Oban.Job{
-        args: %{
-          "contacts" => contacts,
-          "params" => params,
-          "user_job_id" => user_job_id,
-          "organization_id" => organization_id
-        }
-      }) do
+  def perform(
+        %Oban.Job{
+          args: %{
+            "contacts" => contacts,
+            "params" => params,
+            "user_job_id" => user_job_id,
+            "organization_id" => organization_id
+          }
+        } = job
+      ) do
     Repo.put_process_state(organization_id)
 
     contacts
     |> BulkImport.process_chunk(Import.parse_worker_params(params, organization_id))
     |> then(&Import.update_user_job_progress(user_job_id, &1))
+  rescue
+    exception ->
+      handle_failure(exception, __STACKTRACE__, job, contacts, user_job_id)
+  end
+
+  @spec handle_failure(Exception.t(), Exception.stacktrace(), Oban.Job.t(), [map()], integer()) ::
+          :ok | no_return()
+  defp handle_failure(exception, stacktrace, job, contacts, user_job_id) do
+    if job.attempt < job.max_attempts do
+      reraise exception, stacktrace
+    else
+      Glific.log_exception(exception)
+
+      contacts
+      |> Map.new(&{&1["phone"] || "unknown", @chunk_failed})
+      |> then(&Import.update_user_job_progress(user_job_id, &1))
+    end
   end
 end

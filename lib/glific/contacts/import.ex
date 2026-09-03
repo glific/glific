@@ -155,8 +155,6 @@ defmodule Glific.Contacts.Import do
   @doc "Record one finished chunk against the user job, merging in any row level errors."
   @spec update_user_job_progress(non_neg_integer(), map()) :: :ok
   def update_user_job_progress(user_job_id, errors) do
-    errors = if errors == %{}, do: %{}, else: %{errors: errors}
-
     Repo.transaction(fn ->
       user_job =
         UserJob
@@ -165,11 +163,19 @@ defmodule Glific.Contacts.Import do
 
       UserJob.update_user_job(user_job, %{
         tasks_done: user_job.tasks_done + 1,
-        errors: Map.merge(user_job.errors || %{}, errors)
+        errors: merge_errors(user_job.errors, errors)
       })
     end)
 
     :ok
+  end
+
+  @spec merge_errors(map() | nil, map()) :: map()
+  defp merge_errors(existing, errors) when errors == %{}, do: existing || %{}
+
+  defp merge_errors(existing, errors) do
+    existing = existing || %{}
+    Map.put(existing, "errors", Map.merge(Map.get(existing, "errors", %{}), errors))
   end
 
   @doc """

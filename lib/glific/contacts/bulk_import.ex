@@ -21,6 +21,7 @@ defmodule Glific.Contacts.BulkImport do
     Contacts.Import,
     Groups,
     Groups.ContactGroup,
+    Profiles,
     Repo,
     Settings.Language
   }
@@ -36,8 +37,6 @@ defmodule Glific.Contacts.BulkImport do
     {errors, rows} = Import.validate_contacts(rows)
     {deletes, rows} = Enum.split_with(rows, &(&1["delete"] == "1"))
 
-    errors = Enum.reduce(deletes, errors, &delete_contact(&1, params, &2))
-
     existing = load_existing(rows)
     {errors, rows} = reject_missing(rows, existing, errors, params.type)
 
@@ -47,12 +46,14 @@ defmodule Glific.Contacts.BulkImport do
 
     prepared =
       rows
-      |> Enum.map(&prepare(&1, existing, languages, params))
+      |> Enum.map(&prepare(&1, existing, languages, params, now))
       |> dedupe()
 
     {:ok, _} = Repo.transaction(fn -> write(prepared, params, now) end)
 
-    errors
+    delete_errors = Enum.reduce(deletes, %{}, &delete_contact(&1, params, &2))
+
+    Map.merge(errors, delete_errors)
   end
 
   # one transaction so a chunk that dies half way cannot leave the history rows behind:
@@ -66,6 +67,7 @@ defmodule Glific.Contacts.BulkImport do
     upsert_field_registry(prepared, params, now)
     insert_histories(prepared, saved, params, now)
     link_collections(prepared, saved, params, now)
+    sync_profiles(prepared, saved)
   end
 
   @spec load_existing([map()]) :: map()
@@ -82,7 +84,9 @@ defmodule Glific.Contacts.BulkImport do
       language_id: c.language_id,
       optin_time: c.optin_time,
       optout_time: c.optout_time,
-      last_message_at: c.last_message_at
+      last_message_at: c.last_message_at,
+      status: c.status,
+      active_profile_id: c.active_profile_id
     })
     |> Repo.all()
     |> Map.new(&{&1.phone, &1})
@@ -117,10 +121,15 @@ defmodule Glific.Contacts.BulkImport do
         |> put_new_downcased(language.locale, language.id)
       end)
 
+    default_id =
+      Map.get(lookup, @default_language) ||
+        raise "contact import needs an active #{@default_language} language to fall back on"
+
     %{
       lookup: lookup,
+      ordered: Enum.sort_by(lookup, fn {key, id} -> {id, key} end),
       labels: Map.new(languages, &{&1.id, &1.label}),
-      default_id: Map.fetch!(lookup, @default_language)
+      default_id: default_id
     }
   end
 
@@ -128,19 +137,19 @@ defmodule Glific.Contacts.BulkImport do
   defp put_new_downcased(acc, nil, _id), do: acc
   defp put_new_downcased(acc, key, id), do: Map.put_new(acc, String.downcase(key), id)
 
-  @spec prepare(map(), map(), map(), map()) :: map()
-  defp prepare(row, existing, languages, params) do
+  @spec prepare(map(), map(), map(), map(), DateTime.t()) :: map()
+  defp prepare(row, existing, languages, params, now) do
     phone = row["phone"]
     contact = Map.get(existing, phone)
-    fields = build_fields(row["contact_fields"])
 
     %{
       phone: phone,
       name: row["name"],
       language_id: language_id(row["language"], contact, languages),
-      fields: fields,
+      fields: build_fields(row["contact_fields"], now),
       collections: collections(row["collection"]),
       previous_language_id: contact && contact.language_id,
+      active_profile_id: contact && contact.active_profile_id,
       optin?: optin?(params, contact),
       bsp_status: bsp_status(contact)
     }
@@ -164,12 +173,10 @@ defmodule Glific.Contacts.BulkImport do
     |> Map.values()
   end
 
-  @spec build_fields(map() | nil) :: map()
-  defp build_fields(nil), do: %{}
+  @spec build_fields(map() | nil, DateTime.t()) :: map()
+  defp build_fields(nil, _now), do: %{}
 
-  defp build_fields(fields) do
-    inserted_at = DateTime.utc_now()
-
+  defp build_fields(fields, now) do
     fields
     |> Enum.reject(fn {_label, value} -> value in [nil, ""] end)
     |> Map.new(fn {label, value} ->
@@ -180,7 +187,7 @@ defmodule Glific.Contacts.BulkImport do
          value: value,
          label: shortcode,
          type: @field_type,
-         inserted_at: inserted_at
+         inserted_at: now
        }}
     end)
   end
@@ -204,14 +211,18 @@ defmodule Glific.Contacts.BulkImport do
     term = language |> String.trim() |> String.downcase()
 
     case Map.get(languages.lookup, term) do
-      nil -> match_language_prefix(term, languages.lookup) || language_id(nil, contact, languages)
-      id -> id
+      nil ->
+        match_language_prefix(term, languages.ordered) || language_id(nil, contact, languages)
+
+      id ->
+        id
     end
   end
 
-  @spec match_language_prefix(String.t(), map()) :: non_neg_integer() | nil
-  defp match_language_prefix(term, lookup) do
-    Enum.find_value(lookup, fn {key, id} ->
+  @spec match_language_prefix(String.t(), [{String.t(), non_neg_integer()}]) ::
+          non_neg_integer() | nil
+  defp match_language_prefix(term, ordered) do
+    Enum.find_value(ordered, fn {key, id} ->
       if String.starts_with?(key, term), do: id
     end)
   end
@@ -219,14 +230,18 @@ defmodule Glific.Contacts.BulkImport do
   @spec optin?(map(), map() | nil) :: boolean()
   defp optin?(%{type: "move_contact"}, _contact), do: false
 
-  defp optin?(params, contact) do
-    cond do
-      contact && contact.optin_time != nil -> false
-      contact && contact.optout_time != nil -> false
-      Authorize.valid_role?(params.user.roles, :manager) -> true
-      params.user.upload_contacts -> true
-      true -> false
-    end
+  defp optin?(params, contact), do: optin_allowed?(contact) and may_optin?(params.user)
+
+  @spec optin_allowed?(map() | nil) :: boolean()
+  defp optin_allowed?(nil), do: true
+
+  defp optin_allowed?(contact) do
+    contact.status != :blocked and is_nil(contact.optin_time) and is_nil(contact.optout_time)
+  end
+
+  @spec may_optin?(map()) :: boolean()
+  defp may_optin?(user) do
+    Authorize.valid_role?(user.roles, :manager) or user.upload_contacts == true
   end
 
   @spec bsp_status(map() | nil) :: atom()
@@ -262,10 +277,10 @@ defmodule Glific.Contacts.BulkImport do
       Repo.insert_all(Contact, entries,
         on_conflict: on_conflict(optin?),
         conflict_target: [:phone, :organization_id],
-        returning: [:id, :phone]
+        returning: [:id, :phone, :fields]
       )
 
-    Map.new(saved, &{&1.phone, &1.id})
+    Map.new(saved, &{&1.phone, %{id: &1.id, fields: &1.fields}})
   end
 
   @spec contact_entry(map(), map(), DateTime.t(), boolean()) :: map()
@@ -275,6 +290,8 @@ defmodule Glific.Contacts.BulkImport do
       name: row.name,
       language_id: row.language_id,
       fields: row.fields,
+      contact_type: "WABA",
+      last_communication_at: DateTime.truncate(now, :second),
       organization_id: params.organization_id,
       inserted_at: now,
       updated_at: now
@@ -327,6 +344,18 @@ defmodule Glific.Contacts.BulkImport do
     )
   end
 
+  @spec sync_profiles([map()], map()) :: :ok
+  defp sync_profiles(prepared, saved) do
+    prepared
+    |> Enum.filter(&(is_integer(&1.active_profile_id) and &1.fields != %{}))
+    |> Enum.each(fn row ->
+      with %{fields: fields} <- Map.get(saved, row.phone),
+           {:ok, profile} <- Repo.fetch_by(Profiles.Profile, %{id: row.active_profile_id}) do
+        Profiles.update_profile(profile, %{fields: fields})
+      end
+    end)
+  end
+
   @spec upsert_field_registry([map()], map(), DateTime.t()) :: :ok
   defp upsert_field_registry(prepared, params, now) do
     now = DateTime.truncate(now, :second)
@@ -365,7 +394,7 @@ defmodule Glific.Contacts.BulkImport do
       nil ->
         []
 
-      contact_id ->
+      %{id: contact_id} ->
         [
           fields_history(row, contact_id, params, now),
           language_history(row, contact_id, params, now),
@@ -451,12 +480,13 @@ defmodule Glific.Contacts.BulkImport do
 
     entries =
       for row <- prepared,
+          saved_row = Map.get(saved, row.phone),
+          not is_nil(saved_row),
           label <- row.collections,
           group_id = Map.get(groups, label),
-          contact_id = Map.get(saved, row.phone),
-          not is_nil(group_id) and not is_nil(contact_id) do
+          not is_nil(group_id) do
         %{
-          contact_id: contact_id,
+          contact_id: saved_row.id,
           group_id: group_id,
           organization_id: params.organization_id,
           inserted_at: now,
@@ -470,11 +500,9 @@ defmodule Glific.Contacts.BulkImport do
 
   @spec ensure_groups([String.t()], non_neg_integer()) :: %{String.t() => non_neg_integer()}
   defp ensure_groups(labels, organization_id) do
-    Enum.reduce(labels, %{}, fn label, acc ->
-      case Groups.get_or_create_group_by_label(label, organization_id) do
-        {:ok, group} -> Map.put(acc, label, group.id)
-        _error -> acc
-      end
+    Map.new(labels, fn label ->
+      {:ok, group} = Groups.get_or_create_group_by_label(label, organization_id)
+      {label, group.id}
     end)
   end
 
