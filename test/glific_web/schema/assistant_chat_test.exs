@@ -50,6 +50,41 @@ defmodule GlificWeb.Schema.AssistantChatTest do
       assert response["errors"] in [nil, []]
     end
 
+    test "dispatches the selected config version when configVersionId is given",
+         %{staff: user, organization_id: organization_id} do
+      assistant = Fixtures.live_assistant_fixture(%{organization_id: organization_id})
+
+      selected_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          kaapi_version_number: 5
+        })
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        assert Jason.decode!(body)["config"]["version"] == 5
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{job_id: "job_gql_002", conversation: %{id: "conv_gql_002"}}}
+        }
+      end)
+
+      result =
+        auth_query_gql_by(:send_message, user,
+          variables: %{
+            "input" => %{
+              "assistantId" => assistant.id,
+              "message" => "Hello",
+              "configVersionId" => selected_version.id
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:data, "sendAssistantMessage", "jobId"]) == "job_gql_002"
+    end
+
     test "returns an error for an assistant belonging to another organization",
          %{staff: user} do
       other_organization = Fixtures.organization_fixture()
