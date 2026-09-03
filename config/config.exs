@@ -50,7 +50,14 @@ oban_queues = [
     ]
   ],
   gcs: 10,
-  gupshup: 10,
+  gupshup: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 10,
+      burst: false,
+      partition: [args: :organization_id]
+    ]
+  ],
   webhook: [
     local_limit: 20,
     global_limit: [
