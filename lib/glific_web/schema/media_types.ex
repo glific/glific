@@ -12,6 +12,10 @@ defmodule GlificWeb.Schema.MediaTypes do
     field :upload_media, :string do
       arg(:media, non_null(:upload))
       arg(:extension, non_null(:string))
+
+      @desc "reject anything larger, in kilobytes. Omitted means no limit."
+      arg(:max_size_kb, :integer)
+
       middleware(Authorize, :staff)
       resolve(&Resolvers.Media.upload/3)
     end
