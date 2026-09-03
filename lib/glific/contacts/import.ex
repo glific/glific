@@ -183,7 +183,7 @@ defmodule Glific.Contacts.Import do
 
   defp merge_errors(existing, errors) do
     existing = existing || %{}
-    Map.put(existing, "errors", Map.merge(Map.get(existing, "errors", %{}), errors))
+    Map.update(existing, "errors", errors, &Map.merge(&1, errors))
   end
 
   @doc """

@@ -138,6 +138,26 @@ defmodule Glific.Contacts.BulkImportTest do
     end
   end
 
+  test "trims collection labels so a spaced csv does not create padded groups" do
+    run(
+      "name,phone,language,collection\nTrim,+919876580501,english,\"trim_one, trim_two\"\n",
+      :import_contact,
+      nil
+    )
+
+    labels =
+      Group
+      |> where([g], like(g.label, "trim_%"))
+      |> select([g], g.label)
+      |> Repo.all()
+      |> Enum.sort()
+
+    # collection_label_check/2 split on "," without trimming, so " trim_two" became a
+    # group of its own
+    assert labels == ["trim_one", "trim_two"]
+    assert in_group?("919876580501", "trim_two")
+  end
+
   describe "columns insert_all does not get for free" do
     test "sets contact_type so the contact is visible in chats and search" do
       run("name,phone,language,city\nType,+919876580101,english,Pune\n")
@@ -301,6 +321,8 @@ defmodule Glific.Contacts.BulkImportTest do
     test "a failure on the last write rolls back the contact and its history" do
       # link_collections/4 is the final write inside the transaction, after the contact
       # upsert and the history insert have already run
+      before = Repo.aggregate(ContactHistory, :count, :id)
+
       result =
         with_mock Groups, [:passthrough],
           get_or_create_group_by_label: fn _label, _org -> raise "collection write failed" end do
@@ -316,10 +338,7 @@ defmodule Glific.Contacts.BulkImportTest do
       assert %{success: 0, failure: 1} = result
 
       refute exists?("919876570001")
-
-      assert ContactHistory
-             |> where([h], like(h.event_label, "%city%"))
-             |> Repo.aggregate(:count, :id) == 0
+      assert Repo.aggregate(ContactHistory, :count, :id) == before
     end
 
     test "a failed write leaves a delete row in the same chunk unapplied" do
@@ -513,6 +532,21 @@ defmodule Glific.Contacts.BulkImportTest do
       assert fetch("919876540002").language_id == tamil.id
       assert fetch("919876540003").language_id == english.id
       assert fetch("919876540004").language_id == english.id
+    end
+
+    test "an unresolvable language resets an existing contact to the default" do
+      {:ok, hindi} = Repo.fetch_by(Language, %{label: "Hindi"}, skip_organization_id: true)
+
+      {:ok, english} =
+        Repo.fetch_by(Language, %{label_locale: "English"}, skip_organization_id: true)
+
+      run("name,phone,language,city\nLang,+919876540006,Hindi,Pune\n")
+      assert fetch("919876540006").language_id == hindi.id
+
+      # add_language/2 sent an unknown language to the default rather than keeping the
+      # contact's current one. Only a blank cell preserves it.
+      run("name,phone,language,city\nLang,+919876540006,klingon,Pune\n")
+      assert fetch("919876540006").language_id == english.id
     end
 
     test "keeps the contact's existing language when the csv leaves it blank" do

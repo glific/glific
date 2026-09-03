@@ -209,16 +209,12 @@ defmodule Glific.Contacts.BulkImport do
     if contact, do: contact.language_id, else: languages.default_id
   end
 
-  defp language_id(language, contact, languages) do
+  defp language_id(language, _contact, languages) do
     term = language |> String.trim() |> String.downcase()
 
-    case Map.get(languages.lookup, term) do
-      nil ->
-        match_language_prefix(term, languages.ordered) || language_id(nil, contact, languages)
-
-      id ->
-        id
-    end
+    Map.get(languages.lookup, term) ||
+      match_language_prefix(term, languages.ordered) ||
+      languages.default_id
   end
 
   @spec match_language_prefix(String.t(), [{String.t(), non_neg_integer()}]) ::
