@@ -321,6 +321,34 @@ defmodule Glific.Contacts.BulkImportTest do
              |> where([h], like(h.event_label, "%city%"))
              |> Repo.aggregate(:count, :id) == 0
     end
+
+    test "a failed write leaves a delete row in the same chunk unapplied" do
+      run("name,phone,language,city\nDoomed,+919876570002,english,Pune\n")
+      assert exists?("919876570002")
+
+      result =
+        with_mock Groups, [:passthrough],
+          get_or_create_group_by_label: fn _label, _org -> raise "collection write failed" end do
+          Import.import_contacts(
+            org_id(),
+            %{user: admin(), collection: "rollback", type: :import_contact},
+            data: """
+            name,phone,language,city,delete
+            Fresh,+919876570003,english,Pune,
+            Doomed,+919876570002,english,,1
+            """
+          )
+
+          Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+        end
+
+      assert %{success: 0, failure: 1} = result
+
+      # deletes run after the write transaction commits, so a chunk that rolls back has
+      # not deleted anything and the retry sees the same rows it started with
+      assert exists?("919876570002")
+      refute exists?("919876570003")
+    end
   end
 
   describe "import_contact field merging" do
