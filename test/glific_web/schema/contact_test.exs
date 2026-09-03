@@ -6,7 +6,7 @@ defmodule GlificWeb.Schema.ContactTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Contacts.ImportWorker,
+    Contacts.BulkImportWorker,
     Fixtures,
     Flows,
     Messages.Message,
@@ -280,7 +280,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _query_data} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -307,7 +307,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -340,7 +340,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -377,7 +377,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -410,7 +410,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -446,7 +446,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -482,7 +482,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -511,7 +511,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)

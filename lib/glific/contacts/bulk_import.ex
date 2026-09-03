@@ -1,0 +1,492 @@
+defmodule Glific.Contacts.BulkImport do
+  @moduledoc """
+  Batched contact import.
+
+  Processes a whole chunk of CSV rows with a fixed number of SQL statements, rather than
+  one write per contact field. The previous path issued six to nine statements for every
+  field of every contact — an `UPDATE contacts`, a `contacts_fields` lookup, a
+  `contact_histories` insert and the two row triggers that insert fires — which row-locked
+  the contacts table for the duration of an import.
+
+  Everything here is expressed as a batch: one lookup of the existing contacts, one upsert,
+  one field-registry upsert, one history insert and one collection insert per chunk.
+  """
+  import Ecto.Query
+
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Contacts.ContactHistory,
+    Contacts.ContactsField,
+    Contacts.Import,
+    Groups,
+    Groups.ContactGroup,
+    Repo,
+    Settings.Language
+  }
+
+  alias GlificWeb.Schema.Middleware.Authorize
+
+  @default_language "english"
+  @field_type "string"
+
+  @doc """
+  Import one chunk of CSV rows, returning a map of phone => error message for the rows
+  that could not be processed.
+  """
+  @spec process_chunk([map()], map()) :: map()
+  def process_chunk(rows, params) do
+    {errors, rows} = Import.validate_contacts(rows)
+    {deletes, rows} = Enum.split_with(rows, &(&1["delete"] == "1"))
+
+    errors = Enum.reduce(deletes, errors, &delete_contact(&1, params, &2))
+
+    existing = load_existing(rows)
+    {errors, rows} = reject_missing(rows, existing, errors, params.type)
+
+    languages = language_index()
+    params = Map.put(params, :language_labels, languages.labels)
+    now = DateTime.utc_now()
+
+    prepared =
+      rows
+      |> Enum.map(&prepare(&1, existing, languages, params))
+      |> dedupe()
+
+    saved = upsert_contacts(prepared, params, now)
+
+    upsert_field_registry(prepared, params, now)
+    insert_histories(prepared, saved, params, now)
+    link_collections(prepared, saved, params, now)
+
+    errors
+  end
+
+  @spec load_existing([map()]) :: map()
+  defp load_existing([]), do: %{}
+
+  defp load_existing(rows) do
+    phones = Enum.map(rows, & &1["phone"])
+
+    Contact
+    |> where([c], c.phone in ^phones)
+    |> select([c], %{
+      id: c.id,
+      phone: c.phone,
+      language_id: c.language_id,
+      optin_time: c.optin_time,
+      optout_time: c.optout_time,
+      last_message_at: c.last_message_at
+    })
+    |> Repo.all()
+    |> Map.new(&{&1.phone, &1})
+  end
+
+  @spec reject_missing([map()], map(), map(), String.t()) :: {map(), [map()]}
+  defp reject_missing(rows, existing, errors, "move_contact") do
+    Enum.reduce(rows, {errors, []}, fn row, {errors, keep} ->
+      phone = row["phone"]
+
+      if Map.has_key?(existing, phone),
+        do: {errors, [row | keep]},
+        else: {Map.put(errors, phone, "Contact #{phone} was not found and hence not added"), keep}
+    end)
+  end
+
+  defp reject_missing(rows, _existing, errors, _type), do: {errors, rows}
+
+  @spec language_index() :: map()
+  defp language_index do
+    languages =
+      Language
+      |> where([l], l.is_active == true)
+      |> order_by([l], asc: l.id)
+      |> select([l], %{id: l.id, label: l.label, locale: l.locale})
+      |> Repo.all(skip_organization_id: true)
+
+    lookup =
+      Enum.reduce(languages, %{}, fn language, acc ->
+        acc
+        |> put_new_downcased(language.label, language.id)
+        |> put_new_downcased(language.locale, language.id)
+      end)
+
+    %{
+      lookup: lookup,
+      labels: Map.new(languages, &{&1.id, &1.label}),
+      default_id: Map.fetch!(lookup, @default_language)
+    }
+  end
+
+  @spec put_new_downcased(map(), String.t() | nil, non_neg_integer()) :: map()
+  defp put_new_downcased(acc, nil, _id), do: acc
+  defp put_new_downcased(acc, key, id), do: Map.put_new(acc, String.downcase(key), id)
+
+  @spec prepare(map(), map(), map(), map()) :: map()
+  defp prepare(row, existing, languages, params) do
+    phone = row["phone"]
+    contact = Map.get(existing, phone)
+    fields = build_fields(row["contact_fields"])
+
+    %{
+      phone: phone,
+      name: row["name"],
+      language_id: language_id(row["language"], contact, languages),
+      fields: fields,
+      collections: collections(row["collection"]),
+      previous_language_id: contact && contact.language_id,
+      optin?: optin?(params, contact),
+      bsp_status: bsp_status(contact)
+    }
+  end
+
+  # Postgres rejects an ON CONFLICT DO UPDATE that touches the same row twice, so a csv
+  # listing a phone more than once has to be folded into a single row first. Merging the
+  # field maps in row order reproduces what the old per-row path did: the later row wins.
+  @spec dedupe([map()]) :: [map()]
+  defp dedupe(prepared) do
+    prepared
+    |> Enum.reduce(%{}, fn row, acc ->
+      Map.update(acc, row.phone, row, fn seen ->
+        %{
+          row
+          | fields: Map.merge(seen.fields, row.fields),
+            collections: Enum.uniq(seen.collections ++ row.collections)
+        }
+      end)
+    end)
+    |> Map.values()
+  end
+
+  @spec build_fields(map() | nil) :: map()
+  defp build_fields(nil), do: %{}
+
+  defp build_fields(fields) do
+    inserted_at = DateTime.utc_now()
+
+    fields
+    |> Enum.reject(fn {_label, value} -> value in [nil, ""] end)
+    |> Map.new(fn {label, value} ->
+      shortcode = Glific.string_snake_case(label) |> String.trim()
+
+      {shortcode,
+       %{
+         value: value,
+         label: shortcode,
+         type: @field_type,
+         inserted_at: inserted_at
+       }}
+    end)
+  end
+
+  @spec collections(String.t() | nil) :: [String.t()]
+  defp collections(collection) when collection in [nil, ""], do: []
+
+  defp collections(collection) do
+    collection
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  @spec language_id(String.t() | nil, map() | nil, map()) :: non_neg_integer()
+  defp language_id(language, contact, languages) when language in [nil, ""] do
+    if contact, do: contact.language_id, else: languages.default_id
+  end
+
+  defp language_id(language, contact, languages) do
+    term = language |> String.trim() |> String.downcase()
+
+    case Map.get(languages.lookup, term) do
+      nil -> match_language_prefix(term, languages.lookup) || language_id(nil, contact, languages)
+      id -> id
+    end
+  end
+
+  @spec match_language_prefix(String.t(), map()) :: non_neg_integer() | nil
+  defp match_language_prefix(term, lookup) do
+    Enum.find_value(lookup, fn {key, id} ->
+      if String.starts_with?(key, term), do: id
+    end)
+  end
+
+  @spec optin?(map(), map() | nil) :: boolean()
+  defp optin?(%{type: "move_contact"}, _contact), do: false
+
+  defp optin?(params, contact) do
+    cond do
+      contact && contact.optin_time != nil -> false
+      contact && contact.optout_time != nil -> false
+      Authorize.valid_role?(params.user.roles, :manager) -> true
+      params.user.upload_contacts -> true
+      true -> false
+    end
+  end
+
+  @spec bsp_status(map() | nil) :: atom()
+  defp bsp_status(nil), do: :hsm
+
+  defp bsp_status(%{last_message_at: nil}), do: :hsm
+
+  defp bsp_status(%{last_message_at: last_message_at}) do
+    if Timex.compare(last_message_at, Glific.go_back_time(24)) > 0,
+      do: :session_and_hsm,
+      else: :hsm
+  end
+
+  @spec upsert_contacts([map()], map(), DateTime.t()) :: %{String.t() => non_neg_integer()}
+  defp upsert_contacts([], _params, _now), do: %{}
+
+  defp upsert_contacts(prepared, params, now) do
+    {optin, plain} = Enum.split_with(prepared, & &1.optin?)
+
+    Map.merge(
+      do_upsert(plain, params, now, false),
+      do_upsert(optin, params, now, true)
+    )
+  end
+
+  @spec do_upsert([map()], map(), DateTime.t(), boolean()) :: %{String.t() => non_neg_integer()}
+  defp do_upsert([], _params, _now, _optin?), do: %{}
+
+  defp do_upsert(rows, params, now, optin?) do
+    entries = Enum.map(rows, &contact_entry(&1, params, now, optin?))
+
+    {_count, saved} =
+      Repo.insert_all(Contact, entries,
+        on_conflict: on_conflict(optin?),
+        conflict_target: [:phone, :organization_id],
+        returning: [:id, :phone]
+      )
+
+    Map.new(saved, &{&1.phone, &1.id})
+  end
+
+  @spec contact_entry(map(), map(), DateTime.t(), boolean()) :: map()
+  defp contact_entry(row, params, now, false) do
+    %{
+      phone: row.phone,
+      name: row.name,
+      language_id: row.language_id,
+      fields: row.fields,
+      organization_id: params.organization_id,
+      inserted_at: now,
+      updated_at: now
+    }
+  end
+
+  defp contact_entry(row, params, now, true) do
+    row
+    |> contact_entry(params, now, false)
+    |> Map.merge(%{
+      optin_time: DateTime.truncate(now, :second),
+      optin_status: true,
+      optin_method: "Import",
+      optout_time: nil,
+      status: :valid,
+      bsp_status: row.bsp_status
+    })
+  end
+
+  @spec on_conflict(boolean()) :: Ecto.Query.t()
+  defp on_conflict(false) do
+    from(c in Contact,
+      update: [
+        set: [
+          name: fragment("EXCLUDED.name"),
+          language_id: fragment("EXCLUDED.language_id"),
+          fields: fragment("? || EXCLUDED.fields", c.fields),
+          updated_at: fragment("EXCLUDED.updated_at")
+        ]
+      ]
+    )
+  end
+
+  defp on_conflict(true) do
+    from(c in Contact,
+      update: [
+        set: [
+          name: fragment("EXCLUDED.name"),
+          language_id: fragment("EXCLUDED.language_id"),
+          fields: fragment("? || EXCLUDED.fields", c.fields),
+          updated_at: fragment("EXCLUDED.updated_at"),
+          optin_time: fragment("EXCLUDED.optin_time"),
+          optin_status: fragment("EXCLUDED.optin_status"),
+          optin_method: fragment("EXCLUDED.optin_method"),
+          optout_time: fragment("EXCLUDED.optout_time"),
+          status: fragment("EXCLUDED.status"),
+          bsp_status: fragment("EXCLUDED.bsp_status")
+        ]
+      ]
+    )
+  end
+
+  @spec upsert_field_registry([map()], map(), DateTime.t()) :: :ok
+  defp upsert_field_registry(prepared, params, now) do
+    now = DateTime.truncate(now, :second)
+
+    entries =
+      prepared
+      |> Enum.flat_map(&Map.keys(&1.fields))
+      |> Enum.uniq()
+      |> Enum.map(
+        &%{
+          name: &1,
+          shortcode: &1,
+          value_type: :text,
+          scope: :contact,
+          organization_id: params.organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      )
+
+    Repo.insert_all(ContactsField, entries, on_conflict: :nothing)
+    :ok
+  end
+
+  @spec insert_histories([map()], map(), map(), DateTime.t()) :: :ok
+  defp insert_histories(prepared, saved, params, now) do
+    entries = Enum.flat_map(prepared, &history_entries(&1, saved, params, now))
+
+    Repo.insert_all(ContactHistory, entries)
+    :ok
+  end
+
+  @spec history_entries(map(), map(), map(), DateTime.t()) :: [map()]
+  defp history_entries(row, saved, params, now) do
+    case Map.get(saved, row.phone) do
+      nil ->
+        []
+
+      contact_id ->
+        [
+          fields_history(row, contact_id, params, now),
+          language_history(row, contact_id, params, now),
+          optin_history(row, contact_id, params, now)
+        ]
+        |> Enum.reject(&is_nil/1)
+    end
+  end
+
+  @spec fields_history(map(), non_neg_integer(), map(), DateTime.t()) :: map() | nil
+  defp fields_history(%{fields: fields}, _contact_id, _params, _now) when map_size(fields) == 0,
+    do: nil
+
+  defp fields_history(row, contact_id, params, now) do
+    shortcodes = Map.keys(row.fields)
+
+    history(contact_id, params, now, "contact_fields_updated", %{
+      event_label:
+        "Updated #{length(shortcodes)} fields via import: #{Enum.join(shortcodes, ", ")}",
+      event_meta: %{
+        fields:
+          Map.new(row.fields, fn {shortcode, field} ->
+            {shortcode, %{label: field.label, value: field.value}}
+          end)
+      }
+    })
+  end
+
+  @spec language_history(map(), non_neg_integer(), map(), DateTime.t()) :: map() | nil
+  defp language_history(%{previous_language_id: previous, language_id: current}, _id, _p, _now)
+       when is_nil(previous) or previous == current,
+       do: nil
+
+  defp language_history(row, contact_id, params, now) do
+    labels = params.language_labels
+    old_label = Map.get(labels, row.previous_language_id)
+    new_label = Map.get(labels, row.language_id)
+
+    history(contact_id, params, now, "contact_language_updated", %{
+      event_label: "Changed contact language to #{new_label} from #{old_label}, via import.",
+      event_meta: %{
+        language: %{
+          id: row.language_id,
+          label: new_label,
+          old_language: row.previous_language_id
+        }
+      }
+    })
+  end
+
+  @spec optin_history(map(), non_neg_integer(), map(), DateTime.t()) :: map() | nil
+  defp optin_history(%{optin?: false}, _contact_id, _params, _now), do: nil
+
+  defp optin_history(_row, contact_id, params, now) do
+    history(contact_id, params, now, "contact_opted_in", %{
+      event_label: "contact opted in, via Import",
+      event_meta: %{method: "Import", utc_time: now}
+    })
+  end
+
+  @spec history(non_neg_integer(), map(), DateTime.t(), String.t(), map()) :: map()
+  defp history(contact_id, params, now, event_type, attrs) do
+    %{
+      contact_id: contact_id,
+      event_type: event_type,
+      event_datetime: DateTime.truncate(now, :second),
+      organization_id: params.organization_id,
+      inserted_at: now,
+      updated_at: now
+    }
+    |> Map.merge(attrs)
+  end
+
+  @spec link_collections([map()], map(), map(), DateTime.t()) :: :ok
+  defp link_collections(prepared, saved, params, now) do
+    now = DateTime.truncate(now, :second)
+
+    groups =
+      prepared
+      |> Enum.flat_map(& &1.collections)
+      |> Enum.uniq()
+      |> ensure_groups(params.organization_id)
+
+    entries =
+      for row <- prepared,
+          label <- row.collections,
+          group_id = Map.get(groups, label),
+          contact_id = Map.get(saved, row.phone),
+          not is_nil(group_id) and not is_nil(contact_id) do
+        %{
+          contact_id: contact_id,
+          group_id: group_id,
+          organization_id: params.organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      end
+
+    Repo.insert_all(ContactGroup, Enum.uniq(entries), on_conflict: :nothing)
+    :ok
+  end
+
+  @spec ensure_groups([String.t()], non_neg_integer()) :: %{String.t() => non_neg_integer()}
+  defp ensure_groups(labels, organization_id) do
+    Enum.reduce(labels, %{}, fn label, acc ->
+      case Groups.get_or_create_group_by_label(label, organization_id) do
+        {:ok, group} -> Map.put(acc, label, group.id)
+        _error -> acc
+      end
+    end)
+  end
+
+  @spec delete_contact(map(), map(), map()) :: map()
+  defp delete_contact(row, params, errors) do
+    phone = row["phone"]
+
+    if Authorize.valid_role?(params.user.roles, :manager) || params.user.upload_contacts do
+      case Repo.get_by(Contact, %{phone: phone}) do
+        nil ->
+          Map.put(errors, phone, "Contact does not exist")
+
+        contact ->
+          {:ok, _contact} = Contacts.delete_contact(contact)
+          errors
+      end
+    else
+      Map.put(errors, phone, "This user #{params.user.name} doesn't have enough permission")
+    end
+  end
+end

@@ -10,6 +10,7 @@ defmodule Glific.ContactsTest do
     Contacts,
     Contacts.Contact,
     Contacts.Import,
+    Contacts.BulkImportWorker,
     Contacts.ImportWorker,
     Jobs.UserJob,
     Partners,
@@ -406,8 +407,14 @@ defmodule Glific.ContactsTest do
         "type" => "import_contact"
       }
 
-      job_args = %{"contacts" => contacts, "params" => params, "user_job_id" => user_job.id}
-      assert :ok == ImportWorker.perform(%Oban.Job{args: job_args})
+      job_args = %{
+        "contacts" => contacts,
+        "params" => params,
+        "user_job_id" => user_job.id,
+        "organization_id" => organization.id
+      }
+
+      assert :ok == BulkImportWorker.perform(%Oban.Job{args: job_args})
     end
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
@@ -475,7 +482,7 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -505,7 +512,7 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -513,6 +520,133 @@ defmodule Glific.ContactsTest do
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 0
+    end
+
+    test "jobs enqueued before the bulk import deploy still drain on the old worker" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      [organization | _] = Partners.list_organizations()
+      {:ok, english} = Repo.fetch_by(Language, %{label_locale: "English"})
+
+      user_job =
+        UserJob.create_user_job(%{
+          status: "pending",
+          type: "contact_import",
+          total_tasks: 1,
+          tasks_done: 0,
+          organization_id: organization.id,
+          errors: %{}
+        })
+
+      # exactly the args the pre-deploy Import.decode_csv_data/3 produced: language
+      # already resolved to language_id, and organization_id nested inside params
+      old_args = %{
+        "contacts" => [
+          %{
+            "name" => "legacy_job",
+            "phone" => "919989329291",
+            "organization_id" => organization.id,
+            "collection" => "",
+            "delete" => nil,
+            "language_id" => english.id,
+            "contact_fields" => %{"city" => "Pune"}
+          }
+        ],
+        "params" => %{
+          "organization_id" => organization.id,
+          "user" => %{
+            "roles" => Enum.map(user.roles, &Atom.to_string/1),
+            "upload_contacts" => true
+          },
+          "type" => "import_contact"
+        },
+        "user_job_id" => user_job.id
+      }
+
+      assert :ok == ImportWorker.perform(%Oban.Job{args: old_args})
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329291"})
+      assert get_in(contact.fields, ["city", "value"]) == "Pune"
+      assert contact.language_id == english.id
+    end
+
+    test "import_contact/3 folds a phone listed twice in the same csv into one contact" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+      [organization | _] = Partners.list_organizations()
+
+      data =
+        "name,phone,language,city,age\n" <>
+          "dup_one,+919989329293,english,Pune,30\n" <>
+          "dup_two,+919989329293,english,Mumbai,\n"
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+
+      assert Contacts.count_contacts(%{filter: %{phone: "919989329293"}}) == 1
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329293"})
+
+      # the later row wins on a repeated field, and a field only on the first row survives
+      assert get_in(contact.fields, ["city", "value"]) == "Mumbai"
+      assert get_in(contact.fields, ["age", "value"]) == "30"
+    end
+
+    test "import_contact/3 merges new contact fields into the existing ones" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+      [organization | _] = Partners.list_organizations()
+
+      import_data = fn data ->
+        Import.import_contacts(
+          organization.id,
+          %{user: user, collection: "collection", type: :import_contact},
+          data: data
+        )
+
+        Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+      end
+
+      import_data.("name,phone,language,city,age\nfield_merge,+919989329299,english,Pune,30\n")
+
+      import_data.("name,phone,language,age,state\nfield_merge,+919989329299,english,31,MH\n")
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329299"})
+
+      # a field only in the first csv survives the second import
+      assert get_in(contact.fields, ["city", "value"]) == "Pune"
+      # a field in both csvs takes the newer value
+      assert get_in(contact.fields, ["age", "value"]) == "31"
+      # a field only in the second csv is added
+      assert get_in(contact.fields, ["state", "value"]) == "MH"
+    end
+
+    test "import_contact/3 does not erase an existing field when the csv cell is blank" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+      [organization | _] = Partners.list_organizations()
+
+      import_data = fn data ->
+        Import.import_contacts(
+          organization.id,
+          %{user: user, collection: "collection", type: :import_contact},
+          data: data
+        )
+
+        Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+      end
+
+      import_data.("name,phone,language,city\nblank_field,+919989329298,english,Pune\n")
+      import_data.("name,phone,language,city\nblank_field,+919989329298,english,\n")
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329298"})
+
+      assert get_in(contact.fields, ["city", "value"]) == "Pune"
     end
 
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
@@ -530,7 +664,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -555,7 +689,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -595,7 +729,7 @@ defmodule Glific.ContactsTest do
         url: "http://www.bar.com/foo.csv"
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -634,7 +768,7 @@ defmodule Glific.ContactsTest do
         url: "http://www.bar.com/foo.csv"
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -671,7 +805,7 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -700,7 +834,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       Import.import_contacts(organization.id, %{user: user, type: :import_contact}, data: data)
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -729,7 +863,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       Import.import_contacts(organization.id, %{user: user, type: :import_contact}, data: data)
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -769,7 +903,7 @@ defmodule Glific.ContactsTest do
         url: "http://www.bar.com/foo.csv"
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -807,7 +941,7 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -846,7 +980,7 @@ defmodule Glific.ContactsTest do
           file_path: get_tmp_path()
         )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true, with_safety: false)
@@ -885,7 +1019,7 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -928,7 +1062,7 @@ defmodule Glific.ContactsTest do
           file_path: get_tmp_path()
         )
 
-        assert_enqueued(worker: ImportWorker, prefix: "global")
+        assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
         assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                  Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1508,7 +1642,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1532,7 +1666,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1555,7 +1689,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1578,7 +1712,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1601,7 +1735,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1624,7 +1758,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1647,7 +1781,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1682,7 +1816,7 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1714,7 +1848,7 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1809,7 +1943,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1832,7 +1966,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
@@ -1855,7 +1989,7 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
