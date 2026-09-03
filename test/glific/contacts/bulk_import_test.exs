@@ -56,7 +56,7 @@ defmodule Glific.Contacts.BulkImportTest do
     attrs = if is_nil(collection), do: attrs, else: Map.put(attrs, :collection, collection)
 
     Import.import_contacts(org_id(), attrs, data: data)
-    Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+    Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
   end
 
   defp fetch(phone) do
@@ -332,7 +332,7 @@ defmodule Glific.Contacts.BulkImportTest do
             data: "name,phone,language,city\nRollback,+919876570001,english,Pune\n"
           )
 
-          Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+          Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
         end
 
       assert %{success: 0, failure: 1} = result
@@ -358,7 +358,7 @@ defmodule Glific.Contacts.BulkImportTest do
             """
           )
 
-          Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+          Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
         end
 
       assert %{success: 0, failure: 1} = result
@@ -444,6 +444,17 @@ defmodule Glific.Contacts.BulkImportTest do
       contact = fetch("919876520001")
       assert contact.name == "Move"
       refute field(contact, "attendance")
+    end
+
+    test "folds a duplicate phone the same way import_contact does, later row winning" do
+      run(
+        "name,phone,language,collection,city\nMove,+919876520001,english,moved,FIRST\nMove,+919876520001,english,moved,SECOND\n",
+        :move_contact,
+        nil
+      )
+
+      assert count_exact("919876520001") == 1
+      assert field(fetch("919876520001"), "city") == "SECOND"
     end
 
     test "does not change the optin time" do

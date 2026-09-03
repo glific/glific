@@ -81,7 +81,8 @@ oban_queues = [
       partition: [args: :organization_id]
     ]
   ],
-  contact_import: [
+  contact_import: 10,
+  contact_import_bulk: [
     local_limit: 10,
     global_limit: [
       allowed: 5,

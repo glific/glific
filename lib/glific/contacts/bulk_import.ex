@@ -96,13 +96,17 @@ defmodule Glific.Contacts.BulkImport do
 
   @spec reject_missing([map()], map(), map(), String.t()) :: {map(), [map()]}
   defp reject_missing(rows, existing, errors, "move_contact") do
-    Enum.reduce(rows, {errors, []}, fn row, {errors, keep} ->
-      phone = row["phone"]
+    {errors, keep} =
+      Enum.reduce(rows, {errors, []}, fn row, {errors, keep} ->
+        phone = row["phone"]
 
-      if Map.has_key?(existing, phone),
-        do: {errors, [row | keep]},
-        else: {Map.put(errors, phone, "Contact #{phone} was not found and hence not added"), keep}
-    end)
+        if Map.has_key?(existing, phone),
+          do: {errors, [row | keep]},
+          else:
+            {Map.put(errors, phone, "Contact #{phone} was not found and hence not added"), keep}
+      end)
+
+    {errors, Enum.reverse(keep)}
   end
 
   defp reject_missing(rows, _existing, errors, _type), do: {errors, rows}

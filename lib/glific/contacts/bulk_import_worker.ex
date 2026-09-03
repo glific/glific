@@ -3,11 +3,13 @@ defmodule Glific.Contacts.BulkImportWorker do
   Worker for processing contact chunks with batched writes.
 
   Replaces the per-field write path in `Glific.Contacts.ImportWorker`, which issued six to
-  nine statements per field per contact. `organization_id` is a top-level job arg so the
-  `contact_import` queue can partition its global limit on it.
+  nine statements per field per contact. It runs on its own queue so that
+  `contact_import` can stay unpartitioned while the old worker drains: partitioning is a
+  queue level setting, and jobs enqueued before this shipped have no `meta.partition_key`.
+  `organization_id` is a top level job arg so this queue can partition its global limit on it.
   """
   use Oban.Worker,
-    queue: :contact_import,
+    queue: :contact_import_bulk,
     max_attempts: 2,
     priority: 1
 
