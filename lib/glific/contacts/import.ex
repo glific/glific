@@ -11,6 +11,7 @@ defmodule Glific.Contacts.Import do
     Contacts.Contact,
     Contacts.ContactHistory,
     Contacts.ImportWorker,
+    CSV.Encoding,
     Flows.ContactField,
     Groups,
     Groups.ContactGroup,
@@ -43,8 +44,6 @@ defmodule Glific.Contacts.Import do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-
     contact_attrs = %{
       organization_id: organization_id,
       user: user,
@@ -52,7 +51,9 @@ defmodule Glific.Contacts.Import do
       type: type
     }
 
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+    with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
+      handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+    end
   end
 
   def import_contacts(organization_id, contact_attrs, opts) do
@@ -60,15 +61,15 @@ defmodule Glific.Contacts.Import do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-
-    contact_attrs = %{
+    new_attrs = %{
       organization_id: organization_id,
       user: contact_attrs.user,
       type: contact_attrs.type
     }
 
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
+    with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
+      handle_csv_for_admins(new_attrs, contact_data_as_stream, opts)
+    end
   end
 
   @doc """
@@ -108,7 +109,13 @@ defmodule Glific.Contacts.Import do
   """
   @spec add_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
   def add_contacts_to_group(organization_id, group_label, opts \\ []) do
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
+    with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
+      do_add_contacts_to_group(organization_id, group_label, contact_data_as_stream)
+    end
+  end
+
+  @spec do_add_contacts_to_group(integer, String.t(), Enumerable.t()) :: tuple()
+  defp do_add_contacts_to_group(organization_id, group_label, contact_data_as_stream) do
     {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
 
     contact_id_list =
@@ -225,7 +232,8 @@ defmodule Glific.Contacts.Import do
     end)
   end
 
-  @spec fetch_contact_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
+  @spec fetch_contact_data_as_string(Keyword.t()) ::
+          {:ok, Enumerable.t()} | {:error, map()}
   defp fetch_contact_data_as_string(opts) do
     file_path = Keyword.get(opts, :file_path, nil)
     url = Keyword.get(opts, :url, nil)
@@ -233,17 +241,43 @@ defmodule Glific.Contacts.Import do
 
     cond do
       file_path != nil ->
-        file_path |> Path.expand() |> File.stream!()
+        stream = file_path |> Path.expand() |> File.stream!()
+        with :ok <- validate_encoding(stream), do: {:ok, Encoding.strip_bom(stream)}
 
       url != nil ->
         {:ok, response} = Tesla.get(url)
-        {:ok, stream} = StringIO.open(response.body)
-        stream |> IO.binstream(:line)
+        validated_string_stream(response.body)
 
       data != nil ->
-        {:ok, stream} = StringIO.open(data)
-        stream |> IO.binstream(:line)
+        validated_string_stream(data)
     end
+  end
+
+  @spec validated_string_stream(binary()) :: {:ok, Enumerable.t()} | {:error, map()}
+  defp validated_string_stream(contents) do
+    with :ok <- validate_encoding(contents),
+         do: {:ok, contents |> string_stream() |> Encoding.strip_bom()}
+  end
+
+  @spec validate_encoding(binary() | Enumerable.t()) :: :ok | {:error, map()}
+  defp validate_encoding(contents) do
+    case Encoding.validate(contents) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        {:error,
+         %{
+           message: reason,
+           details: "No contacts were imported. The uploaded CSV is not valid UTF-8."
+         }}
+    end
+  end
+
+  @spec string_stream(binary()) :: IO.Stream.t()
+  defp string_stream(contents) do
+    {:ok, pid} = StringIO.open(contents)
+    IO.binstream(pid, :line)
   end
 
   @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: list() | {:error, any()}
