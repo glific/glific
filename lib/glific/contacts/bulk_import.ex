@@ -31,7 +31,9 @@ defmodule Glific.Contacts.BulkImport do
   @default_language "english"
   @field_type "string"
 
-  @doc "Import one chunk of csv rows, returning a map of phone => error message."
+  @doc """
+  Import one chunk of csv rows, returning a map of phone => error message.
+  """
   @spec process_chunk([map()], map()) :: map()
   def process_chunk(rows, params) do
     {errors, rows} = Import.validate_contacts(rows)
