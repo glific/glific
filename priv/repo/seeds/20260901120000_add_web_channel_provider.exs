@@ -1,4 +1,9 @@
 defmodule Glific.Repo.Seeds.AddWebChannelProvider do
+  @moduledoc """
+  Seeds the `web_channel` provider, whose keys drive the branding form on the Settings page
+  and the values the widget reads at boot.
+  """
+
   use Glific.Seeds.Seed
 
   import Ecto.Query
@@ -6,27 +11,31 @@ defmodule Glific.Repo.Seeds.AddWebChannelProvider do
   alias Glific.{
     Partners.Provider,
     Repo,
-    WebChannel.Theme
+    WebChannel.Branding
   }
 
   envs([:dev, :test, :prod])
 
   tags([:web_channel])
 
+  @doc """
+  Adds the web channel provider, once.
+  """
+  @spec up(Ecto.Repo.t(), Keyword.t()) :: any()
   def up(_repo, _opts) do
     add_web_channel_provider()
   end
 
   @spec add_web_channel_provider() :: any()
   defp add_web_channel_provider() do
-    query = from(p in Provider, where: p.shortcode == "web")
+    query = from(p in Provider, where: p.shortcode == "web_channel")
 
     # add only if does not exist
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
           name: "Web Channel",
-          shortcode: "web",
+          shortcode: "web_channel",
           description: "Branding shown to beneficiaries chatting from a browser",
           group: nil,
           is_required: false,
@@ -53,10 +62,10 @@ defmodule Glific.Repo.Seeds.AddWebChannelProvider do
             theme: %{
               type: :select,
               label: "Theme",
-              default: Theme.default_theme(),
+              default: Branding.default_theme(),
               view_only: false,
               position: 3,
-              options: Theme.themes()
+              options: Branding.themes()
             }
           },
           secrets: %{}

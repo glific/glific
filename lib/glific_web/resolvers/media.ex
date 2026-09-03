@@ -24,8 +24,13 @@ defmodule GlificWeb.Resolvers.Media do
     end
   end
 
-  @spec within_size_limit(String.t(), non_neg_integer() | nil) :: :ok | {:error, String.t()}
+  @spec within_size_limit(String.t(), integer() | nil) :: :ok | {:error, String.t()}
   defp within_size_limit(_path, nil), do: :ok
+
+  # Absinthe's :integer is signed, and a negative limit would reject every upload — the
+  # comparison below is true for any size. Refuse the argument rather than the file.
+  defp within_size_limit(_path, max_size_kb) when max_size_kb <= 0,
+    do: {:error, "max_size_kb must be greater than zero."}
 
   defp within_size_limit(path, max_size_kb) do
     case File.stat(path) do

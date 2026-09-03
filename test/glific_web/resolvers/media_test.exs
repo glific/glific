@@ -72,6 +72,18 @@ defmodule GlificWeb.Resolvers.MediaTest do
       end)
     end
 
+    test "rejects a non-positive limit rather than every file", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      # :integer is signed, so a negative limit would otherwise make the size comparison true
+      # for any file and silently refuse every upload.
+      for limit <- [0, -1] do
+        assert {:error, "max_size_kb must be greater than zero."} =
+                 file_of(1) |> args(%{max_size_kb: limit}, organization_id) |> upload(user)
+      end
+    end
+
     test "reports a file it cannot read rather than uploading it", %{
       user: user,
       organization_id: organization_id

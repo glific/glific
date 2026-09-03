@@ -4,9 +4,9 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
   use GlificWeb.ConnCase
 
   alias FunWithFlags.Store.Cache, as: FlagCache
-  alias Glific.{Fixtures, Partners, WebChannel.Theme}
+  alias Glific.{Fixtures, Partners, WebChannel.Branding}
 
-  @theme_path "/api/v1/web_channel/theme"
+  @branding_path "/api/v1/web_channel/branding"
 
   # FunWithFlags persists through Ecto but reads through a 15-minute cache, and only the Ecto
   # half rolls back with the sandbox. Flushing forces every read back to the rolled-back table,
@@ -23,7 +23,7 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
     {:ok, _credential} =
       Partners.create_credential(%{
         organization_id: organization_id,
-        shortcode: "web",
+        shortcode: "web_channel",
         keys: keys,
         secrets: %{},
         is_active: true
@@ -33,7 +33,7 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
     :ok
   end
 
-  describe "theme/2" do
+  describe "branding/2" do
     test "returns the organization's branding when the web channel is enabled", %{
       conn: conn,
       organization_id: organization_id
@@ -52,7 +52,7 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
                  "logo_url" => "https://cdn.example.org/logo.svg",
                  "display_name" => "Example NGO"
                }
-             } = conn |> get(@theme_path) |> json_response(200)
+             } = conn |> get(@branding_path) |> json_response(200)
     end
 
     test "falls back to the organization name when no branding has been saved", %{
@@ -64,11 +64,11 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
       assert %{
                "data" => %{
-                 "theme" => Theme.default_theme(),
+                 "theme" => Branding.default_theme(),
                  "logo_url" => nil,
                  "display_name" => organization.name
                }
-             } == conn |> get(@theme_path) |> json_response(200)
+             } == conn |> get(@branding_path) |> json_response(200)
     end
 
     test "falls back for branding values the browser should not be asked to paint", %{
@@ -83,12 +83,12 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
       })
 
       assert %{"data" => %{"theme" => "zinc", "logo_url" => nil}} =
-               conn |> get(@theme_path) |> json_response(200)
+               conn |> get(@branding_path) |> json_response(200)
     end
 
     test "returns 404 for an organization without the feature flag", %{conn: conn} do
       assert %{"error" => %{"status" => 404, "message" => "Web channel is not enabled."}} =
-               conn |> get(@theme_path) |> json_response(404)
+               conn |> get(@branding_path) |> json_response(404)
     end
 
     test "resolves the organization from the request host", %{organization_id: organization_id} do
@@ -100,17 +100,17 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
       add_branding(other.id, %{theme: "amber", display_name: "Second NGO"})
 
       assert %{"data" => %{"theme" => "violet", "display_name" => "First NGO"}} =
-               "glific.glific.test" |> theme_for_host() |> json_response(200)
+               "glific.glific.test" |> branding_for_host() |> json_response(200)
 
       assert %{"data" => %{"theme" => "amber", "display_name" => "Second NGO"}} =
-               "other_ngo.glific.test" |> theme_for_host() |> json_response(200)
+               "other_ngo.glific.test" |> branding_for_host() |> json_response(200)
     end
   end
 
   # The organization comes from the host via SubdomainPlug in the endpoint, so these have to go
   # through a conn that ConnCase has not already assigned an organization onto.
-  defp theme_for_host(host) do
+  defp branding_for_host(host) do
     %{Phoenix.ConnTest.build_conn() | host: host}
-    |> get(@theme_path)
+    |> get(@branding_path)
   end
 end

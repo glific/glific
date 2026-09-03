@@ -74,7 +74,9 @@ defmodule GlificWeb.Router do
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
-    get("/web_channel/theme", WebChannelController, :theme)
+
+    # Web channel
+    get("/web_channel/branding", WebChannelController, :branding)
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do

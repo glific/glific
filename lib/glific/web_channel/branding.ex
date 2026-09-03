@@ -1,6 +1,8 @@
-defmodule Glific.WebChannel.Theme do
+defmodule Glific.WebChannel.Branding do
   @moduledoc """
-  Per-organisation branding for the web channel.
+  Per-organisation branding for the web channel — its theme, logo and display name.
+
+  "Theme" here means the colour palette only; branding is that plus the logo and the name.
 
   One deployment serves every organisation and the widget is a single build, so branding is
   read at runtime from the organisation's `web` credential rather than baked in. An
@@ -15,7 +17,7 @@ defmodule Glific.WebChannel.Theme do
 
   alias Glific.Partners.Organization
 
-  @shortcode "web"
+  @provider_code "web_channel"
 
   # Kept in step with THEMES in glific-web-channel's src/services/themes.ts, which holds the
   # palette each of these names resolves to. A name the widget does not recognise falls back
@@ -67,7 +69,7 @@ defmodule Glific.WebChannel.Theme do
 
   @spec branding_keys(Organization.t()) :: map()
   defp branding_keys(organization) do
-    case organization.services[@shortcode] do
+    case organization.services[@provider_code] do
       %{keys: keys} when is_map(keys) -> keys
       _no_credential -> %{}
     end
