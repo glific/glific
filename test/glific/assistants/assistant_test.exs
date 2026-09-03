@@ -441,6 +441,16 @@ defmodule Glific.Assistants.AssistantTest do
       assert signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
     end
 
+    test "returns a clear error for legacy OpenAI file ids", %{
+      organization_id: organization_id
+    } do
+      assert {:error, error_message} =
+               Assistants.get_file("file-1r7VpWeTW4CThvnsjvBRp4", organization_id)
+
+      assert error_message ==
+               "This file belongs to a legacy knowledge base created before the knowledge base rewrite and cannot be downloaded"
+    end
+
     test "returns an error when Kaapi fails", %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
         %{method: :get, url: "This is not a secret/api/v1/documents/doc_123"} ->

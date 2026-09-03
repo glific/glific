@@ -1031,9 +1031,17 @@ defmodule Glific.Assistants do
 
   @doc """
   Get a knowledge base file's metadata and signed download URL from Kaapi.
+
+  Legacy knowledge bases store OpenAI file ids (`file-...`), which Kaapi has no
+  document for, so those downloads are rejected upfront.
   """
   @spec get_file(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
+  def get_file("file-" <> _, _organization_id),
+    do:
+      {:error,
+       "This file belongs to a legacy knowledge base created before the knowledge base rewrite and cannot be downloaded"}
+
   def get_file(file_id, organization_id) do
     case Kaapi.get_document(file_id, organization_id) do
       {:ok, document_data} ->
