@@ -1,12 +1,11 @@
 subscription assistantConfigVersionUpdated {
   assistantConfigVersionUpdated {
     id
-    versionNumber
+    versionLabel
     model
     prompt
     settings
     status
-    isLive
     description
     insertedAt
     updatedAt

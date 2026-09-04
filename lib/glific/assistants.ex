@@ -94,7 +94,6 @@ defmodule Glific.Assistants do
            id: version.id,
            major_version: version.major_version,
            minor_version: version.minor_version,
-           version_label: AssistantConfigVersion.version_label(version),
            model: version.model,
            prompt: version.prompt,
            settings: version.settings,
