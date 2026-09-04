@@ -32,7 +32,7 @@ defmodule Glific.Flows.Webhook do
       period: 60,
       fields: [:args, :worker],
       keys: [:context_id, :url, :action_id],
-      states: [:available, :scheduled, :executing, :completed]
+      states: [:available, :scheduled, :executing, :completed, :retryable]
     ]
 
   defmodule Error do

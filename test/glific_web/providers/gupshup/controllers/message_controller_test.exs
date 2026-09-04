@@ -1,5 +1,6 @@
 defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
+  use Oban.Testing, repo: Glific.Repo
 
   import Mock
 
@@ -8,6 +9,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     Contacts.Location,
     Messages,
     Messages.Message,
+    Processor.MessageWorker,
     Repo,
     Seeds.SeedsDev,
     Templates,
@@ -85,8 +87,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -140,8 +142,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -151,10 +153,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(message_params, ["payload", "sender", "phone"])
 
       # Duplicate delivery — handled gracefully by handle_inbound_create_result/2;
-      # the duplicate must be swallowed without dispatching to the poolboy worker
+      # the duplicate must be swallowed without enqueuing another processing job
       conn3 = post(conn, "/gupshup", message_params)
       assert response(conn3, 200) == ""
-      refute_receive :received_message_to_process, 50
+      assert [_only_job] = all_enqueued(worker: MessageWorker, prefix: "global")
     end
 
     test "Updating the contacts due to sender contact already existing", %{
@@ -179,8 +181,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -211,8 +217,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -246,8 +256,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -320,8 +334,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.caption == setup_config.image_payload["caption"]
@@ -355,8 +369,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -385,8 +399,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -414,8 +428,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -444,8 +458,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -493,8 +507,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       {:ok, location} = Repo.fetch_by(Location, %{message_id: message.id})
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test location fields
       assert location.longitude == setup_config.location_payload["longitude"]
@@ -625,7 +639,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         })
 
       message = Repo.preload(message, [:sender, :media])
-      assert_receive :received_message_to_process
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.whatsapp_form_response_id != nil
       assert message.flow == :inbound
@@ -749,7 +763,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn1 = post(conn, "/gupshup", text_params)
       assert conn1.halted
-      assert_receive :received_message_to_process
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       {:ok, original_message} =
         Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
@@ -759,8 +773,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                 increment_counter: fn _, _, _ -> :ok end do
         conn2 = post(conn, "/gupshup", text_params)
         assert conn2.halted
-        # Duplicate delivery must not trigger downstream flow processing
-        refute_receive :received_message_to_process, 50
+        # Duplicate delivery must not enqueue another processing job
+        assert [_only_job] = all_enqueued(worker: MessageWorker, prefix: "global")
 
         assert called(
                  Elixir.Appsignal.increment_counter(
@@ -784,7 +798,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn1 = post(conn, "/gupshup", image_params)
       assert conn1.halted
-      assert_receive :received_message_to_process
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       {:ok, original_message} =
         Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
@@ -797,8 +811,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                 increment_counter: fn _, _, _ -> :ok end do
         conn2 = post(conn, "/gupshup", image_params)
         assert conn2.halted
-        # Duplicate delivery must not trigger downstream flow processing
-        refute_receive :received_message_to_process, 50
+        # Duplicate delivery must not enqueue another processing job
+        assert [_only_job] = all_enqueued(worker: MessageWorker, prefix: "global")
 
         assert called(
                  Elixir.Appsignal.increment_counter(
@@ -838,117 +852,28 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         conn2 = post(conn, "/gupshup", text_params)
         # The controller still returns 200 — error is logged, not propagated
         assert conn2.halted
-        # Error path must not trigger downstream flow processing either
-        refute_receive :received_message_to_process, 50
+        # Error path must not enqueue a processing job either
+        refute_enqueued(worker: MessageWorker, prefix: "global")
         assert called(Elixir.Appsignal.send_error(:error, :_, :_))
       end
     end
 
-    test "poolboy checkout timeout emits the pool metric and reports FlowProcessingError",
+    test "enqueue failure is logged and does not break the inbound pipeline",
          %{conn: conn, text_params: text_params} do
-      organization_id = conn.assigns[:organization_id]
-      test_pid = self()
-
-      # A checkout timeout surfaces as an Erlang :gen_server call timeout — make poolboy raise it
-      # so the classification branch and the pool metric are exercised.
-      with_mocks [
-        {:poolboy, [:passthrough],
-         [
-           transaction: fn _pool, _fun, _timeout ->
-             exit({:timeout, {:gen_server, :call, [:message_pool, :checkout, 1]}})
-           end
-         ]},
-        {Elixir.Appsignal, [:passthrough],
-         [
-           increment_counter: fn name, count, tags ->
-             send(test_pid, {:increment_counter, name, count, tags})
-             :ok
-           end,
-           send_error: fn exception, _stack, _fun ->
-             send(test_pid, {:send_error, exception})
-             :ok
-           end
-         ]}
-      ] do
+      with_mock MessageWorker, [:passthrough], make_job: fn _message -> {:error, :boom} end do
         conn2 = post(conn, "/gupshup", text_params)
         assert conn2.halted
 
-        assert_receive {:increment_counter, "message_poolboy_checkout_timeout", 1,
-                        %{organization_id: ^organization_id}},
-                       500
+        # the message is still stored even though enqueueing its processing failed
+        bsp_message_id = get_in(text_params, ["payload", "id"])
 
-        assert_receive {:send_error,
-                        %Glific.Communications.Message.FlowProcessingError{
-                          organization_id: ^organization_id
-                        }},
-                       500
-      end
-    end
+        assert {:ok, _message} =
+                 Repo.fetch_by(Message, %{
+                   bsp_message_id: bsp_message_id,
+                   organization_id: conn.assigns[:organization_id]
+                 })
 
-    test "worker processing timeout emits the processing metric and reports FlowProcessingError",
-         %{conn: conn, text_params: text_params} do
-      organization_id = conn.assigns[:organization_id]
-      test_pid = self()
-
-      # A worker-processing timeout surfaces as an Elixir GenServer call timeout — make poolboy's
-      # inner call raise it so the classification branch and the processing metric are exercised.
-      with_mocks [
-        {:poolboy, [:passthrough],
-         [
-           transaction: fn _pool, _fun, _timeout ->
-             exit({:timeout, {GenServer, :call, [self(), :flow, 1]}})
-           end
-         ]},
-        {Elixir.Appsignal, [:passthrough],
-         [
-           increment_counter: fn name, count, tags ->
-             send(test_pid, {:increment_counter, name, count, tags})
-             :ok
-           end,
-           send_error: fn exception, _stack, _fun ->
-             send(test_pid, {:send_error, exception})
-             :ok
-           end
-         ]}
-      ] do
-        conn2 = post(conn, "/gupshup", text_params)
-        assert conn2.halted
-
-        assert_receive {:increment_counter, "message_flow_processing_timeout", 1,
-                        %{organization_id: ^organization_id}},
-                       500
-
-        assert_receive {:send_error,
-                        %Glific.Communications.Message.FlowProcessingError{
-                          organization_id: ^organization_id
-                        }},
-                       500
-      end
-    end
-
-    test "non-timeout poolboy error reports FlowProcessingError without the pool metric",
-         %{conn: conn, text_params: text_params} do
-      test_pid = self()
-
-      with_mocks [
-        {:poolboy, [:passthrough], [transaction: fn _pool, _fun, _timeout -> exit(:boom) end]},
-        {Elixir.Appsignal, [:passthrough],
-         [
-           increment_counter: fn name, count, tags ->
-             send(test_pid, {:increment_counter, name, count, tags})
-             :ok
-           end,
-           send_error: fn exception, _stack, _fun ->
-             send(test_pid, {:send_error, exception})
-             :ok
-           end
-         ]}
-      ] do
-        conn2 = post(conn, "/gupshup", text_params)
-        assert conn2.halted
-
-        assert_receive {:send_error, %Glific.Communications.Message.FlowProcessingError{}}, 500
-        refute_receive {:increment_counter, "message_poolboy_checkout_timeout", _, _}, 100
+        refute_enqueued(worker: MessageWorker, prefix: "global")
       end
     end
   end

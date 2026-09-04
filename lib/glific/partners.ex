@@ -591,6 +591,7 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_ask_glific_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_copy_node_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
       |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
@@ -1494,6 +1495,7 @@ defmodule Glific.Partners do
         Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization),
       "assistant_config_versions_enabled" =>
         Flags.get_assistant_config_versions_enabled(organization),
+      "copy_node_enabled" => Flags.get_copy_node_enabled(organization),
       "superset_enabled" =>
         FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id}),
       "prompt_generator_enabled" =>
