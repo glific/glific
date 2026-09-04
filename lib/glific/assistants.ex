@@ -1037,22 +1037,38 @@ defmodule Glific.Assistants do
 
   @doc """
   Get a knowledge base file's metadata and signed download URL from Kaapi.
+
+  A knowledge base version with no `kaapi_job_id` was synced straight from OpenAI
+  before the knowledge base rewrite, so Kaapi holds no document for its files and
+  those downloads are rejected upfront.
   """
   @spec get_file(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   def get_file(file_id, organization_id) do
-    case Kaapi.get_document(file_id, organization_id) do
-      {:ok, document_data} ->
-        {:ok,
-         %{
-           file_id: document_data[:id],
-           filename: document_data[:fname],
-           signed_url: document_data[:signed_url]
-         }}
+    with false <- legacy_file?(file_id, organization_id),
+         {:ok, document_data} <- Kaapi.get_document(file_id, organization_id) do
+      {:ok,
+       %{
+         file_id: document_data[:id],
+         filename: document_data[:fname],
+         signed_url: document_data[:signed_url]
+       }}
+    else
+      true ->
+        {:error,
+         "This file belongs to a legacy knowledge base created before the knowledge base rewrite and cannot be downloaded"}
 
       {:error, reason} ->
         format_kaapi_file_error("File download", reason)
     end
+  end
+
+  @spec legacy_file?(String.t(), non_neg_integer()) :: boolean()
+  defp legacy_file?(file_id, organization_id) do
+    KnowledgeBaseVersion
+    |> where([kbv], is_nil(kbv.kaapi_job_id))
+    |> where([kbv], fragment("jsonb_exists(?, ?)", kbv.files, ^file_id))
+    |> Repo.exists?(organization_id: organization_id)
   end
 
   @spec format_kaapi_file_error(String.t(), map() | binary() | any()) :: {:error, String.t()}
