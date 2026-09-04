@@ -178,7 +178,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            duplication_factor: factor,
            file_name: file.filename,
            organization_id: user.organization_id,
-           total_items: row_count
+           total_items: Map.get(kaapi_dataset, :original_items, row_count)
          }) do
       {:ok, golden_qa} ->
         {:ok, %{golden_qa: golden_qa}}

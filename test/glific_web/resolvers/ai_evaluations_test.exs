@@ -902,15 +902,31 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.name == "dataset_2024_v1"
     end
 
-    test "v1 path: uploads to the v1 endpoint and stores the CSV row count as total_items",
-         %{staff: user, upload: upload} do
+    test "v1 path: falls back to the CSV row count, since the v1 wrapper drops the item counts",
+         %{staff: user} do
+      csv_path = create_csv_with_rows(7)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "golden_qa.csv"
+      }
+
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
           assert url =~ "/api/v1/evaluations/datasets"
 
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "v1_regression_dataset", dataset_id: "88003"}}
+            body: %{
+              data: %{
+                dataset_name: "v1_regression_dataset",
+                dataset_id: "88003",
+                total_items: 129,
+                original_items: 43
+              }
+            }
           }
       end)
 
@@ -929,18 +945,27 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert golden_qa.name == "v1_regression_dataset"
       assert golden_qa.dataset_id == 88_003
-      assert golden_qa.total_items == 1
+      assert golden_qa.total_items == 7
     end
   end
 
   describe "create_golden_qa/3 v2 (is_ai_evaluation_enabled)" do
     setup [:enable_kaapi, :create_upload_file]
 
-    test "v2 path: hits the v2 endpoint and ignores Kaapi's duplicated total_items",
-         %{staff: user, upload: upload} do
+    test "v2 path: stores Kaapi's original_items, not the post-duplication total_items",
+         %{staff: user} do
       FunWithFlags.enable(:is_ai_evaluation_enabled,
         for_actor: %{organization_id: user.organization_id}
       )
+
+      csv_path = create_csv_with_rows(7)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "golden_qa.csv"
+      }
 
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
@@ -948,7 +973,14 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_id: "88004", total_items: 120}}
+            body: %{
+              data: %{
+                dataset_id: "88004",
+                total_items: 129,
+                original_items: 43,
+                duplication_factor: 3
+              }
+            }
           }
       end)
 
@@ -968,7 +1000,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
         assert golden_qa.name == "valid_dataset_v2"
         assert golden_qa.dataset_id == 88_004
-        assert golden_qa.total_items == 1
+        assert golden_qa.total_items == 43
 
         assert called(
                  Glific.Metrics.increment(
@@ -983,7 +1015,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       )
     end
 
-    test "v2 path: returns a generic error when the Kaapi response is missing total_items", %{
+    test "v2 path: returns a generic error when the Kaapi response is missing original_items", %{
       staff: user,
       upload: upload
     } do
