@@ -1060,10 +1060,10 @@ defmodule Glific.ThirdParty.Kaapi do
           non_neg_integer()
         ) :: {:ok, map()} | {:error, map() | binary()}
   defp handle_evaluation_dataset_v2_response(
-         {:ok, %{data: %{dataset_id: dataset_id, total_items: total_items}}},
+         {:ok, %{data: %{dataset_id: dataset_id, original_items: original_items}}},
          _organization_id
        ) do
-    {:ok, %{dataset_id: dataset_id, total_items: total_items}}
+    {:ok, %{dataset_id: dataset_id, original_items: original_items}}
   end
 
   defp handle_evaluation_dataset_v2_response({:error, reason}, organization_id) do
