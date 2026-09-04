@@ -103,7 +103,10 @@ defmodule Glific.Assistants.AssistantConfigVersion do
   end
 
   @doc "Display label for a config version, e.g. `\"1.3\"`."
-  @spec version_label(t()) :: String.t()
-  def version_label(%__MODULE__{major_version: major, minor_version: minor}),
-    do: "#{major}.#{minor}"
+  @spec version_label(map()) :: String.t() | nil
+  def version_label(%{major_version: major, minor_version: minor})
+      when not is_nil(major) and not is_nil(minor),
+      do: "#{major}.#{minor}"
+
+  def version_label(_config_version), do: nil
 end
