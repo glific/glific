@@ -82,6 +82,13 @@ oban_queues = [
     ]
   ],
   contact_import: 10,
+  contact_import_bulk: [
+    local_limit: 10,
+    global_limit: [
+      allowed: 5,
+      partition: [args: :organization_id]
+    ]
+  ],
   gupshup_high_tps: 10,
   clone_assistant: 5,
   gupshup_inbound: [
