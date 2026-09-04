@@ -94,7 +94,6 @@ defmodule Glific.Assistants do
            id: version.id,
            major_version: version.major_version,
            minor_version: version.minor_version,
-           version_label: AssistantConfigVersion.version_label(version),
            model: version.model,
            prompt: version.prompt,
            settings: version.settings,
@@ -462,9 +461,16 @@ defmodule Glific.Assistants do
   @spec publish_config_version_update(AssistantConfigVersion.t()) :: :ok
   defp publish_config_version_update(%{status: status} = config_version)
        when status in [:ready, :failed] do
+    config_version = Repo.preload(config_version, knowledge_base_versions: :knowledge_base)
+
+    payload =
+      config_version
+      |> Map.from_struct()
+      |> Map.put(:vector_store_data, build_vector_store_data(config_version))
+
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
-      config_version,
+      payload,
       [{:assistant_config_version_updated, "#{config_version.organization_id}"}]
     )
 
