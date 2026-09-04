@@ -322,7 +322,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def get_golden_qa(_, %{id: golden_qa_id, include_signed_url: include_signed_url}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, golden_qa} <- Repo.fetch(Glific.AIEvaluations.GoldenQA, golden_qa_id),
+    with {:ok, golden_qa} <-
+           Repo.fetch_by(GoldenQA, %{id: golden_qa_id, organization_id: user.organization_id}),
          {:ok, kaapi_data} <- fetch_kaapi_dataset(golden_qa, user, include_signed_url) do
       golden_qa_map =
         golden_qa
