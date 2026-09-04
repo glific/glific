@@ -57,26 +57,29 @@ defmodule Glific.ThirdParty.KaapiTest do
   describe "upload_evaluation_dataset_v2/2" do
     setup [:enable_kaapi_credential, :create_dataset_upload_params]
 
-    test "extracts dataset_id and total_items from a well-shaped v2 response", %{
+    test "extracts dataset_id and the pre-duplication original_items from a v2 response", %{
       organization_id: organization_id,
       dataset_params: dataset_params
     } do
       mock(fn %Tesla.Env{method: :post, url: url} ->
         assert url =~ "/api/v2/evaluations/datasets"
 
-        %Tesla.Env{status: 200, body: %{data: %{dataset_id: "99002", total_items: 55}}}
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{dataset_id: "99002", total_items: 55, original_items: 11}}
+        }
       end)
 
-      assert {:ok, %{dataset_id: "99002", total_items: 55}} =
+      assert {:ok, %{dataset_id: "99002", original_items: 11}} =
                Kaapi.upload_evaluation_dataset_v2(dataset_params, organization_id)
     end
 
-    test "returns a generic error and does not crash when total_items is missing", %{
+    test "returns a generic error and does not crash when original_items is missing", %{
       organization_id: organization_id,
       dataset_params: dataset_params
     } do
       mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{status: 200, body: %{data: %{dataset_id: "99003"}}}
+        %Tesla.Env{status: 200, body: %{data: %{dataset_id: "99003", total_items: 55}}}
       end)
 
       assert {:error, "An unknown error occurred, please contact Glific support."} =

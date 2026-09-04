@@ -94,7 +94,6 @@ defmodule Glific.Assistants do
            id: version.id,
            major_version: version.major_version,
            minor_version: version.minor_version,
-           version_label: AssistantConfigVersion.version_label(version),
            model: version.model,
            prompt: version.prompt,
            settings: version.settings,
@@ -462,9 +461,16 @@ defmodule Glific.Assistants do
   @spec publish_config_version_update(AssistantConfigVersion.t()) :: :ok
   defp publish_config_version_update(%{status: status} = config_version)
        when status in [:ready, :failed] do
+    config_version = Repo.preload(config_version, knowledge_base_versions: :knowledge_base)
+
+    payload =
+      config_version
+      |> Map.from_struct()
+      |> Map.put(:vector_store_data, build_vector_store_data(config_version))
+
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
-      config_version,
+      payload,
       [{:assistant_config_version_updated, "#{config_version.organization_id}"}]
     )
 
@@ -1031,22 +1037,38 @@ defmodule Glific.Assistants do
 
   @doc """
   Get a knowledge base file's metadata and signed download URL from Kaapi.
+
+  A knowledge base version with no `kaapi_job_id` was synced straight from OpenAI
+  before the knowledge base rewrite, so Kaapi holds no document for its files and
+  those downloads are rejected upfront.
   """
   @spec get_file(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   def get_file(file_id, organization_id) do
-    case Kaapi.get_document(file_id, organization_id) do
-      {:ok, document_data} ->
-        {:ok,
-         %{
-           file_id: document_data[:id],
-           filename: document_data[:fname],
-           signed_url: document_data[:signed_url]
-         }}
+    with false <- legacy_file?(file_id, organization_id),
+         {:ok, document_data} <- Kaapi.get_document(file_id, organization_id) do
+      {:ok,
+       %{
+         file_id: document_data[:id],
+         filename: document_data[:fname],
+         signed_url: document_data[:signed_url]
+       }}
+    else
+      true ->
+        {:error,
+         "This file belongs to a legacy knowledge base created before the knowledge base rewrite and cannot be downloaded"}
 
       {:error, reason} ->
         format_kaapi_file_error("File download", reason)
     end
+  end
+
+  @spec legacy_file?(String.t(), non_neg_integer()) :: boolean()
+  defp legacy_file?(file_id, organization_id) do
+    KnowledgeBaseVersion
+    |> where([kbv], is_nil(kbv.kaapi_job_id))
+    |> where([kbv], fragment("jsonb_exists(?, ?)", kbv.files, ^file_id))
+    |> Repo.exists?(organization_id: organization_id)
   end
 
   @spec format_kaapi_file_error(String.t(), map() | binary() | any()) :: {:error, String.t()}
@@ -1182,9 +1204,7 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Dispatches a chat message to an assistant's live Kaapi config ("Try It Out" sandbox).
-  Kaapi just queues the job; the reply arrives via the `/kaapi/assistant_chat` callback and
-  is published over the `assistant_chat_response` subscription — no history is persisted here.
+  Queues a chat message on Kaapi for the selected (or live) config version of an assistant.
   """
   @spec send_message(map(), non_neg_integer(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
@@ -1192,7 +1212,7 @@ defmodule Glific.Assistants do
     request_id = Ecto.UUID.generate()
 
     with {:ok, {kaapi_uuid, kaapi_version_number}} <-
-           fetch_live_kaapi_config(assistant_id, organization_id),
+           fetch_kaapi_config(assistant_id, params[:config_version_id], organization_id),
          payload =
            build_assistant_chat_payload(
              input,
@@ -1208,20 +1228,50 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec fetch_live_kaapi_config(non_neg_integer(), non_neg_integer()) ::
-          {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
-  defp fetch_live_kaapi_config(assistant_id, organization_id) do
+  @spec fetch_kaapi_config(
+          non_neg_integer(),
+          non_neg_integer() | String.t() | nil,
+          non_neg_integer()
+        ) :: {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
+  defp fetch_kaapi_config(assistant_id, config_version_id, organization_id) do
     with {:ok, assistant} <-
            Repo.fetch_by(Assistant, %{id: assistant_id, organization_id: organization_id}),
-         assistant <- Repo.preload(assistant, :active_config_version),
-         {kaapi_uuid, %AssistantConfigVersion{kaapi_version_number: kaapi_version_number}}
-         when not is_nil(kaapi_uuid) and not is_nil(kaapi_version_number) <-
-           {assistant.kaapi_uuid, assistant.active_config_version} do
+         %Assistant{kaapi_uuid: kaapi_uuid} when not is_nil(kaapi_uuid) <- assistant,
+         %AssistantConfigVersion{kaapi_version_number: kaapi_version_number}
+         when not is_nil(kaapi_version_number) <-
+           fetch_config_version(assistant, config_version_id, organization_id) do
       {:ok, {kaapi_uuid, kaapi_version_number}}
     else
-      {:error, _} -> {:error, "Assistant not found"}
-      _ -> {:error, "Assistant does not have a live config version yet"}
+      {:error, _} ->
+        {:error, "Assistant not found"}
+
+      %Assistant{} ->
+        {:error, "Assistant is not available on Kaapi yet"}
+
+      _ when is_nil(config_version_id) ->
+        {:error, "Assistant does not have a live config version yet"}
+
+      _ ->
+        {:error, "Selected assistant version is not available on Kaapi yet"}
     end
+  end
+
+  @spec fetch_config_version(
+          Assistant.t(),
+          non_neg_integer() | String.t() | nil,
+          non_neg_integer()
+        ) :: AssistantConfigVersion.t() | nil
+  defp fetch_config_version(assistant, nil, _organization_id),
+    do: Repo.preload(assistant, :active_config_version).active_config_version
+
+  defp fetch_config_version(assistant, config_version_id, organization_id) do
+    AssistantConfigVersion
+    |> where(
+      [v],
+      v.id == ^config_version_id and v.assistant_id == ^assistant.id and
+        v.organization_id == ^organization_id and is_nil(v.deleted_at)
+    )
+    |> Repo.one()
   end
 
   @spec build_assistant_chat_payload(
