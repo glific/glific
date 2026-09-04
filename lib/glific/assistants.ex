@@ -1182,10 +1182,7 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Dispatches a chat message to the selected (or live, when none is given) Kaapi config
-  version of an assistant ("Try It Out" sandbox).
-  Kaapi just queues the job; the reply arrives via the `/kaapi/assistant_chat` callback and
-  is published over the `assistant_chat_response` subscription — no history is persisted here.
+  Queues a chat message on Kaapi for the selected (or live) config version of an assistant.
   """
   @spec send_message(map(), non_neg_integer(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
@@ -1246,14 +1243,13 @@ defmodule Glific.Assistants do
     do: Repo.preload(assistant, :active_config_version).active_config_version
 
   defp fetch_config_version(assistant, config_version_id, organization_id) do
-    case Repo.fetch_by(AssistantConfigVersion, %{
-           id: config_version_id,
-           assistant_id: assistant.id,
-           organization_id: organization_id
-         }) do
-      {:ok, config_version} -> config_version
-      _ -> nil
-    end
+    AssistantConfigVersion
+    |> where(
+      [v],
+      v.id == ^config_version_id and v.assistant_id == ^assistant.id and
+        v.organization_id == ^organization_id and is_nil(v.deleted_at)
+    )
+    |> Repo.one()
   end
 
   @spec build_assistant_chat_payload(
