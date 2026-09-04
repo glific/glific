@@ -3,7 +3,6 @@ mutation CreateGoldenQa($input: GoldenQaInput!) {
     goldenQa {
       id
       name
-      duplicationFactor
       fileName
       totalItems
     }

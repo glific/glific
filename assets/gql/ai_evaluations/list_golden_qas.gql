@@ -3,7 +3,6 @@ query GoldenQas($filter: GoldenQaFilter, $opts: Opts) {
     id
     name
     goldenQaId
-    duplicationFactor
     fileName
     totalItems
     insertedAt
