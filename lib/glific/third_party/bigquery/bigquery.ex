@@ -1001,7 +1001,8 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{safe_inspect(response)}"
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, " <>
+        "table: #{table}, #{bigquery_error_summary(response)}"
     )
 
     {error, message} = bigquery_error_status(response)
@@ -1032,6 +1033,44 @@ defmodule Glific.BigQuery do
         raise("BigQuery Insert Error for table #{table} #{safe_inspect(response)}")
     end
   end
+
+  ## Inspecting the `%Tesla.Env{}` yields ~1KB carrying BigQuery's pretty-printed JSON as 15
+  ## escaped newline sequences, which the log pipeline re-expands into separate entries that
+  ## carry no metadata and are dropped under load — so the reason for a failure was not
+  ## recoverable from the logs. This keeps the diagnosis short and free of newline escapes.
+  @spec bigquery_error_summary(any()) :: String.t()
+  defp bigquery_error_summary(%Tesla.Env{status: status, body: body}) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"error" => error}} when is_map(error) ->
+        Enum.map_join(
+          [
+            {"http_status", status},
+            {"code", error["code"]},
+            {"bq_status", error["status"]},
+            {"reason", get_in(error, ["errors", Access.at(0), "reason"])},
+            {"message", error["message"]}
+          ],
+          " ",
+          fn
+            {key, value} when is_integer(value) -> "#{key}=#{value}"
+            {key, value} -> "#{key}=#{safe_inspect(one_line(value))}"
+          end
+        )
+
+      _ ->
+        "http_status=#{status} body=#{safe_inspect(one_line(body))}"
+    end
+  end
+
+  defp bigquery_error_summary(error), do: one_line(safe_inspect(error))
+
+  @spec one_line(term()) :: String.t()
+  defp one_line(nil), do: ""
+
+  defp one_line(text) when is_binary(text),
+    do: text |> String.replace(~r/\s+/, " ") |> String.trim()
+
+  defp one_line(term), do: term |> to_string() |> one_line()
 
   @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}
   defp bigquery_error_status(response) do
@@ -1138,8 +1177,11 @@ defmodule Glific.BigQuery do
     Instrumentation.record(table, :error, :remove_duplicates, organization_id)
 
     Logger.error(
-      "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
+      "Error while removing duplicate entries from the table #{table} on bigquery. " <>
+        "org_id: #{organization_id} #{bigquery_error_summary(error)}"
     )
+
+    :ok
   end
 
   @spec format_datetime(DateTime.t() | NaiveDateTime.t(), String.t()) :: String.t() | no_return()

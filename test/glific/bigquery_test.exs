@@ -184,6 +184,90 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  describe "bigquery_error_summary/1" do
+    ## The Logger format ends with `$message`, so a newline in an error dump is shipped as a
+    ## separate entry carrying no metadata and dropped under load — which is how the reason
+    ## for a failed dedup went missing in production. Everything must stay on one line.
+    @streaming_buffer_body ~s({\n  "error": {\n    "code": 400,\n) <>
+                             ~s(    "message": "UPDATE or DELETE statement over table ) <>
+                             ~s(918454812392.messages would affect rows in the streaming ) <>
+                             ~s(buffer, which is not supported",\n    "errors": [\n      {\n) <>
+                             ~s(        "domain": "global",\n        "reason": "invalidQuery"\n) <>
+                             ~s(      }\n    ],\n    "status": "INVALID_ARGUMENT"\n  }\n})
+
+    test "extracts the BigQuery reason onto a single line" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @streaming_buffer_body})
+
+      assert summary =~ "http_status=400"
+      assert summary =~ "code=400"
+      assert summary =~ ~s(bq_status="INVALID_ARGUMENT")
+      assert summary =~ ~s(reason="invalidQuery")
+      assert summary =~ "streaming buffer, which is not supported"
+      refute summary =~ "\n"
+    end
+
+    test "never leaks the Tesla client middleware" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{
+          status: 400,
+          body: @streaming_buffer_body,
+          __client__: %Tesla.Client{}
+        })
+
+      refute summary =~ "__client__"
+      refute summary =~ "Bearer"
+    end
+
+    test "falls back to a one-line body when the payload is not BigQuery JSON" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: "upstream\n unavailable"})
+
+      assert summary =~ "http_status=503"
+      assert summary =~ "upstream unavailable"
+      refute summary =~ "\n"
+    end
+
+    test "renders fields the payload does not carry as empty" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{
+          status: 403,
+          body: ~s({"error":{"code":403,"message":"denied"}})
+        })
+
+      assert summary =~ ~s(bq_status="")
+      assert summary =~ ~s(reason="")
+      assert summary =~ ~s(message="denied")
+    end
+
+    test "renders a field that is neither a string nor an integer" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{
+          status: 400,
+          body: ~s({"error":{"code":400,"status":["INVALID_ARGUMENT"],"message":"boom"}})
+        })
+
+      assert summary =~ "http_status=400"
+      assert summary =~ ~s(message="boom")
+      refute summary =~ "\n"
+    end
+
+    ## Logging must never raise: an `error` that is not the usual Google envelope (OAuth
+    ## replies with a bare string) would otherwise crash the job it was reporting on.
+    test "falls back when the error payload is not a map" do
+      for payload <- [~s({"error":"invalid_grant"}), ~s({"error":[1,2]}), ~s({"error":null})] do
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: payload})
+
+        assert summary =~ "http_status=400"
+        refute summary =~ "\n"
+      end
+    end
+
+    test "handles a non-response error term" do
+      assert BigQuery.bigquery_error_summary(:timeout) == ":timeout"
+    end
+  end
+
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(
