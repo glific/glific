@@ -10,11 +10,6 @@ defmodule Glific.Sheets.GoogleSheets do
   alias Glific.Sheets
   alias Glific.Sheets.ApiClient
 
-  alias GoogleApi.Sheets.V4.{
-    Api.Spreadsheets,
-    Connection
-  }
-
   @scopes [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/drive.file",
@@ -23,13 +18,15 @@ defmodule Glific.Sheets.GoogleSheets do
     "https://www.googleapis.com/auth/spreadsheets.readonly"
   ]
 
+  @sheets_api_base_url "https://sheets.googleapis.com"
+
   @doc """
   Get headers (first row) from the spreadsheet.
   """
   @spec get_headers(non_neg_integer(), String.t()) :: {:ok, list(String.t())} | {:error, any()}
   def get_headers(org_id, spreadsheet_id) do
     with {:ok, %{conn: conn}} <- fetch_credentials(org_id) do
-      case Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "1:1") do
+      case values_get(conn, spreadsheet_id, "1:1") do
         {:ok, %{values: [headers | _]}} when is_list(headers) ->
           {:ok, headers}
 
@@ -53,12 +50,7 @@ defmodule Glific.Sheets.GoogleSheets do
     with {:ok, %{conn: conn}} <- fetch_credentials(org_id) do
       Glific.Metrics.increment("Sheets Write", org_id)
 
-      params = [
-        valueInputOption: "USER_ENTERED",
-        body: %{majorDimension: "ROWS", values: data}
-      ]
-
-      Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params)
+      values_append(conn, spreadsheet_id, range, data)
     end
   end
 
@@ -111,7 +103,7 @@ defmodule Glific.Sheets.GoogleSheets do
          {:ok, sheet_name} <- find_sheet_name(conn, spreadsheet_id, gid),
          range = "'#{sheet_name}'!A:ZZ",
          {:ok, %{values: values}} when not is_nil(values) <-
-           Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, range),
+           values_get(conn, spreadsheet_id, range),
          {:ok, rows} <- convert_rows_to_csv_format(values) do
       {:ok, rows}
     else
@@ -139,7 +131,7 @@ defmodule Glific.Sheets.GoogleSheets do
   @spec find_sheet_name(Tesla.Client.t(), String.t(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   defp find_sheet_name(conn, spreadsheet_id, gid) do
-    case Spreadsheets.sheets_spreadsheets_get(conn, spreadsheet_id) do
+    case spreadsheets_get(conn, spreadsheet_id) do
       {:ok, %{sheets: sheets}} when is_list(sheets) ->
         case Enum.find(sheets, fn s -> s.properties.sheetId == gid end) do
           nil -> {:error, "Sheet with gid #{gid} not found"}
@@ -153,14 +145,76 @@ defmodule Glific.Sheets.GoogleSheets do
 
   @spec build_conn(String.t()) :: Tesla.Client.t()
   defp build_conn(token) do
-    extra = [
+    middleware = [
+      {Tesla.Middleware.BaseUrl, @sheets_api_base_url},
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer #{token}"}]},
       {Tesla.Middleware.Opts, [recv_timeout: 10_000]},
+      Tesla.Middleware.KeepRequest,
+      Tesla.Middleware.PathParams,
       {Tesla.Middleware.Telemetry, metadata: %{provider: "google_sheets_api"}}
-      | Glific.get_tesla_retry_middleware()
     ]
 
-    Tesla.client(extra ++ Tesla.Client.middleware(Connection.new(token)))
+    Tesla.client(middleware ++ Glific.get_tesla_retry_middleware())
   end
+
+  @spec spreadsheets_get(Tesla.Client.t(), String.t()) :: {:ok, map()} | {:error, any()}
+  defp spreadsheets_get(conn, spreadsheet_id) do
+    conn
+    |> Tesla.get("/v4/spreadsheets/:spreadsheet_id",
+      opts: [path_params: [spreadsheet_id: spreadsheet_id]]
+    )
+    |> decode_sheets_response()
+  end
+
+  @spec values_get(Tesla.Client.t(), String.t(), String.t()) :: {:ok, map()} | {:error, any()}
+  defp values_get(conn, spreadsheet_id, range) do
+    conn
+    |> Tesla.get("/v4/spreadsheets/:spreadsheet_id/values/#{encode_range(range)}",
+      opts: [path_params: [spreadsheet_id: spreadsheet_id]]
+    )
+    |> decode_sheets_response()
+    |> put_default_values_key()
+  end
+
+  @spec put_default_values_key({:ok, map() | nil} | {:error, any()}) ::
+          {:ok, map()} | {:error, any()}
+  defp put_default_values_key({:ok, nil}), do: {:ok, %{values: nil}}
+  defp put_default_values_key({:ok, response}), do: {:ok, Map.put_new(response, :values, nil)}
+  defp put_default_values_key(error), do: error
+
+  @spec values_append(Tesla.Client.t(), String.t(), String.t(), list(list())) ::
+          {:ok, map()} | {:error, any()}
+  defp values_append(conn, spreadsheet_id, range, values) do
+    body = Jason.encode!(%{majorDimension: "ROWS", values: values})
+
+    conn
+    |> Tesla.post(
+      "/v4/spreadsheets/:spreadsheet_id/values/#{encode_range(range)}:append",
+      body,
+      query: [valueInputOption: "USER_ENTERED"],
+      headers: [{"content-type", "application/json"}],
+      opts: [path_params: [spreadsheet_id: spreadsheet_id]]
+    )
+    |> decode_sheets_response()
+  end
+
+  @spec encode_range(String.t()) :: String.t()
+  defp encode_range(range), do: URI.encode(range, &(URI.char_unreserved?(&1) || &1 == ?/))
+
+  @spec decode_sheets_response(Tesla.Env.result()) :: {:ok, map() | nil} | {:error, any()}
+  defp decode_sheets_response({:error, reason}), do: {:error, reason}
+
+  defp decode_sheets_response({:ok, %Tesla.Env{status: status} = env})
+       when status < 200 or status >= 300,
+       do: {:error, env}
+
+  defp decode_sheets_response({:ok, %Tesla.Env{body: body}}) when body in [nil, ""],
+    do: {:ok, nil}
+
+  defp decode_sheets_response({:ok, %Tesla.Env{body: body}}) when is_binary(body),
+    do: Jason.decode(body, keys: :atoms)
+
+  defp decode_sheets_response({:ok, %Tesla.Env{body: body}}), do: {:ok, body}
 
   @doc """
   Converts the Google Sheets API response (list of lists) into the
