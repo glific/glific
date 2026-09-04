@@ -42,17 +42,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :updated_at, :datetime
   end
 
-  object :golden_qa_item do
-    field :id, :id
-    field :name, :string
-    field :golden_qa_id, :id
-    field :duplication_factor, :integer
-    field :file_name, :string
-    field :total_items, :integer
-    field :inserted_at, :datetime
-    field :updated_at, :datetime
-  end
-
   input_object :ai_evaluation_filter do
     field :name, :string
     field :golden_qa_id, :id
@@ -154,7 +143,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     end
 
     @desc "List Golden QAs"
-    field :golden_qas, list_of(:golden_qa_item) do
+    field :golden_qas, list_of(:golden_qa) do
       arg(:filter, :golden_qa_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
