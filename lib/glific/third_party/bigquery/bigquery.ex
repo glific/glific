@@ -79,6 +79,8 @@ defmodule Glific.BigQuery do
     Connection
   }
 
+  alias GoogleApi.Gax.Response
+
   @bigquery_tables %{
     "contacts" => :contact_schema,
     "contact_histories" => :contact_history_schema,
@@ -123,6 +125,10 @@ defmodule Glific.BigQuery do
   @partitioned_tables ~w(messages flow_contexts flow_results contact_histories wa_messages messages_media)
   @partition_field "inserted_at"
   @partition_type "MONTH"
+
+  # Expressed in DAY because BigQuery's TIMESTAMP_SUB rejects MONTH — DAY is the largest
+  # date part it accepts. See `partition_filter/2`.
+  @partition_window_days 90
 
   # Per-table clustering keys (highest-selectivity first, max 4). Each org has its
   # own dataset, so there is no `organization_id` column to cluster on. Partitioned
@@ -1057,10 +1063,20 @@ defmodule Glific.BigQuery do
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 
-        ## timeout takes some time to delete the old records. So increasing the timeout limit.
-        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+        ## `timeoutMs` below only bounds how long BigQuery's own server is allowed to keep
+        ## running the query - it has no effect on how long our own HTTP client waits for
+        ## the response. `Api.Jobs.bigquery_jobs_query/4` never forwards an `opts:` you pass
+        ## it to the actual request (its own `opts` param only reaches response decoding),
+        ## so we call the connection's Tesla `request/2` directly here - the same connection
+        ## and middleware `bigquery_jobs_query/4` uses internally - to set an explicit
+        ## `recv_timeout`.
+        Connection.request(conn,
+          url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
+          method: :post,
+          body: %{query: sql, useLegacySql: false, timeoutMs: bigquery_dedup_query_timeout_ms()},
+          opts: [adapter: [recv_timeout: bigquery_dedup_recv_timeout_ms()]]
         )
+        |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
@@ -1069,6 +1085,14 @@ defmodule Glific.BigQuery do
         :ok
     end
   end
+
+  @spec bigquery_dedup_query_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_query_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_timeout_ms, 120_000)
+
+  @spec bigquery_dedup_recv_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_recv_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 150_000)
 
   @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
@@ -1090,11 +1114,11 @@ defmodule Glific.BigQuery do
   # For MONTH-partitioned tables, also bound the dedup scan by `inserted_at` (the
   # partition key) so BigQuery prunes to recent partitions instead of full-scanning.
   # These are transactional tables whose `updated_at` stays close to creation, so
-  # duplicates (from re-syncs of recently-updated rows) fall inside a 3-month window.
+  # duplicates (from re-syncs of recently-updated rows) fall inside the window.
   @spec partition_filter(String.t(), String.t()) :: String.t()
   defp partition_filter(table, timezone) when table in @partitioned_tables,
     do:
-      "\n    AND #{@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), '#{timezone}')"
+      "\n    AND #{@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL #{@partition_window_days} DAY), '#{timezone}')"
 
   defp partition_filter(_table, _timezone), do: ""
 

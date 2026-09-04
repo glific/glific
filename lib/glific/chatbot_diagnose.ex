@@ -80,7 +80,7 @@ defmodule Glific.ChatbotDiagnose do
   # Whitelisted fields per table. Only these fields can be selected/filtered.
   @allowed_fields %{
     "assistant_config_versions" =>
-      ~w(id version_number kaapi_version_number description prompt provider model status failure_reason assistant_id organization_id inserted_at updated_at)a,
+      ~w(id major_version minor_version bump_type kaapi_version_number description prompt provider model status failure_reason assistant_id organization_id inserted_at updated_at)a,
     "assistants" =>
       ~w(id name description kaapi_uuid assistant_display_id clone_status active_config_version_id organization_id inserted_at updated_at)a,
     "contact_histories" =>

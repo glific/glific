@@ -1363,7 +1363,7 @@ defmodule Glific.Messages do
     mime_types = [
       {:image, ["png", "jpg", "jpeg"]},
       {:video, ["mp4", "3gp", "3gpp"]},
-      {:audio, ["mp3", "wav", "acc", "ogg"]},
+      {:audio, ["mp3", "wav", "aac", "ogg"]},
       {:document, ["pdf", "docx", "xlsx"]},
       {:sticker, ["webp"]}
     ]

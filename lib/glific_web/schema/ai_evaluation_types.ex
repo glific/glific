@@ -24,7 +24,8 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   object :ai_eval_config_version do
     field :id, :id
-    field :version_number, :integer
+    field :major_version, :integer
+    field :minor_version, :integer
     field :assistant, :ai_eval_assistant
   end
 
@@ -53,6 +54,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   input_object :ai_evaluation_filter do
     field :name, :string
+    field :golden_qa_id, :id
   end
 
   input_object :golden_qa_filter do
@@ -111,6 +113,10 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :input_modalities, list_of(:string)
     field :output_modalities, list_of(:string)
     field :pricing, :json
+
+    @desc "One of: recommended, all, to_be_deprecated"
+    field :category, :string
+    field :badge, :string
   end
 
   object :improve_prompt do

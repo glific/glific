@@ -8,12 +8,11 @@ defmodule Glific.Flows.WakeupWorker do
 
   use Oban.Worker,
     queue: :flow_wakeup,
-    max_attempts: 3,
     unique: [
       period: :infinity,
       fields: [:args, :worker],
       keys: [:organization_id],
-      states: [:available, :scheduled, :executing]
+      states: [:available, :scheduled, :executing, :retryable]
     ]
 
   import Ecto.Query
