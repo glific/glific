@@ -257,6 +257,46 @@ defmodule Glific.AI.ToolDetailsTest do
       assert is_list(all.tickets)
       assert is_list(all.certificates)
     end
+
+    test "a collection filter returns only that collection's contacts", %{
+      user: user,
+      contact: contact
+    } do
+      group = Fixtures.group_fixture(%{organization_id: 1})
+      outsider = Fixtures.contact_fixture(%{organization_id: 1, phone: "919000000111"})
+
+      {:ok, _} =
+        Groups.create_contact_group(%{
+          contact_id: contact.id,
+          group_id: group.id,
+          organization_id: 1
+        })
+
+      assert {:ok, in_collection} =
+               Tools.run("list_contacts", %{"collection_id" => group.id}, user)
+
+      ids = Enum.map(in_collection, & &1.id)
+      assert contact.id in ids
+      refute outsider.id in ids
+    end
+
+    test "a tag filter returns only the tagged contacts", %{user: user, contact: contact} do
+      tag = Fixtures.tag_fixture(%{organization_id: 1})
+      outsider = Fixtures.contact_fixture(%{organization_id: 1, phone: "919000000222"})
+
+      {:ok, _} =
+        Tags.create_contact_tag(%{
+          contact_id: contact.id,
+          tag_id: tag.id,
+          organization_id: 1
+        })
+
+      assert {:ok, tagged} = Tools.run("list_contacts", %{"tag_id" => tag.id}, user)
+
+      ids = Enum.map(tagged, & &1.id)
+      assert contact.id in ids
+      refute outsider.id in ids
+    end
   end
 
   describe "flows" do
