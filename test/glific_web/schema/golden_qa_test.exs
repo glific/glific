@@ -14,6 +14,12 @@ defmodule GlificWeb.Schema.GoldenQATest do
     "assets/gql/ai_evaluations/list_golden_qas.gql"
   )
 
+  load_gql(
+    :by_id,
+    GlificWeb.Schema,
+    "assets/gql/ai_evaluations/get_golden_qa_dataset.gql"
+  )
+
   setup %{organization_id: org_id} do
     FunWithFlags.enable(:ai_evaluations, for_actor: %{organization_id: org_id})
     :ok
@@ -38,5 +44,29 @@ defmodule GlificWeb.Schema.GoldenQATest do
 
     assert %{"totalItems" => 7} =
              Enum.find(datasets, &(&1["id"] == to_string(golden_qa.id)))
+  end
+
+  test "goldenQa returns every declared field off the record", %{
+    staff: user,
+    organization_id: organization_id
+  } do
+    golden_qa =
+      Fixtures.golden_qa_fixture(%{
+        name: "dataset_by_id",
+        dataset_id: 4243,
+        total_items: 11,
+        file_name: "golden.csv",
+        organization_id: organization_id
+      })
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => golden_qa.id})
+
+    assert {:ok, query_data} = result
+    dataset = get_in(query_data, [:data, "goldenQa", "goldenQa"])
+
+    assert dataset["datasetId"] == 4243
+    assert dataset["totalItems"] == 11
+    assert dataset["fileName"] == "golden.csv"
+    assert dataset["signedUrl"] == nil
   end
 end

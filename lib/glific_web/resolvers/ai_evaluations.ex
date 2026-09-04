@@ -325,15 +325,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with {:ok, golden_qa} <- Repo.fetch(Glific.AIEvaluations.GoldenQA, golden_qa_id),
          {:ok, kaapi_data} <- fetch_kaapi_dataset(golden_qa, user, include_signed_url) do
       golden_qa_map =
-        %{
-          id: golden_qa.id,
-          name: golden_qa.name,
-          duplication_factor: golden_qa.duplication_factor,
-          file_name: golden_qa.file_name,
-          total_items: golden_qa.total_items,
-          inserted_at: golden_qa.inserted_at,
-          updated_at: golden_qa.updated_at
-        }
+        golden_qa
+        |> Map.from_struct()
         |> maybe_put_signed_url(kaapi_data)
 
       if include_signed_url, do: Metrics.increment("Golden QA Downloaded", user.organization_id)
