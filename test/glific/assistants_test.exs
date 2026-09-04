@@ -3092,7 +3092,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id} do
       assistant = create_live_assistant(organization_id)
 
-      assert {:error, _reason} =
+      assert {:error, "Assistant not found"} =
                Assistants.send_message(
                  %{assistant_id: assistant.id, input: "Hello"},
                  organization_id + 1,
@@ -3100,7 +3100,7 @@ defmodule Glific.AssistantsTest do
                )
     end
 
-    test "returns an error when the assistant has no live config version yet",
+    test "returns an error when the assistant is not on Kaapi yet",
          %{organization_id: organization_id} do
       {:ok, assistant} =
         %Assistant{}
@@ -3110,7 +3110,23 @@ defmodule Glific.AssistantsTest do
         })
         |> Repo.insert()
 
-      assert {:error, _reason} =
+      assert {:error, "Assistant is not available on Kaapi yet"} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error when the assistant has no live config version yet",
+         %{organization_id: organization_id} do
+      assistant =
+        Fixtures.assistant_fixture(%{
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_002"
+        })
+
+      assert {:error, "Assistant does not have a live config version yet"} =
                Assistants.send_message(
                  %{assistant_id: assistant.id, input: "Hello"},
                  organization_id,
@@ -3159,7 +3175,7 @@ defmodule Glific.AssistantsTest do
           kaapi_version_number: 9
         })
 
-      assert {:error, _reason} =
+      assert {:error, "Selected assistant version is not available on Kaapi yet"} =
                Assistants.send_message(
                  %{
                    assistant_id: assistant.id,
