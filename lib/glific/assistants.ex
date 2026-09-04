@@ -461,16 +461,15 @@ defmodule Glific.Assistants do
   @spec publish_config_version_update(AssistantConfigVersion.t()) :: :ok
   defp publish_config_version_update(%{status: status} = config_version)
        when status in [:ready, :failed] do
-    config_version = Repo.preload(config_version, knowledge_base_versions: :knowledge_base)
-
-    config =
+    config_version =
       config_version
+      |> Repo.preload(knowledge_base_versions: :knowledge_base)
       |> Map.from_struct()
       |> Map.put(:vector_store_data, build_vector_store_data(config_version))
 
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
-      config,
+      config_version,
       [{:assistant_config_version_updated, "#{config_version.organization_id}"}]
     )
 
