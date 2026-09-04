@@ -50,8 +50,6 @@ defmodule Glific.AI.ToolsTest do
 
     def run("raising_tool", _args), do: raise("something went wrong deep inside")
 
-    # The gateway restores the caller's identity on the way out, so which user a
-    # read ran as can only be observed from inside the read itself.
     def run("whoami_tool", _args) do
       {:ok,
        %{
@@ -136,32 +134,14 @@ defmodule Glific.AI.ToolsTest do
       assert Repo.get(Flow, original.id).name == original.name
     end
 
-    test "the caller keeps its own identity after a lookup", %{user: user} do
-      before_user = Repo.get_current_user()
-      before_org = Repo.get_organization_id()
-      refute before_user.id == user.id
-
-      assert {:ok, _} = Tools.run("list_flows", %{}, user)
-
-      assert Repo.get_current_user().id == before_user.id
-      assert Repo.get_organization_id() == before_org
-    end
-
-    test "the caller keeps its identity even when a tool raises", %{user: user} do
-      before_user = Repo.get_current_user()
-
-      assert {:error, _} = Tools.run("raising_tool", %{}, user, modules())
-      assert Repo.get_current_user().id == before_user.id
-    end
-
-    test "the read runs as the given user, whatever the process state said", %{
-      user: user
-    } do
+    test "the read runs as the given user, and leaves them installed", %{user: user} do
       Repo.put_current_user(Fixtures.user_fixture(%{organization_id: 1, phone: "919876500011"}))
 
       assert {:ok, ran_as} = Tools.run("whoami_tool", %{}, user, modules())
       assert ran_as.user_id == user.id
       assert ran_as.organization_id == user.organization_id
+
+      assert Repo.get_current_user().id == user.id
     end
 
     test "a tool cannot see another organisation's data", %{user: user} do

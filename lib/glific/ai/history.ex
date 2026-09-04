@@ -59,7 +59,12 @@ defmodule Glific.AI.History do
   end
 
   @spec within(Ecto.Query.t(), pos_integer()) :: Ecto.Query.t()
-  defp within(ranked, take), do: from(row in subquery(ranked), where: row.rank <= ^take)
+  defp within(ranked, take) do
+    from(row in subquery(ranked),
+      where: row.rank <= ^take,
+      order_by: [asc: row.parent, asc: row.rank]
+    )
+  end
 
   @spec group([map()], [atom()]) :: map()
   defp group(rows, fields) do

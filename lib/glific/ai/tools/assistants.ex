@@ -95,7 +95,7 @@ defmodule Glific.AI.Tools.Assistants do
       |> maybe_named(args[:name])
       |> order_by([a], desc: a.inserted_at)
       |> limit(^min(args[:limit], 100))
-      |> select([a], ^@fields)
+      |> select([a], map(a, ^@fields))
       |> Repo.all()
 
     {:ok, assistants}
@@ -104,7 +104,7 @@ defmodule Glific.AI.Tools.Assistants do
   def run("get_assistant", %{assistant_id: id} = args) do
     Assistant
     |> where([a], a.id == ^id)
-    |> select([a], ^@fields)
+    |> select([a], map(a, ^@fields))
     |> Repo.one()
     |> case do
       nil -> {:error, "No assistant with id #{id} exists in this organisation."}

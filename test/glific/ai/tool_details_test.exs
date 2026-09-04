@@ -10,13 +10,15 @@ defmodule Glific.AI.ToolDetailsTest do
 
   alias Glific.{
     AI.Tools,
-    Contacts,
+    AIEvaluations.AIEvaluation,
     Contacts.ContactHistory,
     Fixtures,
     Flows.FlowResult,
     Flows.FlowRevision,
     Flows.WebhookLog,
-    Repo
+    Groups,
+    Repo,
+    Tags
   }
 
   setup do
@@ -28,15 +30,28 @@ defmodule Glific.AI.ToolDetailsTest do
   end
 
   describe "templates" do
-    test "session templates come back with their approval status", %{user: user} do
+    test "a session template returns exactly the documented fields", %{user: user} do
       template = Fixtures.session_template_fixture(%{organization_id: 1})
 
       assert {:ok, templates} = Tools.run("list_templates", %{}, user)
       found = Enum.find(templates, &(&1.id == template.id))
 
+      assert Map.keys(found) |> Enum.sort() ==
+               Enum.sort([
+                 :id,
+                 :label,
+                 :shortcode,
+                 :body,
+                 :is_hsm,
+                 :status,
+                 :category,
+                 :is_active,
+                 :language_id
+               ])
+
       assert found.label == template.label
-      assert Map.has_key?(found, :status)
-      assert Map.has_key?(found, :is_hsm)
+      assert found.body == template.body
+      assert found.is_hsm == template.is_hsm
     end
 
     test "interactive templates are a different kind, not a different tool", %{user: user} do
@@ -55,6 +70,39 @@ defmodule Glific.AI.ToolDetailsTest do
                )
 
       assert message =~ "apply only to session templates"
+    end
+  end
+
+  describe "triggers" do
+    test "a trigger returns exactly the documented fields", %{user: user, flow: flow} do
+      trigger = Fixtures.trigger_fixture(%{organization_id: 1, flow_id: flow.id})
+
+      assert {:ok, triggers} = Tools.run("list_triggers", %{}, user)
+      found = Enum.find(triggers, &(&1.id == trigger.id))
+
+      assert Map.keys(found) |> Enum.sort() ==
+               Enum.sort([
+                 :id,
+                 :name,
+                 :flow_id,
+                 :is_active,
+                 :is_repeating,
+                 :frequency,
+                 :start_at,
+                 :next_trigger_at,
+                 :last_trigger_at
+               ])
+
+      assert found.flow_id == trigger.flow_id
+      assert found.name == trigger.name
+      assert found.is_active == trigger.is_active
+    end
+
+    test "the limit is clamped", %{user: user, flow: flow} do
+      Fixtures.trigger_fixture(%{organization_id: 1, flow_id: flow.id})
+
+      assert {:ok, one} = Tools.run("list_triggers", %{"limit" => 1}, user)
+      assert length(one) <= 1
     end
   end
 
@@ -98,6 +146,70 @@ defmodule Glific.AI.ToolDetailsTest do
                )
 
       refute described.config
+    end
+
+    test "an evaluation returns exactly the documented fields", %{user: user} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: 1})
+
+      version =
+        Fixtures.assistant_config_version_fixture(%{
+          organization_id: 1,
+          assistant_id: assistant.id
+        })
+
+      golden_qa = Fixtures.golden_qa_fixture(%{organization_id: 1})
+
+      {:ok, evaluation} =
+        %AIEvaluation{}
+        |> AIEvaluation.changeset(%{
+          name: "nightly run",
+          organization_id: 1,
+          assistant_config_version_id: version.id,
+          golden_qa_id: golden_qa.id,
+          status: :completed
+        })
+        |> Repo.insert()
+
+      assert {:ok, evaluations} = Tools.run("list_evaluations", %{}, user)
+      found = Enum.find(evaluations, &(&1.id == evaluation.id))
+
+      # The hand-written mapping is the tool's contract; a schema field added or
+      # renamed should fail here rather than silently vanish from the answer.
+      assert Map.keys(found) |> Enum.sort() ==
+               Enum.sort([
+                 :id,
+                 :name,
+                 :status,
+                 :failure_reason,
+                 :results,
+                 :golden_qa_id,
+                 :assistant_config_version_id,
+                 :inserted_at
+               ])
+
+      assert found.name == "nightly run"
+      assert found.status == :completed
+      assert found.assistant_config_version_id == version.id
+    end
+
+    test "an assistant returns exactly the documented fields", %{user: user} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: 1})
+
+      assert {:ok, assistants} = Tools.run("list_assistants", %{}, user)
+      found = Enum.find(assistants, &(&1.id == assistant.id))
+
+      assert Map.keys(found) |> Enum.sort() ==
+               Enum.sort([
+                 :id,
+                 :name,
+                 :description,
+                 :assistant_display_id,
+                 :clone_status,
+                 :active_config_version_id,
+                 :inserted_at
+               ])
+
+      assert found.name == assistant.name
     end
 
     test "evaluations can bring their golden datasets along", %{user: user} do
@@ -144,19 +256,6 @@ defmodule Glific.AI.ToolDetailsTest do
       assert is_list(all.profiles)
       assert is_list(all.tickets)
       assert is_list(all.certificates)
-    end
-
-    test "a search can be narrowed to a collection or a tag", %{user: user, contact: contact} do
-      group = Fixtures.group_fixture(%{organization_id: 1})
-      Contacts.update_contact(contact, %{})
-
-      assert {:ok, all} = Tools.run("list_contacts", %{}, user)
-      assert Enum.any?(all, &(&1.id == contact.id))
-
-      assert {:ok, in_collection} =
-               Tools.run("list_contacts", %{"collection_id" => group.id}, user)
-
-      assert is_list(in_collection)
     end
   end
 

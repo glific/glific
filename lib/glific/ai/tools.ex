@@ -8,8 +8,11 @@ defmodule Glific.AI.Tools do
 
   What `run/4` guarantees:
 
-    * **The read runs as the person who asked.** The caller's `organization_id`
-        and `user` are put into the Repo.
+    * **The read runs as the person who asked.** Their organisation and user are
+      installed before the tool runs, so a tool cannot reach another tenant and
+      cannot read past what the asker may see. They stay installed afterwards:
+      a background job that had the organisation's root user continues as the
+      asker, which is the identity the rest of the request should carry anyway.
     * **Failure is data, not a crash.** Unknown tools, invalid arguments and
       exceptions all come back as `{:error, message}` for the model to read.
     * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
@@ -114,20 +117,14 @@ defmodule Glific.AI.Tools do
 
   @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   defp execute(module, name, args, user) do
-    caller = {Repo.get_organization_id(), Repo.get_current_user()}
-
     Repo.put_organization_id(user.organization_id)
     Repo.put_current_user(user)
 
-    try do
-      read(module, name, args)
-    rescue
-      exception ->
-        Glific.log_exception(exception)
-        {:error, "The lookup failed: #{Exception.message(exception)}"}
-    after
-      restore(caller)
-    end
+    read(module, name, args)
+  rescue
+    exception ->
+      Glific.log_exception(exception)
+      {:error, "The lookup failed: #{Exception.message(exception)}"}
   end
 
   @spec read(module(), String.t(), map()) :: {:ok, term()} | {:error, String.t()}
@@ -146,12 +143,5 @@ defmodule Glific.AI.Tools do
       {:error, reason} ->
         {:error, "The lookup could not be completed: #{SafeLog.safe_inspect(reason)}"}
     end
-  end
-
-  @spec restore({non_neg_integer() | nil, User.t() | nil}) :: :ok
-  defp restore({organization_id, user}) do
-    Repo.put_organization_id(organization_id)
-    Repo.put_current_user(user)
-    :ok
   end
 end
