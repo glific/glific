@@ -1,10 +1,14 @@
-#import "./golden_qa_fields.frag.gql"
-
-mutation CreateGoldenQA($input: GoldenQaInput!) {
-  createGoldenQA(input: $input) {
-    goldenQA {
+mutation CreateGoldenQa($input: GoldenQaInput!) {
+  createGoldenQa(input: $input) {
+    goldenQa {
+      id
       name
+      duplicationFactor
+      fileName
+      totalItems
     }
-    ...ErrorFields
+    errors {
+      message
+    }
   }
 }

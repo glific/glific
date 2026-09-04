@@ -121,7 +121,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          {:ok, row_count} <- validate_csv_structure(file),
          :ok <- validate_golden_qa_question_limit(row_count),
          {:ok, kaapi_dataset} <- upload_dataset(dataset, user.organization_id) do
-      create_golden_qa_record(kaapi_dataset, name, file, factor, user)
+      create_golden_qa_record(kaapi_dataset, name, file, factor, row_count, user)
     else
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
@@ -162,16 +162,23 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec create_golden_qa_record(map(), String.t(), Plug.Upload.t(), integer(), map()) ::
+  @spec create_golden_qa_record(
+          map(),
+          String.t(),
+          Plug.Upload.t(),
+          integer(),
+          non_neg_integer(),
+          map()
+        ) ::
           {:ok, %{golden_qa: GoldenQA.t()}} | {:ok, %{errors: [%{message: String.t()}]}}
-  defp create_golden_qa_record(kaapi_dataset, name, file, factor, user) do
+  defp create_golden_qa_record(kaapi_dataset, name, file, factor, row_count, user) do
     case AIEvaluations.create_golden_qa(%{
            name: name,
            dataset_id: kaapi_dataset.dataset_id,
            duplication_factor: factor,
            file_name: file.filename,
            organization_id: user.organization_id,
-           total_items: Map.get(kaapi_dataset, :total_items, 0)
+           total_items: row_count
          }) do
       {:ok, golden_qa} ->
         {:ok, %{golden_qa: golden_qa}}

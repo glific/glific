@@ -641,6 +641,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
       assert golden_qa.name == "valid_name"
+      assert golden_qa.total_items == 5
     end
 
     test "succeeds when CSV has only a header row (0 questions)", %{staff: user} do
@@ -901,7 +902,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.name == "dataset_2024_v1"
     end
 
-    test "v1 path: uploads to the v1 endpoint and leaves total_items at default when the flag is off",
+    test "v1 path: uploads to the v1 endpoint and stores the CSV row count as total_items",
          %{staff: user, upload: upload} do
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
@@ -928,14 +929,14 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert golden_qa.name == "v1_regression_dataset"
       assert golden_qa.dataset_id == 88_003
-      assert golden_qa.total_items == 0
+      assert golden_qa.total_items == 1
     end
   end
 
   describe "create_golden_qa/3 v2 (is_ai_evaluation_enabled)" do
     setup [:enable_kaapi, :create_upload_file]
 
-    test "v2 path: returns golden_qa with total_items and hits the v2 endpoint when is_ai_evaluation_enabled is on",
+    test "v2 path: hits the v2 endpoint and ignores Kaapi's duplicated total_items",
          %{staff: user, upload: upload} do
       FunWithFlags.enable(:is_ai_evaluation_enabled,
         for_actor: %{organization_id: user.organization_id}
@@ -967,7 +968,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
         assert golden_qa.name == "valid_dataset_v2"
         assert golden_qa.dataset_id == 88_004
-        assert golden_qa.total_items == 120
+        assert golden_qa.total_items == 1
 
         assert called(
                  Glific.Metrics.increment(
