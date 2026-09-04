@@ -7,6 +7,13 @@ subscription assistantConfigVersionUpdated {
     settings
     status
     description
+    vectorStore {
+      id
+      knowledgeBaseVersionId
+      vectorStoreId
+      name
+      status
+    }
     insertedAt
     updatedAt
   }
