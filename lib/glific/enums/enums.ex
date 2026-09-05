@@ -170,6 +170,9 @@ defmodule Glific.Enums do
   defmacro message_type_const,
     do: Macro.expand(@message_type_const, __CALLER__)
 
+  defmacro message_channel_const,
+    do: Macro.expand(@message_channel_const, __CALLER__)
+
   defmacro question_type_const,
     do: Macro.expand(@question_type_const, __CALLER__)
 
