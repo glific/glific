@@ -207,6 +207,38 @@ There is a precedent to harden rather than a mechanism to invent: `Triggers.vali
 
 > **Two hazards for whoever implements this.** `Triggers.update_next/1` calls `update_trigger/2` on *every* trigger fire, with a hard `{:ok, trigger} =` match — so a validation that rejects unconditionally in the changeset would make every pre-existing bad trigger crash the cron. And `resolvers/triggers.ex` swallows every failure in its `with`, returning a hardcoded *"Trigger start_at should always be greater than current time"*; any new error on the update path would be reported as a start-time problem until that is fixed.
 
+### Every entry point states its channel; only a reply inherits one
+
+A reply knows its channel because `flow_contexts.channel` was written from the message that started the flow. Anything that **initiates** has nothing to inherit, and today silently becomes WhatsApp. The trigger above is one instance of a class with seven members. `[Target]`: every initiating entry point takes an optional channel argument **defaulting to `whatsapp`**, so no existing caller changes behaviour and a web start becomes expressible at all.
+
+| Entry point | Names a flow? | Inherits a channel? | Where |
+|---|---|---|---|
+| `startContactFlow` | yes | no — needs the argument | `resolvers/flows.ex:209` |
+| `startGroupFlow` | yes | no — needs the argument | `resolvers/flows.ex:310` |
+| Trigger | yes | no — needs the argument | `triggers.ex:149` |
+| `start_session`, contacts and collections | yes | no — needs the argument | `flow.ex:711,720` |
+| `enter_flow` sub-flow | yes | **yes** — `context.channel` | `flow.ex:292` |
+| Periodic / out-of-office | yes | yes — inbound-derived | `periodic.ex:150` |
+| Inbound keyword and optin | yes | yes | `consumer_flow.ex:152,261` |
+| Exotel inbound call | yes | no — telephony, leave defaulted (#5705) | `exotel_controller.ex:104` |
+| Group message **broadcast** | **no — a raw message** | no | `broadcast.ex:126` |
+
+**`startGroupFlow` is not a group conversation, and this is the one thing to get right.** It takes *collection* ids and fans out to every contact in them, producing N ordinary **1-1 conversations**. The proof is a per-contact `INSERT ... SELECT FROM contacts` (`broadcast.ex:560-567`) followed by one `FlowContext.init_context/4` per contact (`broadcast.ex:409`) — every row it creates is `contact_id`-scoped. So it needs the channel argument exactly as `startContactFlow` does, and it is the highest-volume such path, because triggers route through it. The genuine group conversation is `start_wa_group_flow` — WhatsApp Groups over Maytapi, seeding a context with a `wa_group_id` and **no `contact_id`** (`flow_context.ex:732`) and writing to `wa_messages`. That one has no web equivalent and is deliberately untouched.
+
+> **Two obstacles on the group path, neither of them obvious.**
+>
+> `Broadcast.flow_tasks/3` is fed by a **three-key allowlist** — `:delay`, `:message_broadcast_id`, `:default_results` (`broadcast.ex:383`). A `:channel` threaded in from above is silently dropped there, with no error.
+>
+> More importantly, `message_broadcasts` **needs a column**; opts cannot carry it. `broadcast_flow_to_group/4` only enqueues, and execution happens later in a different process, where `process_broadcast_group/1` rebuilds `opts` entirely from the persisted row (`broadcast.ex:213`). Nothing in memory survives that gap. `default_results` is the exact precedent — an `init_context` opt that had to be persisted for the same reason. The column reuses `message_channel_enum`, so no `ALTER TYPE`.
+
+**`enter_flow` should inherit, and in the prototype it does not.** `Flow.start_sub_flow/3` keeps the same contact and passes `context.status`, `parent_id` and `delay` — but not `:channel` — so a web parent flow silently produces a WhatsApp child. That is a one-line fix, not a new argument.
+
+**Reachability stays caller-beware in v1**, deliberately. Almost nothing is knowable at the moment of the call: `contact_identities` does not exist yet, `contacts.contact_type` has no `web` value, and a web contact is created on the same phone-keyed row as a WhatsApp one, leaving no durable marker. The only two signals are live `Presence` and historical `messages.channel = 'web'`. So validate the one thing that is cheap and correct — that the flow's `channels` contains the requested channel — and do not pretend to validate reachability. A `web` start on a contact who has never connected seeds a context whose first outbound finds no presence and persists undelivered; that is the honest behaviour until identities land.
+
+**A reachability predicate does not belong in `ChannelCapability`.** The registry is a static `capability => channels` table that takes no contact, so it cannot express *this human on this channel*; and §2.2 already forbids the conflation — `supports?/2` answers "can this channel render X", never "is this the web channel". Overloading it with `can_initiate` rebuilds the channel enum behind a second, worse interface. The home is a contact-aware predicate — `Contacts.reachable_on?/2`, or a channel-aware clause on `can_send_message_to?/3` — where WhatsApp answers from `bsp_status` and the 24-hour window as it does today, and web answers from presence now and identities later. That is the "reachability precondition on every outbound path" §3.3 already names as one of the three gaps Telegram surfaced.
+
+**Group message broadcasts cannot be gated this way at all.** They send a raw message rather than starting a flow, so there is no `flows.channels` to consult. They either take their own channel input or stay WhatsApp; that is a separate decision and not part of this work.
+
 ### Contact identities: one contact, one row per channel
 
 A person reaching an NGO on WhatsApp, on the web and later on Telegram is **one contact** carrying **one identity row per channel** `[Target]`.
