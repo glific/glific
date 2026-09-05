@@ -67,6 +67,9 @@ defmodule Glific.Enums.Constants do
         :whatsapp_form_response
       ]
 
+      # the channel a message was sent or received on
+      @message_channel_const [:whatsapp, :web]
+
       # the different possible types of interactive message
       @interactive_message_type_const [:list, :quick_reply, :location_request_message]
 
