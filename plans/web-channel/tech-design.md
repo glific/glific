@@ -182,7 +182,32 @@ varchar and enum are **identical on disk** — row alignment absorbs the five-by
 
 *A stale comment corrected along the way:* `20260812154401_add_blocks_to_message_type_enum.exs` says `ALTER TYPE ... ADD VALUE` "cannot run inside the migration's default transaction". That was true before PG 12. On PG 15 the statement commits fine inside a transaction; what is still forbidden is *using* the new value in that same transaction — so `@disable_ddl_transaction true` remains correct for any migration that writes the value it just added, and unnecessary otherwise.
 
-> **Where the volume cost actually is.** The concern behind the question is real, it is just not about this column. Every message insert fires `message_before_insert_callback`, which does `UPDATE contacts SET last_communication_at, last_message_number ... WHERE id = NEW.contact_id`. A chatty conversation serialises on that contact's row lock and produces one dead `contacts` tuple per message. That is the write-path ceiling for a high-volume web channel, it is entirely type-independent, and it compounds the `message_number` problem in §4.14.
+> **Where the volume cost actually is.** The concern behind the question is real, it is just not about this column. Every message insert fires `message_before_insert_callback`, which does `UPDATE contacts SET last_communication_at, last_message_number ... WHERE id = NEW.contact_id`. A chatty conversation serialises on that contact's row lock and produces one dead `contacts` tuple per message. That is the write-path ceiling for a high-volume web channel, it is entirely type-independent, and it compounds the `message_number` question settled below.
+
+### The message counter stays shared across channels
+
+`messages.message_number` and `contacts.last_message_number` are a per-contact counter assigned by `message_before_insert_callback` (`structure.sql:370`), keyed on **`contact_id` alone** — no channel, no profile — and incremented by inbound and outbound alike. It is hand-rolled rather than a sequence: gapless and 1-based only because the read-then-write is serialised by the row lock the `UPDATE contacts` takes. `[Target]`: **it stays shared.** The channel-filtered read is fixed instead — #5708.
+
+**Nothing needs it per channel.** Sorted by what each consumer actually requires:
+
+| Requires | Consumer |
+|---|---|
+| **Gapless** | `Erase.clean_message_for_contact/4` (`erase.ex:265-325`) uses `last - first` as a *row count* and prunes `message_number < last - 250` |
+| **1-based** | `Contacts.new_contact?/1` (`contacts.ex:496`), and a duplicate of the same test off the message struct at `taggers/status.ex:13`, which gates new-contact tagging |
+| **As a cursor** | `Conversations.add_special_offset/4`, and the staff frontend |
+| Monotonic only | Collection-count badges, the search tiebreak, `tickets.message_number` pointers, both GraphQL output fields |
+
+Every one of these needs per-contact monotonicity, which it already has. **BigQuery does not consume it at all** — `message_schema/0` has no such column, dedup runs on `bq_uuid` and the sync watermark is the primary key — so the coupling that would have been hardest to unpick does not exist.
+
+**The defect is the read, not the counter.** Reading a conversation is a two-stage query with no `LIMIT` in either stage: a numeric window selects ids, and filters are applied to the result afterwards. A channel filter therefore cannot widen the search, only subtract from a page chosen without it. This already bit once — the commented-out `include_labels` filter at `messages.ex:1074-1078` was resolved by deleting the filter, which is not available for channel. The fix is keyset pagination on `(contact_id, channel, message_number)` with a real `LIMIT`: one concurrent index, **no backfill**, reversible, write path untouched, and it repairs the identical latent bug in the WhatsApp Groups inbox for free. The prototype's widget path already does exactly this and is the working reference.
+
+> **The cost that makes this a coordinated change, not a backend refactor.** `message_number` is an *addressable coordinate* in the staff UI, not an internal detail: `ChatMessages.tsx` derives the paging `offset` from it (`:638`), derives `limit` from it (`:673`), uses the first message's number as a limit when jumping to a search hit (`:545`), and builds scroll anchors as `#search{messageNumber}` DOM ids. The offset contract is real and honoured, so backend and frontend must ship together.
+
+**Two alternatives rejected.** A *second per-channel counter* needs `message_number` recomputed per channel across ~10M rows — a full-table `UPDATE` rewriting every tuple, the same cost ruled out for the `channel` column itself — and makes the write path strictly worse by adding a second `UPDATE contacts` per insert. *Re-keying the existing counter to (contact, channel)* looks cheapest and is the most dangerous: `message_number` remains one column, so two channels' numbers interleave, every existing row needs renumbering, and `Erase` would then delete `message_number < last_whatsapp - 250` and **destroy the entire web history** of any contact with more WhatsApp traffic. Irreversible once renumbered.
+
+**WhatsApp Groups is not a precedent to copy here.** It solved this by cloning — a separate `wa_messages` table with its own counter and trigger — which is the architecture the web channel already rejected, and it had no backfill because the table was new. Tellingly, WA *search* declined the counter: `searches.ex:584-585` orders by `inserted_at, id` with a real limit and offset. Someone already reached for keyset ordering the moment they needed a filter alongside pagination.
+
+*Recorded because it is easy to miss and unrelated to channels:* the counter is **not stable over a contact's lifetime**. `Messages.reset_contact_fields/1` sets `last_message_number: 0` on the `clear_messages` path, restarting at 1 while leaving `first_message_number` untouched, so a `tickets.message_number` bookmark taken before a clear silently repoints. Noted on #5708, worth its own ticket.
 
 ### Flows are omnichannel until a node narrows them
 
