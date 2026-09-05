@@ -25,8 +25,8 @@ defmodule Glific.AI.Provider do
   @typedoc """
   Why a call failed.
 
-  The message is deliberately generic: the caller records it against a message
-  row and shows it to a user, so it must never carry request detail. What
+  The message is generic: the caller records it against a message row and shows
+  it to a user, so it must never carry request detail. What
   actually went wrong is logged and reported to AppSignal by the implementation.
   """
   @type failure ::

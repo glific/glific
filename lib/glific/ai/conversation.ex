@@ -1,26 +1,33 @@
 defmodule Glific.AI.Conversation do
   @moduledoc """
-  A Glific AI chat thread, owned by one user within one organization.
+  A Glific AI thread, owned by one user within one organization.
 
   Groups many `Glific.AI.Message`s, each of which holds its own
   `Glific.AI.Event`s.
+
+  `kind` separates the two ways a thread starts. A `:chat` thread is what
+  someone typed in the chat window and can hold many exchanges; a `:skill_run`
+  thread is one skill run on its own, which is why the chat history lists only
+  `:chat`.
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.{
+    Enums.GlificAIConversationKind,
     Partners.Organization,
     Users.User
   }
 
   @required_fields [:user_id, :organization_id]
-  @optional_fields [:title]
+  @optional_fields [:title, :kind]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           title: String.t() | nil,
+          kind: GlificAIConversationKind.t() | nil,
           user_id: non_neg_integer | nil,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -31,6 +38,8 @@ defmodule Glific.AI.Conversation do
 
   schema "glific_ai_conversations" do
     field :title, :string
+    field :kind, GlificAIConversationKind, default: :chat
+
     belongs_to :user, User
     belongs_to :organization, Organization
 

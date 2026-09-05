@@ -18,6 +18,7 @@ defmodule Glific.AI.Message do
 
   @required_fields [:conversation_id, :user_id, :organization_id]
   @optional_fields [
+    :skill,
     :status,
     :error,
     :model,
@@ -29,6 +30,7 @@ defmodule Glific.AI.Message do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
+          skill: String.t() | nil,
           status: GlificAIMessageStatus.t() | nil,
           error: String.t() | nil,
           model: String.t() | nil,
@@ -46,6 +48,7 @@ defmodule Glific.AI.Message do
         }
 
   schema "glific_ai_messages" do
+    field :skill, :string
     field :status, GlificAIMessageStatus, default: :pending
     field :error, :string
     field :model, :string

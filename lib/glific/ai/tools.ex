@@ -10,9 +10,8 @@ defmodule Glific.AI.Tools do
 
     * **The read runs as the person who asked.** Their organisation and user are
       installed before the tool runs, so a tool cannot reach another tenant and
-      cannot read past what the asker may see. They stay installed afterwards:
-      a background job that had the organisation's root user continues as the
-      asker, which is the identity the rest of the request should carry anyway.
+      cannot read past what the asker may see. Both stay set after the call
+      returns.
     * **Failure is data, not a crash.** Unknown tools, invalid arguments and
       exceptions all come back as `{:error, message}` for the model to read.
     * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
@@ -40,7 +39,16 @@ defmodule Glific.AI.Tools do
 
   @doc "Every operation, flattened across the feature modules, as the model sees them."
   @spec all() :: [Tool.spec()]
-  def all, do: Enum.flat_map(modules(), & &1.specs())
+  def all, do: all(modules())
+
+  @doc """
+  The operations of just these modules.
+
+  A skill sends every tool it declares to the model on each turn, so narrowing
+  the set is what keeps a focused skill from paying for the whole platform.
+  """
+  @spec all([module()]) :: [Tool.spec()]
+  def all(modules), do: Enum.flat_map(modules, & &1.specs())
 
   @doc "Looks an operation up by the name the model uses."
   @spec fetch(String.t(), [module()]) :: {:ok, {module(), Tool.spec()}} | :error

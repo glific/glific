@@ -182,3 +182,9 @@ defenum(
   :glific_ai_event_type_enum,
   Glific.Enums.glific_ai_event_type_const()
 )
+
+defenum(
+  Glific.Enums.GlificAIConversationKind,
+  :glific_ai_conversation_kind_enum,
+  Glific.Enums.glific_ai_conversation_kind_const()
+)
