@@ -5,17 +5,44 @@ defmodule GlificWeb.Resolvers.Media do
   alias Glific.{GCS.GcsWorker, Users.User}
 
   @doc """
-  Upload a file given its extension
+  Upload a file given its extension.
+
+  A caller that knows what it is uploading may cap the size with `max_size_kb`. The client
+  checks too, so this is the backstop for a request that did not come from our form — the only
+  other bound is `Plug.Parsers`, which admits 20MB.
   """
   @spec upload(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def upload(
         _,
-        %{media: media, extension: extension, organization_id: organization_id},
+        %{media: media, extension: extension, organization_id: organization_id} = args,
         %{context: %{current_user: user}}
       ) do
-    GcsWorker.upload_media(media.path, remote_name(user, extension), organization_id)
-    |> handle_response()
+    with :ok <- within_size_limit(media.path, args[:max_size_kb]) do
+      GcsWorker.upload_media(media.path, remote_name(user, extension), organization_id)
+      |> handle_response()
+    end
+  end
+
+  @spec within_size_limit(String.t(), integer() | nil) :: :ok | {:error, String.t()}
+  defp within_size_limit(_path, nil), do: :ok
+
+  # Absinthe's :integer is signed, and a negative limit would reject every upload — the
+  # comparison below is true for any size. Refuse the argument rather than the file.
+  defp within_size_limit(_path, max_size_kb) when max_size_kb <= 0,
+    do: {:error, "max_size_kb must be greater than zero."}
+
+  defp within_size_limit(path, max_size_kb) do
+    case File.stat(path) do
+      {:ok, %{size: size}} when size > max_size_kb * 1024 ->
+        {:error, "File is #{div(size, 1024)}KB. The limit is #{max_size_kb}KB."}
+
+      {:ok, _stat} ->
+        :ok
+
+      {:error, reason} ->
+        {:error, "Could not read the uploaded file: #{:file.format_error(reason)}"}
+    end
   end
 
   @doc """
