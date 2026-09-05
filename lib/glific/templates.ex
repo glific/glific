@@ -7,6 +7,7 @@ defmodule Glific.Templates do
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
+    Caches,
     Communications.Mailer,
     Contacts.Contact,
     Flows.Translate.GoogleTranslate,
@@ -330,6 +331,48 @@ defmodule Glific.Templates do
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def bulk_apply_templates(org_id, data) do
     Provider.bsp_module(org_id, :template).bulk_apply_templates(org_id, data)
+  end
+
+  @doc """
+  Searches Meta's pre-approved WhatsApp template library, fetched live from the
+  organization's BSP partner API. Read-only passthrough for the frontend to
+  browse Meta's curated template catalog and prefill the create template form —
+  it does **not** create any `SessionTemplate` rows.
+
+  There's no caller-facing filtering: the BSP module fetches the org's full
+  eligible catalog (already narrowed to Utility templates, excluded topics, and
+  the org's active languages) and the UI searches/filters that cached payload
+  client-side. Results are cached per organization for a short window, since
+  the same catalog is otherwise re-fetched on every catalog open.
+  """
+  @spec search_library_templates(non_neg_integer()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  def search_library_templates(organization_id) do
+    # Active languages are part of the cache key (not just invalidated after the
+    # fact) so a stale entry can never outlive an org's language settings change:
+    # changing active_language_ids yields a new key instead of serving old results.
+    active_language_ids = Partners.organization(organization_id).active_language_ids
+    cache_key = {:template_library, active_language_ids}
+
+    case Caches.get(organization_id, cache_key, refresh_cache: false) do
+      {:ok, false} -> fetch_library_templates(organization_id, cache_key)
+      {:ok, templates} -> {:ok, templates}
+    end
+  end
+
+  @spec fetch_library_templates(non_neg_integer(), tuple()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  defp fetch_library_templates(organization_id, cache_key) do
+    bsp_module = Provider.bsp_module(organization_id, :template)
+
+    case bsp_module.search_library_templates(organization_id) do
+      {:ok, templates} = result ->
+        Caches.set(organization_id, cache_key, templates, ttl: :timer.minutes(20))
+        result
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -970,11 +1013,10 @@ defmodule Glific.Templates do
   end
 
   @doc """
-  Machine-translates an HSM draft's body/footer/button text from English into
-  the target language, for the "Add new language" flow on an existing
-  template family. Returns translated strings only — it does not create or
-  update any SessionTemplate record, since each language of an HSM still has
-  to be submitted separately (via create_session_template) for BSP approval.
+  Machine-translates an HSM draft's body/footer/button text into the target
+  language, using the anchor template's own language as the source. Returns
+  the translated strings and the resolved source language; it does not
+  create or update a SessionTemplate.
   """
   @spec translate_session_template(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
@@ -985,18 +1027,34 @@ defmodule Glific.Templates do
     texts = [body, footer || ""] ++ buttons
 
     with {:ok, language} <- Repo.fetch_by(Language, %{id: params.language_id}),
+         {:ok, anchor_template} <-
+           Repo.fetch_by(SessionTemplate, %{
+             id: params.template_id,
+             organization_id: organization_id
+           }),
+         {:ok, source_language} <- Repo.fetch_by(Language, %{id: anchor_template.language_id}),
+         :ok <- validate_distinct_languages(source_language, language),
          {:ok, translated} <-
-           GoogleTranslate.translate(texts, "English", language.label, org_id: organization_id) do
+           GoogleTranslate.translate(texts, source_language.label, language.label,
+             org_id: organization_id
+           ) do
       [translated_body, translated_footer | translated_buttons] = translated
 
       {:ok,
        %{
          body: translated_body,
          footer: if(footer, do: translated_footer, else: nil),
-         buttons: translated_buttons
+         buttons: translated_buttons,
+         source_language: source_language
        }}
     end
   end
+
+  @spec validate_distinct_languages(Language.t(), Language.t()) :: :ok | {:error, String.t()}
+  defp validate_distinct_languages(%{locale: locale}, %{locale: locale}),
+    do: {:error, "Source and target language cannot be the same."}
+
+  defp validate_distinct_languages(_source, _target), do: :ok
 
   @doc """
   get template from EEx based on variables

@@ -322,12 +322,138 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} = Expression.validate(~S|<%= %{"a" => 1}[System.cmd("id", [])] %>|)
     end
 
-    test "newly allowlisted pure functions (Decimal, Enum, List, Timex)" do
+    test "newly allowlisted pure functions (Decimal, Enum, List, String, Kernel, DateTime)" do
       assert {:ok, "6"} = Expression.eval("<%= Decimal.mult(2, 3) %>")
       assert {:ok, "3"} = Expression.eval("<%= Decimal.div(9, 3) %>")
       assert {:ok, "6"} = Expression.eval("<%= Enum.sum([1, 2, 3]) %>")
       assert {:ok, "a, b"} = Expression.eval(~S|<%= Enum.map_join(["a", "b"], ", ", &(&1)) %>|)
       assert {:ok, "1"} = Expression.eval("<%= Enum.count(List.wrap(1)) %>")
+
+      assert {:ok, "1, 2"} =
+               Expression.eval(~S/<%= Enum.take([1, 2, 3], 2) |> Enum.join(", ") %>/)
+
+      assert {:ok, "b-a"} =
+               Expression.eval(~S/<%= ["a", "b"] |> Enum.reverse() |> Enum.join("-") %>/)
+
+      assert {:ok, "2"} =
+               Expression.eval(
+                 ~S/<%= MapSet.new([1, 1, 2]) |> Enum.count() |> Integer.to_string() %>/
+               )
+
+      # Enum.into/2 with a MapSet as the collectable (dedupes 1, 1, 2 -> 2 elements)
+      assert {:ok, "2"} =
+               Expression.eval(
+                 ~S/<%= Enum.into([1, 1, 2], MapSet.new([])) |> Enum.count() |> Integer.to_string() %>/
+               )
+
+      assert {:ok, "2, 4, 6"} =
+               Expression.eval(
+                 ~S/<%= Enum.into([1, 2, 3], [], fn n -> n * 2 end) |> Enum.join(", ") %>/
+               )
+
+      # a disallowed call inside the Enum.into/3 transform closure is still rejected
+      assert {:error, _} =
+               Expression.validate(~S/<%= Enum.into(@l, [], &(System.cmd(&1, []))) %>/)
+
+      # inspect/1 — stringifies any term, useful for debugging / rendering non-string values
+      assert {:ok, "\"en\""} = Expression.eval(~S/<%= inspect("en") %>/)
+      assert {:ok, "[1, 2, 3]"} = Expression.eval(~S/<%= inspect([1, 2, 3]) %>/)
+      assert {:ok, "\"EN\""} = Expression.eval(~S/<%= inspect("en") |> String.upcase() %>/)
+
+      assert {:ok, "a-0,b-1,c-2"} =
+               Expression.eval(
+                 ~S/<%= Enum.with_index(["a", "b", "c"]) |> Enum.map_join(",", fn p -> "#{elem(p, 0)}-#{elem(p, 1)}" end) %>/
+               )
+
+      assert {:ok, "1,3"} =
+               Expression.eval(
+                 ~S/<%= Enum.group_by([1, 2, 3], fn n -> rem(n, 2) end) |> Map.get(1) |> Enum.join(",") %>/
+               )
+
+      assert {:ok, "true"} =
+               Expression.eval(~S/<%= MapSet.new([1, 2, 3]) |> MapSet.member?(2) %>/)
+
+      assert {:ok, "a, b, c"} =
+               Expression.eval(~S/<%= "abc" |> String.graphemes() |> Enum.join(", ") %>/)
+
+      assert {:ok, "1.5"} = Expression.eval(~S|<%= String.to_float("1.5") %>|)
+      assert {:ok, "he"} = Expression.eval(~S|<%= String.slice("hello", 0..1//1) %>|)
+      assert {:ok, "true"} = Expression.eval("<%= 5 |> Kernel.>(0) %>")
+      assert {:ok, "2000"} = Expression.eval("<%= 1000 |> Kernel.+(1000) %>")
+
+      assert {:ok, iso} =
+               Expression.eval(
+                 "<%= DateTime.shift_zone!(DateTime.utc_now(), \"Etc/UTC\") " <>
+                   "|> DateTime.to_date() |> Date.to_iso8601() %>"
+               )
+
+      assert iso == Date.to_string(Date.utc_today())
+    end
+
+    test "Enum.max_by/2, Enum.max/2 and Enum.take_random/2" do
+      # max_by/2 is higher-order: the mapper is one of our own closures
+      assert {:ok, "bbb"} =
+               Expression.eval(
+                 ~S|<%= Enum.max_by(["a", "bbb", "cc"], fn s -> String.length(s) end) %>|
+               )
+
+      # max/2 with an explicit sorter closure
+      assert {:ok, "5"} = Expression.eval("<%= Enum.max([1, 5, 3], fn a, b -> a >= b end) %>")
+
+      # take_random/2 is non-deterministic; assert on the count of what it returns
+      assert {:ok, "2"} = Expression.eval("<%= Enum.count(Enum.take_random([1, 2, 3], 2)) %>")
+
+      # a disallowed call inside the mapper closure is still rejected
+      assert {:error, _} =
+               Expression.validate(~S|<%= Enum.max_by(@l, &(System.cmd(&1, []))) %>|)
+    end
+
+    test "a bare module used as a value rejects with an actionable message" do
+      # single-segment and multi-segment aliases both get a clear message
+      assert {:error, "module String used as a value; call it as String.function(...)"} =
+               Expression.eval("<%= String %>")
+
+      assert {:error, "module Foo.Bar used as a value; call it as Foo.Bar.function(...)"} =
+               Expression.validate("<%= Foo.Bar %>")
+
+      # a bare module as an argument is rejected the same way
+      assert {:error, "module Date used as a value" <> _} =
+               Expression.eval("<%= Enum.max_by([1, 2], Date) %>")
+
+      # the completed form still works
+      assert {:ok, "3"} =
+               Expression.eval("<%= String.length(@name) %>", %{"name" => "abc"})
+
+      # render/2 trusts its compiled input and skips re-validation, so it is the
+      # path that actually reaches eval_node's bare-alias clause -- verifying the
+      # sole security boundary fails closed with the same message even when the
+      # safe_shape twin is bypassed.
+      assert {:error, "module String used as a value; call it as String.function(...)"} =
+               Expression.render([{:expr, {:__aliases__, [], [:String]}}], %{})
+    end
+
+    test "a capitalised field/result name is treated as a variable, not a module" do
+      # `@contact.fields.Grade` parses as an alias whose first segment is the
+      # `@contact.fields` AST node; it is a field reference, so it validates and
+      # resolves like any other variable rather than being rejected as a module.
+      assert :ok = Expression.validate("<%= @contact.fields.Grade %>")
+      assert :ok = Expression.validate("<%= @results.Score %>")
+
+      {:ok, compiled} = Expression.compile("<%= @contact.fields.Grade %>")
+
+      assert {:ok, "8"} =
+               Expression.render(compiled, %{"contact" => %{"fields" => %{"Grade" => "8"}}})
+
+      # an unresolved reference degrades like a lowercase one (never raises)
+      assert {:error, "field access on non-map"} =
+               Expression.eval("<%= @contact.fields.Grade %>")
+    end
+
+    test "a genuine bare module is still rejected" do
+      assert {:error, "module String used as a value" <> _} = Expression.validate("<%= String %>")
+
+      assert {:error, "module Foo.Bar used as a value" <> _} =
+               Expression.validate("<%= Foo.Bar %>")
     end
 
     test "anonymous functions (fn and & capture) with Enum" do
@@ -340,6 +466,50 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "3"} = Expression.render(c2, results)
 
       assert {:ok, "10"} = Expression.eval("<%= 5 |> then(fn v -> v * 2 end) %>")
+    end
+
+    test "fn params support tuple, list, literal and pin destructuring" do
+      # tuple destructuring — the corpus's Enum.with_index / group_by / into shape
+      assert {:ok, "3,7"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{1, 2}, {3, 4}], fn {a, b} -> a + b end) |> Enum.join(",") %>/
+               )
+
+      # literal + var, corpus: fn {:ok, v} -> v end
+      assert {:ok, "5,9"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{:ok, 5}, {:ok, 9}], fn {:ok, v} -> v end) |> Enum.join(",") %>/
+               )
+
+      # underscore in tuple (corpus: fn {v, _} -> v end and fn {_, i} -> i end)
+      assert {:ok, "a,b,c"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{"a", 1}, {"b", 2}, {"c", 3}], fn {v, _} -> v end) |> Enum.join(",") %>/
+               )
+
+      # list destructuring (corpus: fn [day, month, year] -> ...)
+      assert {:ok, "6"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([[1, 2, 3]], fn [a, b, c] -> a + b + c end) |> Enum.at(0) |> Integer.to_string() %>/
+               )
+
+      # arity 2 with tuple destructuring in both params (Enum.max/2 comparator)
+      assert {:ok, "b"} =
+               Expression.eval(
+                 ~S/<%= Enum.max([{1, "a"}, {3, "b"}, {2, "c"}], fn {a, _}, {b, _} -> a >= b end) |> elem(1) %>/
+               )
+    end
+
+    test "an fn param that fails to match at call time returns {:error, _}" do
+      assert {:error, _} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{:error, "boom"}], fn {:ok, v} -> v end) %>/
+               )
+    end
+
+    test "invalid fn param patterns are rejected at publish time" do
+      # <<x>> is a bitstring pattern, not in the pattern grammar
+      assert {:error, _} = Expression.validate(~S/<%= Enum.map(@l, fn <<x>> -> x end) %>/)
     end
 
     test "a closure body cannot escape the allowlist" do
@@ -389,6 +559,11 @@ defmodule Glific.Flows.ExpressionTest do
 
       assert :ok = Expression.validate(~s|<%= Glific.Clients.Tap.template("code", "") %>|)
 
+      # additional client template calls seen in the corpus
+      assert :ok = Expression.validate(~s|<%= Glific.Clients.ArogyaWorld.template("u") %>|)
+      assert :ok = Expression.validate(~s|<%= Glific.Clients.PehlayAkshar.template("l", 1) %>|)
+      assert :ok = Expression.validate(~s|<%= Glific.Templates.template("uuid", ["a"]) %>|)
+
       # but unknown multi-segment modules/functions are still rejected
       assert {:error, _} = Expression.validate("<%= Glific.Clients.Evil.cmd(\"id\") %>")
       assert {:error, _} = Expression.validate("<%= Glific.Repo.all() %>")
@@ -421,6 +596,220 @@ defmodule Glific.Flows.ExpressionTest do
         assert {:error, _} = Expression.eval(payload), "expected #{payload} to reject"
         assert {:error, _} = Expression.validate(payload)
       end
+    end
+  end
+
+  describe "eval/2 — with expression" do
+    test "happy path binds and runs the do body" do
+      assert {:ok, "10"} = Expression.eval("<%= with {:ok, v} <- {:ok, 5} do v * 2 end %>")
+    end
+
+    test "chains multiple clauses, threading bindings forward" do
+      assert {:ok, "5"} =
+               Expression.eval(
+                 "<%= with {:ok, a} <- {:ok, 2}, {:ok, b} <- {:ok, 3} do a + b end %>"
+               )
+    end
+
+    test "a non-match routes to the else clause" do
+      assert {:ok, "boom"} =
+               Expression.eval(
+                 "<%= with {:ok, v} <- {:error, \"boom\"} do v else {:error, e} -> e end %>"
+               )
+    end
+
+    test "a non-match with no else returns the unmatched value" do
+      assert {:ok, "raw"} = Expression.eval("<%= with {:ok, v} <- \"raw\" do v end %>")
+    end
+
+    test "list, cons and map patterns" do
+      assert {:ok, "3"} = Expression.eval("<%= with [a, b] <- [1, 2] do a + b end %>")
+      assert {:ok, "3"} = Expression.eval("<%= with [h | t] <- [1, 2, 3] do h + hd(t) end %>")
+      assert {:ok, "9"} = Expression.eval(~S|<%= with %{"n" => n} <- %{"n" => 9} do n end %>|)
+    end
+
+    test "pin matches against a bound value" do
+      {:ok, compiled} = Expression.compile(~S|<%= with ^x <- 5 do "eq" else _ -> "ne" end %>|)
+      assert {:ok, "eq"} = Expression.render(compiled, %{"x" => 5})
+      assert {:ok, "ne"} = Expression.render(compiled, %{"x" => 9})
+    end
+
+    test "decodes JSON then destructures the result with a map pattern" do
+      assert {:ok, "1"} =
+               Expression.eval(~S|<%= with %{"a" => a} <- Jason.decode!("{\"a\":1}") do a end %>|)
+    end
+
+    test "the do body cannot escape the allowlist" do
+      payload = "<%= with x <- 1 do System.cmd(\"id\", []) end %>"
+      assert {:error, _} = Expression.eval(payload)
+      assert {:error, _} = Expression.validate(payload)
+    end
+
+    test "the clause rhs cannot escape the allowlist" do
+      payload = "<%= with x <- System.cmd(\"id\", []) do x end %>"
+      assert {:error, _} = Expression.eval(payload)
+      assert {:error, _} = Expression.validate(payload)
+    end
+
+    test "the else body cannot escape the allowlist" do
+      payload =
+        "<%= with {:ok, v} <- {:error, 1} do v else _ -> File.read!(\"/etc/hostname\") end %>"
+
+      assert {:error, _} = Expression.eval(payload)
+      assert {:error, _} = Expression.validate(payload)
+    end
+
+    test "validate/1 and eval/2 both accept a valid with" do
+      valid = "<%= with {:ok, v} <- {:ok, 1} do v end %>"
+      assert :ok = Expression.validate(valid)
+      assert {:ok, "1"} = Expression.eval(valid)
+    end
+
+    test "n-tuple pattern binds each element (tuple arrives as a binding)" do
+      {:ok, compiled} = Expression.compile("<%= with {a, b, c} <- @triple do a + b + c end %>")
+      assert {:ok, "6"} = Expression.render(compiled, %{"triple" => {1, 2, 3}})
+    end
+
+    test "a guard on a clause is not supported and rejects" do
+      payload = "<%= with {:ok, x} when is_integer(x) <- {:ok, 5} do x end %>"
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload)
+    end
+
+    test "a non-stringable result (unmatched tuple, no else) errors instead of raising" do
+      # `with` with no else returns the unmatched value; here that is a tuple,
+      # which has no String.Chars — eval must degrade to an error tuple, not raise.
+      assert {:error, _} = Expression.eval("<%= with {:ok, v} <- {:error, 1} do v end %>")
+    end
+
+    test "handles with statement" do
+      template =
+        "<%= (with {:ok, s, _} <- DateTime.from_iso8601(\"2024-01-01T10:00:00Z\"), " <>
+          "{:ok, e, _} <- DateTime.from_iso8601(\"2024-01-01T10:10:00Z\"), " <>
+          "do: DateTime.diff(e, s, :second) / 60 |> round()) || 0 %>"
+
+      assert :ok = Expression.validate(template)
+      assert {:ok, "10"} = Expression.eval(template)
+    end
+
+    test "= binding and bare-expression steps are supported" do
+      assert {:ok, "11"} =
+               Expression.eval(~S|<%= with a = 5, {:ok, b} <- {:ok, 6} do a + b end %>|)
+
+      assert {:ok, "5"} = Expression.eval(~S|<%= with 1, {:ok, v} <- {:ok, 5} do v end %>|)
+    end
+
+    test "a literal pattern matches" do
+      assert {:ok, "ok"} = Expression.eval(~S|<%= with 200 <- 200 do "ok" end %>|)
+    end
+
+    test "a map pattern against a non-map value routes to else" do
+      assert {:ok, "fallback"} =
+               Expression.eval(~S|<%= with %{"a" => a} <- "x" do a else _ -> "fallback" end %>|)
+    end
+
+    test "a tuple-size mismatch routes to else" do
+      {:ok, compiled} =
+        Expression.compile(~S|<%= with {a, b, c} <- @pair do a + b + c else _ -> "no" end %>|)
+
+      assert {:ok, "no"} = Expression.render(compiled, %{"pair" => {1, 2}})
+      assert {:ok, "6"} = Expression.render(compiled, %{"pair" => {1, 2, 3}})
+    end
+
+    test "an else with no matching clause errors" do
+      assert {:error, _} =
+               Expression.eval(
+                 ~S|<%= with {:ok, v} <- {:error, 1} do v else {:ok, x} -> x end %>|
+               )
+    end
+
+    test "a non-matching = step errors" do
+      assert {:error, _} = Expression.eval(~S/<%= with {:ok, v} = {:error, 1} do v end %>/)
+    end
+
+    test "a map pattern with a non-matching value or missing key routes to else" do
+      assert {:ok, "no"} =
+               Expression.eval(
+                 ~S/<%= with %{"a" => :ok} <- %{"a" => 1} do "y" else _ -> "no" end %>/
+               )
+
+      assert {:ok, "no"} =
+               Expression.eval(~S/<%= with %{"z" => a} <- %{"a" => 1} do a else _ -> "no" end %>/)
+    end
+
+    test "list and cons patterns route to else on any mismatch" do
+      assert {:ok, "no"} =
+               Expression.eval(~S/<%= with [:ok | t] <- [1, 2] do t else _ -> "no" end %>/)
+
+      assert {:ok, "no"} = Expression.eval(~S/<%= with [h | t] <- "x" do h else _ -> "no" end %>/)
+
+      assert {:ok, "no"} =
+               Expression.eval(~S/<%= with [:ok, b] <- [1, 2] do b else _ -> "no" end %>/)
+
+      assert {:ok, "no"} = Expression.eval(~S/<%= with [a, b] <- "x" do a else _ -> "no" end %>/)
+      assert {:ok, "no"} = Expression.eval(~S/<%= with [a] <- [1, 2] do a else _ -> "no" end %>/)
+    end
+
+    test "invalid patterns are rejected at publish time" do
+      assert {:error, _} = Expression.validate(~S/<%= with :nope <- @x do 1 end %>/)
+      assert {:error, _} = Expression.validate(~S/<%= with {:ok, <<x>>} <- @y do x end %>/)
+      assert {:error, _} = Expression.validate(~S/<%= with %{"a" => <<x>>} <- @y do x end %>/)
+    end
+  end
+
+  describe "eval/2 — case expression" do
+    test "picks the first matching clause and evaluates its body" do
+      template =
+        ~S/<%= case @n do 0 -> "zero"; 1 -> "one"; _ -> "many" end %>/
+
+      {:ok, compiled} = Expression.compile(template)
+      assert {:ok, "zero"} = Expression.render(compiled, %{"n" => 0})
+      assert {:ok, "one"} = Expression.render(compiled, %{"n" => 1})
+      assert {:ok, "many"} = Expression.render(compiled, %{"n" => 7})
+    end
+
+    test "binds variables from the matched pattern into the body" do
+      assert {:ok, "5"} =
+               Expression.eval(~S/<%= case {:ok, 5} do {:ok, v} -> v; _ -> 0 end %>/)
+    end
+
+    test "map, list-cons and tuple patterns work like they do in with" do
+      assert {:ok, "3"} =
+               Expression.eval(~S/<%= case [1, 2, 3] do [h | _] -> h + 2; _ -> 0 end %>/)
+
+      assert {:ok, "9"} =
+               Expression.eval(~S|<%= case %{"n" => 9} do %{"n" => n} -> n; _ -> 0 end %>|)
+    end
+
+    test "pin matches against a bound value" do
+      {:ok, compiled} =
+        Expression.compile(~S/<%= case @actual do ^expected -> "eq"; _ -> "ne" end %>/)
+
+      assert {:ok, "eq"} = Expression.render(compiled, %{"actual" => 5, "expected" => 5})
+      assert {:ok, "ne"} = Expression.render(compiled, %{"actual" => 5, "expected" => 9})
+    end
+
+    test "no matching clause errors instead of raising CaseClauseError" do
+      assert {:error, _} =
+               Expression.eval(~S/<%= case 3 do 1 -> "a"; 2 -> "b" end %>/)
+    end
+
+    test "the scrutinee cannot escape the allowlist" do
+      payload = ~S/<%= case System.cmd("id", []) do _ -> "x" end %>/
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload)
+    end
+
+    test "a clause body cannot escape the allowlist" do
+      payload = ~S|<%= case 1 do _ -> File.read!("/etc/hostname") end %>|
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload)
+    end
+
+    test "a guard on a clause is not supported and rejects" do
+      payload = ~S/<%= case @n do x when is_integer(x) -> x; _ -> 0 end %>/
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload, %{"n" => 1})
     end
   end
 end

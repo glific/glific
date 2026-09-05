@@ -241,7 +241,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       name: name,
       prompt: config_version.prompt,
       model: config_version.model,
-      temperature: get_in(config_version.settings, ["temperature"]) || 1,
+      settings: config_version.settings || %{},
       description: "Cloned version",
       organization_id: organization_id,
       knowledge_base_ids: knowledge_base_ids
@@ -250,7 +250,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @spec resolve_clone_name(Assistant.t(), AssistantConfigVersion.t()) :: String.t()
   defp resolve_clone_name(assistant, config_version) do
-    base_name = "Copy of #{assistant.name} Version #{config_version.version_number}"
+    base_name =
+      "Copy of #{assistant.name} Version #{AssistantConfigVersion.version_label(config_version)}"
+
     find_unique_name(base_name, 1)
   end
 
@@ -617,7 +619,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       prompt: params.prompt,
       model: params.model,
       provider: "openai",
-      settings: %{temperature: params.temperature},
+      settings: params.settings,
       status: :ready,
       organization_id: params.organization_id,
       kaapi_version_number: kaapi_config_version

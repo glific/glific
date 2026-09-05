@@ -30,11 +30,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
     field(:ai_evaluations_enabled, :boolean)
+    field(:ai_evaluation_v2_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
-    field(:copy_node_enabled, :boolean)
     field(:superset_enabled, :boolean)
     field(:prompt_generator_enabled, :boolean)
     field(:template_v2_enabled, :boolean)
+    field(:template_library_enabled, :boolean)
+    field(:glific_ai_enabled, :boolean)
+    field(:web_channel_enabled, :boolean)
   end
 
   object :organization_export_result do
@@ -143,12 +146,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_whatsapp_group_enabled, :boolean)
     field(:is_certificate_enabled, :boolean)
     field(:is_whatsapp_forms_enabled, :boolean)
-    field(:is_copy_node_enabled, :boolean)
     field(:is_trial_org, :boolean)
     field(:trial_expiration_date, :datetime)
     field(:assistant_config_versions_enabled, :boolean)
     field(:is_prompt_generator_enabled, :boolean)
     field(:is_template_v2_enabled, :boolean)
+    field(:is_template_library_enabled, :boolean)
+    field(:glific_ai_enabled, :boolean)
+    field(:web_channel_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 
@@ -318,23 +323,26 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.organization_services/3)
     end
 
+    # These export the whole organization via raw SQL, so neither prepare_query nor
+    # Repo.add_permission applies - a restricted staff user would read every contact
+    # and message in the org. The gate is the only available control.
     @desc "Export organization dynamic data"
     field :organization_export_data, :organization_export_result do
       arg(:filter, :export_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_data/3)
     end
 
     @desc "Export organization config data"
     field :organization_export_config, :organization_export_result do
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_config/3)
     end
 
     @desc "Export organization stats data"
     field :organization_export_stats, :organization_export_result do
       arg(:filter, :export_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_stats/3)
     end
 

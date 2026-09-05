@@ -6,7 +6,7 @@ defmodule GlificWeb.Resolvers.Users do
   use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.Repo
-  alias Glific.{Groups, Users, Users.User}
+  alias Glific.{Groups, OTP, Users, Users.User}
   alias GlificWeb.Schema.Middleware.Authorize
 
   @doc false
@@ -58,8 +58,7 @@ defmodule GlificWeb.Resolvers.Users do
   @spec update_password_params(User.t(), map()) :: {:ok, map()} | {:error, any}
   defp update_password_params(user, params) do
     with false <- is_nil(params[:password]) || is_nil(params[:otp]),
-         :ok <- PasswordlessAuth.verify_code(user.phone, params.otp) do
-      PasswordlessAuth.remove_code(user.phone)
+         :ok <- OTP.verify_code(:auth, user.phone, params.otp) do
       params = Map.merge(params, %{password_confirmation: params.password})
       {:ok, params}
     else
@@ -79,11 +78,52 @@ defmodule GlificWeb.Resolvers.Users do
           {:ok, any} | {:error, any}
   def update_user(_, %{id: id, input: params}, %{context: %{current_user: current_user}}) do
     with {:ok, user} <-
-           Repo.fetch_by(User, %{id: id, organization_id: current_user.organization_id}) do
-      current_user.roles
-      |> Authorize.valid_role?(hd(user.roles))
-      |> do_update_user(user, params)
+           Repo.fetch_by(User, %{id: id, organization_id: current_user.organization_id}),
+         :ok <- authorize_user_update(current_user, user, params) do
+      do_update_user(user, params)
     end
+  end
+
+  @spec authorize_user_update(User.t(), User.t(), map()) :: :ok | {:error, String.t()}
+  defp authorize_user_update(current_user, user, params) do
+    if Authorize.can_manage_user?(current_user.roles, user.roles),
+      do: authorize_requested_roles(current_user, params),
+      else: {:error, dgettext("errors", "Does not have access to the user")}
+  end
+
+  @spec authorize_requested_roles(User.t(), map()) :: :ok | {:error, String.t()}
+  defp authorize_requested_roles(current_user, params) do
+    case requested_roles(params) do
+      :error ->
+        {:error, dgettext("errors", "Resource not found")}
+
+      {:ok, requested} ->
+        if Authorize.can_grant_roles?(current_user.roles, requested),
+          do: :ok,
+          else: {:error, dgettext("errors", "Does not have access to assign this role")}
+    end
+  end
+
+  @spec requested_roles(map()) :: {:ok, list()} | :error
+  defp requested_roles(params) do
+    case roles_from_ids(Map.get(params, :add_role_ids, [])) do
+      :error -> :error
+      {:ok, labels} -> {:ok, Map.get(params, :roles, []) ++ labels}
+    end
+  end
+
+  @spec roles_from_ids(list()) :: {:ok, list()} | :error
+  defp roles_from_ids([]), do: {:ok, []}
+
+  defp roles_from_ids(role_ids) do
+    labels = Users.role_labels_by_ids(role_ids)
+
+    # an id that resolves to nothing belongs to another org or does not exist. Refusing
+    # here stops it from reaching check_access_role, which maps an empty label list to
+    # the lowest role and would silently demote the target
+    if length(labels) == length(Enum.uniq(role_ids)),
+      do: {:ok, labels},
+      else: :error
   end
 
   @doc """
@@ -98,10 +138,8 @@ defmodule GlificWeb.Resolvers.Users do
     end
   end
 
-  defp do_update_user(false, _user, _params),
-    do: {:error, dgettext("errors", "Does not have access to the user")}
-
-  defp do_update_user(true, user, params) do
+  @spec do_update_user(User.t(), map()) :: {:ok, map()}
+  defp do_update_user(user, params) do
     {:ok, user} = Users.update_user(user, params)
 
     if Map.has_key?(params, :group_ids) do
@@ -118,9 +156,14 @@ defmodule GlificWeb.Resolvers.Users do
   @doc false
   @spec delete_user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_user(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}) do
+  def delete_user(_, %{id: id}, %{context: %{current_user: current_user}}) do
+    with {:ok, user} <-
+           Repo.fetch_by(User, %{id: id, organization_id: current_user.organization_id}),
+         true <- Authorize.can_manage_user?(current_user.roles, user.roles) do
       Users.delete_user(user)
+    else
+      false -> {:error, dgettext("errors", "Does not have access to the user")}
+      error -> error
     end
   end
 end

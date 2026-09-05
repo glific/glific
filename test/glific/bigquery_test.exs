@@ -159,6 +159,31 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "make_job_to_remove_duplicate/2 should override Hackney's default recv_timeout",
+       attrs do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      Tesla.Mock.mock(fn %{method: :post} = env ->
+        assert env.opts[:adapter][:recv_timeout] == 150_000
+        assert Jason.decode!(env.body)["timeoutMs"] == 120_000
+        assert env.url =~ "/queries"
+
+        %Tesla.Env{status: 200}
+      end)
+
+      assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    end
+  end
+
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(
@@ -180,7 +205,7 @@ defmodule Glific.BigQueryTest do
       FROM `test_dataset.messages` delta
       WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
         'Asia/Kolkata')
-      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
+      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
   """
 
   test "generate_duplicate_removal_query/3 should create sql query", attrs do
@@ -224,7 +249,30 @@ defmodule Glific.BigQueryTest do
       )
 
     assert query =~ "DELETE FROM `test_dataset.contacts`"
-    refute query =~ "INTERVAL 3 MONTH"
+    refute query =~ "INTERVAL 90 DAY"
+  end
+
+  test "generate_duplicate_removal_query/3 only uses date parts TIMESTAMP_SUB accepts", attrs do
+    # BigQuery's TIMESTAMP_SUB rejects anything larger than DAY, and the failure is a
+    # query-analysis error, so an invalid part breaks the dedup for every org silently.
+    for table <- ~w(messages flow_contexts flow_results wa_messages messages_media contacts) do
+      query =
+        BigQuery.generate_duplicate_removal_query(
+          table,
+          %{project_id: "test_project", dataset_id: "test_dataset"},
+          attrs.organization_id
+        )
+
+      parts =
+        Regex.scan(~r/TIMESTAMP_SUB\(.*?INTERVAL \d+ (\w+)\)/s, query, capture: :all_but_first)
+
+      refute parts == [], "#{table}: expected at least one TIMESTAMP_SUB in the dedup query"
+
+      for [part] <- parts do
+        assert part in ~w(MICROSECOND MILLISECOND SECOND MINUTE HOUR DAY),
+               "#{table}: TIMESTAMP_SUB does not support the #{part} date part"
+      end
+    end
   end
 
   test "handle_insert_query_response/3 should update table", attrs do
@@ -240,14 +288,15 @@ defmodule Glific.BigQueryTest do
     job_table2 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
     assert job_table2.table_id > job_table1.table_id
 
-    assert_raise RuntimeError, fn ->
-      BigQuery.handle_insert_query_response(
-        {:ok, %{insertErrors: %{error: "Some errors"}}},
-        attrs.organization_id,
-        table: "messages",
-        max_id: 10
-      )
-    end
+    # Incident #274: insertErrors used to raise and crash-loop the Oban job. It is now
+    # logged (see Glific.log_error/2) and the function falls through to its :ok return.
+    assert :ok ==
+             BigQuery.handle_insert_query_response(
+               {:ok, %{insertErrors: %{error: "Some errors"}}},
+               attrs.organization_id,
+               table: "messages",
+               max_id: 10
+             )
 
     assert :ok ==
              BigQuery.handle_insert_query_response(
@@ -256,6 +305,58 @@ defmodule Glific.BigQueryTest do
                table: "messages",
                max_id: nil
              )
+  end
+
+  test "make_insert_query/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
+       %{organization_id: org_id} do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/messages/insertAll"
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: [
+                  %GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponseInsertErrors{
+                    index: 0,
+                    errors: [
+                      %GoogleApi.BigQuery.V2.Model.ErrorProto{
+                        reason: "invalid",
+                        message: "Malformed row: missing required field"
+                      }
+                    ]
+                  }
+                ]
+              })
+          }
+      end)
+
+      # Previously (pre-incident-274-fix) this call raised a RuntimeError from inside
+      # handle_insert_query_response/3 and never returned, crash-looping the Oban job
+      # that called it. Now it should complete normally and return :ok.
+      assert :ok ==
+               BigQuery.make_insert_query(
+                 [%{json: %{id: 1, name: "test"}}],
+                 "messages",
+                 org_id,
+                 max_id: 10,
+                 last_updated_at: nil
+               )
+    end
   end
 
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
@@ -320,6 +421,49 @@ defmodule Glific.BigQueryTest do
         Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "bigquery"})
 
       assert cred.is_active == false
+    end
+  end
+
+  test "decode_bigquery_credential/3 returns error for a missing service account without raising",
+       attrs do
+    credentials = %{secrets: %{}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Missing Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for a nil service account without raising",
+       attrs do
+    credentials = %{secrets: %{"service_account" => nil}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Missing Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for an invalid service account without raising",
+       attrs do
+    credentials = %{secrets: %{"service_account" => "not-a-json"}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Invalid Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for non-object service account json without raising",
+       attrs do
+    org_contact = %{phone: "919999999999"}
+
+    for service_account_json <- ["[]", "null", "{}", ~s({"project_id": ""})] do
+      credentials = %{secrets: %{"service_account" => service_account_json}}
+
+      assert {:error, "Invalid Service Account JSON"} =
+               BigQuery.decode_bigquery_credential(
+                 credentials,
+                 org_contact,
+                 attrs.organization_id
+               )
     end
   end
 

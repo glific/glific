@@ -25,7 +25,6 @@ defmodule Glific.BigQuery do
   require Logger
   use Publicist
 
-  import Ecto.Query
   import Glific.SafeLog
 
   alias Glific.{
@@ -57,7 +56,6 @@ defmodule Glific.BigQuery do
     Partners.Organization,
     Partners.Saas,
     Profiles.Profile,
-    Registrations.Registration,
     Repo,
     Searches.SavedSearch,
     Stats.Stat,
@@ -80,6 +78,8 @@ defmodule Glific.BigQuery do
     Api.Tables,
     Connection
   }
+
+  alias GoogleApi.Gax.Response
 
   @bigquery_tables %{
     "contacts" => :contact_schema,
@@ -125,6 +125,10 @@ defmodule Glific.BigQuery do
   @partitioned_tables ~w(messages flow_contexts flow_results contact_histories wa_messages messages_media)
   @partition_field "inserted_at"
   @partition_type "MONTH"
+
+  # Expressed in DAY because BigQuery's TIMESTAMP_SUB rejects MONTH — DAY is the largest
+  # date part it accepts. See `partition_filter/2`.
+  @partition_window_days 90
 
   # Per-table clustering keys (highest-selectivity first, max 4). Each org has its
   # own dataset, so there is no `organization_id` column to cluster on. Partitioned
@@ -249,21 +253,35 @@ defmodule Glific.BigQuery do
         org_contact,
         organization_id
       ) do
-    case Jason.decode(credentials.secrets["service_account"]) do
-      {:ok, service_account} ->
-        project_id = service_account["project_id"]
-        token = Partners.get_goth_token(organization_id, "bigquery")
+    with {:secrets, service_account_json}
+         when is_binary(service_account_json) and service_account_json != "" <-
+           {:secrets, credentials.secrets["service_account"]},
+         {:ok, %{"project_id" => project_id}}
+         when is_binary(project_id) and project_id != "" <- Jason.decode(service_account_json),
+         {:token, token} when not is_nil(token) <-
+           {:token, Partners.get_goth_token(organization_id, "bigquery")} do
+      conn = Connection.new(token.token)
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+    else
+      {:secrets, _missing} ->
+        log_bigquery_credential_error(organization_id, "missing")
+        {:error, "Missing Service Account JSON"}
 
-        if is_nil(token) do
-          {:error, "Error fetching token with Service Account JSON"}
-        else
-          conn = Connection.new(token.token)
-          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
-        end
+      {:token, nil} ->
+        {:error, "Error fetching token with Service Account JSON"}
 
-      {:error, _error} ->
+      _invalid ->
+        log_bigquery_credential_error(organization_id, "invalid")
         {:error, "Invalid Service Account JSON"}
     end
+  end
+
+  @spec log_bigquery_credential_error(non_neg_integer(), String.t()) :: :ok
+  defp log_bigquery_credential_error(organization_id, reason) do
+    Glific.log_exception(
+      %RuntimeError{message: "BigQuery service account JSON #{reason}"},
+      tags: %{organization_id: organization_id, shortcode: "bigquery"}
+    )
   end
 
   @table_lookup %{
@@ -523,15 +541,17 @@ defmodule Glific.BigQuery do
   @spec validate_bigquery_credentials(map(), non_neg_integer() | nil) ::
           {:ok, :valid} | {:error, String.t()}
   def validate_bigquery_credentials(service_account, organization_id \\ nil) do
-    project_id = service_account["project_id"]
-
-    case Goth.Token.fetch(source: {:service_account, service_account, []}) do
-      {:ok, token} ->
-        conn = Connection.new(token.token)
-        validate_bigquery_permissions(conn, project_id, organization_id)
-
+    with %{"project_id" => project_id} when is_binary(project_id) and project_id != "" <-
+           service_account,
+         {:ok, token} <- Goth.Token.fetch(source: {:service_account, service_account, []}) do
+      conn = Connection.new(token.token)
+      validate_bigquery_permissions(conn, project_id, organization_id)
+    else
       {:error, reason} ->
         {:error, "Error fetching token from service account: #{safe_inspect(reason)}"}
+
+      _invalid ->
+        {:error, "Invalid Service Account JSON"}
     end
   end
 
@@ -888,18 +908,29 @@ defmodule Glific.BigQuery do
       "Insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
-    fetch_bigquery_credentials(organization_id)
-    |> do_make_insert_query(organization_id, data,
-      table: table,
-      max_id: max_id,
-      last_updated_at: last_updated_at
-    )
-    |> handle_insert_query_response(organization_id,
-      table: table,
-      max_id: max_id,
-      last_updated_at: last_updated_at,
-      action: Keyword.get(attrs, :action)
-    )
+    case fetch_bigquery_credentials(organization_id) do
+      {:ok, %{conn: _conn, project_id: _project_id, dataset_id: _dataset_id}} = credentials ->
+        credentials
+        |> do_make_insert_query(organization_id, data,
+          table: table,
+          max_id: max_id,
+          last_updated_at: last_updated_at
+        )
+        |> handle_insert_query_response(organization_id,
+          table: table,
+          max_id: max_id,
+          last_updated_at: last_updated_at,
+          action: Keyword.get(attrs, :action)
+        )
+
+      {:error, _reason} ->
+        Instrumentation.record(table, :error, Keyword.get(attrs, :action), organization_id)
+
+      {:ok, message} ->
+        Logger.info(
+          "Skipping bigquery insert for org_id: #{organization_id}, table: #{table}: #{message}"
+        )
+    end
 
     :ok
   end
@@ -936,7 +967,9 @@ defmodule Glific.BigQuery do
 
     cond do
       res.insertErrors != nil ->
-        raise("BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}")
+        Glific.log_error(
+          "BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}"
+        )
 
       ## Max id will be nil or 0 in case of update statement.
       max_id not in [nil, 0] ->
@@ -1030,10 +1063,20 @@ defmodule Glific.BigQuery do
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 
-        ## timeout takes some time to delete the old records. So increasing the timeout limit.
-        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+        ## `timeoutMs` below only bounds how long BigQuery's own server is allowed to keep
+        ## running the query - it has no effect on how long our own HTTP client waits for
+        ## the response. `Api.Jobs.bigquery_jobs_query/4` never forwards an `opts:` you pass
+        ## it to the actual request (its own `opts` param only reaches response decoding),
+        ## so we call the connection's Tesla `request/2` directly here - the same connection
+        ## and middleware `bigquery_jobs_query/4` uses internally - to set an explicit
+        ## `recv_timeout`.
+        Connection.request(conn,
+          url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
+          method: :post,
+          body: %{query: sql, useLegacySql: false, timeoutMs: bigquery_dedup_query_timeout_ms()},
+          opts: [adapter: [recv_timeout: bigquery_dedup_recv_timeout_ms()]]
         )
+        |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
@@ -1042,6 +1085,14 @@ defmodule Glific.BigQuery do
         :ok
     end
   end
+
+  @spec bigquery_dedup_query_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_query_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_timeout_ms, 120_000)
+
+  @spec bigquery_dedup_recv_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_recv_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 150_000)
 
   @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
@@ -1063,11 +1114,11 @@ defmodule Glific.BigQuery do
   # For MONTH-partitioned tables, also bound the dedup scan by `inserted_at` (the
   # partition key) so BigQuery prunes to recent partitions instead of full-scanning.
   # These are transactional tables whose `updated_at` stays close to creation, so
-  # duplicates (from re-syncs of recently-updated rows) fall inside a 3-month window.
+  # duplicates (from re-syncs of recently-updated rows) fall inside the window.
   @spec partition_filter(String.t(), String.t()) :: String.t()
   defp partition_filter(table, timezone) when table in @partitioned_tables,
     do:
-      "\n    AND #{@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), '#{timezone}')"
+      "\n    AND #{@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL #{@partition_window_days} DAY), '#{timezone}')"
 
   defp partition_filter(_table, _timezone), do: ""
 
@@ -1089,116 +1140,6 @@ defmodule Glific.BigQuery do
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
     )
-  end
-
-  @doc """
-    Syncing registration details to BQ instance
-  """
-  @spec sync_registration_details(non_neg_integer) :: {:ok, any()} | {:error, any()}
-  def sync_registration_details(organization_id) do
-    with {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
-           fetch_bigquery_credentials(organization_id),
-         {:ok, registration_data} <- fetch_registration_details(organization_id) do
-      # creating table in BQ
-      create_table(Schema.registration_schema(), %{
-        conn: conn,
-        dataset_id: dataset_id,
-        project_id: project_id,
-        table_id: "registration"
-      })
-      |> case do
-        {:ok, _} ->
-          Logger.info("Created registration table for org_id: #{organization_id}")
-
-        {:error, %{body: body}} ->
-          error = Jason.decode!(body)
-
-          if error["error"]["status"] == "ALREADY_EXISTS" do
-            Logger.info("Deleting old registration data in BQ for org_id: #{organization_id}")
-
-            sql = "TRUNCATE TABLE `#{dataset_id}.registration`"
-
-            GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-              body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
-            )
-          end
-      end
-
-      # syncing data to BQ
-      do_sync_registration_details(conn, project_id, dataset_id, registration_data)
-      |> case do
-        {:ok, _} ->
-          "Synced registration details"
-
-        error ->
-          Logger.error(
-            "Error while syncing registration details for org_id: #{organization_id} #{safe_inspect(error)}"
-          )
-
-          "Error while syncing details"
-      end
-    end
-  end
-
-  @spec do_sync_registration_details(Tesla.Env.client(), String.t(), String.t(), map()) ::
-          {:ok, any()} | {:error, any()}
-  defp do_sync_registration_details(conn, project_id, dataset_id, registration_data) do
-    Tabledata.bigquery_tabledata_insert_all(
-      conn,
-      project_id,
-      dataset_id,
-      "registration",
-      [
-        body: %{
-          rows: [
-            %{
-              json: %{
-                org_details: format_json(registration_data.org_details),
-                platform_details: format_json(registration_data.platform_details),
-                finance_poc: format_json(registration_data.finance_poc),
-                submitter: format_json(registration_data.submitter),
-                signing_authority: format_json(registration_data.signing_authority),
-                billing_frequency: registration_data.billing_frequency,
-                ip_address: registration_data.ip_address,
-                has_submitted: registration_data.has_submitted,
-                terms_agreed: registration_data.terms_agreed,
-                support_staff_account: registration_data.support_staff_account,
-                is_disputed: registration_data.is_disputed,
-                inserted_at: registration_data.inserted_at
-              }
-            }
-          ]
-        }
-      ],
-      []
-    )
-  end
-
-  # fetching data from db for organization_id
-  @spec fetch_registration_details(non_neg_integer) :: {:ok, map()} | {:error, String.t()}
-  defp fetch_registration_details(organization_id) do
-    data =
-      Registration
-      |> select([r], %{
-        org_details: r.org_details,
-        platform_details: r.platform_details,
-        billing_frequency: r.billing_frequency,
-        finance_poc: r.finance_poc,
-        submitter: r.submitter,
-        signing_authority: r.signing_authority,
-        ip_address: r.ip_address,
-        has_submitted: r.has_submitted,
-        terms_agreed: r.terms_agreed,
-        support_staff_account: r.support_staff_account,
-        is_disputed: r.is_disputed,
-        inserted_at: r.inserted_at
-      })
-      |> where([r], r.organization_id == ^organization_id)
-      |> Repo.one()
-
-    if is_nil(data),
-      do: {:error, "Registration details for org_id: #{organization_id} not found"},
-      else: {:ok, data}
   end
 
   @spec format_datetime(DateTime.t() | NaiveDateTime.t(), String.t()) :: String.t() | no_return()

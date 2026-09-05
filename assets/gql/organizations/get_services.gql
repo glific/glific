@@ -14,7 +14,11 @@ query organizationServices {
     ask_glific_enabled
     whatsapp_forms_enabled
     ai_evaluations_enabled
+    ai_evaluation_v2_enabled
     template_v2_enabled
+    template_library_enabled
+    glific_ai_enabled
+    web_channel_enabled
     errors {
       key
       message

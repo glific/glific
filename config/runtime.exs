@@ -77,6 +77,12 @@ config :glific,
 
 config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
 
+config :glific, :bigquery_dedup_timeout_ms, env!("BIGQUERY_DEDUP_TIMEOUT_MS", :integer, 120_000)
+
+config :glific,
+       :bigquery_dedup_recv_timeout_ms,
+       env!("BIGQUERY_DEDUP_RECV_TIMEOUT_MS", :integer, 150_000)
+
 # AppSignal configs
 config :appsignal, :config,
   otp_app: :glific,
@@ -87,7 +93,8 @@ config :appsignal, :config,
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
   ecto_repos: [],
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
-  instrument_oban: false
+  instrument_oban: false,
+  log_level: env!("APPSIGNAL_LOG_LEVEL", :string!, "info")
 
 config :glific, Glific.Vault,
   ciphers: [
@@ -125,9 +132,6 @@ config :glific,
 
 config :glific,
   google_translate: env!("GOOGLE_TRANSLATE_KEY", :string!, "This is not a secret")
-
-config :glific,
-  notion_secret: env!("NOTION_SECRET", :string!, "This is not a secret")
 
 config :glific,
   gigalixir_username: env!("GIGALIXIR_USERNAME", :string!, "This is not a secret")
@@ -195,6 +199,99 @@ config :glific,
   api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
   discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
 
+# The BSP webhooks are unauthenticated, so callers are filtered on the source IPs the
+# provider publishes; anything else gets a 403.
+
+# :inet rather than the CIDR library the plug matches with, because config runs before any
+# dependency is started.
+# The CIDR library the plug matches with rejects a block whose host bits are set, so
+# accepting one here would leave a list that looks configured but never matches, and the
+# whole range would be answered with 403.
+network_address? = fn parsed, prefix_length ->
+  {bits, group} = if tuple_size(parsed) == 4, do: {32, 256}, else: {128, 65_536}
+  address = parsed |> Tuple.to_list() |> Enum.reduce(0, fn part, acc -> acc * group + part end)
+
+  rem(address, Integer.pow(2, bits - prefix_length)) == 0
+end
+
+valid_webhook_ip? = fn entry ->
+  [address | prefix] = String.split(entry, "/", parts: 2)
+
+  case :inet.parse_address(String.to_charlist(address)) do
+    {:error, _reason} ->
+      false
+
+    {:ok, parsed} ->
+      max_length = if tuple_size(parsed) == 4, do: 32, else: 128
+
+      case prefix do
+        [] ->
+          true
+
+        [length] ->
+          case Integer.parse(length) do
+            {prefix_length, ""} when prefix_length >= 0 and prefix_length <= max_length ->
+              network_address?.(parsed, prefix_length)
+
+            _invalid ->
+              false
+          end
+      end
+  end
+end
+
+webhook_ips = fn variable ->
+  case env!(variable, :string, nil) do
+    unset when unset in [nil, ""] ->
+      []
+
+    ips ->
+      ips
+      |> String.split(",", trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.map(fn entry ->
+        if valid_webhook_ip?.(entry),
+          do: entry,
+          else:
+            raise("""
+            #{variable} contains "#{entry}", which is not an IP address or CIDR block.
+
+            A CIDR block must be given as its network address, so 192.0.2.0/24 rather than
+            192.0.2.10/24.
+
+            Expected a comma separated list, for example:
+
+                gigalixir config:set #{variable}="a.b.c.d,e.f.g.h,w.x.y.z/24"
+            """)
+      end)
+  end
+end
+
+# Only :prod is configured. An unset list means the provider is not filtered, which keeps
+# dev and test working against localhost.
+if config_env() == :prod do
+  gupshup_webhook_ips = webhook_ips.("GUPSHUP_WEBHOOK_IPS")
+
+  # Booting without this list would leave the busiest webhook accepting forged messages
+  # from any caller, so refuse to start rather than come up unprotected.
+  if gupshup_webhook_ips == [],
+    do:
+      raise("""
+      GUPSHUP_WEBHOOK_IPS is not set.
+
+      The /gupshup webhook is unauthenticated and is guarded only by Gupshup's published
+      callback IPs, so Glific will not boot without them.
+
+      Set it to Gupshup's comma separated callback IPs, CIDR blocks allowed:
+
+          gigalixir config:set GUPSHUP_WEBHOOK_IPS="a.b.c.d,e.f.g.h,w.x.y.z/24"
+      """)
+
+  config :glific, :gupshup_webhook_ips, gupshup_webhook_ips
+  config :glific, :gupshup_enterprise_webhook_ips, webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS")
+  config :glific, :maytapi_webhook_ips, webhook_ips.("MAYTAPI_WEBHOOK_IPS")
+end
+
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 
@@ -208,3 +305,10 @@ unless config_env() == :test do
     username: env!("SUPERSET_USERNAME", :string, "this_is_not_a_username"),
     password: env!("SUPERSET_PASSWORD", :string, "this_is_not_a_password")
 end
+
+# Provider credentials for Glific AI. Secrets: environment only, never committed.
+# req_llm resolves these itself; nil simply means no provider is configured, which
+# Glific.AI reports as a failure rather than crashing at boot.
+config :req_llm,
+  anthropic_api_key: env!("ANTHROPIC_API_KEY", :string, nil),
+  openai_api_key: env!("OPENAI_API_KEY", :string, nil)

@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "8.9.5",
+      version: "8.12.4",
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -136,7 +136,6 @@ defmodule Glific.MixProject do
       {:fun_with_flags_ui, "~> 1.0"},
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal_phoenix, "~> 2.3"},
-      {:poolboy, "~> 1.5"},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},
@@ -148,13 +147,16 @@ defmodule Glific.MixProject do
       {:csv, "~> 3.2"},
       {:observer_cli, "~> 1.7"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
+      {:inet_cidr, "~> 1.0"},
       {:ex_phone_number, "~> 0.3"},
       {:tzdata, "~> 1.1"},
       {:stripity_stripe, "~> 2.3"},
       {:stripe_mock, "~> 0.1", only: @test_envs},
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
-      {:dotenvy, "~> 0.1"},
+      {:dotenvy, "~> 1.1"},
+      {:mime, "~> 2.0", override: true},
+      {:finch, "~> 0.23"},
       {:tailwind, "~> 0.1", runtime: Mix.env() == :dev},
       {:phoenix_swoosh, "~> 1.2"},
       {:gen_smtp, "~> 1.1"},
@@ -169,7 +171,8 @@ defmodule Glific.MixProject do
       {:tarams, "~> 1.8"},
       {:mix_test_watch, "~> 1.2", only: @test_envs},
       {:ex_audit, "~> 0.10"},
-      {:req, "~> 0.5.0"}
+      {:req, "~> 0.7"},
+      {:req_llm, "~> 1.21"}
     ]
   end
 
