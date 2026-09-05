@@ -143,20 +143,46 @@ There is no channel dimension in that call. `provider_handler/1` reads a single 
 
 | You write | Roughly | You do not touch |
 |---|---|---|
-| Inbound parser — provider payload → normalised params | 1 module | The `messages` schema — `channel` is a varchar |
+| Inbound parser — provider payload → normalised params | 1 module | The `messages` schema — `channel` gains one enum value, not a column |
 | Outbound adapter implementing `MessageBehaviour` | 1 module | The `contacts` schema — identities are their own table |
 | Dispatch clause routing that channel | ~3 lines | The flow engine or flow editor |
 | Capability declarations | ~1 line each | The staff inbox — it reads `messages` |
 | Identity namespace — a row type, no schema change | 1 row type | BigQuery — it emits the `channel` string |
 | Ingress — a webhook route or a socket | 1 route | Tenant resolution — `SubdomainPlug` already does it |
 
-***One caveat on "no migration".** That property covers the `channel` column only. `message_type_enum` is a Postgres enum, so a channel that introduces genuinely new *message types* — RCS rich cards, carousels — still needs a migration.*
+***One caveat on "no migration".** A new channel needs one `ALTER TYPE message_channel_enum ADD VALUE` (§2.2), and a channel introducing genuinely new *message types* — RCS rich cards, carousels — needs a second on `message_type_enum`. Both are catalog-only and sub-millisecond. What stays untouched is the shape of the schema: no new column, no new table, no backfill.*
 
 ## 2.2 Design decisions
 
 ### The channel lives on the message, not the contact
 
 A contact is a *human*; a channel is a *route*. The same person may be reachable three ways at once, so a channel field on the contact would have to be a set — and even then it could not say which route a particular message took. On the message, every row is self-describing, which is what both the flow engine and the staff inbox need in order to reply correctly.
+
+### The channel column is a Postgres enum, not a varchar
+
+`messages.channel` and `flow_contexts.channel` are `message_channel_enum` — written and in review on `add-channel-columns`, superseding the prototype's varchar. The decision was reopened on the concern that a string discriminator would be expensive to join on once a chatty web channel multiplies message volume. Neither half of that turned out to be where the cost is, and the reasons are worth recording because they will be asked again for Telegram.
+
+**`channel` is not a join key.** There is exactly one SQL reference to it in the whole prototype — `where([m], m.contact_id == ^contact_id and m.channel == ^channel)` in `Messages.list_conversation_messages/3`. Everything else that reads a channel pattern-matches an already-loaded struct. `Conversations`, the inbox pagination path, never mentions it, and `message_filter` has no channel field. It is a one-shot equality predicate inside a lookup already scoped by `contact_id`, so no type choice can make a join cheaper — there is no join.
+
+**Nor is it a storage decision.** Measured on a synthetic 5M-row table replicating the `messages` column layout, on PG 15:
+
+| | tuple bytes | heap, 5M rows | `(contact_id, channel)` index | 2000 point lookups |
+|---|---|---|---|---|
+| varchar | +9 raw | 1509 MB (+37) | 36 MB | 4.65 ms |
+| PG enum | +4 raw | 1509 MB (+37) | 36 MB | 4.73 ms |
+| smallint | +2 raw | 1472 MB (+0) | 36 MB | 4.65 ms |
+
+varchar and enum are **identical on disk** — row alignment absorbs the five-byte difference — and all three index sizes are byte-identical because B-tree item alignment absorbs it there too. Lookup times are indistinguishable at ~2.3 µs.
+
+**So it is a schema-hygiene decision, and on hygiene the enum wins.** `messages` already carries four enum-typed columns — `type`, `flow`, `status`, `bsp_status` — and the schema has 20 enum types across 26 `defenum`s. A bare varchar discriminator would be the outlier. More concretely, the enum enforces the domain in the database, which a changeset `validate_inclusion` cannot: nothing otherwise stops an Oban worker, a backfill script or a `Repo.update_all` writing `"Web"` or `"whatsap"`.
+
+**The tradeoff accepted.** Enum values are permanent — Postgres cannot drop or rename one — so a speculative channel shipped and then abandoned is permanent schema debt. That is the same reasoning applied to `:blocks` elsewhere in this design, and it is why only `:whatsapp` and `:web` ship: the prototype's `:telegram, :rcs, :sms, :fb_messenger, :instagram` must not. In exchange, every later channel costs a one-line migration instead of a one-line constant.
+
+*Two rejected alternatives.* `smallint` saves ~78 MB on 10M rows against a ~3 GB table and costs readability in `psql` and in the BigQuery export — not a trade worth making for 2.5%. A lookup table with an FK introduces exactly the join the original concern was trying to avoid, for a two-value domain.
+
+*A stale comment corrected along the way:* `20260812154401_add_blocks_to_message_type_enum.exs` says `ALTER TYPE ... ADD VALUE` "cannot run inside the migration's default transaction". That was true before PG 12. On PG 15 the statement commits fine inside a transaction; what is still forbidden is *using* the new value in that same transaction — so `@disable_ddl_transaction true` remains correct for any migration that writes the value it just added, and unnecessary otherwise.
+
+> **Where the volume cost actually is.** The concern behind the question is real, it is just not about this column. Every message insert fires `message_before_insert_callback`, which does `UPDATE contacts SET last_communication_at, last_message_number ... WHERE id = NEW.contact_id`. A chatty conversation serialises on that contact's row lock and produces one dead `contacts` tuple per message. That is the write-path ceiling for a high-volume web channel, it is entirely type-independent, and it compounds the `message_number` problem in §4.14.
 
 ### Flows are omnichannel until a node narrows them
 
@@ -165,6 +191,21 @@ A contact is a *human*; a channel is a *route*. The same person may be reachable
 A flow narrows itself: it becomes web-only once a node sends a custom-node template, WhatsApp-only when a node does a broadcast or a templated HSM send, and stays omnichannel otherwise. The migration default — `["whatsapp", "web"]` applied to every existing flow — is the concrete expression of *omnichannel unless proven otherwise*.
 
 Asking authors to declare channels instead would mean a migration decision for every existing flow, a decision from every new author who doesn't think in channels, and genuinely-omnichannel flows marked single-channel by cautious ones.
+
+### A trigger cannot start a web-only flow
+
+Triggers are scheduled, *outbound-initiated* flow starts against a collection. On WhatsApp, initiating outside the 24-hour session window requires an approved HSM template — `Contacts.can_send_message_to?/2` rejects any non-template send when `bsp_status` has left the session states, and an hourly cron demotes every contact idle for 24 hours. The web channel has no equivalent: a browser contact is reachable only while their widget session is open, and there is no template concept to fall back on. A trigger on a web-only flow is therefore not merely degraded, it is meaningless.
+
+**What happens today is worse than "it sends over WhatsApp instead."** `FlowContext.seed_context/4` defaults `channel` to `"whatsapp"`, and `Broadcast.flow_tasks/3` never passes a `:channel`. So the flow runs *as WhatsApp*, every contact in the collection hits the session wall, and each one gets a warning notification and a `reset_all_contexts`. One trigger fire on a 5,000-contact collection is 5,000 notifications and 5,000 aborted contexts, with nothing surfaced to the trigger's author. `[Risk]`
+
+**The check is two-sided, because the flow can change after the trigger exists.** `flows.channels` is derived on every floweditor autosave, and while the array is not monotonic — `["whatsapp","web"] ↔ ["whatsapp"]` oscillates freely — the `["web"]` state is *absorbing*, because `flow_type: :web_message` is sticky. A flow can therefore become web-only under a trigger that was valid when it was created, and can never become valid again. `[Target]`:
+
+- **At publish, a warning.** Not at autosave: derivation runs on every keystroke-level save, `maybe_update_flow_type_and_channels/2` cannot fail, and blocking mid-edit would break the editor. Publish is user-initiated, already returns an error list to the editor, and already re-derives — it sits naturally beside `web_channel_capability_errors/2`, which already names offending nodes for `:web_message` flows.
+- **At fire time, stop and notify.** `Triggers.do_start_flow/1` skips the start rather than seeding N doomed contexts, and raises a Notification to the org's admins naming the trigger and the flow. This is what covers flows that went web-only before the publish check existed, and the case of a flow saved but never republished.
+
+There is a precedent to harden rather than a mechanism to invent: `Triggers.validate_trigger/1` already walks the published revision's start node and warns *"The first message node is not an HSM template"*. It is advisory and `createTrigger` never calls it.
+
+> **Two hazards for whoever implements this.** `Triggers.update_next/1` calls `update_trigger/2` on *every* trigger fire, with a hard `{:ok, trigger} =` match — so a validation that rejects unconditionally in the changeset would make every pre-existing bad trigger crash the cron. And `resolvers/triggers.ex` swallows every failure in its `with`, returning a hardcoded *"Trigger start_at should always be greater than current time"*; any new error on the update path would be reported as a start-time problem until that is fixed.
 
 ### Contact identities: one contact, one row per channel
 
@@ -175,7 +216,7 @@ CREATE TABLE contact_identities (
   id              bigserial PRIMARY KEY,
   contact_id      bigint NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
   organization_id bigint NOT NULL REFERENCES organizations(id),
-  channel         varchar(50)  NOT NULL,   -- 'whatsapp' | 'web' | 'telegram' | …
+  channel         message_channel_enum NOT NULL,  -- same enum as messages.channel (§2.2)
   identifier      varchar(255) NOT NULL,   -- phone | username | telegram chat id
   verified_at     timestamp,               -- how the link was proven
   inserted_at     timestamp NOT NULL,
@@ -244,12 +285,12 @@ Everything the omnichannel foundation needs, in one place. All additive; all rew
 
 | Table | Change | Status |
 |---|---|---|
-| `messages` | `channel` varchar, default `"whatsapp"`, `NOT NULL`; index on `[:contact_id, :channel]`. Plain string, no PG enum, so new channels need no migration | `[Prototype]` |
-| `flow_contexts` | `channel` varchar, default `"whatsapp"`, `NOT NULL`. This is what makes a flow reply on the channel it was triggered from — the inbound message's channel is written onto the context and every outbound send reads it back | `[Prototype]` |
+| `messages` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. No index — §2.2 and the review on #5660. Written, in review on `add-channel-columns` | `[Target]` |
+| `flow_contexts` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. This is what makes a flow reply on the channel it was triggered from — the inbound message's channel is written onto the context and every outbound send reads it back | `[Prototype]` |
 | `flows` | `channels` `{:array,:string}`, default `["whatsapp","web"]`, `NOT NULL`; backfills `["web"]` where `flow_type = 'web_message'`. Derived on save, never authored | `[Prototype]` |
 | `contacts` | `channels` `{:array,:string}` with a GIN index — denormalised so the staff inbox can filter without a join. `phone` becomes nullable | `[Target]` |
 | `contact_identities` | New table (§2.2) | `[Target]` |
-| `message_type_enum` | `:blocks` added for custom nodes. A PG enum — irreversible, and the one place where "no migration" does not hold | `[Prototype]` |
+| `message_type_enum` | `:blocks` added for custom nodes. Irreversible, as every PG enum value is — including `message_channel_enum`'s | `[Prototype]` |
 | `interactive_message_type_enum` | `:blocks` added, same caveat | `[Prototype]` |
 
 **Why the defaults matter.** Every existing row reads `"whatsapp"`, and the migrations do not bump `updated_at` — so nothing re-syncs downstream and no existing behaviour changes on deploy. `contact_type` is deliberately left alone: it is written by the Gupshup and Maytapi controllers and read by `reports.ex` and the stats dashboards, so adding `channels` is additive while replacing `contact_type` would be a downstream break for no present gain.
@@ -393,8 +434,8 @@ Everything the web channel needs, including what §2.3 already covers, so this s
 
 | # | Change | Detail | Status |
 |---|---|---|---|
-| 1 | `messages.channel` | varchar, default `"whatsapp"`, `NOT NULL`; index `[:contact_id, :channel]` | `[Prototype]` |
-| 2 | `flow_contexts.channel` | varchar, default `"whatsapp"`, `NOT NULL` — carries the reply channel through a flow run | `[Prototype]` |
+| 1 | `messages.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL`; no index (§2.2) | `[Target]` |
+| 2 | `flow_contexts.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL` — carries the reply channel through a flow run | `[Target]` |
 | 3 | `flows.channels` | `{:array,:string}`, default `["whatsapp","web"]`, `NOT NULL`; backfill from `flow_type` | `[Prototype]` |
 | 4 | `message_type_enum` | add `:blocks` | `[Prototype]` |
 | 5 | `interactive_message_type_enum` | add `:blocks` | `[Prototype]` |
@@ -1026,5 +1067,6 @@ Recorded because each was stated wrongly at some point and someone may have read
 - **The socket topic is per-contact, not a literal `me`.** A `web_channel:me` proposal was
   implemented and withdrawn; in Phoenix the channel topic *is* the PubSub topic, so a literal would
   put every contact in every tenant on one topic and empty the only authorization check. See §4.4.
-- **A new channel does not always avoid a migration.** That property covers the `channel` varchar
-  only — `message_type_enum` is a Postgres enum, so new *message types* still need one. See §2.1.
+- **`channel` is a Postgres enum, not a varchar.** Earlier drafts recorded the varchar as settled
+  and justified it as "no migration per channel". The column is `message_channel_enum`; adding a
+  channel costs one `ALTER TYPE`. See §2.2 for the measurements that reopened it.
