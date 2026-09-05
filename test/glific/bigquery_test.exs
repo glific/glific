@@ -184,6 +184,46 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  describe "bigquery_error_summary/1" do
+    ## The Logger format ends with `$message`, so a raw newline in an error dump ends the entry
+    ## and the rest is shipped without metadata — which is how the reason for a failed dedup
+    ## went missing in production. The body must reach the log escaped, not expanded.
+    @streaming_buffer_body ~s({\n  "error": {\n    "code": 400,\n) <>
+                             ~s(    "message": "UPDATE or DELETE statement over table ) <>
+                             ~s(918454812392.messages would affect rows in the streaming ) <>
+                             ~s(buffer, which is not supported",\n    "errors": [\n      {\n) <>
+                             ~s(        "domain": "global",\n        "reason": "invalidQuery"\n) <>
+                             ~s(      }\n    ],\n    "status": "INVALID_ARGUMENT"\n  }\n})
+
+    test "keeps the status and the whole body on a single line" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @streaming_buffer_body})
+
+      assert summary =~ "http_status=400"
+      assert summary =~ "would affect rows in the streaming buffer, which is not supported"
+      assert summary =~ "INVALID_ARGUMENT"
+      refute summary =~ "\n"
+    end
+
+    test "never leaks the Tesla client middleware" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{
+          status: 400,
+          body: @streaming_buffer_body,
+          __client__: %Tesla.Client{}
+        })
+
+      refute summary =~ "__client__"
+      refute summary =~ "Bearer"
+    end
+
+    ## Logging must never raise: an error that is not a response at all (a bare `:timeout`)
+    ## would otherwise crash the job it was reporting on.
+    test "handles a non-response error term" do
+      assert BigQuery.bigquery_error_summary(:timeout) == ":timeout"
+    end
+  end
+
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(

@@ -1001,7 +1001,8 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{safe_inspect(response)}"
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, " <>
+        "table: #{table}, #{bigquery_error_summary(response)}"
     )
 
     {error, message} = bigquery_error_status(response)
@@ -1032,6 +1033,14 @@ defmodule Glific.BigQuery do
         raise("BigQuery Insert Error for table #{table} #{safe_inspect(response)}")
     end
   end
+
+  ## The body is inspected rather than interpolated: BigQuery's JSON is pretty-printed, and a
+  ## raw newline ends the log entry (the Logger format ends with `$message`), losing the rest.
+  @spec bigquery_error_summary(any()) :: String.t()
+  defp bigquery_error_summary(%Tesla.Env{status: status, body: body}),
+    do: "http_status=#{status} body=#{safe_inspect(body)}"
+
+  defp bigquery_error_summary(error), do: safe_inspect(error)
 
   @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}
   defp bigquery_error_status(response) do
@@ -1138,8 +1147,11 @@ defmodule Glific.BigQuery do
     Instrumentation.record(table, :error, :remove_duplicates, organization_id)
 
     Logger.error(
-      "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
+      "Error while removing duplicate entries from the table #{table} on bigquery. " <>
+        "org_id: #{organization_id} #{bigquery_error_summary(error)}"
     )
+
+    :ok
   end
 
   @spec format_datetime(DateTime.t() | NaiveDateTime.t(), String.t()) :: String.t() | no_return()
