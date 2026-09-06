@@ -206,8 +206,11 @@ defmodule Glific.GCS do
     end
   end
 
+  @doc """
+  The GCS bucket name configured for `org_id`, or `nil` if GCS isn't configured for it.
+  """
   @spec bucket_name(non_neg_integer()) :: String.t() | nil
-  defp bucket_name(org_id) do
+  def bucket_name(org_id) do
     case get_secrets(org_id) do
       %{"bucket" => bucket} -> bucket
       _ -> nil

@@ -18,7 +18,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Flags,
     Messages,
     OTP,
     Partners,
@@ -26,7 +25,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     SafeLog
   }
 
-  alias GlificWeb.WebChannel.{DisplayName, Token}
+  alias GlificWeb.WebChannel.{DisplayName, Flag, Token}
   alias Plug.Conn
 
   # Identical whether or not `phone` is a known contact and whether or not delivery succeeded, so
@@ -50,7 +49,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   def request_otp(conn, %{"phone" => phone}) when is_binary(phone) and phone != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if web_channel_enabled?(organization_id) do
+    if Flag.enabled?(organization_id) do
       case Contacts.parse_phone_number(phone) do
         {:ok, normalized} -> request_otp_for(conn, organization_id, normalized)
         {:error, message} -> unprocessable_entity_error(conn, message)
@@ -86,7 +85,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       when is_binary(phone) and phone != "" and is_binary(otp) and otp != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if web_channel_enabled?(organization_id) do
+    if Flag.enabled?(organization_id) do
       case Contacts.parse_phone_number(phone) do
         {:ok, normalized} -> verify_otp_for(conn, organization_id, normalized, otp)
         {:error, message} -> unprocessable_entity_error(conn, message)
@@ -142,10 +141,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   end
 
-  # Not `organization.web_channel_enabled`: that virtual field is only stamped during
-  # `Partners.fill_cache/1`, which enabling a flag does not trigger, so it keeps reporting the
-  # value from whenever the 24h org cache was last filled. FunWithFlags busts its own cache on
-  # write, so this takes effect immediately.
   @doc """
   Exchange a still-valid token for a fresh one, so a one hour TTL does not end a conversation the
   beneficiary is still having.
@@ -158,7 +153,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   def renew_token(conn, %{"token" => token}) when is_binary(token) and token != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if web_channel_enabled?(organization_id) do
+    if Flag.enabled?(organization_id) do
       renew_token_for(conn, organization_id, token)
     else
       web_channel_disabled_error(conn)
@@ -213,12 +208,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     conn
     |> put_status(401)
     |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
-  end
-
-  @spec web_channel_enabled?(non_neg_integer()) :: boolean()
-  defp web_channel_enabled?(organization_id) do
-    organization = Partners.organization(organization_id)
-    Flags.get_flag_enabled(:web_channel_enabled, organization)
   end
 
   # Two buckets, because neither dimension is sufficient alone and they fail in opposite
