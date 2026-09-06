@@ -290,7 +290,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       end)
     end
 
-    test "returns a typed 422 when no upload destination is configured for the organization", %{
+    test "returns a typed 503 when no upload destination is configured for the organization", %{
       conn: conn,
       contact: contact
     } do
@@ -314,8 +314,10 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
             "extension" => "png"
           })
 
-        assert json = json_response(conn, 422)
-        assert get_in(json, ["error", "code"]) == "upload_failed"
+        # 503, not 422: the request was fine, the organization was enabled for the web channel
+        # without the GCS credential it requires.
+        assert json = json_response(conn, 503)
+        assert get_in(json, ["error", "code"]) == "storage_unavailable"
       end)
     end
   end

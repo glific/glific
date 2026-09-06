@@ -7,6 +7,13 @@ defmodule Glific.Providers.Web.Upload do
   Google Cloud Storage upload (`Glific.GCS.GcsWorker.upload_media/3`) behind a
   contact-facing entry point.
 
+  Media goes straight into the organization's own bucket, which makes **a configured Google
+  Cloud Storage credential a precondition for enabling the web channel**, alongside the
+  `verify_otp` HSM template #5662 already requires. There is no application-level hook on the
+  feature flag (see #5711), so nothing can enforce that at enablement time — an organization
+  without GCS gets a working chat whose attachments all fail, and the error says so rather than
+  making an operator infer it.
+
   When the organization has no GCS credential and the dev/test-only
   `:web_channel_local_media` flag is enabled, the file is instead written under
   `priv/static/uploads/<org_id>/`. That fallback is never enabled in production.
@@ -24,7 +31,8 @@ defmodule Glific.Providers.Web.Upload do
   enabled, otherwise returns an error.
   """
   @spec upload_file(non_neg_integer(), String.t(), String.t() | nil) ::
-          {:ok, %{url: String.t(), content_type: String.t() | nil}} | {:error, String.t()}
+          {:ok, %{url: String.t(), content_type: String.t() | nil}}
+          | {:error, String.t() | :storage_unavailable}
   def upload_file(organization_id, local_path, content_type) do
     with {:ok, extension} <- extension_for(content_type) do
       cond do
@@ -35,7 +43,7 @@ defmodule Glific.Providers.Web.Upload do
           local_upload(organization_id, local_path, extension, content_type)
 
         true ->
-          {:error, "media upload unavailable: configure Google Cloud Storage"}
+          {:error, :storage_unavailable}
       end
     end
   end
@@ -119,11 +127,11 @@ defmodule Glific.Providers.Web.Upload do
     {:ok, %{url: url, content_type: content_type}}
   end
 
+  # A bare UUID. Unlike the BSP naming in `GcsWorker.do_perform/1`, which embeds the contact and
+  # flow ids, nothing here should let someone holding one object name infer who sent it, when,
+  # or over which channel, or walk to a neighbouring object.
   @spec remote_name(String.t()) :: String.t()
-  defp remote_name(extension) do
-    {year, week} = Timex.iso_week(Timex.now())
-    "outbound/#{year}-#{week}/web_channel/#{Ecto.UUID.generate()}.#{extension}"
-  end
+  defp remote_name(extension), do: "#{Ecto.UUID.generate()}.#{extension}"
 
   @spec local_media_enabled?() :: boolean()
   defp local_media_enabled?, do: Application.get_env(:glific, :web_channel_local_media, false)

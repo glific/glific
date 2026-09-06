@@ -29,6 +29,17 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
         {:ok, %{url: url, content_type: content_type}} ->
           json(conn, %{data: %{url: url, content_type: content_type}})
 
+        {:error, :storage_unavailable} ->
+          # A misconfiguration rather than a bad request, and one nothing can catch at
+          # enablement time — the feature flag has no application-level hook (#5711).
+          Glific.log_error(
+            "Web channel media upload is unavailable for organization #{organization_id}: " <>
+              "no Google Cloud Storage credential. Configure GCS before enabling the web " <>
+              "channel, or every attachment will fail."
+          )
+
+          typed_error(conn, 503, "storage_unavailable", "Attachments are unavailable")
+
         {:error, reason} ->
           typed_error(conn, 422, "upload_failed", to_string(reason))
       end

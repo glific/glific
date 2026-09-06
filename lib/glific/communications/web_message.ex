@@ -71,6 +71,11 @@ defmodule Glific.Communications.WebMessage do
         with {:ok, media} <-
                message_params
                |> Map.put_new(:flow, :inbound)
+               # Already in the organization's own bucket, unlike BSP media, which arrives as a
+               # provider URL. Leaving gcs_url nil would make GCS.base_query/1 treat this as
+               # unsynced and have GcsWorker re-download and re-upload it into the same bucket
+               # under a second name.
+               |> Map.put_new(:gcs_url, message_params[:url])
                |> Messages.create_message_media(),
              {:ok, message} <-
                message_params |> Map.put(:media_id, media.id) |> Messages.create_message() do

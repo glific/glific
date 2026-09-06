@@ -1895,6 +1895,33 @@ defmodule Glific.MessagesTest do
       assert Messages.valid_media_content_type?("audio", "audio/mpeg")
     end
 
+    # The check used to look for the substrings "docx" and "xlxs" — the second a typo — neither of
+    # which appears in the types an Office document is actually served as, so no spreadsheet or
+    # Word document had ever passed it, on any channel.
+    test "accepts the content types Office documents are really served as" do
+      assert Messages.valid_media_content_type?(
+               "document",
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+             )
+
+      assert Messages.valid_media_content_type?(
+               "document",
+               "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+             )
+
+      assert Messages.valid_media_content_type?("document", "application/msword")
+      assert Messages.valid_media_content_type?("document", "application/vnd.ms-excel")
+    end
+
+    test "tolerates a charset parameter on a document content type" do
+      assert Messages.valid_media_content_type?("document", "application/pdf; charset=binary")
+    end
+
+    test "still refuses a document content type outside the allowlist" do
+      refute Messages.valid_media_content_type?("document", "text/html")
+      refute Messages.valid_media_content_type?("document", "application/zip")
+    end
+
     test "rejects a mismatched or missing content type" do
       refute Messages.valid_media_content_type?("image", "application/pdf")
       refute Messages.valid_media_content_type?("image", nil)
