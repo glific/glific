@@ -49,7 +49,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   def request_otp(conn, %{"phone" => phone}) when is_binary(phone) and phone != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if Flag.enabled?(organization_id) do
+    if Flag.web_channel_enabled?(organization_id) do
       case Contacts.parse_phone_number(phone) do
         {:ok, normalized} -> request_otp_for(conn, organization_id, normalized)
         {:error, message} -> unprocessable_entity_error(conn, message)
@@ -85,7 +85,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       when is_binary(phone) and phone != "" and is_binary(otp) and otp != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if Flag.enabled?(organization_id) do
+    if Flag.web_channel_enabled?(organization_id) do
       case Contacts.parse_phone_number(phone) do
         {:ok, normalized} -> verify_otp_for(conn, organization_id, normalized, otp)
         {:error, message} -> unprocessable_entity_error(conn, message)
@@ -153,7 +153,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   def renew_token(conn, %{"token" => token}) when is_binary(token) and token != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if Flag.enabled?(organization_id) do
+    if Flag.web_channel_enabled?(organization_id) do
       renew_token_for(conn, organization_id, token)
     else
       web_channel_disabled_error(conn)

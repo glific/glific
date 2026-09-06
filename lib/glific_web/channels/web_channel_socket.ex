@@ -17,7 +17,7 @@ defmodule GlificWeb.WebChannelSocket do
   @spec connect(map(), Phoenix.Socket.t(), map()) :: {:ok, Phoenix.Socket.t()} | :error
   def connect(%{"token" => token}, socket, _connect_info) do
     with {:ok, payload} <- Token.verify_contact_token(token),
-         true <- Flag.enabled?(payload.org_id),
+         true <- Flag.web_channel_enabled?(payload.org_id),
          # The connect process is fresh (no org/user context). Permission-checked context
          # calls like Contacts.get_contact!/1 raise "Invalid user" without it — same rule an
          # Oban worker follows. There's no staff user behind a web connection, so run as the

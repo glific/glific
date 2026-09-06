@@ -27,7 +27,7 @@ defmodule GlificWeb.Plugs.WebChannelAuth do
 
   @spec authorize_flag(Conn.t(), Token.payload()) :: Conn.t()
   defp authorize_flag(conn, payload) do
-    if Flag.enabled?(payload.org_id) do
+    if Flag.web_channel_enabled?(payload.org_id) do
       Repo.put_process_state(payload.org_id)
 
       conn
