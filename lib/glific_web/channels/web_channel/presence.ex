@@ -26,9 +26,11 @@ defmodule GlificWeb.WebChannel.Presence do
   @doc """
   Whether a contact currently has at least one web-channel socket open.
   """
+  # `get_by_key/2` rather than `list/1`: the latter builds the whole organization's presence map
+  # to answer a question about one contact, which a contact list would then repeat per row.
   @spec online?(non_neg_integer(), non_neg_integer()) :: boolean()
   def online?(organization_id, contact_id),
-    do: organization_id |> topic() |> list() |> Map.has_key?(to_string(contact_id))
+    do: organization_id |> topic() |> get_by_key(to_string(contact_id)) != []
 
   @doc """
   The ids of every contact in an organization with a web-channel socket open.
