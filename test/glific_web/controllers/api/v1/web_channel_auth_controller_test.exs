@@ -115,6 +115,41 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
                "Web channel is not enabled for this organization"
     end
 
+    test "takes effect without refilling the organization cache", %{conn: conn} do
+      # The regression this pins: an admin enables the flag and nothing else happens. Nobody
+      # calls Partners.fill_cache/1, so `organization.web_channel_enabled` — a virtual field
+      # stamped on only while that function runs — keeps reporting the value it had when the
+      # cache was last filled. A controller reading it answers 404 indefinitely.
+      #
+      # Deliberately NOT using with_web_channel_enabled/1 here: that helper refills the cache,
+      # which is exactly the step being asserted as unnecessary.
+      Partners.organization(1) |> Partners.fill_cache()
+      assert Partners.organization(1).web_channel_enabled == false
+
+      FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: 1})
+
+      try do
+        # The stale snapshot is still sitting in the cache, and that is the point.
+        assert Partners.organization(1).web_channel_enabled == false
+
+        conn =
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{
+              "phone" => @reachable_phone
+            })
+          )
+
+        assert json = json_response(conn, 200)
+
+        assert get_in(json, ["data", "message"]) ==
+                 "If this number is registered on WhatsApp, you will receive a one-time code"
+      after
+        FunWithFlags.disable(:web_channel_enabled, for_actor: %{organization_id: 1})
+        Partners.organization(1) |> Partners.fill_cache()
+      end
+    end
+
     test "both endpoints behave normally once web_channel_enabled is turned on", %{conn: conn} do
       with_web_channel_enabled(fn ->
         request_conn =

@@ -27,6 +27,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Flags,
     Messages,
     OTP,
     Partners,
@@ -147,11 +148,18 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   end
 
+  # Read the flag live rather than off `organization.web_channel_enabled`. That field is virtual
+  # and is only stamped onto the organization struct by `Flags.set_flag_enabled/2` while
+  # `Partners.fill_cache/1` runs — so the cached struct holds a *snapshot* taken whenever the
+  # cache was last filled, and the org cache has a 24 hour TTL. Enabling the flag for an
+  # organization does not refill it, so a controller reading the virtual field keeps answering
+  # 404 long after an admin has switched the channel on. `Flags.get_flag_enabled/2` goes to
+  # FunWithFlags, whose own cache is busted across nodes on write via PhoenixPubSub
+  # (config.exs:196-199), so a toggle takes effect immediately.
   @spec web_channel_enabled?(non_neg_integer()) :: boolean()
   defp web_channel_enabled?(organization_id) do
-    organization_id
-    |> Partners.organization()
-    |> Map.get(:web_channel_enabled)
+    organization = Partners.organization(organization_id)
+    Flags.get_flag_enabled(:web_channel_enabled, organization)
   end
 
   # Allow at most `count` OTP requests per client IP within `scale_ms` (default: one per 30s).
