@@ -213,7 +213,9 @@ Every one of these needs per-contact monotonicity, which it already has. **BigQu
 
 `flows.channels` records which channels a flow can reach, and it is **computed from the flow definition on every save**, never chosen by the author `[Prototype]`. `Flows.maybe_update_flow_type_and_channels/2` calls `Flow.derive_channels/2` and writes only on change (`lib/glific/flows.ex:501`).
 
-A flow narrows itself: it becomes web-only once a node sends a custom-node template, WhatsApp-only when a node does a broadcast or a templated HSM send, and stays omnichannel otherwise. The migration default — `["whatsapp", "web"]` applied to every existing flow — is the concrete expression of *omnichannel unless proven otherwise*.
+A flow narrows itself: it becomes web-only once a node sends a custom-node template, WhatsApp-only when a node does a broadcast or a templated HSM send, and is omnichannel otherwise.
+
+**The migration default is `["whatsapp"]` alone, and that is deliberately not the same thing as "narrowed to WhatsApp".** It is the *un-derived* state. Every existing flow demonstrably works on WhatsApp today, and web is **earned**: an author edits the flow, the derivation runs, and web is added if every node is compatible. Defaulting to `["whatsapp", "web"]` would advertise thousands of never-inspected flows as web-capable, which is the wrong direction to be wrong in — a flow wrongly marked WhatsApp-only is a missing option, while one wrongly marked web-capable is a broken conversation.
 
 Asking authors to declare channels instead would mean a migration decision for every existing flow, a decision from every new author who doesn't think in channels, and genuinely-omnichannel flows marked single-channel by cautious ones.
 
@@ -223,7 +225,9 @@ Triggers are scheduled, *outbound-initiated* flow starts against a collection. O
 
 **What happens today is worse than "it sends over WhatsApp instead."** `FlowContext.seed_context/4` defaults `channel` to `"whatsapp"`, and `Broadcast.flow_tasks/3` never passes a `:channel`. So the flow runs *as WhatsApp*, every contact in the collection hits the session wall, and each one gets a warning notification and a `reset_all_contexts`. One trigger fire on a 5,000-contact collection is 5,000 notifications and 5,000 aborted contexts, with nothing surfaced to the trigger's author. `[Risk]`
 
-**The check is two-sided, because the flow can change after the trigger exists.** `flows.channels` is derived on every floweditor autosave, and while the array is not monotonic — `["whatsapp","web"] ↔ ["whatsapp"]` oscillates freely — the `["web"]` state is *absorbing*, because `flow_type: :web_message` is sticky. A flow can therefore become web-only under a trigger that was valid when it was created, and can never become valid again. `[Target]`:
+**The check is two-sided, because the flow can change after the trigger exists.** `flows.channels` is derived on every floweditor autosave, so a flow can become web-only under a trigger that was valid when it was created. `[Target]`:
+
+*One sub-decision is still open:* the prototype made the `["web"]` state **absorbing** by holding the stickiness in `flow_type: :web_message`. `flow_type` is now deliberately untouched (it is a single-valued vestigial column that nothing branches on), so unless the stickiness is re-homed in `channels` itself, the state is recoverable — remove the offending node and the flow widens again. That changes how bad the situation is, not whether the check is needed.
 
 - **At publish, a warning.** Not at autosave: derivation runs on every keystroke-level save, `maybe_update_flow_type_and_channels/2` cannot fail, and blocking mid-edit would break the editor. Publish is user-initiated, already returns an error list to the editor, and already re-derives — it sits naturally beside `web_channel_capability_errors/2`, which already names offending nodes for `:web_message` flows.
 - **At fire time, stop and notify.** `Triggers.do_start_flow/1` skips the start rather than seeding N doomed contexts, and raises a Notification to the org's admins naming the trigger and the flow. This is what covers flows that went web-only before the publish check existed, and the case of a flow saved but never republished.
@@ -344,9 +348,10 @@ Everything the omnichannel foundation needs, in one place. All additive; all rew
 |---|---|---|
 | `messages` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. No index — §2.2 and the review on #5660. Written, in review on `add-channel-columns` | `[Target]` |
 | `flow_contexts` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. This is what makes a flow reply on the channel it was triggered from — the inbound message's channel is written onto the context and every outbound send reads it back | `[Prototype]` |
-| `flows` | `channels` `{:array,:string}`, default `["whatsapp","web"]`, `NOT NULL`; backfills `["web"]` where `flow_type = 'web_message'`. Derived on save, never authored | `[Prototype]` |
+| `flows` | `channels` `message_channel_enum[]`, default `["whatsapp"]`, `NOT NULL`. Derived on save, never authored; web is earned by the derivation, not granted by the default. No backfill | `[Target]` |
 | `contacts` | `channels` `{:array,:string}` with a GIN index — denormalised so the staff inbox can filter without a join. `phone` becomes nullable | `[Target]` |
 | `contact_identities` | New table (§2.2) | `[Target]` |
+| `message_broadcasts` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL` — the channel a scheduled or collection-initiated send runs on. Not derivable from `flow_id`, which is nullable | `[Target]` |
 | `message_type_enum` | `:blocks` added for custom nodes. Irreversible, as every PG enum value is — including `message_channel_enum`'s | `[Prototype]` |
 | `interactive_message_type_enum` | `:blocks` added, same caveat | `[Prototype]` |
 
@@ -493,7 +498,7 @@ Everything the web channel needs, including what §2.3 already covers, so this s
 |---|---|---|---|
 | 1 | `messages.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL`; no index (§2.2) | `[Target]` |
 | 2 | `flow_contexts.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL` — carries the reply channel through a flow run | `[Target]` |
-| 3 | `flows.channels` | `{:array,:string}`, default `["whatsapp","web"]`, `NOT NULL`; backfill from `flow_type` | `[Prototype]` |
+| 3 | `flows.channels` | `message_channel_enum[]`, default `["whatsapp"]`, `NOT NULL`. No backfill — the default is the backfill | `[Target]` |
 | 4 | `message_type_enum` | add `:blocks` | `[Prototype]` |
 | 5 | `interactive_message_type_enum` | add `:blocks` | `[Prototype]` |
 | 6 | `contact_identities` | New table — one row per human per channel (§2.2) | `[Target]` |
