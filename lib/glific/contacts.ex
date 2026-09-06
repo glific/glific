@@ -685,6 +685,17 @@ defmodule Glific.Contacts do
   Specifically designed for when we are trying to optin an opted out contact
   """
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
+  # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
+  # contact that has only ever existed in a browser sits at `:none`, which both clauses above
+  # refuse. Consent for the web is recorded in `contact_channel_optins` when the contact signs
+  # in, so the only thing left to check when staff reply is that the contact is not blocked.
+  def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
+      when channel in [:web, "web"] do
+    if contact.status == :blocked,
+      do: {:error, dgettext("errors", "Contact is blocked.")},
+      else: {:ok, nil}
+  end
+
   def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
     if is_hsm do
       if contact.bsp_status in [:session_and_hsm, :hsm, :session],
@@ -699,17 +710,6 @@ defmodule Glific.Contacts do
            {:error,
             "Cannot send session message to contact, invalid BSP status or not messaged in 24 hour window."}
     end
-  end
-
-  # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
-  # contact that has only ever existed in a browser sits at `:none`, which both clauses above
-  # refuse. Consent for the web is recorded in `contact_channel_optins` when the contact signs
-  # in, so the only thing left to check when staff reply is that the contact is not blocked.
-  def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
-      when channel in [:web, "web"] do
-    if contact.status == :blocked,
-      do: {:error, dgettext("errors", "Contact is blocked.")},
-      else: {:ok, nil}
   end
 
   # The web channel OTP is transactional — the person asked for it by typing their own number into
