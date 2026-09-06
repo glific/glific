@@ -30,7 +30,7 @@ revoked. Contact identity (§3) is channel-general and outlives the web channel.
 socket.
 
 - **Mode A — Glific's own widget.** Phone + OTP, verified by Glific, exactly as today. Glific
-  mints the token.
+  mints the token, **and as of #5662 that token is itself an HS256 JWT** — see §2.5.
 - **Mode B — API clients.** The NGO's backend mints an **HS256 JWT** locally, signed with a secret
   Glific issued it. The browser presents that JWT **directly** to the socket. Glific only verifies;
   it never mints and never sees the token before it is used.
@@ -195,6 +195,64 @@ a flat 5000 ms with no randomisation. Jitter must be added by us, including on t
 after coming back online.
 
 ---
+
+### 2.5 The Glific-minted token (Mode A) is also a JWT
+
+§2.1 above describes the **NGO-minted** token. This section describes the one **Glific** mints at
+`verify-otp`, which is a different credential with a different trust model reached by a different
+route.
+
+An earlier reading of this document took "Glific mints the token" to leave the format open, and the
+prototype used an opaque `Phoenix.Token`. #5662 makes it a JWT. The reason is not tidiness:
+
+1. **One shape at the socket.** §1 settled that there is no token exchange endpoint, and that
+   `connect/3` would "branch on credential type in a few lines". That branch is cheaper still if
+   both credentials are JWTs — the difference collapses to *which key verifies this*, rather than
+   two parsers, two failure vocabularies and two expiry models.
+2. **§4.5 already needed a session identifier for the OTP path** — "our UUID for OTP logins and the
+   org's `jti` for JWTs". A JWT supplies `jti` directly, so the eviction rule reads one claim in
+   both modes instead of one claim and one out-of-band UUID.
+
+```
+Header   { "alg": "HS256", "typ": "JWT" }
+
+Claims   {
+  "sub":     "6638",                              // REQUIRED — the contact id, as a string
+  "channel": "web",                               // REQUIRED — same namespace claim as §2.1
+  "org_id":  1,                                   // REQUIRED — see below
+  "jti":     "1f9c…",                             // REQUIRED — the session identifier (§4.5)
+  "iat":     1755590400,                          // REQUIRED
+  "exp":     1755676800                           // REQUIRED
+}
+```
+
+**There is no `kid`**, and that is the substantive difference from §2.1. A `kid` exists so a
+verifier can resolve *which of many organizations' secrets* signed a token it did not mint. Glific
+owns both ends of this one, so there is a single key and nothing to resolve — which is also why
+`org_id` is carried as a claim here while §2.1 was able to drop the `org` claim (changelog #2): with
+no `kid`, there is nothing else to derive the organization from.
+
+**Signing key.** Derived from `secret_key_base` through `Plug.Crypto.KeyGenerator` with a dedicated
+salt, so this credential is not interchangeable with anything else signed from that base, and
+rotating the base rotates it. Per-org signing keys and `revoked_at` (§4) apply to Mode B only.
+
+**Verification.** §2.2's rules 1, 4 and 7 apply unchanged — pin the algorithm, require the claims
+with ≤ 60s leeway, treat `sub` as bounded. Rules 2, 3 and 6 are Mode B's (`kid` resolution, key
+revocation, org cross-check) and have nothing to resolve here. One addition, which §2.2 does not
+state because an NGO minting its own token has no reason to want it: **reject an `iat` in the
+future, and check it before `exp`** — otherwise anyone who obtained the key could date a token
+forward and give it an unbounded life while every individual claim still looked valid.
+
+> **The algorithm must be pinned, and the obvious call does not do it.** `JOSE.JWT.verify_strict/3`
+> takes the permitted algorithms as an argument; `JOSE.JWT.verify/2` reads `alg` from the token's
+> own header and is the more natural-looking call. That is `alg: none` and HS/RS confusion, and it
+> is the single mistake most likely to be made when this code is next touched.
+
+**TTL is 24 hours, deliberately not the one hour of §2.4.** That cap is only survivable alongside
+the `token_expiring` / `renew_token` handshake in the same section, which is not built. Shortening
+this first would sign a beneficiary out mid-conversation with no route back. The two should be
+revisited together.
+
 
 ## 3. Contact identity
 

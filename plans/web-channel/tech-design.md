@@ -580,7 +580,7 @@ sequenceDiagram
 | Endpoint | Purpose | Status |
 |---|---|---|
 | `POST /api/v1/web_channel/request-otp` | Send an OTP to a phone number | `[Prototype]` |
-| `POST /api/v1/web_channel/verify-otp` | Verify; resolve or create the contact; return the socket token. Gains the WhatsApp opt-in flag (US3) | `[Prototype]` |
+| `POST /api/v1/web_channel/verify-otp` | Verify; resolve or create the contact; return the socket token, an HS256 JWT (§4.5). Gains the WhatsApp opt-in flag (US3) | `[Prototype]` |
 | `POST /api/v1/web_channel/upload` | Media upload → GCS, returns a URL for the socket push | `[Prototype]` `[Risk]` |
 | `GET /api/v1/web_channel/theme` | Per-org accent, logo, display name (§4.8) | `[Target]` |
 | `GET /api/v1/web_channel/me` | `{contact_id, name}` — lets a client that doesn't know its own id derive the socket topic | `[Target]` |
@@ -621,7 +621,13 @@ The fix reuses the existing mechanism rather than adding one: the client supplie
 
 Two modes, one socket. **OTP** for Glific's own widget; **an NGO-minted JWT** for a partner org embedding messaging in its own product, where Glific never issues credentials to that org's end users.
 
-### The JWT contract
+**Both modes present a JWT.** The mode is *who signed it*, not *what it looks like*. The OTP path mints Glific's own HS256 JWT at `verify-otp` (#5662); the partner path presents one the NGO signed with a key Glific issued it. So `connect/3` verifies a single token shape and the difference reduces to which key applies — rather than two parsers, two failure vocabularies and two expiry models. It also gives the OTP path a real `jti`, which is exactly what the session-eviction rule below needs.
+
+The Glific-minted token carries `sub` (contact id), `channel: "web"`, `org_id`, `jti`, `iat` and `exp`, and has **no `kid`** — a `kid` exists to resolve which of many organizations' secrets signed a token, and Glific owns both ends of this one. Its key is derived from `secret_key_base` with a dedicated salt. Full contract and verification rules in [`api-auth-design.md` §2.5](./api-auth-design.md); the NGO-minted contract is §2.1 there and immediately below here.
+
+> Worth stating plainly, because the two are easy to conflate: **§2.1's JWT contract is the NGO-minted token.** Mode A originally said only "Glific mints the token" and left the format open. Making it a JWT is an *extension* of this design, recorded here and in §2.5, not something the earlier draft already required.
+
+### The NGO-minted JWT contract
 
 **HS256**, not RSA. Glific generates the signing key and shares it with the org; the org may hold up to five keys at once for rotation, selected by the `kid` header. There is no JWKS endpoint — rotation is `kid`-based.
 
