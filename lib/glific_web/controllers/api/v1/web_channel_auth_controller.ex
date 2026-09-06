@@ -6,9 +6,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Signing in records no consent. A contact row is created if the number is new, because an HSM has
-  to be addressed to one; nothing else about the contact is touched. Consent, and the exemption
-  that makes the OTP deliverable to a contact who has never opted in, are #5713's.
+  Signing in records consent for the web channel only, in `contact_channel_optins`;
+  `contacts.optin_*` keeps its existing meaning of WhatsApp consent (#5713).
   """
 
   use GlificWeb, :controller
@@ -39,6 +38,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # The IP limit is usually a shared network, where "wait 30 seconds" would be wrong advice.
   @phone_throttled_message "An OTP was just sent. Please try again in 30 seconds."
   @ip_throttled_message "Too many sign-in attempts from your network. Please wait a few minutes and try again."
+
+  # Carried into both the sendability check and the HSM send so the two agree; see
+  # `Contacts.can_send_message_to?/3` for why a web OTP is exempt from the opt-in gate.
+  @otp_exemption %{is_web_channel_otp: true}
 
   @doc """
   Requests that an OTP be sent over WhatsApp to `phone`, so a beneficiary can sign in to the
@@ -118,6 +121,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
     case ensure_contact(organization_id, normalized) do
       {:ok, contact} ->
+        # Recorded here and not at request-otp: anyone can type any number into a public form,
+        # and a consent record that can be manufactured for a number the caller does not control
+        # is worse than none. Proving control of the number is what makes the record mean
+        # something. `record_channel_optin/3` is idempotent, so repeat logins add nothing.
+        Contacts.record_channel_optin(contact, :web, method: "web_channel")
+
         json(conn, %{
           data: %{
             token: Token.sign_contact_token(contact),
@@ -266,7 +275,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     with {:ok, contact} <- ensure_contact(organization_id, phone),
          true <- can_send_message_to?(contact),
          code = mint_code(phone),
-         {:ok, _message} <- Messages.create_and_send_otp_verification_message(contact, code) do
+         {:ok, _message} <-
+           Messages.create_and_send_otp_verification_message(contact, code, @otp_exemption) do
       :ok
     else
       error ->
@@ -323,9 +333,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec can_send_message_to?(Contact.t()) :: boolean()
   defp can_send_message_to?(contact) do
-    hsm = Contacts.can_send_message_to?(contact, true)
-    session = Contacts.can_send_message_to?(contact, false)
-    elem(hsm, 0) == :ok || elem(session, 0) == :ok
+    elem(Contacts.can_send_message_to?(contact, true, @otp_exemption), 0) == :ok
   end
 
   @spec unprocessable_entity_error(Conn.t(), String.t()) :: Conn.t()

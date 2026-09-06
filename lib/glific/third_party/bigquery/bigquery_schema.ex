@@ -2039,6 +2039,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
+        description: "channel the event came from",
+        name: "channel",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "event type for the contact history",
         name: "event_type",
         type: "STRING",

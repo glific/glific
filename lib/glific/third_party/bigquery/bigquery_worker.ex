@@ -1111,6 +1111,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
+            channel: to_string(row.channel),
             event_type: row.event_type,
             event_label: row.event_label,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),

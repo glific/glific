@@ -710,21 +710,21 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
-  describe "signing in records no consent" do
-    test "a first sign-in leaves every opt-in field at its default", %{conn: conn} do
+  describe "opt-in is recorded per channel, not as a WhatsApp opt-in (#5713)" do
+    defp sign_in_new_contact(conn, phone) do
+      code = OTP.generate_code(:web_channel, phone)
+
+      post(
+        conn,
+        Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{"phone" => phone, "otp" => code})
+      )
+    end
+
+    test "a first web login leaves every WhatsApp opt-in field at its default", %{conn: conn} do
       phone = unique_phone()
 
       with_web_channel_enabled(fn ->
-        code = OTP.generate_code(:web_channel, phone)
-
-        assert %{status: 200} =
-                 post(
-                   conn,
-                   Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
-                     "phone" => phone,
-                     "otp" => code
-                   })
-                 )
+        assert %{status: 200} = sign_in_new_contact(conn, phone)
 
         contact = Repo.get_by!(Contact, phone: phone)
 
@@ -732,28 +732,99 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         assert contact.optin_status == false
         assert is_nil(contact.optin_method)
         assert is_nil(contact.optin_message_id)
+        assert is_nil(contact.optout_time)
       end)
     end
 
-    test "an existing WhatsApp opt-in is not refreshed by a web sign-in", %{conn: conn} do
-      with_web_channel_enabled(fn ->
-        before = Repo.get_by!(Contact, phone: @reachable_phone)
-        code = OTP.generate_code(:web_channel, @reachable_phone)
+    test "a first web login records a web opt-in and a web history event", %{conn: conn} do
+      phone = unique_phone()
 
-        assert %{status: 200} =
-                 post(
-                   conn,
-                   Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
-                     "phone" => @reachable_phone,
-                     "otp" => code
+      with_web_channel_enabled(fn ->
+        assert %{status: 200} = sign_in_new_contact(conn, phone)
+
+        contact = Repo.get_by!(Contact, phone: phone)
+
+        assert %{channel: :web, optin_method: "web_channel"} =
+                 optin =
+                 Contacts.get_channel_optin(contact.id, :web)
+
+        refute is_nil(optin.optin_time)
+        assert Contacts.channel_opted_in?(contact.id, :web)
+        refute Contacts.channel_opted_in?(contact.id, :whatsapp)
+
+        assert [%{channel: :web, event_type: "contact_opted_in"}] =
+                 Contacts.list_contact_history(%{
+                   filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+                 })
+      end)
+    end
+
+    test "signing in repeatedly produces one opt-in row and one history event", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        for _attempt <- 1..5, do: assert(%{status: 200} = sign_in_new_contact(conn, phone))
+
+        contact = Repo.get_by!(Contact, phone: phone)
+
+        assert 1 ==
+                 Repo.aggregate(
+                   from(o in Glific.Contacts.ContactChannelOptin,
+                     where: o.contact_id == ^contact.id
+                   ),
+                   :count
+                 )
+
+        assert 1 ==
+                 length(
+                   Contacts.list_contact_history(%{
+                     filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
                    })
                  )
+      end)
+    end
+
+    test "an existing WhatsApp opt-in survives a web login byte for byte", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        before = Repo.get_by!(Contact, phone: @reachable_phone)
+
+        assert %{status: 200} = sign_in_new_contact(conn, @reachable_phone)
 
         unchanged = Repo.get_by!(Contact, phone: @reachable_phone)
 
         assert unchanged.optin_time == before.optin_time
+        assert unchanged.optin_status == before.optin_status
         assert unchanged.optin_method == before.optin_method
         assert unchanged.status == before.status
+      end)
+    end
+
+    test "a contact opted out of WhatsApp is not silently opted back in", %{conn: conn} do
+      phone = unique_phone()
+
+      opted_out =
+        Fixtures.contact_fixture(%{
+          phone: phone,
+          status: :invalid,
+          optin_time: nil,
+          optin_status: false,
+          optout_time: DateTime.utc_now() |> DateTime.truncate(:second),
+          optout_method: "user"
+        })
+
+      with_web_channel_enabled(fn ->
+        assert %{status: 200} = sign_in_new_contact(conn, phone)
+
+        after_login = Repo.get_by!(Contact, phone: phone)
+
+        assert after_login.optin_status == false
+        assert is_nil(after_login.optin_time)
+        assert after_login.optout_time == opted_out.optout_time
+        assert after_login.status == :invalid
+
+        # The web channel is still open to them: opting out of WhatsApp is not opting out of
+        # everything, and this is the whole point of recording the two separately.
+        assert Contacts.channel_opted_in?(after_login.id, :web)
       end)
     end
   end

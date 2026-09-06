@@ -19,7 +19,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     Repo
   }
 
-  alias GlificWeb.WebChannel.{MessageSerializer, Token}
+  alias GlificWeb.WebChannel.{MessageSerializer, Presence, Token}
 
   @page_size 100
   @max_body_length 4_096
@@ -41,6 +41,15 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       # Its own process, so org context has to be re-established, as in an Oban worker.
       Repo.put_process_state(socket.assigns.organization_id)
       schedule_sweep()
+
+      # Tracked against the channel process, not the socket: presence lives under a
+      # per-organization topic rather than this channel's own, so it survives being looked up
+      # without joining anything, and it is untracked automatically when this process dies.
+      Presence.track_contact(
+        self(),
+        socket.assigns.organization_id,
+        socket.assigns.current_contact.id
+      )
 
       messages =
         contact_id
