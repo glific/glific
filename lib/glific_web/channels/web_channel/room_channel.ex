@@ -242,7 +242,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   defp verify_uploaded_media(organization_id, type, url, claimed_content_type) do
     case Upload.gcs_object(organization_id, url) do
       {:ok, bucket, object_name} ->
-        case ObjectMetadata.fetch(bucket, object_name) do
+        case ObjectMetadata.fetch(organization_id, bucket, object_name) do
           {:ok, metadata} -> validate_uploaded_metadata(type, metadata, claimed_content_type)
           _ -> {:error, :invalid_media_url}
         end

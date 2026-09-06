@@ -3,36 +3,61 @@ defmodule Glific.GCS.ObjectMetadata do
   Reads a GCS object's real size and content type without downloading it — the authoritative
   check run before persisting a web-channel media message, since the `size` declared when the
   upload URL was signed only bounds the honest case
-  (`plans/web-channel-presigned-uploads.md` §3). The object metadata endpoint grants the same
-  unauthenticated read access as the object's own hosted URL, so this never needs a token.
+  (`plans/web-channel-presigned-uploads.md` §3).
+
+  Reads through a short-lived signed HEAD rather than the JSON API. An unauthenticated JSON read
+  works only while the bucket is publicly readable, which is true of Glific's buckets today but
+  is exactly what #5715 removes; and authenticating it with `Partners.get_goth_token/2` would put
+  an OAuth round trip (and, in tests, a real network call) on the path of every media message.
+  Signing is local, needs no token, and works on a private bucket.
   """
 
-  @endpoint "https://storage.googleapis.com/storage/v1/b"
+  alias Glific.GCS.SignedUrl
+
+  require Logger
+
+  @expires_in_seconds 60
 
   @doc """
-  Fetch `object_name`'s size (bytes) and content type from `bucket`.
+  Fetch `object_name`'s size in bytes and content type from `bucket`, as `organization_id`.
   """
-  @spec fetch(String.t(), String.t()) ::
+  @spec fetch(non_neg_integer(), String.t(), String.t()) ::
           {:ok, %{size: non_neg_integer(), content_type: String.t()}} | {:error, term()}
-  def fetch(bucket, object_name) do
-    url = "#{@endpoint}/#{bucket}/o/#{URI.encode(object_name, &URI.char_unreserved?/1)}"
+  def fetch(organization_id, bucket, object_name) do
+    with {:ok, url} <-
+           SignedUrl.signed_head_url(organization_id, bucket, object_name, @expires_in_seconds),
+         {:ok, %Tesla.Env{status: 200} = env} <- Tesla.head(url) do
+      parse(env)
+    else
+      {:ok, %Tesla.Env{status: status}} ->
+        log_failure(organization_id, bucket, object_name, "HTTP #{status}")
+        {:error, {:http_status, status}}
 
-    Tesla.client([Tesla.Middleware.JSON])
-    |> Tesla.get(url)
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} -> parse(body)
-      {:ok, %Tesla.Env{status: status}} -> {:error, {:http_status, status}}
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        log_failure(organization_id, bucket, object_name, Glific.SafeLog.safe_inspect(reason))
+        {:error, reason}
     end
   end
 
-  @spec parse(map()) :: {:ok, map()} | {:error, :invalid_response}
-  defp parse(%{"size" => size, "contentType" => content_type}) when is_binary(size) do
-    case Integer.parse(size) do
-      {size_bytes, ""} -> {:ok, %{size: size_bytes, content_type: content_type}}
+  # Without this the caller cannot tell a missing object from a permissions failure: every
+  # outcome collapses to one rejected message and no trace of why it was rejected.
+  @spec log_failure(non_neg_integer(), String.t(), String.t(), String.t()) :: :ok
+  defp log_failure(organization_id, bucket, object_name, reason) do
+    Logger.error(
+      "Could not read web channel media metadata for organization #{organization_id}: " <>
+        "#{reason} for gs://#{bucket}/#{object_name}"
+    )
+
+    :ok
+  end
+
+  @spec parse(Tesla.Env.t()) :: {:ok, map()} | {:error, :invalid_response}
+  defp parse(env) do
+    with size when is_binary(size) <- Tesla.get_header(env, "content-length"),
+         {size_bytes, ""} <- Integer.parse(size) do
+      {:ok, %{size: size_bytes, content_type: Tesla.get_header(env, "content-type")}}
+    else
       _ -> {:error, :invalid_response}
     end
   end
-
-  defp parse(_body), do: {:error, :invalid_response}
 end

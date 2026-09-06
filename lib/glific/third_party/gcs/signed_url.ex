@@ -46,6 +46,22 @@ defmodule Glific.GCS.SignedUrl do
     end
   end
 
+  @doc """
+  A V4-signed HEAD URL for `object_name` in `bucket`, valid for `expires_in` seconds.
+
+  Used to read an object's size and content type without downloading it, and without depending on
+  the bucket being publicly readable.
+  """
+  @spec signed_head_url(non_neg_integer(), String.t(), String.t(), pos_integer()) ::
+          {:ok, String.t()} | {:error, :gcs_not_configured | :signing_failed}
+  def signed_head_url(organization_id, bucket, object_name, expires_in) do
+    with {:ok, credential} <- fetch_credential(organization_id),
+         {:ok, %{upload_url: url}} <-
+           sign("HEAD", bucket, object_name, nil, expires_in, credential) do
+      {:ok, url}
+    end
+  end
+
   @spec fetch_credential(non_neg_integer()) ::
           {:ok, %{email: String.t(), private_key: String.t()}} | {:error, :gcs_not_configured}
   defp fetch_credential(organization_id) do

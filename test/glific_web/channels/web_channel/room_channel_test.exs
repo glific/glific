@@ -239,8 +239,11 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       url: url
     } do
       with_web_channel_enabled(fn ->
-        Tesla.Mock.mock_global(fn %{method: :get} ->
-          %Tesla.Env{status: 200, body: %{"size" => "1024", "contentType" => "image/png"}}
+        Tesla.Mock.mock_global(fn %{method: :head} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-length", "1024"}, {"content-type", "image/png"}]
+          }
         end)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
@@ -263,8 +266,11 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       url: url
     } do
       with_web_channel_enabled(fn ->
-        Tesla.Mock.mock_global(fn %{method: :get} ->
-          %Tesla.Env{status: 200, body: %{"size" => "1024", "contentType" => "image/gif"}}
+        Tesla.Mock.mock_global(fn %{method: :head} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-length", "1024"}, {"content-type", "image/gif"}]
+          }
         end)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
@@ -287,10 +293,13 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         # media_size_limit("image") is 5120 KB; one byte over that in bytes.
         oversized_bytes = 5_120 * 1024 + 1
 
-        Tesla.Mock.mock_global(fn %{method: :get} ->
+        Tesla.Mock.mock_global(fn %{method: :head} ->
           %Tesla.Env{
             status: 200,
-            body: %{"size" => to_string(oversized_bytes), "contentType" => "image/png"}
+            headers: [
+              {"content-length", to_string(oversized_bytes)},
+              {"content-type", "image/png"}
+            ]
           }
         end)
 
@@ -311,7 +320,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
     test "rejects a GCS object that no longer exists", %{contact: contact, url: url} do
       with_web_channel_enabled(fn ->
-        Tesla.Mock.mock_global(fn %{method: :get} -> %Tesla.Env{status: 404, body: %{}} end)
+        Tesla.Mock.mock_global(fn %{method: :head} -> %Tesla.Env{status: 404, headers: []} end)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
         {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
