@@ -2,7 +2,15 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   @moduledoc false
   use GlificWeb.ChannelCase
 
-  alias Glific.{Contacts.Location, Fixtures, Messages.Message, Repo, WebChannelFixtures}
+  alias Glific.{
+    Contacts.Location,
+    Fixtures,
+    GcsFixtures,
+    Messages.Message,
+    Repo,
+    WebChannelFixtures
+  }
+
   alias GlificWeb.WebChannel.{RoomChannel, Token}
 
   setup do
@@ -204,6 +212,119 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
         ref = push(socket, "new_media_message", %{"type" => "sticker", "url" => "whatever"})
         assert_reply ref, :error, %{reason: "unsupported media type"}
+      end)
+    end
+  end
+
+  # A signed PUT URL cannot bind an upload's size or content type, so the socket handler must
+  # check the object's real metadata itself before persisting anything — these cover that
+  # authoritative check, distinct from `issued_url?/2`'s shape-only validation in "new_media_message".
+  describe "new_media_message — GCS object verification" do
+    setup %{contact: contact} do
+      bucket = "org-#{contact.organization_id}-bucket"
+      {private_key_pem, _public_key} = GcsFixtures.generate_rsa_keypair()
+
+      GcsFixtures.create_gcs_credential(
+        contact.organization_id,
+        bucket,
+        "org-#{contact.organization_id}@example.iam.gserviceaccount.com",
+        private_key_pem
+      )
+
+      %{bucket: bucket, url: "https://storage.googleapis.com/#{bucket}/some-object.png"}
+    end
+
+    test "accepts a GCS object whose real metadata matches what was claimed", %{
+      contact: contact,
+      url: url
+    } do
+      with_web_channel_enabled(fn ->
+        Tesla.Mock.mock_global(fn %{method: :get} ->
+          %Tesla.Env{status: 200, body: %{"size" => "1024", "contentType" => "image/png"}}
+        end)
+
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        ref =
+          push(socket, "new_media_message", %{
+            "type" => "image",
+            "url" => url,
+            "content_type" => "image/png"
+          })
+
+        assert_reply ref, :ok
+        assert Repo.get_by(Message, contact_id: contact.id, type: :image)
+      end)
+    end
+
+    test "rejects a GCS object whose real content type contradicts what was claimed", %{
+      contact: contact,
+      url: url
+    } do
+      with_web_channel_enabled(fn ->
+        Tesla.Mock.mock_global(fn %{method: :get} ->
+          %Tesla.Env{status: 200, body: %{"size" => "1024", "contentType" => "image/gif"}}
+        end)
+
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        ref =
+          push(socket, "new_media_message", %{
+            "type" => "image",
+            "url" => url,
+            "content_type" => "image/png"
+          })
+
+        assert_reply ref, :error, %{reason: "invalid_media_url"}
+        refute Repo.get_by(Message, contact_id: contact.id, type: :image)
+      end)
+    end
+
+    test "rejects a GCS object over the type's size limit", %{contact: contact, url: url} do
+      with_web_channel_enabled(fn ->
+        # media_size_limit("image") is 5120 KB; one byte over that in bytes.
+        oversized_bytes = 5_120 * 1024 + 1
+
+        Tesla.Mock.mock_global(fn %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{"size" => to_string(oversized_bytes), "contentType" => "image/png"}
+          }
+        end)
+
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        ref =
+          push(socket, "new_media_message", %{
+            "type" => "image",
+            "url" => url,
+            "content_type" => "image/png"
+          })
+
+        assert_reply ref, :error, %{reason: "media_too_large"}
+        refute Repo.get_by(Message, contact_id: contact.id, type: :image)
+      end)
+    end
+
+    test "rejects a GCS object that no longer exists", %{contact: contact, url: url} do
+      with_web_channel_enabled(fn ->
+        Tesla.Mock.mock_global(fn %{method: :get} -> %Tesla.Env{status: 404, body: %{}} end)
+
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        ref =
+          push(socket, "new_media_message", %{
+            "type" => "image",
+            "url" => url,
+            "content_type" => "image/png"
+          })
+
+        assert_reply ref, :error, %{reason: "invalid_media_url"}
+        refute Repo.get_by(Message, contact_id: contact.id, type: :image)
       end)
     end
   end

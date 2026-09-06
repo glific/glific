@@ -13,6 +13,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   alias Glific.{
     Communications.WebMessage,
+    GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
     Repo
@@ -131,15 +132,18 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   def handle_in("new_message", _params, socket),
     do: {:reply, {:error, %{reason: "blank_body"}}, socket}
 
-  # The file was already uploaded to storage via POST /api/v1/web_channel/upload, so the payload
-  # carries only the resulting url — no file bytes travel over the socket.
+  # The file was already uploaded straight to GCS via a pre-signed URL from
+  # POST /api/v1/web_channel/upload-url, so the payload carries only the resulting url — no
+  # file bytes travel over the socket.
   def handle_in("new_media_message", %{"type" => type, "url" => url} = params, socket)
       when type in ~w(image audio video document) do
     contact = socket.assigns.current_contact
     caption = params["caption"]
+    content_type = params["content_type"]
 
     with :ok <- check_message_rate_limit(contact.id),
          true <- Upload.issued_url?(contact.organization_id, url),
+         :ok <- verify_uploaded_media(contact.organization_id, type, url, content_type),
          {:ok, _message} <-
            WebMessage.receive_message(
              %{
@@ -148,7 +152,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
                url: url,
                source_url: url,
                caption: caption,
-               content_type: params["content_type"],
+               content_type: content_type,
                body: caption || ""
              },
              String.to_existing_atom(type)
@@ -156,6 +160,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       {:reply, :ok, socket}
     else
       false -> {:reply, {:error, %{reason: "invalid_media_url"}}, socket}
+      {:error, :media_too_large} -> {:reply, {:error, %{reason: "media_too_large"}}, socket}
+      {:error, :invalid_media_url} -> {:reply, {:error, %{reason: "invalid_media_url"}}, socket}
       error -> {:reply, {:error, %{reason: failure_reason(error)}}, socket}
     end
   end
@@ -223,6 +229,42 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   @spec failure_reason(any()) :: String.t()
   defp failure_reason({:error, reason}) when is_binary(reason), do: reason
   defp failure_reason(_error), do: "send_failed"
+
+  # The declared `size` at signing time only bounds the honest case — a signed PUT URL cannot
+  # bind an upload's size or verify its bytes, so this is the authoritative check, run against
+  # the object's real metadata rather than a client-supplied claim. Only GCS objects are
+  # checked; a local-fallback URL (dev/test only) has no bucket/object to look up.
+  #
+  # A rejection here leaves the object in the bucket: cleanup is a bucket lifecycle rule's job,
+  # not this socket handler's.
+  @spec verify_uploaded_media(non_neg_integer(), String.t(), String.t(), String.t() | nil) ::
+          :ok | {:error, :media_too_large | :invalid_media_url}
+  defp verify_uploaded_media(organization_id, type, url, claimed_content_type) do
+    case Upload.gcs_object(organization_id, url) do
+      {:ok, bucket, object_name} ->
+        case ObjectMetadata.fetch(bucket, object_name) do
+          {:ok, metadata} -> validate_uploaded_metadata(type, metadata, claimed_content_type)
+          _ -> {:error, :invalid_media_url}
+        end
+
+      :error ->
+        :ok
+    end
+  end
+
+  @spec validate_uploaded_metadata(String.t(), map(), String.t() | nil) ::
+          :ok | {:error, :media_too_large | :invalid_media_url}
+  defp validate_uploaded_metadata(type, %{size: size_bytes, content_type: content_type}, claimed) do
+    limit_kb = Messages.media_size_limit(type)
+
+    cond do
+      content_type != claimed -> {:error, :invalid_media_url}
+      !Messages.valid_media_content_type?(type, content_type) -> {:error, :invalid_media_url}
+      is_nil(limit_kb) -> {:error, :invalid_media_url}
+      size_bytes / 1024 > limit_kb -> {:error, :media_too_large}
+      true -> :ok
+    end
+  end
 
   @spec check_message_rate_limit(non_neg_integer()) :: :ok | {:error, String.t()}
   defp check_message_rate_limit(contact_id) do
