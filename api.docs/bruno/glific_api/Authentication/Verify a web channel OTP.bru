@@ -1,0 +1,114 @@
+meta {
+  name: Verify a web channel OTP
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{api_url}}/v1/web_channel/verify-otp
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+      "phone": "919820198765",
+      "otp": "321721"
+  }
+}
+
+docs {
+  # Verify a Web Channel OTP
+  
+  ## Description
+  Verifies a code minted by `/v1/web_channel/request-otp` and, on success, resolves or creates the
+  `Contact` for that phone and organisation and returns a contact-scoped token the browser uses to
+  open the web channel socket.
+  
+  The code is **consumed on success**, so it cannot be replayed.
+  
+  ## Base URL
+  `{{api_url}}`
+  
+  ## URL
+  `/v1/web_channel/verify-otp`
+  
+  ## Parameters
+  
+  | Parameter | DataType | Description                                                    |
+  |-----------|----------|----------------------------------------------------------------|
+  | `phone`   | String   | The same phone number the code was requested for.              |
+  | `otp`     | String   | The 6-digit code delivered over WhatsApp.                      |
+  
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}}/v1/web_channel/verify-otp \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d '{
+          "phone": "919820198765",
+          "otp": "321721"
+      }'
+  ```
+  
+  ## Response
+  ```json
+  {
+      "data": {
+          "token": "SFMyNTY.g2gDaAJhAWEB...",
+          "contact_id": 42,
+          "name": "Priya",
+          "phone": "919820198765"
+      }
+  }
+  ```
+  
+  `name` is the flow-captured `contact.fields.name` if present, otherwise the contact's name, and
+  may be `null`. `token` is a `Phoenix.Token` scoped to this contact and organisation; it is not a
+  staff access token and cannot be used against the GraphQL API.
+  
+  ## Error Codes
+  - `401 Unauthorized`: The code is wrong, expired, was never issued, or the attempt limit was hit.
+    **All four return the identical body** — distinguishing them would reveal whether a code was ever
+    issued for that number.
+  - `422 Unprocessable Entity`: The phone or otp is missing, blank, or the phone is not a valid number.
+  - `404 Not Found`: The organisation does not have the web channel enabled.
+  - `500 Internal Server Error`: The code verified but the contact could not be resolved. The code has
+    already been consumed at this point, so the caller must request a new one.
+  
+  ## Use Cases
+  1. **Use Case 1: Successful sign in**
+  
+     The beneficiary enters the code they received on WhatsApp and receives a socket token.
+  
+  2. **Use Case 2: Existing WhatsApp contact**
+  
+     A number already known to the organisation from WhatsApp resolves to that **same** contact. No
+     duplicate is created, and the beneficiary's history is preserved across channels.
+  
+  3. **Use Case 3: Wrong code**
+  
+     Six wrong guesses trip `PasswordlessAuth`'s per-phone lockout. Every one of them returns the same
+     401 body as an ordinary wrong code.
+  
+  ## FAQ
+  
+  ### 1. Scope isolation
+  
+  **Q:** Can a code from the staff registration flow be used here, or vice versa?
+  
+  **A:** No. Codes are stored under a `<scope>:<phone>` key by `Glific.OTP`, so a `:web_channel` code
+  is rejected by the password-reset flow and an `:auth` code is rejected here. This is the specific
+  failure that module exists to prevent.
+  
+  ### 2. Token lifetime
+  
+  **Q:** How long is the returned token valid?
+  
+  **A:** 24 hours. It is a stateless signed token, so it cannot currently be revoked before it expires.
+}

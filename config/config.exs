@@ -246,6 +246,10 @@ config :ex_audit,
 # Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
 config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
 
+# Throttle web channel OTP requests separately from staff registration (default 1 / 30s), so the
+# two flows never share a rate-limit budget.
+config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1
+
 config :mime, :types, %{
   "audio/amr" => ["amr"],
   "audio/mp4" => ["m4a"],

@@ -82,3 +82,7 @@ config :glific, gupshup_partner_client_secret: "test_client_secret"
 # Relax OTP rate limiting in tests (the suite fires many send_otp requests from the same IP).
 # The dedicated rate-limit test overrides this locally.
 config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1_000
+
+# Relax web channel OTP rate limiting in tests for the same reason.
+# The dedicated rate-limit test overrides this locally.
+config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1_000
