@@ -250,6 +250,11 @@ config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
 # two flows never share a rate-limit budget.
 config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1
 
+# The per-IP companion to the above. Deliberately loose: one carrier-grade NAT address can front
+# a whole district of beneficiaries, so this bounds enumeration from a single host rather than
+# throttling an individual.
+config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 20
+
 config :mime, :types, %{
   "audio/amr" => ["amr"],
   "audio/mp4" => ["m4a"],

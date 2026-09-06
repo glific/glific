@@ -86,3 +86,6 @@ config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1_000
 # Relax web channel OTP rate limiting in tests for the same reason.
 # The dedicated rate-limit test overrides this locally.
 config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1_000
+
+# Same, for the per-IP bucket. The dedicated rate-limit tests override these locally.
+config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 1_000

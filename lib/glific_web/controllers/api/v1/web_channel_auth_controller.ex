@@ -57,7 +57,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec request_otp_for(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp request_otp_for(conn, organization_id, normalized) do
-    case check_rate_limit(conn) do
+    case check_rate_limit(conn, normalized) do
       :ok ->
         send_web_channel_otp(organization_id, normalized)
         json(conn, %{data: %{phone: normalized, message: @request_otp_message}})
@@ -213,14 +213,35 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     Flags.get_flag_enabled(:web_channel_enabled, organization)
   end
 
-  # Keyed separately from the staff `send_otp:` limiter so the web channel never shares a budget
-  # with staff registration.
-  @spec check_rate_limit(Conn.t()) :: :ok | {:error, String.t()}
-  defp check_rate_limit(conn) do
-    config = Application.get_env(:glific, :web_channel_otp_rate_limit, [])
+  # Two buckets, because neither dimension is sufficient alone and they fail in opposite
+  # directions. Keying only on IP is wrong for this audience: beneficiaries reach the internet
+  # through carrier-grade NAT, so a whole district can share one address and a 1-per-30s budget
+  # becomes a login outage rather than a throttle. Keying only on the phone leaves an attacker
+  # free to walk thousands of numbers from one host, each once per window, spending the
+  # organization's HSM budget and spamming strangers. So the phone is throttled tightly and the
+  # IP loosely — loose enough for a shared NAT, tight enough that enumeration is not free.
+  #
+  # Both are keyed separately from the staff `send_otp:` limiter, so the web channel never shares
+  # a budget with staff registration.
+  @spec check_rate_limit(Conn.t(), String.t()) :: :ok | {:error, String.t()}
+  defp check_rate_limit(conn, phone) do
+    with :ok <- check_bucket(:web_channel_otp_rate_limit, "web_channel_send_otp:#{phone}"),
+         :ok <-
+           check_bucket(
+             :web_channel_otp_ip_rate_limit,
+             "web_channel_send_otp_ip:#{GlificWeb.Tenants.remote_ip(conn)}"
+           ) do
+      :ok
+    end
+  end
+
+  # One message for both buckets: which limit a caller tripped is not something they need, and
+  # saying would tell an attacker whether that number had just been sent a code.
+  @spec check_bucket(atom(), String.t()) :: :ok | {:error, String.t()}
+  defp check_bucket(config_key, key) do
+    config = Application.get_env(:glific, config_key, [])
     scale_ms = Keyword.get(config, :scale_ms, 30_000)
     count = Keyword.get(config, :count, 1)
-    key = "web_channel_send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
 
     case ExRated.check_rate(key, scale_ms, count) do
       {:ok, _count} -> :ok
