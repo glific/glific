@@ -128,6 +128,16 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
                  "https://storage.googleapis.com/org-#{contact.organization_id}-bucket/"
                )
 
+        # Both halves must name the same object under the same prefix. `uploads/` is where every
+        # other object Glific writes to an organization's bucket lives (waffle's default
+        # storage_dir), so an object outside it sits apart from the bucket's lifecycle rules and
+        # access grants — and a `url` that disagrees with `upload_url` points at a file the PUT
+        # never created.
+        assert String.starts_with?(
+                 url,
+                 "https://storage.googleapis.com/org-#{contact.organization_id}-bucket/uploads/"
+               )
+
         assert String.starts_with?(upload_url, url <> "?")
         assert String.contains?(upload_url, "X-Goog-Signature=")
         assert get_in(json, ["data", "content_type"]) == "image/png"
