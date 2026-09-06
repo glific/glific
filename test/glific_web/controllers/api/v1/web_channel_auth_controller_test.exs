@@ -43,6 +43,13 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       }
     end)
 
+    # FunWithFlags' ETS cache outlives the SQL sandbox and busts asynchronously, so a flag another
+    # test enabled can still be live here. Resetting on the way in rather than trusting every
+    # previous teardown; without this roughly one run in five failed.
+    FunWithFlags.disable(:web_channel_enabled, for_actor: %{organization_id: 1})
+    FunWithFlags.Store.Cache.flush()
+    Partners.organization(1) |> Partners.fill_cache()
+
     :ok
   end
 
@@ -59,15 +66,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     "919" <> suffix
   end
 
-  # `FunWithFlags.enable/disable/2` writes through to Postgres, so it must run on the same
-  # process that owns the SQL sandbox connection for this test — an `on_exit` callback runs in a
-  # *different* process, after the test process (and with it, sandbox ownership) has already
-  # exited, so `FunWithFlags.disable/2` there raises a `DBConnection` ownership error (confirmed
-  # empirically; see the same constraint documented in `test/glific/ai_test.exs`). `try/after`
-  # inside the test process itself is the only reliable way to flip the flag back off — including
-  # when an assertion inside `fun` fails — before this test's connection goes away, so a later
-  # test file (e.g. `organization_test.exs`, which asserts `web_channel_enabled == false` for
-  # org 1) never observes it stuck on.
+  # try/after rather than on_exit: the flag write needs the process owning this test's sandbox
+  # connection, and on_exit runs after that process has gone, raising a DBConnection ownership
+  # error. Same constraint as `test/glific/ai_test.exs`.
   @spec with_web_channel_enabled((-> any())) :: any()
   defp with_web_channel_enabled(fun) do
     FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: 1})
@@ -183,11 +184,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       phone: phone
     } do
       with_web_channel_enabled(fn ->
-        # Deliberately names a contact that DOES exist in org 1 while claiming org 2. A token
-        # naming some arbitrary foreign contact id would be caught by the org-scoped contact
-        # lookup instead, and would prove nothing about this check — contact ids come from one
-        # global sequence, so they never collide across orgs and the lookup would always save us.
-        # Isolating the check means making the lookup succeed.
+        # Names a contact that DOES exist in org 1 while claiming org 2. An arbitrary foreign
+        # contact id would be caught by the org-scoped lookup instead — ids never collide across
+        # orgs — and would prove nothing about the org comparison.
         existing = Repo.get_by!(Contact, phone: phone)
 
         foreign =
@@ -262,13 +261,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
 
     test "takes effect without refilling the organization cache", %{conn: conn} do
-      # The regression this pins: an admin enables the flag and nothing else happens. Nobody
-      # calls Partners.fill_cache/1, so `organization.web_channel_enabled` — a virtual field
-      # stamped on only while that function runs — keeps reporting the value it had when the
-      # cache was last filled. A controller reading it answers 404 indefinitely.
-      #
-      # Deliberately NOT using with_web_channel_enabled/1 here: that helper refills the cache,
-      # which is exactly the step being asserted as unnecessary.
+      # Pins the regression where an admin enables the flag and nothing refills the org cache, so
+      # the virtual field keeps reporting stale and the endpoints answer 404 indefinitely. Not
+      # using with_web_channel_enabled/1: it refills the cache, the step asserted as unnecessary.
       Partners.organization(1) |> Partners.fill_cache()
       assert Partners.organization(1).web_channel_enabled == false
 
@@ -394,13 +389,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         reachable_json = json_response(reachable_conn, 200)
 
-        # The status has to be :blocked, not :invalid. `send_web_channel_otp/2` opts the contact
-        # in *before* checking deliverability, and `Contacts.contact_opted_in/4` forces
-        # `status: :valid` on the way through — `ignore_optin?/2` (contacts.ex:551-559) only
-        # declines to do that for a :blocked contact. With :invalid the fixture is quietly
-        # flipped to :valid and this test would exercise the success path while claiming
-        # otherwise. :blocked survives the opt-in, fails `can_send_message_to?/1`, and so
-        # actually reaches the failure branch this test exists to cover.
+        # :blocked, not :invalid. Opt-in runs before the deliverability check and forces
+        # `status: :valid`, except for a :blocked contact (`ignore_optin?/2`) — so :invalid would
+        # be flipped to valid and this test would silently exercise the success path.
         undeliverable = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
 
         undeliverable_conn =
@@ -430,13 +421,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       conn: conn
     } do
       with_web_channel_enabled(fn ->
-        # A contact that is outside the 24-hour session window but is opted in, so
-        # `Messages.create_and_send_otp_verification_message/2` takes the HSM-template branch
-        # rather than the session-message one.
-        # last_message_at must be older than 24 hours. `contact_opted_in/4` re-derives bsp_status
-        # via `set_session_status(contact, :hsm)` (contacts.ex:768-775), which promotes to
-        # :session_and_hsm whenever the last message is inside the window — and a
-        # :session_and_hsm contact takes the plain-session branch, never the template one.
+        # Outside the 24h window but opted in, so the HSM-template branch is taken. last_message_at
+        # must be older than 24h: `contact_opted_in/4` re-derives bsp_status and promotes to
+        # :session_and_hsm inside the window, which takes the session branch instead.
         hsm_only =
           Fixtures.contact_fixture(%{
             phone: unique_phone(),

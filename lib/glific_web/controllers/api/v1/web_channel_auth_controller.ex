@@ -1,25 +1,16 @@
 defmodule GlificWeb.API.V1.WebChannelAuthController do
   @moduledoc """
-  Public, unauthenticated endpoints that let a browser-based beneficiary request and verify a
-  one-time code delivered over WhatsApp, so they can sign in to the web channel widget.
+  Public, unauthenticated OTP auth for the browser web channel widget.
 
-  This authenticates a `Glific.Contacts.Contact`, never a `Glific.Users.User` — it is
-  deliberately distinct from the Pow staff registration flow in
-  `GlificWeb.API.V1.RegistrationController`. The code travels over WhatsApp rather than SMS
-  because SMS delivery is not enabled yet (see #5659's Phase-0 -> Phase-1 rollout table).
+  Authenticates a `Glific.Contacts.Contact`, never a `Glific.Users.User` — deliberately separate
+  from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
+  WhatsApp because SMS is not enabled yet (#5659).
 
-  ## Interim behaviour: opt-in is implied, not asked for
-
-  `request_otp/2` opts the contact in to WhatsApp (`Contacts.contact_opted_in/4` writes
-  `optin_status: true` and an `optin_time`) purely because someone typed a phone number into a
-  login box. That is how the staff registration flow has always worked, and it is what makes the
-  OTP deliverable at all — an HSM cannot be sent to a contact who is not opted in. It is still
-  weaker than consent: the beneficiary is never asked.
-
-  US3 of #5659 replaces this with an explicit, unchecked-by-default consent step at the OTP
-  screen, recorded with a timestamp, and is deliberately not in this ticket. Until it ships,
-  treat an `optin_method` of `"web_channel"` as *implied* consent and do not read it as the
-  beneficiary having agreed to anything.
+  Interim behaviour: `request_otp/2` opts the contact in to WhatsApp because someone typed a
+  number into a login box, which is how staff registration has always worked and is what makes the
+  OTP deliverable at all — an HSM cannot reach a contact who is not opted in. US3 of #5659
+  replaces this with an explicit consent step, so until then treat an `optin_method` of
+  `"web_channel"` as *implied* consent, not agreement.
   """
 
   use GlificWeb, :controller
@@ -38,9 +29,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   alias GlificWeb.WebChannel.{DisplayName, Token}
   alias Plug.Conn
 
-  # Neutral response returned regardless of whether `phone` belongs to a known contact or
-  # whether delivery succeeded, so the API never discloses which numbers are contacts of this
-  # organization (account/number enumeration protection).
+  # Identical whether or not `phone` is a known contact and whether or not delivery succeeded, so
+  # the endpoint cannot be used to enumerate an organization's contacts.
   @request_otp_message "If this number is registered on WhatsApp, you will receive a one-time code"
 
   @doc """
@@ -108,19 +98,15 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         build_context(organization_id)
         resolve_contact_and_sign_in(conn, organization_id, normalized)
 
-      # :incorrect_code | :code_expired | :does_not_exist | :attempt_blocked all collapse to
-      # the same response — distinguishing them would tell an attacker whether a code was ever
-      # issued for this number.
+      # Distinguishing these would tell an attacker whether a code was ever issued for a number.
       {:error, _reason} ->
         invalid_otp_error(conn)
     end
   end
 
-  # `OTP.verify_code/3` consumes the code the moment it matches, so by the time we get here the
-  # caller has spent it and cannot retry with the same one. A `{:ok, contact} = ...` match would
-  # turn any changeset failure into an unhandled 500 and strand them behind the 30s throttle —
-  # `Contacts.contact_opted_in/4` can genuinely fail, e.g. two concurrent verifies for a phone
-  # with no contact yet both see `nil` and race on the (phone, organization_id) unique index.
+  # The code is already spent by the time we get here, so a hard match on a changeset failure
+  # would 500 and strand the caller behind the throttle with no code. Two concurrent verifies for
+  # an unknown phone can genuinely race on the (phone, organization_id) unique index.
   @spec resolve_contact_and_sign_in(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
     case optin_contact(organization_id, normalized) do
@@ -148,14 +134,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   end
 
-  # Read the flag live rather than off `organization.web_channel_enabled`. That field is virtual
-  # and is only stamped onto the organization struct by `Flags.set_flag_enabled/2` while
-  # `Partners.fill_cache/1` runs — so the cached struct holds a *snapshot* taken whenever the
-  # cache was last filled, and the org cache has a 24 hour TTL. Enabling the flag for an
-  # organization does not refill it, so a controller reading the virtual field keeps answering
-  # 404 long after an admin has switched the channel on. `Flags.get_flag_enabled/2` goes to
-  # FunWithFlags, whose own cache is busted across nodes on write via PhoenixPubSub
-  # (config.exs:196-199), so a toggle takes effect immediately.
+  # Not `organization.web_channel_enabled`: that virtual field is only stamped during
+  # `Partners.fill_cache/1`, which enabling a flag does not trigger, so it keeps reporting the
+  # value from whenever the 24h org cache was last filled. FunWithFlags busts its own cache on
+  # write, so this takes effect immediately.
   @doc """
   Exchange a still-valid token for a fresh one, so a one hour TTL does not end a conversation the
   beneficiary is still having.
@@ -185,8 +167,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         build_context(organization_id)
         respond_with_session(conn, renewed, payload, organization_id)
 
-      # Expired, tampered, past its absolute session bound, or minted for another purpose — all
-      # one answer, so a caller cannot probe which.
+      # One answer for every cause, so a caller cannot probe which.
       {:error, _reason} ->
         conn
         |> put_status(401)
@@ -194,10 +175,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   end
 
-  # A token names an organization, but the request also resolves one from the Host header. They
-  # must agree: a token minted for another organization must not be renewable here, and today the
-  # signing key is installation-wide so nothing but this check separates them (#5711 makes the
-  # separation cryptographic).
+  # The signing key is installation-wide until #5711, so this comparison is the only thing
+  # stopping another organization's token being renewed here.
   @spec respond_with_session(Conn.t(), String.t(), map(), non_neg_integer()) :: Conn.t()
   defp respond_with_session(conn, renewed, %{org_id: org_id} = payload, organization_id)
        when org_id == organization_id do
@@ -212,7 +191,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
           }
         })
 
-      # The token verifies but its contact is gone. Nothing to renew into.
+      # Verified, but the contact is gone — nothing to renew into.
       {:error, _} ->
         conn
         |> put_status(401)
@@ -234,9 +213,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     Flags.get_flag_enabled(:web_channel_enabled, organization)
   end
 
-  # Allow at most `count` OTP requests per client IP within `scale_ms` (default: one per 30s).
-  # Keyed separately from the staff `send_otp:` limiter (registration_controller.ex) so the web
-  # channel never shares a rate-limit budget with staff registration.
+  # Keyed separately from the staff `send_otp:` limiter so the web channel never shares a budget
+  # with staff registration.
   @spec check_rate_limit(Conn.t()) :: :ok | {:error, String.t()}
   defp check_rate_limit(conn) do
     config = Application.get_env(:glific, :web_channel_otp_rate_limit, [])
@@ -250,23 +228,17 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   end
 
-  # We need to give the process permission (a root user) so the org-scoped contact and message
-  # calls below are allowed to run.
+  # The permission-checked contact and message calls below raise without a current user.
   @spec build_context(non_neg_integer()) :: map() | nil
   defp build_context(organization_id) do
     organization = Partners.organization(organization_id)
     Repo.put_current_user(organization.root_user)
   end
 
-  # Best-effort send: the caller always gets the same neutral response regardless of what
-  # happens here (see request_otp_for/3). Failures are logged internally instead.
-  #
-  # The rescue is load-bearing, not defensive padding. Not every failure down this path arrives
-  # as an {:error, _} tuple that `else` can catch — `Messages.create_and_send_otp_template_message/2`
-  # hard-matches on fetching the "verify_otp" HSM template (messages.ex:466), so an organization
-  # that has not had that template approved *raises* here. Without the rescue that would surface
-  # as a 500 and break the neutral-response guarantee this endpoint exists to provide, turning a
-  # missing-template misconfiguration into an enumeration oracle.
+  # The rescue is load-bearing. `Messages.create_and_send_otp_template_message/2` hard-matches on
+  # the "verify_otp" HSM template, so an organization without it *raises* rather than returning
+  # {:error, _} — a 500 here would turn a missing-template misconfiguration into an enumeration
+  # oracle.
   @spec send_web_channel_otp(non_neg_integer(), String.t()) :: :ok
   defp send_web_channel_otp(organization_id, phone) do
     build_context(organization_id)
@@ -278,14 +250,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       :ok
     else
       error ->
-        # send_appsignal? is false on purpose. A beneficiary who is opted out, blocked or simply
-        # not on WhatsApp fails `can_send_message_to?/1`, and that is ordinary traffic for a public
-        # login form, not an incident — paging on it would make the noise proportional to usage.
-        # The staff path logs the same case at Logger level for the same reason
-        # (registration_controller.ex:203-206).
-        #
-        # Never inspect/1 an error term that may hold a %Tesla.Env{} — it can carry a live
-        # Authorization header. SafeLog.safe_inspect/1 strips it first.
+        # send_appsignal? false: a contact who is opted out or simply not on WhatsApp is ordinary
+        # traffic for a public login form, so paging would scale the noise with usage. safe_inspect
+        # because the error term may hold a %Tesla.Env{} carrying a live Authorization header.
         Glific.log_error(
           "Failed to send web channel OTP to #{Glific.mask_phone_number(phone)}: " <>
             SafeLog.safe_inspect(error),
@@ -296,8 +263,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   rescue
     exception ->
-      # An unexpected raise is a real misconfiguration worth paging on, unlike the routine
-      # delivery failures above — so this one does reach AppSignal.
+      # Unlike the routine failures above, a raise is a real misconfiguration worth paging on.
       Glific.log_error(
         "Could not send web channel OTP to #{Glific.mask_phone_number(phone)} " <>
           "for organization #{organization_id}: #{describe_send_failure(exception)}"
@@ -306,11 +272,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       :ok
   end
 
-  # The bare exception is not actionable on call. The overwhelmingly likely cause is the
-  # precondition from #5662: the organization has no approved `verify_otp` HSM template, so
-  # `Messages.create_and_send_otp_template_message/2` hard-matches on a missing row
-  # (messages.ex:466) and every contact outside the 24 hour session window fails. Say that,
-  # rather than making whoever reads the alert reverse-engineer a MatchError.
+  # So whoever reads the alert does not have to reverse-engineer a MatchError into #5662's
+  # missing-template precondition.
   @spec describe_send_failure(Exception.t()) :: String.t()
   defp describe_send_failure(%MatchError{
          term: {:error, ["Elixir.Glific.Templates.SessionTemplate", "Resource not found"]}
@@ -333,7 +296,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "web_channel")
   end
 
-  # ORs the HSM and session checks — either is sufficient to attempt delivery.
   @spec can_send_message_to?(Contact.t()) :: boolean()
   defp can_send_message_to?(contact) do
     hsm = Contacts.can_send_message_to?(contact, true)
