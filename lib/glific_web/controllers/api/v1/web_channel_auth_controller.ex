@@ -156,6 +156,78 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # 404 long after an admin has switched the channel on. `Flags.get_flag_enabled/2` goes to
   # FunWithFlags, whose own cache is busted across nodes on write via PhoenixPubSub
   # (config.exs:196-199), so a toggle takes effect immediately.
+  @doc """
+  Exchange a still-valid token for a fresh one, so a one hour TTL does not end a conversation the
+  beneficiary is still having.
+
+  Requires the current token to be valid: an expired one is refused rather than resurrected,
+  which is what keeps expiry meaningful. Renewal is also bounded in total — see
+  `GlificWeb.WebChannel.Token` — so refreshing indefinitely does not grant an indefinite session.
+  """
+  @spec renew_token(Conn.t(), map()) :: Conn.t()
+  def renew_token(conn, %{"token" => token}) when is_binary(token) and token != "" do
+    organization_id = conn.assigns[:organization_id]
+
+    if web_channel_enabled?(organization_id) do
+      renew_token_for(conn, organization_id, token)
+    else
+      web_channel_disabled_error(conn)
+    end
+  end
+
+  def renew_token(conn, _params),
+    do: unprocessable_entity_error(conn, "Token is required")
+
+  @spec renew_token_for(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
+  defp renew_token_for(conn, organization_id, token) do
+    case Token.renew_contact_token(token) do
+      {:ok, renewed, payload} ->
+        build_context(organization_id)
+        respond_with_session(conn, renewed, payload, organization_id)
+
+      # Expired, tampered, past its absolute session bound, or minted for another purpose — all
+      # one answer, so a caller cannot probe which.
+      {:error, _reason} ->
+        conn
+        |> put_status(401)
+        |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
+    end
+  end
+
+  # A token names an organization, but the request also resolves one from the Host header. They
+  # must agree: a token minted for another organization must not be renewable here, and today the
+  # signing key is installation-wide so nothing but this check separates them (#5711 makes the
+  # separation cryptographic).
+  @spec respond_with_session(Conn.t(), String.t(), map(), non_neg_integer()) :: Conn.t()
+  defp respond_with_session(conn, renewed, %{org_id: org_id} = payload, organization_id)
+       when org_id == organization_id do
+    case Repo.fetch_by(Contact, %{id: payload.contact_id, organization_id: organization_id}) do
+      {:ok, contact} ->
+        json(conn, %{
+          data: %{
+            token: renewed,
+            contact_id: contact.id,
+            name: DisplayName.resolve(contact),
+            phone: contact.phone
+          }
+        })
+
+      # The token verifies but its contact is gone. Nothing to renew into.
+      {:error, _} ->
+        conn
+        |> put_status(401)
+        |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
+    end
+  end
+
+  defp respond_with_session(conn, _renewed, _payload, _organization_id) do
+    Glific.log_error("Web channel token renewal attempted across organizations")
+
+    conn
+    |> put_status(401)
+    |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
+  end
+
   @spec web_channel_enabled?(non_neg_integer()) :: boolean()
   defp web_channel_enabled?(organization_id) do
     organization = Partners.organization(organization_id)

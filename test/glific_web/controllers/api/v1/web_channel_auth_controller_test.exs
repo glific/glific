@@ -81,6 +81,152 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
+  describe "renew_token/2" do
+    setup %{conn: conn} do
+      # A real login, so the token under test is one the system actually issued.
+      %{conn: conn, phone: @reachable_phone}
+    end
+
+    defp sign_in(conn, phone) do
+      code = OTP.generate_code(:web_channel, phone)
+
+      conn
+      |> post(
+        Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{"phone" => phone, "otp" => code})
+      )
+      |> json_response(200)
+      |> get_in(["data", "token"])
+    end
+
+    test "exchanges a valid token for a fresh one", %{conn: conn, phone: phone} do
+      with_web_channel_enabled(fn ->
+        token = sign_in(conn, phone)
+
+        renew_conn =
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token})
+          )
+
+        assert json = json_response(renew_conn, 200)
+        renewed = get_in(json, ["data", "token"])
+
+        assert is_binary(renewed)
+        assert {:ok, payload} = Token.verify_contact_token(renewed)
+        assert payload.org_id == 1
+
+        # Same response shape as verify-otp, so the widget can store it with the same code path.
+        assert get_in(json, ["data", "contact_id"]) == payload.contact_id
+        assert get_in(json, ["data", "phone"]) == phone
+        assert Map.has_key?(json["data"], "name")
+      end)
+    end
+
+    test "the renewed token belongs to the same session", %{conn: conn, phone: phone} do
+      with_web_channel_enabled(fn ->
+        token = sign_in(conn, phone)
+        {:ok, before} = Token.verify_contact_token(token)
+
+        renewed =
+          conn
+          |> post(Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
+          |> json_response(200)
+          |> get_in(["data", "token"])
+
+        {:ok, after_renewal} = Token.verify_contact_token(renewed)
+        assert after_renewal.session_id == before.session_id
+        assert after_renewal.session_started_at == before.session_started_at
+      end)
+    end
+
+    test "rejects a garbage token with 401", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        renew_conn =
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => "not-a-token"})
+          )
+
+        assert json = json_response(renew_conn, 401)
+        assert get_in(json, ["error", "message"]) == "Invalid or expired session"
+      end)
+    end
+
+    test "rejects an OTP code presented as a token", %{conn: conn, phone: phone} do
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        renew_conn =
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => code})
+          )
+
+        assert json_response(renew_conn, 401)
+      end)
+    end
+
+    test "a missing or blank token is a 422, not a 401", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        for params <- [%{}, %{"token" => ""}] do
+          renew_conn =
+            post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, params))
+
+          assert json = json_response(renew_conn, 422)
+          assert get_in(json, ["error", "message"]) == "Token is required"
+        end
+      end)
+    end
+
+    test "refuses a token whose organization is not the one the request resolved to", %{
+      conn: conn,
+      phone: phone
+    } do
+      with_web_channel_enabled(fn ->
+        # Deliberately names a contact that DOES exist in org 1 while claiming org 2. A token
+        # naming some arbitrary foreign contact id would be caught by the org-scoped contact
+        # lookup instead, and would prove nothing about this check — contact ids come from one
+        # global sequence, so they never collide across orgs and the lookup would always save us.
+        # Isolating the check means making the lookup succeed.
+        existing = Repo.get_by!(Contact, phone: phone)
+
+        foreign =
+          Token.sign_contact_token(%Contact{
+            id: existing.id,
+            organization_id: 2,
+            phone: phone
+          })
+
+        assert {:ok, %{org_id: 2, contact_id: contact_id}} = Token.verify_contact_token(foreign)
+        assert contact_id == existing.id
+
+        # The signing key is installation-wide today (#5711 makes it per-org), so this token is
+        # cryptographically valid here. Only the explicit org comparison rejects it.
+        renew_conn =
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => foreign})
+          )
+
+        assert json = json_response(renew_conn, 401)
+        assert get_in(json, ["error", "message"]) == "Invalid or expired session"
+      end)
+    end
+
+    test "returns 404 when the web channel is off", %{conn: conn} do
+      renew_conn =
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => "anything"})
+        )
+
+      assert json = json_response(renew_conn, 404)
+
+      assert get_in(json, ["error", "message"]) ==
+               "Web channel is not enabled for this organization"
+    end
+  end
+
   describe "feature flag" do
     test "request-otp returns 404 when web_channel_enabled is off (the ConnCase default)", %{
       conn: conn

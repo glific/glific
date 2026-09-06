@@ -42,11 +42,15 @@ defmodule GlificWeb.WebChannel.Token do
   # verifier can eventually reject a token minted for some other channel.
   @channel "web"
 
-  # 24 hours, carried over from the Phoenix.Token this replaces. api-auth-design.md §2.4 caps the
-  # NGO-minted token at one hour, but that cap is only survivable alongside the `token_expiring` /
-  # `renew_token` handshake described in the same section, which does not exist yet — shortening
-  # this before that ships would sign a beneficiary out mid-conversation with no way back.
-  @ttl_seconds 86_400
+  # One hour, the cap api-auth-design.md §2.4 sets. This was 24 hours until renewal existed,
+  # because a short TTL with no way to refresh signs a beneficiary out mid-conversation.
+  @ttl_seconds 3_600
+
+  # The outer bound on a session, regardless of how many times it is renewed. Without it a short
+  # TTL buys nothing against a stolen token: the thief simply refreshes it forever, and the only
+  # thing a one hour expiry would have achieved is more frequent renewals of the attacker's
+  # access. Twenty-four hours keeps the worst case no worse than the fixed TTL this replaced.
+  @session_max_seconds 86_400
 
   # Tolerance for clock skew between nodes, matching the design's "clock leeway <= 60s".
   @leeway_seconds 60
@@ -60,7 +64,8 @@ defmodule GlificWeb.WebChannel.Token do
   @type payload :: %{
           contact_id: non_neg_integer(),
           org_id: non_neg_integer(),
-          session_id: String.t()
+          session_id: String.t(),
+          session_started_at: non_neg_integer()
         }
 
   @doc """
@@ -70,13 +75,61 @@ defmodule GlificWeb.WebChannel.Token do
   def sign_contact_token(%Contact{} = contact) do
     issued_at = System.system_time(:second)
 
-    claims = %{
-      "sub" => to_string(contact.id),
-      "channel" => @channel,
-      "org_id" => contact.organization_id,
+    mint(
+      to_string(contact.id),
+      contact.organization_id,
       # Identifies the session, not the token. #5663's eviction rule compares this to decide
       # whether a connection is the same session reconnecting or a new login displacing it.
-      "jti" => Ecto.UUID.generate(),
+      Ecto.UUID.generate(),
+      issued_at,
+      issued_at
+    )
+  end
+
+  @doc """
+  Exchange a still-valid token for a fresh one, so a one hour TTL does not end a conversation.
+
+  The session identity is deliberately carried over rather than regenerated. `jti` names the
+  *session*, and #5663 evicts a socket when it sees a different one — minting a new `jti` here
+  would make every refresh look like a second login displacing the first. `sst` carries over for
+  the opposite reason: it is what stops renewal being unbounded.
+
+  An expired token cannot be renewed. Resurrection would make expiry advisory.
+  """
+  @spec renew_contact_token(String.t() | nil) ::
+          {:ok, String.t(), payload()} | {:error, :expired | :invalid | :missing}
+  def renew_contact_token(token) do
+    with {:ok, payload} <- verify_contact_token(token) do
+      now = System.system_time(:second)
+
+      if now - payload.session_started_at >= @session_max_seconds do
+        {:error, :expired}
+      else
+        renewed =
+          mint(
+            to_string(payload.contact_id),
+            payload.org_id,
+            payload.session_id,
+            payload.session_started_at,
+            now
+          )
+
+        {:ok, renewed, payload}
+      end
+    end
+  end
+
+  @spec mint(String.t(), non_neg_integer(), String.t(), non_neg_integer(), non_neg_integer()) ::
+          String.t()
+  defp mint(sub, org_id, jti, session_started_at, issued_at) do
+    claims = %{
+      "sub" => sub,
+      "channel" => @channel,
+      "org_id" => org_id,
+      "jti" => jti,
+      # When this session began, preserved across renewals. Bounds the total life of a session
+      # independently of how often it is refreshed.
+      "sst" => session_started_at,
       "iat" => issued_at,
       "exp" => issued_at + @ttl_seconds
     }
@@ -116,31 +169,50 @@ defmodule GlificWeb.WebChannel.Token do
            "channel" => @channel,
            "org_id" => org_id,
            "jti" => jti,
+           "sst" => session_started_at,
            "iat" => iat,
            "exp" => exp
          } = _claims
        )
        when is_binary(sub) and is_integer(org_id) and is_binary(jti) and
-              is_integer(iat) and is_integer(exp) do
-    now = System.system_time(:second)
-
-    cond do
-      # Rejected before the expiry check so a token claiming to be from the future cannot be
-      # used to manufacture an arbitrarily long lifetime.
-      iat > now + @leeway_seconds -> {:error, :invalid}
-      exp <= now - @leeway_seconds -> {:error, :expired}
-      true -> to_payload(sub, org_id, jti)
+              is_integer(session_started_at) and is_integer(iat) and is_integer(exp) do
+    with :ok <- validate_timing(session_started_at, iat, exp) do
+      to_payload(sub, org_id, jti, session_started_at)
     end
   end
 
   defp validate_claims(_claims), do: {:error, :invalid}
 
-  @spec to_payload(String.t(), non_neg_integer(), String.t()) ::
+  @spec validate_timing(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          :ok | {:error, :expired | :invalid}
+  defp validate_timing(session_started_at, iat, exp) do
+    now = System.system_time(:second)
+
+    cond do
+      # Forward-dating is rejected before expiry is considered, so a token cannot be given an
+      # arbitrarily long life by claiming to have been issued in the future.
+      iat > now + @leeway_seconds -> {:error, :invalid}
+      session_started_at > now + @leeway_seconds -> {:error, :invalid}
+      exp <= now - @leeway_seconds -> {:error, :expired}
+      # A session past its absolute bound is refused on every read, not only on renewal, so an
+      # over-age token cannot be spent on the socket either.
+      now - session_started_at >= @session_max_seconds -> {:error, :expired}
+      true -> :ok
+    end
+  end
+
+  @spec to_payload(String.t(), non_neg_integer(), String.t(), non_neg_integer()) ::
           {:ok, payload()} | {:error, :invalid}
-  defp to_payload(sub, org_id, jti) do
+  defp to_payload(sub, org_id, jti, session_started_at) do
     case Integer.parse(sub) do
       {contact_id, ""} when contact_id > 0 ->
-        {:ok, %{contact_id: contact_id, org_id: org_id, session_id: jti}}
+        {:ok,
+         %{
+           contact_id: contact_id,
+           org_id: org_id,
+           session_id: jti,
+           session_started_at: session_started_at
+         }}
 
       _ ->
         {:error, :invalid}
