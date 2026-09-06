@@ -215,7 +215,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         # Never inspect/1 an error term that may hold a %Tesla.Env{} — it can carry a live
         # Authorization header. SafeLog.safe_inspect/1 strips it first.
         Glific.log_error(
-          "Failed to send web channel OTP to #{phone}: #{SafeLog.safe_inspect(error)}",
+          "Failed to send web channel OTP to #{Glific.mask_phone_number(phone)}: " <>
+            SafeLog.safe_inspect(error),
           false
         )
 
@@ -226,11 +227,28 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       # An unexpected raise is a real misconfiguration worth paging on, unlike the routine
       # delivery failures above — so this one does reach AppSignal.
       Glific.log_error(
-        "Raised while sending web channel OTP to #{phone}: #{SafeLog.safe_inspect(exception)}"
+        "Could not send web channel OTP to #{Glific.mask_phone_number(phone)} " <>
+          "for organization #{organization_id}: #{describe_send_failure(exception)}"
       )
 
       :ok
   end
+
+  # The bare exception is not actionable on call. The overwhelmingly likely cause is the
+  # precondition from #5662: the organization has no approved `verify_otp` HSM template, so
+  # `Messages.create_and_send_otp_template_message/2` hard-matches on a missing row
+  # (messages.ex:466) and every contact outside the 24 hour session window fails. Say that,
+  # rather than making whoever reads the alert reverse-engineer a MatchError.
+  @spec describe_send_failure(Exception.t()) :: String.t()
+  defp describe_send_failure(%MatchError{
+         term: {:error, ["Elixir.Glific.Templates.SessionTemplate", "Resource not found"]}
+       }),
+       do:
+         "no approved HSM template with shortcode \"verify_otp\" exists for this organization, " <>
+           "so a contact outside the 24 hour session window cannot be sent a code. " <>
+           "Approve that template before enabling the web channel for this organization."
+
+  defp describe_send_failure(exception), do: SafeLog.safe_inspect(exception)
 
   @spec optin_contact(non_neg_integer(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
