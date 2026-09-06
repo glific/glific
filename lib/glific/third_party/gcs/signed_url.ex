@@ -67,7 +67,7 @@ defmodule Glific.GCS.SignedUrl do
     now = DateTime.utc_now()
     request_timestamp = Calendar.strftime(now, "%Y%m%dT%H%M%SZ")
     credential_scope = "#{Calendar.strftime(now, "%Y%m%d")}/auto/storage/goog4_request"
-    canonical_uri = "/#{bucket}/#{uri_encode(object_name)}"
+    canonical_uri = "/#{bucket}/#{encode_object_path(object_name)}"
 
     {canonical_headers, signed_headers} = headers(content_type)
 
@@ -127,6 +127,13 @@ defmodule Glific.GCS.SignedUrl do
   # unescaped, which would leave `content-type;host` unencoded in the query string.
   @spec uri_encode(String.t()) :: String.t()
   defp uri_encode(value), do: URI.encode(value, &URI.char_unreserved?/1)
+
+  # The object path is the one place `/` must survive: it separates path segments in the
+  # canonical resource, and percent-encoding it would sign a request for an object whose name
+  # literally contains "%2F" rather than one in a folder. Encode each segment, keep the slashes.
+  @spec encode_object_path(String.t()) :: String.t()
+  defp encode_object_path(object_name),
+    do: object_name |> String.split("/") |> Enum.map_join("/", &uri_encode/1)
 
   @spec hex_sha256(String.t()) :: String.t()
   defp hex_sha256(data), do: :sha256 |> :crypto.hash(data) |> Base.encode16(case: :lower)
