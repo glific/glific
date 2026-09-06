@@ -133,6 +133,32 @@ defmodule Glific.GCS.SignedUrlTest do
       refute verify_v4_signature(tampered, "PUT", "image/png", public_key)
     end
 
+    # A nested object name is the case the encoder gets wrong: percent-encoding the separator
+    # signs a request for an object literally named "uploads%2Ff.png" rather than one in a folder,
+    # so GCS accepts the PUT and the file lands somewhere nobody is looking.
+    test "keeps path separators in a nested object name", %{
+      organization_id: organization_id,
+      email: email,
+      public_key: public_key
+    } do
+      assert {:ok, %{upload_url: upload_url, url: url}} =
+               SignedUrl.signed_put_url(
+                 organization_id,
+                 "a-bucket",
+                 "uploads/some-object.png",
+                 "image/png",
+                 300
+               )
+
+      assert url == "https://storage.googleapis.com/a-bucket/uploads/some-object.png"
+      # Only the path matters here: `X-Goog-Credential` legitimately percent-encodes its own
+      # slashes, so asserting against the whole URL would always fail.
+      [path, _query] = String.split(upload_url, "?", parts: 2)
+      refute String.contains?(path, "%2F")
+      assert String.contains?(upload_url, URI.encode(email, &URI.char_unreserved?/1))
+      assert verify_v4_signature(upload_url, "PUT", "image/png", public_key)
+    end
+
     test "returns gcs_not_configured when the organization has no GCS credential" do
       other_organization = Fixtures.organization_fixture()
 
