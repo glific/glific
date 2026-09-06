@@ -772,6 +772,25 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message"
     end
 
+    test "create and send message refuses a web channel send instead of reaching the BSP",
+         attrs do
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text,
+        channel: :web
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+
+      assert {:error, "web channel sends are not implemented yet"} =
+               Messages.create_and_send_message(message_attrs)
+
+      # the string form (as it would arrive from a JSON-decoded caller) is refused the same way
+      assert {:error, "web channel sends are not implemented yet"} =
+               Messages.create_and_send_message(Map.put(message_attrs, :channel, "web"))
+    end
+
     test "create and send message should send template message to contact through gupshup enterprise",
          attrs do
       enable_gupshup_enterprise(attrs)
@@ -1808,6 +1827,85 @@ defmodule Glific.MessagesTest do
 
       assert message.body ==
                "112233 is your verification code. For your security, do not share this code."
+    end
+  end
+
+  describe "list_conversation_messages/3" do
+    test "returns a contact's own messages on the given channel, newest first", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      web_message =
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          contact_id: contact.id,
+          receiver_id: Partners.organization_contact_id(attrs.organization_id),
+          flow: :inbound,
+          channel: :web,
+          organization_id: attrs.organization_id
+        })
+
+      _whatsapp_message =
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          contact_id: contact.id,
+          receiver_id: Partners.organization_contact_id(attrs.organization_id),
+          flow: :inbound,
+          organization_id: attrs.organization_id
+        })
+
+      messages =
+        Messages.list_conversation_messages(contact.id, :web, %{limit: 100, offset: 0})
+
+      assert Enum.map(messages, & &1.id) == [web_message.id]
+    end
+
+    test "paginates with limit/offset", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      for _ <- 1..3 do
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          contact_id: contact.id,
+          receiver_id: Partners.organization_contact_id(attrs.organization_id),
+          flow: :inbound,
+          channel: :web,
+          organization_id: attrs.organization_id
+        })
+      end
+
+      assert length(Messages.list_conversation_messages(contact.id, :web, %{limit: 2, offset: 0})) ==
+               2
+
+      assert length(Messages.list_conversation_messages(contact.id, :web, %{limit: 2, offset: 2})) ==
+               1
+    end
+  end
+
+  describe "media_size_limit/1 and valid_media_content_type?/2" do
+    test "returns the configured KB limit for a known type, nil for an unknown one" do
+      assert Messages.media_size_limit("image") == 5120
+      assert Messages.media_size_limit("document") == 102_400
+      assert Messages.media_size_limit("unknown") == nil
+    end
+
+    test "accepts a content type in the same family do_validate_media accepts" do
+      assert Messages.valid_media_content_type?("image", "image/png")
+      assert Messages.valid_media_content_type?("video", "video/mp4")
+      assert Messages.valid_media_content_type?("document", "application/pdf")
+      assert Messages.valid_media_content_type?("audio", "audio/mpeg")
+    end
+
+    test "rejects a mismatched or missing content type" do
+      refute Messages.valid_media_content_type?("image", "application/pdf")
+      refute Messages.valid_media_content_type?("image", nil)
+    end
+
+    test "excludes audio/ogg, matching do_validate_media's existing exclusion" do
+      refute Messages.valid_media_content_type?("audio", "audio/ogg")
+    end
+
+    test "does not crash on a malformed audio content type" do
+      refute Messages.valid_media_content_type?("audio", "audio")
     end
   end
 end

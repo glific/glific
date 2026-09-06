@@ -55,6 +55,24 @@ defmodule Glific.Messages do
   def count_messages(args),
     do: Repo.count_filter(args, Message, &filter_with/2)
 
+  @doc """
+  Returns a page of a single contact's messages on a given channel, newest first.
+
+  Used by the web channel's `RoomChannel` to serve the initial (and "load more") message
+  history for a browser's own conversation.
+  """
+  @spec list_conversation_messages(non_neg_integer(), atom(), map()) :: [Message.t()]
+  def list_conversation_messages(contact_id, channel, %{limit: limit, offset: offset}) do
+    Message
+    |> where([m], m.contact_id == ^contact_id and m.channel == ^channel)
+    |> order_by([m], desc: m.message_number)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
+    |> Repo.preload(:media)
+    |> Enum.map(&put_clean_body/1)
+  end
+
   # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -309,6 +327,12 @@ defmodule Glific.Messages do
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
+  # Temporary, and removed by the "flows reply on web" ticket under epic #5659, which adds the
+  # real `Providers.Web.Message` outbound adapter. Until then nothing on a web-channel message
+  # may reach the BSP — a WhatsApp reply to a browser visitor is worse than no reply.
+  defp check_for_hsm_message(%{channel: channel}, _contact) when channel in [:web, "web"],
+    do: {:error, "web channel sends are not implemented yet"}
+
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
       attrs
@@ -1275,6 +1299,34 @@ defmodule Glific.Messages do
     "document" => 102_400,
     "sticker" => 100
   }
+
+  @doc """
+  The maximum accepted size, in KB, for an uploaded media `type` — the single source of truth
+  so a caller validating a file up front (e.g. the web channel's upload endpoint) cannot drift
+  from the limit enforced when a media URL is validated.
+  """
+  @spec media_size_limit(String.t()) :: pos_integer() | nil
+  def media_size_limit(type), do: @size_limit[type]
+
+  @doc """
+  Whether `content_type` is one accepted for media `type`, using the same content-type
+  families `do_validate_headers/3` checks for a fetched media URL — so a file accepted here
+  (e.g. the web channel's upload endpoint) cannot later fail that validation.
+  """
+  @spec valid_media_content_type?(String.t(), String.t() | nil) :: boolean()
+  def valid_media_content_type?("audio", content_type) when is_binary(content_type) do
+    # do_validate_headers/3's audio clause destructures on "/" and MatchErrors on a malformed
+    # content-type; a client-supplied upload can send anything, so guard the shape first.
+    case String.split(content_type, "/") do
+      [_mime_type, _ext] -> do_validate_headers(%{"content-type" => content_type}, "audio", "")
+      _ -> false
+    end
+  end
+
+  def valid_media_content_type?(type, content_type) when is_binary(content_type),
+    do: do_validate_headers(%{"content-type" => content_type}, type, "")
+
+  def valid_media_content_type?(_type, _content_type), do: false
 
   @spec do_validate_media(String.t(), String.t()) :: map()
   defp do_validate_media(url, type) do
