@@ -65,17 +65,9 @@ defmodule GlificWeb.Endpoint do
                        [body_reader: {GlificWeb.Misc.BodyReader, :cache_raw_body, []}] ++ opts
                      )
 
-  # Above `opts`'s 20MB default: Messages.media_size_limit("document") allows up to 100MB, and
-  # this global cap runs before the upload action, so a large document would otherwise die as a
-  # parser error instead of the typed 413 the controller returns.
-  @parser_for_web_channel_upload Plug.Parsers.init(Keyword.put(opts, :length, 110_000_000))
-
   # All endpoints that start with "webhooks" have their body cached.
   defp parse_body(%{path_info: ["webhook" | _]} = conn, _),
     do: Plug.Parsers.call(conn, @parser_with_cache)
-
-  defp parse_body(%{path_info: ["api", "v1", "web_channel", "upload"]} = conn, _),
-    do: Plug.Parsers.call(conn, @parser_for_web_channel_upload)
 
   defp parse_body(conn, _),
     do: Plug.Parsers.call(conn, @parser_without_cache)

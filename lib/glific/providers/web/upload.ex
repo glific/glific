@@ -1,58 +1,26 @@
 defmodule Glific.Providers.Web.Upload do
   @moduledoc """
-  Turns a file a browser contact uploaded over the web channel into a hosted URL.
+  Validates URLs a web-channel browser contact's message claims to point at.
 
-  The web-channel end user is not a staff `Glific.Users.User`, so it cannot use the
-  `:staff`-gated `uploadMedia` GraphQL mutation. This module offers the same underlying
-  Google Cloud Storage upload (`Glific.GCS.GcsWorker.upload_media/3`) behind a
-  contact-facing entry point.
-
-  Media goes straight into the organization's own bucket, which makes **a configured Google
-  Cloud Storage credential a precondition for enabling the web channel**, alongside the
-  `verify_otp` HSM template #5662 already requires. There is no application-level hook on the
-  feature flag (see #5711), so nothing can enforce that at enablement time — an organization
-  without GCS gets a working chat whose attachments all fail, and the error says so rather than
-  making an operator infer it.
-
-  When the organization has no GCS credential and the dev/test-only
-  `:web_channel_local_media` flag is enabled, the file is instead written under
-  `priv/static/uploads/<org_id>/`. That fallback is never enabled in production.
+  The web channel now uploads straight into the organization's own GCS bucket via a pre-signed
+  PUT URL (`Glific.GCS.SignedUrl`) — Glific itself never sees the bytes. This module is what is
+  left once that upload is done: deriving the extension a signed object is named with, and
+  checking that a URL a `new_media_message` socket event claims is one the organization's own
+  bucket (or, in dev/test, the local-disk fallback) could actually have produced.
   """
 
-  alias Glific.{GCS, GCS.GcsWorker, Partners}
+  alias Glific.GCS
 
   @gcs_host "storage.googleapis.com"
 
   @doc """
-  Upload a local file for the given organization, returning its hosted URL and content type.
-
-  `local_path` is a file already on disk (e.g. a `%Plug.Upload{}.path`). Prefers GCS when the
-  org has it configured, otherwise falls back to local disk when `:web_channel_local_media` is
-  enabled, otherwise returns an error.
+  Derive a file extension from an already-validated content type — never from anything the
+  caller supplies directly. An extension the client chooses is a filename it chooses:
+  "../../x" writes outside the org's directory, and "html" turns an upload into same-origin
+  script if the path is ever served.
   """
-  @spec upload_file(non_neg_integer(), String.t(), String.t() | nil) ::
-          {:ok, %{url: String.t(), content_type: String.t() | nil}}
-          | {:error, String.t() | :storage_unavailable}
-  def upload_file(organization_id, local_path, content_type) do
-    with {:ok, extension} <- extension_for(content_type) do
-      cond do
-        Partners.attachments_enabled?(organization_id) ->
-          gcs_upload(organization_id, local_path, extension, content_type)
-
-        local_media_enabled?() ->
-          local_upload(organization_id, local_path, extension, content_type)
-
-        true ->
-          {:error, :storage_unavailable}
-      end
-    end
-  end
-
-  # Derived from the already-validated content type, never taken from the caller. An extension
-  # the client chooses is a filename it chooses: "../../x" writes outside the org's directory,
-  # and "html" turns an upload into same-origin script if the path is ever served.
   @spec extension_for(String.t() | nil) :: {:ok, String.t()} | {:error, String.t()}
-  defp extension_for(content_type) when is_binary(content_type) do
+  def extension_for(content_type) when is_binary(content_type) do
     content_type
     |> String.split(";")
     |> hd()
@@ -66,8 +34,28 @@ defmodule Glific.Providers.Web.Upload do
     end
   end
 
-  defp extension_for(_content_type),
+  def extension_for(_content_type),
     do: {:error, "media upload failed: missing content type"}
+
+  @doc """
+  The GCS bucket and object name a previously-issued GCS URL points at, or `:error` if `url`
+  isn't one of the organization's own GCS objects (this never matches a local-fallback URL,
+  which has no bucket/object to look up).
+  """
+  @spec gcs_object(non_neg_integer(), String.t()) :: {:ok, String.t(), String.t()} | :error
+  def gcs_object(organization_id, url) when is_binary(url) do
+    with %URI{scheme: scheme, host: @gcs_host, path: path} when scheme in ["http", "https"] <-
+           URI.parse(url),
+         bucket when is_binary(bucket) <- GCS.bucket_name(organization_id),
+         prefix = "/#{bucket}/",
+         true <- String.starts_with?(path || "", prefix) do
+      {:ok, bucket, path |> String.trim_leading(prefix) |> URI.decode()}
+    else
+      _ -> :error
+    end
+  end
+
+  def gcs_object(_organization_id, _url), do: :error
 
   @doc """
   Whether `url` is one this module itself issued for `organization_id` — a GCS object under the
@@ -105,37 +93,4 @@ defmodule Glific.Providers.Web.Upload do
     endpoint_host = GlificWeb.Endpoint.url() |> URI.parse() |> Map.get(:host)
     host == endpoint_host && String.starts_with?(path || "", "/uploads/#{organization_id}/")
   end
-
-  @spec gcs_upload(non_neg_integer(), String.t(), String.t(), String.t() | nil) ::
-          {:ok, %{url: String.t(), content_type: String.t() | nil}} | {:error, String.t()}
-  defp gcs_upload(organization_id, local_path, extension, content_type) do
-    case GcsWorker.upload_media(local_path, remote_name(extension), organization_id) do
-      {:ok, %{url: url}} -> {:ok, %{url: url, content_type: content_type}}
-      error -> {:error, "media upload failed: #{Glific.SafeLog.safe_inspect(error)}"}
-    end
-  end
-
-  @spec local_upload(non_neg_integer(), String.t(), String.t(), String.t() | nil) ::
-          {:ok, %{url: String.t(), content_type: String.t() | nil}} | {:error, String.t()}
-  defp local_upload(organization_id, local_path, extension, content_type) do
-    filename = "#{Ecto.UUID.generate()}.#{extension}"
-    dir = Path.join(local_media_dir(), to_string(organization_id))
-    File.mkdir_p!(dir)
-    File.cp!(local_path, Path.join(dir, filename))
-
-    url = "#{GlificWeb.Endpoint.url()}/uploads/#{organization_id}/#{filename}"
-    {:ok, %{url: url, content_type: content_type}}
-  end
-
-  # A bare UUID. Unlike the BSP naming in `GcsWorker.do_perform/1`, which embeds the contact and
-  # flow ids, nothing here should let someone holding one object name infer who sent it, when,
-  # or over which channel, or walk to a neighbouring object.
-  @spec remote_name(String.t()) :: String.t()
-  defp remote_name(extension), do: "#{Ecto.UUID.generate()}.#{extension}"
-
-  @spec local_media_enabled?() :: boolean()
-  defp local_media_enabled?, do: Application.get_env(:glific, :web_channel_local_media, false)
-
-  @spec local_media_dir() :: String.t()
-  defp local_media_dir, do: Application.app_dir(:glific, "priv/static/uploads")
 end

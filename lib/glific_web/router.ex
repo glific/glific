@@ -97,7 +97,7 @@ defmodule GlificWeb.Router do
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through([:web_channel_api])
 
-    post("/web_channel/upload", WebChannelMediaController, :upload)
+    post("/web_channel/upload-url", WebChannelMediaController, :upload_url)
   end
 
   # Enables LiveDashboard only for development

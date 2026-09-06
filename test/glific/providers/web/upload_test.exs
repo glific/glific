@@ -75,4 +75,59 @@ defmodule Glific.Providers.Web.UploadTest do
       refute Upload.issued_url?(organization_id, url)
     end
   end
+
+  describe "extension_for/1" do
+    test "derives an extension from a valid content type" do
+      assert Upload.extension_for("image/png") == {:ok, "png"}
+    end
+
+    test "ignores parameters after the ; and case", %{} do
+      assert Upload.extension_for("Image/PNG; charset=binary") == {:ok, "png"}
+    end
+
+    test "rejects an unrecognised or missing content type" do
+      assert {:error, _reason} = Upload.extension_for("image/not-a-real-subtype")
+      assert {:error, _reason} = Upload.extension_for(nil)
+    end
+  end
+
+  describe "gcs_object/2" do
+    setup %{organization_id: organization_id} do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          shortcode: "google_cloud_storage",
+          secrets: %{
+            "bucket" => "org-#{organization_id}-bucket",
+            "service_account" =>
+              Jason.encode!(%{
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
+          },
+          is_active: true,
+          organization_id: organization_id
+        })
+
+      :ok
+    end
+
+    test "extracts the bucket and object name from a GCS url", %{organization_id: organization_id} do
+      url = "https://storage.googleapis.com/org-#{organization_id}-bucket/some-object.png"
+
+      assert Upload.gcs_object(organization_id, url) ==
+               {:ok, "org-#{organization_id}-bucket", "some-object.png"}
+    end
+
+    test "rejects a GCS url under another organisation's bucket", %{
+      organization_id: organization_id
+    } do
+      url = "https://storage.googleapis.com/some-other-orgs-bucket/some-object.png"
+      assert Upload.gcs_object(organization_id, url) == :error
+    end
+
+    test "rejects a non-GCS url", %{organization_id: organization_id} do
+      url = "#{GlificWeb.Endpoint.url()}/uploads/#{organization_id}/test.png"
+      assert Upload.gcs_object(organization_id, url) == :error
+    end
+  end
 end
