@@ -1292,6 +1292,15 @@ defmodule Glific.Messages do
     end
   end
 
+  @document_content_types ~w(
+    application/msword
+    application/vnd.ms-excel
+    application/vnd.ms-powerpoint
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+    application/vnd.openxmlformats-officedocument.presentationml.presentation
+  )
+
   @size_limit %{
     "image" => 5120,
     "video" => 16_384,
@@ -1368,8 +1377,15 @@ defmodule Glific.Messages do
   end
 
   @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
-  defp do_validate_headers(headers, "document", _url),
-    do: String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"])
+  # Matched on the exact base type, not a substring. The previous check looked for "docx" and
+  # "xlxs" — the latter a typo for "xlsx", and neither substring present in the
+  # application/vnd.openxmlformats-officedocument.* types that browsers and servers actually
+  # send, so no Office document has ever passed this on any channel.
+  defp do_validate_headers(headers, "document", _url) do
+    content_type = base_content_type(headers["content-type"])
+
+    String.contains?(content_type, "pdf") or content_type in @document_content_types
+  end
 
   ## sometimes webp files does not return any content type. We need to figure out another way to validate this
   defp do_validate_headers(headers, "sticker", url),
@@ -1387,6 +1403,12 @@ defmodule Glific.Messages do
   end
 
   defp do_validate_headers(_, _, _), do: false
+
+  @spec base_content_type(String.t() | nil) :: String.t()
+  defp base_content_type(nil), do: ""
+
+  defp base_content_type(content_type),
+    do: content_type |> String.split(";") |> hd() |> String.trim() |> String.downcase()
 
   @spec do_validate_size(Integer, String.t() | integer()) :: boolean
   defp do_validate_size(_size_limit, nil), do: false
