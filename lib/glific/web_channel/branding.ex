@@ -22,15 +22,19 @@ defmodule Glific.WebChannel.Branding do
   # Kept in step with THEMES in glific-web-channel's src/services/themes.ts, which holds the
   # palette each of these names resolves to. A name the widget does not recognise falls back
   # there too, so the two lists drifting degrades rather than breaks.
+  #
+  # `swatch` is display only — it is the sRGB rendering of that theme's `--primary`, so the
+  # Settings dropdown can show the colour beside the name. The widget still owns the real
+  # values; `shade` names the Tailwind colour both sides were taken from.
   @themes [
-    %{id: "violet", label: "Violet"},
-    %{id: "blue", label: "Blue"},
-    %{id: "green", label: "Green"},
-    %{id: "teal", label: "Teal"},
-    %{id: "rose", label: "Rose"},
-    %{id: "orange", label: "Orange"},
-    %{id: "amber", label: "Amber"},
-    %{id: "zinc", label: "Zinc"}
+    %{id: "violet", label: "Violet", shade: "violet-600", swatch: "#7f22fe"},
+    %{id: "blue", label: "Blue", shade: "blue-600", swatch: "#155dfc"},
+    %{id: "green", label: "Green", shade: "green-700", swatch: "#008236"},
+    %{id: "teal", label: "Teal", shade: "teal-700", swatch: "#00786f"},
+    %{id: "rose", label: "Rose", shade: "rose-600", swatch: "#ec003f"},
+    %{id: "orange", label: "Orange", shade: "orange-500", swatch: "#ff6900"},
+    %{id: "amber", label: "Amber", shade: "amber-400", swatch: "#ffb900"},
+    %{id: "zinc", label: "Zinc", shade: "zinc-900", swatch: "#18181b"}
   ]
 
   @default_theme "zinc"
@@ -44,7 +48,7 @@ defmodule Glific.WebChannel.Branding do
   @doc """
   The themes an organisation may choose between, as the Settings dropdown renders them.
   """
-  @spec themes() :: [%{id: String.t(), label: String.t()}]
+  @spec themes() :: [%{id: String.t(), label: String.t(), shade: String.t(), swatch: String.t()}]
   def themes, do: @themes
 
   @doc """

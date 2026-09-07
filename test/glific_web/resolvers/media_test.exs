@@ -1,4 +1,6 @@
 defmodule GlificWeb.Resolvers.MediaTest do
+  @moduledoc false
+
   use GlificWeb.ConnCase
 
   import Mock

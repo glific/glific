@@ -3,6 +3,8 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
   use GlificWeb.ConnCase
 
+  import Mock
+
   alias FunWithFlags.Store.Cache, as: FlagCache
   alias Glific.{Fixtures, Partners, WebChannel.Branding}
 
@@ -84,6 +86,15 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
       assert %{"data" => %{"theme" => "zinc", "logo_url" => nil}} =
                conn |> get(@branding_path) |> json_response(200)
+    end
+
+    test "returns 404 rather than raising when the organization cannot be loaded", %{conn: conn} do
+      # organization/1 returns {:error, _} on a cache or lookup failure, and everything
+      # downstream reads organization.id. This is a public endpoint, so it must not 500.
+      with_mock Partners, [:passthrough], organization: fn _id -> {:error, "cache miss"} end do
+        assert %{"error" => %{"status" => 404}} =
+                 conn |> get(@branding_path) |> json_response(404)
+      end
     end
 
     test "returns 404 for an organization without the feature flag", %{conn: conn} do

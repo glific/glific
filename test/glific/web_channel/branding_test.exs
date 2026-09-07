@@ -1,4 +1,6 @@
 defmodule Glific.WebChannel.BrandingTest do
+  @moduledoc false
+
   use Glific.DataCase, async: true
 
   alias Glific.Partners.Organization
@@ -13,6 +15,20 @@ defmodule Glific.WebChannel.BrandingTest do
         assert is_binary(theme.id) and theme.id != ""
         assert is_binary(theme.label) and theme.label != ""
       end
+    end
+
+    test "every theme carries a swatch the Settings dropdown can render" do
+      for theme <- Branding.themes() do
+        # Display only — the widget owns the real palette — but it must be a colour the
+        # browser will accept, or the picker silently shows nothing.
+        assert theme.swatch =~ ~r/^#[0-9a-f]{6}$/
+        assert is_binary(theme.shade) and theme.shade != ""
+      end
+    end
+
+    test "swatches are distinct, so two themes never look the same in the picker" do
+      swatches = Enum.map(Branding.themes(), & &1.swatch)
+      assert swatches == Enum.uniq(swatches)
     end
 
     test "ids are unique, so a choice resolves to exactly one palette" do
