@@ -75,7 +75,11 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :id, :id
     field :major_version, :integer
     field :minor_version, :integer
-    field :version_label, :string
+
+    field :version_label, :string do
+      resolve(&Resolvers.Assistants.version_label/3)
+    end
+
     field :model, :string
     field :prompt, :string
     field :settings, :json

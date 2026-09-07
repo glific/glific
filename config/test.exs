@@ -32,8 +32,6 @@ config :glific,
 
 config :goth, disabled: true
 
-config :glific, Poolboy, worker: Glific.Processor.ConsumerWorkerMock
-
 config :tesla, adapter: Tesla.Mock
 
 config :phoenix, :json_library, Jason

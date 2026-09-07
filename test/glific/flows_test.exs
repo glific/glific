@@ -13,7 +13,7 @@ defmodule Glific.FLowsTest do
     Messages,
     Messages.Message,
     Processor.ConsumerFlow,
-    Processor.ConsumerWorker,
+    Processor.MessageWorker,
     Repo,
     Seeds.SeedsDev
   }
@@ -672,13 +672,13 @@ defmodule Glific.FLowsTest do
         }
     end)
 
-    state = ConsumerWorker.load_state(organization_id)
+    state = MessageWorker.load_state(organization_id)
 
     message = Fixtures.message_fixture(%{body: "👍", sender_id: contact.id})
-    ConsumerWorker.process_message(message, state)
+    MessageWorker.process_message(message, state)
 
     message = Fixtures.message_fixture(%{body: "2", sender_id: contact.id})
-    ConsumerWorker.process_message(message, state)
+    MessageWorker.process_message(message, state)
 
     db_context = Repo.get!(FlowContext, context.id)
     assert !is_nil(db_context.results)

@@ -3,14 +3,13 @@ defmodule Glific.Contacts.Import do
   The Contact Importer Module
   """
   import Ecto.Query
-  alias Glific.Settings.Language
   alias GlificWeb.Schema.Middleware.Authorize
 
   alias Glific.{
     Contacts,
+    Contacts.BulkImportWorker,
     Contacts.Contact,
     Contacts.ContactHistory,
-    Contacts.ImportWorker,
     Flows.ContactField,
     Groups,
     Groups.ContactGroup,
@@ -104,6 +103,90 @@ defmodule Glific.Contacts.Import do
   end
 
   @doc """
+  Validate a chunk of raw csv rows, returning the errors and the rows that parsed.
+  """
+  @spec validate_contacts([map()]) :: {map(), [map()]}
+  def validate_contacts(contacts) do
+    {errors, valid} =
+      Enum.reduce(contacts, {%{}, []}, fn contact, {errors, valid} ->
+        case validate_contact(contact) do
+          {:ok, clean_phone} -> {errors, [Map.put(contact, "phone", clean_phone) | valid]}
+          {:error, error} -> {Map.merge(errors, error), valid}
+        end
+      end)
+
+    # the accumulator prepends, so restore csv order: when a phone is listed twice it is
+    # the later row that should win
+    {errors, Enum.reverse(valid)}
+  end
+
+  @doc """
+  Validate one csv row's phone number and name.
+  """
+  @spec validate_contact(map()) :: {:ok, String.t()} | {:error, map()}
+  def validate_contact(%{"phone" => phone}) when phone in [nil, ""],
+    do: {:error, %{"phone" => "Phone number is missing."}}
+
+  def validate_contact(%{"phone" => phone, "name" => name}) do
+    case Contacts.parse_phone_number(phone) do
+      {:ok, clean_phone} -> validate_name(name, clean_phone)
+      {:error, message} -> {:error, %{phone => message}}
+    end
+  end
+
+  def validate_contact(_contact), do: {:error, %{"error" => "Failed to parse some rows"}}
+
+  @spec validate_name(String.t() | nil, String.t()) :: {:ok, String.t()} | {:error, map()}
+  defp validate_name(name, phone) when name in [nil, ""],
+    do: {:error, %{phone => "Contact name is empty"}}
+
+  defp validate_name(_name, phone), do: {:ok, phone}
+
+  @doc """
+  Rebuild the worker params from the json serialized Oban args.
+  """
+  @spec parse_worker_params(map(), non_neg_integer()) :: map()
+  def parse_worker_params(params, organization_id) do
+    %{
+      organization_id: organization_id,
+      type: params["type"],
+      user: %{
+        roles: Enum.map(params["user"]["roles"], &String.to_existing_atom/1),
+        upload_contacts: params["user"]["upload_contacts"],
+        name: params["user"]["name"]
+      }
+    }
+  end
+
+  @doc """
+  Record one finished chunk against the user job, merging in any row level errors.
+  """
+  @spec update_user_job_progress(non_neg_integer(), map()) :: :ok
+  def update_user_job_progress(user_job_id, errors) do
+    Repo.transaction(fn ->
+      user_job =
+        UserJob
+        |> lock("FOR UPDATE")
+        |> Repo.get_by(id: user_job_id)
+
+      UserJob.update_user_job(user_job, %{
+        tasks_done: user_job.tasks_done + 1,
+        errors: merge_errors(user_job.errors, errors)
+      })
+    end)
+
+    :ok
+  end
+
+  @spec merge_errors(map() | nil, map()) :: map()
+  defp merge_errors(existing, errors) when map_size(errors) == 0, do: existing || %{}
+
+  defp merge_errors(existing, errors) do
+    existing = existing || %{}
+    Map.update(existing, "errors", errors, &Map.merge(&1, errors))
+  end
+
+  @doc """
     Move the existing contacts to a group.
   """
   @spec add_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
@@ -190,9 +273,9 @@ defmodule Glific.Contacts.Import do
       organization_id: organization_id,
       collection: get_collection(contact_attrs.type, data, contact_attrs),
       delete: data["delete"],
+      language: data["language"],
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
     }
-    |> add_language(data["language"])
   end
 
   # Handling csv parsing errors for rows
@@ -293,7 +376,7 @@ defmodule Glific.Contacts.Import do
       |> Stream.chunk_every(@contact_job_chunk_size)
       |> Stream.with_index()
       |> Enum.map(fn {chunk, index} ->
-        ImportWorker.make_job(chunk, params, user_job.id, index * 2)
+        BulkImportWorker.make_job(chunk, params, user_job.id, index * 2)
       end)
       |> Enum.count()
 
@@ -417,28 +500,6 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @spec add_language(map(), String.t() | nil) :: map()
-  defp add_language(results, language) when language in [nil, ""] do
-    # Check if contacts have a language other than English; if so, don't update it
-    case Repo.fetch_by(Contact, %{phone: results.phone}) do
-      {:error, _error} ->
-        add_default_language(results)
-
-      {:ok, contact} ->
-        Map.put(results, :language_id, contact.language_id)
-    end
-  end
-
-  defp add_language(results, language) do
-    case Settings.get_language_by_label_or_locale(language) do
-      [] ->
-        add_default_language(results)
-
-      [lang | _] ->
-        Map.put(results, :language_id, lang.id)
-    end
-  end
-
   @spec capture_language_history(
           Contact.t(),
           non_neg_integer() | String.t(),
@@ -462,11 +523,5 @@ defmodule Glific.Contacts.Import do
         }
       })
     end
-  end
-
-  @spec add_default_language(map()) :: map()
-  defp add_default_language(results) do
-    {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
-    Map.put(results, :language_id, en.id)
   end
 end

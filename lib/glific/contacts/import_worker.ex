@@ -1,6 +1,10 @@
 defmodule Glific.Contacts.ImportWorker do
   @moduledoc """
-  Worker for processing contact chunks.
+  Worker for processing contact chunks one field at a time.
+
+  Superseded by `Glific.Contacts.BulkImportWorker`, which batches its writes. Nothing
+  enqueues this worker any more; it is kept only so that jobs already sitting in the
+  queue can still drain, and should be removed once they have.
   """
   require Logger
 
@@ -10,25 +14,9 @@ defmodule Glific.Contacts.ImportWorker do
     priority: 1
 
   alias Glific.{
-    Contacts,
     Contacts.Import,
-    Jobs.UserJob,
     Repo
   }
-
-  import Ecto.Query
-
-  @doc """
-  Creating new job for each chunk of contacts.
-  """
-  @spec make_job(list(), map(), non_neg_integer(), non_neg_integer()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def make_job(chunk, params, user_job_id, delay) do
-    __MODULE__.new(%{contacts: chunk, params: params, user_job_id: user_job_id},
-      schedule_in: delay
-    )
-    |> Oban.insert()
-  end
 
   @doc """
   Standard perform method to use Oban worker.
@@ -37,82 +25,26 @@ defmodule Glific.Contacts.ImportWorker do
   def perform(%Oban.Job{
         args: %{"contacts" => contacts, "params" => params, "user_job_id" => user_job_id}
       }) do
-    params = %{
-      organization_id: params["organization_id"],
-      user: %{
-        roles: Enum.map(params["user"]["roles"], &String.to_existing_atom/1),
-        upload_contacts: params["user"]["upload_contacts"],
-        name: params["user"]["name"]
-      },
-      type: params["type"]
-    }
+    params = Import.parse_worker_params(params, params["organization_id"])
 
     Repo.put_process_state(params.organization_id)
 
-    {validation_errors, valid_contacts} =
-      Enum.reduce(contacts, {%{}, []}, fn contact, {acc, valid_contacts} ->
-        case validate_contact(contact) do
-          {:ok, clean_phone} ->
-            {acc, [Map.put(contact, "phone", clean_phone) | valid_contacts]}
-
-          {:error, errors} ->
-            {Map.update(acc, :errors, errors, &Map.merge(&1, errors)), valid_contacts}
-        end
-      end)
+    {validation_errors, valid_contacts} = Import.validate_contacts(contacts)
 
     contacts =
       Enum.map(valid_contacts, fn contact ->
         for {key, value} <- contact, into: %{}, do: {String.to_existing_atom(key), value}
       end)
 
-    errors =
-      Enum.reduce(contacts, validation_errors, fn contact, error_map ->
-        case process_contact(contact, params) do
-          {:ok, _} ->
-            error_map
-
-          {:error, error} ->
-            Map.update(error_map, :errors, error, &Map.merge(&1, error))
-        end
-      end)
-
-    Repo.transaction(fn ->
-      user_job =
-        UserJob
-        |> lock("FOR UPDATE")
-        |> Repo.get_by(id: user_job_id)
-
-      tasks_done = user_job.tasks_done + 1
-      updated_errors = Map.merge(user_job.errors || %{}, errors)
-      UserJob.update_user_job(user_job, %{tasks_done: tasks_done, errors: updated_errors})
+    contacts
+    |> Enum.reduce(validation_errors, fn contact, error_map ->
+      case process_contact(contact, params) do
+        {:ok, _} -> error_map
+        {:error, error} -> Map.merge(error_map, error)
+      end
     end)
-
-    :ok
+    |> then(&Import.update_user_job_progress(user_job_id, &1))
   end
-
-  @spec validate_contact(map()) :: {:ok, String.t()} | {:error, map()}
-  defp validate_contact(%{"phone" => phone}) when phone in [nil, ""] do
-    {:error, %{"phone" => "Phone number is missing."}}
-  end
-
-  defp validate_contact(%{"phone" => phone, "name" => name}) do
-    case Contacts.parse_phone_number(phone) do
-      {:ok, clean_phone} ->
-        validate_name(name, clean_phone)
-
-      {:error, message} ->
-        {:error, %{phone => message}}
-    end
-  end
-
-  defp validate_contact(_), do: {:error, %{"error" => "Failed to parse some rows"}}
-
-  @spec validate_name(String.t(), String.t()) :: {:ok, String.t()} | {:error, map()}
-  defp validate_name(name, phone) when name in [nil, ""] do
-    {:error, %{phone => "Contact name is empty"}}
-  end
-
-  defp validate_name(_name, phone), do: {:ok, phone}
 
   @spec process_contact(map(), map()) :: {:ok, map()} | {:error, map()}
   defp process_contact(contact, params) do

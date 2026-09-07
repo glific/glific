@@ -441,6 +441,61 @@ defmodule Glific.Assistants.AssistantTest do
       assert signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
     end
 
+    test "returns a clear error for files of a knowledge base version with no kaapi_job_id", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      {:ok, _legacy_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          llm_service_id: "vs_legacy_123",
+          status: :completed,
+          organization_id: organization_id,
+          files: %{"file-abc123" => %{"name" => "legacy.pdf", "size" => 10}},
+          size: 10
+        })
+
+      assert {:error, error_message} =
+               Assistants.get_file("file-abc123", organization_id)
+
+      assert error_message ==
+               "This file belongs to a legacy knowledge base created before the knowledge base rewrite and cannot be downloaded"
+    end
+
+    test "fetches from Kaapi when the knowledge base version has a kaapi_job_id", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      {:ok, _version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          llm_service_id: "vs_synced_123",
+          kaapi_job_id: "job_123",
+          status: :completed,
+          organization_id: organization_id,
+          files: %{"file-abc123" => %{"name" => "synced.pdf", "size" => 10}},
+          size: 10
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "This is not a secret/api/v1/documents/file-abc123"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                id: "file-abc123",
+                fname: "synced.pdf",
+                signed_url: "https://kaapi-test.s3.amazonaws.com/test/synced.pdf"
+              }
+            }
+          }
+      end)
+
+      assert {:ok, %{filename: "synced.pdf"}} =
+               Assistants.get_file("file-abc123", organization_id)
+    end
+
     test "returns an error when Kaapi fails", %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
         %{method: :get, url: "This is not a secret/api/v1/documents/doc_123"} ->

@@ -93,7 +93,8 @@ config :appsignal, :config,
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
   ecto_repos: [],
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
-  instrument_oban: false
+  instrument_oban: false,
+  log_level: env!("APPSIGNAL_LOG_LEVEL", :string!, "info")
 
 config :glific, Glific.Vault,
   ciphers: [
@@ -304,3 +305,10 @@ unless config_env() == :test do
     username: env!("SUPERSET_USERNAME", :string, "this_is_not_a_username"),
     password: env!("SUPERSET_PASSWORD", :string, "this_is_not_a_password")
 end
+
+# Provider credentials for Glific AI. Secrets: environment only, never committed.
+# req_llm resolves these itself; nil simply means no provider is configured, which
+# Glific.AI reports as a failure rather than crashing at boot.
+config :req_llm,
+  anthropic_api_key: env!("ANTHROPIC_API_KEY", :string, nil),
+  openai_api_key: env!("OPENAI_API_KEY", :string, nil)
