@@ -69,6 +69,8 @@ defmodule Glific.Flows.Expression do
   escape hatch — we return `{:error, _}`).
   """
 
+  alias Glific.SafeLog
+
   # The complete set of callable functions, keyed `{alias, fun, arity}`.
   # Every entry must be pure, total, and cheap. Never add anything that evals
   # (`Code`/`EEx`), touches the OS (`System`/`File`/`:os`), reaches the `Repo`,
@@ -265,7 +267,7 @@ defmodule Glific.Flows.Expression do
     {:min, 2},
     {:then, 2},
     {:.., 2},
-    {:"..//", 3},
+    {:..//, 3},
     {:hd, 1},
     {:is_map, 1}
   ]
@@ -1088,7 +1090,10 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:in, [a, b]) when is_list(b), do: Enum.member?(b, a)
   defp kernel_call(:in, _), do: reject("in requires a list")
   defp kernel_call(:to_string, [a]), do: to_string(a)
-  defp kernel_call(:inspect, [a]), do: inspect(a)
+  # safe_inspect rather than inspect: an expression's result can reach a message body, so a term
+  # carrying credentials — a %Tesla.Env{} with a live Authorization header — must not be rendered
+  # verbatim. Identical to inspect/1 for ordinary terms.
+  defp kernel_call(:inspect, [a]), do: SafeLog.safe_inspect(a)
   defp kernel_call(:is_number, [a]), do: is_number(a)
   defp kernel_call(:is_binary, [a]), do: is_binary(a)
   defp kernel_call(:is_integer, [a]), do: is_integer(a)
@@ -1098,7 +1103,7 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:then, [value, fun]) when is_function(fun, 1), do: fun.(value)
   defp kernel_call(:then, _), do: reject("then requires a function")
   defp kernel_call(:.., [a, b]), do: Range.new(a, b)
-  defp kernel_call(:"..//", [a, b, c]), do: Range.new(a, b, c)
+  defp kernel_call(:..//, [a, b, c]), do: Range.new(a, b, c)
   defp kernel_call(:hd, [a]) when is_list(a) and a != [], do: hd(a)
   defp kernel_call(:hd, _), do: reject("hd requires a non-empty list")
   defp kernel_call(:is_map, [a]), do: is_map(a)
