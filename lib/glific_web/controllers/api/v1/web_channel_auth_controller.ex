@@ -6,11 +6,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Interim behaviour: `request_otp/2` opts the contact in to WhatsApp because someone typed a
-  number into a login box, which is how staff registration has always worked and is what makes the
-  OTP deliverable at all — an HSM cannot reach a contact who is not opted in. US3 of #5659
-  replaces this with an explicit consent step, so until then treat an `optin_method` of
-  `"web_channel"` as *implied* consent, not agreement.
+  Signing in records **no consent of any kind**. A contact row is created if the number is new,
+  because an HSM has to be addressed to one, and nothing else about the contact is touched.
+  Consent — recorded per channel, and the exemption that makes the OTP deliverable to a contact
+  who has never opted in — is #5713's work. Until it lands, a number with no prior Glific opt-in
+  gets the same neutral response as any other and no code, because `can_send_message_to?/2`
+  refuses an HSM to a contact at `bsp_status: :none`.
   """
 
   use GlificWeb, :controller
@@ -32,6 +33,15 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # Identical whether or not `phone` is a known contact and whether or not delivery succeeded, so
   # the endpoint cannot be used to enumerate an organization's contacts.
   @request_otp_message "If this number is registered on WhatsApp, you will receive a one-time code"
+
+  # Separate messages for the two buckets, because they describe different situations and the
+  # remedy differs. Hitting the phone limit means "you just did this" and waiting works; hitting
+  # the IP limit usually means a shared network — beneficiaries reach the internet through
+  # carrier-grade NAT, so a whole district can share one address — and "wait 30 seconds" would be
+  # wrong advice. Distinguishing them tells a caller that a code was requested for this number in
+  # the last window, which is a weak enough oracle to trade for the copy being true.
+  @phone_throttled_message "An OTP was just sent. Please try again in 30 seconds."
+  @ip_throttled_message "Too many sign-in attempts from your network. Please wait a few minutes and try again."
 
   @doc """
   Requests that an OTP be sent over WhatsApp to `phone`, so a beneficiary can sign in to the
@@ -109,7 +119,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # an unknown phone can genuinely race on the (phone, organization_id) unique index.
   @spec resolve_contact_and_sign_in(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
-    case optin_contact(organization_id, normalized) do
+    case ensure_contact(organization_id, normalized) do
       {:ok, contact} ->
         json(conn, %{
           data: %{
@@ -225,27 +235,29 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # a budget with staff registration.
   @spec check_rate_limit(Conn.t(), String.t()) :: :ok | {:error, String.t()}
   defp check_rate_limit(conn, phone) do
-    with :ok <- check_bucket(:web_channel_otp_rate_limit, "web_channel_send_otp:#{phone}"),
-         :ok <-
+    with :ok <-
            check_bucket(
-             :web_channel_otp_ip_rate_limit,
-             "web_channel_send_otp_ip:#{GlificWeb.Tenants.remote_ip(conn)}"
+             :web_channel_otp_rate_limit,
+             "web_channel_send_otp:#{phone}",
+             @phone_throttled_message
            ) do
-      :ok
+      check_bucket(
+        :web_channel_otp_ip_rate_limit,
+        "web_channel_send_otp_ip:#{GlificWeb.Tenants.remote_ip(conn)}",
+        @ip_throttled_message
+      )
     end
   end
 
-  # One message for both buckets: which limit a caller tripped is not something they need, and
-  # saying would tell an attacker whether that number had just been sent a code.
-  @spec check_bucket(atom(), String.t()) :: :ok | {:error, String.t()}
-  defp check_bucket(config_key, key) do
+  @spec check_bucket(atom(), String.t(), String.t()) :: :ok | {:error, String.t()}
+  defp check_bucket(config_key, key, message) do
     config = Application.get_env(:glific, config_key, [])
     scale_ms = Keyword.get(config, :scale_ms, 30_000)
     count = Keyword.get(config, :count, 1)
 
     case ExRated.check_rate(key, scale_ms, count) do
       {:ok, _count} -> :ok
-      {:error, _limit} -> {:error, "An OTP was just sent. Please try again in 30 seconds."}
+      {:error, _limit} -> {:error, message}
     end
   end
 
@@ -264,7 +276,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp send_web_channel_otp(organization_id, phone) do
     build_context(organization_id)
 
-    with {:ok, contact} <- optin_contact(organization_id, phone),
+    with {:ok, contact} <- ensure_contact(organization_id, phone),
          true <- can_send_message_to?(contact),
          code = OTP.generate_code(:web_channel, phone),
          {:ok, _message} <- Messages.create_and_send_otp_verification_message(contact, code) do
@@ -306,16 +318,14 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   defp describe_send_failure(exception), do: SafeLog.safe_inspect(exception)
 
-  @spec optin_contact(non_neg_integer(), String.t()) ::
+  # A contact row has to exist for the HSM to be addressed to, but creating it writes no
+  # `optin_*`: typing a number into a public login box is not consent to anything, and recording
+  # it as a WhatsApp opt-in put people into an organization's broadcast audience who had never
+  # agreed to be there. #5713 records consent per channel instead.
+  @spec ensure_contact(non_neg_integer(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp optin_contact(organization_id, phone) do
-    %{
-      phone: phone,
-      organization_id: organization_id,
-      method: "web_channel"
-    }
-    |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "web_channel")
-  end
+  defp ensure_contact(organization_id, phone),
+    do: Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id})
 
   @spec can_send_message_to?(Contact.t()) :: boolean()
   defp can_send_message_to?(contact) do

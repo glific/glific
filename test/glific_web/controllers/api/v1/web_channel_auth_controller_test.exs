@@ -20,6 +20,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   }
 
   alias GlificWeb.WebChannel.Token
+  alias Plug.Conn
 
   # Seeded by `SeedsDev.seed_contacts/1` with `bsp_status: :session_and_hsm` and a recent
   # `optin_time`/`last_message_at`, so it is deliverable via a session message without any extra
@@ -315,6 +316,58 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         # 401, not 404 — the flag no longer gates this request once it is on.
         assert json_response(verify_conn, 401)
       end)
+    end
+  end
+
+  # CORS is asserted through the endpoint rather than the controller, because the endpoint's
+  # CORSPlug answers a preflight itself and halts — a restriction placed anywhere later would
+  # narrow the real request and leave the preflight wide open.
+  describe "CORS" do
+    # Built from scratch rather than by mutating the case's conn: `path_info` is what the plug
+    # dispatches on, and it is set when the conn is created, not from `request_path`.
+    defp options_preflight(path, origin) do
+      :options
+      |> Plug.Test.conn(path)
+      |> Conn.put_req_header("origin", origin)
+      |> Conn.put_req_header("access-control-request-method", "POST")
+      |> Conn.put_req_header("access-control-request-headers", "content-type")
+      |> GlificWeb.Endpoint.call([])
+    end
+
+    test "a preflight from the widget's own origin is allowed" do
+      response = options_preflight("/api/v1/web_channel/request-otp", "https://glific.test:5174")
+
+      assert Conn.get_resp_header(response, "access-control-allow-origin") ==
+               ["https://glific.test:5174"]
+    end
+
+    test "a wildcard origin matches one hostname label" do
+      response = options_preflight("/api/v1/web_channel/verify-otp", "https://web.ngo.glific.com")
+
+      assert Conn.get_resp_header(response, "access-control-allow-origin") ==
+               ["https://web.ngo.glific.com"]
+    end
+
+    # The wildcard must not span a dot, or an attacker registers a domain that ends in the right
+    # suffix and the check means nothing.
+    test "a wildcard does not span a dot" do
+      response = options_preflight("/api/v1/web_channel/verify-otp", "https://web.a.b.glific.com")
+
+      assert Conn.get_resp_header(response, "access-control-allow-origin") == []
+    end
+
+    test "an unknown origin gets no CORS headers back" do
+      response = options_preflight("/api/v1/web_channel/request-otp", "https://evil.example")
+
+      assert Conn.get_resp_header(response, "access-control-allow-origin") == []
+    end
+
+    # The rest of Glific's API keeps the permissive default it has always had; this ticket
+    # narrows the web channel, not everything.
+    test "routes outside the web channel are unchanged" do
+      response = options_preflight("/api/v1/registration", "https://evil.example")
+
+      assert Conn.get_resp_header(response, "access-control-allow-origin") == ["*"]
     end
   end
 
@@ -618,10 +671,15 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           Enum.map(phones, fn phone ->
             conn
             |> post(Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => phone}))
-            |> Map.get(:status)
           end)
 
-        assert responses == [200, 200, 429]
+        assert Enum.map(responses, & &1.status) == [200, 200, 429]
+
+        # The two buckets say different things, because the remedies differ: waiting works for the
+        # phone limit, while the IP limit is usually a shared network — telling someone behind
+        # carrier-grade NAT to "try again in 30 seconds" would be wrong advice.
+        assert get_in(json_response(List.last(responses), 429), ["error", "message"]) ==
+                 "Too many sign-in attempts from your network. Please wait a few minutes and try again."
       end)
     end
 
@@ -737,6 +795,57 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         assert json = json_response(conn, 200)
         assert get_in(json, ["data", "phone"]) == "919820198765"
+      end)
+    end
+  end
+
+  # Signing in used to opt the contact in to WhatsApp, which put people into an organization's
+  # broadcast audience on the strength of having typed their number into a public login box.
+  # Consent is #5713's, recorded per channel; this pins that nothing here records any.
+  describe "signing in records no consent" do
+    test "a first sign-in leaves every opt-in field at its default", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        assert %{status: 200} =
+                 post(
+                   conn,
+                   Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                     "phone" => phone,
+                     "otp" => code
+                   })
+                 )
+
+        contact = Repo.get_by!(Contact, phone: phone)
+
+        assert is_nil(contact.optin_time)
+        assert contact.optin_status == false
+        assert is_nil(contact.optin_method)
+        assert is_nil(contact.optin_message_id)
+      end)
+    end
+
+    test "an existing WhatsApp opt-in is not refreshed by a web sign-in", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        before = Repo.get_by!(Contact, phone: @reachable_phone)
+        code = OTP.generate_code(:web_channel, @reachable_phone)
+
+        assert %{status: 200} =
+                 post(
+                   conn,
+                   Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                     "phone" => @reachable_phone,
+                     "otp" => code
+                   })
+                 )
+
+        unchanged = Repo.get_by!(Contact, phone: @reachable_phone)
+
+        assert unchanged.optin_time == before.optin_time
+        assert unchanged.optin_method == before.optin_method
+        assert unchanged.status == before.status
       end)
     end
   end

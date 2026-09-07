@@ -102,9 +102,6 @@ defmodule Glific.MixProject do
       {:gettext, "~> 0.22"},
       {:decimal, "~> 2.0"},
       {:jason, "~> 1.4"},
-      # JWT signing/verification for the web channel socket token. Already present
-      # transitively; declared directly because security-critical code should not rest on
-      # another package continuing to pull it in.
       {:jose, "~> 1.11"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},

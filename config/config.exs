@@ -248,6 +248,13 @@ config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
 
 # Throttle web channel OTP requests separately from staff registration (default 1 / 30s), so the
 # two flows never share a rate-limit budget.
+# The only origins the browser widget is served from. `*` matches one hostname label, so
+# `web.*.glific.com` admits `web.ngo.glific.com` and nothing deeper.
+config :glific, :web_channel_allowed_origins, [
+  "https://glific.test:5174",
+  "https://web.*.glific.com"
+]
+
 config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1
 
 # The per-IP companion to the above. Deliberately loose: one carrier-grade NAT address can front
