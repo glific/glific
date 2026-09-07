@@ -185,93 +185,111 @@ defmodule Glific.BigQueryTest do
   end
 
   describe "bigquery_error_summary/1" do
-    ## The Logger format ends with `$message`, so a raw newline in an error dump ends the entry
-    ## and the rest is shipped without metadata — which is how the reason for a failed dedup
-    ## went missing in production. The body must reach the log escaped, not expanded.
-    ## `jobs.query` reports the failure in a top-level `errors` array, not in an `error`
-    ## envelope, so that is the shape every case here uses.
-    @streaming_buffer_body ~s({\n  "kind": "bigquery#queryResponse",\n) <>
-                             ~s(  "jobComplete": true,\n  "errors": [\n    {\n) <>
-                             ~s(      "domain": "global",\n      "reason": "invalidQuery",\n) <>
-                             ~s(      "location": "query",\n) <>
-                             ~s(      "message": "UPDATE or DELETE statement over table ) <>
-                             ~s(918454812392.messages would affect rows in the streaming ) <>
-                             ~s(buffer, which is not supported"\n    }\n  ]\n})
+    @envelope_body """
+    {
+      "error": {
+        "code": 400,
+        "message": "TIMESTAMP_SUB does not support the MONTH date part when the argument is TIMESTAMP type at [10:33]",
+        "errors": [
+          {
+            "message": "TIMESTAMP_SUB does not support the MONTH date part when the argument is TIMESTAMP type at [10:33]",
+            "domain": "global",
+            "reason": "invalidQuery",
+            "location": "q",
+            "locationType": "parameter"
+          }
+        ],
+        "status": "INVALID_ARGUMENT"
+      }
+    }
+    """
 
-    test "keeps the reason and the whole body on a single line" do
-      summary =
-        BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @streaming_buffer_body})
+    test "keeps the status, the reason and the whole body on a single line" do
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @envelope_body})
 
-      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
-      assert summary =~ "would affect rows in the streaming buffer, which is not supported"
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
+             )
+
+      assert summary =~ "TIMESTAMP_SUB does not support the MONTH date part"
       refute summary =~ "\n"
     end
 
-    ## `reason` deliberately sits *behind* the long `message` here: past `inspect/1`'s
-    ## 4096-char clip, so the only way it reaches the log is by being lifted to the front.
-    test "keeps the reason ahead of the clip on a long response" do
+    test "keeps the status and reason ahead of the clip on a long response" do
       body =
-        ~s({"kind":"bigquery#queryResponse","errors":[{"message":"Syntax error: ) <>
+        ~s({"error":{"code":400,"message":"Syntax error: ) <>
           String.duplicate("very long query text ", 300) <>
-          ~s(","domain":"global","reason":"invalidQuery"}]})
+          ~s(","errors":[{"domain":"global","reason":"invalidQuery"}],"status":"INVALID_ARGUMENT"}})
 
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
 
       assert byte_size(body) > 4096
-      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
+             )
+
       assert String.ends_with?(summary, "<> ...")
-      ## the clipped body dropped the reason — only the lifted copy survives
-      assert summary |> String.split("body=") |> List.last() |> String.contains?("invalidQuery") ==
-               false
+      tail = summary |> String.split("body=") |> List.last()
+      refute tail =~ "invalidQuery"
+      refute tail =~ "INVALID_ARGUMENT"
 
       refute summary =~ "\n"
     end
 
-    test "renders no fields when the errors value is not a populated list" do
-      for errors <- [~s({}), ~s([]), ~s("accessDenied"), "null"] do
-        body = ~s({"kind":"bigquery#queryResponse","errors":#{errors}})
-
-        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
-
-        assert String.starts_with?(summary, "http_status=403 body=")
-      end
-    end
-
-    test "renders a blank reason when the first error carries none" do
-      body = ~s({"errors":[{"domain":"global","message":"no reason given"}]})
+    test "lifts the reason out of a top-level errors array" do
+      body =
+        ~s({"kind":"bigquery#queryResponse","jobComplete":true,"errors":) <>
+          ~s([{"reason":"invalidQuery","location":"query","message":"UPDATE or DELETE ) <>
+          ~s(statement over table would affect rows in the streaming buffer"}]})
 
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
 
-      assert String.starts_with?(summary, "http_status=400 reason= body=")
+      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
+      assert summary =~ "would affect rows in the streaming buffer"
+      refute summary =~ "\n"
+    end
+
+    test "renders a blank reason when the errors value is not a populated list" do
+      for errors <- [~s({}), ~s([]), ~s("accessDenied"), ~s([{"domain":"global"}]), "null"] do
+        body = ~s({"error":{"code":403,"errors":#{errors},"status":"PERMISSION_DENIED"}})
+
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
+
+        assert String.starts_with?(
+                 summary,
+                 "http_status=403 bq_status=PERMISSION_DENIED reason= body="
+               )
+      end
     end
 
     test "renders a blank reason when the reason is not a string" do
       for reason <- [~s({"a":1}), ~s([{"a":1}]), "42", "true", "null"] do
-        body = ~s({"errors":[{"reason":#{reason}}]})
+        body = ~s({"error":{"errors":[{"reason":#{reason}}],"status":"INVALID_ARGUMENT"}})
 
         summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
 
-        assert String.starts_with?(summary, "http_status=400 reason= body=")
+        assert String.starts_with?(
+                 summary,
+                 "http_status=400 bq_status=INVALID_ARGUMENT reason= body="
+               )
       end
     end
 
     test "collapses whitespace in the reason so the entry stays on one line" do
-      body = ~s({"errors":[{"reason":"access\\n  denied\\tnow"}]})
+      body = ~s({"error":{"errors":[{"reason":"access\\n  denied\\tnow"}]}})
 
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
 
-      assert String.starts_with?(summary, "http_status=403 reason=access denied now body=")
+      assert String.starts_with?(summary, "http_status=403 bq_status= reason=access denied now ")
       refute summary =~ "\n"
       refute summary =~ "\t"
     end
 
-    test "renders no fields when the body carries no top-level errors array" do
-      for body <- [
-            ~s({"error":{"code":403,"status":"PERMISSION_DENIED"}}),
-            ~s({"error":"invalid_grant"}),
-            "upstream unavailable",
-            ""
-          ] do
+    test "renders no fields when the body is neither known shape" do
+      for body <- [~s({"error":"invalid_grant"}), ~s({"errors":[]}), "upstream unavailable", ""] do
         summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: body})
 
         assert String.starts_with?(summary, "http_status=503 body=")
@@ -282,7 +300,7 @@ defmodule Glific.BigQueryTest do
       summary =
         BigQuery.bigquery_error_summary(%Tesla.Env{
           status: 400,
-          body: @streaming_buffer_body,
+          body: @envelope_body,
           __client__: %Tesla.Client{}
         })
 
@@ -296,14 +314,14 @@ defmodule Glific.BigQueryTest do
 
     test "bounds an oversized body instead of flooding the log" do
       body =
-        ~s({"errors":[{"reason":"invalidQuery","message":"Syntax error: ) <>
-          String.duplicate("very long query text ", 500) <> ~s("}]})
+        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 500) <> ~s("}})
 
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
 
       assert byte_size(body) > 8192
       assert summary =~ "http_status=400"
-      assert summary =~ "reason=invalidQuery"
+      assert summary =~ "bq_status=INVALID_ARGUMENT"
       assert summary =~ "Syntax error:"
       assert String.ends_with?(summary, "<> ...")
       assert byte_size(summary) < 4500
