@@ -39,10 +39,14 @@ defmodule Glific.AI.SkillsTest do
       assert message == ~s(There is no skill called "no_such_skill".)
     end
 
-    test "no skill means the default, which only reads" do
-      assert {:ok, Knowledge} = Skills.fetch(nil)
-      assert {:ok, Knowledge} = Skills.fetch("")
+    test "a blank name is refused too, so it cannot stand in for a choice" do
+      assert {:error, _} = Skills.fetch(nil)
+      assert {:error, _} = Skills.fetch("")
+    end
+
+    test "the default is the broad read-only skill, and is asked for by name" do
       assert Skills.default() == Knowledge
+      assert {:ok, Knowledge} = Skills.fetch("knowledge")
     end
 
     test "a narrowed skill sends far fewer tool schemas than the broad one" do

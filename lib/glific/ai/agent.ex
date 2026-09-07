@@ -20,6 +20,7 @@ defmodule Glific.AI.Agent do
     AI,
     AI.ChatMessage,
     AI.Event,
+    AI.Instrumentation,
     AI.Message,
     AI.Provider,
     AI.Router,
@@ -69,23 +70,29 @@ defmodule Glific.AI.Agent do
   def run(%Message{} = message, %User{} = user, opts \\ []) do
     thread = thread(message)
 
-    with {:ok, skill, usage, classified?} <- resolve_skill(thread, message, opts) do
-      run = record_routing(message, skill, usage, classified?, start(thread, message, usage))
+    case resolve_skill(thread, message, opts) do
+      {:ok, skill, usage, classified?} ->
+        run = record_routing(message, skill, usage, classified?, start(thread, message, usage))
 
-      ctx = %{
-        organization_id: message.organization_id,
-        model: Provider.impl().model(opts),
-        skill: skill,
-        tools: Skills.tools(skill),
-        modules: Skills.modules(skill),
-        deadline: System.monotonic_time(:millisecond) + limits()[:max_duration_ms]
-      }
+        ctx = %{
+          organization_id: message.organization_id,
+          model: Provider.impl().model(opts),
+          skill: skill,
+          tools: Skills.tools(skill),
+          modules: Skills.modules(skill),
+          started_at: System.monotonic_time(:millisecond),
+          deadline: System.monotonic_time(:millisecond) + limits()[:max_duration_ms]
+        }
 
-      messages = [ChatMessage.system(skill.prompt()) | Enum.map(thread, &to_chat_message/1)]
+        messages = [ChatMessage.system(skill.prompt()) | Enum.map(thread, &to_chat_message/1)]
 
-      message
-      |> loop(user, messages, run, ctx)
-      |> finish(message, ctx)
+        message
+        |> loop(user, messages, run, ctx)
+        |> finish(message, ctx)
+
+      {:error, reason} ->
+        message |> Message.changeset(%{status: :failed, error: reason}) |> Repo.update!()
+        {:error, reason}
     end
   end
 
@@ -233,12 +240,24 @@ defmodule Glific.AI.Agent do
           {:ok, String.t(), meta()} | {:error, String.t()}
   defp finish({:ok, answer, run}, message, ctx) do
     record(message, %{status: :succeeded}, run, ctx)
+    measure("succeeded", run, ctx)
     {:ok, answer, %{skill: ctx.skill.name(), answer_event_id: run.answer_event_id}}
   end
 
   defp finish({:stopped, reason, run}, message, ctx) do
     record(message, %{status: :failed, error: reason}, run, ctx)
+    measure("failed", run, ctx)
     {:error, reason}
+  end
+
+  @spec measure(String.t(), run(), map()) :: :ok
+  defp measure(outcome, run, ctx) do
+    Instrumentation.question(%{
+      skill: ctx.skill.name(),
+      outcome: outcome,
+      duration_ms: System.monotonic_time(:millisecond) - ctx.started_at,
+      cost: run.usage.cost
+    })
   end
 
   @spec record(Message.t(), map(), run(), map()) :: Message.t()

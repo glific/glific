@@ -126,6 +126,28 @@ defmodule Glific.AI.AskGlificTest do
              AskGlific.submit_feedback(%{message_id: "999999", rating: "like"}, user)
   end
 
+  test "the chat list is ordered by last activity, not by when threads started",
+       %{user: user} do
+    {:ok, %{conversation_id: older}} = AskGlific.ask(%{query: "first thread"}, user)
+    {:ok, %{conversation_id: newer}} = AskGlific.ask(%{query: "second thread"}, user)
+
+    # A follow-up on the older thread brings it back to the top of the list.
+    {:ok, _} = AskGlific.ask(%{query: "still here", conversation_id: older}, user)
+
+    assert {:ok, %{conversations: [top, second]}} = AskGlific.get_conversations(user)
+    assert top.id == older
+    assert second.id == newer
+  end
+
+  test "an unknown skill fails the request rather than leaving it running", %{user: user} do
+    assert {:error, reason} = AskGlific.ask(%{query: "draft something", skill: "typo"}, user)
+    assert reason =~ "typo"
+
+    assert [message] = Repo.all(Message)
+    assert message.status == :failed
+    assert message.error =~ "typo"
+  end
+
   test "an empty skill is classified rather than taken as a choice", %{user: user} do
     # A client that always sends the field, with nothing selected, must still
     # get routing rather than silently falling to the default skill.

@@ -21,6 +21,7 @@ defmodule Glific.AI.AskGlific do
     AI.Agent,
     AI.Conversation,
     AI.Event,
+    AI.Instrumentation,
     AI.Message,
     Repo
   }
@@ -121,8 +122,12 @@ defmodule Glific.AI.AskGlific do
       |> Event.changeset(%{data: Map.put(event.data, "feedback", feedback)})
       |> Repo.update()
       |> case do
-        {:ok, _} -> {:ok, %{success: true}}
-        {:error, _} -> {:error, "Could not record feedback"}
+        {:ok, _} ->
+          Instrumentation.feedback(Map.get(params, :rating))
+          {:ok, %{success: true}}
+
+        {:error, _} ->
+          {:error, "Could not record feedback"}
       end
     else
       _ -> {:error, "Message not found"}
@@ -163,7 +168,18 @@ defmodule Glific.AI.AskGlific do
     })
     |> Repo.insert!()
 
+    record_activity(conversation)
+
     message
+  end
+
+  @spec record_activity(Conversation.t()) :: :ok
+  defp record_activity(conversation) do
+    Conversation
+    |> where([c], c.id == ^conversation.id)
+    |> Repo.update_all(set: [updated_at: DateTime.utc_now()])
+
+    :ok
   end
 
   @spec conversation(String.t() | nil, map(), String.t()) ::

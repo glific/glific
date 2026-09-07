@@ -25,10 +25,13 @@ defmodule Glific.AI.Skills do
   @spec default() :: module()
   def default, do: Glific.AI.Skills.Knowledge
 
-  @doc "Looks a skill up by the name the API uses."
-  @spec fetch(String.t() | nil) :: {:ok, module()} | {:error, String.t()}
-  def fetch(name) when name in [nil, ""], do: {:ok, default()}
+  @doc """
+  Looks a skill up by the name the API uses.
 
+  A name that matches nothing is an error. Callers that want the default skill
+  ask for it by name or use `default/0`.
+  """
+  @spec fetch(String.t() | nil) :: {:ok, module()} | {:error, String.t()}
   def fetch(name) do
     case Enum.find(all(), &(&1.name() == name)) do
       nil -> {:error, ~s(There is no skill called "#{name}".)}
