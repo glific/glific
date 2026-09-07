@@ -217,10 +217,24 @@ defmodule Glific.BigQueryTest do
       refute summary =~ "Bearer"
     end
 
-    ## Logging must never raise: an error that is not a response at all (a bare `:timeout`)
-    ## would otherwise crash the job it was reporting on.
     test "handles a non-response error term" do
       assert BigQuery.bigquery_error_summary(:timeout) == ":timeout"
+    end
+
+    test "bounds an oversized body instead of flooding the log" do
+      body =
+        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 500) <> ~s("}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert byte_size(body) > 8192
+      assert summary =~ "http_status=400"
+      assert summary =~ "INVALID_ARGUMENT"
+      assert summary =~ "Syntax error:"
+      assert String.ends_with?(summary, "<> ...")
+      assert byte_size(summary) < 4500
+      refute summary =~ "\n"
     end
   end
 
