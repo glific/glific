@@ -2,6 +2,8 @@ defmodule Glific.AI.WorkerTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
 
+  alias FunWithFlags.Store.Cache
+
   alias Glific.{
     AI.Conversation,
     AI.Event,
@@ -26,6 +28,12 @@ defmodule Glific.AI.WorkerTest do
     # AI.generate/3 checks the flag on every call, and FunWithFlags state is
     # global, so set it here rather than inheriting whatever ran before.
     FunWithFlags.enable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+
+    # The flag row is rolled back with the transaction, but its ETS cache is not,
+    # so a later test that expects the flag off would read a stale true. Only the
+    # cache is flushed here: `on_exit` runs after the sandbox connection is
+    # checked in, so it cannot touch the database.
+    on_exit(fn -> Cache.flush() end)
 
     user = Fixtures.user_fixture(%{organization_id: 1})
 

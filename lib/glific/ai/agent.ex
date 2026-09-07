@@ -68,6 +68,7 @@ defmodule Glific.AI.Agent do
   @spec run(Message.t(), User.t(), keyword()) ::
           {:ok, String.t(), meta()} | {:error, String.t()}
   def run(%Message{} = message, %User{} = user, opts \\ []) do
+    started_at = System.monotonic_time(:millisecond)
     thread = thread(message)
 
     case resolve_skill(thread, message, opts) do
@@ -80,8 +81,8 @@ defmodule Glific.AI.Agent do
           skill: skill,
           tools: Skills.tools(skill),
           modules: Skills.modules(skill),
-          started_at: System.monotonic_time(:millisecond),
-          deadline: System.monotonic_time(:millisecond) + limits()[:max_duration_ms]
+          started_at: started_at,
+          deadline: started_at + limits()[:max_duration_ms]
         }
 
         messages = [ChatMessage.system(skill.prompt()) | Enum.map(thread, &to_chat_message/1)]
@@ -92,6 +93,14 @@ defmodule Glific.AI.Agent do
 
       {:error, reason} ->
         message |> Message.changeset(%{status: :failed, error: reason}) |> Repo.update!()
+
+        Instrumentation.question(%{
+          skill: "unresolved",
+          outcome: "rejected",
+          duration_ms: System.monotonic_time(:millisecond) - started_at,
+          cost: 0
+        })
+
         {:error, reason}
     end
   end
@@ -193,46 +202,83 @@ defmodule Glific.AI.Agent do
   @spec run_tools(Message.t(), User.t(), [ChatMessage.tool_call()], run(), [module()]) ::
           {[ChatMessage.t()], run()}
   defp run_tools(message, user, calls, run, modules) do
+    {running, skipped} = Enum.split(calls, affordable(run))
+
+    numbered = Enum.with_index(running)
+
+    Enum.each(numbered, fn {call, index} ->
+      append(
+        message,
+        :tool_call,
+        call.name,
+        %{"arguments" => call.args},
+        call.id,
+        run.step + index * 2
+      )
+    end)
+
     results =
-      calls
-      |> Enum.with_index()
+      numbered
       |> Task.async_stream(
-        fn {call, index} ->
-          run_tool(message, user, call, run.step + index * 2, modules)
-        end,
-        max_concurrency: max(length(calls), 1),
+        fn {call, index} -> run_tool(message, user, call, run.step + index * 2 + 1, modules) end,
+        max_concurrency: max(length(running), 1),
         timeout: limits()[:max_duration_ms],
         on_timeout: :kill_task,
         ordered: true
       )
-      |> Enum.zip(calls)
+      |> Enum.zip(numbered)
       |> Enum.map(fn
-        {{:ok, result}, _call} -> result
-        {{:exit, _reason}, call} -> timed_out(call)
+        {{:ok, result}, _} -> result
+        {{:exit, reason}, {call, index}} -> died(message, call, run.step + index * 2 + 1, reason)
       end)
 
-    taken = 2 * length(calls)
+    taken = 2 * length(running)
 
-    {results, %{run | step: run.step + taken, steps: run.steps + taken}}
+    {results ++ Enum.map(skipped, &out_of_steps/1),
+     %{run | step: run.step + taken, steps: run.steps + taken}}
   end
 
-  @spec timed_out(ChatMessage.tool_call()) :: ChatMessage.t()
-  defp timed_out(%{id: id, name: name}) do
-    ChatMessage.tool_result(id, name, Jason.encode!(%{error: "The lookup timed out."}))
+  @spec affordable(run()) :: non_neg_integer()
+  defp affordable(run) do
+    (limits()[:max_steps] - run.steps)
+    |> max(0)
+    |> div(2)
+  end
+
+  @spec out_of_steps(ChatMessage.tool_call()) :: ChatMessage.t()
+  defp out_of_steps(call), do: failed(call, :out_of_steps)
+
+  @spec died(Message.t(), ChatMessage.tool_call(), pos_integer(), term()) :: ChatMessage.t()
+  defp died(message, call, step, reason) do
+    result = failed(call, reason)
+
+    append(message, :tool_result, nil, %{"output" => result.content}, call.id, step)
+    result
+  end
+
+  @spec failed(ChatMessage.tool_call(), term()) :: ChatMessage.t()
+  defp failed(%{id: id, name: name}, reason),
+    do: ChatMessage.tool_result(id, name, Jason.encode!(%{error: describe_failure(reason)}))
+
+  @spec describe_failure(term()) :: String.t()
+  defp describe_failure(:out_of_steps), do: "Not run: this question has reached its step limit."
+  defp describe_failure(:timeout), do: "The lookup timed out."
+
+  defp describe_failure(reason) do
+    Logger.error("Glific AI tool task exited: #{Glific.SafeLog.safe_inspect(reason)}")
+    "The lookup stopped before it finished."
   end
 
   @spec run_tool(Message.t(), User.t(), ChatMessage.tool_call(), pos_integer(), [module()]) ::
           ChatMessage.t()
   defp run_tool(message, user, %{id: id, name: name, args: args}, step, modules) do
-    append(message, :tool_call, name, %{"arguments" => args}, id, step)
-
     body =
       case Tools.run(name, args, user, modules) do
         {:ok, result} -> encode(result)
         {:error, reason} -> Jason.encode!(%{error: reason})
       end
 
-    append(message, :tool_result, nil, %{"output" => body}, id, step + 1)
+    append(message, :tool_result, nil, %{"output" => body}, id, step)
     ChatMessage.tool_result(id, name, body)
   end
 

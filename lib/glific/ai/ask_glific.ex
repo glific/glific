@@ -43,10 +43,14 @@ defmodule Glific.AI.AskGlific do
     else
       with {:ok, conversation, new?} <-
              conversation(Map.get(params, :conversation_id, ""), user, query) do
-        answer(conversation, new?, user, query, Map.get(params, :skill))
+        answer(conversation, new?, user, query)
       end
     end
   end
+
+  @spec rating(String.t() | nil) :: String.t() | nil
+  defp rating(rating) when rating in ["like", "dislike"], do: rating
+  defp rating(_rating), do: nil
 
   @doc """
   The user's chat threads, most recent first.
@@ -113,8 +117,10 @@ defmodule Glific.AI.AskGlific do
     with {:ok, id} when is_integer(id) <-
            Glific.parse_maybe_integer(Map.get(params, :message_id, "")),
          %Event{} = event <- owned_event(id, user) do
+      rating = rating(Map.get(params, :rating))
+
       feedback =
-        %{"rating" => Map.get(params, :rating), "content" => Map.get(params, :content)}
+        %{"rating" => rating, "content" => Map.get(params, :content)}
         |> Enum.reject(fn {_k, v} -> is_nil(v) end)
         |> Map.new()
 
@@ -123,7 +129,7 @@ defmodule Glific.AI.AskGlific do
       |> Repo.update()
       |> case do
         {:ok, _} ->
-          Instrumentation.feedback(Map.get(params, :rating))
+          Instrumentation.feedback(rating)
           {:ok, %{success: true}}
 
         {:error, _} ->
@@ -134,12 +140,12 @@ defmodule Glific.AI.AskGlific do
     end
   end
 
-  @spec answer(Conversation.t(), boolean(), map(), String.t(), String.t() | nil) ::
+  @spec answer(Conversation.t(), boolean(), map(), String.t()) ::
           {:ok, map()} | {:error, String.t()}
-  defp answer(conversation, new?, user, query, skill) do
+  defp answer(conversation, new?, user, query) do
     message = start_message(conversation, user, query)
 
-    case Agent.run(message, user, skill: skill) do
+    case Agent.run(message, user) do
       {:ok, content, meta} -> {:ok, result(conversation, content, meta, new?)}
       {:error, reason} -> {:error, reason}
     end

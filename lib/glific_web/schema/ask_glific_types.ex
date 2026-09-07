@@ -33,9 +33,6 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:conversation_id, :string)
     field(:page_url, :string)
     field(:request_id, :string)
-
-    @desc "Invoke one skill directly, as a button does. Omit to classify the intent."
-    field(:skill, :string)
   end
 
   object :ask_glific_message do

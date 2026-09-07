@@ -3,6 +3,8 @@ defmodule Glific.AI.AgentTest do
 
   import Ecto.Query
 
+  alias FunWithFlags.Store.Cache
+
   alias Glific.{
     AI.Agent,
     AI.Conversation,
@@ -64,6 +66,12 @@ defmodule Glific.AI.AgentTest do
     # AI.generate/3 checks the flag on every call, and FunWithFlags state is
     # global, so set it here rather than inheriting whatever ran before.
     FunWithFlags.enable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+
+    # The flag row is rolled back with the transaction, but its ETS cache is not,
+    # so a later test that expects the flag off would read a stale true. Only the
+    # cache is flushed here: `on_exit` runs after the sandbox connection is
+    # checked in, so it cannot touch the database.
+    on_exit(fn -> Cache.flush() end)
 
     Fixtures.flow_fixture(%{organization_id: 1, name: "Registration flow"})
     %{user: Fixtures.user_fixture(%{organization_id: 1})}
@@ -174,6 +182,60 @@ defmodule Glific.AI.AgentTest do
              "An HSM is a template message.",
              "how do I send one?"
            ]
+  end
+
+  test "a turn cannot spend more steps than the budget has left", %{user: user} do
+    # Two steps per call and a budget of four, so only two of the three asked
+    # for may run. Without a reservation the whole turn would start and spend
+    # six.
+    set_limits(max_steps: 4)
+
+    FakeProvider.always(
+      FakeProvider.tool_uses([
+        {"list_flows", %{}},
+        {"list_templates", %{}},
+        {"list_reference", %{"kind" => "tags"}}
+      ])
+    )
+
+    {_conversation, request} = ask("tell me everything", user)
+
+    assert {:error, reason} = Agent.run(request, user, skill: "knowledge")
+    assert reason =~ "limit of 4 steps"
+
+    spent =
+      Event
+      |> where([e], e.message_id == ^request.id and e.type in [:tool_call, :tool_result])
+      |> Repo.aggregate(:count)
+
+    assert spent == 4
+  end
+
+  test "a tool whose task dies is recorded, and not reported as a timeout", %{user: user} do
+    FakeProvider.script([
+      FakeProvider.tool_use("list_flows", %{}),
+      FakeProvider.answer("done")
+    ])
+
+    {_conversation, request} = ask("what flows do I have?", user)
+
+    assert {:ok, _, _meta} = Agent.run(request, user, skill: "knowledge")
+
+    # Every call has a terminal result, whatever happened to the task that ran
+    # it, so the trail never shows a call with no outcome.
+    calls =
+      Event
+      |> where([e], e.message_id == ^request.id and e.type == :tool_call)
+      |> select([e], e.tool_call_id)
+      |> Repo.all()
+
+    results =
+      Event
+      |> where([e], e.message_id == ^request.id and e.type == :tool_result)
+      |> select([e], e.tool_call_id)
+      |> Repo.all()
+
+    assert Enum.sort(calls) == Enum.sort(results)
   end
 
   test "a model that keeps calling tools is stopped by the step limit", %{user: user} do

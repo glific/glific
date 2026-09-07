@@ -50,9 +50,32 @@ defmodule Glific.FakeProvider do
     ]
   end
 
-  @doc "Stops the server."
+  @doc """
+  Stops the server and the agent holding its replies.
+
+  Waits for the agent to go down. It is registered under this module's name and
+  linked to the test process, so a following `start/0` would otherwise race a
+  still-terminating one and get `{:error, {:already_started, pid}}`.
+  """
   @spec stop() :: :ok
-  def stop, do: Plug.Cowboy.shutdown(__MODULE__.HTTP)
+  def stop do
+    Plug.Cowboy.shutdown(__MODULE__.HTTP)
+
+    case Process.whereis(__MODULE__) do
+      nil ->
+        :ok
+
+      pid ->
+        ref = Process.monitor(pid)
+        Agent.stop(pid, :normal, :infinity)
+
+        receive do
+          {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+        after
+          5_000 -> :ok
+        end
+    end
+  end
 
   @doc "Stages the replies this run should receive, in order."
   @spec script([map()]) :: :ok

@@ -1,6 +1,8 @@
 defmodule Glific.AI.AskGlificTest do
   use Glific.DataCase
 
+  alias FunWithFlags.Store.Cache
+
   alias Glific.{
     AI.Conversation,
     AI.Event,
@@ -22,6 +24,13 @@ defmodule Glific.AI.AskGlificTest do
     end)
 
     FunWithFlags.enable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+
+    # The flag row is rolled back with the transaction, but its ETS cache is not,
+    # so a later test that expects the flag off would read a stale true. Only the
+    # cache is flushed here: `on_exit` runs after the sandbox connection is
+    # checked in, so it cannot touch the database.
+    on_exit(fn -> Cache.flush() end)
+
     FakeProvider.always(FakeProvider.answer("an answer"))
 
     %{user: Fixtures.user_fixture(%{organization_id: 1})}
@@ -65,18 +74,11 @@ defmodule Glific.AI.AskGlificTest do
   end
 
   test "a follow-up in the same conversation carries the earlier exchange", %{user: user} do
-    {:ok, first} =
-      AskGlific.ask(%{query: "what is an HSM?", skill: "knowledge"}, user)
-
-    assert [%{"messages" => [%{"content" => "what is an HSM?"}]}] = sent()
+    {:ok, first} = AskGlific.ask(%{query: "what is an HSM?"}, user)
 
     {:ok, _} =
       AskGlific.ask(
-        %{
-          query: "and how do I send one?",
-          conversation_id: first.conversation_id,
-          skill: "knowledge"
-        },
+        %{query: "and how do I send one?", conversation_id: first.conversation_id},
         user
       )
 
@@ -139,24 +141,21 @@ defmodule Glific.AI.AskGlificTest do
     assert second.id == newer
   end
 
-  test "an unknown skill fails the request rather than leaving it running", %{user: user} do
-    assert {:error, reason} = AskGlific.ask(%{query: "draft something", skill: "typo"}, user)
-    assert reason =~ "typo"
+  test "only a rating the interface offers is stored", %{user: user} do
+    {:ok, %{message_id: message_id, conversation_id: conversation_id}} =
+      AskGlific.ask(%{query: "what is an HSM?"}, user)
 
-    assert [message] = Repo.all(Message)
-    assert message.status == :failed
-    assert message.error =~ "typo"
-  end
+    assert {:ok, %{success: true}} =
+             AskGlific.submit_feedback(%{message_id: message_id, rating: "<script>"}, user)
 
-  test "an empty skill is classified rather than taken as a choice", %{user: user} do
-    # A client that always sends the field, with nothing selected, must still
-    # get routing rather than silently falling to the default skill.
-    FakeProvider.script([FakeProvider.answer("draft_hsm"), FakeProvider.answer("a draft")])
+    assert {:ok, %{messages: [exchange]}} = AskGlific.get_messages(conversation_id, user)
+    refute exchange.feedback
 
-    assert {:ok, result} = AskGlific.ask(%{query: "draft me a reminder", skill: ""}, user)
+    assert {:ok, %{success: true}} =
+             AskGlific.submit_feedback(%{message_id: message_id, rating: "like"}, user)
 
-    assert result.skill == "draft_hsm"
-    assert Repo.exists?(from(e in Event, where: e.type == :routing))
+    assert {:ok, %{messages: [exchange]}} = AskGlific.get_messages(conversation_id, user)
+    assert exchange.feedback == "like"
   end
 
   test "a provider failure is recorded as a failed message, not lost", %{user: user} do
@@ -176,34 +175,6 @@ defmodule Glific.AI.AskGlificTest do
 
     # The question is still on record even though no answer came back.
     assert [%Event{type: :user, content: "a question"}] = Repo.all(Event)
-  end
-
-  test "a button can invoke one skill directly, skipping classification", %{user: user} do
-    assert {:ok, result} =
-             AskGlific.ask(%{query: "a reminder for the clinic", skill: "draft_hsm"}, user)
-
-    assert result.skill == "draft_hsm"
-    assert [message] = Repo.all(Message)
-    assert message.skill == "draft_hsm"
-
-    # One call, not two: naming the skill means nothing was classified.
-    assert length(sent()) == 1
-
-    # And it saw only the skill's own tools, not all of them.
-    names =
-      sent() |> List.last() |> Map.fetch!("tools") |> Enum.map(& &1["name"]) |> MapSet.new()
-
-    declared =
-      Glific.AI.Skills.DraftHSM |> Skills.tools() |> Enum.map(& &1.name) |> MapSet.new()
-
-    assert MapSet.subset?(names, declared)
-
-    refute "list_flows" in names
-  end
-
-  test "an unknown skill is refused before anything is stored", %{user: user} do
-    assert {:error, message} = AskGlific.ask(%{query: "hello", skill: "no_such_skill"}, user)
-    assert message == ~s(There is no skill called "no_such_skill".)
   end
 
   test "without a skill the intent is classified and recorded", %{user: user} do

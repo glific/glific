@@ -1,11 +1,15 @@
 defmodule Glific.AI.SkillRunTest do
   use Glific.DataCase
 
+  alias FunWithFlags.Store.Cache
+  alias Glific.AI.Skills.DraftHSM
+
   alias Glific.{
     AI.Conversation,
     AI.Event,
     AI.Message,
     AI.SkillRun,
+    AI.Skills,
     AskGlific,
     FakeProvider,
     Fixtures,
@@ -22,10 +26,19 @@ defmodule Glific.AI.SkillRunTest do
     end)
 
     FunWithFlags.enable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+
+    # The flag row is rolled back with the transaction, but its ETS cache is not,
+    # so a later test that expects the flag off would read a stale true. Only the
+    # cache is flushed here: `on_exit` runs after the sandbox connection is
+    # checked in, so it cannot touch the database.
+    on_exit(fn -> Cache.flush() end)
+
     FakeProvider.always(FakeProvider.answer("a draft"))
 
     %{user: Fixtures.user_fixture(%{organization_id: 1})}
   end
+
+  defp sent, do: FakeProvider.seen() |> Enum.map(&Jason.decode!/1)
 
   describe "running one skill" do
     test "answers, and records the run against a skill_run thread", %{user: user} do
@@ -50,6 +63,21 @@ defmodule Glific.AI.SkillRunTest do
       types = Repo.all(from(e in Event, order_by: e.step, select: e.type))
       assert :user in types
       assert :assistant in types
+    end
+
+    test "only the skill's own tools are offered to the model", %{user: user} do
+      assert {:ok, _} = SkillRun.start("draft_hsm", "draft something", user)
+
+      # One call, not two: naming the skill means nothing was classified.
+      assert length(sent()) == 1
+
+      offered =
+        sent() |> List.last() |> Map.fetch!("tools") |> Enum.map(& &1["name"]) |> MapSet.new()
+
+      declared = DraftHSM |> Skills.tools() |> Enum.map(& &1.name) |> MapSet.new()
+
+      assert MapSet.equal?(offered, declared)
+      refute "list_flows" in offered
     end
 
     test "a tool outside the skill's set is refused even when the model asks for it",
