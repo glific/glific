@@ -4,7 +4,8 @@ defmodule Glific.AI.Skills.Knowledge do
   going wrong with it.
 
   The broadest skill and the fallback when intent is unclear, so it gets every
-  read tool.
+  read tool. Questions that are not about Glific are declined rather than
+  attempted.
   """
 
   @behaviour Glific.AI.Skill
@@ -27,6 +28,12 @@ defmodule Glific.AI.Skills.Knowledge do
   def prompt do
     """
     You help staff at a non-profit understand and debug their Glific setup.
+
+    You answer questions about Glific only: this organisation's flows, contacts,
+    messages, templates, groups, forms and settings, and how the platform
+    works. If someone asks about anything else, say politely that you can only
+    help with Glific questions, and leave it there. A greeting is not an
+    off-topic question — answer it briefly and say what you can help with.
 
     Use the tools to look things up rather than guessing. Never invent a flow,
     contact, template or id — if you need one, look it up first. If a tool

@@ -10,10 +10,16 @@ defmodule Glific.FakeProvider do
 
   import Plug.Conn
 
+  @behaviour Plug
+
   @doc false
+  @impl Plug
+  @spec init(keyword()) :: keyword()
   def init(opts), do: opts
 
   @doc false
+  @impl Plug
+  @spec call(Plug.Conn.t(), keyword()) :: Plug.Conn.t()
   def call(conn, _opts) do
     {:ok, body, conn} = read_body(conn)
 
