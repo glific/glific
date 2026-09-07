@@ -426,7 +426,7 @@ defmodule Glific.WhatsappFormResponsesTest do
                raw_response
     end
 
-    test "leaves the media unchanged (no gcs_url) when the download fails",
+    test "marks the media as download_failed (no gcs_url) when the download fails",
          %{organization_id: organization_id} do
       with_mocks([
         {PartnerAPI, [:passthrough],
@@ -444,6 +444,29 @@ defmodule Glific.WhatsappFormResponsesTest do
 
         assert [saved_photo] = enriched["photos"]
         refute Map.has_key?(saved_photo, "gcs_url")
+        assert saved_photo["download_failed"] == true
+      end
+    end
+
+    test "never re-downloads media that already failed once (no retry)",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [Map.put(@photo, "download_failed", true)]}
+
+        assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+                 raw_response
+
+        refute called(PartnerAPI.download_flow_media(:_, :_))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
       end
     end
 
@@ -595,24 +618,29 @@ defmodule Glific.WhatsappFormResponsesTest do
   end
 
   describe "PartnerAPI.download_flow_media/2" do
+    @media_url "https://filemanager.gupshup.io/wa/Glific42/wa/media/123?download=true"
+
     test "returns the raw media bytes on a 2xx response",
          %{organization_id: organization_id} do
       Fixtures.set_bsp_partner_tokens(organization_id)
 
       Tesla.Mock.mock(fn
-        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/media/123"} ->
+        %{method: :get, url: @media_url} ->
           %Tesla.Env{status: 200, body: <<255, 216, 255>>}
       end)
 
       assert {:ok, <<255, 216, 255>>} = PartnerAPI.download_flow_media(organization_id, 123)
     end
 
-    test "returns an error tuple on a non-2xx response",
+    test "returns an error tuple on a non-2xx response without retrying",
          %{organization_id: organization_id} do
       Fixtures.set_bsp_partner_tokens(organization_id)
+      test_pid = self()
 
       Tesla.Mock.mock(fn
-        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/media/123"} ->
+        %{method: :get, url: @media_url} ->
+          send(test_pid, :media_request)
+
           %Tesla.Env{
             status: 429,
             body: ~s({"status":"error","message":"Too Many Requests"})
@@ -621,6 +649,11 @@ defmodule Glific.WhatsappFormResponsesTest do
 
       assert {:error, message} = PartnerAPI.download_flow_media(organization_id, 123)
       assert message =~ "flow media download failed"
+
+      # a failed media request is never re-sent: 20 failures block the whole app
+      # for the rest of the hour
+      assert_received :media_request
+      refute_received :media_request
     end
   end
 

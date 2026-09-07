@@ -145,6 +145,15 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
       response
       |> WhatsappFormResponse.changeset(%{raw_response: updated_response})
       |> Repo.update()
+      |> case do
+        {:ok, _response} ->
+          :ok
+
+        {:error, changeset} ->
+          Logger.error(
+            "Failed to persist WhatsApp form response media for response #{id}: #{Glific.SafeLog.safe_inspect(changeset)}"
+          )
+      end
 
       payload
       |> Map.put("raw_response", updated_response)

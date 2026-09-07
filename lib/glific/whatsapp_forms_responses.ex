@@ -129,8 +129,8 @@ defmodule Glific.WhatsappFormsResponses do
   A media field is a list of maps shaped like
   `%{"id" => 913.., "file_name" => "x.jpg", "mime_type" => "image/jpeg", "sha256" => ".."}`.
   Non-media fields (strings, multi-select lists) are returned untouched. Any single
-  download/upload failure is logged and leaves that entry as-is, so one bad photo
-  never blocks the rest of the response.
+  download/upload failure is logged and marks that entry with `download_failed`, so
+  one bad photo never blocks the rest of the response and is never re-downloaded.
   """
   @spec save_response_media(map(), non_neg_integer()) :: map()
   def save_response_media(raw_response, organization_id) when is_map(raw_response) do
@@ -169,6 +169,11 @@ defmodule Glific.WhatsappFormsResponses do
        when is_binary(gcs_url),
        do: media
 
+  # Already failed once (marker persisted on the response row). Gupshup blocks every
+  # media request for the app for the rest of the hour after 20 failed ones, so a
+  # failed download is never re-attempted on an Oban retry.
+  defp save_one_media(%{"download_failed" => true} = media, _organization_id), do: media
+
   # Requires id + file_name — the same fields media_list?/1 classifies on, so every
   # item treated as media here is actually downloadable (no silent skip).
   defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id) do
@@ -191,7 +196,7 @@ defmodule Glific.WhatsappFormsResponses do
           "Failed to save WhatsApp form media #{file_name} (id #{id}): #{SafeLog.safe_inspect(error)}"
         )
 
-        media
+        Map.put(media, "download_failed", true)
     end
   end
 
