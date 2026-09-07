@@ -10,6 +10,8 @@ depends on. Three repositories, three stacked branches, all named
 | `glific-web-channel` | `web-channel-send-messages` | needs the phone-entry step this adds copy to |
 | `glific-frontend` | `master` | no earlier web-channel branch exists here, so nothing to stack on |
 
+Pull requests: glific#5717, glific-web-channel#6, glific-frontend#4171.
+
 Everything below is gated on `:web_channel_enabled`. Nothing in this plan changes behaviour for
 an organization with the flag off.
 
@@ -285,3 +287,46 @@ existing design tokens; do not introduce literals.
 - [ ] The existing WhatsApp send path is untouched: the two original `can_send_message_to?/2`
       clauses still gate on `bsp_status` exactly as before.
 - [ ] The dashboard's opted-in count is numerically identical before and after a web login.
+
+---
+
+## What changed while building it
+
+Recorded here rather than left for a reader to spot by diffing the plan against the code.
+
+**`FlowContext` had no `channel` field.** #5660's migration added the column; nothing mapped it in
+the Ecto schema, so `context.channel` would have raised. T3 adds the field, not just the threading.
+
+**`do_add_contact_field/5` takes the channel as a defaulted sixth argument.** It has seventeen call
+sites, all of them client webhooks with no flow context, so threading a required argument through
+would have been noise. The flow path passes `context.channel`; everything else keeps `:whatsapp`.
+
+**The widget needed interactive rendering.** T8 allows staff to send an interactive template, but
+the widget rendered it as its plain body — options invisible and untappable. Rendering them, and
+answering with the tapped option's title the way WhatsApp records an interactive reply, is part of
+this work; without it the feature does not exist end to end.
+
+**Only the web channel filters the inbox list (T13).** A filtered list reads a lazily-fetched
+result rather than the cache `ChatSubscription` writes into, so it stops updating live. Applying
+that to WhatsApp as well would cost every organization with the flag on live updates in their main
+inbox. The consequence is that a web-only contact still appears under WhatsApp; making the WhatsApp
+option exclusive requires the chat subscription to become channel-aware, which is a follow-up.
+
+**The open conversation is not channel-scoped.** The selector filters the contact list and decides
+where a reply goes; the thread shows the contact's whole history. Scoping it would mean reading a
+different Apollo cache entry from the one the subscription primes, breaking pagination and live
+updates for a case — a contact with real traffic on both channels — that barely exists yet.
+
+**One `channel` state, two selectors.** The header selector and the list selector share it, so
+switching in the header re-filters the list. That is the intended reading: you are working a
+channel, not a conversation.
+
+**Two adjacent fixes folded in.** `.dialyzer_ignore.exs` gains
+`test/support/fixtures/web_channel_fixtures.ex` — `mix check` was already failing on the parent
+branch because dialyzer cannot see through `Phoenix.ChannelTest.subscribe_and_join/3`, and
+`test/support/channel_case.ex` is ignored for the same reason. And `vitest.config.ts` in
+glific-frontend now excludes `.claude/**`, whose worktrees are full checkouts of the repo and were
+doubling every test file in the run.
+
+**`Presence.online?/2` uses `get_by_key/2`, not `list/1`.** The latter groups every tracked contact
+in the organization to answer a question about one of them.
