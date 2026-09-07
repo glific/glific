@@ -46,9 +46,8 @@ defmodule Glific.Conversations do
     |> Repo.all(timeout: 10_000)
   end
 
-  # Scopes a conversation to the channel the inbox is showing. The message_number window applied
-  # below is per contact and spans channels, so a contact whose recent traffic is on the other
-  # channel can come back with fewer than `limit` messages here.
+  # The message_number window below spans channels, so a contact whose recent traffic is on the
+  # other channel can come back with fewer than `limit` messages.
   @spec filter_by_channel(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_by_channel(query, %{filter: %{channel: channel}}) when not is_nil(channel),
     do: where(query, [m: m], m.channel == ^channel)

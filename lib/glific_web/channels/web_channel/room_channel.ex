@@ -42,9 +42,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       Repo.put_process_state(socket.assigns.organization_id)
       schedule_sweep()
 
-      # Tracked against the channel process, not the socket: presence lives under a
-      # per-organization topic rather than this channel's own, so it survives being looked up
-      # without joining anything, and it is untracked automatically when this process dies.
+      # The channel process, not the socket: presence lives under a per-organization topic, and
+      # untracks when this process dies.
       Presence.track_contact(
         self(),
         socket.assigns.organization_id,

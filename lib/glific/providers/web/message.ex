@@ -62,9 +62,8 @@ defmodule Glific.Providers.Web.Message do
     end
   end
 
-  # `:sent` and not `:delivered`: nothing on this channel acknowledges receipt, and claiming
-  # delivery for a message pushed at a socket that may not be open would be a lie the inbox
-  # then shows to staff.
+  # `:sent`, not `:delivered`: nothing here acknowledges receipt, and the inbox would show the
+  # claim to staff.
   @spec mark_sent(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
   defp mark_sent(message) do
     case Messages.update_message(message, %{

@@ -58,11 +58,9 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       end)
     end
 
-    # Presence is a display nicety, and this is the failure it caused in practice: Phoenix's dev
-    # reloader recompiles modules without restarting the supervision tree, so pulling this branch
-    # into a running server gave you the code that calls the tracker without the tracker, and an
-    # unguarded track/4 raised inside join/3 and took the whole conversation down. Driven against
-    # the real thing — the supervised child is stopped, not mocked.
+    # The real failure: the dev reloader recompiles without restarting the tree, so an unguarded
+    # track/4 raised inside join/3. Driven against the real thing — the child is stopped, not
+    # mocked.
     test "a conversation still opens when the presence tracker is not running", %{
       contact: contact
     } do
@@ -657,9 +655,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     end
   end
 
-  # Stops the supervised tracker for the duration of `fun` and puts it back whatever happens —
-  # leaving it down would break every later test in this file, and the GraphQL contact field that
-  # reads it.
+  # Put back whatever happens: leaving it down breaks every later test in this file.
   @spec without_presence((-> any())) :: any()
   defp without_presence(fun) do
     :ok = Supervisor.terminate_child(Glific.Supervisor, Presence)
