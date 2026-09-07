@@ -188,60 +188,70 @@ defmodule Glific.BigQueryTest do
     ## The Logger format ends with `$message`, so a raw newline in an error dump ends the entry
     ## and the rest is shipped without metadata — which is how the reason for a failed dedup
     ## went missing in production. The body must reach the log escaped, not expanded.
-    @streaming_buffer_body ~s({\n  "error": {\n    "code": 400,\n) <>
-                             ~s(    "message": "UPDATE or DELETE statement over table ) <>
+    ## `jobs.query` reports the failure in a top-level `errors` array, not in an `error`
+    ## envelope, so that is the shape every case here uses.
+    @streaming_buffer_body ~s({\n  "kind": "bigquery#queryResponse",\n) <>
+                             ~s(  "jobComplete": true,\n  "errors": [\n    {\n) <>
+                             ~s(      "domain": "global",\n      "reason": "invalidQuery",\n) <>
+                             ~s(      "location": "query",\n) <>
+                             ~s(      "message": "UPDATE or DELETE statement over table ) <>
                              ~s(918454812392.messages would affect rows in the streaming ) <>
-                             ~s(buffer, which is not supported",\n    "errors": [\n      {\n) <>
-                             ~s(        "domain": "global",\n        "reason": "invalidQuery"\n) <>
-                             ~s(      }\n    ],\n    "status": "INVALID_ARGUMENT"\n  }\n})
+                             ~s(buffer, which is not supported"\n    }\n  ]\n})
 
-    test "keeps the status and the whole body on a single line" do
+    test "keeps the reason and the whole body on a single line" do
       summary =
         BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @streaming_buffer_body})
 
-      assert String.starts_with?(
-               summary,
-               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
-             )
-
+      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
       assert summary =~ "would affect rows in the streaming buffer, which is not supported"
       refute summary =~ "\n"
     end
 
-    test "keeps the status and reason ahead of the clip on a long response" do
+    ## `reason` deliberately sits *behind* the long `message` here: past `inspect/1`'s
+    ## 4096-char clip, so the only way it reaches the log is by being lifted to the front.
+    test "keeps the reason ahead of the clip on a long response" do
       body =
-        ~s({"error":{"code":400,"message":"Syntax error: ) <>
+        ~s({"kind":"bigquery#queryResponse","errors":[{"message":"Syntax error: ) <>
           String.duplicate("very long query text ", 300) <>
-          ~s(","errors":[{"domain":"global","reason":"invalidQuery"}],"status":"INVALID_ARGUMENT"}})
+          ~s(","domain":"global","reason":"invalidQuery"}]})
 
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
 
       assert byte_size(body) > 4096
-
-      assert String.starts_with?(
-               summary,
-               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
-             )
-
+      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
       assert String.ends_with?(summary, "<> ...")
+      ## the clipped body dropped the reason — only the lifted copy survives
+      assert summary |> String.split("body=") |> List.last() |> String.contains?("invalidQuery") ==
+               false
+
       refute summary =~ "\n"
     end
 
-    test "renders a blank reason when the errors value is not a populated list" do
-      for errors <- [~s({}), ~s([]), ~s("accessDenied"), ~s([{"domain":"global"}]), "null"] do
-        body = ~s({"error":{"code":403,"errors":#{errors},"status":"PERMISSION_DENIED"}})
+    test "renders no fields when the errors value is not a populated list" do
+      for errors <- [~s({}), ~s([]), ~s("accessDenied"), "null"] do
+        body = ~s({"kind":"bigquery#queryResponse","errors":#{errors}})
 
         summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
 
-        assert String.starts_with?(
-                 summary,
-                 "http_status=403 bq_status=PERMISSION_DENIED reason= body="
-               )
+        assert String.starts_with?(summary, "http_status=403 body=")
       end
     end
 
-    test "renders no fields when the body is not a BigQuery error envelope" do
-      for body <- [~s({"error":"invalid_grant"}), "upstream unavailable", ""] do
+    test "renders a blank reason when the first error carries none" do
+      body = ~s({"errors":[{"domain":"global","message":"no reason given"}]})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(summary, "http_status=400 reason= body=")
+    end
+
+    test "renders no fields when the body carries no top-level errors array" do
+      for body <- [
+            ~s({"error":{"code":403,"status":"PERMISSION_DENIED"}}),
+            ~s({"error":"invalid_grant"}),
+            "upstream unavailable",
+            ""
+          ] do
         summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: body})
 
         assert String.starts_with?(summary, "http_status=503 body=")
@@ -266,14 +276,14 @@ defmodule Glific.BigQueryTest do
 
     test "bounds an oversized body instead of flooding the log" do
       body =
-        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Syntax error: ) <>
-          String.duplicate("very long query text ", 500) <> ~s("}})
+        ~s({"errors":[{"reason":"invalidQuery","message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 500) <> ~s("}]})
 
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
 
       assert byte_size(body) > 8192
       assert summary =~ "http_status=400"
-      assert summary =~ "INVALID_ARGUMENT"
+      assert summary =~ "reason=invalidQuery"
       assert summary =~ "Syntax error:"
       assert String.ends_with?(summary, "<> ...")
       assert byte_size(summary) < 4500
