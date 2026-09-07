@@ -22,9 +22,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   alias GlificWeb.WebChannel.Token
   alias Plug.Conn
 
-  # Seeded by `SeedsDev.seed_contacts/1` with `bsp_status: :session_and_hsm` and a recent
-  # `optin_time`/`last_message_at`, so it is deliverable via a session message without any extra
-  # setup — this is our stand-in for "a reachable contact".
+  # Seeded deliverable by `SeedsDev.seed_contacts/1`; our stand-in for a reachable contact.
   @reachable_phone "917834811231"
 
   setup do
@@ -34,9 +32,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     Fixtures.set_bsp_partner_tokens()
     Fixtures.otp_hsm_fixture()
 
-    # Broad catch-all so the (synchronous) BSP send triggered by a successful OTP dispatch never
-    # makes a real network call, whichever of the session/HSM paths `Messages.
-    # create_and_send_otp_verification_message/2` picks.
+    # Catch-all so no OTP dispatch makes a real network call, whichever send path it picks.
     Tesla.Mock.mock(fn %{method: :post} ->
       %Tesla.Env{
         status: 200,
@@ -54,9 +50,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     :ok
   end
 
-  # Generates a fresh, E.164-parseable Indian phone number so tests never collide with each other
-  # or with the seeded fixtures, and never need a lookup against `Contacts.parse_phone_number/1`
-  # to fail from an accidentally-invalid Faker-generated number.
+  # E.164-parseable and unique, so tests never collide and never fail phone-number parsing.
   @spec unique_phone() :: String.t()
   defp unique_phone do
     suffix =
@@ -185,9 +179,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       phone: phone
     } do
       with_web_channel_enabled(fn ->
-        # Names a contact that DOES exist in org 1 while claiming org 2. An arbitrary foreign
-        # contact id would be caught by the org-scoped lookup instead — ids never collide across
-        # orgs — and would prove nothing about the org comparison.
+        # A contact that exists in org 1 while claiming org 2; an arbitrary id would be caught
+        # by the org-scoped lookup instead and prove nothing.
         existing = Repo.get_by!(Contact, phone: phone)
 
         foreign =
@@ -262,9 +255,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
 
     test "takes effect without refilling the organization cache", %{conn: conn} do
-      # Pins the regression where an admin enables the flag and nothing refills the org cache, so
-      # the virtual field keeps reporting stale and the endpoints answer 404 indefinitely. Not
-      # using with_web_channel_enabled/1: it refills the cache, the step asserted as unnecessary.
+      # Not using with_web_channel_enabled/1: it refills the cache, the step being asserted as
+      # unnecessary.
       Partners.organization(1) |> Partners.fill_cache()
       assert Partners.organization(1).web_channel_enabled == false
 
@@ -436,9 +428,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         reachable_json = json_response(reachable_conn, 200)
 
-        # :blocked, not :invalid. Opt-in runs before the deliverability check and forces
-        # `status: :valid`, except for a :blocked contact (`ignore_optin?/2`) — so :invalid would
-        # be flipped to valid and this test would silently exercise the success path.
+        # :blocked, not :invalid — an :invalid contact is still sent a code, so it would
+        # silently exercise the success path.
         undeliverable = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
 
         undeliverable_conn =
@@ -468,9 +459,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       conn: conn
     } do
       with_web_channel_enabled(fn ->
-        # Outside the 24h window but opted in, so the HSM-template branch is taken. last_message_at
-        # must be older than 24h: `contact_opted_in/4` re-derives bsp_status and promotes to
-        # :session_and_hsm inside the window, which takes the session branch instead.
+        # Outside the 24h window, so the HSM-template branch is taken rather than the session
+        # one.
         hsm_only =
           Fixtures.contact_fixture(%{
             phone: unique_phone(),
@@ -493,9 +483,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
             Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => hsm_only.phone})
           )
 
-        # The template lookup raises rather than returning {:error, _}. Without the rescue in
-        # `send_web_channel_otp/2` this is a 500, which would both break the always-200 contract
-        # and hand a caller a way to tell a deliverable number from an undeliverable one.
+        # The template lookup raises; without the rescue this 500s and becomes an enumeration
+        # oracle.
         assert json = json_response(conn, 200)
 
         assert get_in(json, ["data", "message"]) ==
@@ -556,9 +545,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         assert too_short_json = json_response(too_short_conn, 422)
         assert get_in(too_short_json, ["error", "message"])
 
-        # Neither invalid attempt above consumed the (count: 1) rate-limit budget: a valid
-        # request right after them still succeeds instead of 429ing — proving validation runs
-        # before the rate limiter.
+        # A valid request still succeeds, so validation runs before the rate limiter.
         valid_conn =
           post(
             conn,
@@ -608,9 +595,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    # The reason the key is not the IP alone. Beneficiaries reach the internet through
-    # carrier-grade NAT, so two people on the same mobile carrier present one address; keying on
-    # it would make the first person's login lock everyone else out for the window.
+    # Why the key is not the IP alone: behind carrier-grade NAT one login would lock out
+    # everyone sharing the address.
     test "two different phones behind one IP do not share a budget", %{conn: conn} do
       with_web_channel_enabled(fn ->
         other_phone = "917834811232"
@@ -753,10 +739,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         assert json_response(web_channel_second, 429)
 
-        # ... a staff request from the same IP is unaffected in turn. Reset the staff bucket
-        # first — it is still sitting at its own (count: 1) limit from staff_first/staff_second
-        # above, which would otherwise return 429 for a reason that has nothing to do with the
-        # web-channel budget we just exhausted, defeating the point of this assertion.
+        # Reset the staff bucket first, or it 429s for its own reason and the assertion proves
+        # nothing.
         ExRated.delete_bucket(staff_key)
 
         staff_params_2 = %{
@@ -916,10 +900,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
     test "cross-scope, direction 2: a :web_channel-scoped code is rejected by the staff password reset endpoint",
          %{conn: conn} do
-      # No flag needed: this direction never touches the web_channel controller — it only
-      # proves a `:web_channel` code cannot authorize the staff `reset_password` (`:auth`-scoped)
-      # endpoint. Modeled on `registration_controller_test.exs`'s "with an otp minted by the
-      # trial signup flow" case, which asserts the same non-leakage for the `:trial` scope.
+      # No flag needed: this direction never touches the web_channel controller.
       user = Fixtures.user_fixture()
       web_channel_code = OTP.generate_code(:web_channel, user.phone)
 
@@ -998,14 +979,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    # Expiry (5 minute TTL) is intentionally not covered here: `PasswordlessAuth`'s code store is
-    # a global process/ETS structure that is not injectable, so exercising real expiry would
-    # require a literal 300-second sleep in the suite, which we were explicitly told not to add.
-    # `OTP.verify_code/3` mapping a `{:error, :code_expired}` to this controller's generic 401 is
-    # covered structurally instead: `verify_otp_for/4` collapses every `{:error, _}` reason
-    # (`:incorrect_code`, `:code_expired`, `:does_not_exist`, `:attempt_blocked`) to the identical
-    # response, and the wrong-code/attempt-lockout tests above already exercise that same
-    # collapsing clause for the other three reasons.
+    # Real expiry is not covered: the code store is global and not injectable, so it would need
+    # a 300-second sleep. `verify_otp_for/4` collapses every error reason to one response, and
+    # the tests above exercise that clause for the other three.
 
     test "missing otp returns 422", %{conn: conn} do
       phone = unique_phone()
