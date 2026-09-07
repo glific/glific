@@ -581,12 +581,12 @@ sequenceDiagram
 |---|---|---|
 | `POST /api/v1/web_channel/request-otp` | Send an OTP to a phone number | `[Prototype]` |
 | `POST /api/v1/web_channel/verify-otp` | Verify; resolve or create the contact; return the socket token, an HS256 JWT (§4.5). Gains the WhatsApp opt-in flag (US3) | `[Prototype]` |
-| `POST /api/v1/web_channel/upload` | Media upload → GCS, returns a URL for the socket push | `[Prototype]` `[Risk]` |
+| `POST /api/v1/web_channel/upload-url` | Mints a pre-signed PUT URL; the browser uploads straight to the organisation's bucket and Glific never sees the bytes (§4.15) | `[Today]` |
 | `GET /api/v1/web_channel/theme` | Per-org accent, logo, display name (§4.8) | `[Target]` |
 | `GET /api/v1/web_channel/me` | `{contact_id, name}` — lets a client that doesn't know its own id derive the socket topic | `[Target]` |
 | `POST /api/v1/web_channel/logout` | Ends the session and evicts the socket | `[Target]` |
 
-`[Risk]` All three prototype endpoints sit in the **unprotected** `:api` pipeline, and the source comment on `upload` admits it "should be behind a protected scope". `/theme` is legitimately public (it renders before login); `/me` and `/logout` go on the authenticated pipeline. **OTP endpoints need rate limiting** — none exists today, and US17 requires a resend with sensible limits.
+`[Risk]` The OTP endpoints are legitimately public and now rate limited by phone *and* by IP. `/theme` is also public — it renders before login. `upload-url` has moved to the authenticated `:web_channel_api` pipeline, whose plug does both the token check and the feature-flag check, so a route added there inherits both; `/me` and `/logout` belong on the same pipeline.
 
 ### Socket
 
@@ -679,7 +679,7 @@ History is *not* profile-scoped: the topic and the message query are per contact
 
 > **Must not reach production**
 >
-> The `"9999"` OTP bypass is gated on `Application.get_env(:glific, :web_channel_otp_bypass, false)` — set in `dev.exs` and `test.exs`, absent from `prod.exs`. It is one config flag away from being a universal login for every contact. Prefer a compile-time guard. The upload endpoint being unauthenticated is the other.
+> The `"9999"` OTP bypass is gated on `Application.get_env(:glific, :web_channel_otp_bypass, false)` — set in `dev.exs` and `test.exs`, absent from `prod.exs`. It is one config flag away from being a universal login for every contact. Prefer a compile-time guard. (The upload endpoint, the other item once listed here, is now authenticated — see §4.15.)
 
 ## 4.6 Custom nodes
 
@@ -907,6 +907,104 @@ Mitigations worth designing for now: jittered reconnect backoff on the client; a
 3. **Read routing** — history queries to `RepoReplica`, and connection pooling in front of Postgres.
 4. **A thin websocket gateway** split from `glific-core`. The motivation is coupling as much as capacity: one application currently holds sockets, the flow engine and Oban, so a flow-engine CPU spike degrades chat delivery. Out of MVP scope; worth filing.
 
+## 4.15 Media uploads
+
+*Added after the messaging work landed (#5663, #5714). It supersedes the prototype's
+`POST /web_channel/upload`, which proxied file bytes through Glific into a Glific-owned bucket.*
+
+A beneficiary sends a photo, a voice note or a document. Where those bytes travel, who owns them, and
+who can read them afterwards are four separate decisions, and only the first three are settled.
+
+### The shape
+
+The browser uploads **directly to the organisation's own Google Cloud Storage bucket**. Glific never
+sees the file:
+
+```
+1 · browser  →  POST /api/v1/web_channel/upload-url   { type, content_type, size }
+2 · Glific   →  a V4 pre-signed PUT URL, valid for minutes, bound to one object
+3 · browser  →  PUT the bytes straight to storage.googleapis.com
+4 · browser  →  socket "new_media_message" { type, url, content_type }
+5 · Glific   →  signed HEAD on the object; verify it; then persist the message
+```
+
+### Decisions taken
+
+| # | Decision | Why |
+|---|---|---|
+| 1 | **Direct to the NGO's bucket, never through Glific** | An earlier design put uploads in a Glific bucket with a 7-day expiry and a background sync to the NGO's, mirroring how BSP media is handled. Reversed: the file is the NGO's data from the moment it exists, and a copy sitting in Glific's bucket is a second place it can leak from. The consequence is that **enabling the web channel now requires an organisation to configure GCS** (#5711). |
+| 2 | **A pre-signed PUT per upload, not a shared credential** | The browser never holds anything reusable. The URL binds the method, the object name, the content type and an expiry — it cannot be replayed for a different object or a different type. |
+| 3 | **Signed with the organisation's own service-account key, passed as an argument** | `Glific.GCS.SignedUrl` takes the credential as a function argument. waffle's signer and the old `GCS.load_goth/1` both stashed `client_email`/`private_key` in `Goth.Config`, a single GenServer slot shared by every organisation on the node — two organisations signing at the same time could interleave and sign with each other's identity. Multi-tenant correctness, not preference. |
+| 4 | **The server owns the object name and the file extension** | Objects are `uploads/<uuid>.<ext>`. The UUID is so a file cannot be guessed or attributed to an organisation from its URL. The extension is derived **server-side from the validated content type** — an earlier version took it from the client, which is a path-traversal and stored-XSS hole. |
+| 5 | **The object is verified *after* the upload, not before** | A signed PUT URL cannot constrain size and cannot inspect bytes, so anything the client declares at step 1 is a claim. After the upload Glific reads the object's real metadata and checks it against the declared content type, the type allowlist and the size limit. A message whose object fails is refused. |
+| 6 | **Metadata is read with a signed HEAD, not an anonymous GET** | So the check does not depend on the bucket being publicly readable, and so it stays correct if #5715 makes media private. A HEAD also means the bytes never cross the wire. |
+| 7 | **The message's `gcs_url` is set at creation** | The file is already in the organisation's bucket. Leaving `gcs_url` nil would make the existing sync worker treat it as unsynced and re-download and re-upload it into the same bucket under a second name. |
+| 8 | **The socket only accepts a URL this server issued** | `new_media_message` rejects any URL that is not on the expected host and under this organisation's own upload prefix, so the socket cannot be used to attach an arbitrary internet URL to a conversation. |
+| 9 | **The accepted type list is wider than WhatsApp's** | A browser produces `webp` images and `webm`/`m4a` audio that WhatsApp never sends, and desktop users attach Office documents. Sizes still follow WhatsApp's limits per type — see the open question below. |
+
+### Open questions
+
+Ordered by what they block.
+
+**1 · Can media be private? — needs a product answer, tracked in #5715**
+
+Today `message_media.url` and `gcs_url` are public URLs, rendered directly by the staff inbox, the
+widget, and the flow editor. An unguessable UUID is not access control: anyone with the link has the
+file, forever, and links leak.
+
+Making the bucket private breaks rendering **everywhere**, not just on the web channel — this is not
+a web-channel-local change. The candidate answer is a Glific endpoint that authorises the viewer and
+redirects to a short-lived signed URL, generated on demand. The cost was measured rather than
+assumed: RSA-2048 signing is **0.484 ms**, so a page of 100 images costs ~48 ms of signing — real,
+but not the N+1 disaster it was assumed to be.
+
+This is the one on this list with a compliance dimension, and it should be answered before an
+organisation handling sensitive beneficiary material is onboarded.
+
+**2 · Brand assets need the opposite policy — needs a product answer**
+
+The display picture and favicon (#5711) render on the **sign-in page, before anyone authenticates**.
+They cannot be behind an authorising redirect. So "the NGO's bucket is private" and "the NGO's brand
+assets are public" have to be true at once — either two buckets, or two prefixes with different
+policies. #5711 currently asks NGOs to disable public URLs, which contradicts both this and the point
+above; that instruction cannot ship before #5715 resolves it.
+
+**3 · CORS on a real bucket is unverified — engineering, tracked in #5722**
+
+The browser PUTs across origins to `storage.googleapis.com`. No test suite can see a CORS rejection —
+it happens in the browser, against Google's servers. This is the most likely first failure when a new
+organisation configures its bucket, and it is invisible from the server: Glific hands out a signed URL
+and never learns whether the upload happened. Counting *issued* against *completed* uploads (#5721) is
+what would make it visible.
+
+**4 · Nobody owns cleanup — needs an engineering decision**
+
+An object whose verification fails at step 5 stays in the bucket, unreferenced. So does one uploaded
+by a client that never sends the socket message. The current answer is "a bucket lifecycle rule", which
+no one has written, and which lives in the NGO's project rather than ours. Either it becomes part of
+the configuration #5711 walks an NGO through, or Glific needs a sweep of its own.
+
+**5 · An organisation without GCS cannot enable the web channel — needs a product answer**
+
+A direct consequence of decision 1. Configuring GCS is a real barrier for a small NGO: a Google Cloud
+project, a bucket, a service account, a key. Is that acceptable for every organisation, or does the
+smallest tier need a Glific-hosted fallback — which is exactly the design that was reversed? If it is
+acceptable, the failure needs to be legible: today an organisation that switches the channel on without
+GCS gets uploads that fail at the moment a beneficiary tries to send a photo.
+
+**6 · Retention and deletion — needs a product answer**
+
+Message rows are Glific's; the objects are the NGO's. Erasing an organisation deletes its rows
+(`Erase.org_data_deletion_order/0`) and leaves every file in its bucket. A beneficiary asking to be
+forgotten is the same gap, one contact wide. Not a bug — nobody decided otherwise — but it should be a
+decision rather than an omission.
+
+**7 · Size limits are inherited from WhatsApp — needs a product answer**
+
+Per-type limits mirror WhatsApp's, because that is where they came from. The web channel has no BSP
+constraining them. Whether a beneficiary on a browser should be able to send a larger file than one on
+WhatsApp is a product question nobody has been asked.
+
 ---
 
 # Part 5 — Technical debt
@@ -1104,6 +1202,10 @@ than rediscovered.
   alternate identity today, so it likely needs a facilitator-assisted path. Flagged, not designed around.
 - **US13 — web-channel cost visibility.** Belongs to the separate Billing & Subscriptions work. The
   source asks to confirm one dashboard, not two.
+- **Media uploads — five product questions**, each stated in full in §4.15: whether media can be made
+  private (#5715, the one with a compliance dimension), how brand assets stay public if it is, whether
+  requiring GCS is an acceptable barrier for a small NGO, what happens to files on erasure, and whether
+  web file-size limits should still be WhatsApp's.
 
 ## Needs an engineering decision
 
@@ -1113,6 +1215,8 @@ than rediscovered.
   with `bsp_message_id` deprecated, rather than a hard cut. Not decided.
 - **Whether the dark-mode palette is wired to theming or deleted** (§4.8).
 - **Whether `+Q` is raised now or at the point a second replica is added** (§4.14).
+- **Who owns cleanup of orphaned upload objects** (§4.15) — a lifecycle rule in the NGO's project, or a
+  sweep of Glific's own.
 
 ## Stale elsewhere in this directory
 
