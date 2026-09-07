@@ -16,6 +16,9 @@ defmodule GlificWeb.Schema.MediaTypes do
       @desc "reject anything larger, in kilobytes. Omitted means no limit."
       arg(:max_size_kb, :integer)
 
+      @desc "file under <folder>/<org id>/<uuid>.<ext>. Omitted uses the attachment path."
+      arg(:folder, :string)
+
       middleware(Authorize, :staff)
       resolve(&Resolvers.Media.upload/3)
     end

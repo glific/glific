@@ -56,8 +56,10 @@ defmodule Glific.Repo.Seeds.AddWebChannelProvider do
               view_only: false,
               position: 2,
               max_size_kb: 200,
+              upload_folder: "org_logo",
               accept: "image/png,image/jpeg,image/webp,image/svg+xml",
-              helper_text: "PNG, JPEG, WEBP or SVG up to 200KB. Landscape works best."
+              helper_text:
+                "Upload a PNG, JPEG, WEBP or SVG up to 200KB, or paste an https URL you host. Landscape works best."
             },
             theme: %{
               type: :select,

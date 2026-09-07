@@ -33,6 +33,66 @@ defmodule GlificWeb.Resolvers.MediaTest do
     end
   end
 
+  describe "upload/3 folder" do
+    test "files the object under the folder, the org and a uuid", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, remote, _org -> {:ok, %{url: remote, type: :image}} end do
+        assert {:ok, remote} =
+                 file_of(1) |> args(%{folder: "org_logo"}, organization_id) |> upload(user)
+
+        assert String.starts_with?(remote, "org_logo/#{organization_id}/")
+        assert String.ends_with?(remote, ".png")
+
+        uuid = remote |> Path.basename(".png")
+        assert {:ok, _} = Ecto.UUID.cast(uuid)
+      end
+    end
+
+    test "two uploads of the same name do not collide", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, remote, _org -> {:ok, %{url: remote, type: :image}} end do
+        assert {:ok, first} =
+                 file_of(1) |> args(%{folder: "org_logo"}, organization_id) |> upload(user)
+
+        assert {:ok, second} =
+                 file_of(1) |> args(%{folder: "org_logo"}, organization_id) |> upload(user)
+
+        refute first == second
+      end
+    end
+
+    test "keeps the attachment path when no folder is asked for", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      # The chat composer names no folder, so its objects must land exactly where they did.
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, remote, _org -> {:ok, %{url: remote, type: :image}} end do
+        assert {:ok, remote} = file_of(1) |> args(organization_id) |> upload(user)
+        assert String.starts_with?(remote, "outbound/")
+      end
+    end
+
+    test "refuses a folder that could climb out of its prefix", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      # No GCS mock: a rejected folder must never reach the upload.
+      for folder <- ["../escape", "org_logo/../..", "/absolute", "Org_Logo", "org logo", ""] do
+        assert {:error, message} =
+                 file_of(1) |> args(%{folder: folder}, organization_id) |> upload(user)
+
+        assert message =~ "folder may only contain"
+      end
+    end
+  end
+
   describe "upload/3 size limit" do
     test "rejects a file larger than the caller's limit", %{
       user: user,
