@@ -199,10 +199,53 @@ defmodule Glific.BigQueryTest do
       summary =
         BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @streaming_buffer_body})
 
-      assert summary =~ "http_status=400"
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
+             )
+
       assert summary =~ "would affect rows in the streaming buffer, which is not supported"
-      assert summary =~ "INVALID_ARGUMENT"
       refute summary =~ "\n"
+    end
+
+    test "keeps the status and reason ahead of the clip on a long response" do
+      body =
+        ~s({"error":{"code":400,"message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 300) <>
+          ~s(","errors":[{"domain":"global","reason":"invalidQuery"}],"status":"INVALID_ARGUMENT"}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert byte_size(body) > 4096
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
+             )
+
+      assert String.ends_with?(summary, "<> ...")
+      refute summary =~ "\n"
+    end
+
+    test "renders a blank reason when the errors value is not a populated list" do
+      for errors <- [~s({}), ~s([]), ~s("accessDenied"), ~s([{"domain":"global"}]), "null"] do
+        body = ~s({"error":{"code":403,"errors":#{errors},"status":"PERMISSION_DENIED"}})
+
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
+
+        assert String.starts_with?(
+                 summary,
+                 "http_status=403 bq_status=PERMISSION_DENIED reason= body="
+               )
+      end
+    end
+
+    test "renders no fields when the body is not a BigQuery error envelope" do
+      for body <- [~s({"error":"invalid_grant"}), "upstream unavailable", ""] do
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: body})
+
+        assert String.starts_with?(summary, "http_status=503 body=")
+      end
     end
 
     test "never leaks the Tesla client middleware" do

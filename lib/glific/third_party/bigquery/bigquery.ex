@@ -1034,13 +1034,35 @@ defmodule Glific.BigQuery do
     end
   end
 
-  ## The body is inspected rather than interpolated: BigQuery's JSON is pretty-printed, and a
-  ## raw newline ends the log entry (the Logger format ends with `$message`), losing the rest.
+  ## Two constraints shape this. The body is inspected rather than interpolated, because
+  ## BigQuery's JSON is pretty-printed and a raw newline ends the log entry (the Logger format
+  ## ends with `$message`). And the two fields that name the failure are lifted to the front,
+  ## because BigQuery puts `status` *after* the `errors` array, so a long response would lose
+  ## it to `inspect/1`'s 4096-char `:printable_limit`. The body still follows in full.
   @spec bigquery_error_summary(any()) :: String.t()
   defp bigquery_error_summary(%Tesla.Env{status: status, body: body}),
-    do: "http_status=#{status} body=#{safe_inspect(body)}"
+    do: "http_status=#{status} #{bigquery_error_fields(body)}body=#{safe_inspect(body)}"
 
   defp bigquery_error_summary(error), do: safe_inspect(error)
+
+  @spec bigquery_error_fields(any()) :: String.t()
+  defp bigquery_error_fields(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"error" => %{} = error}} ->
+        "bq_status=#{error["status"]} reason=#{first_error_reason(error["errors"])} "
+
+      _ ->
+        ""
+    end
+  end
+
+  defp bigquery_error_fields(_body), do: ""
+
+  ## Matched rather than reached through `Access.at/1`, which raises on anything that is not a
+  ## list — a shape this handler must survive, since it runs while reporting another failure.
+  @spec first_error_reason(any()) :: String.t() | nil
+  defp first_error_reason([%{"reason" => reason} | _]), do: reason
+  defp first_error_reason(_errors), do: nil
 
   @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}
   defp bigquery_error_status(response) do
