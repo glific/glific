@@ -58,6 +58,29 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       end)
     end
 
+    # Presence is a display nicety, and this is the failure it caused in practice: Phoenix's dev
+    # reloader recompiles modules without restarting the supervision tree, so pulling this branch
+    # into a running server gave you the code that calls the tracker without the tracker, and an
+    # unguarded track/4 raised inside join/3 and took the whole conversation down. Driven against
+    # the real thing — the supervised child is stopped, not mocked.
+    test "a conversation still opens when the presence tracker is not running", %{
+      contact: contact
+    } do
+      with_web_channel_enabled(fn ->
+        without_presence(fn ->
+          {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+
+          assert {:ok, %{messages: _messages}, _socket} =
+                   WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+          # And the two read paths degrade to their empty answer rather than raising: `online?/2`
+          # is resolved from a GraphQL field, where a raise would 500 the contact query.
+          refute Presence.online?(contact.organization_id, contact.id)
+          assert Presence.online_contact_ids(contact.organization_id) == []
+        end)
+      end)
+    end
+
     test "one contact being online says nothing about another", %{
       contact: contact,
       other_contact: other_contact
@@ -631,6 +654,20 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         assert_push "session_expired", %{}
         assert_receive {:DOWN, ^ref, :process, _, :normal}
       end)
+    end
+  end
+
+  # Stops the supervised tracker for the duration of `fun` and puts it back whatever happens —
+  # leaving it down would break every later test in this file, and the GraphQL contact field that
+  # reads it.
+  @spec without_presence((-> any())) :: any()
+  defp without_presence(fun) do
+    :ok = Supervisor.terminate_child(Glific.Supervisor, Presence)
+
+    try do
+      fun.()
+    after
+      {:ok, _pid} = Supervisor.restart_child(Glific.Supervisor, Presence)
     end
   end
 
