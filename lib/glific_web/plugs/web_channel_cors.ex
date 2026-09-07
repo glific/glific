@@ -1,16 +1,10 @@
 defmodule GlificWeb.Plugs.WebChannelCors do
   @moduledoc """
-  Narrows CORS to a known set of origins for the web channel routes, leaving every other route on
-  the permissive default the rest of Glific's API has always used.
+  Narrows CORS to `:web_channel_allowed_origins` for the web channel routes, leaving the rest of
+  the API on its permissive default.
 
-  This has to run in the endpoint rather than a router pipeline. `CORSPlug` answers a preflight
-  `OPTIONS` itself and halts, so the endpoint's own `CORSPlug` would have already replied
-  `access-control-allow-origin: *` before the router ever ran — a router-level restriction would
-  narrow the real request and leave the preflight wide open, which is no restriction at all.
-
-  Origins come from `:web_channel_allowed_origins`, so staging and an NGO on its own domain do not
-  need a code change. A request from an origin not on the list gets no CORS headers back, and the
-  browser refuses it.
+  Runs in the endpoint, not a router pipeline: `CORSPlug` answers a preflight itself and halts, so
+  anything later would narrow the real request and leave the preflight wide open.
   """
 
   @behaviour Plug
@@ -35,9 +29,7 @@ defmodule GlificWeb.Plugs.WebChannelCors do
     |> Enum.map(&compile/1)
   end
 
-  # A `*` in a configured origin means one hostname label, not "anything" — `web.*.glific.com`
-  # must not match `web.evil.com.glific.com.attacker.net`, so the wildcard is anchored and cannot
-  # span a dot.
+  # Anchored, and `*` cannot span a dot, or a domain an attacker registers would match.
   @spec compile(String.t()) :: Regex.t()
   defp compile(origin) do
     pattern =

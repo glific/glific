@@ -6,12 +6,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Signing in records **no consent of any kind**. A contact row is created if the number is new,
-  because an HSM has to be addressed to one, and nothing else about the contact is touched.
-  Consent — recorded per channel, and the exemption that makes the OTP deliverable to a contact
-  who has never opted in — is #5713's work. Until it lands, a number with no prior Glific opt-in
-  gets the same neutral response as any other and no code, because `can_send_message_to?/2`
-  refuses an HSM to a contact at `bsp_status: :none`.
+  Signing in records no consent. A contact row is created if the number is new, because an HSM has
+  to be addressed to one; nothing else about the contact is touched. Consent, and the exemption
+  that makes the OTP deliverable to a contact who has never opted in, are #5713's.
   """
 
   use GlificWeb, :controller
@@ -34,12 +31,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # the endpoint cannot be used to enumerate an organization's contacts.
   @request_otp_message "If this number is registered on WhatsApp, you will receive a one-time code"
 
-  # Separate messages for the two buckets, because they describe different situations and the
-  # remedy differs. Hitting the phone limit means "you just did this" and waiting works; hitting
-  # the IP limit usually means a shared network — beneficiaries reach the internet through
-  # carrier-grade NAT, so a whole district can share one address — and "wait 30 seconds" would be
-  # wrong advice. Distinguishing them tells a caller that a code was requested for this number in
-  # the last window, which is a weak enough oracle to trade for the copy being true.
+  # The IP limit is usually a shared network, where "wait 30 seconds" would be wrong advice.
   @phone_throttled_message "An OTP was just sent. Please try again in 30 seconds."
   @ip_throttled_message "Too many sign-in attempts from your network. Please wait a few minutes and try again."
 
@@ -318,10 +310,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   defp describe_send_failure(exception), do: SafeLog.safe_inspect(exception)
 
-  # A contact row has to exist for the HSM to be addressed to, but creating it writes no
-  # `optin_*`: typing a number into a public login box is not consent to anything, and recording
-  # it as a WhatsApp opt-in put people into an organization's broadcast audience who had never
-  # agreed to be there. #5713 records consent per channel instead.
+  # Writes no `optin_*`: typing a number into a public login box is not consent to anything.
   @spec ensure_contact(non_neg_integer(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp ensure_contact(organization_id, phone),

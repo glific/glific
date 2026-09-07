@@ -319,12 +319,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
-  # CORS is asserted through the endpoint rather than the controller, because the endpoint's
-  # CORSPlug answers a preflight itself and halts — a restriction placed anywhere later would
-  # narrow the real request and leave the preflight wide open.
+  # Driven through the endpoint, because that is where CORSPlug answers and halts a preflight.
   describe "CORS" do
-    # Built from scratch rather than by mutating the case's conn: `path_info` is what the plug
-    # dispatches on, and it is set when the conn is created, not from `request_path`.
+    # Built fresh: the plug dispatches on `path_info`, which is set at creation, not from
+    # `request_path`.
     defp options_preflight(path, origin) do
       :options
       |> Plug.Test.conn(path)
@@ -348,8 +346,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
                ["https://web.ngo.glific.com"]
     end
 
-    # The wildcard must not span a dot, or an attacker registers a domain that ends in the right
-    # suffix and the check means nothing.
     test "a wildcard does not span a dot" do
       response = options_preflight("/api/v1/web_channel/verify-otp", "https://web.a.b.glific.com")
 
@@ -362,8 +358,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       assert Conn.get_resp_header(response, "access-control-allow-origin") == []
     end
 
-    # The rest of Glific's API keeps the permissive default it has always had; this ticket
-    # narrows the web channel, not everything.
     test "routes outside the web channel are unchanged" do
       response = options_preflight("/api/v1/registration", "https://evil.example")
 
@@ -675,9 +669,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         assert Enum.map(responses, & &1.status) == [200, 200, 429]
 
-        # The two buckets say different things, because the remedies differ: waiting works for the
-        # phone limit, while the IP limit is usually a shared network — telling someone behind
-        # carrier-grade NAT to "try again in 30 seconds" would be wrong advice.
         assert get_in(json_response(List.last(responses), 429), ["error", "message"]) ==
                  "Too many sign-in attempts from your network. Please wait a few minutes and try again."
       end)
@@ -799,9 +790,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
-  # Signing in used to opt the contact in to WhatsApp, which put people into an organization's
-  # broadcast audience on the strength of having typed their number into a public login box.
-  # Consent is #5713's, recorded per channel; this pins that nothing here records any.
   describe "signing in records no consent" do
     test "a first sign-in leaves every opt-in field at its default", %{conn: conn} do
       phone = unique_phone()
