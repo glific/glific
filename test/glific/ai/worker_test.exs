@@ -2,6 +2,7 @@ defmodule Glific.AI.WorkerTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
 
+  alias Ecto.Adapters.SQL.Sandbox
   alias FunWithFlags.Store.Cache
 
   alias Glific.{
@@ -34,7 +35,7 @@ defmodule Glific.AI.WorkerTest do
     # cache is flushed here: `on_exit` runs after the sandbox connection is
     # checked in, so it cannot touch the database.
     on_exit(fn ->
-      Ecto.Adapters.SQL.Sandbox.checkout(Glific.Repo)
+      Sandbox.checkout(Glific.Repo)
       FunWithFlags.disable(:glific_ai_enabled, for_actor: %{organization_id: 1})
       Cache.flush()
     end)

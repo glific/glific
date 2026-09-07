@@ -3,6 +3,7 @@ defmodule Glific.AskGlificTest do
 
   import Mock
 
+  alias FunWithFlags.Store.Cache
   alias Glific.AskGlific
   alias Glific.AskGlific.Conversation
   alias Glific.Repo
@@ -63,7 +64,7 @@ defmodule Glific.AskGlificTest do
     test_pid = self()
 
     FunWithFlags.disable(:glific_ai_enabled, for_actor: %{organization_id: 1})
-    FunWithFlags.Store.Cache.flush()
+    Cache.flush()
 
     Application.put_env(:glific, :dify_req_plug, {Req.Test, test_pid})
     Application.put_env(:glific, :dify_api_key, "test-api-key")

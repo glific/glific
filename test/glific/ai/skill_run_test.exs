@@ -1,6 +1,7 @@
 defmodule Glific.AI.SkillRunTest do
   use Glific.DataCase
 
+  alias Ecto.Adapters.SQL.Sandbox
   alias FunWithFlags.Store.Cache
   alias Glific.AI.Skills.DraftHSM
 
@@ -32,7 +33,7 @@ defmodule Glific.AI.SkillRunTest do
     # cache is flushed here: `on_exit` runs after the sandbox connection is
     # checked in, so it cannot touch the database.
     on_exit(fn ->
-      Ecto.Adapters.SQL.Sandbox.checkout(Glific.Repo)
+      Sandbox.checkout(Glific.Repo)
       FunWithFlags.disable(:glific_ai_enabled, for_actor: %{organization_id: 1})
       Cache.flush()
     end)
