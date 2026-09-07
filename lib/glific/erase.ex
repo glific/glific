@@ -609,6 +609,7 @@ defmodule Glific.Erase do
       bigquery_jobs
       certificate_templates
       consulting_hours
+      contact_channel_optins
       contact_histories
       contacts_fields
       contacts_groups
