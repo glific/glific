@@ -1061,7 +1061,9 @@ defmodule Glific.BigQuery do
   ## Matched rather than reached through `Access.at/1`, which raises on a head that is not a
   ## map — a shape this handler must survive, since it runs while reporting another failure.
   @spec first_error_reason(any()) :: String.t() | nil
-  defp first_error_reason([%{"reason" => reason} | _]), do: reason
+  defp first_error_reason([%{"reason" => reason} | _]) when is_binary(reason),
+    do: String.replace(reason, ~r/\s+/, " ")
+
   defp first_error_reason(_errors), do: nil
 
   @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}

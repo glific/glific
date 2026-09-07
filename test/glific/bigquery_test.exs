@@ -245,6 +245,26 @@ defmodule Glific.BigQueryTest do
       assert String.starts_with?(summary, "http_status=400 reason= body=")
     end
 
+    test "renders a blank reason when the reason is not a string" do
+      for reason <- [~s({"a":1}), ~s([{"a":1}]), "42", "true", "null"] do
+        body = ~s({"errors":[{"reason":#{reason}}]})
+
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+        assert String.starts_with?(summary, "http_status=400 reason= body=")
+      end
+    end
+
+    test "collapses whitespace in the reason so the entry stays on one line" do
+      body = ~s({"errors":[{"reason":"access\\n  denied\\tnow"}]})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
+
+      assert String.starts_with?(summary, "http_status=403 reason=access denied now body=")
+      refute summary =~ "\n"
+      refute summary =~ "\t"
+    end
+
     test "renders no fields when the body carries no top-level errors array" do
       for body <- [
             ~s({"error":{"code":403,"status":"PERMISSION_DENIED"}}),
