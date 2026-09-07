@@ -537,6 +537,7 @@ defmodule Glific.Contacts.BulkImport do
       Map.put(errors, phone, "This user #{params.user.name} doesn't have enough permission")
     end
   end
+
   @spec delete_one(Contact.t(), String.t(), map()) :: map()
   defp delete_one(contact, phone, errors) do
     case Contacts.delete_contact(contact) do
