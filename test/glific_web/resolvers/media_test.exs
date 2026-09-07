@@ -4,6 +4,7 @@ defmodule GlificWeb.Resolvers.MediaTest do
   import Mock
 
   alias Glific.GCS.GcsWorker
+  alias Glific.Partners.Saas
   alias GlificWeb.Resolvers.Media
 
   @uploaded_url "https://gcs.test/logo.png"
@@ -30,6 +31,52 @@ defmodule GlificWeb.Resolvers.MediaTest do
     with_mock GcsWorker, [:passthrough],
       upload_media: fn _local, _remote, _org -> {:ok, %{url: @uploaded_url, type: :image}} end do
       block.()
+    end
+  end
+
+  describe "upload/3 storage account" do
+    test "writes to the platform org's GCS when asked", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      # An org with no Google Cloud Storage of its own would otherwise be unable to upload at
+      # all, which would make a missing credential block the whole feature.
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, _remote, org -> {:ok, %{url: "#{org}", type: :image}} end do
+        assert {:ok, storage_org} =
+                 file_of(1)
+                 |> args(%{folder: "org_logo", storage: :saas}, organization_id)
+                 |> upload(user)
+
+        assert storage_org == "#{Saas.organization_id()}"
+      end
+    end
+
+    test "keeps the uploading org's id in the path even on platform storage", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, remote, _org -> {:ok, %{url: remote, type: :image}} end do
+        assert {:ok, remote} =
+                 file_of(1)
+                 |> args(%{folder: "org_logo", storage: :saas}, organization_id)
+                 |> upload(user)
+
+        # Attributable in a shared bucket.
+        assert String.starts_with?(remote, "org_logo/#{organization_id}/")
+      end
+    end
+
+    test "writes to the uploading org's own GCS by default", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, _remote, org -> {:ok, %{url: "#{org}", type: :image}} end do
+        assert {:ok, storage_org} = file_of(1) |> args(organization_id) |> upload(user)
+        assert storage_org == "#{organization_id}"
+      end
     end
   end
 

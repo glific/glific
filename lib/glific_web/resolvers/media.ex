@@ -2,7 +2,7 @@ defmodule GlificWeb.Resolvers.Media do
   @moduledoc """
   Resolver to deal with file uploads, which we send directly to GCS
   """
-  alias Glific.{GCS.GcsWorker, Users.User}
+  alias Glific.{GCS.GcsWorker, Partners.Saas, Users.User}
 
   @doc """
   Upload a file given its extension.
@@ -14,6 +14,11 @@ defmodule GlificWeb.Resolvers.Media do
   It may also name a `folder`, which files the object under `<folder>/<org id>/<uuid>.<ext>`
   rather than the default message-attachment path. The organisation id is taken from the
   request, never from the caller, so one org cannot write into another's prefix.
+
+  `storage: :saas` writes to the platform organisation's bucket instead of the uploading
+  organisation's, the same way global stats are stored under the SaaS org's credentials. That
+  is what lets an organisation with no Google Cloud Storage of its own still upload — without
+  it, a missing GCS credential would block the feature entirely.
   """
   @spec upload(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -24,10 +29,18 @@ defmodule GlificWeb.Resolvers.Media do
       ) do
     with :ok <- within_size_limit(media.path, args[:max_size_kb]),
          {:ok, remote} <- remote_path(args[:folder], user, extension, organization_id) do
-      GcsWorker.upload_media(media.path, remote, organization_id)
+      media.path
+      |> GcsWorker.upload_media(remote, storage_organization_id(args[:storage], organization_id))
       |> handle_response()
     end
   end
+
+  # Both the bucket and the service account are resolved from whichever organisation is passed
+  # to GcsWorker, so this one value chooses the account. The path keeps the *uploading* org's
+  # id either way, so an object stays attributable in a shared bucket.
+  @spec storage_organization_id(atom() | nil, non_neg_integer()) :: non_neg_integer()
+  defp storage_organization_id(:saas, _organization_id), do: Saas.organization_id()
+  defp storage_organization_id(_storage, organization_id), do: organization_id
 
   # Anchored, and with no "." allowed, so a folder can never climb out of its prefix.
   @folder_format ~r{^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)*$}
