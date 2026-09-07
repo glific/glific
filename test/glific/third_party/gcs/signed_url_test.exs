@@ -9,9 +9,8 @@ defmodule Glific.GCS.SignedUrlTest do
   defdelegate create_gcs_credential(organization_id, bucket, email, private_key_pem),
     to: GcsFixtures
 
-  # Reconstructs the V4 string-to-sign independently of `SignedUrl`'s own implementation (rather
-  # than reusing its private functions), so a passing assertion means the URL is verifiable by
-  # an outside party reading the spec, not just self-consistent with the code that produced it.
+  # Rebuilt from the spec rather than from `SignedUrl`'s own functions, so a pass means the URL
+  # is verifiable by an outside party, not merely self-consistent.
   @spec verify_v4_signature(String.t(), String.t(), String.t() | nil, tuple()) :: boolean()
   defp verify_v4_signature(full_url, method, content_type, public_key) do
     uri = URI.parse(full_url)
@@ -133,9 +132,8 @@ defmodule Glific.GCS.SignedUrlTest do
       refute verify_v4_signature(tampered, "PUT", "image/png", public_key)
     end
 
-    # A nested object name is the case the encoder gets wrong: percent-encoding the separator
-    # signs a request for an object literally named "uploads%2Ff.png" rather than one in a folder,
-    # so GCS accepts the PUT and the file lands somewhere nobody is looking.
+    # Percent-encoding the separator signs for an object literally named "uploads%2Ff.png", so
+    # GCS accepts the PUT and the file lands where nobody is looking.
     test "keeps path separators in a nested object name", %{
       organization_id: organization_id,
       email: email,

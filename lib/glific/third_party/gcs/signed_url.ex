@@ -138,15 +138,11 @@ defmodule Glific.GCS.SignedUrl do
     |> Enum.map_join("&", fn {key, value} -> "#{uri_encode(key)}=#{uri_encode(value)}" end)
   end
 
-  # GCS's V4 spec requires strict RFC3986-unreserved encoding (letters, digits, `-._~` only) —
-  # `URI.encode/1`'s default predicate also leaves reserved characters like `;`, `/` and `:`
-  # unescaped, which would leave `content-type;host` unencoded in the query string.
+  # V4 requires strict RFC3986-unreserved encoding; `URI.encode/1`'s default leaves `;` and `/`.
   @spec uri_encode(String.t()) :: String.t()
   defp uri_encode(value), do: URI.encode(value, &URI.char_unreserved?/1)
 
-  # The object path is the one place `/` must survive: it separates path segments in the
-  # canonical resource, and percent-encoding it would sign a request for an object whose name
-  # literally contains "%2F" rather than one in a folder. Encode each segment, keep the slashes.
+  # The one place `/` must survive, or the signature names an object containing "%2F".
   @spec encode_object_path(String.t()) :: String.t()
   defp encode_object_path(object_name),
     do: object_name |> String.split("/") |> Enum.map_join("/", &uri_encode/1)
@@ -154,9 +150,7 @@ defmodule Glific.GCS.SignedUrl do
   @spec hex_sha256(String.t()) :: String.t()
   defp hex_sha256(data), do: :sha256 |> :crypto.hash(data) |> Base.encode16(case: :lower)
 
-  # The private key never appears in the return value or a log line here on purpose — a
-  # malformed key makes `:public_key` raise, and the rescue below discards the exception term
-  # rather than surfacing it.
+  # The rescue discards the exception term rather than surfacing it: it can hold the key.
   @spec rsa_sign_hex(String.t(), String.t()) :: {:ok, String.t()} | {:error, :signing_failed}
   defp rsa_sign_hex(string_to_sign, private_key_pem) do
     [entry] = :public_key.pem_decode(private_key_pem)

@@ -32,10 +32,8 @@ defmodule Glific.Media do
 
   # Whitelist file extensions:
   def validate({file, _}) do
-    # The audio and Office extensions come from MIME.extensions/1 on what a browser actually
-    # produces: Chrome records voice notes as audio/webm (.weba) and Safari as audio/mp4 (.m4a),
-    # and an .xlsx/.docx derives from the openxmlformats types. Without them every web-channel
-    # voice note and Office document is refused here, after passing content-type validation.
+    # What browsers actually produce: Chrome records voice notes as .weba, Safari as .m4a.
+    # Without these every web voice note is refused here, after passing content-type validation.
     ~w(.jpg .jpeg .gif .png .webp .pdf .wav .mp3 .mp4 .aac .mpeg .m4a .weba .webm
        .doc .docx .xls .xlsx .ppt .pptx)
     |> Enum.member?(Path.extname(file.file_name))

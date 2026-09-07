@@ -127,9 +127,8 @@ defmodule Glific.Communications.WebMessageTest do
 
   test "never touches session_status: inbound web messages don't apply the WhatsApp session window",
        %{contact: contact} do
-    # last_message_at is bumped by an unconditional DB trigger on every inbound message insert
-    # (any channel); bsp_status is the actual WhatsApp session-window concept, only ever
-    # written by Contacts.set_session_status/2 — which this path deliberately never calls.
+    # last_message_at comes from a DB trigger; bsp_status is the WhatsApp session concept and
+    # only set_session_status/2 writes it, which this path never calls.
     before_message = Repo.get!(Contact, contact.id)
 
     assert {:ok, _message} =
@@ -147,10 +146,8 @@ defmodule Glific.Communications.WebMessageTest do
   end
 
   describe "no path to the flow engine or the BSP" do
-    # A web inbound message reaching MessageWorker would run it through the flow engine, which
-    # today can only reply over WhatsApp — the worse-than-no-reply scenario #5663 exists to
-    # prevent. `publish/2` (unlike `Communications.Message`'s `publish_data/2`) must never call
-    # `MessageWorker.make_job/1`.
+    # Reaching MessageWorker would run the flow engine, which today can only reply over
+    # WhatsApp — worse than no reply.
     test "a text message never enqueues MessageWorker", %{contact: contact} do
       assert {:ok, _message} =
                WebMessage.receive_message(

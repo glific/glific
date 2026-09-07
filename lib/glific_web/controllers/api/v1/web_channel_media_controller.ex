@@ -17,11 +17,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
 
   @allowed_types ~w(image audio video document)
 
-  # Every object Glific has ever written to an organization's bucket sits under this prefix:
-  # waffle's default `storage_dir` is "uploads", and `GcsWorker.upload_media/3` has always gone
-  # through waffle. Writing to the bucket root instead would put web channel media somewhere
-  # nothing else lives — outside whatever lifecycle rules and access grants the bucket already
-  # applies to that prefix, and invisible to anyone looking where Glific media is kept.
+  # Where every other Glific object already lives (waffle's default `storage_dir`), so web media
+  # inherits the bucket's existing lifecycle rules and access grants.
   @object_prefix "uploads"
   @expires_in_seconds 300
 

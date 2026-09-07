@@ -52,9 +52,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       end)
     end
 
-    # A client can authenticate and then sit on the socket without joining. The sweep only starts
-    # at join, so without this check a token that died while the socket idled still buys a join,
-    # the history replay that comes with it, and up to a sweep interval of channel access.
+    # The sweep only starts at join, so without this check a token that died while the socket
+    # idled still buys a join and the history replay with it.
     test "a socket whose token has since expired cannot join", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
@@ -216,9 +215,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     end
   end
 
-  # A signed PUT URL cannot bind an upload's size or content type, so the socket handler must
-  # check the object's real metadata itself before persisting anything — these cover that
-  # authoritative check, distinct from `issued_url?/2`'s shape-only validation in "new_media_message".
+  # A signed PUT URL cannot bind size or content type, so these cover the check against the
+  # object's real metadata — not `issued_url?/2`'s shape-only validation.
   describe "new_media_message — GCS object verification" do
     setup %{contact: contact} do
       bucket = "org-#{contact.organization_id}-bucket"
@@ -478,9 +476,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     end
   end
 
-  # Same three sweep properties as above, but driven end to end by a genuinely minted,
-  # short-lived token rather than reaching into the channel's assigns — so these also prove
-  # `token_exp` gets assigned correctly from a real `Token.verify_contact_token/1` payload.
+  # The same three properties, driven by a genuinely minted token rather than the channel's
+  # assigns, so these also prove `token_exp` is assigned from a real payload.
   describe "the mid-session sweep, driven by a minted token" do
     test "pushes token_expiring once for a token nearing its own expiry", %{contact: contact} do
       with_web_channel_enabled(fn ->
@@ -518,10 +515,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         send(socket.channel_pid, :sweep_token)
         assert_push "token_expiring", %{}
 
-        # Renews to a token that is *itself* still inside the warning window. If renewal didn't
-        # reset the once-only flag, this alone would prove nothing (a second sweep at an
-        # unchanged exp already doesn't repush — see the test above); pushing again here can
-        # only be explained by the renewal actually having cleared it.
+        # Renews to a token itself still inside the warning window, so a second push can only
+        # be explained by the renewal having cleared the once-only flag.
         still_near_expiry =
           contact
           |> WebChannelFixtures.web_channel_claims(%{"exp" => System.system_time(:second) + 250})
@@ -554,9 +549,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         ref = push(socket, "renew_token", %{"token" => fresh_token})
         assert_reply ref, :ok
 
-        # Same wait the sibling "not renewing" test uses to cross the original token's grace
-        # deadline — if `token_exp` hadn't actually been extended by the renewal above, this
-        # sweep would stop the channel exactly as that test demonstrates.
+        # The same wait the sibling "not renewing" test uses: unextended, this sweep would stop
+        # the channel exactly as that test shows.
         Process.sleep(7_000)
 
         send(socket.channel_pid, :sweep_token)
@@ -573,10 +567,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       with_web_channel_enabled(fn ->
         now = System.system_time(:second)
 
-        # Within Token's own 60s verification leeway (so it mints as a genuinely valid,
-        # connectable token) but already 55s old — @grace_seconds (60) after this exp lands 5s
-        # in the future, so a short real wait (well under the 60s sweep interval) is enough for
-        # the sweep to see it as expired, without needing to fake or skip real time.
+        # Inside Token's 60s leeway so it still connects, but old enough that grace expires 5s
+        # out — a short real wait, no faked time.
         about_to_grace_out =
           contact
           |> WebChannelFixtures.web_channel_claims(%{"exp" => now - 55})

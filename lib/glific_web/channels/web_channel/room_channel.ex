@@ -24,27 +24,21 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   @page_size 100
   @max_body_length 4_096
 
-  # api-auth-design.md §2.4: the sweep interval is the real granularity, not the token TTL — a
-  # token expiring at T dies at T + interval. 60s against the token's 1h TTL is a backstop, not
-  # the primary renewal mechanism (the widget renews ten minutes early).
+  # The real expiry granularity: a token expiring at T dies at T + interval.
   @sweep_interval_ms 60_000
-  # Matches WEB_CHANNEL_TOKEN_REFRESH_THRESHOLD_SECONDS on the widget, so both sides agree on
-  # when renewal is due.
+  # Matches WEB_CHANNEL_TOKEN_REFRESH_THRESHOLD_SECONDS on the widget.
   @warning_window_seconds 600
-  # Matches Token's own clock leeway — killing at exactly `exp` while the verifier still
-  # accepts a 60s-old token would be two components disagreeing.
+  # Matches Token's own clock leeway, so the two do not disagree at the boundary.
   @grace_seconds 60
 
   @impl true
   @spec join(String.t(), map(), Phoenix.Socket.t()) ::
           {:ok, map(), Phoenix.Socket.t()} | {:error, map()}
   def join("web_channel:" <> contact_id, _params, socket) do
-    # `connect/3` verified the token once; a client can sit on an authenticated socket without
-    # joining until well past `exp` and the sweep would not start until it did. Both refusals
-    # answer identically, so a caller cannot tell an expired token from someone else's topic.
+    # `connect/3` verified the token once, and the sweep only starts here — so re-check expiry.
+    # Both refusals answer identically, so neither can be told from the other.
     if contact_id == to_string(socket.assigns.current_contact.id) and not token_expired?(socket) do
-      # The channel runs in its own process, separate from the connect/3 process, so org
-      # context has to be re-established here — same requirement as an Oban worker's perform/1.
+      # Its own process, so org context has to be re-established, as in an Oban worker.
       Repo.put_process_state(socket.assigns.organization_id)
       schedule_sweep()
 
@@ -86,9 +80,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     end
   end
 
-  # Glific.Processor.ConsumerWorkerMock (test env only) notifies the caller process once it
-  # has "processed" a message — swallow it here rather than crash, since nothing in this
-  # ticket hands a message to that consumer in the first place.
+  # ConsumerWorkerMock (test env) notifies its caller; swallow rather than crash the channel.
   def handle_info(:received_message_to_process, socket), do: {:noreply, socket}
 
   @impl true
@@ -109,9 +101,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   def handle_in("new_message", %{"body" => body}, socket) do
     contact = socket.assigns.current_contact
 
-    # No bsp_message_id here on purpose: the web channel has no BSP, and a client-supplied
-    # value under the (bsp_message_id, organization_id) unique index could collide with a
-    # real BSP id or suppress another contact's message. Postgres allows many nulls under it.
+    # No bsp_message_id: a client-supplied one could collide with a real BSP id under the
+    # unique index and suppress another contact's message.
     with :ok <- check_message_rate_limit(contact.id),
          {:ok, trimmed} <- validate_body(body),
          {:ok, _message} <-
@@ -132,9 +123,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   def handle_in("new_message", _params, socket),
     do: {:reply, {:error, %{reason: "blank_body"}}, socket}
 
-  # The file was already uploaded straight to GCS via a pre-signed URL from
-  # POST /api/v1/web_channel/upload-url, so the payload carries only the resulting url — no
-  # file bytes travel over the socket.
+  # The file went straight to GCS via a pre-signed URL; no bytes travel over the socket.
   def handle_in("new_media_message", %{"type" => type, "url" => url} = params, socket)
       when type in ~w(image audio video document) do
     contact = socket.assigns.current_contact
@@ -207,9 +196,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
       {:reply, :ok, socket}
     else
-      # Collapsed to one reason regardless of cause (bad signature, expired, or — the case that
-      # matters here — a token that verifies but belongs to a different contact/org) so a
-      # renewal can never be used to probe which. `current_contact` is untouched in every branch.
+      # One reason for every cause, so a renewal cannot be used to probe which.
       _ -> {:reply, {:error, %{reason: "invalid_token"}}, socket}
     end
   end
@@ -224,19 +211,13 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   defp token_expired?(socket),
     do: System.system_time(:second) >= socket.assigns.token_exp + @grace_seconds
 
-  # A persist failure must reply, not raise: a raise takes the channel process down, so the
-  # widget sees a socket teardown instead of the error its retry path is built on.
+  # Reply, never raise: a raise tears the socket down instead of erroring the send.
   @spec failure_reason(any()) :: String.t()
   defp failure_reason({:error, reason}) when is_binary(reason), do: reason
   defp failure_reason(_error), do: "send_failed"
 
-  # The declared `size` at signing time only bounds the honest case — a signed PUT URL cannot
-  # bind an upload's size or verify its bytes, so this is the authoritative check, run against
-  # the object's real metadata rather than a client-supplied claim. Only GCS objects are
-  # checked; a local-fallback URL (dev/test only) has no bucket/object to look up.
-  #
-  # A rejection here leaves the object in the bucket: cleanup is a bucket lifecycle rule's job,
-  # not this socket handler's.
+  # A signed PUT URL cannot bind size or inspect bytes, so the declared values are only a claim;
+  # this checks the real object. A rejection leaves it in the bucket for a lifecycle rule.
   @spec verify_uploaded_media(non_neg_integer(), String.t(), String.t(), String.t() | nil) ::
           :ok | {:error, :media_too_large | :invalid_media_url}
   defp verify_uploaded_media(organization_id, type, url, claimed_content_type) do
