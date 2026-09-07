@@ -65,9 +65,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
 
     test "rejects a token for a different organisation", %{conn: conn, contact: contact} do
       with_web_channel_enabled(fn ->
-        # web_channel_enabled is only on for org 1 (with_web_channel_enabled/1 above) — a token
-        # naming a different org must not piggyback on that, even though it verifies fine (the
-        # signing key is installation-wide today).
+        # The flag is on for org 1 only; a token naming another org verifies fine today, since
+        # the signing key is installation-wide.
         other_organization_id = contact.organization_id + 1
 
         foreign_token =
@@ -128,11 +127,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
                  "https://storage.googleapis.com/org-#{contact.organization_id}-bucket/"
                )
 
-        # Both halves must name the same object under the same prefix. `uploads/` is where every
-        # other object Glific writes to an organization's bucket lives (waffle's default
-        # storage_dir), so an object outside it sits apart from the bucket's lifecycle rules and
-        # access grants — and a `url` that disagrees with `upload_url` points at a file the PUT
-        # never created.
+        # Both halves must name the same object: a `url` that disagrees with `upload_url`
+        # points at a file the PUT never created.
         assert String.starts_with?(
                  url,
                  "https://storage.googleapis.com/org-#{contact.organization_id}-bucket/uploads/"
@@ -145,9 +141,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       end)
     end
 
-    # The object name is a bare, server-derived UUID with an extension taken from the content
-    # type — never anything the caller supplies — so a caller cannot escape the bucket's flat
-    # namespace or smuggle a dangerous extension (e.g. "html") through this endpoint.
+    # Server-derived throughout, so a caller cannot escape the prefix or choose the extension.
     test "derives the object's extension from the content type, ignoring anything the caller implies",
          %{conn: conn, contact: contact} do
       with_web_channel_enabled(fn ->

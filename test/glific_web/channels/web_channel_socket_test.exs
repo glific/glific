@@ -77,15 +77,11 @@ defmodule GlificWeb.WebChannelSocketTest do
          %{contact: contact} do
       organization_id = contact.organization_id
 
-      # `reset_web_channel_flag/1` (ChannelCase setup) already left this organization cached
-      # with the flag off. Confirm the stale cached field really is `false` before proving the
-      # socket doesn't rely on it.
+      # Confirm the cached field really is stale before proving the socket ignores it.
       cached = Partners.organization(organization_id)
       assert cached.web_channel_enabled == false
 
-      # Flip the flag WITHOUT refilling the cache. If `WebChannelSocket` read
-      # `organization.web_channel_enabled` (stamped only by `fill_cache/1`) instead of asking
-      # `Glific.Flags.get_flag_enabled/2` live, it would still see this stale `false`.
+      # Flipped without refilling the cache: reading the virtual field would still see false.
       FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: organization_id})
 
       try do

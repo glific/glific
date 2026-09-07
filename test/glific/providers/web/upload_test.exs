@@ -66,9 +66,7 @@ defmodule Glific.Providers.Web.UploadTest do
     test "rejects a URL on the same GCS host but under another organisation's bucket", %{
       organization_id: organization_id
     } do
-      # A raw client can't be told apart from a legitimate one by host alone: every org's GCS
-      # media lives under the same storage.googleapis.com host, so the bucket segment of the
-      # path is the only thing that can tell one organisation's media from another's.
+      # Every org's media shares one host, so the bucket segment is the only discriminator.
       url =
         "https://storage.googleapis.com/some-other-orgs-bucket/outbound/2026-01/web_channel/file.png"
 

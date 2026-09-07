@@ -29,9 +29,8 @@ defmodule Glific.Communications.WebMessage do
   @spec receive_message(map(), atom()) ::
           {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
-    # Every failure below returns rather than raises: the caller is a socket handler, and a raise
-    # there takes the channel down instead of replying. Two concurrent first messages from one
-    # number genuinely race on the (phone, organization_id) unique index.
+    # Returns rather than raises throughout: the caller is a socket handler, and a raise there
+    # takes the channel down instead of replying.
     with {:ok, contact} <-
            message_params.sender
            |> Map.put(:organization_id, organization_id)
@@ -62,8 +61,7 @@ defmodule Glific.Communications.WebMessage do
     result
   end
 
-  # The media row and the message are created in one transaction so a failed message insert
-  # cannot leave an orphaned messages_media row.
+  # One transaction, so a failed message insert cannot orphan a messages_media row.
   @spec receive_media(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   defp receive_media(message_params) do
     result =
@@ -71,10 +69,8 @@ defmodule Glific.Communications.WebMessage do
         with {:ok, media} <-
                message_params
                |> Map.put_new(:flow, :inbound)
-               # Already in the organization's own bucket, unlike BSP media, which arrives as a
-               # provider URL. Leaving gcs_url nil would make GCS.base_query/1 treat this as
-               # unsynced and have GcsWorker re-download and re-upload it into the same bucket
-               # under a second name.
+               # Already in the organization's bucket; nil would make GcsWorker re-upload it
+               # into the same bucket under a second name.
                |> Map.put_new(:gcs_url, message_params[:url])
                |> Messages.create_message_media(),
              {:ok, message} <-
@@ -104,9 +100,7 @@ defmodule Glific.Communications.WebMessage do
     end
   end
 
-  # The message body already carries the maps link, so a missing locations row degrades the
-  # message rather than invalidating it — but it must not vanish silently the way a piped-away
-  # result would.
+  # The body already carries the maps link, so this degrades the message rather than failing it.
   @spec log_location_failure({:ok, any()} | {:error, Ecto.Changeset.t()}) :: :ok
   defp log_location_failure({:error, changeset}) do
     Glific.log_error(

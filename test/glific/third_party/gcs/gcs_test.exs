@@ -28,9 +28,7 @@ defmodule Glific.GCSTest do
       assert String.contains?(url, "org-#{organization_id}-private-bucket")
       assert String.contains?(url, "X-Goog-Expires=300")
 
-      # A rewrite of this function's own signing removes the hardcoded
-      # `"private_bucket" => "test-private-cc"` override it used to have — the URL must name the
-      # organization's real configured bucket, never that constant.
+      # This function used to hardcode `"private_bucket" => "test-private-cc"`.
       refute String.contains?(url, "test-private-cc")
       assert String.starts_with?(url, "https://storage.googleapis.com/")
     end
@@ -94,10 +92,8 @@ defmodule Glific.GCSTest do
       configure_private_bucket(organization_a, "bucket-a", "org-a@example.com", private_key_a)
       configure_private_bucket(organization_b, "bucket-b", "org-b@example.com", private_key_b)
 
-      # A barrier, not a hope: both tasks report ready and then block on the same release
-      # message, so their two get_signed_url/3 calls (and the GenServer round-trips the old
-      # `load_goth/1` path made) genuinely overlap rather than merely running "concurrently"
-      # but actually executing one after the other.
+      # A barrier, not a hope: both block on the same release message so the calls really
+      # overlap rather than running one after the other.
       run = fn organization_id, expected_bucket ->
         Task.async(fn ->
           receive do
@@ -124,11 +120,8 @@ defmodule Glific.GCSTest do
         assert String.contains?(url, expected_bucket)
         refute String.contains?(url, other_bucket)
 
-        # The bucket alone proves nothing about the race this test exists for: it came from
-        # `put_bucket_name/1`, which uses the process dictionary and was therefore always
-        # per-caller. The identity is what `load_goth/1` shared, so `X-Goog-Credential` is the
-        # assertion that bites — the old code could name the other organization here while still
-        # pointing at the right bucket.
+        # The bucket was always per-caller; the identity is what was shared, so
+        # `X-Goog-Credential` is the assertion that bites.
         assert String.contains?(url, URI.encode(expected_email, &URI.char_unreserved?/1))
         refute String.contains?(url, URI.encode(other_email, &URI.char_unreserved?/1))
       end

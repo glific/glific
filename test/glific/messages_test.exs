@@ -1895,9 +1895,8 @@ defmodule Glific.MessagesTest do
       assert Messages.valid_media_content_type?("audio", "audio/mpeg")
     end
 
-    # The check used to look for the substrings "docx" and "xlxs" — the second a typo — neither of
-    # which appears in the types an Office document is actually served as, so no spreadsheet or
-    # Word document had ever passed it, on any channel.
+    # The old check looked for "docx" and "xlxs" (a typo), neither of which appears in the types
+    # Office documents are served as — so none had ever passed, on any channel.
     test "accepts the content types Office documents are really served as" do
       assert Messages.valid_media_content_type?(
                "document",

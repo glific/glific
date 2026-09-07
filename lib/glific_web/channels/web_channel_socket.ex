@@ -18,10 +18,8 @@ defmodule GlificWeb.WebChannelSocket do
   def connect(%{"token" => token}, socket, _connect_info) do
     with {:ok, payload} <- Token.verify_contact_token(token),
          true <- Flag.web_channel_enabled?(payload.org_id),
-         # The connect process is fresh (no org/user context). Permission-checked context
-         # calls like Contacts.get_contact!/1 raise "Invalid user" without it — same rule an
-         # Oban worker follows. There's no staff user behind a web connection, so run as the
-         # organization's root user.
+         # A fresh process with no context; permission-checked calls raise without it. No staff
+         # user is behind a web connection, so run as the organization's root user.
          :ok <- put_org_context(payload.org_id),
          %Contacts.Contact{} = contact <- Contacts.get_contact!(payload.contact_id) do
       socket =
@@ -37,8 +35,7 @@ defmodule GlificWeb.WebChannelSocket do
       _ -> :error
     end
   rescue
-    # Undifferentiated on purpose (ticket #5663): a caller must never learn *why* connect
-    # refused it, whether that's a bad token, a since-deleted contact, or anything else.
+    # Undifferentiated on purpose: a caller must never learn why connect refused it.
     _ -> :error
   end
 

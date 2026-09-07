@@ -327,9 +327,8 @@ defmodule Glific.Messages do
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  # Temporary, and removed by the "flows reply on web" ticket under epic #5659, which adds the
-  # real `Providers.Web.Message` outbound adapter. Until then nothing on a web-channel message
-  # may reach the BSP — a WhatsApp reply to a browser visitor is worse than no reply.
+  # Temporary until #5719 adds the outbound adapter; a WhatsApp reply to a browser visitor is
+  # worse than no reply.
   defp check_for_hsm_message(%{channel: channel}, _contact) when channel in [:web, "web"],
     do: {:error, "web channel sends are not implemented yet"}
 
@@ -1377,10 +1376,8 @@ defmodule Glific.Messages do
   end
 
   @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
-  # Matched on the exact base type, not a substring. The previous check looked for "docx" and
-  # "xlxs" — the latter a typo for "xlsx", and neither substring present in the
-  # application/vnd.openxmlformats-officedocument.* types that browsers and servers actually
-  # send, so no Office document has ever passed this on any channel.
+  # Exact base type, not a substring: the previous check looked for "docx" and "xlxs", neither
+  # of which appears in the openxmlformats types actually sent.
   defp do_validate_headers(headers, "document", _url) do
     content_type = base_content_type(headers["content-type"])
 
