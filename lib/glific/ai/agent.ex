@@ -327,8 +327,7 @@ defmodule Glific.AI.Agent do
     Keyword.put(config, :max_cost, config[:max_cost_usd] |> Decimal.new() |> Decimal.to_float())
   end
 
-  @spec describe(term()) :: String.t()
+  @spec describe(:disabled | Provider.failure()) :: String.t()
   defp describe(:disabled), do: "Glific AI is not enabled for this organisation."
-  defp describe({_kind, message}) when is_binary(message), do: message
-  defp describe(reason), do: Glific.SafeLog.safe_inspect(reason)
+  defp describe({_kind, message}), do: message
 end
