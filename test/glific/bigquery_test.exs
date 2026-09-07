@@ -197,6 +197,11 @@ defmodule Glific.BigQueryTest do
             "reason": "invalidQuery",
             "location": "q",
             "locationType": "parameter"
+          },
+          {
+            "message": "Query was stopped",
+            "domain": "global",
+            "reason": "stopped"
           }
         ],
         "status": "INVALID_ARGUMENT"
@@ -204,15 +209,16 @@ defmodule Glific.BigQueryTest do
     }
     """
 
-    test "keeps the status, the reason and the whole body on a single line" do
+    test "keeps the status, every reason and the whole body on a single line" do
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @envelope_body})
 
       assert String.starts_with?(
                summary,
-               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,stopped body="
              )
 
       assert summary =~ "TIMESTAMP_SUB does not support the MONTH date part"
+      assert summary =~ "Query was stopped"
       refute summary =~ "\n"
     end
 
@@ -252,6 +258,47 @@ defmodule Glific.BigQueryTest do
       refute summary =~ "\n"
     end
 
+    test "prints the reason from every record in the errors array" do
+      body =
+        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","errors":[) <>
+          ~s({"domain":"global","reason":"invalidQuery","message":"first"},) <>
+          ~s({"domain":"global","reason":"accessDenied","message":"second"},) <>
+          ~s({"domain":"global","reason":"rateLimitExceeded","message":"third"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT " <>
+                 "reason=invalidQuery,accessDenied,rateLimitExceeded body="
+             )
+    end
+
+    test "prints every reason from a top-level errors array too" do
+      body = ~s({"errors":[{"reason":"invalidQuery"},{"reason":"accessDenied"}]})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 reason=invalidQuery,accessDenied body="
+             )
+    end
+
+    test "skips records whose reason is missing or not a string" do
+      body =
+        ~s({"error":{"status":"INVALID_ARGUMENT","errors":[) <>
+          ~s({"reason":"invalidQuery"},{"domain":"global"},{"reason":{"a":1}},) <>
+          ~s("not-a-map",{"reason":"accessDenied"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,accessDenied body="
+             )
+    end
+
     test "renders a blank reason when the errors value is not a populated list" do
       for errors <- [~s({}), ~s([]), ~s("accessDenied"), ~s([{"domain":"global"}]), "null"] do
         body = ~s({"error":{"code":403,"errors":#{errors},"status":"PERMISSION_DENIED"}})
@@ -278,12 +325,18 @@ defmodule Glific.BigQueryTest do
       end
     end
 
-    test "collapses whitespace in the reason so the entry stays on one line" do
-      body = ~s({"error":{"errors":[{"reason":"access\\n  denied\\tnow"}]}})
+    test "collapses whitespace in every reason so the entry stays on one line" do
+      body =
+        ~s({"error":{"errors":[{"reason":"access\\n  denied\\tnow"},) <>
+          ~s({"reason":"quota\\nexceeded"}]}})
 
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
 
-      assert String.starts_with?(summary, "http_status=403 bq_status= reason=access denied now ")
+      assert String.starts_with?(
+               summary,
+               "http_status=403 bq_status= reason=access denied now,quota exceeded "
+             )
+
       refute summary =~ "\n"
       refute summary =~ "\t"
     end

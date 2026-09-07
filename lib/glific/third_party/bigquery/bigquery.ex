@@ -1049,10 +1049,10 @@ defmodule Glific.BigQuery do
   defp bigquery_error_fields(body) when is_binary(body) do
     case Jason.decode(body) do
       {:ok, %{"error" => %{} = error}} ->
-        "bq_status=#{error["status"]} reason=#{first_error_reason(error["errors"])} "
+        "bq_status=#{error["status"]} reason=#{error_reasons(error["errors"])} "
 
       {:ok, %{"errors" => [_ | _] = errors}} ->
-        "reason=#{first_error_reason(errors)} "
+        "reason=#{error_reasons(errors)} "
 
       _ ->
         ""
@@ -1061,13 +1061,17 @@ defmodule Glific.BigQuery do
 
   defp bigquery_error_fields(_body), do: ""
 
-  ## Matched rather than reached through `Access.at/1`, which raises on a head that is not a
-  ## map — a shape this handler must survive, since it runs while reporting another failure.
-  @spec first_error_reason(any()) :: String.t() | nil
-  defp first_error_reason([%{"reason" => reason} | _]) when is_binary(reason),
-    do: String.replace(reason, ~r/\s+/, " ")
+  @spec error_reasons(any()) :: String.t()
+  defp error_reasons(errors) when is_list(errors) do
+    errors
+    |> Enum.flat_map(fn
+      %{"reason" => reason} when is_binary(reason) -> [String.replace(reason, ~r/\s+/, " ")]
+      _ -> []
+    end)
+    |> Enum.join(",")
+  end
 
-  defp first_error_reason(_errors), do: nil
+  defp error_reasons(_errors), do: ""
 
   @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}
   defp bigquery_error_status(response) do
