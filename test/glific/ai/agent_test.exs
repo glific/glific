@@ -189,8 +189,13 @@ defmodule Glific.AI.AgentTest do
     assert request.status == :failed
     assert request.error =~ "6 steps"
 
-    steps = Event |> where([e], e.message_id == ^request.id) |> Repo.aggregate(:count)
-    assert steps >= 6
+    # Exactly the budget that was set: two events per tool call, three calls.
+    spent =
+      Event
+      |> where([e], e.message_id == ^request.id and e.type in [:tool_call, :tool_result])
+      |> Repo.aggregate(:count)
+
+    assert spent == 6
   end
 
   test "a run is stopped by the cost ceiling", %{user: user} do

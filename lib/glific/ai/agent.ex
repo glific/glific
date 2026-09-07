@@ -77,6 +77,7 @@ defmodule Glific.AI.Agent do
         model: Provider.impl().model(opts),
         skill: skill,
         tools: Skills.tools(skill),
+        modules: Skills.modules(skill),
         deadline: System.monotonic_time(:millisecond) + limits()[:max_duration_ms]
       }
 
@@ -92,7 +93,7 @@ defmodule Glific.AI.Agent do
           {:ok, module(), Provider.usage(), boolean()} | {:error, String.t()}
   defp resolve_skill(thread, message, opts) do
     case Keyword.get(opts, :skill) do
-      nil ->
+      blank when blank in [nil, ""] ->
         {skill, usage, classified?} =
           Router.classify(message.organization_id, question(thread), opts)
 
@@ -177,19 +178,21 @@ defmodule Glific.AI.Agent do
   end
 
   defp handle_reply(message, user, messages, reply, run, ctx) do
-    {results, run} = run_tools(message, user, reply.tool_calls, run)
+    {results, run} = run_tools(message, user, reply.tool_calls, run, ctx.modules)
 
     loop(message, user, messages ++ [reply | results], run, ctx)
   end
 
-  @spec run_tools(Message.t(), User.t(), [ChatMessage.tool_call()], run()) ::
+  @spec run_tools(Message.t(), User.t(), [ChatMessage.tool_call()], run(), [module()]) ::
           {[ChatMessage.t()], run()}
-  defp run_tools(message, user, calls, run) do
+  defp run_tools(message, user, calls, run, modules) do
     results =
       calls
       |> Enum.with_index()
       |> Task.async_stream(
-        fn {call, index} -> run_tool(message, user, call, run.step + index * 2) end,
+        fn {call, index} ->
+          run_tool(message, user, call, run.step + index * 2, modules)
+        end,
         max_concurrency: max(length(calls), 1),
         timeout: limits()[:max_duration_ms],
         on_timeout: :kill_task,
@@ -211,13 +214,13 @@ defmodule Glific.AI.Agent do
     ChatMessage.tool_result(id, name, Jason.encode!(%{error: "The lookup timed out."}))
   end
 
-  @spec run_tool(Message.t(), User.t(), ChatMessage.tool_call(), pos_integer()) ::
+  @spec run_tool(Message.t(), User.t(), ChatMessage.tool_call(), pos_integer(), [module()]) ::
           ChatMessage.t()
-  defp run_tool(message, user, %{id: id, name: name, args: args}, step) do
+  defp run_tool(message, user, %{id: id, name: name, args: args}, step, modules) do
     append(message, :tool_call, name, %{"arguments" => args}, id, step)
 
     body =
-      case Tools.run(name, args, user) do
+      case Tools.run(name, args, user, modules) do
         {:ok, result} -> encode(result)
         {:error, reason} -> Jason.encode!(%{error: reason})
       end
@@ -275,7 +278,7 @@ defmodule Glific.AI.Agent do
     mine = Enum.filter(thread, fn {message_id, _, _, _} -> message_id == message.id end)
     highest = mine |> Enum.map(fn {_, step, _, _} -> step end) |> Enum.max(fn -> 0 end)
 
-    %{usage: usage, step: highest + 1, steps: length(mine), answer_event_id: nil}
+    %{usage: usage, step: highest + 1, steps: 0, answer_event_id: nil}
   end
 
   @spec append(Message.t(), atom(), String.t() | nil, map(), String.t() | nil, pos_integer()) ::

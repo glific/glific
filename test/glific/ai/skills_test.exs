@@ -2,6 +2,7 @@ defmodule Glific.AI.SkillsTest do
   use Glific.DataCase
 
   alias Glific.AI.{Router, Skills, Tools}
+  alias Glific.Fixtures
   alias Glific.AI.Skills.{DraftHSM, Knowledge}
 
   setup do
@@ -53,6 +54,19 @@ defmodule Glific.AI.SkillsTest do
 
       # Every tool a skill declares must be one the gateway can actually run.
       for spec <- narrow, do: assert({:ok, {_module, ^spec}} = Tools.fetch(spec.name))
+    end
+
+    test "a tool outside the skill's set is refused when the model names it anyway" do
+      # A model can name a tool it knows from training rather than from the
+      # schemas it was sent, so narrowing has to hold at execution too.
+      user = Fixtures.user_fixture(%{organization_id: 1})
+
+      refute Enum.any?(Skills.tools(DraftHSM), &(&1.name == "list_contacts"))
+
+      assert {:error, message} =
+               Tools.run("list_contacts", %{}, user, Skills.modules(DraftHSM))
+
+      assert message =~ "list_contacts"
     end
   end
 

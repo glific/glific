@@ -126,6 +126,17 @@ defmodule Glific.AI.AskGlificTest do
              AskGlific.submit_feedback(%{message_id: "999999", rating: "like"}, user)
   end
 
+  test "an empty skill is classified rather than taken as a choice", %{user: user} do
+    # A client that always sends the field, with nothing selected, must still
+    # get routing rather than silently falling to the default skill.
+    FakeProvider.script([FakeProvider.answer("draft_hsm"), FakeProvider.answer("a draft")])
+
+    assert {:ok, result} = AskGlific.ask(%{query: "draft me a reminder", skill: ""}, user)
+
+    assert result.skill == "draft_hsm"
+    assert Repo.exists?(from(e in Event, where: e.type == :routing))
+  end
+
   test "a provider failure is recorded as a failed message, not lost", %{user: user} do
     # Nothing listening on the port, so the real adapter fails the way it would
     # against a provider that is down.

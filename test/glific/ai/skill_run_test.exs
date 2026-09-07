@@ -52,6 +52,22 @@ defmodule Glific.AI.SkillRunTest do
       assert :assistant in types
     end
 
+    test "a tool outside the skill's set is refused even when the model asks for it",
+         %{user: user} do
+      # The model can name a tool it knows from training rather than from the
+      # schemas it was sent, so the skill's set has to hold at execution.
+      FakeProvider.script([
+        FakeProvider.tool_use("list_contacts", %{}),
+        FakeProvider.answer("a draft")
+      ])
+
+      assert {:ok, _} = SkillRun.start("draft_hsm", "draft something", user)
+
+      result = Repo.one!(from(e in Event, where: e.type == :tool_result))
+      assert result.data["output"] =~ "There is no tool called"
+      assert result.data["output"] =~ "list_contacts"
+    end
+
     test "a named skill is not classified, so no routing event is recorded", %{user: user} do
       assert {:ok, _} = SkillRun.start("draft_hsm", "draft something", user)
 

@@ -36,14 +36,24 @@ defmodule Glific.AI.Skills do
     end
   end
 
-  @doc "The tools one skill may use, as the provider needs them."
-  @spec tools(module()) :: [Glific.AI.Tool.spec()]
-  def tools(skill) do
+  @doc """
+  The feature modules one skill may read through.
+
+  This is the set enforced when a tool runs, not only the set advertised to the
+  model: a skill cannot reach a module it does not declare, whatever the model
+  asks for.
+  """
+  @spec modules(module()) :: [module()]
+  def modules(skill) do
     case skill.tools() do
-      :all -> Tools.all()
-      modules -> Tools.all(modules)
+      :all -> Tools.modules()
+      modules -> modules
     end
   end
+
+  @doc "The tools one skill may use, as the provider needs them."
+  @spec tools(module()) :: [Glific.AI.Tool.spec()]
+  def tools(skill), do: skill |> modules() |> Tools.all()
 
   @doc """
   Every skill as `{name, description}`, for choosing between them.

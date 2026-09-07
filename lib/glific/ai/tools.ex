@@ -9,9 +9,8 @@ defmodule Glific.AI.Tools do
   What `run/4` guarantees:
 
     * **The read runs as the person who asked.** Their organisation and user are
-      installed before the tool runs, so a tool cannot reach another tenant and
-      cannot read past what the asker may see. Both stay set after the call
-      returns.
+      set on the process that runs the tool, so a tool cannot reach another
+      tenant and cannot read past what the asker may see.
     * **Failure is data, not a crash.** Unknown tools, invalid arguments and
       exceptions all come back as `{:error, message}` for the model to read.
     * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
