@@ -96,12 +96,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec download_flow_media(non_neg_integer(), String.t() | non_neg_integer()) ::
           {:ok, binary()} | {:error, String.t()}
   def download_flow_media(org_id, media_id) do
-    # Use the non-bang app_id/1 so a missing/misconfigured app id returns
-    # {:error, ...} instead of raising — keeps this function's contract a pure
-    # tagged tuple (the caller treats it as a soft failure).
     with {:ok, app_id} <- app_id(org_id) do
-      # A bare client (no retry middleware) so a 4xx is never re-sent — see the
-      # rate limit noted in the @doc above.
       Tesla.client([])
       |> Tesla.get("#{@filemanager_url}#{app_id}/wa/media/#{media_id}?download=true",
         headers: headers(:app_token, org_id: org_id)
