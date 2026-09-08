@@ -2,7 +2,7 @@ defmodule Glific.GCS.ObjectMetadataTest do
   @moduledoc false
   use Glific.DataCase
 
-  alias Glific.{GcsFixtures, GCS.ObjectMetadata}
+  alias Glific.{GCS.ObjectMetadata, GcsFixtures}
 
   setup %{organization_id: organization_id} do
     {private_key_pem, _public_key} = GcsFixtures.generate_rsa_keypair()
