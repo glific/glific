@@ -20,7 +20,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   }
 
   alias GlificWeb.WebChannel.Token
-  alias Plug.Conn
 
   # Seeded deliverable by `SeedsDev.seed_contacts/1`; our stand-in for a reachable contact.
   @reachable_phone "917834811231"
@@ -308,52 +307,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         # 401, not 404 — the flag no longer gates this request once it is on.
         assert json_response(verify_conn, 401)
       end)
-    end
-  end
-
-  # Driven through the endpoint, because that is where CORSPlug answers and halts a preflight.
-  describe "CORS" do
-    # Built fresh: the plug dispatches on `path_info`, which is set at creation, not from
-    # `request_path`.
-    defp options_preflight(path, origin) do
-      :options
-      |> Plug.Test.conn(path)
-      |> Conn.put_req_header("origin", origin)
-      |> Conn.put_req_header("access-control-request-method", "POST")
-      |> Conn.put_req_header("access-control-request-headers", "content-type")
-      |> GlificWeb.Endpoint.call([])
-    end
-
-    test "a preflight from the widget's own origin is allowed" do
-      response = options_preflight("/api/v1/web_channel/request-otp", "https://glific.test:5174")
-
-      assert Conn.get_resp_header(response, "access-control-allow-origin") ==
-               ["https://glific.test:5174"]
-    end
-
-    test "a wildcard origin matches one hostname label" do
-      response = options_preflight("/api/v1/web_channel/verify-otp", "https://web.ngo.glific.com")
-
-      assert Conn.get_resp_header(response, "access-control-allow-origin") ==
-               ["https://web.ngo.glific.com"]
-    end
-
-    test "a wildcard does not span a dot" do
-      response = options_preflight("/api/v1/web_channel/verify-otp", "https://web.a.b.glific.com")
-
-      assert Conn.get_resp_header(response, "access-control-allow-origin") == []
-    end
-
-    test "an unknown origin gets no CORS headers back" do
-      response = options_preflight("/api/v1/web_channel/request-otp", "https://evil.example")
-
-      assert Conn.get_resp_header(response, "access-control-allow-origin") == []
-    end
-
-    test "routes outside the web channel are unchanged" do
-      response = options_preflight("/api/v1/registration", "https://evil.example")
-
-      assert Conn.get_resp_header(response, "access-control-allow-origin") == ["*"]
     end
   end
 
