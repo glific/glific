@@ -938,7 +938,7 @@ sees the file:
 | 4 | **The server owns the object name and the file extension** | Objects are `uploads/<uuid>.<ext>`. The UUID is so a file cannot be guessed or attributed to an organisation from its URL. The extension is derived **server-side from the validated content type** — an earlier version took it from the client, which is a path-traversal and stored-XSS hole. |
 | 5 | **The object is verified *after* the upload, not before** | A signed PUT URL cannot constrain size and cannot inspect bytes, so anything the client declares at step 1 is a claim. After the upload Glific reads the object's real metadata and checks it against the declared content type, the type allowlist and the size limit. A message whose object fails is refused. |
 | 6 | **Metadata is read with a signed HEAD, not an anonymous GET** | So the check does not depend on the bucket being publicly readable, and so it stays correct if #5715 makes media private. A HEAD also means the bytes never cross the wire. |
-| 7 | **The message's `gcs_url` is set at creation** | The file is already in the organisation's bucket. Leaving `gcs_url` nil would make the existing sync worker treat it as unsynced and re-download and re-upload it into the same bucket under a second name. |
+| 7 | **`url`, `source_url` and `gcs_url` all take the same value at creation** | The file is already in the organisation's bucket, so there is nothing to sync. `is_nil(gcs_url)` is what `GCS.base_query/1` and `GcsWorker` gate on, so leaving it nil would have them re-download and re-upload the file into the same bucket under a second name. |
 | 8 | **The socket only accepts a URL this server issued** | `new_media_message` rejects any URL that is not on the expected host and under this organisation's own upload prefix, so the socket cannot be used to attach an arbitrary internet URL to a conversation. |
 | 9 | **The accepted type list is wider than WhatsApp's** | A browser produces `webp` images and `webm`/`m4a` audio that WhatsApp never sends, and desktop users attach Office documents. Sizes still follow WhatsApp's limits per type — see the open question below. |
 
@@ -946,28 +946,31 @@ sees the file:
 
 Ordered by what they block.
 
-**1 · Can media be private? — needs a product answer, tracked in #5715**
+**1 · Can media be private? — decided for v1: no. Deferred to #5715**
 
-Today `message_media.url` and `gcs_url` are public URLs, rendered directly by the staff inbox, the
-widget, and the flow editor. An unguessable UUID is not access control: anyone with the link has the
-file, forever, and links leak.
+Media stays in the organisation's own **public** bucket and the raw URL is rendered straight to the
+client. An unguessable v4 UUID object name is the only thing between a URL and the file: anyone who
+obtains one has it permanently, and links leak. **That is obscurity, not access control**, and v1
+accepts it deliberately.
 
-Making the bucket private breaks rendering **everywhere**, not just on the web channel — this is not
-a web-channel-local change. The candidate answer is a Glific endpoint that authorises the viewer and
-redirects to a short-lived signed URL, generated on demand. The cost was measured rather than
-assumed: RSA-2048 signing is **0.484 ms**, so a page of 100 images costs ~48 ms of signing — real,
-but not the N+1 disaster it was assumed to be.
+Two things make the trade hold. It is the status quo for every other kind of Glific media, WhatsApp
+included, so the web channel inherits an exposure rather than creating one. And the flip is not a
+web-channel change at all — the BSP and OpenAI both fetch media URLs **server-side with no Glific
+session**, so a private bucket takes WhatsApp media down for every organisation unless each is
+handled first.
 
-This is the one on this list with a compliance dimension, and it should be answered before an
-organisation handling sensitive beneficiary material is onboarded.
+#5715 is that work and carries the consequences in full. It has a compliance dimension and should be
+scheduled before an organisation handling sensitive beneficiary material is onboarded — not deferred
+indefinitely because v1 got away with it.
 
-**2 · Brand assets need the opposite policy — needs a product answer**
+**2 · Brand assets need the opposite policy — moot in v1, blocking for #5715**
 
 The display picture and favicon (#5711) render on the **sign-in page, before anyone authenticates**.
 They cannot be behind an authorising redirect. So "the NGO's bucket is private" and "the NGO's brand
 assets are public" have to be true at once — either two buckets, or two prefixes with different
 policies. #5711 currently asks NGOs to disable public URLs, which contradicts both this and the point
-above; that instruction cannot ship before #5715 resolves it.
+above. With v1 keeping buckets public that instruction is simply wrong today and should be removed;
+it becomes a real design question when #5715 flips them.
 
 **3 · CORS on a real bucket is unverified — engineering, tracked in #5722**
 
