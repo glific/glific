@@ -4,6 +4,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
 
   alias Glific.Fixtures
   alias GlificWeb.WebChannel.Token
+  alias Plug.Crypto.KeyGenerator
 
   @algorithm "HS256"
   @key_salt "web_channel_contact_jwt"
@@ -17,7 +18,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
   # signature check is what rejects them.
   defp signing_key do
     GlificWeb.Endpoint.config(:secret_key_base)
-    |> Plug.Crypto.KeyGenerator.generate(@key_salt, length: 32)
+    |> KeyGenerator.generate(@key_salt, length: 32)
     |> JOSE.JWK.from_oct()
   end
 

@@ -19,6 +19,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     Users
   }
 
+  alias FunWithFlags.Store.Cache
   alias GlificWeb.WebChannel.Token
 
   # Seeded deliverable by `SeedsDev.seed_contacts/1`; our stand-in for a reachable contact.
@@ -43,7 +44,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     # test enabled can still be live here. Resetting on the way in rather than trusting every
     # previous teardown; without this roughly one run in five failed.
     FunWithFlags.disable(:web_channel_enabled, for_actor: %{organization_id: 1})
-    FunWithFlags.Store.Cache.flush()
+    Cache.flush()
     Partners.organization(1) |> Partners.fill_cache()
 
     :ok
