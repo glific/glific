@@ -775,6 +775,32 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
+  describe "the OTP the login mints" do
+    test "mints a code that verify-otp accepts", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => @reachable_phone})
+        )
+
+        %{code: code} =
+          Agent.get(
+            PasswordlessAuth.Store,
+            &Map.fetch!(&1, "web_channel:#{@reachable_phone}")
+          )
+
+        assert %{status: 200} =
+                 post(
+                   conn,
+                   Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                     "phone" => @reachable_phone,
+                     "otp" => code
+                   })
+                 )
+      end)
+    end
+  end
+
   describe "verify_otp/2" do
     test "a correct code returns a valid contact-scoped token and resolves the contact", %{
       conn: conn,

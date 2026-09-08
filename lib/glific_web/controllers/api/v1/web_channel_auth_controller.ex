@@ -13,6 +13,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   use GlificWeb, :controller
 
+  require Logger
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -30,6 +32,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # Identical whether or not `phone` is a known contact and whether or not delivery succeeded, so
   # the endpoint cannot be used to enumerate an organization's contacts.
   @request_otp_message "If this number is registered on WhatsApp, you will receive a one-time code"
+
+  # Compile-time, not a config read: a runtime flag can be flipped by an env var or an IEx console
+  # on production, and what this prints is a live credential.
+  @log_otp Mix.env() == :dev
 
   # The IP limit is usually a shared network, where "wait 30 seconds" would be wrong advice.
   @phone_throttled_message "An OTP was just sent. Please try again in 30 seconds."
@@ -270,7 +276,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
     with {:ok, contact} <- ensure_contact(organization_id, phone),
          true <- can_send_message_to?(contact),
-         code = OTP.generate_code(:web_channel, phone),
+         code = mint_code(phone),
          {:ok, _message} <- Messages.create_and_send_otp_verification_message(contact, code) do
       :ok
     else
@@ -295,6 +301,16 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       )
 
       :ok
+  end
+
+  # Local development has no BSP, so the HSM never arrives and there is no way to read the code.
+  # It is minted here regardless of whether the send succeeds, so logging it is enough — no bypass
+  # in `verify_code/3`, which means dev exercises the same verification path as production.
+  @spec mint_code(String.t()) :: String.t()
+  defp mint_code(phone) do
+    code = OTP.generate_code(:web_channel, phone)
+    if @log_otp, do: Logger.info("Web channel OTP for #{phone}: #{code}")
+    code
   end
 
   # So whoever reads the alert does not have to reverse-engineer a MatchError into #5662's
