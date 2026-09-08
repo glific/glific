@@ -131,13 +131,15 @@ defmodule Glific.WhatsappFormsResponses do
   Non-media fields (strings, multi-select lists) are returned untouched. Any single
   download/upload failure is logged and marks that entry with `download_failed`, so
   one bad photo never blocks the rest of the response and is never re-downloaded.
+
+  Items within one media field are downloaded concurrently (see `@media_concurrency`).
   """
   @spec save_response_media(map(), non_neg_integer()) :: map()
   def save_response_media(raw_response, organization_id) when is_map(raw_response) do
     Map.new(raw_response, fn
       {key, value} when is_list(value) ->
         if media_list?(value),
-          do: {key, Enum.map(value, &save_one_media(&1, organization_id))},
+          do: {key, save_media_list(value, organization_id)},
           else: {key, value}
 
       kv ->
@@ -146,6 +148,35 @@ defmodule Glific.WhatsappFormsResponses do
   end
 
   def save_response_media(raw_response, _organization_id), do: raw_response
+
+  @media_concurrency 3
+  @media_timeout :timer.minutes(1)
+
+  @spec save_media_list([map()], non_neg_integer()) :: [map()]
+  defp save_media_list(media_list, organization_id) do
+    media_list
+    |> Task.async_stream(
+      fn media ->
+        Repo.put_process_state(organization_id)
+        save_one_media(media, organization_id)
+      end,
+      max_concurrency: @media_concurrency,
+      timeout: @media_timeout,
+      on_timeout: :kill_task
+    )
+    |> Enum.zip(media_list)
+    |> Enum.map(fn
+      {{:ok, media}, _media} ->
+        media
+
+      {{:exit, reason}, media} ->
+        Logger.error(
+          "Timed out saving WhatsApp form media #{media["file_name"]} (id #{media["id"]}): #{SafeLog.safe_inspect(reason)}"
+        )
+
+        Map.put(media, "download_failed", true)
+    end)
+  end
 
   # A media list is a NON-EMPTY list where EVERY item carries the WhatsApp media
   # fields we need to download it. Validating all items (not just the head) means a
