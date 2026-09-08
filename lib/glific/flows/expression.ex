@@ -1088,6 +1088,8 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:in, [a, b]) when is_list(b), do: Enum.member?(b, a)
   defp kernel_call(:in, _), do: reject("in requires a list")
   defp kernel_call(:to_string, [a]), do: to_string(a)
+  # Whitelisted expression function — the result is flow output, not a log line.
+  # credo:disable-for-next-line GlificCredo.Checks.NoRawInspect
   defp kernel_call(:inspect, [a]), do: inspect(a)
   defp kernel_call(:is_number, [a]), do: is_number(a)
   defp kernel_call(:is_binary, [a]), do: is_binary(a)
