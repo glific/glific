@@ -502,9 +502,7 @@ defmodule Glific.Flows.ExpressionTest do
 
     test "an fn param that fails to match at call time returns {:error, _}" do
       assert {:error, _} =
-               Expression.eval(
-                 ~S/<%= Enum.map([{:error, "boom"}], fn {:ok, v} -> v end) %>/
-               )
+               Expression.eval(~S/<%= Enum.map([{:error, "boom"}], fn {:ok, v} -> v end) %>/)
     end
 
     test "invalid fn param patterns are rejected at publish time" do
