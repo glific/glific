@@ -62,7 +62,6 @@ directly from the web layer. Use the `Repo` helper functions instead of hand-wri
   rarely and deliberately (SaaS/admin/cron paths only).
 - **In Oban workers you must call `Repo.put_process_state(org_id)`** (or `put_organization_id`)
   at the top of `perform/1` — the job runs in a fresh process with no org context. Forgetting
-  this is the #1 source of "works in dev, leaks/empties in prod" bugs. See `Contacts.BulkImportWorker`.
 
 ## Oban workers (background jobs)
 
