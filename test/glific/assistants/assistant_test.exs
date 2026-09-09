@@ -298,8 +298,8 @@ defmodule Glific.Assistants.AssistantTest do
       end)
 
       for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"],
-          cased <- [extension, String.upcase(extension), String.capitalize(extension)] do
-        upload = build_upload_for_extension(cased)
+          cased_extension <- [extension, String.upcase(extension), String.capitalize(extension)] do
+        upload = build_upload_for_extension(cased_extension)
 
         assert {:ok, %{filename: filename}} =
                  Assistants.upload_file(%{media: upload}, organization_id)
@@ -307,12 +307,11 @@ defmodule Glific.Assistants.AssistantTest do
         assert filename == "sample.#{extension}"
       end
 
-      for cased <- ["png", "PNG", "Png"] do
+      for cased_extension <- ["png", "PNG", "Png"] do
+        unsupported_upload = build_upload_for_extension(cased_extension)
+
         assert {:error, "Files with extension '.png' not supported in Assistants"} =
-                 Assistants.upload_file(
-                   %{media: build_upload_for_extension(cased)},
-                   organization_id
-                 )
+                 Assistants.upload_file(%{media: unsupported_upload}, organization_id)
       end
     end
 
@@ -576,9 +575,6 @@ defmodule Glific.Assistants.AssistantTest do
     end
   end
 
-  defp multipart_filename(%Tesla.Multipart{parts: parts}),
-    do: Enum.find_value(parts, fn part -> part.dispositions[:filename] end)
-
   defp build_upload_for_extension(extension) do
     tmp_path =
       Path.join(
@@ -607,4 +603,7 @@ defmodule Glific.Assistants.AssistantTest do
         is_active: true
       })
   end
+
+  defp multipart_filename(%Tesla.Multipart{parts: parts}),
+    do: Enum.find_value(parts, fn part -> part.dispositions[:filename] end)
 end
