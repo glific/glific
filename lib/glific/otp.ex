@@ -18,10 +18,12 @@ defmodule Glific.OTP do
   * `:auth` — codes delivered over WhatsApp to the contact's own phone (registration, password
     reset, password change).
   * `:trial` — codes emailed to the address supplied in a trial signup request.
+  * `:web_channel` — codes delivered over WhatsApp to a beneficiary signing in to the browser
+    widget.
   """
-  @type scope :: :auth | :trial
+  @type scope :: :auth | :trial | :web_channel
 
-  @scopes [:auth, :trial]
+  @scopes [:auth, :trial, :web_channel]
 
   @doc "Generates and stores an OTP for the given phone under the given scope."
   @spec generate_code(scope(), String.t()) :: String.t()
