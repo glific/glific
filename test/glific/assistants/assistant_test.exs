@@ -281,13 +281,13 @@ defmodule Glific.Assistants.AssistantTest do
   describe "upload_file/2" do
     test "validates assistant-supported file extensions", %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
-        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+        %{method: :post, url: "This is not a secret/api/v1/documents/", body: multipart} ->
           %Tesla.Env{
             status: 200,
             body: %{
               success: true,
               data: %{
-                fname: "uploaded",
+                fname: multipart_filename(multipart),
                 id: "d33539f6-2196-477c-a127-0f17f04ef133",
                 inserted_at: "2026-01-30T10:51:16.872363"
               },
@@ -297,15 +297,23 @@ defmodule Glific.Assistants.AssistantTest do
           }
       end)
 
-      for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"] do
-        upload = build_upload_for_extension(extension)
-        assert {:ok, _} = Assistants.upload_file(%{media: upload}, organization_id)
+      for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"],
+          cased <- [extension, String.upcase(extension), String.capitalize(extension)] do
+        upload = build_upload_for_extension(cased)
+
+        assert {:ok, %{filename: filename}} =
+                 Assistants.upload_file(%{media: upload}, organization_id)
+
+        assert filename == "sample.#{extension}"
       end
 
-      unsupported_upload = build_upload_for_extension("png")
-
-      assert {:error, "Files with extension '.png' not supported in Assistants"} =
-               Assistants.upload_file(%{media: unsupported_upload}, organization_id)
+      for cased <- ["png", "PNG", "Png"] do
+        assert {:error, "Files with extension '.png' not supported in Assistants"} =
+                 Assistants.upload_file(
+                   %{media: build_upload_for_extension(cased)},
+                   organization_id
+                 )
+      end
     end
 
     test "uploads the file successfully to Kaapi", %{
@@ -567,6 +575,9 @@ defmodule Glific.Assistants.AssistantTest do
       assert refreshed.updated_at == original_updated_at
     end
   end
+
+  defp multipart_filename(%Tesla.Multipart{parts: parts}),
+    do: Enum.find_value(parts, fn part -> part.dispositions[:filename] end)
 
   defp build_upload_for_extension(extension) do
     tmp_path =
