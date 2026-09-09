@@ -82,7 +82,7 @@ defmodule Glific.AI.Agent do
           tools: Skills.tools(skill),
           modules: Skills.modules(skill),
           started_at: started_at,
-          deadline: started_at + limits()[:max_duration_ms]
+          deadline: started_at + limits()[:max_run_duration_ms]
         }
 
         messages = [ChatMessage.system(skill.prompt()) | Enum.map(thread, &to_chat_message/1)]
@@ -154,15 +154,17 @@ defmodule Glific.AI.Agent do
   @spec loop(Message.t(), User.t(), [ChatMessage.t()], run(), map()) :: outcome()
   defp loop(message, user, messages, run, ctx) do
     cond do
-      run.steps >= limits()[:max_steps] ->
-        {:stopped, "Reached the limit of #{limits()[:max_steps]} steps without finishing.", run}
-
-      run.usage.cost > limits()[:max_cost] ->
-        {:stopped, "Reached the cost ceiling of $#{limits()[:max_cost_usd]} for one question.",
+      run.steps >= limits()[:max_run_steps] ->
+        {:stopped, "Reached the limit of #{limits()[:max_run_steps]} steps without finishing.",
          run}
 
+      run.usage.cost > limits()[:max_run_cost] ->
+        {:stopped,
+         "Reached the cost ceiling of $#{limits()[:max_run_cost_usd]} for one question.", run}
+
       System.monotonic_time(:millisecond) > ctx.deadline ->
-        {:stopped, "Took longer than #{div(limits()[:max_duration_ms], 1000)}s to answer.", run}
+        {:stopped, "Took longer than #{div(limits()[:max_run_duration_ms], 1000)}s to answer.",
+         run}
 
       true ->
         take_turn(message, user, messages, run, ctx)
@@ -222,7 +224,7 @@ defmodule Glific.AI.Agent do
       |> Task.async_stream(
         fn {call, index} -> run_tool(message, user, call, run.step + index * 2 + 1, modules) end,
         max_concurrency: max(length(running), 1),
-        timeout: limits()[:max_duration_ms],
+        timeout: limits()[:max_run_duration_ms],
         on_timeout: :kill_task,
         ordered: true
       )
@@ -234,13 +236,14 @@ defmodule Glific.AI.Agent do
 
     taken = 2 * length(running)
 
-    {results ++ Enum.map(skipped, &out_of_steps/1),
-     %{run | step: run.step + taken, steps: run.steps + taken}}
+    steps = if skipped == [], do: run.steps + taken, else: limits()[:max_run_steps]
+
+    {results ++ Enum.map(skipped, &out_of_steps/1), %{run | step: run.step + taken, steps: steps}}
   end
 
   @spec affordable(run()) :: non_neg_integer()
   defp affordable(run) do
-    (limits()[:max_steps] - run.steps)
+    (limits()[:max_run_steps] - run.steps)
     |> max(0)
     |> div(2)
   end
@@ -385,14 +388,18 @@ defmodule Glific.AI.Agent do
 
   @spec limits() :: keyword()
   defp limits do
-    defaults = [max_steps: 12, max_cost_usd: "0.50", max_duration_ms: 120_000]
+    defaults = [max_run_steps: 12, max_run_cost_usd: "0.50", max_run_duration_ms: 120_000]
 
     config =
       :glific
       |> Application.get_env(__MODULE__, [])
       |> then(&Keyword.merge(defaults, &1))
 
-    Keyword.put(config, :max_cost, config[:max_cost_usd] |> Decimal.new() |> Decimal.to_float())
+    Keyword.put(
+      config,
+      :max_run_cost,
+      config[:max_run_cost_usd] |> Decimal.new() |> Decimal.to_float()
+    )
   end
 
   @spec describe(:disabled | Provider.failure()) :: String.t()

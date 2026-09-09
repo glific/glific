@@ -189,11 +189,28 @@ defmodule Glific.AI.AgentTest do
            ]
   end
 
+  test "an odd step ceiling stops the run instead of spinning", %{user: user} do
+    set_limits(max_run_steps: 5, max_run_duration_ms: 5_000)
+
+    FakeProvider.always(
+      FakeProvider.tool_uses([
+        {"list_flows", %{}},
+        {"list_templates", %{}},
+        {"list_reference", %{"kind" => "tags"}}
+      ])
+    )
+
+    {_conversation, request} = ask("tell me everything", user)
+
+    assert {:error, reason} = Agent.run(request, user, skill: "knowledge")
+    assert reason =~ "limit of 5 steps"
+  end
+
   test "a turn cannot spend more steps than the budget has left", %{user: user} do
     # Two steps per call and a budget of four, so only two of the three asked
     # for may run. Without a reservation the whole turn would start and spend
     # six.
-    set_limits(max_steps: 4)
+    set_limits(max_run_steps: 4)
 
     FakeProvider.always(
       FakeProvider.tool_uses([
@@ -245,7 +262,7 @@ defmodule Glific.AI.AgentTest do
 
   test "a model that keeps calling tools is stopped by the step limit", %{user: user} do
     FakeProvider.always(FakeProvider.tool_use("list_flows"))
-    set_limits(max_steps: 6)
+    set_limits(max_run_steps: 6)
 
     {_conversation, request} = ask("loop forever", user)
 
@@ -269,7 +286,7 @@ defmodule Glific.AI.AgentTest do
     FakeProvider.always(FakeProvider.tool_use("list_flows"))
     # A real call costs fractions of a cent, so the ceiling is set below one call
     # rather than inventing an implausible price.
-    set_limits(max_cost_usd: "0.00001", max_steps: 50)
+    set_limits(max_run_cost_usd: "0.00001", max_run_steps: 50)
 
     {_conversation, request} = ask("expensive question", user)
 

@@ -11,7 +11,11 @@ defmodule Glific.AI.Worker do
 
   alias Glific.{AI.Agent, AI.Message, Repo, Users.User}
 
-  @doc "Queues a request to run."
+  @doc """
+
+  Queues a request to run.
+
+  """
   @spec enqueue(Message.t()) :: {:ok, Oban.Job.t()} | {:error, term()}
   def enqueue(%Message{} = message) do
     %{message_id: message.id, organization_id: message.organization_id}

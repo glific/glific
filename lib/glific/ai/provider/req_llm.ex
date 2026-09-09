@@ -33,7 +33,11 @@ defmodule Glific.AI.Provider.ReqLLM do
     end
   end
 
-  @doc "The model this call resolves to, from `model:` or configuration."
+  @doc """
+
+  The model this call resolves to, from `model:` or configuration.
+
+  """
   @impl Glific.AI.Provider
   @spec model(keyword()) :: String.t() | nil
   def model(opts) do

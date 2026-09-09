@@ -16,7 +16,11 @@ defmodule Glific.AI.Skill do
   Adding a skill is a module plus one line in `Glific.AI.Skills`.
   """
 
-  @doc "Identifier used in the API and recorded on the message row. Stable."
+  @doc """
+
+  Identifier used in the API and recorded on the message row. Stable.
+
+  """
   @callback name() :: String.t()
 
   @doc """
@@ -27,7 +31,11 @@ defmodule Glific.AI.Skill do
   """
   @callback description() :: String.t()
 
-  @doc "The system prompt for this skill."
+  @doc """
+
+  The system prompt for this skill.
+
+  """
   @callback prompt() :: String.t()
 
   @doc """

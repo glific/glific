@@ -19,7 +19,11 @@ defmodule Glific.AI.Instrumentation do
   @question_cost_metric "glific_ai_question_cost_micro_usd"
   @feedback_metric "glific_ai_feedback_count"
 
-  @doc "Wrap a provider `generate/2` with outcome count + latency telemetry."
+  @doc """
+
+  Wrap a provider `generate/2` with outcome count + latency telemetry.
+
+  """
   @spec around(module(), keyword(), (-> any())) :: any()
   def around(module, opts, fun) when is_atom(module) and is_function(fun, 0) do
     start = System.monotonic_time(:millisecond)
@@ -55,7 +59,11 @@ defmodule Glific.AI.Instrumentation do
     :ok
   end
 
-  @doc "Records a rating a person gave an answer."
+  @doc """
+
+  Records a rating a person gave an answer.
+
+  """
   @spec feedback(String.t() | nil) :: :ok
   def feedback(rating) do
     Appsignal.increment_counter(@feedback_metric, 1, %{rating: rating || "unknown"})

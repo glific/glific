@@ -64,7 +64,11 @@ defmodule Glific.AI.Message do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @doc "Standard changeset pattern we use for all data types"
+  @doc """
+
+  Standard changeset pattern we use for all data types
+
+  """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message

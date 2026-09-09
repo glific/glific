@@ -12,24 +12,26 @@ defmodule Glific.AI.Skills do
     Glific.AI.Skills.DraftHSM
   ]
 
-  @doc "Every available skill."
+  @doc """
+
+  Every available skill.
+
+  """
   @spec all() :: [module()]
   def all, do: @skills
 
   @doc """
-  The skill used when intent is unclear.
 
-  Answering from the organisation's own data is the safe fallback: it reads and
-  never acts.
+  The skill used when intent is unclear, which reads and never acts.
+
   """
   @spec default() :: module()
   def default, do: Glific.AI.Skills.Knowledge
 
   @doc """
-  Looks a skill up by the name the API uses.
 
-  A name that matches nothing is an error. Callers that want the default skill
-  ask for it by name or use `default/0`.
+  Looks a skill up by the name the API uses; a name matching nothing is an error.
+
   """
   @spec fetch(String.t() | nil) :: {:ok, module()} | {:error, String.t()}
   def fetch(name) do
@@ -40,11 +42,9 @@ defmodule Glific.AI.Skills do
   end
 
   @doc """
-  The feature modules one skill may read through.
 
-  This is the set enforced when a tool runs, not only the set advertised to the
-  model: a skill cannot reach a module it does not declare, whatever the model
-  asks for.
+  The feature modules one skill may read through, enforced when a tool runs.
+
   """
   @spec modules(module()) :: [module()]
   def modules(skill) do
@@ -54,14 +54,18 @@ defmodule Glific.AI.Skills do
     end
   end
 
-  @doc "The tools one skill may use, as the provider needs them."
+  @doc """
+
+  The tools one skill may use, as the provider needs them.
+
+  """
   @spec tools(module()) :: [Glific.AI.Tool.spec()]
   def tools(skill), do: skill |> modules() |> Tools.all()
 
   @doc """
+
   Every skill as `{name, description}`, for choosing between them.
 
-  Also what an API can offer a UI so buttons are not hardcoded against this list.
   """
   @spec catalogue() :: [%{name: String.t(), description: String.t()}]
   def catalogue do

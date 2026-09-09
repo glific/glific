@@ -273,9 +273,9 @@ config :glific, Glific.AI,
 # so these are the circuit breaker: whichever is reached first ends the run and
 # records why.
 config :glific, Glific.AI.Agent,
-  max_steps: 12,
-  max_cost_usd: "0.50",
-  max_duration_ms: 120_000
+  max_run_steps: 12,
+  max_run_cost_usd: "0.50",
+  max_run_duration_ms: 120_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
