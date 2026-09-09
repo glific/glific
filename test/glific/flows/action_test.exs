@@ -893,11 +893,76 @@ defmodule Glific.Flows.ActionTest do
     # before the wait clauses were moved above the WA group catch-all this raised
     # UndefinedFunctionError instead of arming the timer
     assert {:wait, %FlowContext{} = waiting_context, []} = Action.execute(action, context, [])
+
+    # a regression that armed wakeup_at at "now" would pass a mere non-nil assertion
+    assert_in_delta DateTime.diff(waiting_context.wakeup_at, DateTime.utc_now()),
+                    action.wait_time,
+                    5
+
+    assert waiting_context.is_await_result == false
+
+    no_response = Messages.create_temp_message(attrs.organization_id, "No Response")
+    assert {:ok, %FlowContext{}, []} = Action.execute(action, context, [no_response])
+  end
+
+  test "a WA Group context parked by wait_for_time is resumed by wakeup_one/1",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail] = flow.nodes
+
+    context =
+      Fixtures.wa_flow_context_fixture(%{
+        node_uuid: node.uuid,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id,
+        organization_id: organization_id
+      })
+      |> Repo.preload([:flow, :wa_group])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: node.uuid,
+      type: "wait_for_time",
+      wait_time: 900
+    }
+
+    assert {:wait, waiting_context, []} = Action.execute(action, context, [])
     assert waiting_context.wakeup_at != nil
 
-    # woken by its own timeout, the wait proceeds along the normal path
-    assert {:ok, %FlowContext{}, []} =
-             Action.execute(action, context, [%{body: "No Response"}])
+    # wakeup_one/1 (no message) is the path a wait timer actually takes: mark_flows_complete and
+    # handle_nil_message must both tolerate a context with contact_id: nil
+    assert {:ok, _context, []} = FlowContext.wakeup_one(waiting_context)
+
+    resumed = Repo.get!(FlowContext, waiting_context.id)
+    assert resumed.wakeup_at == nil
+    assert resumed.is_await_result == false
+  end
+
+  test "execute a wait_for_result action for a WA Group is rejected, not parked", attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        flow_id: flow.id,
+        flow_uuid: Ecto.UUID.generate(),
+        wa_group_id: wa_group.id,
+        organization_id: attrs.organization_id
+      })
+
+    context = Repo.preload(context, [:flow, :wa_group])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "wait_for_result",
+      wait_time: 900
+    }
+
+    # await_context/2 filters on contact_id, so a parked group context is unresumable by a result
+    assert {:ok, skipped_context, []} = Action.execute(action, context, [])
+    assert skipped_context.wakeup_at == nil
+    assert skipped_context.is_await_result == false
   end
 
   test "execute an action for WA Group when type is set_run_result", attrs do
@@ -1630,11 +1695,16 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute a wa group unsupported action skips the node instead of raising",
-       _attrs do
+       attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
 
     context =
-      %FlowContext{wa_group_id: wa_group.id, flow_id: 1, results: %{"test_result" => "field1"}}
+      %FlowContext{
+        wa_group_id: wa_group.id,
+        flow_id: 1,
+        organization_id: attrs.organization_id,
+        results: %{"test_result" => "field1"}
+      }
       |> Repo.preload([:wa_group, :flow])
 
     action = %Action{
