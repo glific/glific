@@ -1,5 +1,6 @@
 defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: false
+  use Oban.Pro.Testing, repo: Glific.Repo
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -18,7 +19,8 @@ defmodule Glific.Flows.FlowContextTest do
     Flow,
     FlowContext,
     FlowResult,
-    Node
+    Node,
+    WakeupWorker
   }
 
   @valid_attrs %{
@@ -300,6 +302,102 @@ defmodule Glific.Flows.FlowContextTest do
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert flow_context.wakeup_at == nil
     assert flow_context.is_background_flow == false
+  end
+
+  describe "wakeup_flows/0" do
+    test "queues a wakeup job for an organization that has an overdue context",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      assert_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "does not queue a job for an organization whose only context isn't due yet",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      five_minutes_from_now = Timex.shift(Timex.now(), minutes: 5)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: five_minutes_from_now,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      refute_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "does not queue a job for an organization whose only overdue context is already completed",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        completed_at: Timex.now(),
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      refute_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "calling wakeup_flows/0 twice for the same overdue organization only ever queues one job",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+      FlowContext.wakeup_flows()
+
+      jobs =
+        all_enqueued(worker: WakeupWorker, prefix: "global")
+        |> Enum.filter(&(&1.args["organization_id"] == organization_id))
+
+      assert length(jobs) == 1
+    end
   end
 
   test "resume_contact_flow/3 will process all the context for the contact",

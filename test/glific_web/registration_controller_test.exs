@@ -7,6 +7,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    OTP,
     Partners.Saas,
     Repo,
     Seeds.SeedsDev,
@@ -604,6 +605,26 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["access_token"]
       assert json["data"]["renewal_token"]
       assert json["data"]["token_expiry_time"]
+    end
+
+    test "with an otp minted by the trial signup flow", %{conn: conn} do
+      user = user_fixture()
+
+      # The trial flow mails its OTP to a self-declared address, so a code minted there must
+      # never authorize a password reset for the same phone.
+      invalid_params = %{
+        "user" => %{
+          "phone" => user.phone,
+          "password" => @new_password,
+          "otp" => OTP.generate_code(:trial, user.phone)
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+      assert json = json_response(conn, 500)
+      assert json["error"]["status"] == 500
+      assert json["error"]["message"] == "Couldn't update user password"
+      assert Repo.get!(Users.User, user.id).password_hash == user.password_hash
     end
 
     test "with wrong otp", %{conn: conn} do

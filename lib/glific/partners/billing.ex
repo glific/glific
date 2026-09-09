@@ -7,7 +7,7 @@ defmodule Glific.Partners.Billing do
   use Ecto.Schema
   use Publicist
   import Ecto.Changeset
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
 
   alias __MODULE__

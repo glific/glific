@@ -3,7 +3,7 @@ defmodule Glific.Flows.ContactField do
   Since many of the functions set/update fields in contact and related tables, lets
   centralize all the code here for now
   """
-  import Ecto.Query, warn: false
+  import Ecto.Query
   import Ecto.Changeset
 
   alias Glific.{

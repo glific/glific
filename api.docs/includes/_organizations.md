@@ -459,6 +459,12 @@ Enabled days Ids represets weekdays starting from 1 for Monday.
 
 ## Delete an Organization
 
+Deletes the organization asynchronously via a background job, so the request returns
+immediately regardless of how much data the organization holds. The organization must be in
+`ready_to_delete` status (set it with `updateOrganizationStatus` first); the outcome is
+reported through an in-app notification in the `Organization` category — `info` on success,
+`critical` on failure.
+
 ```graphql
 mutation deleteOrganization($id: ID!) {
   deleteOrganization(id: $id) {

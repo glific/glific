@@ -58,7 +58,8 @@ jobs:
           sed -i 's/:max_rate_limit_request, 60/:max_rate_limit_request, 300/g' config/config.exs
 
       - name: Clone frontend
-        run: git clone https://github.com/glific/glific-frontend.git
+        run: |
+          git clone https://github.com/glific/glific-frontend.git
 
       - name: Use latest Node.js
         uses: actions/setup-node@v6
@@ -165,10 +166,7 @@ jobs:
       - name: Setup cypress
         run: |
           cd glific-frontend
-          git clone https://github.com/glific/cypress-testing.git
-          cp -r cypress-testing/cypress ./cypress
-          cp cypress-testing/cypress.config.ts.example ./cypress.config.ts
-          yarn add cypress@15.15.0
+          cp cypress.config.ts.example cypress.config.ts
 
       - name: Run glific frontend
         run: |

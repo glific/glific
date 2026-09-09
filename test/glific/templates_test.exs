@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Caches,
     Fixtures,
     Mails.MailLog,
     Messages,
@@ -25,6 +26,9 @@ defmodule Glific.TemplatesTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.hsm_templates(organization)
+    active_language_ids = Partners.organization(organization.id).active_language_ids
+    Caches.remove(organization.id, [{:template_library, active_language_ids}])
+
     :ok
   end
 
@@ -97,8 +101,8 @@ defmodule Glific.TemplatesTest do
 
       {:ok, session_template} =
         attrs
-        |> Map.put(:language_id, language.id)
         |> Enum.into(@valid_attrs)
+        |> Map.put_new(:language_id, language.id)
         |> Templates.create_session_template()
 
       session_template
@@ -2722,6 +2726,7 @@ defmodule Glific.TemplatesTest do
   test "translate_session_template/2 translates body, footer, and buttons into the target language",
        attrs do
     language = language_fixture(@valid_language_attrs_1)
+    anchor_template = session_template_fixture(attrs)
 
     # GoogleTranslate.translate/4 fans each string out to its own Task via
     # Task.async_stream, so a process-scoped Tesla.Mock.mock/1 (bound to this test
@@ -2744,6 +2749,7 @@ defmodule Glific.TemplatesTest do
     assert {:ok, result} =
              Templates.translate_session_template(
                %{
+                 template_id: anchor_template.id,
                  language_id: language.id,
                  body: "Thank you",
                  footer: "footer text",
@@ -2760,6 +2766,7 @@ defmodule Glific.TemplatesTest do
   test "translate_session_template/2 returns nil footer and no buttons when none were provided",
        attrs do
     language = language_fixture(@valid_language_attrs_1)
+    anchor_template = session_template_fixture(attrs)
 
     Tesla.Mock.mock_global(fn _env ->
       %Tesla.Env{
@@ -2770,7 +2777,7 @@ defmodule Glific.TemplatesTest do
 
     assert {:ok, result} =
              Templates.translate_session_template(
-               %{language_id: language.id, body: "Hello"},
+               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
                attrs.organization_id
              )
 
@@ -2785,5 +2792,209 @@ defmodule Glific.TemplatesTest do
                %{language_id: 999_999, body: "Hello"},
                attrs.organization_id
              )
+  end
+
+  test "translate_session_template/2 derives the source language from the anchor template's own record, not from client input",
+       attrs do
+    source_language = language_fixture(%{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
+    target_language = language_fixture()
+    anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
+
+    test_pid = self()
+
+    Tesla.Mock.mock_global(fn env ->
+      send(test_pid, {:translate_request, Jason.decode!(env.body)})
+
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 template_id: anchor_template.id,
+                 language_id: target_language.id,
+                 body: "Namaste"
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "translated"
+    assert result.source_language.id == source_language.id
+
+    assert_receive {:translate_request, request}
+    assert request["source"] == source_language.locale
+    assert request["target"] == target_language.locale
+  end
+
+  test "translate_session_template/2 returns an error when the anchor template belongs to another organization",
+       attrs do
+    other_organization = Fixtures.organization_fixture()
+    language = language_fixture()
+
+    Repo.put_organization_id(other_organization.id)
+
+    anchor_template =
+      session_template_fixture(%{
+        organization_id: other_organization.id,
+        language_id: language.id
+      })
+
+    Repo.put_organization_id(attrs.organization_id)
+
+    assert {:error, _} =
+             Templates.translate_session_template(
+               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+  end
+
+  test "translate_session_template/2 returns a clear error when source and target languages are the same",
+       attrs do
+    language = language_fixture()
+    anchor_template = session_template_fixture(Map.put(attrs, :language_id, language.id))
+
+    assert {:error, "Source and target language cannot be the same."} =
+             Templates.translate_session_template(
+               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+  end
+
+  test "translate_session_template/2 allows distinct locales that happen to share a label",
+       attrs do
+    source_language = language_fixture(%{label: "Hindi", locale: "hi_IN"})
+    target_language = language_fixture(%{label: "Hindi", locale: "hi_US"})
+    anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 template_id: anchor_template.id,
+                 language_id: target_language.id,
+                 body: "Hello"
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "translated"
+  end
+
+  test "search_library_templates/1 stops serving a stale cache when the org's active languages change",
+       attrs do
+    organization = Partners.get_organization!(attrs.organization_id)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_english",
+                  "category" => "UTILITY",
+                  "data" => "Hello {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_hindi",
+                  "category" => "UTILITY",
+                  "data" => "Namaste {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "hi",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, templates_before} = Templates.search_library_templates(attrs.organization_id)
+
+    assert templates_before |> Enum.map(& &1.element_name) |> Enum.sort() ==
+             ["utility_english", "utility_hindi"]
+
+    # Dropping Hindi from the org's active languages must be reflected
+    # immediately, not after the 20-minute cache TTL expires.
+    assert {:ok, _updated_organization} =
+             Partners.update_organization(organization, %{active_language_ids: [1]})
+
+    assert {:ok, templates_after} = Templates.search_library_templates(attrs.organization_id)
+
+    assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
+  end
+
+  test "search_library_templates/1 serves an identical second call from cache instead of refetching",
+       attrs do
+    {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        Agent.update(counter, &(&1 + 1))
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_cache_hit",
+                  "category" => "UTILITY",
+                  "data" => "Hi {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, first_call} = Templates.search_library_templates(attrs.organization_id)
+
+    assert {:ok, second_call} = Templates.search_library_templates(attrs.organization_id)
+
+    assert Enum.map(first_call, & &1.element_name) == ["utility_cache_hit"]
+    assert first_call == second_call
+
+    # the metalibrary endpoint must only be hit once - the second identical
+    # call is served from the {:ok, templates} -> {:ok, templates} cache branch
+    assert Agent.get(counter, & &1) == 1
   end
 end

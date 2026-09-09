@@ -7,7 +7,7 @@ defmodule Glific.Clients.Lahi do
     Repo
   }
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   @doc """
   Tweak GCS Bucket name based Lahi usecase

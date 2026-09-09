@@ -15,6 +15,7 @@ defmodule Glific.BigQueryTest do
     Partners,
     Partners.Saas,
     Repo,
+    RepoReplica,
     Seeds.SeedsDev
   }
 
@@ -158,6 +159,229 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "make_job_to_remove_duplicate/2 should override Hackney's default recv_timeout",
+       attrs do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      Tesla.Mock.mock(fn %{method: :post} = env ->
+        assert env.opts[:adapter][:recv_timeout] == 150_000
+        assert Jason.decode!(env.body)["timeoutMs"] == 120_000
+        assert env.url =~ "/queries"
+
+        %Tesla.Env{status: 200}
+      end)
+
+      assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    end
+  end
+
+  describe "bigquery_error_summary/1" do
+    @envelope_body """
+    {
+      "error": {
+        "code": 400,
+        "message": "TIMESTAMP_SUB does not support the MONTH date part when the argument is TIMESTAMP type at [10:33]",
+        "errors": [
+          {
+            "message": "TIMESTAMP_SUB does not support the MONTH date part when the argument is TIMESTAMP type at [10:33]",
+            "domain": "global",
+            "reason": "invalidQuery",
+            "location": "q",
+            "locationType": "parameter"
+          },
+          {
+            "message": "Query was stopped",
+            "domain": "global",
+            "reason": "stopped"
+          }
+        ],
+        "status": "INVALID_ARGUMENT"
+      }
+    }
+    """
+
+    test "keeps the status, every reason and the whole body on a single line" do
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @envelope_body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,stopped body="
+             )
+
+      assert summary =~ "TIMESTAMP_SUB does not support the MONTH date part"
+      assert summary =~ "Query was stopped"
+      refute summary =~ "\n"
+    end
+
+    test "keeps the status and reason ahead of the clip on a long response" do
+      body =
+        ~s({"error":{"code":400,"message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 300) <>
+          ~s(","errors":[{"domain":"global","reason":"invalidQuery"}],"status":"INVALID_ARGUMENT"}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert byte_size(body) > 4096
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
+             )
+
+      assert String.ends_with?(summary, "<> ...")
+      tail = summary |> String.split("body=") |> List.last()
+      refute tail =~ "invalidQuery"
+      refute tail =~ "INVALID_ARGUMENT"
+
+      refute summary =~ "\n"
+    end
+
+    test "lifts the reason out of a top-level errors array" do
+      body =
+        ~s({"kind":"bigquery#queryResponse","jobComplete":true,"errors":) <>
+          ~s([{"reason":"invalidQuery","location":"query","message":"UPDATE or DELETE ) <>
+          ~s(statement over table would affect rows in the streaming buffer"}]})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
+      assert summary =~ "would affect rows in the streaming buffer"
+      refute summary =~ "\n"
+    end
+
+    test "prints the reason from every record in the errors array" do
+      body =
+        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","errors":[) <>
+          ~s({"domain":"global","reason":"invalidQuery","message":"first"},) <>
+          ~s({"domain":"global","reason":"accessDenied","message":"second"},) <>
+          ~s({"domain":"global","reason":"rateLimitExceeded","message":"third"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT " <>
+                 "reason=invalidQuery,accessDenied,rateLimitExceeded body="
+             )
+    end
+
+    test "prints every reason from a top-level errors array too" do
+      body = ~s({"errors":[{"reason":"invalidQuery"},{"reason":"accessDenied"}]})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 reason=invalidQuery,accessDenied body="
+             )
+    end
+
+    test "skips records whose reason is missing or not a string" do
+      body =
+        ~s({"error":{"status":"INVALID_ARGUMENT","errors":[) <>
+          ~s({"reason":"invalidQuery"},{"domain":"global"},{"reason":{"a":1}},) <>
+          ~s("not-a-map",{"reason":"accessDenied"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,accessDenied body="
+             )
+    end
+
+    test "renders a blank reason when the errors value is not a populated list" do
+      for errors <- [~s({}), ~s([]), ~s("accessDenied"), ~s([{"domain":"global"}]), "null"] do
+        body = ~s({"error":{"code":403,"errors":#{errors},"status":"PERMISSION_DENIED"}})
+
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
+
+        assert String.starts_with?(
+                 summary,
+                 "http_status=403 bq_status=PERMISSION_DENIED reason= body="
+               )
+      end
+    end
+
+    test "renders a blank reason when the reason is not a string" do
+      for reason <- [~s({"a":1}), ~s([{"a":1}]), "42", "true", "null"] do
+        body = ~s({"error":{"errors":[{"reason":#{reason}}],"status":"INVALID_ARGUMENT"}})
+
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+        assert String.starts_with?(
+                 summary,
+                 "http_status=400 bq_status=INVALID_ARGUMENT reason= body="
+               )
+      end
+    end
+
+    test "collapses whitespace in every reason so the entry stays on one line" do
+      body =
+        ~s({"error":{"errors":[{"reason":"access\\n  denied\\tnow"},) <>
+          ~s({"reason":"quota\\nexceeded"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=403 bq_status= reason=access denied now,quota exceeded "
+             )
+
+      refute summary =~ "\n"
+      refute summary =~ "\t"
+    end
+
+    test "renders no fields when the body is neither known shape" do
+      for body <- [~s({"error":"invalid_grant"}), ~s({"errors":[]}), "upstream unavailable", ""] do
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: body})
+
+        assert String.starts_with?(summary, "http_status=503 body=")
+      end
+    end
+
+    test "never leaks the Tesla client middleware" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{
+          status: 400,
+          body: @envelope_body,
+          __client__: %Tesla.Client{}
+        })
+
+      refute summary =~ "__client__"
+      refute summary =~ "Bearer"
+    end
+
+    test "handles a non-response error term" do
+      assert BigQuery.bigquery_error_summary(:timeout) == ":timeout"
+    end
+
+    test "bounds an oversized body instead of flooding the log" do
+      body =
+        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 500) <> ~s("}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert byte_size(body) > 8192
+      assert summary =~ "http_status=400"
+      assert summary =~ "bq_status=INVALID_ARGUMENT"
+      assert summary =~ "Syntax error:"
+      assert String.ends_with?(summary, "<> ...")
+      assert byte_size(summary) < 4500
+      refute summary =~ "\n"
+    end
+  end
+
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(
@@ -179,7 +403,7 @@ defmodule Glific.BigQueryTest do
       FROM `test_dataset.messages` delta
       WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
         'Asia/Kolkata')
-      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
+      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
   """
 
   test "generate_duplicate_removal_query/3 should create sql query", attrs do
@@ -223,7 +447,30 @@ defmodule Glific.BigQueryTest do
       )
 
     assert query =~ "DELETE FROM `test_dataset.contacts`"
-    refute query =~ "INTERVAL 3 MONTH"
+    refute query =~ "INTERVAL 90 DAY"
+  end
+
+  test "generate_duplicate_removal_query/3 only uses date parts TIMESTAMP_SUB accepts", attrs do
+    # BigQuery's TIMESTAMP_SUB rejects anything larger than DAY, and the failure is a
+    # query-analysis error, so an invalid part breaks the dedup for every org silently.
+    for table <- ~w(messages flow_contexts flow_results wa_messages messages_media contacts) do
+      query =
+        BigQuery.generate_duplicate_removal_query(
+          table,
+          %{project_id: "test_project", dataset_id: "test_dataset"},
+          attrs.organization_id
+        )
+
+      parts =
+        Regex.scan(~r/TIMESTAMP_SUB\(.*?INTERVAL \d+ (\w+)\)/s, query, capture: :all_but_first)
+
+      refute parts == [], "#{table}: expected at least one TIMESTAMP_SUB in the dedup query"
+
+      for [part] <- parts do
+        assert part in ~w(MICROSECOND MILLISECOND SECOND MINUTE HOUR DAY),
+               "#{table}: TIMESTAMP_SUB does not support the #{part} date part"
+      end
+    end
   end
 
   test "handle_insert_query_response/3 should update table", attrs do
@@ -239,14 +486,15 @@ defmodule Glific.BigQueryTest do
     job_table2 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
     assert job_table2.table_id > job_table1.table_id
 
-    assert_raise RuntimeError, fn ->
-      BigQuery.handle_insert_query_response(
-        {:ok, %{insertErrors: %{error: "Some errors"}}},
-        attrs.organization_id,
-        table: "messages",
-        max_id: 10
-      )
-    end
+    # Incident #274: insertErrors used to raise and crash-loop the Oban job. It is now
+    # logged (see Glific.log_error/2) and the function falls through to its :ok return.
+    assert :ok ==
+             BigQuery.handle_insert_query_response(
+               {:ok, %{insertErrors: %{error: "Some errors"}}},
+               attrs.organization_id,
+               table: "messages",
+               max_id: 10
+             )
 
     assert :ok ==
              BigQuery.handle_insert_query_response(
@@ -255,6 +503,58 @@ defmodule Glific.BigQueryTest do
                table: "messages",
                max_id: nil
              )
+  end
+
+  test "make_insert_query/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
+       %{organization_id: org_id} do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/messages/insertAll"
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: [
+                  %GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponseInsertErrors{
+                    index: 0,
+                    errors: [
+                      %GoogleApi.BigQuery.V2.Model.ErrorProto{
+                        reason: "invalid",
+                        message: "Malformed row: missing required field"
+                      }
+                    ]
+                  }
+                ]
+              })
+          }
+      end)
+
+      # Previously (pre-incident-274-fix) this call raised a RuntimeError from inside
+      # handle_insert_query_response/3 and never returned, crash-looping the Oban job
+      # that called it. Now it should complete normally and return :ok.
+      assert :ok ==
+               BigQuery.make_insert_query(
+                 [%{json: %{id: 1, name: "test"}}],
+                 "messages",
+                 org_id,
+                 max_id: 10,
+                 last_updated_at: nil
+               )
+    end
   end
 
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
@@ -319,6 +619,49 @@ defmodule Glific.BigQueryTest do
         Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "bigquery"})
 
       assert cred.is_active == false
+    end
+  end
+
+  test "decode_bigquery_credential/3 returns error for a missing service account without raising",
+       attrs do
+    credentials = %{secrets: %{}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Missing Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for a nil service account without raising",
+       attrs do
+    credentials = %{secrets: %{"service_account" => nil}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Missing Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for an invalid service account without raising",
+       attrs do
+    credentials = %{secrets: %{"service_account" => "not-a-json"}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Invalid Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for non-object service account json without raising",
+       attrs do
+    org_contact = %{phone: "919999999999"}
+
+    for service_account_json <- ["[]", "null", "{}", ~s({"project_id": ""})] do
+      credentials = %{secrets: %{"service_account" => service_account_json}}
+
+      assert {:error, "Invalid Service Account JSON"} =
+               BigQuery.decode_bigquery_credential(
+                 credentials,
+                 org_contact,
+                 attrs.organization_id
+               )
     end
   end
 
@@ -474,6 +817,55 @@ defmodule Glific.BigQueryTest do
     # There are cases where we get date as a iso date only type, so handling that too
     assert "#{String.split(@formatted_time, " ") |> List.first()} 00:00:00" ==
              BigQuery.format_date(DateTime.to_date(datetime) |> to_string, attrs.organization_id)
+  end
+
+  test "make_job/4 forwards the real action, not \"unknown\"" do
+    # Drives make_job -> make_insert_query -> handle_insert_query_response -> record so a
+    # regression in forwarding :action is caught. Asserting on handle_insert_query_response
+    # alone cannot see this — the action is dropped upstream of it.
+    #
+    # Mocks our own Instrumentation module rather than Appsignal: Appsignal is called from
+    # every module in the app, so mocking it globally leaks into unrelated tests.
+    parent = self()
+
+    with_mocks([
+      {Goth.Token, [:passthrough],
+       [
+         fetch: fn _ ->
+           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+         end
+       ]},
+      {Glific.BigQuery.Instrumentation, [:passthrough],
+       [
+         record: fn table, status, action, organization_id ->
+           send(parent, {:record, table, status, action, organization_id})
+           :ok
+         end
+       ]}
+    ]) do
+      Tesla.Mock.mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+      end)
+
+      BigQueryWorker.make_job([%{json: %{id: 1}}], :contacts, 1, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: DateTime.utc_now()
+      })
+
+      assert_receive {:record, "contacts", :success, :update, 1}
+
+      # The invariant is exactly one increment per job — assert_receive alone would pass
+      # with a duplicate success counter still sitting in the mailbox.
+      refute_received {:record, _, _, _, _}
+    end
   end
 
   test "queue_table_data/3 should process and queue data correctly", %{organization_id: org_id} do
@@ -851,6 +1243,21 @@ defmodule Glific.BigQueryTest do
       # orgs, and OUT of the dedup list so those re-syncs accumulate as a change log
       # rather than collapsing to one row per org.
       refute "organizations" in BigQuery.ignore_updates_for_table()
+    end
+
+    test "fetch_data/3 for organizations returns every org, not just the current process organization_id",
+         %{organization_id: organization_id} do
+      other_organization = organization_fixture()
+
+      Repo.put_process_state(organization_id)
+      RepoReplica.put_process_state(organization_id)
+
+      organization_ids =
+        BigQueryWorker.fetch_data("organizations", organization_id, %{})
+        |> Enum.map(& &1.id)
+
+      assert organization_id in organization_ids
+      assert other_organization.id in organization_ids
     end
   end
 end

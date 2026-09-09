@@ -3,8 +3,7 @@ defmodule Glific.AccessControl do
   The AccessControl context.
   """
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Flags, Partners, Repo, Users.User}
 
   alias Glific.AccessControl.{

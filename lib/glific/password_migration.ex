@@ -4,8 +4,7 @@ defmodule Glific.PasswordMigration do
   We will remove this migration soon or may be move this file to priv migration directory
   """
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.Repo
   alias Glific.Users.User
   alias Pbkdf2.Base64

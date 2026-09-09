@@ -77,16 +77,28 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
     end
 
     test "changeset with optional fields", %{valid_attrs: valid_attrs} do
-      attrs =
-        valid_attrs
-        |> Map.put(:description, "Version 1 of the assistant")
-        |> Map.put(:version_number, 1)
+      attrs = Map.put(valid_attrs, :description, "Version 1 of the assistant")
 
       changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
 
       assert changeset.valid?
       assert get_change(changeset, :description) == "Version 1 of the assistant"
-      assert get_change(changeset, :version_number) == 1
+    end
+
+    test "changeset defaults bump_type to :minor and casts an explicit :major", %{
+      valid_attrs: valid_attrs
+    } do
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, valid_attrs)
+
+      assert changeset.valid?
+      assert get_change(changeset, :bump_type) == nil
+      assert get_field(changeset, :bump_type) == :minor
+
+      attrs = Map.put(valid_attrs, :bump_type, :major)
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
+
+      assert changeset.valid?
+      assert get_change(changeset, :bump_type) == :major
     end
 
     test "changeset with failure_reason when status is failed", %{valid_attrs: valid_attrs} do
@@ -122,6 +134,18 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert changeset.valid?
       assert get_change(changeset, :status) == nil
       assert get_field(changeset, :status) == :in_progress
+    end
+  end
+
+  describe "version_label/1" do
+    test "renders major.minor as a dotted string" do
+      version = %AssistantConfigVersion{major_version: 1, minor_version: 3}
+      assert AssistantConfigVersion.version_label(version) == "1.3"
+    end
+
+    test "renders a freshly published major version with minor 0" do
+      version = %AssistantConfigVersion{major_version: 2, minor_version: 0}
+      assert AssistantConfigVersion.version_label(version) == "2.0"
     end
   end
 

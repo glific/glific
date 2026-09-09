@@ -8,7 +8,7 @@ defmodule Glific.ConversationsGroup do
 
   use Ecto.Schema
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Conversations,

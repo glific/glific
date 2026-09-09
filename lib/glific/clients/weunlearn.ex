@@ -1,7 +1,7 @@
 defmodule Glific.Clients.Weunlearn do
   @moduledoc false
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,

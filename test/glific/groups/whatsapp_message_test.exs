@@ -325,6 +325,74 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert Message.receive_media(params) == expected_result
   end
 
+  test "receive_text/1 recovers the sender phone from the message id when user.phone is blank" do
+    for blank <- [nil, ""] do
+      params = %{
+        "message" => %{
+          "id" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
+          "_serialized" =>
+            "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
+          "text" => "Hello, World!",
+          "fromMe" => false
+        },
+        "receiver" => "917834811114",
+        "user" => %{"phone" => blank, "name" => "John Doe"}
+      }
+
+      assert %{sender: %{phone: "919642961343"}} = Message.receive_text(params)
+    end
+  end
+
+  test "receive_text/1 leaves the sender phone nil when the message id carries our own number" do
+    params = %{
+      "message" => %{
+        "id" =>
+          "false_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "_serialized" =>
+          "false_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "text" => "Hello, World!",
+        "fromMe" => false
+      },
+      "receiver" => "917834811114",
+      "user" => %{"id" => "", "name" => "", "phone" => ""}
+    }
+
+    assert %{sender: %{phone: nil}} = Message.receive_text(params)
+  end
+
+  test "receive_text/1 keeps our own number as sender for an outbound echo" do
+    params = %{
+      "message" => %{
+        "id" => "true_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "_serialized" =>
+          "true_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "text" => "Hello, World!",
+        "fromMe" => true
+      },
+      "receiver" => "917834811114",
+      "user" => %{"id" => "", "name" => "", "phone" => ""}
+    }
+
+    assert %{sender: %{phone: "917834811114"}} = Message.receive_text(params)
+  end
+
+  test "receive_media/1 leaves the sender phone nil for an unresolved LID participant" do
+    params = %{
+      "message" => %{
+        "id" => "false_120363027326493365@g.us_0C623FCC2528444570C488FB229F7628_289473521@lid",
+        "_serialized" =>
+          "false_120363027326493365@g.us_0C623FCC2528444570C488FB229F7628_289473521@lid",
+        "caption" => "A photo",
+        "url" => "http://example.com/photo.jpg",
+        "type" => "image",
+        "fromMe" => false
+      },
+      "user" => %{"phone" => nil, "name" => "Jane Doe"}
+    }
+
+    assert %{sender: %{phone: nil}} = Message.receive_media(params)
+  end
+
   test "send_message_to_wa_group_collection/2 check the possible error",
        attrs do
     group =

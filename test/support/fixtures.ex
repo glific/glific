@@ -17,6 +17,12 @@ defmodule Glific.Fixtures do
     AccessControl,
     AccessControl.Permission,
     AccessControl.Role,
+    AIEvaluations.AIEvaluation,
+    AIEvaluations.GoldenQA,
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     Contacts,
     Contacts.ContactsField,
     Extensions.Extension,
@@ -43,12 +49,11 @@ defmodule Glific.Fixtures do
     Notifications.Notification,
     Partners,
     Partners.Billing,
+    Partners.Credential,
     Partners.Organization,
     Partners.Provider,
     Profiles.Profile,
     Providers.Maytapi.Message,
-    Registrations,
-    Registrations.Registration,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -1337,44 +1342,6 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec registration_fixture :: Registration.t()
-  def registration_fixture do
-    valid_args = %{
-      org_details: %{
-        current_address: Faker.Lorem.paragraph(1..30),
-        gstin: " 07AAAAA1234A124",
-        name: Faker.Company.name(),
-        registered_address: Faker.Lorem.paragraph(1..30)
-      },
-      signing_authority: %{
-        name: Faker.Person.name(),
-        email: Faker.Internet.email(),
-        designation: "designation"
-      },
-      submitter: %{
-        name: Faker.Person.name() |> String.slice(0, 10),
-        email: Faker.Internet.email()
-      },
-      finance_poc: %{
-        name: Faker.Person.name() |> String.slice(0, 10),
-        email: Faker.Internet.email(),
-        designation: "Sr Accountant",
-        phone: Phone.PtBr.phone()
-      },
-      platform_details: %{
-        app_name: "app_name",
-        api_key: "api_key",
-        phone: Phone.PtBr.phone()
-      },
-      billing_frequency: "yearly",
-      organization_id: get_org_id()
-    }
-
-    {:ok, registration} = Registrations.create_registration(valid_args)
-    registration
-  end
-
-  @doc false
   @spec wa_poll_fixture(map()) :: Glific.WAGroup.WaPoll.t()
   def wa_poll_fixture(attrs \\ %{}) do
     %{
@@ -1410,5 +1377,156 @@ defmodule Glific.Fixtures do
     flow_context
     |> Repo.preload(:wa_group)
     |> Repo.preload(:flow)
+  end
+
+  @doc false
+  @spec kaapi_credential_fixture(map()) :: Credential.t()
+  def kaapi_credential_fixture(attrs) do
+    valid_attrs = %{
+      organization_id: attrs.organization_id,
+      shortcode: "kaapi",
+      keys: %{},
+      secrets: %{"api_key" => Map.get(attrs, :api_key, "sk_test_key")}
+    }
+
+    {:ok, credential} = Partners.create_credential(valid_attrs)
+
+    {:ok, credential} =
+      Partners.update_credential(credential, Map.put(valid_attrs, :is_active, true))
+
+    credential
+  end
+
+  @doc false
+  @spec assistant_fixture(map()) :: Assistant.t()
+  def assistant_fixture(attrs) do
+    valid_attrs = %{
+      name: "Fixture Assistant #{Ecto.UUID.generate()}",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    assistant
+  end
+
+  @doc false
+  @spec assistant_config_version_fixture(map()) :: AssistantConfigVersion.t()
+  def assistant_config_version_fixture(attrs) do
+    valid_attrs = %{
+      provider: "openai",
+      model: "gpt-4o",
+      prompt: "You are a helpful assistant",
+      settings: %{"temperature" => 1.0},
+      status: :ready
+    }
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    config_version
+  end
+
+  @doc false
+  @spec live_assistant_fixture(map()) :: Assistant.t()
+  def live_assistant_fixture(attrs) do
+    assistant =
+      assistant_fixture(%{
+        organization_id: attrs.organization_id,
+        kaapi_uuid: Map.get(attrs, :kaapi_uuid, "kaapi_uuid_#{Ecto.UUID.generate()}")
+      })
+
+    config_version =
+      assistant_config_version_fixture(%{
+        assistant_id: assistant.id,
+        organization_id: attrs.organization_id,
+        kaapi_version_number: Map.get(attrs, :kaapi_version_number, 1)
+      })
+
+    {:ok, assistant} =
+      assistant
+      |> Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+    assistant
+  end
+
+  @doc "Creates a knowledge base fixture"
+  @spec knowledge_base_fixture(map()) :: KnowledgeBase.t()
+  def knowledge_base_fixture(attrs) do
+    valid_attrs = %{name: "Fixture Knowledge Base #{Ecto.UUID.generate()}"}
+
+    {:ok, knowledge_base} =
+      %KnowledgeBase{}
+      |> KnowledgeBase.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    knowledge_base
+  end
+
+  @doc "Creates a knowledge base version fixture"
+  @spec knowledge_base_version_fixture(map()) :: KnowledgeBaseVersion.t()
+  def knowledge_base_version_fixture(attrs) do
+    knowledge_base_id =
+      Map.get_lazy(attrs, :knowledge_base_id, fn ->
+        knowledge_base_fixture(%{organization_id: attrs.organization_id}).id
+      end)
+
+    valid_attrs = %{
+      knowledge_base_id: knowledge_base_id,
+      files: %{},
+      status: :completed,
+      llm_service_id: "llm-service-#{Ecto.UUID.generate()}"
+    }
+
+    {:ok, knowledge_base_version} =
+      %KnowledgeBaseVersion{}
+      |> KnowledgeBaseVersion.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    knowledge_base_version
+  end
+
+  @doc "Creates a golden QA fixture"
+  @spec golden_qa_fixture(map()) :: GoldenQA.t()
+  def golden_qa_fixture(attrs) do
+    valid_attrs = %{name: "Fixture Golden QA #{Ecto.UUID.generate()}", dataset_id: 1}
+
+    {:ok, golden_qa} =
+      %GoldenQA{}
+      |> GoldenQA.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    golden_qa
+  end
+
+  @doc "Creates an AI evaluation fixture"
+  @spec ai_evaluation_fixture(map()) :: AIEvaluation.t()
+  def ai_evaluation_fixture(attrs) do
+    golden_qa_id =
+      Map.get_lazy(attrs, :golden_qa_id, fn ->
+        golden_qa_fixture(%{organization_id: attrs.organization_id}).id
+      end)
+
+    valid_attrs = %{
+      name: "Fixture Evaluation #{Ecto.UUID.generate()}",
+      status: :processing,
+      golden_qa_id: golden_qa_id,
+      kaapi_evaluation_id: System.unique_integer([:positive])
+    }
+
+    {:ok, evaluation} =
+      %AIEvaluation{}
+      |> AIEvaluation.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    evaluation
   end
 end

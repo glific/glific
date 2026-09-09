@@ -2,8 +2,6 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   @moduledoc """
   A worker to handle send message in whatsapp group processes
   """
-  import Ecto.Query, warn: false
-
   use Oban.Worker,
     queue: :wa_group,
     max_attempts: 2,

@@ -20,10 +20,17 @@ defmodule Glific.BigQuery.BigQueryWorker do
   use Oban.Worker,
     queue: :bigquery,
     max_attempts: 1,
-    priority: 1
+    priority: 2,
+    unique: [
+      period: :infinity,
+      fields: [:args, :worker],
+      keys: [:table, :organization_id, :action, :remove_duplicates],
+      states: [:available, :scheduled, :executing]
+    ]
 
   alias Glific.{
     BigQuery,
+    BigQuery.Instrumentation,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
     Contacts,
@@ -186,7 +193,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Repo.put_process_state(organization_id)
     RepoReplica.put_process_state(organization_id)
     Logger.debug("removing duplicates for org_id: #{organization_id} table: #{table}")
-    BigQuery.make_job_to_remove_duplicate(table, organization_id)
+
+    Instrumentation.track(table, :remove_duplicates, organization_id, fn ->
+      BigQuery.make_job_to_remove_duplicate(table, organization_id)
+    end)
+
     :ok
   end
 
@@ -198,8 +209,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Repo.put_process_state(organization_id)
     RepoReplica.put_process_state(organization_id)
 
-    Jobs.get_bigquery_job(organization_id, table)
-    |> insert_for_table(organization_id, action)
+    # Only wraps the raising failure paths. Outcomes BigQuery reports without raising are
+    # recorded inside BigQuery.handle_insert_query_response/3, where they are visible.
+    Instrumentation.track(table, action, organization_id, fn ->
+      Jobs.get_bigquery_job(organization_id, table)
+      |> insert_for_table(organization_id, action)
+    end)
   end
 
   @spec format_date_with_millisecond(DateTime.t(), non_neg_integer()) :: String.t()
@@ -1688,7 +1703,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     BigQuery.make_insert_query(data, table, organization_id,
       max_id: max_id,
-      last_updated_at: last_updated_at
+      last_updated_at: last_updated_at,
+      action: attrs[:action]
     )
   end
 
@@ -2096,7 +2112,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp fetch_data(table, organization_id, attrs) do
     query = get_query(table, organization_id, attrs)
 
-    if table in ["stats", "stats_all", "trackers", "trackers_all", "trial_users"] do
+    if table in ["stats", "stats_all", "trackers", "trackers_all", "trial_users", "organizations"] do
       RepoReplica.all(query, skip_organization_id: true)
     else
       RepoReplica.all(query)

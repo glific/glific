@@ -70,6 +70,12 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.MessageChannel,
+  :message_channel_enum,
+  Glific.Enums.message_channel_const()
+)
+
+defenum(
   Glific.Enums.QuestionType,
   :question_type_enum,
   Glific.Enums.question_type_const()
@@ -154,6 +160,12 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.AssistantConfigVersionBumpType,
+  :assistant_config_version_bump_type_enum,
+  Glific.Enums.assistant_config_version_bump_type_const()
+)
+
+defenum(
   Glific.Enums.KnowledgeBaseStatus,
   :knowledge_base_status_enum,
   Glific.Enums.knowledge_base_status_const()
@@ -163,4 +175,16 @@ defenum(
   Glific.Enums.AIEvaluationStatus,
   :ai_evaluation_status_enum,
   Glific.Enums.ai_evaluation_status_const()
+)
+
+defenum(
+  Glific.Enums.GlificAIMessageStatus,
+  :glific_ai_message_status_enum,
+  Glific.Enums.glific_ai_message_status_const()
+)
+
+defenum(
+  Glific.Enums.GlificAIEventType,
+  :glific_ai_event_type_enum,
+  Glific.Enums.glific_ai_event_type_const()
 )

@@ -4,6 +4,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
   alias Glific.{
     Contacts.Contact,
     Mails.MailLog,
+    OTP,
     Partners.Organization,
     Repo,
     Seeds.SeedsDev,
@@ -36,7 +37,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
       trial_user = insert_trial_user(@valid_phone)
 
-      valid_otp = PasswordlessAuth.generate_code(@valid_phone)
+      valid_otp = OTP.generate_code(:trial, @valid_phone)
 
       %{
         trial_org_1: trial_org_1,
@@ -136,6 +137,22 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       params = %{
         "phone" => @valid_phone,
         "otp" => "wrong_otp",
+        "username" => "Test User",
+        "password" => @password
+      }
+
+      conn = TrialAccountController.trial(conn, params)
+
+      assert json_response(conn, 400) == %{
+               "success" => false,
+               "error" => "Invalid OTP"
+             }
+    end
+
+    test "rejects an OTP minted by the authentication flow", %{conn: conn} do
+      params = %{
+        "phone" => @valid_phone,
+        "otp" => OTP.generate_code(:auth, @valid_phone),
         "username" => "Test User",
         "password" => @password
       }

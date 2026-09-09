@@ -46,8 +46,10 @@ defmodule Glific.Flows.MessageVarParser do
 
   # We need to figure out a way to replace these kind of variables
   defp bound("@contact.language", binding) do
-    language = get_in(binding, ["contact", "fields", "language"])
-    language["label"]
+    case safe_get_in(binding, ["contact", "fields", "language", "label"]) do
+      label when is_binary(label) -> label
+      _ -> "@contact.language"
+    end
   end
 
   defp bound("@contact.groups", binding),
@@ -55,18 +57,26 @@ defmodule Glific.Flows.MessageVarParser do
 
   # since this is a list we need to convert that into a string.
   defp bound("@contact.in_groups", binding) do
-    "#{Glific.SafeLog.safe_inspect(get_in(binding, ["contact", "in_groups"]))}"
+    "#{Glific.SafeLog.safe_inspect(safe_get_in(binding, ["contact", "in_groups"]))}"
   end
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     var = String.replace_trailing(var, ".", "")
 
     substitution =
-      get_in(binding, String.split(var, "."))
+      safe_get_in(binding, String.split(var, "."))
       |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
   end
+
+  @spec safe_get_in(term(), [String.t()]) :: term()
+  defp safe_get_in(value, []), do: value
+
+  defp safe_get_in(map, [key | rest]) when is_map(map),
+    do: safe_get_in(Map.get(map, key), rest)
+
+  defp safe_get_in(_value, _keys), do: nil
 
   # this is for the other fields like @contact.fields.name which is a map of (value)
   defp bound(substitution) when is_map(substitution) do

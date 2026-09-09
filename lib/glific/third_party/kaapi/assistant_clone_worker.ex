@@ -34,6 +34,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   @max_poll_duration_ms 20 * 60 * 1_000
   @initial_backoff_ms 5_000
   @max_backoff_ms 60_000
+  @text_native_extensions ~w(txt md markdown csv html htm json)
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()}
@@ -240,7 +241,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       name: name,
       prompt: config_version.prompt,
       model: config_version.model,
-      temperature: get_in(config_version.settings, ["temperature"]) || 1,
+      settings: config_version.settings || %{},
       description: "Cloned version",
       organization_id: organization_id,
       knowledge_base_ids: knowledge_base_ids
@@ -249,7 +250,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @spec resolve_clone_name(Assistant.t(), AssistantConfigVersion.t()) :: String.t()
   defp resolve_clone_name(assistant, config_version) do
-    base_name = "Copy of #{assistant.name} Version #{config_version.version_number}"
+    base_name =
+      "Copy of #{assistant.name} Version #{AssistantConfigVersion.version_label(config_version)}"
+
     find_unique_name(base_name, 1)
   end
 
@@ -349,7 +352,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
       {:ok, %{status: 200}} ->
         # Fallback filename if "filename" key is missing
-        filename = "#{file_id}.md"
+        filename = "content.md"
         fetch_and_save(file_id, filename, vector_store_id, assistant_name, organization_id)
 
       {:ok, %{status: status, body: body}} ->
@@ -376,13 +379,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
           |> Enum.filter(&(&1["type"] == "text"))
           |> Enum.map_join("\n", & &1["text"])
 
-        dest =
-          Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}/#{filename}")
-
-        File.mkdir_p!(Path.dirname(dest))
-        File.write!(dest, content)
-        Logger.info("-> saved (#{byte_size(content)} bytes)")
-        :ok
+        save_extracted_text(content, file_id, filename, assistant_name, organization_id)
 
       {:ok, %{status: status, body: body}} ->
         # Handle the error case when file save fails
@@ -394,6 +391,37 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         Logger.error("FAILED (content request error): #{Glific.SafeLog.safe_inspect(reason)}")
         :error
     end
+  end
+
+  # OpenAI's vector-store content endpoint returns only the parsed *text* of a file,
+  # never the original bytes. Persisting that text under the source extension (e.g. .pdf)
+  # makes Kaapi parse it as a corrupt PDF and reject it, so store it under a text
+  # extension. Names stay clean; the unique file_id is only prepended when two source
+  # files would otherwise resolve to the same path. Empty extractions are skipped.
+  @spec save_extracted_text(String.t(), String.t(), String.t(), String.t(), non_neg_integer()) ::
+          :ok | :error
+  defp save_extracted_text(content, file_id, filename, assistant_name, organization_id) do
+    if String.trim(content) == "" do
+      Glific.log_error("AssistantCloneWorker: no text extracted for file #{filename}, skipping")
+      :error
+    else
+      dir = Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}")
+      File.mkdir_p!(dir)
+      File.write!(unique_dest(dir, file_id, text_safe_filename(filename)), content)
+      :ok
+    end
+  end
+
+  @spec unique_dest(String.t(), String.t(), String.t()) :: String.t()
+  defp unique_dest(dir, file_id, name) do
+    dest = Path.join(dir, name)
+    if File.exists?(dest), do: Path.join(dir, "#{file_id}-#{name}"), else: dest
+  end
+
+  @spec text_safe_filename(String.t()) :: String.t()
+  defp text_safe_filename(filename) do
+    extension = filename |> Path.extname() |> String.trim_leading(".") |> String.downcase()
+    if extension in @text_native_extensions, do: filename, else: "#{filename}.txt"
   end
 
   @spec upload_files_to_kaapi(String.t(), non_neg_integer()) :: [map()]
@@ -591,7 +619,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       prompt: params.prompt,
       model: params.model,
       provider: "openai",
-      settings: %{temperature: params.temperature},
+      settings: params.settings,
       status: :ready,
       organization_id: params.organization_id,
       kaapi_version_number: kaapi_config_version

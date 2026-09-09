@@ -3,7 +3,7 @@ defmodule Glific.WhatsappFormsRevisions do
    Context module for managing WhatsApp form revisions.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Repo,

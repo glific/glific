@@ -73,7 +73,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&AIEvaluations.poll_and_update/1, nil, [])
 
       "wakeup_flows" ->
-        Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
+        FlowContext.wakeup_flows()
 
       "triggers_and_broadcast" ->
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
@@ -168,7 +168,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
-        Partners.perform_all(&WAWorker.perform_periodic/1, nil, [], only_recent: true)
+        Partners.perform_all(&WAWorker.perform_periodic/1, nil, services["maytapi"],
+          only_recent: true
+        )
 
         Partners.perform_all(&Assistants.process_timeouts/1, nil, [])
 

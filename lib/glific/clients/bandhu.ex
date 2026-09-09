@@ -2,9 +2,6 @@ defmodule Glific.Clients.Bandhu do
   @moduledoc """
   Tweak GCS Bucket name based on group that the contact is in (if any)
   """
-
-  import Ecto.Query, warn: false
-
   @housing_url "https://housing.bandhumember.work/api/housing/create_sql_glific_query"
 
   @doc """

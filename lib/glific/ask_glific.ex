@@ -3,8 +3,7 @@ defmodule Glific.AskGlific do
   Glific AskGlific context module for business logic.
   """
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
@@ -17,6 +16,9 @@ defmodule Glific.AskGlific do
     """
     defexception [:message]
   end
+
+  # AppSignal namespace for AskGlific errors (enables a dedicated error-rate trigger).
+  @appsignal_namespace "ask_glific"
 
   @doc """
   Calls the Dify chat-messages API and fetches the answer for AskGlific bot.
@@ -54,6 +56,8 @@ defmodule Glific.AskGlific do
 
     case ApiClient.chat_messages(body) do
       {:ok, response} ->
+        record_outcome("success", System.monotonic_time(:millisecond) - start_time)
+
         answer = Map.get(response, "answer", "")
         resp_conversation_id = Map.get(response, "conversation_id", "")
         message_id = Map.get(response, "message_id", "")
@@ -79,6 +83,7 @@ defmodule Glific.AskGlific do
 
       {:error, reason} ->
         latency_ms = System.monotonic_time(:millisecond) - start_time
+        record_outcome("failure", latency_ms)
         report_failure(user, latency_ms, reason)
         {:error, reason}
     end
@@ -87,20 +92,16 @@ defmodule Glific.AskGlific do
   # Reports an AskGlific bot failure to AppSignal.
   @spec report_failure(map(), non_neg_integer(), any()) :: :ok
   defp report_failure(user, latency_ms, reason) do
-    exception = %Error{message: "AskGlific bot failed to respond"}
-
-    Appsignal.send_error(exception, [], fn span ->
-      span
-      |> Appsignal.Span.set_namespace("ask_glific")
-      |> Appsignal.Span.set_sample_data("tags", %{
+    %Error{message: "AskGlific bot failed to respond"}
+    |> Glific.log_exception(
+      namespace: @appsignal_namespace,
+      tags: %{
         organization_id: user.organization_id,
         user_id: user.id,
         latency_ms: latency_ms,
         reason: SafeLog.safe_inspect(reason)
-      })
-    end)
-
-    :ok
+      }
+    )
   end
 
   @doc """
@@ -120,6 +121,7 @@ defmodule Glific.AskGlific do
 
     case ApiClient.message_feedback(message_id, body) do
       {:ok, _response} ->
+        record_feedback(rating)
         {:ok, %{success: true}}
 
       {:error, reason} ->
@@ -263,4 +265,17 @@ defmodule Glific.AskGlific do
 
   @spec dify_user(map()) :: String.t()
   defp dify_user(user), do: "org-#{user.organization_id}-user-#{user.id}"
+
+  # Tracks request count and latency in AppSignal, mirroring prompt_generator_count/latency.
+  @spec record_outcome(String.t(), non_neg_integer()) :: :ok
+  defp record_outcome(status, latency_ms) do
+    Appsignal.increment_counter("ask_glific_count", 1, %{status: status})
+    Appsignal.add_distribution_value("ask_glific_latency", latency_ms, %{status: status})
+  end
+
+  # Tracks like/dislike feedback in AppSignal, keyed by the rating a user gave.
+  @spec record_feedback(String.t() | nil) :: :ok
+  defp record_feedback(rating) do
+    Appsignal.increment_counter("ask_glific_feedback_count", 1, %{rating: rating || "unknown"})
+  end
 end

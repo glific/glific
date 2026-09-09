@@ -2,9 +2,6 @@ defmodule Glific.Clients.KEF do
   @moduledoc """
   Tweak GCS Bucket name based on group that the contact is in (if any)
   """
-
-  import Ecto.Query, warn: false
-
   require Logger
 
   alias Glific.{

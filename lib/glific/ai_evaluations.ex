@@ -7,10 +7,16 @@ defmodule Glific.AIEvaluations do
 
   require Logger
 
+  alias Ecto.Multi
+
   alias Glific.{
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
+    Assistants,
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBaseVersion,
     Metrics,
     Notifications,
     Partners,
@@ -20,7 +26,7 @@ defmodule Glific.AIEvaluations do
 
   alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
-  @timeout_hours 24
+  @tunable_settings_keys ~w(temperature effort)
 
   @doc """
   Returns the list of AI evaluations for an organization.
@@ -79,35 +85,13 @@ defmodule Glific.AIEvaluations do
   end
 
   @doc """
-  Polls Kaapi for status of processing evaluations and times out stale ones.
+  Polls Kaapi for status of processing evaluations.
   Called once per minute by the cron job for each organization.
   """
   @spec poll_and_update(non_neg_integer()) :: :ok
   def poll_and_update(org_id) do
-    timeout_threshold = DateTime.utc_now() |> DateTime.add(-@timeout_hours, :hour)
-
     AIEvaluation
     |> where([e], e.status == :processing)
-    |> where([e], e.inserted_at < ^timeout_threshold)
-    |> Repo.all()
-    |> Enum.each(fn evaluation ->
-      Logger.warning("Timing out AI evaluation #{evaluation.id} for org #{org_id}")
-      Metrics.increment("AI Evaluation Timed Out", org_id)
-
-      Notifications.create_notification(%{
-        category: "AI Evaluation",
-        message: "AI evaluation #{evaluation.name} timed out after #{@timeout_hours} hour(s).",
-        severity: Notifications.types().warning,
-        organization_id: org_id,
-        entity: %{evaluation_id: evaluation.id}
-      })
-
-      do_update(evaluation, %{status: :failed, failure_reason: "Evaluation timed out"})
-    end)
-
-    AIEvaluation
-    |> where([e], e.status == :processing)
-    |> where([e], e.inserted_at >= ^timeout_threshold)
     |> Repo.all()
     |> Enum.each(fn evaluation ->
       poll_evaluation(evaluation, org_id)
@@ -126,38 +110,79 @@ defmodule Glific.AIEvaluations do
 
   @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
-    summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
+    score = Map.get(data, :score, %{})
+    summary_scores = Map.get(score, :summary_scores, [])
+    overall = Map.get(score, :overall, %{})
 
-    duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
+    case process_evaluation_status(evaluation, %{
+           status: :completed,
+           results: %{
+             summary_scores: summary_scores,
+             verdict: Map.get(overall, :verdict),
+             overall_score: Map.get(overall, :overall_score)
+           }
+         }) do
+      {:ok, updated_evaluation} ->
+        duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
 
-    Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{org_id: org_id})
+        Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{
+          org_id: org_id
+        })
 
-    Metrics.increment("AI Evaluation Completed", org_id)
+        Metrics.increment("AI Evaluation Completed", org_id)
 
-    Notifications.create_notification(%{
-      category: "AI Evaluation",
-      message: "AI evaluation #{evaluation.name} completed successfully.",
-      severity: Notifications.types().info,
-      organization_id: org_id,
-      entity: %{evaluation_id: evaluation.id}
-    })
+        Notifications.create_notification(%{
+          category: "AI Evaluation",
+          message: "AI evaluation #{updated_evaluation.name} completed successfully.",
+          severity: Notifications.types().info,
+          organization_id: org_id,
+          entity: %{evaluation_id: updated_evaluation.id}
+        })
 
-    do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}})
+        Assistants.set_last_evaluation_run(evaluation.assistant_config_version_id, evaluation.id)
+
+      {:error, :already_processed} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Failed to process completed AI Evaluation: id=#{evaluation.id}, " <>
+            "name=#{evaluation.name}, org_id=#{org_id}, reason=#{safe_inspect(reason)}"
+        )
+    end
+
+    :ok
   end
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
-    Metrics.increment("AI Evaluation Failed", org_id)
 
-    Notifications.create_notification(%{
-      category: "AI Evaluation",
-      message: "AI evaluation #{evaluation.name} failed: #{failure_reason}",
-      severity: Notifications.types().warning,
-      organization_id: org_id,
-      entity: %{evaluation_id: evaluation.id}
-    })
+    case process_evaluation_status(evaluation, %{
+           status: :failed,
+           failure_reason: failure_reason
+         }) do
+      {:ok, updated_evaluation} ->
+        Metrics.increment("AI Evaluation Failed", org_id)
 
-    do_update(evaluation, %{status: :failed, failure_reason: failure_reason})
+        Notifications.create_notification(%{
+          category: "AI Evaluation",
+          message: "AI evaluation #{updated_evaluation.name} failed: #{failure_reason}",
+          severity: Notifications.types().warning,
+          organization_id: org_id,
+          entity: %{evaluation_id: updated_evaluation.id}
+        })
+
+      {:error, :already_processed} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Failed to process failed AI Evaluation: id=#{evaluation.id}, " <>
+            "name=#{evaluation.name}, org_id=#{org_id}, reason=#{safe_inspect(reason)}"
+        )
+    end
+
+    :ok
   end
 
   defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
@@ -174,15 +199,39 @@ defmodule Glific.AIEvaluations do
     :ok
   end
 
-  @spec do_update(AIEvaluation.t(), map()) :: :ok
-  defp do_update(evaluation, attrs) do
-    case update_ai_evaluation(evaluation, attrs) do
-      {:ok, _} ->
-        :ok
+  @spec process_evaluation_status(AIEvaluation.t(), map()) ::
+          {:ok, AIEvaluation.t()} | {:error, term()}
+  defp process_evaluation_status(evaluation, attrs) do
+    Repo.transaction(fn ->
+      AIEvaluation
+      |> lock("FOR UPDATE")
+      |> Repo.fetch_by(%{id: evaluation.id})
+      |> case do
+        {:ok, %{status: :processing} = locked_evaluation} ->
+          case update_ai_evaluation(locked_evaluation, attrs) do
+            {:ok, evaluation} ->
+              updated_evaluation =
+                Repo.preload(evaluation, [:golden_qa, assistant_config_version: :assistant])
 
-      {:error, changeset} ->
-        {:error, changeset}
-    end
+              Absinthe.Subscription.publish(
+                GlificWeb.Endpoint,
+                updated_evaluation,
+                [{:ai_evaluation_updated, "#{updated_evaluation.organization_id}"}]
+              )
+
+              updated_evaluation
+
+            {:error, reason} ->
+              Repo.rollback(reason)
+          end
+
+        {:ok, _already_resolved} ->
+          Repo.rollback(:already_processed)
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
   end
 
   @doc """
@@ -221,12 +270,12 @@ defmodule Glific.AIEvaluations do
   @doc """
   Fetches evaluation scores for a given AI evaluation from Kaapi.
   """
-  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
+  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  def get_evaluation_scores(evaluation_id, org_id) do
+  def get_evaluation_scores(evaluation_id, org_id, export_format \\ "row") do
     with {:ok, %AIEvaluation{kaapi_evaluation_id: kaapi_id}} <-
-           Repo.fetch(AIEvaluation, evaluation_id) do
-      Kaapi.get_evaluation_scores(kaapi_id, org_id)
+           Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: org_id}) do
+      Kaapi.get_evaluation_scores(kaapi_id, org_id, export_format)
     end
   end
 
@@ -235,6 +284,9 @@ defmodule Glific.AIEvaluations do
     Enum.reduce(filter, query, fn
       {:name, name}, query ->
         where(query, [e], ilike(e.name, ^"%#{name}%"))
+
+      {:golden_qa_id, golden_qa_id}, query ->
+        where(query, [e], e.golden_qa_id == ^golden_qa_id)
     end)
   end
 
@@ -279,5 +331,236 @@ defmodule Glific.AIEvaluations do
       {:name, name}, query ->
         where(query, [g], ilike(g.name, ^"%#{name}%"))
     end)
+  end
+
+  @doc """
+  Dispatches a v2 (native-judge) prompt improvement request to Kaapi for a completed evaluation.
+  """
+  @spec request_improve_prompt(non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def request_improve_prompt(evaluation_id, organization_id) do
+    with {:ok, evaluation} <-
+           Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: organization_id}),
+         {:status, :completed} <- {:status, evaluation.status},
+         callback_url = build_improve_prompt_callback_url(organization_id),
+         {:ok, _} <-
+           Kaapi.improve_evaluation_prompt(
+             evaluation.kaapi_evaluation_id,
+             callback_url,
+             organization_id
+           ) do
+      {:ok, %{status: "pending"}}
+    else
+      {:status, status} ->
+        {:error,
+         "Evaluation is #{status}, must be completed before requesting prompt improvement."}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after v2 prompt-improvement completes, publishing `improve_prompt_updated` on a terminal (SUCCESS/FAILED) status.
+  """
+  @spec handle_improve_prompt_callback(non_neg_integer(), map()) ::
+          {:ok, AssistantConfigVersion.t() | :acknowledged} | {:error, any()}
+  def handle_improve_prompt_callback(
+        organization_id,
+        %{"data" => %{"status" => "SUCCESS"} = data}
+      ) do
+    case create_improve_prompt_config_version(data["config_version"] || %{}, organization_id) do
+      {:ok, config_version} = result ->
+        publish_improve_prompt_update(organization_id, %{
+          status: "success",
+          config_version: config_version,
+          error: nil
+        })
+
+        result
+
+      {:error, _reason} = error ->
+        error
+    end
+  end
+
+  def handle_improve_prompt_callback(organization_id, %{"data" => %{"status" => "FAILED"} = data}) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Improve prompt failed",
+      reason: safe_inspect(data)
+    })
+
+    publish_improve_prompt_update(organization_id, %{
+      status: "failed",
+      config_version: nil,
+      error: data["error_message"] || "Improve prompt failed"
+    })
+
+    {:ok, :acknowledged}
+  end
+
+  def handle_improve_prompt_callback(_organization_id, %{"data" => %{"status" => _}}),
+    do: {:ok, :acknowledged}
+
+  # Defensive catch-all: the callback endpoint is public, so a malformed body must not
+  # raise (the controller must still return 200).
+  def handle_improve_prompt_callback(_organization_id, params) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Unexpected improve prompt callback payload",
+      reason: safe_inspect(params)
+    })
+
+    {:error, "Unexpected improve prompt callback payload"}
+  end
+
+  @spec publish_improve_prompt_update(non_neg_integer(), map()) :: :ok
+  defp publish_improve_prompt_update(organization_id, payload) do
+    Absinthe.Subscription.publish(
+      GlificWeb.Endpoint,
+      payload,
+      [{:improve_prompt_updated, "#{organization_id}"}]
+    )
+
+    :ok
+  end
+
+  @spec build_improve_prompt_callback_url(non_neg_integer()) :: String.t()
+  defp build_improve_prompt_callback_url(organization_id) do
+    organization = Partners.organization(organization_id)
+    Glific.api_callback_base(organization.shortcode) <> "/kaapi/improve_prompt"
+  end
+
+  @doc """
+  Handles Kaapi's async callback when a v2 evaluation run finishes (completed or failed).
+  """
+  @spec handle_evaluation_run_callback(non_neg_integer(), map()) :: :ok
+  def handle_evaluation_run_callback(organization_id, %{
+        "data" => %{"id" => kaapi_evaluation_id, "status" => status}
+      })
+      when status in ["completed", "failed"] do
+    case Repo.fetch_by(AIEvaluation, %{
+           kaapi_evaluation_id: kaapi_evaluation_id,
+           organization_id: organization_id
+         }) do
+      {:ok, %{status: :processing} = evaluation} ->
+        poll_evaluation(evaluation, organization_id)
+
+      {:ok, _already_resolved} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_exception(%Kaapi.Error{
+          message:
+            "Evaluation run callback for unknown kaapi_evaluation_id=#{kaapi_evaluation_id}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+    end
+
+    :ok
+  end
+
+  # non-terminal status (e.g. PROCESSING) — nothing to do
+  def handle_evaluation_run_callback(_organization_id, %{"data" => %{"status" => _}}), do: :ok
+
+  def handle_evaluation_run_callback(organization_id, params) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Unexpected evaluation run callback payload",
+      organization_id: organization_id,
+      reason: safe_inspect(params)
+    })
+
+    :ok
+  end
+
+  @spec create_improve_prompt_config_version(map(), non_neg_integer()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp create_improve_prompt_config_version(config_version_data, organization_id) do
+    with {:ok, assistant} <-
+           Repo.fetch_by(Assistant, %{
+             kaapi_uuid: config_version_data["config_id"],
+             organization_id: organization_id
+           }) do
+      completion = get_in(config_version_data, ["config_blob", "completion"]) || %{}
+      params = completion["params"] || %{}
+
+      changeset =
+        AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+          assistant_id: assistant.id,
+          organization_id: assistant.organization_id,
+          prompt: params["instructions"],
+          provider: completion["provider"] || "openai",
+          model: params["model"],
+          settings: extract_settings(params),
+          status: :ready,
+          kaapi_version_number: config_version_data["version"],
+          description: config_version_data["commit_message"]
+        })
+
+      Multi.new()
+      |> Multi.insert(:config_version, changeset)
+      |> link_improve_prompt_knowledge_bases(
+        params["knowledge_base_ids"],
+        assistant.organization_id
+      )
+      |> Repo.transaction()
+      |> case do
+        {:ok, %{config_version: config_version}} ->
+          {:ok, config_version}
+
+        {:error, :knowledge_base_version, reason, _changes} ->
+          {:error, reason}
+
+        {:error, _failed, changeset, _changes} ->
+          {:error, changeset}
+      end
+    end
+  end
+
+  # Classic models tune via temperature, reasoning models via effort — the two
+  # don't overlap on one model
+  @spec extract_settings(map()) :: map()
+  defp extract_settings(params), do: Map.take(params, @tunable_settings_keys)
+
+  @spec link_improve_prompt_knowledge_bases(Multi.t(), [String.t()] | nil, non_neg_integer()) ::
+          Multi.t()
+  defp link_improve_prompt_knowledge_bases(multi, llm_service_ids, organization_id) do
+    case List.first(llm_service_ids || []) do
+      nil ->
+        multi
+
+      llm_service_id ->
+        do_link_improve_prompt_knowledge_base(multi, llm_service_id, organization_id)
+    end
+  end
+
+  @spec do_link_improve_prompt_knowledge_base(Multi.t(), String.t(), non_neg_integer()) ::
+          Multi.t()
+  defp do_link_improve_prompt_knowledge_base(multi, llm_service_id, organization_id) do
+    multi
+    |> Multi.run(:knowledge_base_version, fn _repo, _changes ->
+      case Repo.fetch_by(KnowledgeBaseVersion, llm_service_id: llm_service_id) do
+        {:error, _} ->
+          {:error, "No matching knowledge base found for llm_service_id=#{llm_service_id}"}
+
+        {:ok, knowledge_base_version} ->
+          {:ok, knowledge_base_version}
+      end
+    end)
+    |> Multi.insert_all(
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      fn %{config_version: config_version, knowledge_base_version: knowledge_base_version} ->
+        [
+          %{
+            assistant_config_version_id: config_version.id,
+            knowledge_base_version_id: knowledge_base_version.id,
+            organization_id: organization_id,
+            inserted_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now()
+          }
+        ]
+      end
+    )
   end
 end

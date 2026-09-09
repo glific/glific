@@ -1,0 +1,32 @@
+subscription assistantConfigVersionUpdated {
+  assistantConfigVersionUpdated {
+    id
+    versionLabel
+    model
+    prompt
+    settings
+    status
+    description
+    vectorStore {
+      id
+      knowledgeBaseVersionId
+      vectorStoreId
+      name
+      status
+    }
+    insertedAt
+    updatedAt
+  }
+}
+
+subscription knowledgeBaseVersionUpdated {
+  knowledgeBaseVersionUpdated {
+    id
+    knowledgeBaseId
+    versionNumber
+    status
+    size
+    insertedAt
+    updatedAt
+  }
+}

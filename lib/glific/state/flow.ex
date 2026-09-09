@@ -4,7 +4,7 @@ defmodule Glific.State.Flow do
   a flow at a time
   """
   require Logger
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Flows.Flow,

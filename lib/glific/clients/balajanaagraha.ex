@@ -2,9 +2,6 @@ defmodule Glific.Clients.Balajanaagraha do
   @moduledoc """
   Custom webhook implementation specific to balajanaagraha usecase
   """
-
-  import Ecto.Query, warn: false
-
   alias Glific.{
     Contacts,
     Flows.ContactField

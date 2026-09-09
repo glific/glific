@@ -3,7 +3,7 @@ defmodule Glific.Tickets do
   The Tickets context.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,

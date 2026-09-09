@@ -6,8 +6,7 @@ defmodule Glific.Flows.Broadcast do
 
   use Publicist
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   require Logger
 
   alias Glific.{

@@ -1,5 +1,9 @@
 defmodule Glific.Messages.Message do
-  @moduledoc false
+  @moduledoc """
+  The schema for a single inbound or outbound WhatsApp message: its content, media/location
+  attachments, delivery status, and links to the sender/receiver contacts, session template,
+  flow, and group it belongs to.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

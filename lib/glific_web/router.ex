@@ -71,16 +71,22 @@ defmodule GlificWeb.Router do
     post("/session/name", SessionController, :name)
     post("/session/tracker", SessionController, :tracker)
     post("/onboard/setup", OnboardController, :setup)
-    post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
+
+    # Web channel
+    get("/web_channel/branding", WebChannelController, :branding)
+    post("/web_channel/request-otp", WebChannelAuthController, :request_otp)
+    post("/web_channel/verify-otp", WebChannelAuthController, :verify_otp)
+    post("/web_channel/renew-token", WebChannelAuthController, :renew_token)
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through([:api, :api_protected])
 
     post("/get-embed-token", SupersetController, :embed_token)
+    post("/simulator/message", SimulatorController, :message)
   end
 
   # Enables LiveDashboard only for development
@@ -113,8 +119,14 @@ defmodule GlificWeb.Router do
     forward("/api", Absinthe.Plug, schema: GlificWeb.Schema)
   end
 
+  pipeline :bsp_webhook do
+    plug(GlificWeb.Plugs.BSPWebhookIPFilter)
+  end
+
   # BSP webhooks
   scope "/", GlificWeb do
+    pipe_through(:bsp_webhook)
+
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
     forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
     forward("/maytapi", Providers.Maytapi.Plugs.Shunt)
@@ -135,6 +147,9 @@ defmodule GlificWeb.Router do
   scope "/kaapi", GlificWeb do
     post("/knowledge_base_version", KaapiController, :knowledge_base_version_creation_callback)
     post("/prompt_generation", KaapiController, :prompt_generation_callback)
+    post("/assistant_chat", KaapiController, :assistant_chat_callback)
+    post("/improve_prompt", KaapiController, :improve_prompt_callback)
+    post("/evaluation_run", KaapiController, :evaluation_run_callback)
   end
 
   # Dify chatbot callback routes.

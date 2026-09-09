@@ -206,12 +206,25 @@ defmodule GlificWeb.Schema.UserTest do
     assert message == "Resource not found"
   end
 
+  test "a manager cannot delete a user of a higher role", %{manager: user_auth} do
+    {:ok, admin} =
+      Repo.fetch_by(User, %{name: "NGO Admin", organization_id: user_auth.organization_id})
+
+    result = auth_query_gql_by(:delete, user_auth, variables: %{"id" => admin.id})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:errors, Access.at(0), :message]) ==
+             "Does not have access to the user"
+
+    assert {:ok, _still_there} = Repo.fetch_by(User, %{id: admin.id})
+  end
+
   test "update a user and test possible scenarios and errors", %{manager: user_auth} do
     {:ok, user} =
       Repo.fetch_by(User, %{name: "NGO Staff", organization_id: user_auth.organization_id})
 
     name = "User Test Name New"
-    roles = ["Staff", "Admin"]
+    roles = ["Staff"]
 
     group = Fixtures.group_fixture()
 
@@ -239,7 +252,6 @@ defmodule GlificWeb.Schema.UserTest do
 
     # update user groups
     group_2 = Fixtures.group_fixture(%{label: "new group"})
-    roles = ["admin"]
 
     result =
       auth_query_gql_by(:update, user_auth,
@@ -258,6 +270,62 @@ defmodule GlificWeb.Schema.UserTest do
     user_result = get_in(query_data, [:data, "updateUser", "user"])
 
     assert user_result["groups"] == [%{"id" => "#{group_2.id}"}]
+  end
+
+  test "a manager cannot grant a role above their own", %{manager: user_auth} do
+    {:ok, user} =
+      Repo.fetch_by(User, %{name: "NGO Staff", organization_id: user_auth.organization_id})
+
+    for requested <- [["glific_admin"], ["Admin"], ["Staff", "Admin"], ["Glific admin"]] do
+      result =
+        auth_query_gql_by(:update, user_auth,
+          variables: %{"id" => user.id, "input" => %{"roles" => requested}}
+        )
+
+      assert {:ok, query_data} = result
+
+      assert get_in(query_data, [:errors, Access.at(0), :message]) ==
+               "Does not have access to assign this role"
+    end
+
+    {:ok, db_user} = Repo.fetch_by(User, %{id: user.id})
+    assert db_user.roles == [:staff]
+  end
+
+  # a role id that does not resolve used to fall through to an empty label list, which
+  # check_access_role maps to the lowest role - so a bogus id silently demoted the target
+  test "an unresolvable add_role_id is refused rather than demoting the user", %{
+    manager: user_auth
+  } do
+    {:ok, user} =
+      Repo.fetch_by(User, %{name: "NGO Staff", organization_id: user_auth.organization_id})
+
+    for role_ids <- [["999999"], ["999999", "1000000"]] do
+      result =
+        auth_query_gql_by(:update, user_auth,
+          variables: %{"id" => user.id, "input" => %{"addRoleIds" => role_ids}}
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:errors, Access.at(0), :message]) == "Resource not found"
+    end
+
+    {:ok, db_user} = Repo.fetch_by(User, %{id: user.id})
+    assert db_user.roles == [:staff]
+    refute db_user.roles == [:none]
+  end
+
+  test "a manager cannot escalate their own role", %{manager: user_auth} do
+    result =
+      auth_query_gql_by(:update, user_auth,
+        variables: %{"id" => user_auth.id, "input" => %{"roles" => ["glific_admin"]}}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors, Access.at(0), :message]) != nil
+
+    {:ok, db_user} = Repo.fetch_by(User, %{id: user_auth.id})
+    refute :glific_admin in db_user.roles
   end
 
   test "update a user of higher role should give an errors", %{manager: user_auth} do

@@ -1,5 +1,8 @@
 defmodule Glific.Templates.SessionTemplate do
-  @moduledoc false
+  @moduledoc """
+  The schema for a reusable message template (including BSP-approved HSM templates) —
+  its body, parameters, buttons, approval status, and translations.
+  """
   use Ecto.Schema
   import Ecto.Changeset
   alias __MODULE__

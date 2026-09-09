@@ -18,6 +18,7 @@ defmodule Glific.AIEvaluations.GoldenQA do
           dataset_id: non_neg_integer() | nil,
           duplication_factor: non_neg_integer() | nil,
           file_name: String.t() | nil,
+          total_items: integer(),
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: DateTime.t() | nil,
@@ -25,13 +26,14 @@ defmodule Glific.AIEvaluations.GoldenQA do
         }
 
   @required_fields [:name, :dataset_id, :organization_id]
-  @optional_fields [:duplication_factor, :file_name]
+  @optional_fields [:duplication_factor, :file_name, :total_items]
 
   schema "golden_qas" do
     field(:name, :string)
     field(:dataset_id, :integer)
     field(:duplication_factor, :integer, default: 1)
     field(:file_name, :string)
+    field(:total_items, :integer, default: 0)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
