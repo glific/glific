@@ -794,13 +794,50 @@ defmodule Glific.Flows.Action do
     {:ok, updated_context, messages}
   end
 
+  def execute(%{type: type} = _action, context, [msg])
+      when type in @wait_for do
+    if msg.body != "No Response" do
+      Logger.info(
+        "Message #{msg.body} with context (#{context.id}) received while waiting for time"
+      )
+
+      {:error, "unexpected message received while waiting for time"}
+    else
+      {:ok, context, []}
+    end
+  end
+
+  @sleep_timeout 4 * 1000
+
+  def execute(%{type: type} = action, context, [])
+      when type in @wait_for do
+    if action.wait_time == @default_wait_time do
+      ## Ideally we should do it by async call
+      ## but this is fine as a sort term fix.
+      Process.sleep(@sleep_timeout)
+      {:ok, context, []}
+    else
+      {:ok, context} =
+        FlowContext.update_flow_context(
+          context,
+          %{
+            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+            is_background_flow: context.flow.is_background,
+            is_await_result: type == "wait_for_result"
+          }
+        )
+
+      {:wait, context, []}
+    end
+  end
+
   def execute(action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
-    Logger.error(
-      "Unsupported action type: for flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} wa_group_id #{Glific.SafeLog.safe_inspect(context.wa_group_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
+    Glific.log_error(
+      "Unsupported action type #{action.type} for WA group: flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} wa_group_id #{Glific.SafeLog.safe_inspect(context.wa_group_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
     )
 
-    raise(UndefinedFunctionError, message: "Unsupported action type #{action.type} for WA group")
+    {:ok, context, messages}
   end
 
   def execute(%{type: "send_msg"} = action, context, messages) do
@@ -1055,43 +1092,6 @@ defmodule Glific.Flows.Action do
     end
 
     {:ok, context, messages}
-  end
-
-  def execute(%{type: type} = _action, context, [msg])
-      when type in @wait_for do
-    if msg.body != "No Response" do
-      Logger.info(
-        "Message #{msg.body} with context (#{context.id}) received while waiting for time"
-      )
-
-      {:error, "unexpected message received while waiting for time"}
-    else
-      {:ok, context, []}
-    end
-  end
-
-  @sleep_timeout 4 * 1000
-
-  def execute(%{type: type} = action, context, [])
-      when type in @wait_for do
-    if action.wait_time == @default_wait_time do
-      ## Ideally we should do it by async call
-      ## but this is fine as a sort term fix.
-      Process.sleep(@sleep_timeout)
-      {:ok, context, []}
-    else
-      {:ok, context} =
-        FlowContext.update_flow_context(
-          context,
-          %{
-            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
-            is_background_flow: context.flow.is_background,
-            is_await_result: type == "wait_for_result"
-          }
-        )
-
-      {:wait, context, []}
-    end
   end
 
   def execute(action, context, messages) do

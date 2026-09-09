@@ -869,6 +869,37 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.results["video_code"]["value"] == "shyness"
   end
 
+  test "execute a wait_for_time action for a WA Group arms the timer instead of raising", attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        flow_id: flow.id,
+        flow_uuid: Ecto.UUID.generate(),
+        wa_group_id: wa_group.id,
+        organization_id: attrs.organization_id
+      })
+
+    context = Repo.preload(context, [:flow, :wa_group])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "wait_for_time",
+      wait_time: 900
+    }
+
+    # before the wait clauses were moved above the WA group catch-all this raised
+    # UndefinedFunctionError instead of arming the timer
+    assert {:wait, %FlowContext{} = waiting_context, []} = Action.execute(action, context, [])
+    assert waiting_context.wakeup_at != nil
+
+    # woken by its own timeout, the wait proceeds along the normal path
+    assert {:ok, %FlowContext{}, []} =
+             Action.execute(action, context, [%{body: "No Response"}])
+  end
+
   test "execute an action for WA Group when type is set_run_result", attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
     [flow | _tail] = Flows.list_flows(%{filter: attrs})
@@ -1598,7 +1629,7 @@ defmodule Glific.Flows.ActionTest do
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
   end
 
-  test "execute a wa group unsupported action",
+  test "execute a wa group unsupported action skips the node instead of raising",
        _attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
 
@@ -1613,7 +1644,26 @@ defmodule Glific.Flows.ActionTest do
 
     message_stream = []
 
-    assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
+    # raising here retried the enclosing webhook job and duplicated an already-sent message
+    assert {:ok, ^context, ^message_stream} = Action.execute(action, context, message_stream)
+  end
+
+  test "execute a wa group unsupported action passes the message stream through untouched",
+       attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+
+    context =
+      %FlowContext{
+        wa_group_id: wa_group.id,
+        flow_id: 1,
+        organization_id: attrs.organization_id
+      }
+      |> Repo.preload([:wa_group, :flow])
+
+    action = %Action{type: "set_contact_name", value: "New Name"}
+    message_stream = [Messages.create_temp_message(attrs.organization_id, "Success")]
+
+    assert {:ok, ^context, ^message_stream} = Action.execute(action, context, message_stream)
   end
 
   describe "call_webhook await state (park_async_webhook)" do
