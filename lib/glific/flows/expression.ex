@@ -265,7 +265,7 @@ defmodule Glific.Flows.Expression do
     {:min, 2},
     {:then, 2},
     {:.., 2},
-    {:"..//", 3},
+    {:..//, 3},
     {:hd, 1},
     {:is_map, 1}
   ]
@@ -1088,6 +1088,8 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:in, [a, b]) when is_list(b), do: Enum.member?(b, a)
   defp kernel_call(:in, _), do: reject("in requires a list")
   defp kernel_call(:to_string, [a]), do: to_string(a)
+  # Whitelisted expression function — the result is flow output, not a log line.
+  # credo:disable-for-next-line GlificCredo.Checks.NoRawInspect
   defp kernel_call(:inspect, [a]), do: inspect(a)
   defp kernel_call(:is_number, [a]), do: is_number(a)
   defp kernel_call(:is_binary, [a]), do: is_binary(a)
@@ -1098,7 +1100,7 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:then, [value, fun]) when is_function(fun, 1), do: fun.(value)
   defp kernel_call(:then, _), do: reject("then requires a function")
   defp kernel_call(:.., [a, b]), do: Range.new(a, b)
-  defp kernel_call(:"..//", [a, b, c]), do: Range.new(a, b, c)
+  defp kernel_call(:..//, [a, b, c]), do: Range.new(a, b, c)
   defp kernel_call(:hd, [a]) when is_list(a) and a != [], do: hd(a)
   defp kernel_call(:hd, _), do: reject("hd requires a non-empty list")
   defp kernel_call(:is_map, [a]), do: is_map(a)

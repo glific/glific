@@ -77,6 +77,9 @@ defmodule GlificWeb.Router do
 
     # Web channel
     get("/web_channel/branding", WebChannelController, :branding)
+    post("/web_channel/request-otp", WebChannelAuthController, :request_otp)
+    post("/web_channel/verify-otp", WebChannelAuthController, :verify_otp)
+    post("/web_channel/renew-token", WebChannelAuthController, :renew_token)
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
