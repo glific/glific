@@ -3,7 +3,6 @@ defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
   use Oban.Pro.Testing, repo: Glific.Repo
 
-  alias Ecto.Adapters.SQL.Sandbox
   alias Faker.Phone
   import Mock
 
@@ -1945,71 +1944,6 @@ defmodule Glific.ContactsTest do
       # Should still be only 1 contact, not duplicated
       count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
       assert count == 1
-    end
-  end
-
-  describe "record_channel_optin/3" do
-    test "records consent for one channel without touching the WhatsApp opt-in fields", attrs do
-      contact = Fixtures.contact_fixture(attrs)
-
-      assert {:ok, optin} = Contacts.record_channel_optin(contact, :web, method: "web_channel")
-
-      assert optin.channel == :web
-      assert optin.optin_method == "web_channel"
-      refute is_nil(optin.optin_time)
-
-      unchanged = Contacts.get_contact!(contact.id)
-      assert unchanged.optin_time == contact.optin_time
-      assert unchanged.optin_status == contact.optin_status
-      assert unchanged.optin_method == contact.optin_method
-    end
-
-    test "captures exactly one history event, on the channel consented to", attrs do
-      contact = Fixtures.contact_fixture(attrs)
-
-      Contacts.record_channel_optin(contact, :web)
-      Contacts.record_channel_optin(contact, :web)
-      Contacts.record_channel_optin(contact, :web)
-
-      assert [%{channel: :web, event_type: "contact_opted_in"}] =
-               Contacts.list_contact_history(%{filter: %{contact_id: contact.id}})
-    end
-
-    test "channel_opted_in?/2 answers per channel", attrs do
-      contact = Fixtures.contact_fixture(attrs)
-
-      Contacts.record_channel_optin(contact, :web)
-
-      assert Contacts.channel_opted_in?(contact.id, :web)
-      refute Contacts.channel_opted_in?(contact.id, :whatsapp)
-    end
-
-    # The unique index, not application-level checking, is what makes this safe: two browser tabs
-    # completing the OTP at the same time genuinely race here.
-    test "two concurrent first calls produce one row and one history event", attrs do
-      contact = Fixtures.contact_fixture(attrs)
-      parent = self()
-
-      tasks =
-        for _attempt <- 1..2 do
-          Task.async(fn ->
-            Sandbox.allow(Repo, parent, self())
-            Repo.put_process_state(contact.organization_id)
-
-            receive do
-              :go -> :ok
-            end
-
-            Contacts.record_channel_optin(contact, :web)
-          end)
-        end
-
-      Enum.each(tasks, &send(&1.pid, :go))
-      results = Enum.map(tasks, &Task.await/1)
-
-      assert Enum.all?(results, &match?({:ok, %{channel: :web}}, &1))
-
-      assert [_one] = Contacts.list_contact_history(%{filter: %{contact_id: contact.id}})
     end
   end
 end

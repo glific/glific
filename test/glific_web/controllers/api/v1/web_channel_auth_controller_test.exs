@@ -710,7 +710,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
-  describe "opt-in is recorded per channel, not as a WhatsApp opt-in (#5713)" do
+  describe "a web login never touches the WhatsApp opt-in fields (#5713)" do
     defp sign_in_new_contact(conn, phone) do
       code = OTP.generate_code(:web_channel, phone)
 
@@ -733,54 +733,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         assert is_nil(contact.optin_method)
         assert is_nil(contact.optin_message_id)
         assert is_nil(contact.optout_time)
-      end)
-    end
-
-    test "a first web login records a web opt-in and a web history event", %{conn: conn} do
-      phone = unique_phone()
-
-      with_web_channel_enabled(fn ->
-        assert %{status: 200} = sign_in_new_contact(conn, phone)
-
-        contact = Repo.get_by!(Contact, phone: phone)
-
-        assert %{channel: :web, optin_method: "web_channel"} =
-                 optin =
-                 Contacts.get_channel_optin(contact.id, :web)
-
-        refute is_nil(optin.optin_time)
-        assert Contacts.channel_opted_in?(contact.id, :web)
-        refute Contacts.channel_opted_in?(contact.id, :whatsapp)
-
-        assert [%{channel: :web, event_type: "contact_opted_in"}] =
-                 Contacts.list_contact_history(%{
-                   filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
-                 })
-      end)
-    end
-
-    test "signing in repeatedly produces one opt-in row and one history event", %{conn: conn} do
-      phone = unique_phone()
-
-      with_web_channel_enabled(fn ->
-        for _attempt <- 1..5, do: assert(%{status: 200} = sign_in_new_contact(conn, phone))
-
-        contact = Repo.get_by!(Contact, phone: phone)
-
-        assert 1 ==
-                 Repo.aggregate(
-                   from(o in Glific.Contacts.ContactChannelOptin,
-                     where: o.contact_id == ^contact.id
-                   ),
-                   :count
-                 )
-
-        assert 1 ==
-                 length(
-                   Contacts.list_contact_history(%{
-                     filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
-                   })
-                 )
       end)
     end
 
@@ -821,10 +773,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         assert is_nil(after_login.optin_time)
         assert after_login.optout_time == opted_out.optout_time
         assert after_login.status == :invalid
-
-        # The web channel is still open to them: opting out of WhatsApp is not opting out of
-        # everything, and this is the whole point of recording the two separately.
-        assert Contacts.channel_opted_in?(after_login.id, :web)
       end)
     end
   end

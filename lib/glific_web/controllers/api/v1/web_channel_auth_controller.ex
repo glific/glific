@@ -6,8 +6,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Signing in records consent for the web channel only, in `contact_channel_optins`;
-  `contacts.optin_*` keeps its existing meaning of WhatsApp consent (#5713).
+  Signing in records no consent. `contacts.optin_*` keeps its existing meaning of WhatsApp
+  consent (#5713); web-channel consent is captured in the widget UI, not persisted here.
   """
 
   use GlificWeb, :controller
@@ -121,12 +121,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
     case ensure_contact(organization_id, normalized) do
       {:ok, contact} ->
-        # Recorded here and not at request-otp: anyone can type any number into a public form,
-        # and a consent record that can be manufactured for a number the caller does not control
-        # is worse than none. Proving control of the number is what makes the record mean
-        # something. `record_channel_optin/3` is idempotent, so repeat logins add nothing.
-        Contacts.record_channel_optin(contact, :web, method: "web_channel")
-
         json(conn, %{
           data: %{
             token: Token.sign_contact_token(contact),

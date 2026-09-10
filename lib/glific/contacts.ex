@@ -15,7 +15,6 @@ defmodule Glific.Contacts do
   alias Glific.{
     Clients,
     Contacts.Contact,
-    Contacts.ContactChannelOptin,
     Contacts.ContactHistory,
     Contacts.Location,
     Groups.ContactGroup,
@@ -687,8 +686,8 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
   # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
   # contact that has only ever existed in a browser sits at `:none`, which both clauses above
-  # refuse. Consent for the web is recorded in `contact_channel_optins` when the contact signs
-  # in, so the only thing left to check when staff reply is that the contact is not blocked.
+  # refuse. A web contact is reachable over their open socket regardless, so the only thing left
+  # to check when staff reply is that the contact is not blocked.
   def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
       when channel in [:web, "web"] do
     if contact.status == :blocked,
@@ -1025,65 +1024,6 @@ defmodule Glific.Contacts do
 
   def capture_history(_, _event_type, _attrs),
     do: {:error, dgettext("errors", "Invalid event type")}
-
-  @doc """
-  Record that a contact consented to being messaged on a channel.
-  """
-  @spec record_channel_optin(Contact.t(), atom(), Keyword.t()) ::
-          {:ok, ContactChannelOptin.t()} | {:error, Ecto.Changeset.t()}
-  def record_channel_optin(%Contact{} = contact, channel, opts \\ []) do
-    method = Keyword.get(opts, :method, "web_channel")
-    optin_time = Keyword.get(opts, :optin_time, DateTime.utc_now() |> DateTime.truncate(:second))
-
-    %ContactChannelOptin{}
-    |> ContactChannelOptin.changeset(%{
-      contact_id: contact.id,
-      organization_id: contact.organization_id,
-      channel: channel,
-      optin_time: optin_time,
-      optin_method: method
-    })
-    |> Repo.insert(on_conflict: :nothing, conflict_target: [:contact_id, :channel])
-    |> case do
-      # Ecto answers a suppressed conflict with an id-less struct. Two concurrent first logins
-      # both reach here, and only the one that actually inserted may capture the history event —
-      # otherwise the contact timeline grows a row per login.
-      {:ok, %ContactChannelOptin{id: nil}} ->
-        {:ok, get_channel_optin(contact.id, channel)}
-
-      {:ok, optin} ->
-        capture_history(contact, :contact_opted_in, %{
-          event_label: "contact opted in on #{channel}, via #{method}",
-          channel: channel,
-          event_meta: %{method: method, utc_time: optin_time}
-        })
-
-        {:ok, optin}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
-  end
-
-  @doc """
-  A contact's opt-in record for one channel, if it has one.
-  """
-  @spec get_channel_optin(non_neg_integer(), atom()) :: ContactChannelOptin.t() | nil
-  def get_channel_optin(contact_id, channel),
-    do: Repo.get_by(ContactChannelOptin, contact_id: contact_id, channel: channel)
-
-  @doc """
-  Whether a contact has consented to being messaged on a channel.
-  """
-  @spec channel_opted_in?(non_neg_integer(), atom()) :: boolean()
-  def channel_opted_in?(contact_id, channel) do
-    ContactChannelOptin
-    |> where(
-      [o],
-      o.contact_id == ^contact_id and o.channel == ^channel and not is_nil(o.optin_time)
-    )
-    |> Repo.exists?()
-  end
 
   @doc """
   Get contact history
