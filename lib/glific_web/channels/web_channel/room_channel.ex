@@ -93,16 +93,18 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       when is_integer(offset) and offset >= 0 do
     contact_id = socket.assigns.current_contact.id
 
-    with :ok <- check_message_rate_limit(contact_id) do
-      messages =
-        contact_id
-        |> Messages.list_conversation_messages(:web, %{limit: @page_size, offset: offset})
-        |> Enum.reverse()
-        |> Enum.map(&MessageSerializer.serialize/1)
+    case check_message_rate_limit(contact_id) do
+      :ok ->
+        messages =
+          contact_id
+          |> Messages.list_conversation_messages(:web, %{limit: @page_size, offset: offset})
+          |> Enum.reverse()
+          |> Enum.map(&MessageSerializer.serialize/1)
 
-      {:reply, {:ok, %{messages: messages}}, socket}
-    else
-      error -> {:reply, {:error, %{reason: failure_reason(error)}}, socket}
+        {:reply, {:ok, %{messages: messages}}, socket}
+
+      error ->
+        {:reply, {:error, %{reason: failure_reason(error)}}, socket}
     end
   end
 
