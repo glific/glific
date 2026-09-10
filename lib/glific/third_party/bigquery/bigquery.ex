@@ -79,6 +79,8 @@ defmodule Glific.BigQuery do
     Connection
   }
 
+  alias GoogleApi.Gax.Response
+
   @bigquery_tables %{
     "contacts" => :contact_schema,
     "contact_histories" => :contact_history_schema,
@@ -999,7 +1001,8 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{safe_inspect(response)}"
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, " <>
+        "table: #{table}, #{bigquery_error_summary(response)}"
     )
 
     {error, message} = bigquery_error_status(response)
@@ -1031,6 +1034,45 @@ defmodule Glific.BigQuery do
     end
   end
 
+  ## Two constraints shape this. The body is inspected rather than interpolated, because
+  ## BigQuery's JSON is pretty-printed and a raw newline ends the log entry (the Logger format
+  ## ends with `$message`). And the two fields that name the failure are lifted to the front,
+  ## because they sit behind a long `message` in the response and would otherwise be lost to
+  ## `inspect/1`'s 4096-char `:printable_limit`. The body still follows in full.
+  @spec bigquery_error_summary(any()) :: String.t()
+  defp bigquery_error_summary(%Tesla.Env{status: status, body: body}),
+    do: "http_status=#{status} #{bigquery_error_fields(body)}body=#{safe_inspect(body)}"
+
+  defp bigquery_error_summary(error), do: safe_inspect(error)
+
+  @spec bigquery_error_fields(any()) :: String.t()
+  defp bigquery_error_fields(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"error" => %{} = error}} ->
+        "bq_status=#{error["status"]} reason=#{error_reasons(error["errors"])} "
+
+      {:ok, %{"errors" => [_ | _] = errors}} ->
+        "reason=#{error_reasons(errors)} "
+
+      _ ->
+        ""
+    end
+  end
+
+  defp bigquery_error_fields(_body), do: ""
+
+  @spec error_reasons(any()) :: String.t()
+  defp error_reasons(errors) when is_list(errors) do
+    errors
+    |> Enum.flat_map(fn
+      %{"reason" => reason} when is_binary(reason) -> [String.replace(reason, ~r/\s+/, " ")]
+      _ -> []
+    end)
+    |> Enum.join(",")
+  end
+
+  defp error_reasons(_errors), do: ""
+
   @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}
   defp bigquery_error_status(response) do
     with true <- is_map(response),
@@ -1061,10 +1103,20 @@ defmodule Glific.BigQuery do
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 
-        ## timeout takes some time to delete the old records. So increasing the timeout limit.
-        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+        ## `timeoutMs` below only bounds how long BigQuery's own server is allowed to keep
+        ## running the query - it has no effect on how long our own HTTP client waits for
+        ## the response. `Api.Jobs.bigquery_jobs_query/4` never forwards an `opts:` you pass
+        ## it to the actual request (its own `opts` param only reaches response decoding),
+        ## so we call the connection's Tesla `request/2` directly here - the same connection
+        ## and middleware `bigquery_jobs_query/4` uses internally - to set an explicit
+        ## `recv_timeout`.
+        Connection.request(conn,
+          url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
+          method: :post,
+          body: %{query: sql, useLegacySql: false, timeoutMs: bigquery_dedup_query_timeout_ms()},
+          opts: [adapter: [recv_timeout: bigquery_dedup_recv_timeout_ms()]]
         )
+        |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
@@ -1073,6 +1125,14 @@ defmodule Glific.BigQuery do
         :ok
     end
   end
+
+  @spec bigquery_dedup_query_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_query_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_timeout_ms, 120_000)
+
+  @spec bigquery_dedup_recv_timeout_ms() :: pos_integer()
+  defp bigquery_dedup_recv_timeout_ms,
+    do: Application.get_env(:glific, :bigquery_dedup_recv_timeout_ms, 150_000)
 
   @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
@@ -1118,8 +1178,11 @@ defmodule Glific.BigQuery do
     Instrumentation.record(table, :error, :remove_duplicates, organization_id)
 
     Logger.error(
-      "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
+      "Error while removing duplicate entries from the table #{table} on bigquery. " <>
+        "org_id: #{organization_id} #{bigquery_error_summary(error)}"
     )
+
+    :ok
   end
 
   @spec format_datetime(DateTime.t() | NaiveDateTime.t(), String.t()) :: String.t() | no_return()

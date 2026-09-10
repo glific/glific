@@ -281,13 +281,13 @@ defmodule Glific.Assistants.AssistantTest do
   describe "upload_file/2" do
     test "validates assistant-supported file extensions", %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
-        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+        %{method: :post, url: "This is not a secret/api/v1/documents/", body: multipart} ->
           %Tesla.Env{
             status: 200,
             body: %{
               success: true,
               data: %{
-                fname: "uploaded",
+                fname: multipart_filename(multipart),
                 id: "d33539f6-2196-477c-a127-0f17f04ef133",
                 inserted_at: "2026-01-30T10:51:16.872363"
               },
@@ -297,15 +297,22 @@ defmodule Glific.Assistants.AssistantTest do
           }
       end)
 
-      for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"] do
-        upload = build_upload_for_extension(extension)
-        assert {:ok, _} = Assistants.upload_file(%{media: upload}, organization_id)
+      for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"],
+          cased_extension <- [extension, String.upcase(extension), String.capitalize(extension)] do
+        upload = build_upload_for_extension(cased_extension)
+
+        assert {:ok, %{filename: filename}} =
+                 Assistants.upload_file(%{media: upload}, organization_id)
+
+        assert filename == "sample.#{extension}"
       end
 
-      unsupported_upload = build_upload_for_extension("png")
+      for cased_extension <- ["png", "PNG", "Png"] do
+        unsupported_upload = build_upload_for_extension(cased_extension)
 
-      assert {:error, "Files with extension '.png' not supported in Assistants"} =
-               Assistants.upload_file(%{media: unsupported_upload}, organization_id)
+        assert {:error, "Files with extension '.png' not supported in Assistants"} =
+                 Assistants.upload_file(%{media: unsupported_upload}, organization_id)
+      end
     end
 
     test "uploads the file successfully to Kaapi", %{
@@ -441,6 +448,61 @@ defmodule Glific.Assistants.AssistantTest do
       assert signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
     end
 
+    test "returns a clear error for files of a knowledge base version with no kaapi_job_id", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      {:ok, _legacy_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          llm_service_id: "vs_legacy_123",
+          status: :completed,
+          organization_id: organization_id,
+          files: %{"file-abc123" => %{"name" => "legacy.pdf", "size" => 10}},
+          size: 10
+        })
+
+      assert {:error, error_message} =
+               Assistants.get_file("file-abc123", organization_id)
+
+      assert error_message ==
+               "This file belongs to a legacy knowledge base created before the knowledge base rewrite and cannot be downloaded"
+    end
+
+    test "fetches from Kaapi when the knowledge base version has a kaapi_job_id", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      {:ok, _version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          llm_service_id: "vs_synced_123",
+          kaapi_job_id: "job_123",
+          status: :completed,
+          organization_id: organization_id,
+          files: %{"file-abc123" => %{"name" => "synced.pdf", "size" => 10}},
+          size: 10
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "This is not a secret/api/v1/documents/file-abc123"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                id: "file-abc123",
+                fname: "synced.pdf",
+                signed_url: "https://kaapi-test.s3.amazonaws.com/test/synced.pdf"
+              }
+            }
+          }
+      end)
+
+      assert {:ok, %{filename: "synced.pdf"}} =
+               Assistants.get_file("file-abc123", organization_id)
+    end
+
     test "returns an error when Kaapi fails", %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
         %{method: :get, url: "This is not a secret/api/v1/documents/doc_123"} ->
@@ -541,4 +603,7 @@ defmodule Glific.Assistants.AssistantTest do
         is_active: true
       })
   end
+
+  defp multipart_filename(%Tesla.Multipart{parts: parts}),
+    do: Enum.find_value(parts, fn part -> part.dispositions[:filename] end)
 end

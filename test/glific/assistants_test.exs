@@ -13,6 +13,7 @@ defmodule Glific.AssistantsTest do
   alias Glific.Notifications.Notification
   alias Glific.Partners
   alias Glific.Repo
+  alias Glific.ThirdParty.Kaapi
 
   defp enable_kaapi(attrs) do
     Fixtures.kaapi_credential_fixture(%{organization_id: attrs.organization_id})
@@ -1354,7 +1355,7 @@ defmodule Glific.AssistantsTest do
                })
 
       assert String.starts_with?(assistant.name, "Assistant-")
-      assert config_version.model == "gpt-4o"
+      assert config_version.model == Kaapi.default_model()
       assert config_version.prompt == "You are a helpful assistant"
       assert config_version.description == "Assistant configuration"
 
@@ -3091,7 +3092,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id} do
       assistant = create_live_assistant(organization_id)
 
-      assert {:error, _reason} =
+      assert {:error, "Assistant not found"} =
                Assistants.send_message(
                  %{assistant_id: assistant.id, input: "Hello"},
                  organization_id + 1,
@@ -3099,7 +3100,7 @@ defmodule Glific.AssistantsTest do
                )
     end
 
-    test "returns an error when the assistant has no live config version yet",
+    test "returns an error when the assistant is not on Kaapi yet",
          %{organization_id: organization_id} do
       {:ok, assistant} =
         %Assistant{}
@@ -3109,9 +3110,78 @@ defmodule Glific.AssistantsTest do
         })
         |> Repo.insert()
 
-      assert {:error, _reason} =
+      assert {:error, "Assistant is not available on Kaapi yet"} =
                Assistants.send_message(
                  %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error when the assistant has no live config version yet",
+         %{organization_id: organization_id} do
+      assistant =
+        Fixtures.assistant_fixture(%{
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_002"
+        })
+
+      assert {:error, "Assistant does not have a live config version yet"} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
+    test "dispatches the selected config version instead of the live one",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      selected_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          kaapi_version_number: 7
+        })
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded = Jason.decode!(body)
+        assert decoded["config"] == %{"id" => "kaapi_uuid_001", "version" => 7}
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_003"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_chat_003"}} =
+               Assistants.send_message(
+                 %{
+                   assistant_id: assistant.id,
+                   input: "Hello",
+                   config_version_id: selected_version.id
+                 },
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error when the selected config version belongs to another assistant",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+      other_assistant = Fixtures.live_assistant_fixture(%{organization_id: organization_id})
+
+      other_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: other_assistant.id,
+          organization_id: organization_id,
+          kaapi_version_number: 9
+        })
+
+      assert {:error, "Selected assistant version is not available on Kaapi yet"} =
+               Assistants.send_message(
+                 %{
+                   assistant_id: assistant.id,
+                   input: "Hello",
+                   config_version_id: other_version.id
+                 },
                  organization_id,
                  1
                )

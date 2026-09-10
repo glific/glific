@@ -70,6 +70,12 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.MessageChannel,
+  :message_channel_enum,
+  Glific.Enums.message_channel_const()
+)
+
+defenum(
   Glific.Enums.QuestionType,
   :question_type_enum,
   Glific.Enums.question_type_const()
@@ -181,4 +187,10 @@ defenum(
   Glific.Enums.GlificAIEventType,
   :glific_ai_event_type_enum,
   Glific.Enums.glific_ai_event_type_const()
+)
+
+defenum(
+  Glific.Enums.GlificAIConversationKind,
+  :glific_ai_conversation_kind_enum,
+  Glific.Enums.glific_ai_conversation_kind_const()
 )

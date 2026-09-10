@@ -1,10 +1,12 @@
 defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     Contacts,
     Contacts.Location,
     Messages.Message,
+    Processor.MessageWorker,
     Repo,
     Seeds.SeedsDev
   }
@@ -65,8 +67,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -139,8 +141,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.caption == image_payload["caption"]
@@ -177,8 +179,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == audio_payload["url"] <> audio_payload["signature"]
@@ -213,8 +215,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.caption == video_payload["caption"]
@@ -249,8 +251,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.caption == file_payload["caption"]
@@ -299,8 +301,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
 
       {:ok, location} = Repo.fetch_by(Location, %{message_id: message.id})
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test location fields
       assert location.longitude == setup_config.location_payload["longitude"]

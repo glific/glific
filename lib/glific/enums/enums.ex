@@ -138,6 +138,9 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.GlificAIEventType.__enum_map__()
   Glific.Enums.glific_ai_event_type_const()
+
+  iex> Glific.Enums.GlificAIConversationKind.__enum_map__()
+  Glific.Enums.glific_ai_conversation_kind_const()
   """
 
   defmacro api_status_const,
@@ -169,6 +172,9 @@ defmodule Glific.Enums do
 
   defmacro message_type_const,
     do: Macro.expand(@message_type_const, __CALLER__)
+
+  defmacro message_channel_const,
+    do: Macro.expand(@message_channel_const, __CALLER__)
 
   defmacro question_type_const,
     do: Macro.expand(@question_type_const, __CALLER__)
@@ -226,4 +232,7 @@ defmodule Glific.Enums do
 
   defmacro glific_ai_event_type_const,
     do: Macro.expand(@glific_ai_event_type_const, __CALLER__)
+
+  defmacro glific_ai_conversation_kind_const,
+    do: Macro.expand(@glific_ai_conversation_kind_const, __CALLER__)
 end

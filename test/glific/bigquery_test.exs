@@ -159,6 +159,229 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "make_job_to_remove_duplicate/2 should override Hackney's default recv_timeout",
+       attrs do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      Tesla.Mock.mock(fn %{method: :post} = env ->
+        assert env.opts[:adapter][:recv_timeout] == 150_000
+        assert Jason.decode!(env.body)["timeoutMs"] == 120_000
+        assert env.url =~ "/queries"
+
+        %Tesla.Env{status: 200}
+      end)
+
+      assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    end
+  end
+
+  describe "bigquery_error_summary/1" do
+    @envelope_body """
+    {
+      "error": {
+        "code": 400,
+        "message": "TIMESTAMP_SUB does not support the MONTH date part when the argument is TIMESTAMP type at [10:33]",
+        "errors": [
+          {
+            "message": "TIMESTAMP_SUB does not support the MONTH date part when the argument is TIMESTAMP type at [10:33]",
+            "domain": "global",
+            "reason": "invalidQuery",
+            "location": "q",
+            "locationType": "parameter"
+          },
+          {
+            "message": "Query was stopped",
+            "domain": "global",
+            "reason": "stopped"
+          }
+        ],
+        "status": "INVALID_ARGUMENT"
+      }
+    }
+    """
+
+    test "keeps the status, every reason and the whole body on a single line" do
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @envelope_body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,stopped body="
+             )
+
+      assert summary =~ "TIMESTAMP_SUB does not support the MONTH date part"
+      assert summary =~ "Query was stopped"
+      refute summary =~ "\n"
+    end
+
+    test "keeps the status and reason ahead of the clip on a long response" do
+      body =
+        ~s({"error":{"code":400,"message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 300) <>
+          ~s(","errors":[{"domain":"global","reason":"invalidQuery"}],"status":"INVALID_ARGUMENT"}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert byte_size(body) > 4096
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
+             )
+
+      assert String.ends_with?(summary, "<> ...")
+      tail = summary |> String.split("body=") |> List.last()
+      refute tail =~ "invalidQuery"
+      refute tail =~ "INVALID_ARGUMENT"
+
+      refute summary =~ "\n"
+    end
+
+    test "lifts the reason out of a top-level errors array" do
+      body =
+        ~s({"kind":"bigquery#queryResponse","jobComplete":true,"errors":) <>
+          ~s([{"reason":"invalidQuery","location":"query","message":"UPDATE or DELETE ) <>
+          ~s(statement over table would affect rows in the streaming buffer"}]})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
+      assert summary =~ "would affect rows in the streaming buffer"
+      refute summary =~ "\n"
+    end
+
+    test "prints the reason from every record in the errors array" do
+      body =
+        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","errors":[) <>
+          ~s({"domain":"global","reason":"invalidQuery","message":"first"},) <>
+          ~s({"domain":"global","reason":"accessDenied","message":"second"},) <>
+          ~s({"domain":"global","reason":"rateLimitExceeded","message":"third"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT " <>
+                 "reason=invalidQuery,accessDenied,rateLimitExceeded body="
+             )
+    end
+
+    test "prints every reason from a top-level errors array too" do
+      body = ~s({"errors":[{"reason":"invalidQuery"},{"reason":"accessDenied"}]})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 reason=invalidQuery,accessDenied body="
+             )
+    end
+
+    test "skips records whose reason is missing or not a string" do
+      body =
+        ~s({"error":{"status":"INVALID_ARGUMENT","errors":[) <>
+          ~s({"reason":"invalidQuery"},{"domain":"global"},{"reason":{"a":1}},) <>
+          ~s("not-a-map",{"reason":"accessDenied"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,accessDenied body="
+             )
+    end
+
+    test "renders a blank reason when the errors value is not a populated list" do
+      for errors <- [~s({}), ~s([]), ~s("accessDenied"), ~s([{"domain":"global"}]), "null"] do
+        body = ~s({"error":{"code":403,"errors":#{errors},"status":"PERMISSION_DENIED"}})
+
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
+
+        assert String.starts_with?(
+                 summary,
+                 "http_status=403 bq_status=PERMISSION_DENIED reason= body="
+               )
+      end
+    end
+
+    test "renders a blank reason when the reason is not a string" do
+      for reason <- [~s({"a":1}), ~s([{"a":1}]), "42", "true", "null"] do
+        body = ~s({"error":{"errors":[{"reason":#{reason}}],"status":"INVALID_ARGUMENT"}})
+
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+        assert String.starts_with?(
+                 summary,
+                 "http_status=400 bq_status=INVALID_ARGUMENT reason= body="
+               )
+      end
+    end
+
+    test "collapses whitespace in every reason so the entry stays on one line" do
+      body =
+        ~s({"error":{"errors":[{"reason":"access\\n  denied\\tnow"},) <>
+          ~s({"reason":"quota\\nexceeded"}]}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
+
+      assert String.starts_with?(
+               summary,
+               "http_status=403 bq_status= reason=access denied now,quota exceeded "
+             )
+
+      refute summary =~ "\n"
+      refute summary =~ "\t"
+    end
+
+    test "renders no fields when the body is neither known shape" do
+      for body <- [~s({"error":"invalid_grant"}), ~s({"errors":[]}), "upstream unavailable", ""] do
+        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: body})
+
+        assert String.starts_with?(summary, "http_status=503 body=")
+      end
+    end
+
+    test "never leaks the Tesla client middleware" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{
+          status: 400,
+          body: @envelope_body,
+          __client__: %Tesla.Client{}
+        })
+
+      refute summary =~ "__client__"
+      refute summary =~ "Bearer"
+    end
+
+    test "handles a non-response error term" do
+      assert BigQuery.bigquery_error_summary(:timeout) == ":timeout"
+    end
+
+    test "bounds an oversized body instead of flooding the log" do
+      body =
+        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Syntax error: ) <>
+          String.duplicate("very long query text ", 500) <> ~s("}})
+
+      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+
+      assert byte_size(body) > 8192
+      assert summary =~ "http_status=400"
+      assert summary =~ "bq_status=INVALID_ARGUMENT"
+      assert summary =~ "Syntax error:"
+      assert String.ends_with?(summary, "<> ...")
+      assert byte_size(summary) < 4500
+      refute summary =~ "\n"
+    end
+  end
+
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(
