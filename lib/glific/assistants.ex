@@ -1012,7 +1012,7 @@ defmodule Glific.Assistants do
   @spec upload_file(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_file(params, organization_id) do
-    with {:ok, filename} <- validate_file_format(params.media.filename),
+    with {:ok, filename} <- validate_and_normalize_file_extension(params.media.filename),
          document_params = %{
            path: params.media.path,
            filename: filename,
@@ -1094,8 +1094,9 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec validate_file_format(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  defp validate_file_format(filename) do
+  @spec validate_and_normalize_file_extension(String.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp validate_and_normalize_file_extension(filename) do
     raw_extension = String.split(filename, ".") |> List.last()
     extension = String.downcase(raw_extension)
 
