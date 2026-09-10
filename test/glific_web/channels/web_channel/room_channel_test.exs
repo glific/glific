@@ -77,6 +77,20 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         assert_reply ref, :ok, %{messages: []}
       end)
     end
+
+    # A negative or non-integer offset reaches Ecto's offset and crashes the channel, so it must
+    # be rejected before the query rather than raised through it.
+    test "rejects an invalid offset instead of crashing the channel", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        for bad_offset <- [-1, "abc", 1.5, nil] do
+          ref = push(socket, "load_more", %{"offset" => bad_offset})
+          assert_reply ref, :error, %{reason: "invalid_offset"}
+        end
+      end)
+    end
   end
 
   describe "new_message" do
