@@ -4,6 +4,7 @@ defmodule Glific.Communications.WebMessageTest do
 
   alias Glific.{
     Communications.WebMessage,
+    Contacts,
     Contacts.Contact,
     Contacts.Location,
     Fixtures,
@@ -51,6 +52,54 @@ defmodule Glific.Communications.WebMessageTest do
                )
 
       assert message.contact_id == contact.id
+    end
+  end
+
+  describe "the WhatsApp session window" do
+    # last_message_at is the WhatsApp 24-hour window; a browser message must not open it, or a
+    # contact who only ever wrote on the web — and, post-#5713, may never have consented to
+    # WhatsApp — would look messageable there for 24 hours.
+    test "an inbound web message does not touch contacts.last_message_at", %{contact: contact} do
+      {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: nil})
+
+      assert {:ok, _message} =
+               WebMessage.receive_message(
+                 %{
+                   sender: %{phone: contact.phone},
+                   organization_id: contact.organization_id,
+                   body: "sent from the browser"
+                 },
+                 :text
+               )
+
+      assert %Contact{last_message_at: nil} = Repo.get!(Contact, contact.id)
+    end
+
+    # The rest of the inbox state is channel-agnostic and still has to update, or a web
+    # conversation would neither surface nor sort in the shared inbox.
+    test "an inbound web message still bumps last_communication_at and unread state",
+         %{contact: contact} do
+      before = Repo.get!(Contact, contact.id)
+
+      assert {:ok, _message} =
+               WebMessage.receive_message(
+                 %{
+                   sender: %{phone: contact.phone},
+                   organization_id: contact.organization_id,
+                   body: "sent from the browser"
+                 },
+                 :text
+               )
+
+      after_contact = Repo.get!(Contact, contact.id)
+
+      assert DateTime.compare(after_contact.last_communication_at, before.last_communication_at) in [
+               :gt,
+               :eq
+             ]
+
+      assert after_contact.is_org_read == false
+      assert after_contact.last_message_number > before.last_message_number
     end
   end
 
