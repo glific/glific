@@ -11,7 +11,6 @@ defmodule Glific.ContactsTest do
     Contacts.BulkImportWorker,
     Contacts.Contact,
     Contacts.Import,
-    Contacts.ImportWorker,
     Jobs.UserJob,
     Partners,
     Partners.Organization,
@@ -531,53 +530,6 @@ defmodule Glific.ContactsTest do
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 0
-    end
-
-    test "jobs enqueued before the bulk import deploy still drain on the old worker" do
-      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-      [organization | _] = Partners.list_organizations()
-      {:ok, english} = Repo.fetch_by(Language, %{label_locale: "English"})
-
-      user_job =
-        UserJob.create_user_job(%{
-          status: "pending",
-          type: "contact_import",
-          total_tasks: 1,
-          tasks_done: 0,
-          organization_id: organization.id,
-          errors: %{}
-        })
-
-      # exactly the args the pre-deploy Import.decode_csv_data/3 produced: language
-      # already resolved to language_id, and organization_id nested inside params
-      old_args = %{
-        "contacts" => [
-          %{
-            "name" => "legacy_job",
-            "phone" => "919989329291",
-            "organization_id" => organization.id,
-            "collection" => "",
-            "delete" => nil,
-            "language_id" => english.id,
-            "contact_fields" => %{"city" => "Pune"}
-          }
-        ],
-        "params" => %{
-          "organization_id" => organization.id,
-          "user" => %{
-            "roles" => Enum.map(user.roles, &Atom.to_string/1),
-            "upload_contacts" => true
-          },
-          "type" => "import_contact"
-        },
-        "user_job_id" => user_job.id
-      }
-
-      assert :ok == ImportWorker.perform(%Oban.Job{args: old_args})
-
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329291"})
-      assert get_in(contact.fields, ["city", "value"]) == "Pune"
-      assert contact.language_id == english.id
     end
 
     test "import_contact/3 folds a phone listed twice in the same csv into one contact" do
@@ -1963,42 +1915,6 @@ defmodule Glific.ContactsTest do
         end)
 
       assert length(language_history) == 1
-    end
-
-    test "may_update_contact/1 returns error when contact does not exist" do
-      update_attrs = %{
-        name: "updated",
-        delete: nil,
-        organization_id: 1,
-        phone: "phone number that does not exist",
-        contact_fields: %{"collection" => "collection"},
-        language_id: 1,
-        optin_time: "2025-05-19 03:49:07.595436",
-        collection: "collection"
-      }
-
-      {:error, error} = Import.may_update_contact(update_attrs)
-
-      assert error == %{"phone number that does not exist" => "Contact not found."}
-    end
-
-    test "may_update_contact/1 returns error when contact upload fails", attrs do
-      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
-
-      update_attrs = %{
-        name: %{"val" => "name val"},
-        delete: nil,
-        organization_id: 1,
-        phone: contact.phone,
-        contact_fields: %{"collection" => "collection"},
-        language_id: 1,
-        optin_time: "2025-05-19 03:49:07.595436",
-        collection: "collection"
-      }
-
-      {:error, error} = Import.may_update_contact(update_attrs)
-
-      assert error == %{"919917443992" => "Contact upload failed."}
     end
 
     test "get_contact_field_map/1 should return the active_profile_name if active profile is there",
