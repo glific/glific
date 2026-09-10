@@ -827,12 +827,11 @@ defmodule Glific.Groups.WAGroups do
         name: name,
         import_data: import_data
       }) do
-    # Seed createGroup with the CSV's first phone (Maytapi rejects an empty list),
-    # then a background job adds the rest and creates the contacts.
-    numbers = import_data |> WAGroupMemberImport.extract_phones() |> Enum.take(1)
-
-    # Validated before createGroup, else a CSV the import rejects leaves an empty group.
+    # Encoding is checked up front, else a CSV the import cannot read leaves an empty group behind.
     with :ok <- Encoding.validate(import_data),
+         # Seed createGroup with the CSV's first phone (Maytapi rejects an empty list),
+         # then a background job adds the rest and creates the contacts.
+         numbers = import_data |> WAGroupMemberImport.extract_phones() |> Enum.take(1),
          {:ok, wa_group} <-
            create_group_via_maytapi(org_id, wa_managed_phone_id, %{name: name, numbers: numbers}) do
       case WAGroupMemberImport.import_members(org_id, wa_group.id, data: import_data) do

@@ -8,10 +8,7 @@ defmodule Glific.Contacts.Import do
     Contacts,
     Contacts.BulkImportWorker,
     Contacts.Contact,
-    Contacts.ContactHistory,
-    Contacts.ImportWorker,
     CSV.Encoding,
-    Flows.ContactField,
     Groups,
     Groups.GroupContacts,
     Jobs.UserJob,
@@ -261,23 +258,6 @@ defmodule Glific.Contacts.Import do
     data["collection"]
   end
 
-  @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
-  defp add_contact_fields(contact, fields) do
-    Enum.reduce(fields, contact, fn {field, value}, contact ->
-      field = Glific.string_snake_case(field)
-
-      if value === "",
-        do: contact,
-        else:
-          ContactField.do_add_contact_field(
-            contact,
-            field,
-            field,
-            value
-          )
-    end)
-  end
-
   @spec fetch_contact_data_as_string(Keyword.t()) ::
           {:ok, Enumerable.t()} | {:error, map()}
   defp fetch_contact_data_as_string(opts) do
@@ -291,11 +271,27 @@ defmodule Glific.Contacts.Import do
         with :ok <- validate_encoding(stream), do: {:ok, Encoding.strip_bom(stream)}
 
       url != nil ->
-        {:ok, response} = Tesla.get(url)
-        validated_string_stream(response.body)
+        with {:ok, body} <- fetch_url(url), do: validated_string_stream(body)
 
       data != nil ->
         validated_string_stream(data)
+    end
+  end
+
+  # Download the CSV rather than raising on a dead url, and reject a non-200 body instead of
+  # parsing an error page as contacts.
+  @spec fetch_url(String.t()) :: {:ok, binary()} | {:error, map()}
+  defp fetch_url(url) do
+    case Tesla.get(url) do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        {:ok, body}
+
+      _ ->
+        {:error,
+         %{
+           message: "Could not download the contacts CSV from the given URL.",
+           details: "No contacts were imported."
+         }}
     end
   end
 
