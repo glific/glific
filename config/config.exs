@@ -254,6 +254,9 @@ config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1
 # throttling an individual.
 config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 20
 
+# Throttle inbound socket messages per contact (default 20 / 10s).
+config :glific, :web_channel_message_rate_limit, scale_ms: 10_000, count: 20
+
 config :mime, :types, %{
   "audio/amr" => ["amr"],
   "audio/mp4" => ["m4a"],

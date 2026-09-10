@@ -89,3 +89,10 @@ config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1_000
 
 # Same, for the per-IP bucket. The dedicated rate-limit tests override these locally.
 config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 1_000
+
+# Relax web channel message rate limiting in tests for the same reason.
+config :glific, :web_channel_message_rate_limit, scale_ms: 10_000, count: 1_000
+
+# No org in the test suite has GCS credentials configured, so route web channel uploads to local
+# disk instead — never enabled in dev/prod.
+config :glific, :web_channel_local_media, true
