@@ -5,6 +5,7 @@ defmodule Glific.Jobs.MinuteWorkerTest do
   import Mock
 
   alias Glific.{
+    Erase,
     Jobs.MinuteWorker,
     Stats
   }
@@ -49,6 +50,14 @@ defmodule Glific.Jobs.MinuteWorkerTest do
                 cron: fn _identifier, fun -> fun.() end do
         assert :ok = perform_job(MinuteWorker, %{"job" => "stats"})
       end
+    end
+  end
+
+  describe "version purge job" do
+    test "enqueues the versions purge worker" do
+      assert :ok = perform_job(MinuteWorker, %{"job" => "daily_version_purge"})
+
+      assert_enqueued(worker: Erase, args: %{purge: "versions"}, prefix: "global")
     end
   end
 end

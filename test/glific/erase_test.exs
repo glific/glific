@@ -8,6 +8,7 @@ defmodule Glific.EraseTest do
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
+    Contacts.Contact,
     Contacts.ContactHistory,
     Erase,
     Fixtures,
@@ -20,6 +21,7 @@ defmodule Glific.EraseTest do
     Notifications.Notification,
     Partners.Organization,
     Repo,
+    Version,
     WhatsappForms.WhatsappFormRevision,
     WhatsappFormsRevisions
   }
@@ -650,6 +652,113 @@ defmodule Glific.EraseTest do
 
     assert 0 == count_for_org("whatsapp_form_revisions", organization_id)
     assert 0 == count_for_org("users", organization_id)
+  end
+
+  describe "version purge" do
+    test "deletes versions older than the retention window and keeps the recent ones", attrs do
+      old = Enum.map(1..5, fn _ -> version_fixture(attrs, 120) end)
+      recent = Enum.map(1..3, fn _ -> version_fixture(attrs, 10) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 2,
+          max_rows_to_delete: 100,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 5} = perform_job(Erase, job.args)
+
+      assert [] == existing_version_ids(old)
+      assert length(existing_version_ids(recent)) == 3
+    end
+
+    test "stops once max_rows_to_delete is reached", attrs do
+      versions = Enum.map(1..6, fn _ -> version_fixture(attrs, 120) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 2,
+          max_rows_to_delete: 4,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 4} = perform_job(Erase, job.args)
+      assert length(existing_version_ids(versions)) == 2
+    end
+
+    test "completes cleanly when nothing is older than the retention window", attrs do
+      versions = Enum.map(1..3, fn _ -> version_fixture(attrs, 10) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 10,
+          max_rows_to_delete: 100,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 0} = perform_job(Erase, job.args)
+      assert length(existing_version_ids(versions)) == 3
+    end
+
+    test "refuses to run with a retention window below the minimum", attrs do
+      versions = Enum.map(1..3, fn _ -> version_fixture(attrs, 120) end)
+
+      assert {:error, message} = Erase.perform_version_purge(retention_days: 0)
+      assert message =~ "Refusing to purge versions"
+
+      refute_enqueued(worker: Erase, prefix: "global")
+
+      assert {:error, _message} =
+               perform_job(Erase, %{
+                 "purge" => "versions",
+                 "retention_days" => 0,
+                 "batch_size" => 10,
+                 "max_rows_to_delete" => 100,
+                 "sleep_after_delete?" => false
+               })
+
+      assert length(existing_version_ids(versions)) == 3
+    end
+
+    test "does not enqueue a second purge while one is still in flight" do
+      opts = [retention_days: 90, batch_size: 10, max_rows_to_delete: 100]
+
+      {:ok, first} = Erase.perform_version_purge(opts)
+      {:ok, second} = Erase.perform_version_purge(opts)
+
+      assert first.id == second.id
+      assert second.conflict?
+    end
+  end
+
+  defp version_fixture(attrs, days_ago) do
+    recorded_at =
+      DateTime.utc_now()
+      |> DateTime.add(-days_ago * 24 * 60 * 60, :second)
+      |> DateTime.truncate(:second)
+
+    %Version{}
+    |> Version.changeset(%{
+      patch: %{},
+      entity_id: 1,
+      entity_schema: Contact,
+      action: :created,
+      recorded_at: recorded_at,
+      organization_id: attrs.organization_id
+    })
+    |> Repo.insert!()
+  end
+
+  defp existing_version_ids(versions) do
+    ids = Enum.map(versions, & &1.id)
+
+    Version
+    |> where([version], version.id in ^ids)
+    |> select([version], version.id)
+    |> Repo.all(skip_organization_id: true)
   end
 
   defp latest_organization_notification do

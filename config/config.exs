@@ -120,6 +120,8 @@ oban_crontab = [
   {"0 21 * * FRI", Glific.Jobs.MinuteWorker, args: %{job: :weekly_message_purge}},
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}},
+  # 21:30 UTC is 03:00 IST and hence low traffic
+  {"30 21 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_version_purge}},
   # We are sending report of previous week(MON to SUN)
   {"0 0 * * MON", Glific.Jobs.MinuteWorker, args: %{job: :weekly_report}},
   # {"0 0 1 * *", Glific.Jobs.MinuteWorker, args: %{job: :monthly_tasks}}
