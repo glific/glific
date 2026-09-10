@@ -55,7 +55,7 @@ defmodule Glific.Jobs.MinuteWorkerTest do
 
   describe "version purge job" do
     test "enqueues the versions purge worker" do
-      assert :ok = perform_job(MinuteWorker, %{"job" => "daily_version_purge"})
+      assert :ok = perform_job(MinuteWorker, %{"job" => "weekly_version_purge"})
 
       assert_enqueued(worker: Erase, args: %{purge: "versions"}, prefix: "global")
     end
