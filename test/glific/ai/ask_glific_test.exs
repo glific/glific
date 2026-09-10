@@ -132,6 +132,29 @@ defmodule Glific.AI.AskGlificTest do
              AskGlific.submit_feedback(%{message_id: "999999", rating: "like"}, user)
   end
 
+  test "a question that failed is not replayed, so the next one still alternates",
+       %{user: user} do
+    FakeProvider.stop()
+    assert {:error, _} = AskGlific.ask(%{query: "first question"}, user)
+
+    conversation = Repo.one!(from(c in Conversation, where: c.user_id == ^user.id))
+
+    original = Application.get_env(:glific, Glific.AI, [])
+    Application.put_env(:glific, Glific.AI, Keyword.merge(original, FakeProvider.start()))
+    FakeProvider.always(FakeProvider.answer("an answer"))
+
+    assert {:ok, _} =
+             AskGlific.ask(
+               %{query: "second question", conversation_id: to_string(conversation.id)},
+               user
+             )
+
+    roles = sent() |> List.last() |> Map.fetch!("messages") |> Enum.map(& &1["role"])
+
+    assert roles == ["user"]
+    refute Enum.any?(Enum.chunk_every(roles, 2, 1), &match?(["user", "user"], &1))
+  end
+
   test "the chat list is ordered by last activity, not by when threads started",
        %{user: user} do
     {:ok, %{conversation_id: older}} = AskGlific.ask(%{query: "first thread"}, user)

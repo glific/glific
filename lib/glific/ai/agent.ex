@@ -332,6 +332,15 @@ defmodule Glific.AI.Agent do
     |> order_by([e], asc: e.message_id, asc: e.step)
     |> select([e], {e.message_id, e.step, e.type, e.content})
     |> Repo.all()
+    |> Enum.chunk_by(fn {message_id, _step, _type, _content} -> message_id end)
+    |> Enum.filter(&exchange?(&1, message.id))
+    |> Enum.concat()
+  end
+
+  @spec exchange?([row()], non_neg_integer()) :: boolean()
+  defp exchange?([{message_id, _step, _type, _content} | _rest] = events, current) do
+    message_id == current or
+      Enum.any?(events, fn {_id, _step, type, _c} -> type == :assistant end)
   end
 
   @spec to_chat_message(row()) :: ChatMessage.t()
