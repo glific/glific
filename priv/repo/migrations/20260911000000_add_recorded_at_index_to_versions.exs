@@ -11,7 +11,7 @@ defmodule Glific.Repo.Migrations.AddRecordedAtIndexToVersions do
     create_if_not_exists index(:versions, [:recorded_at],
                            concurrently: true,
                            comment:
-                             "Lets the retention purge find expired rows without a seq scan (glific#5594)"
+                             "Lets the retention purge find expired rows without a seq scan"
                          )
   end
 end
