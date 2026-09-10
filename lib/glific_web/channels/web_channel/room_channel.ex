@@ -86,17 +86,28 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   @impl true
   @spec handle_in(String.t(), map(), Phoenix.Socket.t()) ::
           {:reply, :ok | {:ok, map()} | {:error, map()}, Phoenix.Socket.t()}
-  def handle_in("load_more", %{"offset" => offset}, socket) do
+  # A raw client can push any offset. A non-integer or negative one reaches Ecto's `offset` and
+  # raises a Postgrex/cast error that takes the channel down, so validate the shape here; and
+  # rate-limit it like the send handlers, since each call is an unbounded history query.
+  def handle_in("load_more", %{"offset" => offset}, socket)
+      when is_integer(offset) and offset >= 0 do
     contact_id = socket.assigns.current_contact.id
 
-    messages =
-      contact_id
-      |> Messages.list_conversation_messages(:web, %{limit: @page_size, offset: offset})
-      |> Enum.reverse()
-      |> Enum.map(&MessageSerializer.serialize/1)
+    with :ok <- check_message_rate_limit(contact_id) do
+      messages =
+        contact_id
+        |> Messages.list_conversation_messages(:web, %{limit: @page_size, offset: offset})
+        |> Enum.reverse()
+        |> Enum.map(&MessageSerializer.serialize/1)
 
-    {:reply, {:ok, %{messages: messages}}, socket}
+      {:reply, {:ok, %{messages: messages}}, socket}
+    else
+      error -> {:reply, {:error, %{reason: failure_reason(error)}}, socket}
+    end
   end
+
+  def handle_in("load_more", _params, socket),
+    do: {:reply, {:error, %{reason: "invalid_offset"}}, socket}
 
   def handle_in("new_message", %{"body" => body}, socket) do
     contact = socket.assigns.current_contact
