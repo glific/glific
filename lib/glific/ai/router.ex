@@ -8,8 +8,6 @@ defmodule Glific.AI.Router do
   names something unknown, the default skill handles it — a misrouted answer is
   better than no answer, and the default only reads.
 
-  With a single skill there is nothing to decide, so no call is made at all.
-
   Skipped entirely when the caller already knows the skill, which is how a
   "Draft HSM" button avoids paying for classification at all.
   """
@@ -22,16 +20,12 @@ defmodule Glific.AI.Router do
 
   Returns the skill module, what the classification consumed so the caller can
   add it to the run's cost, and whether a model chose it. No model chooses when
-  only one skill is registered, or when the call fails and the default is
-  used.
+  the call fails and the default is used.
   """
   @spec classify(non_neg_integer(), String.t(), keyword()) ::
           {module(), Provider.usage(), boolean()}
   def classify(organization_id, question, opts \\ []) do
-    case Skills.all() do
-      [only] -> {only, zero_usage(), false}
-      skills -> ask(organization_id, question, skills, opts)
-    end
+    ask(organization_id, question, Skills.all(), opts)
   end
 
   @spec ask(non_neg_integer(), String.t(), [module()], keyword()) ::

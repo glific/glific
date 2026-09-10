@@ -91,13 +91,6 @@ oban_queues = [
   ],
   gupshup_high_tps: 10,
   clone_assistant: 5,
-  glific_ai: [
-    local_limit: 5,
-    global_limit: [
-      allowed: 2,
-      partition: [args: :organization_id]
-    ]
-  ],
   gupshup_inbound: [
     local_limit: 30,
     global_limit: [
