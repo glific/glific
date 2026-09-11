@@ -26,6 +26,9 @@ defmodule Glific.Application do
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
 
+      # Tracks which web-channel contacts have a browser socket open
+      GlificWeb.WebChannel.Presence,
+
       # Start Mnesia to be used for pow cache store
       Pow.Store.Backend.MnesiaCache,
 

@@ -25,7 +25,7 @@ defmodule Glific.Flows.ContactField do
   @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) ::
           FlowContext.t()
   def add_contact_field(context, field, label, value, type) do
-    contact = do_add_contact_field(context.contact, field, label, value, type)
+    contact = do_add_contact_field(context.contact, field, label, value, type, context.channel)
 
     Map.put(context, :contact, contact)
   end
@@ -44,9 +44,9 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Add contact field taking contact as parameter. We should change the name of this function for the consistency
   """
-  @spec do_add_contact_field(Contact.t(), String.t(), String.t(), any(), String.t()) ::
+  @spec do_add_contact_field(Contact.t(), String.t(), String.t(), any(), String.t(), atom()) ::
           Contact.t()
-  def do_add_contact_field(contact, field, label, value, type \\ "string") do
+  def do_add_contact_field(contact, field, label, value, type \\ "string", channel \\ :whatsapp) do
     contact_fields =
       if is_nil(contact.fields),
         do: %{},
@@ -80,6 +80,7 @@ defmodule Glific.Flows.ContactField do
 
     {:ok, _} =
       Contacts.capture_history(contact, :contact_fields_updated, %{
+        channel: channel,
         event_meta: %{
           field: %{
             data: field,
@@ -108,6 +109,7 @@ defmodule Glific.Flows.ContactField do
 
     {:ok, _} =
       Contacts.capture_history(contact, :contact_fields_reset, %{
+        channel: context.channel,
         event_label: "All contact fields are reset"
       })
 
