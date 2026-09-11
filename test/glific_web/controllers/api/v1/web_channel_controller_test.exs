@@ -43,16 +43,21 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
       enable_web_channel(organization_id)
 
       add_branding(organization_id, %{
-        theme: "violet",
-        logo_url: "https://cdn.example.org/logo.svg",
-        display_name: "Example NGO"
+        primary_color: "#4C3BCF",
+        secondary_color: "#FF8A3D",
+        logo_url: "https://cdn.example.org/logo.png",
+        display_name: "Example NGO",
+        about_website: "example.org"
       })
 
       assert %{
                "data" => %{
-                 "theme" => "violet",
-                 "logo_url" => "https://cdn.example.org/logo.svg",
-                 "display_name" => "Example NGO"
+                 "primary_color" => "#4c3bcf",
+                 "primary_foreground" => _foreground,
+                 "secondary_color" => "#ff8a3d",
+                 "logo_url" => "https://cdn.example.org/logo.png",
+                 "display_name" => "Example NGO",
+                 "about" => %{"website" => "https://example.org"}
                }
              } = conn |> get(@branding_path) |> json_response(200)
     end
@@ -66,9 +71,18 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
       assert %{
                "data" => %{
-                 "theme" => Branding.default_theme(),
+                 "primary_color" => Branding.default_primary(),
+                 "primary_foreground" => Branding.readable_on(Branding.default_primary()),
+                 "secondary_color" => Branding.default_secondary(),
                  "logo_url" => nil,
-                 "display_name" => organization.name
+                 "display_name" => organization.name,
+                 "about" => %{
+                   "description" => nil,
+                   "address" => nil,
+                   "website" => nil,
+                   "email" => nil,
+                   "hours" => nil
+                 }
                }
              } == conn |> get(@branding_path) |> json_response(200)
     end
@@ -80,12 +94,14 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
       enable_web_channel(organization_id)
 
       add_branding(organization_id, %{
-        theme: "red; background: url(evil)",
-        logo_url: "http://cdn.example.org/logo.svg"
+        primary_color: "red; background: url(evil)",
+        logo_url: "http://cdn.example.org/logo.png"
       })
 
-      assert %{"data" => %{"theme" => "zinc", "logo_url" => nil}} =
+      assert %{"data" => %{"primary_color" => primary, "logo_url" => nil}} =
                conn |> get(@branding_path) |> json_response(200)
+
+      assert primary == Branding.default_primary()
     end
 
     test "returns 404 rather than raising when the organization cannot be loaded", %{conn: conn} do
@@ -104,16 +120,16 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
     test "resolves the organization from the request host", %{organization_id: organization_id} do
       enable_web_channel(organization_id)
-      add_branding(organization_id, %{theme: "violet", display_name: "First NGO"})
+      add_branding(organization_id, %{primary_color: "#4c3bcf", display_name: "First NGO"})
 
       other = Fixtures.organization_fixture(%{shortcode: "other_ngo", name: "Second NGO"})
       enable_web_channel(other.id)
-      add_branding(other.id, %{theme: "amber", display_name: "Second NGO"})
+      add_branding(other.id, %{primary_color: "#ffb900", display_name: "Second NGO"})
 
-      assert %{"data" => %{"theme" => "violet", "display_name" => "First NGO"}} =
+      assert %{"data" => %{"primary_color" => "#4c3bcf", "display_name" => "First NGO"}} =
                "glific.glific.test" |> branding_for_host() |> json_response(200)
 
-      assert %{"data" => %{"theme" => "amber", "display_name" => "Second NGO"}} =
+      assert %{"data" => %{"primary_color" => "#ffb900", "display_name" => "Second NGO"}} =
                "other_ngo.glific.test" |> branding_for_host() |> json_response(200)
     end
   end

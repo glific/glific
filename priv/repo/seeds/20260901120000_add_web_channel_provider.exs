@@ -10,8 +10,7 @@ defmodule Glific.Repo.Seeds.AddWebChannelProvider do
 
   alias Glific.{
     Partners.Provider,
-    Repo,
-    WebChannel.Branding
+    Repo
   }
 
   envs([:dev, :test, :prod])
@@ -40,7 +39,7 @@ defmodule Glific.Repo.Seeds.AddWebChannelProvider do
           group: nil,
           is_required: false,
           # `position` drives field order on the Settings page; jsonb hands the keys back
-          # sorted by length, which would otherwise put Theme first.
+          # sorted by length, which bears no relation to the order an admin reads them in.
           keys: %{
             display_name: %{
               type: :string,
@@ -60,14 +59,6 @@ defmodule Glific.Repo.Seeds.AddWebChannelProvider do
               accept: "image/png,image/jpeg,image/webp,image/svg+xml",
               helper_text:
                 "Upload a PNG, JPEG, WEBP or SVG up to 200KB, or paste an https URL you host. Landscape works best."
-            },
-            theme: %{
-              type: :select,
-              label: "Theme",
-              default: Branding.default_theme(),
-              view_only: false,
-              position: 3,
-              options: Branding.themes()
             }
           },
           secrets: %{}
