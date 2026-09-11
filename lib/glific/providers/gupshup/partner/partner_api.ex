@@ -37,10 +37,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
-  # Path (appended to app_url) used to download WhatsApp media by media id.
-  # Final URL: <app_url><app_id><@flow_media_path><media_id>
+  # Gupshup file manager host used to download WhatsApp media by media id.
+  # Final URL: <@filemanager_url><app_id>/wa/media/<media_id>?download=true
   # Returns the raw media bytes directly (one-step, no decryption).
-  @flow_media_path "/media/"
+  @filemanager_url "https://filemanager.gupshup.io/wa/"
   @library_templates_recv_timeout 30_000
 
   @modes [
@@ -85,18 +85,22 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   The media id comes from a flow response, e.g.
   `%{"id" => 913256141793852, "file_name" => "x.jpg", "mime_type" => "image/jpeg"}`.
 
-  Calls `GET <app_url><app_id>/media/<media_id>` with the partner app token, which
-  returns the raw bytes directly (no second fetch, no decryption needed).
+  Calls `GET <filemanager_url><app_id>/wa/media/<media_id>?download=true` with the
+  partner app token, which returns the raw bytes directly (no second fetch, no
+  decryption needed).
+
+  The request is never retried: Gupshup allows only 20 *failed* media requests per
+  app per hour and, once that is crossed, blocks every media request for the app
+  until the next hour window — so a retried failure costs the whole app's downloads.
   """
   @spec download_flow_media(non_neg_integer(), String.t() | non_neg_integer()) ::
           {:ok, binary()} | {:error, String.t()}
   def download_flow_media(org_id, media_id) do
-    # Use the non-bang app_url/1 so a missing/misconfigured app id returns
-    # {:error, ...} instead of raising — keeps this function's contract a pure
-    # tagged tuple (the caller treats it as a soft failure).
-    with {:ok, base_url} <- app_url(org_id) do
-      (base_url <> @flow_media_path <> to_string(media_id))
-      |> get(headers: headers(:app_token, org_id: org_id))
+    with {:ok, app_id} <- app_id(org_id) do
+      Tesla.client([])
+      |> Tesla.get("#{@filemanager_url}#{app_id}/wa/media/#{media_id}?download=true",
+        headers: headers(:app_token, org_id: org_id)
+      )
       |> case do
         {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
           {:ok, body}
