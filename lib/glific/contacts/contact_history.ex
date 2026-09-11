@@ -8,6 +8,7 @@ defmodule Glific.Contacts.ContactHistory do
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactHistory,
+    Enums.MessageChannel,
     Partners.Organization,
     Profiles.Profile
   }
@@ -19,7 +20,7 @@ defmodule Glific.Contacts.ContactHistory do
     :event_datetime,
     :organization_id
   ]
-  @optional_fields [:event_meta, :profile_id]
+  @optional_fields [:event_meta, :profile_id, :channel]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -32,6 +33,7 @@ defmodule Glific.Contacts.ContactHistory do
           event_label: String.t() | nil,
           event_datetime: :utc_datetime | nil,
           event_meta: map() | nil,
+          channel: atom() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
@@ -44,6 +46,7 @@ defmodule Glific.Contacts.ContactHistory do
     field(:event_label, :string)
     field(:event_datetime, :utc_datetime)
     field(:event_meta, :map, default: %{})
+    field(:channel, MessageChannel)
     belongs_to(:contact, Contact)
     belongs_to(:profile, Profile)
     belongs_to(:organization, Organization)

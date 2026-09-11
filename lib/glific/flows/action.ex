@@ -974,6 +974,7 @@ defmodule Glific.Flows.Action do
               {:ok, _} =
                 Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                   event_label: "Added to collection: \"#{group["name"]}\"",
+                  channel: context.channel,
                   event_meta: %{
                     context_id: context.id,
                     group: %{
@@ -1010,6 +1011,7 @@ defmodule Glific.Flows.Action do
       {:ok, _} =
         Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
           event_label: "Removed from All the collections",
+          channel: context.channel,
           event_meta: %{
             context_id: context.id,
             group: %{
@@ -1032,6 +1034,7 @@ defmodule Glific.Flows.Action do
             {:ok, _} =
               Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                 event_label: "Removed from collection: \"#{group["name"]}\"",
+                channel: context.channel,
                 event_meta: %{
                   context_id: context.id,
                   group: %{
