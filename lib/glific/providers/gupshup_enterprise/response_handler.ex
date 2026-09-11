@@ -59,23 +59,40 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
 
   @spec add_error_payload(Tesla.Env.t() | map()) :: Tesla.Env.t()
   defp add_error_payload(response) do
-    %{"response" => error} = Jason.decode!(response.body)
+    # Gupshup Enterprise (or an intermediary) can return a non-JSON
+    # plaintext body on infra-level failures, so decode leniently
+    # instead of crashing the Oban job.
+    reason =
+      case Jason.decode(response.body) do
+        {:ok, %{"response" => error}} -> error["details"]
+        _ -> Glific.SafeLog.safe_inspect(response.body)
+      end
 
-    %{"payload" => %{"payload" => %{"reason" => error["details"]}}}
+    %{"payload" => %{"payload" => %{"reason" => reason}}}
     |> then(&Map.put(response, :body, &1))
   end
 
   @spec add_success_payload(Tesla.Env.t()) :: Tesla.Env.t()
   defp add_success_payload(response) do
-    %{"response" => success_response} = Jason.decode!(response.body)
+    # Same rationale as add_error_payload/1: decode leniently instead of
+    # crashing the Oban job on a non-JSON 2xx body.
+    message_id =
+      case Jason.decode(response.body) do
+        {:ok, %{"response" => success_response}} -> success_response["id"]
+        _ -> nil
+      end
 
-    %{"messageId" => success_response["id"]}
+    %{"messageId" => message_id}
     |> then(&Map.put(response, :body, Jason.encode!(&1)))
   end
 
   @spec check_message_status(Tesla.Env.t()) :: String.t()
   defp check_message_status(%{body: body} = _response) do
-    %{"response" => response} = Jason.decode!(body)
-    response["status"]
+    # A non-JSON body can't confirm success, so treat it as an error and
+    # let add_error_payload/1 (which itself decodes leniently) take over.
+    case Jason.decode(body) do
+      {:ok, %{"response" => response}} -> response["status"]
+      _ -> "error"
+    end
   end
 end
