@@ -2,7 +2,12 @@ defmodule GlificWeb.Schema.FlowL10NTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
+    Fixtures,
+    Flows.FlowRevision,
+    Repo,
     Seeds.SeedsDev
   }
 
@@ -14,6 +19,20 @@ defmodule GlificWeb.Schema.FlowL10NTest do
   load_gql(:export_l10n, GlificWeb.Schema, "assets/gql/flows/export_l10n.gql")
   load_gql(:import_l10n, GlificWeb.Schema, "assets/gql/flows/import_l10n.gql")
   load_gql(:inline_l10n, GlificWeb.Schema, "assets/gql/flows/inline_l10n.gql")
+
+  # Creates a flow with its only revision immediately deleted, so
+  # Flows.get_complete_flow/3 fails to load a revision for it (the same
+  # condition as a flow deleted/unpublished/revision-reassigned after being
+  # cached) and returns nil instead of crashing.
+  defp flow_with_no_revision(attrs) do
+    flow = Fixtures.flow_fixture(attrs)
+
+    FlowRevision
+    |> where([fr], fr.flow_id == ^flow.id)
+    |> Repo.delete_all()
+
+    flow
+  end
 
   @help_export """
   Type,UUID,en,hi,Node_uuid
@@ -54,5 +73,48 @@ defmodule GlificWeb.Schema.FlowL10NTest do
     result = auth_query_gql_by(:inline_l10n, user, variables: %{"id" => 1})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "inlineFlowLocalization", "success"]) == true
+  end
+
+  test "export flow localization returns a GraphQL error instead of crashing when the flow has no revision to load",
+       %{manager: user} do
+    flow = flow_with_no_revision(%{organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:export_l10n, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    # :export_flow_localization has no `errors` field, so this surfaces as a
+    # top-level GraphQL error rather than under `data`
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert message == "Flow not found"
+  end
+
+  test "import flow localization returns a GraphQL error instead of crashing when the flow has no revision to load",
+       %{manager: user} do
+    flow = flow_with_no_revision(%{organization_id: user.organization_id})
+
+    result =
+      auth_query_gql_by(:import_l10n, user,
+        variables: %{"localization" => @help_export, "id" => flow.id}
+      )
+
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "importFlowLocalization", "errors", Access.at(0), "message"])
+
+    assert message == "Flow not found"
+  end
+
+  test "inline flow localization returns a GraphQL error instead of crashing when the flow has no revision to load",
+       %{manager: user} do
+    flow = flow_with_no_revision(%{organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:inline_l10n, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "inlineFlowLocalization", "errors", Access.at(0), "message"])
+
+    assert message == "Flow not found"
   end
 end

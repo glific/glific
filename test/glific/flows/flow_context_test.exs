@@ -82,6 +82,52 @@ defmodule Glific.Flows.FlowContextTest do
     FlowContext.reset_context(context_2)
   end
 
+  test "reset_context/1 leaves the parent untouched when its flow can no longer be loaded",
+       attrs do
+    contact = Fixtures.contact_fixture(attrs)
+
+    # parent_flow only has a draft revision (never published); the child
+    # context's status defaults to "published", so Flow.get_flow/3 will not
+    # find a matching revision when reset_context/1 tries to resume the parent
+    parent_flow =
+      Fixtures.flow_fixture(
+        Map.merge(attrs, %{name: "Reset Context Parent", keywords: ["resetctxparent"]})
+      )
+
+    child_flow =
+      Fixtures.flow_fixture(
+        Map.merge(attrs, %{name: "Reset Context Child", keywords: ["resetctxchild"]})
+      )
+
+    {:ok, parent_context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        organization_id: attrs.organization_id,
+        flow_id: parent_flow.id,
+        flow_uuid: parent_flow.uuid,
+        node_uuid: Ecto.UUID.generate(),
+        uuid_map: %{}
+      })
+
+    {:ok, child_context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        organization_id: attrs.organization_id,
+        flow_id: child_flow.id,
+        flow_uuid: child_flow.uuid,
+        node_uuid: Ecto.UUID.generate(),
+        uuid_map: %{},
+        parent_id: parent_context.id
+      })
+
+    assert %FlowContext{} = FlowContext.reset_context(child_context)
+
+    # the parent could not be resumed (its flow can no longer be loaded), so
+    # it should remain active/incomplete rather than being advanced
+    assert {:ok, reloaded_parent} = Repo.fetch_by(FlowContext, %{id: parent_context.id})
+    assert reloaded_parent.completed_at == nil
+  end
+
   test "update_flow_context/2 will update the UUID for the current context node" do
     flow_context = flow_context_fixture()
     uuid = Ecto.UUID.generate()
@@ -299,6 +345,30 @@ defmodule Glific.Flows.FlowContextTest do
 
     assert {:ok, _context, []} = FlowContext.wakeup_one(flow_context, message)
 
+    flow_context = Repo.get!(FlowContext, flow_context.id)
+    assert flow_context.wakeup_at == nil
+    assert flow_context.is_background_flow == false
+  end
+
+  test "wakeup_one/2 returns an error instead of crashing when the flow can no longer be loaded",
+       %{organization_id: organization_id} = _attrs do
+    message = Messages.create_temp_message(organization_id, "1")
+    wakeup_at = Timex.shift(Timex.now(), minutes: -3)
+
+    # flow_context_fixture/1's default flow_uuid (from @valid_attrs) matches no
+    # flow at all, so get_cached_flow/2 fails to load it (Repo.one!/1 raises,
+    # Cachex wraps it) and returns {:error, _} instead of {:ok, flow}
+    flow_context =
+      flow_context_fixture(%{
+        wakeup_at: wakeup_at,
+        is_background_flow: true
+      })
+
+    assert {:error, error_message} = FlowContext.wakeup_one(flow_context, message)
+    assert error_message == "Could not find flow to wake up context #{flow_context.id}"
+
+    # the context should still be marked as woken (wakeup_at cleared) even
+    # though the flow itself could not be resumed
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert flow_context.wakeup_at == nil
     assert flow_context.is_background_flow == false

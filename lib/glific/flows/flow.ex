@@ -21,6 +21,7 @@ defmodule Glific.Flows.Flow do
     Flows.Node,
     Partners.Organization,
     Repo,
+    SafeLog,
     Settings,
     Tags.Tag
   }
@@ -281,31 +282,45 @@ defmodule Glific.Flows.Flow do
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_sub_flow(context, uuid, parent_id) do
     # we might want to put the current one under some sort of pause status
-    flow = get_flow(context.flow.organization_id, uuid, context.status)
+    case get_flow(context.flow.organization_id, uuid, context.status) do
+      nil ->
+        {:error, "Could not find flow with uuid #{uuid} to start as a sub flow"}
 
-    parent =
-      Glific.delete_multiple(
-        context.results,
-        ["parent", :parent, "child", :child]
-      )
+      flow ->
+        parent =
+          Glific.delete_multiple(
+            context.results,
+            ["parent", :parent, "child", :child]
+          )
 
-    FlowContext.init_context(flow, context.contact, context.status,
-      parent_id: parent_id,
-      delay: context.delay,
-      uuids_seen: context.uuids_seen,
-      # lets keep only one level of results, rather than a lot of them
-      results: %{"parent" => parent}
-    )
+        FlowContext.init_context(flow, context.contact, context.status,
+          parent_id: parent_id,
+          delay: context.delay,
+          uuids_seen: context.uuids_seen,
+          # lets keep only one level of results, rather than a lot of them
+          results: %{"parent" => parent}
+        )
+    end
   end
 
   @doc """
-  Return a flow for a specific uuid. Cache is not present in cache
+  Return a flow for a specific uuid. Cache is not present in cache.
+  Returns nil (and logs) when the flow/revision can no longer be found,
+  e.g. it was deleted, unpublished, or its revision reassigned after being cached.
   """
-  @spec get_flow(non_neg_integer, Ecto.UUID.t(), String.t()) :: map()
+  @spec get_flow(non_neg_integer, Ecto.UUID.t(), String.t()) :: map() | nil
   def get_flow(organization_id, uuid, status) do
-    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, uuid, status})
+    case Flows.get_cached_flow(organization_id, {:flow_uuid, uuid, status}) do
+      {:ok, flow} ->
+        flow
 
-    flow
+      {:error, error} ->
+        Glific.log_error(
+          "Flow.get_flow: failed to load cached flow for uuid #{uuid}, status #{status}, org #{organization_id}: #{SafeLog.safe_inspect(error)}"
+        )
+
+        nil
+    end
   end
 
   @doc """

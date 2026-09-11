@@ -433,15 +433,26 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Helper function to get the flow along with the revision and processing
+  Helper function to get the flow along with the revision and processing.
+  Returns nil (and logs) when the flow row or its matching revision can no
+  longer be found, e.g. the flow was deleted, unpublished, or its revision
+  reassigned since being referenced.
   """
-  @spec get_complete_flow(non_neg_integer(), non_neg_integer(), String.t()) :: Flow.t()
+  @spec get_complete_flow(non_neg_integer(), non_neg_integer(), String.t()) :: Flow.t() | nil
   def get_complete_flow(organization_id, flow_id, status \\ "draft") do
     # note that draft gives us the most recent one (revision_number = 0), so it
     # could be published also. this is what we want!
-    {:ok, flow} = Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id})
+    case Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id}) do
+      {:ok, flow} ->
+        Flow.get_flow(organization_id, flow.uuid, status)
 
-    Flow.get_flow(organization_id, flow.uuid, status)
+      {:error, error} ->
+        Glific.log_error(
+          "Flows.get_complete_flow: failed to load flow #{flow_id} for org #{organization_id}: #{SafeLog.safe_inspect(error)}"
+        )
+
+        nil
+    end
   end
 
   @spec get_user(nil | String.t()) :: map()
@@ -796,10 +807,15 @@ defmodule Glific.Flows do
           {:ok, Flow.t()} | {:error, String.t()}
   def start_group_flow(flow, group_ids, default_results \\ %{}, opts \\ []) do
     # the flow returned is the expanded version
-    {:ok, flow} = get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status})
+    case get_cached_flow(flow.organization_id, {:flow_id, flow.id, @status}) do
+      {:ok, flow} ->
+        with {:ok, _} <-
+               Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts) do
+          {:ok, flow}
+        end
 
-    with {:ok, _} <- Broadcast.broadcast_flow_to_group(flow, group_ids, default_results, opts) do
-      {:ok, flow}
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
