@@ -11,7 +11,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     WebChannelFixtures
   }
 
-  alias GlificWeb.WebChannel.{RoomChannel, Token}
+  alias GlificWeb.WebChannel.{Presence, RoomChannel, Token}
 
   setup do
     contact = Fixtures.contact_fixture()
@@ -37,6 +37,58 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
                  WebChannelFixtures.join_web_channel(ws_socket, contact)
 
         assert Enum.any?(messages, &(&1.body == "earlier message"))
+      end)
+    end
+
+    test "joining marks the contact online, and leaving marks them offline", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        refute Presence.online?(contact.organization_id, contact.id)
+
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        assert Presence.online?(contact.organization_id, contact.id)
+        assert contact.id in Presence.online_contact_ids(contact.organization_id)
+
+        # Tracked against the channel process, so it is released when the browser goes away
+        # rather than needing an explicit "I am leaving" message that a closed laptop never sends.
+        leave_and_wait(socket)
+
+        refute Presence.online?(contact.organization_id, contact.id)
+      end)
+    end
+
+    # The real failure: the dev reloader recompiles without restarting the tree, so an unguarded
+    # track/4 raised inside join/3. Driven against the real thing — the child is stopped, not
+    # mocked.
+    test "a conversation still opens when the presence tracker is not running", %{
+      contact: contact
+    } do
+      with_web_channel_enabled(fn ->
+        without_presence(fn ->
+          {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+
+          assert {:ok, %{messages: _messages}, _socket} =
+                   WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+          # And the two read paths degrade to their empty answer rather than raising: `online?/2`
+          # is resolved from a GraphQL field, where a raise would 500 the contact query.
+          refute Presence.online?(contact.organization_id, contact.id)
+          assert Presence.online_contact_ids(contact.organization_id) == []
+        end)
+      end)
+    end
+
+    test "one contact being online says nothing about another", %{
+      contact: contact,
+      other_contact: other_contact
+    } do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, _socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        assert Presence.online?(contact.organization_id, contact.id)
+        refute Presence.online?(other_contact.organization_id, other_contact.id)
       end)
     end
 
@@ -601,5 +653,36 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         assert_receive {:DOWN, ^ref, :process, _, :normal}
       end)
     end
+  end
+
+  # Put back whatever happens: leaving it down breaks every later test in this file.
+  @spec without_presence((-> any())) :: any()
+  defp without_presence(fun) do
+    :ok = Supervisor.terminate_child(Glific.Supervisor, Presence)
+
+    try do
+      fun.()
+    after
+      {:ok, _pid} = Supervisor.restart_child(Glific.Supervisor, Presence)
+    end
+  end
+
+  # Presence untracks on process exit, which is asynchronous — polling here rather than asserting
+  # straight after leave/1 keeps the test from racing the Presence server.
+  @spec leave_and_wait(Phoenix.Socket.t()) :: :ok
+  defp leave_and_wait(socket) do
+    channel_pid = socket.channel_pid
+    reference = Process.monitor(channel_pid)
+    Process.unlink(channel_pid)
+    :ok = close(socket)
+
+    receive do
+      {:DOWN, ^reference, :process, ^channel_pid, _reason} -> :ok
+    after
+      1_000 -> flunk("the channel process did not shut down")
+    end
+
+    Process.sleep(50)
+    :ok
   end
 end
