@@ -795,9 +795,8 @@ defmodule Glific.Flows.Action do
     {:ok, updated_context, messages}
   end
 
-  # wait_for_result parks the context for FlowContext.await_context/2, which looks a context up by
-  # contact_id. A WA group context has none, so a parked group flow could only ever be freed by its
-  # own wakeup timer -- silently degrading "await a result" into "sleep". Reject it instead.
+  # await_context/2 finds parked contexts by contact_id, which a WA group context does not have,
+  # so a group parked here could never be resumed by a result.
   def execute(
         %{type: "wait_for_result"} = action,
         %{wa_group_id: wa_group_id} = context,
@@ -1109,11 +1108,6 @@ defmodule Glific.Flows.Action do
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
   end
 
-  # Skipping rather than raising is deliberate: this runs inside the webhook Oban job, where an
-  # exception retries the job and repeats an already-sent message. AppSignal is suppressed because
-  # a group flow fans out per wa_group and re-runs on every trigger; the org-visible notification
-  # is the durable signal instead. `messages` passes through untouched, so a pending message is
-  # consumed by the next action rather than aborting the flow.
   @spec unsupported_for_wa_group(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok, FlowContext.t(), [Message.t()]}
   defp unsupported_for_wa_group(action, context, messages) do
