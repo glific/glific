@@ -210,7 +210,7 @@ defmodule Glific.Flows.Webhook do
     do:
       Tesla.get(url,
         headers: headers,
-        query: Enum.into(Jason.decode!(body), []),
+        query: [data: body],
         opts: [adapter: [recv_timeout: 10_000]]
       )
 

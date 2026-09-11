@@ -164,6 +164,98 @@ defmodule Glific.Flows.WebhookTest do
       assert webhook_log.status == "Success"
     end
 
+    test "GET query string building does not crash when the interpolated body contains a nested map (regression for incident #81)",
+         attrs do
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %{method: :get} = env ->
+          send(test_pid, {:webhook_get_request, env.url, env.query})
+
+          %Tesla.Env{status: 200, body: Jason.encode!(@results)}
+      end)
+
+      attrs = %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = %Action{
+        headers: %{"Accept" => "application/json"},
+        method: "GET",
+        url: "some url",
+        # @action_body's `contact: "@contact"` interpolates to the nested contact map
+        # (id/name/phone/fields) that crashed the real query-string builder in incident #81.
+        body: Jason.encode!(@action_body)
+      }
+
+      assert Webhook.execute(action, context) == nil
+      assert_enqueued(worker: Webhook, prefix: "global")
+      Oban.drain_queue(queue: :webhook)
+
+      assert_received {:webhook_get_request, captured_url, captured_query}
+
+      # Tesla.Mock's adapter returns the canned response above without ever building the
+      # request URL, so the assertions above alone would not exercise `Tesla.build_url/2` -
+      # the exact call inside `Tesla.Adapter.Hackney.request/2` that raised
+      # `Protocol.UndefinedError` in production (String.Chars has no implementation for
+      # Map). Building it here for real, from the query the production code actually
+      # produced, is what makes this a genuine regression test.
+      built_url = Tesla.build_url(captured_url, captured_query)
+
+      assert [^captured_url, encoded_query] = String.split(built_url, "?", parts: 2)
+      decoded_query_params = URI.decode_query(encoded_query)
+
+      assert %{"data" => data_param} = decoded_query_params
+      assert {:ok, decoded_body_map} = Jason.decode(data_param)
+      assert %{"contact" => contact_fields_map} = decoded_body_map
+      assert is_map(contact_fields_map)
+      assert Map.has_key?(contact_fields_map, "id")
+    end
+
+    test "GET query string for a nil body encodes to a literal data=%7B%7D parameter",
+         attrs do
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %{method: :get} = env ->
+          send(test_pid, {:webhook_get_request, env.url, env.query})
+
+          %Tesla.Env{status: 200, body: Jason.encode!(@results)}
+      end)
+
+      attrs = %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = %Action{
+        headers: %{"Accept" => "application/json"},
+        method: "GET",
+        url: "url with no body",
+        body: nil
+      }
+
+      assert Webhook.execute(action, context) == nil
+      assert_enqueued(worker: Webhook, prefix: "global")
+      Oban.drain_queue(queue: :webhook)
+
+      assert_received {:webhook_get_request, captured_url, captured_query}
+
+      assert captured_query == [data: "{}"]
+      assert Tesla.build_url(captured_url, captured_query) == captured_url <> "?data=%7B%7D"
+    end
+
     test "execute a webhook for post method should not break and update the webhook log in case of error",
          attrs do
       Tesla.Mock.mock(fn
