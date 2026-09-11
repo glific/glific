@@ -170,7 +170,7 @@ defmodule Glific.Erase do
         }
       }) do
     with :ok <- validate_version_retention(retention_days) do
-      cutoff = DateTime.add(DateTime.utc_now(), -retention_days * 24 * 60 * 60, :second)
+      cutoff = DateTime.add(DateTime.utc_now(), -retention_days, :day)
       delete_old_versions(cutoff, batch_size, max_rows_to_delete, sleep_after_delete?)
     end
   end

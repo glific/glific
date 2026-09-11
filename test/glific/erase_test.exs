@@ -737,7 +737,7 @@ defmodule Glific.EraseTest do
   defp version_fixture(attrs, days_ago) do
     recorded_at =
       DateTime.utc_now()
-      |> DateTime.add(-days_ago * 24 * 60 * 60, :second)
+      |> DateTime.add(-days_ago, :day)
       |> DateTime.truncate(:second)
 
     %Version{}
