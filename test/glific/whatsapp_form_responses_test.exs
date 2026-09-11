@@ -289,7 +289,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
-  test "write_to_google_sheet/2 returns error when Google API is not active",
+  test "write_to_google_sheet/2 errors when Google API is not active, worker does not retry",
        %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} when is_binary(url) ->
@@ -346,26 +346,30 @@ defmodule Glific.WhatsappFormResponsesTest do
       whatsapp_form =
         Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
+      payload = %{
+        "contact_number" => "919425010449",
+        "organization_id" => organization_id,
+        "raw_response" => %{
+          "flow_token" => "unused",
+          "screen_0_Choose_one_0" => "0_Yes"
+        },
+        "submitted_at" => "2025-12-20T09:46:24.000000Z",
+        "whatsapp_form_id" => whatsapp_form.id,
+        "whatsapp_form_name" => whatsapp_form.name
+      }
+
+      assert {:error, _reason} =
+               WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
+
       args = %Oban.Job{
         args: %{
           "organization_id" => organization_id,
-          "payload" => %{
-            "contact_number" => "919425010449",
-            "organization_id" => organization_id,
-            "raw_response" => %{
-              "flow_token" => "unused",
-              "screen_0_Choose_one_0" => "0_Yes"
-            },
-            "submitted_at" => "2025-12-20T09:46:24.000000Z",
-            "whatsapp_form_id" => whatsapp_form.id,
-            "whatsapp_form_name" => whatsapp_form.name
-          },
+          "payload" => payload,
           "whatsapp_form_id" => whatsapp_form.id
         }
       }
 
-      result = WhatsappFormWorker.perform(args)
-      assert {:error, _reason} = result
+      assert :ok = WhatsappFormWorker.perform(args)
     end
   end
 
