@@ -18,8 +18,11 @@ defmodule Glific.WebChannel.Branding do
 
   @provider_code "web_channel"
 
-  @default_primary "#4c3bcf"
-  @default_secondary "#ff8a3d"
+  # Glific's own green and amber, so an organisation that has set nothing still looks deliberate
+  # rather than unstyled. Kept in step with FALLBACK_BRANDING in the widget's branding.ts, which
+  # is what a 404 or an empty payload falls back to there.
+  @default_primary "#119656"
+  @default_secondary "#eab308"
 
   # The two neutrals the widget's own palette is built from, so a computed foreground looks
   # like the rest of the surface rather than like pure #000/#fff dropped on top of it.

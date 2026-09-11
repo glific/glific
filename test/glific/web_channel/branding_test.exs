@@ -16,7 +16,7 @@ defmodule Glific.WebChannel.BrandingTest do
     end
 
     test "clears WCAG AA against the colour it was chosen for" do
-      for primary <- ["#ffffff", "#000000", "#4c3bcf", "#ffb900", "#ff6900", "#008236"] do
+      for primary <- ["#ffffff", "#000000", "#119656", "#eab308", "#ff6900", "#4c3bcf"] do
         assert contrast(primary, Branding.readable_on(primary)) >= 4.5,
                "#{primary} is unreadable under #{Branding.readable_on(primary)}"
       end
