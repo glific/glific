@@ -1012,14 +1012,13 @@ defmodule Glific.Assistants do
   @spec upload_file(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_file(params, organization_id) do
-    document_params = %{
-      path: params.media.path,
-      filename: params.media.filename,
-      target_format: params[:target_format],
-      callback_url: params[:callback_url]
-    }
-
-    with {:ok, _} <- validate_file_format(params.media.filename),
+    with {:ok, filename} <- validate_and_normalize_file_extension(params.media.filename),
+         document_params = %{
+           path: params.media.path,
+           filename: filename,
+           target_format: params[:target_format],
+           callback_url: params[:callback_url]
+         },
          {:ok, %{data: document_data}} <- Kaapi.upload_document(document_params, organization_id) do
       Metrics.increment("Assistant File Uploaded", organization_id)
 
@@ -1095,12 +1094,14 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec validate_file_format(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  defp validate_file_format(filename) do
-    extension = String.split(filename, ".") |> List.last()
+  @spec validate_and_normalize_file_extension(String.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp validate_and_normalize_file_extension(filename) do
+    raw_extension = String.split(filename, ".") |> List.last()
+    extension = String.downcase(raw_extension)
 
     if extension in @assistant_supported_file_extensions do
-      {:ok, filename}
+      {:ok, String.replace_suffix(filename, raw_extension, extension)}
     else
       {:error, "Files with extension '.#{extension}' not supported in Assistants"}
     end
