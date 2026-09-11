@@ -205,19 +205,24 @@ defmodule Glific.GCS.GcsWorker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
-  def perform(%Oban.Job{args: %{"media" => media}}) do
+  def perform(%Oban.Job{
+        args: %{"media" => media},
+        attempt: attempt,
+        max_attempts: max_attempts
+      }) do
     Logger.info("GCSWORKER: Performing gcs media for media id: #{media["id"]}")
 
     Repo.put_process_state(media["organization_id"])
     RepoReplica.put_process_state(media["organization_id"])
 
     Jobs.Instrumentation.track("gcs_upload", media["organization_id"], fn ->
-      do_perform(media)
+      do_perform(media, attempt, max_attempts)
     end)
   end
 
-  @spec do_perform(map()) :: :ok | {:error, String.t()} | {:discard, String.t()}
-  defp do_perform(media) do
+  @spec do_perform(map(), pos_integer(), pos_integer()) ::
+          :ok | {:error, String.t()} | {:discard, String.t()}
+  defp do_perform(media, attempt, max_attempts) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
 
@@ -255,12 +260,24 @@ defmodule Glific.GCS.GcsWorker do
         {:discard, error}
 
       {:error, :timeout} ->
+        # A network timeout is transient and most likely to succeed on a quick retry,
+        # so let Oban retry it normally on non-final attempts -- Glific.Appsignal only
+        # reports to AppSignal once attempt >= max_attempts, so retrying here doesn't
+        # flood it. Only on the final attempt do we give up: discard (not error) so
+        # Oban doesn't raise, recording the failure for visibility. gcs_url stays nil
+        # and no invalid-media marker is set, so the periodic sweep still re-attempts
+        # this media later if the quick retries were exhausted.
         error =
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Logger.info(error)
-        add_message_media_error(media, error)
-        {:error, error}
+
+        if attempt < max_attempts do
+          {:error, error}
+        else
+          add_message_media_error(media, error)
+          {:discard, error}
+        end
 
       {:error, error} ->
         error =

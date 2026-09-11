@@ -139,6 +139,100 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
+  test "perform/1 retries on a non-final attempt when the GCS download times out",
+       attrs do
+    # Incident #292 follow-up: a network timeout is transient and most likely to
+    # succeed on a quick retry, so a non-final attempt should let Oban retry
+    # normally rather than give up immediately. Mocking Tesla to return
+    # {:error, :timeout} drives the worker through the exact same
+    # `download_file_to_temp/3` -> `do_perform/3` case clause as the incident.
+    Tesla.Mock.mock(fn %{method: :get} -> {:error, :timeout} end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      GCS.insert_gcs_jobs(attrs.organization_id)
+
+      media =
+        Fixtures.message_media_fixture(%{
+          organization_id: attrs.organization_id
+        })
+        |> Ecto.Changeset.change(%{
+          inserted_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second),
+          updated_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second)
+        })
+        |> Repo.update!()
+
+      assert :ok = GcsWorker.perform_periodic(attrs.organization_id, %{phase: "incremental"})
+      assert_enqueued(worker: GcsWorker, prefix: "global")
+
+      # Oban.drain_queue actually runs the enqueued job through `perform/1` on its
+      # first attempt, so this exercises the real Oban execution path (not a direct
+      # call to the private `do_perform/3`). The worker's `max_attempts: 2`, so
+      # attempt 1 < max_attempts means `do_perform/3` returns `{:error, _}` here —
+      # Oban treats that as a job failure and schedules a retry (not a discard).
+      assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :gcs)
+
+      # The job is still around, scheduled for its next (final) attempt rather than
+      # discarded outright.
+      assert %MessageMedia{gcs_error: nil, gcs_url: nil} =
+               Repo.get!(MessageMedia, media.id)
+    end
+  end
+
+  test "perform/1 discards on the final attempt when the GCS download times out",
+       attrs do
+    # Once the final attempt is reached, retrying further would only wait out
+    # Oban's backoff forever without success (the timeout is real, not a one-off),
+    # so the worker gives up cleanly: discard, not error, so Oban doesn't raise
+    # `Oban.PerformError`. Recovery still happens later via the periodic sweep.
+    Tesla.Mock.mock(fn %{method: :get} -> {:error, :timeout} end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      media =
+        Fixtures.message_media_fixture(%{
+          organization_id: attrs.organization_id
+        })
+
+      args = %{
+        "media" => %{
+          "id" => media.id,
+          "url" => "https://example.com/file.mp3",
+          "type" => "audio",
+          "contact_id" => 1,
+          "flow_id" => 0,
+          "organization_id" => attrs.organization_id,
+          "sync_phase" => "incremental"
+        }
+      }
+
+      # perform_job/3's opts override the built job's own fields (attempt,
+      # max_attempts), so this still drives the real `perform/1` callback --
+      # simulating being on the last of 2 attempts, not calling `do_perform/3`
+      # directly with a hand-built struct.
+      assert {:discard, error} =
+               perform_job(GcsWorker, args, attempt: 2, max_attempts: 2)
+
+      assert error =~ "GCS Download timeout"
+
+      assert %MessageMedia{gcs_error: gcs_error, gcs_url: nil} =
+               Repo.get!(MessageMedia, media.id)
+
+      assert gcs_error =~ "GCS Download timeout"
+    end
+  end
+
   test "perform_periodic/2, queuing only media_ids not older than a month, unsynced", attrs do
     with_mock(
       Goth.Token,
