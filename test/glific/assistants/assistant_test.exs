@@ -311,8 +311,10 @@ defmodule Glific.Assistants.AssistantTest do
         unsupported_upload = build_upload_for_extension(cased_extension)
         extension = String.downcase(cased_extension)
 
-        assert {:error, "Files with extension '.#{extension}' not supported in Assistants"} =
+        assert {:error, message} =
                  Assistants.upload_file(%{media: unsupported_upload}, organization_id)
+
+        assert message == "Files with extension '.#{extension}' not supported in Assistants"
       end
     end
 
