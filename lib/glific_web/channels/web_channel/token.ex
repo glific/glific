@@ -41,7 +41,8 @@ defmodule GlificWeb.WebChannel.Token do
           contact_id: non_neg_integer(),
           org_id: non_neg_integer(),
           session_id: String.t(),
-          session_started_at: non_neg_integer()
+          session_started_at: non_neg_integer(),
+          exp: non_neg_integer()
         }
 
   @doc """
@@ -149,7 +150,7 @@ defmodule GlificWeb.WebChannel.Token do
        when is_binary(sub) and is_integer(org_id) and is_binary(jti) and
               is_integer(session_started_at) and is_integer(iat) and is_integer(exp) do
     with :ok <- validate_timing(session_started_at, iat, exp) do
-      to_payload(sub, org_id, jti, session_started_at)
+      to_payload(sub, org_id, jti, session_started_at, exp)
     end
   end
 
@@ -173,9 +174,14 @@ defmodule GlificWeb.WebChannel.Token do
     end
   end
 
-  @spec to_payload(String.t(), non_neg_integer(), String.t(), non_neg_integer()) ::
-          {:ok, payload()} | {:error, :invalid}
-  defp to_payload(sub, org_id, jti, session_started_at) do
+  @spec to_payload(
+          String.t(),
+          non_neg_integer(),
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: {:ok, payload()} | {:error, :invalid}
+  defp to_payload(sub, org_id, jti, session_started_at, exp) do
     case Integer.parse(sub) do
       {contact_id, ""} when contact_id > 0 ->
         {:ok,
@@ -183,7 +189,8 @@ defmodule GlificWeb.WebChannel.Token do
            contact_id: contact_id,
            org_id: org_id,
            session_id: jti,
-           session_started_at: session_started_at
+           session_started_at: session_started_at,
+           exp: exp
          }}
 
       _ ->
