@@ -19,6 +19,7 @@ defmodule Glific.Flows.Action do
     Groups.Group,
     Messages,
     Messages.Message,
+    Notifications,
     Profiles,
     Repo,
     Sheets,
@@ -794,14 +795,56 @@ defmodule Glific.Flows.Action do
     {:ok, updated_context, messages}
   end
 
-  def execute(action, %{wa_group_id: wa_group_id} = context, messages)
-      when wa_group_id != nil do
-    Logger.error(
-      "Unsupported action type: for flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} wa_group_id #{Glific.SafeLog.safe_inspect(context.wa_group_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
-    )
+  # await_context/2 finds parked contexts by contact_id, which a WA group context does not have,
+  # so a group parked here could never be resumed by a result.
+  def execute(
+        %{type: "wait_for_result"} = action,
+        %{wa_group_id: wa_group_id} = context,
+        messages
+      )
+      when wa_group_id != nil,
+      do: unsupported_for_wa_group(action, context, messages)
 
-    raise(UndefinedFunctionError, message: "Unsupported action type #{action.type} for WA group")
+  def execute(%{type: type} = _action, context, [msg])
+      when type in @wait_for do
+    if msg.body != "No Response" do
+      Logger.info(
+        "Message #{msg.body} with context (#{context.id}) received while waiting for time"
+      )
+
+      {:error, "unexpected message received while waiting for time"}
+    else
+      {:ok, context, []}
+    end
   end
+
+  @sleep_timeout 4 * 1000
+
+  def execute(%{type: type} = action, context, [])
+      when type in @wait_for do
+    if action.wait_time == @default_wait_time do
+      ## Ideally we should do it by async call
+      ## but this is fine as a short term fix.
+      Process.sleep(@sleep_timeout)
+      {:ok, context, []}
+    else
+      {:ok, context} =
+        FlowContext.update_flow_context(
+          context,
+          %{
+            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+            is_background_flow: context.flow.is_background,
+            is_await_result: type == "wait_for_result"
+          }
+        )
+
+      {:wait, context, []}
+    end
+  end
+
+  def execute(action, %{wa_group_id: wa_group_id} = context, messages)
+      when wa_group_id != nil,
+      do: unsupported_for_wa_group(action, context, messages)
 
   def execute(%{type: "send_msg"} = action, context, messages) do
     templating = Templating.execute(action.templating, context, messages)
@@ -1057,49 +1100,37 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: type} = _action, context, [msg])
-      when type in @wait_for do
-    if msg.body != "No Response" do
-      Logger.info(
-        "Message #{msg.body} with context (#{context.id}) received while waiting for time"
-      )
-
-      {:error, "unexpected message received while waiting for time"}
-    else
-      {:ok, context, []}
-    end
-  end
-
-  @sleep_timeout 4 * 1000
-
-  def execute(%{type: type} = action, context, [])
-      when type in @wait_for do
-    if action.wait_time == @default_wait_time do
-      ## Ideally we should do it by async call
-      ## but this is fine as a sort term fix.
-      Process.sleep(@sleep_timeout)
-      {:ok, context, []}
-    else
-      {:ok, context} =
-        FlowContext.update_flow_context(
-          context,
-          %{
-            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
-            is_background_flow: context.flow.is_background,
-            is_await_result: type == "wait_for_result"
-          }
-        )
-
-      {:wait, context, []}
-    end
-  end
-
   def execute(action, context, messages) do
     Logger.error(
       "Unsupported action type: for flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} contact_id #{Glific.SafeLog.safe_inspect(context.contact_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
     )
 
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+  end
+
+  @spec unsupported_for_wa_group(Action.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t(), [Message.t()]}
+  defp unsupported_for_wa_group(action, context, messages) do
+    Glific.log_error(
+      "Unsupported action type #{action.type} for WA group: flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} wa_group_id #{Glific.SafeLog.safe_inspect(context.wa_group_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}",
+      false
+    )
+
+    Notifications.create_notification(%{
+      category: "Flow",
+      message: "Action #{action.type} is not supported in WhatsApp group flows and was skipped",
+      severity: Notifications.types().warning,
+      organization_id: context.organization_id,
+      entity: %{
+        flow_id: context.flow_id,
+        flow_uuid: context.flow_uuid,
+        node_uuid: context.node_uuid,
+        wa_group_id: context.wa_group_id,
+        action_type: action.type
+      }
+    })
+
+    {:ok, context, messages}
   end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
