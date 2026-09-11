@@ -16,10 +16,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     Repo,
     Seeds.SeedsDev,
     Templates.SessionTemplate,
-    Users
+    Users,
+    WebChannelFlagHelpers
   }
 
-  alias FunWithFlags.Store.Cache
   alias GlificWeb.WebChannel.Token
 
   # Seeded deliverable by `SeedsDev.seed_contacts/1`; our stand-in for a reachable contact.
@@ -40,12 +40,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       }
     end)
 
-    # FunWithFlags' ETS cache outlives the SQL sandbox and busts asynchronously, so a flag another
-    # test enabled can still be live here. Resetting on the way in rather than trusting every
-    # previous teardown; without this roughly one run in five failed.
-    FunWithFlags.disable(:web_channel_enabled, for_actor: %{organization_id: 1})
-    Cache.flush()
-    Partners.organization(1) |> Partners.fill_cache()
+    WebChannelFlagHelpers.reset_web_channel_flag(1)
 
     :ok
   end
@@ -61,21 +56,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     "919" <> suffix
   end
 
-  # try/after rather than on_exit: the flag write needs the process owning this test's sandbox
-  # connection, and on_exit runs after that process has gone, raising a DBConnection ownership
-  # error. Same constraint as `test/glific/ai_test.exs`.
   @spec with_web_channel_enabled((-> any())) :: any()
-  defp with_web_channel_enabled(fun) do
-    FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: 1})
-    Partners.organization(1) |> Partners.fill_cache()
-
-    try do
-      fun.()
-    after
-      FunWithFlags.disable(:web_channel_enabled, for_actor: %{organization_id: 1})
-      Partners.organization(1) |> Partners.fill_cache()
-    end
-  end
+  defp with_web_channel_enabled(fun), do: WebChannelFlagHelpers.with_web_channel_enabled(1, fun)
 
   describe "renew_token/2" do
     setup %{conn: conn} do
