@@ -10,6 +10,7 @@ defmodule Glific.Flows.ActionTest do
     Flows.ContactField,
     Groups,
     Groups.ContactGroup,
+    Notifications,
     Partners,
     Profiles,
     Seeds.SeedsDev,
@@ -938,6 +939,36 @@ defmodule Glific.Flows.ActionTest do
     assert resumed.is_await_result == false
   end
 
+  test "execute a wait_for_result action for a contact still parks and awaits a result", attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        organization_id: attrs.organization_id
+      })
+
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "wait_for_result",
+      wait_time: 900
+    }
+
+    # the WA-group rejection clause must not capture contacts: await_context/2 finds these by
+    # contact_id, so is_await_result has to stay true here
+    assert {:wait, waiting_context, []} = Action.execute(action, context, [])
+    assert waiting_context.is_await_result == true
+
+    assert_in_delta DateTime.diff(waiting_context.wakeup_at, DateTime.utc_now()),
+                    action.wait_time,
+                    5
+  end
+
   test "execute a wait_for_result action for a WA Group is rejected, not parked", attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
     [flow | _tail] = Flows.list_flows(%{filter: attrs})
@@ -1716,6 +1747,36 @@ defmodule Glific.Flows.ActionTest do
 
     # raising here retried the enclosing webhook job and duplicated an already-sent message
     assert {:ok, ^context, ^message_stream} = Action.execute(action, context, message_stream)
+  end
+
+  test "execute a wa group unsupported action raises an org notification", attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+
+    context =
+      %FlowContext{
+        wa_group_id: wa_group.id,
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        node_uuid: Ecto.UUID.generate(),
+        organization_id: attrs.organization_id
+      }
+      |> Repo.preload([:wa_group, :flow])
+
+    action = %Action{type: "add_contact_groups", value: ["1"]}
+
+    assert {:ok, _context, []} = Action.execute(action, context, [])
+
+    # AppSignal is suppressed on this path, so the notification is the only durable signal
+    [notification] =
+      Notifications.list_notifications(%{
+        filter: %{message: "add_contact_groups", category: "Flow"}
+      })
+
+    assert notification.severity == Notifications.types().warning
+    assert notification.organization_id == attrs.organization_id
+    assert notification.entity["action_type"] == "add_contact_groups"
+    assert notification.entity["wa_group_id"] == wa_group.id
+    assert notification.entity["node_uuid"] == context.node_uuid
   end
 
   test "execute a wa group unsupported action passes the message stream through untouched",
