@@ -77,6 +77,10 @@ defmodule GlificWeb.WebChannelSocketTest do
          %{contact: contact} do
       organization_id = contact.organization_id
 
+      # The organization's own half of the switch is already on and cached; this test is about
+      # the flag alone.
+      Glific.WebChannelFlagHelpers.activate_web_channel(organization_id)
+
       # Confirm the cached field really is stale before proving the socket ignores it.
       cached = Partners.organization(organization_id)
       assert cached.web_channel_enabled == false

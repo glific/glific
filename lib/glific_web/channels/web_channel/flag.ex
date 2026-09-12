@@ -1,7 +1,14 @@
 defmodule GlificWeb.WebChannel.Flag do
   @moduledoc """
-  Whether the web channel is switched on for an organization, for the surfaces that gate on it:
-  the OTP auth controller, the socket, and media upload.
+  Whether the web channel is switched on for an organization, for every surface that gates on
+  it: the branding endpoint, the OTP auth controller, the socket, and media upload.
+
+  Two switches, and both have to be on. `:web_channel_enabled` is Glific's — may this
+  organization have the feature at all — and a Glific admin flips it at `/feature-flags`. An
+  active `web_channel` credential is the organization's own, flipped by its admin on the
+  Settings page. Without the second, an organization granted the feature but configured with
+  nothing is already reachable in a browser, serving Glific's default branding under its own
+  domain to anyone who finds the address.
 
   `lib/glific/CLAUDE.md` says not to write a per-flag wrapper around
   `Glific.Flags.get_flag_enabled/2`, and to call it inline instead. This is the exception that
@@ -20,17 +27,29 @@ defmodule GlificWeb.WebChannel.Flag do
   back in.
   """
 
-  alias Glific.{Flags, Partners}
+  alias Glific.{Flags, Partners, Partners.Organization}
+
+  @provider_code "web_channel"
 
   @doc """
-  Whether `:web_channel_enabled` is on for `organization_id`, false for an organization that
-  does not exist.
+  Whether the web channel is on for an organization, false for one that does not exist.
+
+  Takes the id — which every caller reads from a JWT claim and so cannot trust — or an
+  organization already loaded, for a caller that has one and should not resolve it twice.
   """
-  @spec web_channel_enabled?(non_neg_integer()) :: boolean()
+  @spec web_channel_enabled?(non_neg_integer() | Organization.t()) :: boolean()
+  def web_channel_enabled?(%Organization{} = organization),
+    do: Flags.get_flag_enabled(:web_channel_enabled, organization) and configured?(organization)
+
   def web_channel_enabled?(organization_id) do
     case Partners.organization(organization_id) do
       {:error, _reason} -> false
-      organization -> Flags.get_flag_enabled(:web_channel_enabled, organization)
+      organization -> web_channel_enabled?(organization)
     end
   end
+
+  # `services` holds only ACTIVE credentials — `Partners.set_credentials/1` filters on
+  # `is_active` — so the key being present is the organization's own switch being on.
+  @spec configured?(Organization.t()) :: boolean()
+  defp configured?(organization), do: is_map(organization.services[@provider_code])
 end

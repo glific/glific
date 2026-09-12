@@ -8,6 +8,8 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
   alias FunWithFlags.Store.Cache, as: FlagCache
   alias Glific.{Fixtures, Partners, WebChannel.Branding}
 
+  import Glific.WebChannelFlagHelpers, only: [activate_web_channel: 1, activate_web_channel: 2]
+
   @branding_path "/api/v1/web_channel/branding"
 
   # FunWithFlags persists through Ecto but reads through a 15-minute cache, and only the Ecto
@@ -18,20 +20,20 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
     :ok
   end
 
-  defp enable_web_channel(organization_id),
-    do: FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: organization_id})
+  # Both halves of the switch: the Glific flag, and the organization's own active credential.
+  defp enable_web_channel(organization_id) do
+    FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: organization_id})
+    activate_web_channel(organization_id)
+  end
 
-  defp add_branding(organization_id, keys) do
-    {:ok, _credential} =
-      Partners.create_credential(%{
-        organization_id: organization_id,
-        shortcode: "web_channel",
-        keys: keys,
-        secrets: %{},
-        is_active: true
-      })
+  defp add_branding(organization_id, keys), do: activate_web_channel(organization_id, keys)
 
-    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
+  defp deactivate_web_channel(organization_id) do
+    {:ok, credential} =
+      Partners.get_credential(%{organization_id: organization_id, shortcode: "web_channel"})
+
+    Partners.update_credential(credential, %{is_active: false})
+    organization_id |> Partners.organization() |> Partners.fill_cache()
     :ok
   end
 
@@ -114,6 +116,21 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
     end
 
     test "returns 404 for an organization without the feature flag", %{conn: conn} do
+      assert %{"error" => %{"status" => 404, "message" => "Web channel is not enabled."}} =
+               conn |> get(@branding_path) |> json_response(404)
+    end
+
+    # The flag is Glific's half of the switch. An organization that has been granted the feature
+    # and then switched it off in Settings must be just as unreachable.
+    test "returns 404 once the organization switches the channel off", %{
+      conn: conn,
+      organization_id: organization_id
+    } do
+      enable_web_channel(organization_id)
+      assert %{"data" => _branding} = conn |> get(@branding_path) |> json_response(200)
+
+      deactivate_web_channel(organization_id)
+
       assert %{"error" => %{"status" => 404, "message" => "Web channel is not enabled."}} =
                conn |> get(@branding_path) |> json_response(404)
     end

@@ -46,6 +46,8 @@ defmodule Glific.Partners do
     Users.User
   }
 
+  alias GlificWeb.WebChannel.RoomChannel
+
   # We cache organization info under this id since when we want to retrieve
   # by shortcode we do not have an organization id to retrieve it from.
   @global_organization_id 0
@@ -1154,6 +1156,14 @@ defmodule Glific.Partners do
 
         {:error, "Failed to sync WhatsApp data to Glific. Please reach out to Glific Support"}
     end
+  end
+
+  # Switching the web channel off has to reach the browsers already in a conversation; they hold
+  # a token that stays valid and a socket that would otherwise keep serving messages.
+  defp credential_update_callback(organization, credential, "web_channel") do
+    if !credential.is_active, do: RoomChannel.close_all(organization.id)
+
+    {:ok, credential}
   end
 
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}

@@ -10,7 +10,8 @@ defmodule GlificWeb.API.V1.WebChannelController do
 
   use GlificWeb, :controller
 
-  alias Glific.{Flags, Partners, WebChannel.Branding}
+  alias Glific.{Partners, WebChannel.Branding}
+  alias GlificWeb.WebChannel.Flag
 
   @doc """
   Returns the branding the widget should paint itself with, before its first render.
@@ -24,7 +25,7 @@ defmodule GlificWeb.API.V1.WebChannelController do
         not_enabled(conn)
 
       organization ->
-        if Flags.get_flag_enabled(:web_channel_enabled, organization),
+        if Flag.web_channel_enabled?(organization),
           do: json(conn, %{data: Branding.for_organization(organization)}),
           else: not_enabled(conn)
     end
