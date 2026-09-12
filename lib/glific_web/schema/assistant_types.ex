@@ -85,6 +85,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :settings, :json
     field :status, :string
     field :is_live, :boolean
+    field :failure_reason, :string
     field :description, :string
 
     field :vector_store, :vector_store do
