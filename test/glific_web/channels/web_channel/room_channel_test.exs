@@ -7,6 +7,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     Fixtures,
     GcsFixtures,
     Messages.Message,
+    Partners,
     Repo,
     WebChannelFixtures
   }
@@ -115,6 +116,42 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
         assert {:error, %{reason: "unauthorized"}} =
                  WebChannelFixtures.join_web_channel(expired_socket, contact)
+      end)
+    end
+  end
+
+  describe "switching the web channel off" do
+    test "closes an open room and tells the browser why", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        monitor = Process.monitor(socket.channel_pid)
+
+        {:ok, credential} =
+          Partners.get_credential(%{
+            organization_id: contact.organization_id,
+            shortcode: "web_channel"
+          })
+
+        Partners.update_credential(credential, %{is_active: false})
+
+        # The message first, so an open browser is told why rather than watching the chat go
+        # quiet, and only then the room.
+        assert_push("web_channel_disabled", %{})
+        assert_receive {:DOWN, ^monitor, :process, _pid, :normal}
+      end)
+    end
+
+    test "leaves an organization's rooms alone when another one switches off", %{
+      contact: contact
+    } do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, _socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        RoomChannel.close_all(contact.organization_id + 1)
+
+        refute_push("web_channel_disabled", %{})
       end)
     end
   end
