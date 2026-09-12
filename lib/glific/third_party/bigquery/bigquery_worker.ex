@@ -1077,15 +1077,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             language: row.language.label,
             is_default: row.is_default,
             is_active: row.is_active,
-            fields:
-              Enum.map(row.fields, fn {_key, field} ->
-                %{
-                  label: field["label"],
-                  inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
-                  type: field["type"],
-                  value: field["value"]
-                }
-              end)
+            fields: process_row(row, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
