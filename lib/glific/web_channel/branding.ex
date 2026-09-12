@@ -40,12 +40,19 @@ defmodule Glific.WebChannel.Branding do
         }
 
   @type t() :: %{
+          enabled: true,
           display_name: String.t(),
           logo_url: String.t() | nil,
           primary_color: String.t(),
           primary_foreground: String.t(),
           secondary_color: String.t(),
           about: about()
+        }
+
+  @type disabled() :: %{
+          enabled: false,
+          display_name: String.t(),
+          whatsapp_number: String.t() | nil
         }
 
   @doc """
@@ -69,12 +76,30 @@ defmodule Glific.WebChannel.Branding do
     primary = color(keys["primary_color"], @default_primary)
 
     %{
+      enabled: true,
       display_name: display_name(keys["display_name"], organization),
       logo_url: logo_url(keys["logo_url"]),
       primary_color: primary,
       primary_foreground: readable_on(primary),
       secondary_color: color(keys["secondary_color"], @default_secondary),
       about: about(keys)
+    }
+  end
+
+  @doc """
+  What the widget renders for an organisation whose web channel is off.
+
+  A 200 rather than a 404, because there is still something to say: the organisation's name,
+  and the WhatsApp number a contact can reach them on instead. The name comes from the
+  organisation record rather than the credential — an organisation that has never configured
+  the channel has no credential to take a display name from.
+  """
+  @spec disabled_for_organization(Organization.t()) :: disabled()
+  def disabled_for_organization(organization) do
+    %{
+      enabled: false,
+      display_name: organization.name,
+      whatsapp_number: whatsapp_number(organization)
     }
   end
 
@@ -94,6 +119,10 @@ defmodule Glific.WebChannel.Branding do
        do: @on_light,
        else: @on_dark
   end
+
+  @spec whatsapp_number(Organization.t()) :: String.t() | nil
+  defp whatsapp_number(%{contact: %{phone: phone}}) when is_binary(phone), do: phone
+  defp whatsapp_number(_organization), do: nil
 
   @spec branding_keys(Organization.t()) :: map()
   defp branding_keys(organization) do

@@ -73,6 +73,7 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
       assert %{
                "data" => %{
+                 "enabled" => true,
                  "primary_color" => Branding.default_primary(),
                  "primary_foreground" => Branding.readable_on(Branding.default_primary()),
                  "secondary_color" => Branding.default_secondary(),
@@ -108,31 +109,48 @@ defmodule GlificWeb.API.V1.WebChannelControllerTest do
 
     test "returns 404 rather than raising when the organization cannot be loaded", %{conn: conn} do
       # organization/1 returns {:error, _} on a cache or lookup failure, and everything
-      # downstream reads organization.id. This is a public endpoint, so it must not 500.
+      # downstream reads the organization. This is a public endpoint, so it must not 500.
       with_mock Partners, [:passthrough], organization: fn _id -> {:error, "cache miss"} end do
         assert %{"error" => %{"status" => 404}} =
                  conn |> get(@branding_path) |> json_response(404)
       end
     end
 
-    test "returns 404 for an organization without the feature flag", %{conn: conn} do
-      assert %{"error" => %{"status" => 404, "message" => "Web channel is not enabled."}} =
-               conn |> get(@branding_path) |> json_response(404)
+    # 200, not 404: the widget still has a page to render, and it needs the organization's name
+    # and WhatsApp number to render it.
+    test "answers with the organization's name and WhatsApp number when the flag is off", %{
+      conn: conn,
+      organization_id: organization_id
+    } do
+      organization = Partners.organization(organization_id)
+
+      assert %{
+               "data" => %{
+                 "enabled" => false,
+                 "display_name" => display_name,
+                 "whatsapp_number" => whatsapp_number
+               }
+             } = conn |> get(@branding_path) |> json_response(200)
+
+      assert display_name == organization.name
+      assert whatsapp_number == organization.contact.phone
     end
 
     # The flag is Glific's half of the switch. An organization that has been granted the feature
-    # and then switched it off in Settings must be just as unreachable.
-    test "returns 404 once the organization switches the channel off", %{
+    # and then switched it off in Settings must read as just as off.
+    test "reports the channel as off once the organization switches it off", %{
       conn: conn,
       organization_id: organization_id
     } do
       enable_web_channel(organization_id)
-      assert %{"data" => _branding} = conn |> get(@branding_path) |> json_response(200)
+      assert %{"data" => %{"enabled" => true}} = conn |> get(@branding_path) |> json_response(200)
 
       deactivate_web_channel(organization_id)
 
-      assert %{"error" => %{"status" => 404, "message" => "Web channel is not enabled."}} =
-               conn |> get(@branding_path) |> json_response(404)
+      assert %{"data" => %{"enabled" => false, "whatsapp_number" => number}} =
+               conn |> get(@branding_path) |> json_response(200)
+
+      assert is_binary(number)
     end
 
     test "resolves the organization from the request host", %{organization_id: organization_id} do

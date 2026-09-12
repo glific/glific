@@ -45,6 +45,7 @@ defmodule Glific.WebChannel.BrandingTest do
         |> Branding.for_organization()
 
       assert branding == %{
+               enabled: true,
                display_name: "Example NGO",
                logo_url: "https://cdn.example.org/logo.png",
                primary_color: "#4c3bcf",
@@ -134,5 +135,30 @@ defmodule Glific.WebChannel.BrandingTest do
       end)
 
     0.2126 * r + 0.7152 * g + 0.0722 * b
+  end
+
+  describe "disabled_for_organization/1" do
+    test "answers with the name and number a contact can reach the organization on instead" do
+      organization = %Organization{
+        name: "NGO Name",
+        contact: %Glific.Contacts.Contact{phone: "919876543210"},
+        services: %{}
+      }
+
+      assert Branding.disabled_for_organization(organization) == %{
+               enabled: false,
+               display_name: "NGO Name",
+               whatsapp_number: "919876543210"
+             }
+    end
+
+    # `contact` is preloaded on the cached organization, but a caller holding a bare struct is
+    # not a reason for a public endpoint to raise.
+    test "leaves the number out rather than raising when the contact is not loaded" do
+      branding = %Organization{name: "NGO Name"} |> Branding.disabled_for_organization()
+
+      assert branding.whatsapp_number == nil
+      assert branding.display_name == "NGO Name"
+    end
   end
 end
