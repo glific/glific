@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
   alias Faker.Phone
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Fixtures,
     Groups.ContactWAGroup,
@@ -182,7 +183,8 @@ defmodule GlificWeb.Schema.WaReactionTest do
       }
 
     assert :ok = MessageEventController.update_statuses(payload, org_id)
-    contact = Repo.get_by(Contact, %{phone: contact_phone})
+    # the contact is created with a canonicalized phone
+    contact = Repo.get_by(Contact, %{phone: Contacts.normalize_phone(contact_phone)})
     contact_wa_group = Repo.get_by(ContactWAGroup, %{contact_id: contact.id})
 
     assert contact != nil
