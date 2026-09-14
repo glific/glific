@@ -6,6 +6,7 @@ defmodule Glific.Contacts.Contact do
   import Ecto.Changeset
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Enums.ContactProviderStatus,
     Enums.ContactStatus,
@@ -133,10 +134,21 @@ defmodule Glific.Contacts.Contact do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_fields_map()
+    |> put_normalized_phone()
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
   end
+
+  @spec put_normalized_phone(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp put_normalized_phone(%Ecto.Changeset{data: %Contact{id: nil}} = changeset) do
+    case get_change(changeset, :phone) do
+      nil -> changeset
+      phone -> put_change(changeset, :phone, Contacts.normalize_phone(phone))
+    end
+  end
+
+  defp put_normalized_phone(changeset), do: changeset
 
   @doc false
   @spec to_minimal_map(Contact.t()) :: map()
