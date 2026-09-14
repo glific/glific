@@ -772,23 +772,92 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message"
     end
 
-    test "create and send message refuses a web channel send instead of reaching the BSP",
+    test "create and send message on the web channel is delivered over the socket, not the BSP",
          attrs do
-      valid_attrs = %{
-        body: "test message",
-        flow: :outbound,
-        type: :text,
-        channel: :web
+      message_attrs =
+        %{body: "test message", flow: :outbound, type: :text, channel: :web}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      GlificWeb.Endpoint.subscribe("web_channel:#{message_attrs.receiver_id}")
+
+      assert {:ok, message} = Messages.create_and_send_message(message_attrs)
+
+      assert message.channel == :web
+
+      # Re-fetched: `send_message/2` answers with the struct it was handed, so delivery state has
+      # to be read back from the row the adapter actually wrote.
+      sent = Messages.get_message!(message.id)
+
+      # The two assertions that separate this from the BSP path, which would have run
+      # `handle_success_response/2` against the Tesla mock this describe block installs and left
+      # `:enqueued` plus an id from the mocked provider response.
+      assert sent.bsp_status == :sent
+      assert is_nil(sent.bsp_message_id)
+
+      assert_receive %Phoenix.Socket.Broadcast{
+        event: "new_message",
+        payload: %{body: "test message"}
       }
+    end
 
-      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+    test "an HSM cannot be sent on the web channel", attrs do
+      {:ok, hsm_template} =
+        Repo.fetch_by(SessionTemplate, %{
+          shortcode: "otp",
+          organization_id: attrs.organization_id
+        })
 
-      assert {:error, "web channel sends are not implemented yet"} =
+      message_attrs =
+        %{
+          body: hsm_template.example,
+          flow: :outbound,
+          type: :text,
+          channel: :web,
+          is_hsm: true,
+          params: ["adding Anil as a payee", "1234", "15 minutes"],
+          template_id: hsm_template.id
+        }
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, "HSM templates cannot be sent on the web channel."} =
                Messages.create_and_send_message(message_attrs)
 
-      # the string form (as it would arrive from a JSON-decoded caller) is refused the same way
-      assert {:error, "web channel sends are not implemented yet"} =
+      # the string form, as it would arrive from a JSON-decoded caller, is refused identically
+      assert {:error, "HSM templates cannot be sent on the web channel."} =
                Messages.create_and_send_message(Map.put(message_attrs, :channel, "web"))
+    end
+
+    test "a web channel send reaches a contact that has never opted in to WhatsApp", attrs do
+      message_attrs =
+        %{body: "hello", flow: :outbound, type: :text, channel: :web}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      # The state a browser-only contact is actually in after #5713: no opt-in, and the
+      # `bsp_status` both WhatsApp clauses of `can_send_message_to?/2` refuse.
+      {:ok, _receiver} =
+        message_attrs.receiver_id
+        |> Contacts.get_contact!()
+        |> Contacts.update_contact(%{
+          optin_time: nil,
+          optin_status: false,
+          bsp_status: :none,
+          last_message_at: nil
+        })
+
+      assert {:ok, _message} = Messages.create_and_send_message(message_attrs)
+    end
+
+    test "a web channel send is refused for a blocked contact", attrs do
+      message_attrs =
+        %{body: "hello", flow: :outbound, type: :text, channel: :web}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      {:ok, _receiver} =
+        message_attrs.receiver_id
+        |> Contacts.get_contact!()
+        |> Contacts.update_contact(%{status: :blocked})
+
+      assert {:error, _reason} = Messages.create_and_send_message(message_attrs)
     end
 
     test "create and send message should send template message to contact through gupshup enterprise",

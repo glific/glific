@@ -327,10 +327,17 @@ defmodule Glific.Messages do
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  # Temporary until #5719 adds the outbound adapter; a WhatsApp reply to a browser visitor is
-  # worse than no reply.
-  defp check_for_hsm_message(%{channel: channel}, _contact) when channel in [:web, "web"],
-    do: {:error, "web channel sends are not implemented yet"}
+  # No BSP to approve a template against, so refuse it rather than send its rendered body.
+  defp check_for_hsm_message(%{channel: channel} = attrs, contact)
+       when channel in [:web, "web"] do
+    if Map.get(attrs, :is_hsm) || Map.has_key?(attrs, :template_id) do
+      {:error, dgettext("errors", "HSM templates cannot be sent on the web channel.")}
+    else
+      contact
+      |> Contacts.can_send_message_to?(false, attrs)
+      |> do_send_message(attrs)
+    end
+  end
 
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
@@ -462,12 +469,12 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
+  @spec create_and_send_otp_verification_message(Contact.t(), String.t(), map()) ::
           {:ok, Message.t()}
-  def create_and_send_otp_verification_message(contact, otp) do
+  def create_and_send_otp_verification_message(contact, otp, opts \\ %{}) do
     case Contacts.can_send_message_to?(contact, false) do
       {:ok, _} -> create_and_send_otp_session_message(contact, otp)
-      _ -> create_and_send_otp_template_message(contact, otp)
+      _ -> create_and_send_otp_template_message(contact, otp, opts)
     end
   end
 
@@ -482,9 +489,9 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
+  @spec create_and_send_otp_template_message(Contact.t(), String.t(), map()) ::
           {:ok, Message.t()}
-  def create_and_send_otp_template_message(contact, otp) do
+  def create_and_send_otp_template_message(contact, otp, opts \\ %{}) do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
@@ -496,6 +503,7 @@ defmodule Glific.Messages do
     parameters = [otp]
 
     %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
+    |> Map.merge(opts)
     |> create_and_send_hsm_message()
   end
 

@@ -15,6 +15,7 @@ defmodule Glific.Flows.FlowContext do
   alias __MODULE__
   alias Glific.Contacts
   alias Glific.Contacts.Contact
+  alias Glific.Enums.MessageChannel
   alias Glific.Flows
   alias Glific.Flows.Flow
   alias Glific.Flows.FlowResult
@@ -54,7 +55,8 @@ defmodule Glific.Flows.FlowContext do
     :profile_id,
     :reason,
     :node,
-    :wa_group_id
+    :wa_group_id,
+    :channel
   ]
 
   # we store one more than the number of messages specified here
@@ -73,6 +75,7 @@ defmodule Glific.Flows.FlowContext do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           status: String.t() | nil,
+          channel: atom() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           message_broadcast_id: non_neg_integer | nil,
@@ -106,6 +109,11 @@ defmodule Glific.Flows.FlowContext do
     field(:flow_uuid, Ecto.UUID)
 
     field(:status, :string, default: "published")
+
+    # Mapped here rather than in #5660, which added the column but had nothing reading it. The
+    # value decides which channel a flow's history events and outbound sends are attributed to,
+    # so it has to survive a reload rather than being re-derived per call site.
+    field(:channel, MessageChannel, default: :whatsapp)
 
     field(:wakeup_at, :utc_datetime, default: nil)
     field(:completed_at, :utc_datetime, default: nil)
@@ -282,6 +290,7 @@ defmodule Glific.Flows.FlowContext do
       {:ok, _} =
         Contacts.capture_history(context.contact, :contact_flow_ended, %{
           event_label: event_label,
+          channel: context.channel,
           event_meta:
             %{
               context_id: context.id,
@@ -797,6 +806,7 @@ defmodule Glific.Flows.FlowContext do
     {:ok, _} =
       Contacts.capture_history(contact, :contact_flow_started, %{
         event_label: "Flow Started",
+        channel: context.channel,
         event_meta: %{
           context_id: context.id,
           flow: %{

@@ -49,7 +49,7 @@ defmodule Glific.Communications.Message do
 
     with {:ok, _} <-
            apply(
-             Communications.provider_handler(message.organization_id),
+             message_handler(message),
              @type_to_token[message.type],
              [message, attrs]
            ) do
@@ -71,8 +71,23 @@ defmodule Glific.Communications.Message do
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
     _ ->
-      log_error(message, "Could not send message to contact: Check Gupshup Setting")
+      log_error(message, send_failure_reason(message))
   end
+
+  # The only thing standing between a web-channel message and the organization's WhatsApp BSP.
+  # The recipient is a browser visitor who has consented to be messaged on the web and, since
+  # #5713, explicitly not on WhatsApp — so the channel decides the handler, never the org's
+  # BSP credential.
+  @spec message_handler(Message.t()) :: atom()
+  defp message_handler(%Message{channel: :web}), do: Glific.Providers.Web.Message
+  defp message_handler(message), do: Communications.provider_handler(message.organization_id)
+
+  @spec send_failure_reason(Message.t()) :: String.t()
+  defp send_failure_reason(%Message{channel: :web}),
+    do: "Could not deliver message on the web channel"
+
+  defp send_failure_reason(_message),
+    do: "Could not send message to contact: Check Gupshup Setting"
 
   @spec log_error(Message.t(), String.t()) :: {:error, String.t()}
   defp log_error(message, reason) do

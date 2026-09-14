@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
+  alias GlificWeb.WebChannel.Presence
 
   object :contact_result do
     field(:contact, :contact)
@@ -57,6 +58,17 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field(:status, :contact_status_enum)
     field(:bsp_status, :contact_provider_status_enum)
+
+    @desc """
+    Whether the contact currently has a web channel socket open. Resolved at query time from
+    ephemeral presence state, so it is as of the last fetch rather than live, and it is always
+    false for an organization that does not use the web channel.
+    """
+    field :is_web_online, :boolean do
+      resolve(fn contact, _, _ ->
+        {:ok, Presence.online?(contact.organization_id, contact.id)}
+      end)
+    end
 
     field :active_profile, :profile do
       resolve(dataloader(Repo))
@@ -118,6 +130,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   object :contact_history do
     field(:id, :id)
+    field(:channel, :message_channel_enum)
     field(:event_type, :string)
     field(:event_label, :string)
     field(:event_meta, :json)
@@ -202,6 +215,9 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Match the event label"
     field(:event_label, :string)
+
+    @desc "Match the channel the event came from"
+    field(:channel, :message_channel_enum)
 
     @desc "profile id"
     field(:profile_id, :id)

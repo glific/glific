@@ -33,7 +33,6 @@ defmodule Glific.Assistants do
 
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
   @assistant_supported_file_extensions [
-    "csv",
     "doc",
     "docx",
     "htm",
