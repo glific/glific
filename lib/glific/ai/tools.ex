@@ -17,7 +17,7 @@ defmodule Glific.AI.Tools do
       step and cost ceilings bound a whole run.
   """
 
-  alias Glific.{AI.Tool, Repo, SafeLog, Users.User}
+  alias Glific.{AI.Tool, Repo, RepoReplica, SafeLog, Users.User}
 
   @modules [
     Glific.AI.Tools.Flows,
@@ -124,14 +124,30 @@ defmodule Glific.AI.Tools do
 
   @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   defp execute(module, name, args, user) do
-    Repo.put_organization_id(user.organization_id)
-    Repo.put_current_user(user)
+    # Each repo reads its tenant context from a process key of its own, and both
+    # get used: most reads go through Repo, but a few contexts name RepoReplica
+    # themselves — see Jobs.get_bigquery_jobs/1.
+    put_tenant(Repo, user)
+    put_tenant(RepoReplica, user)
+
+    # Points every read in this task at the replica: the tools' own queries and
+    # the contexts they call alike. Nothing puts it back, and nothing needs to —
+    # the task only reads, and the pointer dies with the process. Resolves to the
+    # primary in tests and wherever no replica is deployed.
+    Repo.put_dynamic_repo(RepoReplica.get_dynamic_repo())
 
     read(module, name, args)
   rescue
     exception ->
       Glific.log_exception(exception)
       {:error, "The lookup failed: #{Exception.message(exception)}"}
+  end
+
+  @spec put_tenant(module(), User.t()) :: :ok
+  defp put_tenant(repo, user) do
+    repo.put_organization_id(user.organization_id)
+    repo.put_current_user(user)
+    :ok
   end
 
   @spec read(module(), String.t(), map()) :: {:ok, term()} | {:error, String.t()}

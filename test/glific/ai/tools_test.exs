@@ -8,6 +8,7 @@ defmodule Glific.AI.ToolsTest do
     Flows.Flow,
     Flows.FlowRevision,
     Repo,
+    RepoReplica,
     WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormResponse
   }
@@ -54,7 +55,8 @@ defmodule Glific.AI.ToolsTest do
       {:ok,
        %{
          user_id: Glific.Repo.get_current_user().id,
-         organization_id: Glific.Repo.get_organization_id()
+         organization_id: Glific.Repo.get_organization_id(),
+         dynamic_repo: Glific.Repo.get_dynamic_repo()
        }}
     end
   end
@@ -166,6 +168,28 @@ defmodule Glific.AI.ToolsTest do
         assert {:ok, {module, ^spec}} = Tools.fetch(spec.name)
         assert function_exported?(module, :run, 2)
       end
+    end
+  end
+
+  describe "reads go to the replica" do
+    test "tenant context reaches the replica, which some contexts query directly", %{user: user} do
+      assert {:ok, _ran_as} = Tools.run("whoami_tool", %{}, user, modules())
+      assert RepoReplica.get_organization_id() == user.organization_id
+      assert RepoReplica.get_current_user().id == user.id
+    end
+
+    test "the read runs on whatever the replica resolves to", %{user: user} do
+      # A sentinel the gateway has to overwrite. Without the swap the tool would
+      # still be pointed at it when it ran.
+      Repo.put_dynamic_repo(:not_the_repo_the_read_should_use)
+
+      assert {:ok, ran_as} = Tools.run("whoami_tool", %{}, user, modules())
+      assert ran_as.dynamic_repo == RepoReplica.get_dynamic_repo()
+    end
+
+    test "a tool returns data read through the replica", %{user: user} do
+      assert {:ok, flows} = Tools.run("list_flows", %{"name" => "Registration"}, user)
+      assert [%{name: "Registration flow"} | _] = flows
     end
   end
 
