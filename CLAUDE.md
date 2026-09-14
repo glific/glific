@@ -22,8 +22,22 @@ conventions and patterns:
 | Tests, fixtures, mocking, coverage | `test/CLAUDE.md` |
 | Database migrations | `priv/repo/migrations/CLAUDE.md` |
 
-Specialized agents in `.claude/agents/` (`backend-engineer`, `code-reviewer`,
-`test-automator`) encode the same conventions for automated implement/review/test workflows.
+## The standard agent workflow
+
+Feature work runs through four agents in `.claude/agents/`, the same four in every
+ProjectTech4Dev repo. Use them rather than ad-hoc prompting — they encode the conventions
+in these docs.
+
+| Agent | Takes | Produces |
+|-------|-------|----------|
+| `planner` | a rough plan, ticket, or feature request | a detailed implementation plan at `plans/<slug>.md` |
+| `engineer` | that plan | the implementation |
+| `test-engineer` | the implementation | the test layer (ConnCase / DataCase) |
+| `reviewer` | the diff + the plan + the original request | a prioritised review verdict |
+
+Skip the planner only for changes small enough to hold in one file. The reviewer checks the
+diff against the plan first, so a plan that names real files and testable acceptance criteria
+is what makes the rest of the chain work.
 
 When unsure how something is done, find the nearest existing example and mirror it. Reference
 implementations: `Glific.Tags` / `Glific.Tags.Tag`, `GlificWeb.Resolvers.Tags`,
