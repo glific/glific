@@ -12,6 +12,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     WebChannelFixtures
   }
 
+  alias Glific.WebChannel.Rooms
   alias GlificWeb.WebChannel.{Presence, RoomChannel, Token}
 
   setup do
@@ -149,7 +150,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
         {:ok, _reply, _socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
 
-        RoomChannel.close_all(contact.organization_id + 1)
+        Rooms.close_all(contact.organization_id + 1)
 
         refute_push("web_channel_disabled", %{})
       end)

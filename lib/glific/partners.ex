@@ -43,10 +43,9 @@ defmodule Glific.Partners do
     RepoReplica,
     Settings.Language,
     Stats,
-    Users.User
+    Users.User,
+    WebChannel.Rooms
   }
-
-  alias GlificWeb.WebChannel.RoomChannel
 
   # We cache organization info under this id since when we want to retrieve
   # by shortcode we do not have an organization id to retrieve it from.
@@ -1161,7 +1160,7 @@ defmodule Glific.Partners do
   # Switching the web channel off has to reach the browsers already in a conversation; they hold
   # a token that stays valid and a socket that would otherwise keep serving messages.
   defp credential_update_callback(organization, credential, "web_channel") do
-    if !credential.is_active, do: RoomChannel.close_all(organization.id)
+    if !credential.is_active, do: Rooms.close_all(organization.id)
 
     {:ok, credential}
   end

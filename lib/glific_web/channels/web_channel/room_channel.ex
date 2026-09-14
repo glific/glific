@@ -16,33 +16,11 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
-    Repo
+    Repo,
+    WebChannel.Rooms
   }
 
   alias GlificWeb.WebChannel.{MessageSerializer, Presence, Token}
-
-  @doc """
-  Close every open room for an organization, because its admin has switched the web channel off.
-
-  A per-organization PubSub topic rather than Presence, which degrades to an empty list when its
-  tracker is not running — a room left open after the channel was switched off is the failure
-  this exists to prevent, so it must not depend on a display nicety being up.
-
-  The contact's token stays valid until it expires on its own; revoking it is #5768's job. What
-  this guarantees is that no room is still serving messages after the switch, and that every
-  open browser is told why rather than watching a chat go quiet.
-  """
-  @spec close_all(non_neg_integer()) :: :ok
-  def close_all(organization_id),
-    do:
-      Phoenix.PubSub.broadcast(
-        Glific.PubSub,
-        disabled_topic(organization_id),
-        :web_channel_disabled
-      )
-
-  @spec disabled_topic(non_neg_integer()) :: String.t()
-  defp disabled_topic(organization_id), do: "web_channel_disabled:#{organization_id}"
 
   @page_size 100
   @max_body_length 4_096
@@ -64,7 +42,10 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       # Its own process, so org context has to be re-established, as in an Oban worker.
       Repo.put_process_state(socket.assigns.organization_id)
       schedule_sweep()
-      Phoenix.PubSub.subscribe(Glific.PubSub, disabled_topic(socket.assigns.organization_id))
+
+      # Rooms.close_all/1 broadcasts here when an admin switches the channel off. A per-organization
+      # topic rather than Presence, which degrades to an empty list when its tracker is not running.
+      Phoenix.PubSub.subscribe(Glific.PubSub, Rooms.topic(socket.assigns.organization_id))
 
       # The channel process, not the socket: presence lives under a per-organization topic, and
       # untracks when this process dies.
@@ -112,6 +93,9 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     end
   end
 
+  # The contact's token stays valid until it expires on its own; revoking it is its own ticket.
+  # What this guarantees is that no room is still serving messages after the switch, and that
+  # every open browser is told why rather than watching a chat go quiet.
   def handle_info(:web_channel_disabled, socket) do
     push(socket, "web_channel_disabled", %{})
     {:stop, :normal, socket}
