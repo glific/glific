@@ -24,6 +24,39 @@ defmodule Glific.Flows.NodeTest do
     :ok
   end
 
+  test "a WA group flow takes the exit past an unsupported action instead of stalling", attrs do
+    flow = %Flow{id: 1, uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
+
+    json = %{
+      "uuid" => Ecto.UUID.generate(),
+      "actions" => [
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "set_contact_name",
+          "name" => "Contact Name"
+        }
+      ],
+      "exits" => [
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
+      ]
+    }
+
+    {node, uuid_map} = Node.process(json, %{}, flow)
+
+    context =
+      Fixtures.wa_flow_context_fixture(%{
+        organization_id: attrs.organization_id,
+        flow_id: 1,
+        uuid_map: uuid_map
+      })
+
+    # set_contact_name is contact-only, so it hits the WA group clause. A nil destination_uuid
+    # means the exit resets the context, so {:ok, nil, []} proves the exit was taken rather
+    # than the node raising or the flow stopping at the action.
+    assert {:ok, nil, []} = Node.execute(node, context, [])
+  end
+
   test "process extracts the right values from json" do
     flow = %Flow{uuid: "Flow UUID 1"}
 
