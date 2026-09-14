@@ -124,16 +124,9 @@ defmodule Glific.AI.Tools do
 
   @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   defp execute(module, name, args, user) do
-    # Each repo reads its tenant context from a process key of its own, and both
-    # get used: most reads go through Repo, but a few contexts name RepoReplica
-    # themselves — see Jobs.get_bigquery_jobs/1.
     put_tenant(Repo, user)
     put_tenant(RepoReplica, user)
 
-    # Points every read in this task at the replica: the tools' own queries and
-    # the contexts they call alike. Nothing puts it back, and nothing needs to —
-    # the task only reads, and the pointer dies with the process. Resolves to the
-    # primary in tests and wherever no replica is deployed.
     Repo.put_dynamic_repo(RepoReplica.get_dynamic_repo())
 
     read(module, name, args)
