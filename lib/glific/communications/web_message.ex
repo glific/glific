@@ -2,20 +2,24 @@ defmodule Glific.Communications.WebMessage do
   @moduledoc """
   Persists an inbound web-channel message and publishes it to the staff inbox subscription.
 
-  Deliberately publish-only, unlike WhatsApp inbound: this never hands the message to the flow
-  engine (`Communications.Message.process_message/1`). A web inbound message reaching a
-  WhatsApp-only flow reply would send an unopted-in browser visitor a WhatsApp message, which is
-  worse than no reply at all. Flow replies land with the "flows reply on web" ticket, which
-  introduces `Providers.Web.Message` and presence-gated delivery.
+  Persists the message, publishes it to the staff inbox, and — when the web channel is enabled —
+  hands it to the flow engine via `Processor.MessageWorker`, the same path WhatsApp inbound uses.
+
+  It deliberately does not route through `Communications.Message.receive_message/2`: that path is
+  shaped around a BSP payload and does provider bookkeeping (`bsp_message_id`, session status,
+  billing events) that has no meaning for a channel with no BSP. The flow it starts inherits
+  `channel: :web`, so its replies go back over the web socket rather than to WhatsApp (#5719).
   """
 
   alias Glific.{
     Communications,
     Contacts,
     Contacts.Contact,
+    Flags,
     Messages,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo
   }
 
@@ -46,11 +50,33 @@ defmodule Glific.Communications.WebMessage do
           status: :received
         })
 
-      case type do
-        :text -> receive_text(message_params)
-        :location -> receive_location(message_params)
-        _media -> receive_media(message_params)
-      end
+      result =
+        case type do
+          :text -> receive_text(message_params)
+          :location -> receive_location(message_params)
+          _media -> receive_media(message_params)
+        end
+
+      hand_to_flow_engine(result, organization_id)
+      result
+    end
+  end
+
+  # Flag-gated: with the web channel off, a web message is still persisted and shown in the
+  # inbox, but never enters the flow engine.
+  @spec hand_to_flow_engine({:ok, Message.t()} | {:error, any()}, non_neg_integer()) :: :ok
+  defp hand_to_flow_engine({:ok, message}, organization_id) do
+    if web_channel_enabled?(organization_id), do: MessageWorker.make_job(message)
+    :ok
+  end
+
+  defp hand_to_flow_engine(_result, _organization_id), do: :ok
+
+  @spec web_channel_enabled?(non_neg_integer()) :: boolean()
+  defp web_channel_enabled?(organization_id) do
+    case Partners.organization(organization_id) do
+      {:error, _reason} -> false
+      organization -> Flags.get_flag_enabled(:web_channel_enabled, organization)
     end
   end
 
