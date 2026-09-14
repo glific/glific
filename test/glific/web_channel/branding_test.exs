@@ -103,12 +103,38 @@ defmodule Glific.WebChannel.BrandingTest do
       assert branding.about.address == nil
     end
 
-    test "leaves a website that already carries a scheme alone" do
+    test "leaves an https website alone" do
+      branding =
+        organization(%{"about_website" => "https://example.org/about"})
+        |> Branding.for_organization()
+
+      assert branding.about.website == "https://example.org/about"
+    end
+
+    test "upgrades an http website rather than linking a contact to it over http" do
       branding =
         organization(%{"about_website" => "http://example.org/about"})
         |> Branding.for_organization()
 
-      assert branding.about.website == "http://example.org/about"
+      assert branding.about.website == "https://example.org/about"
+    end
+
+    # The widget writes this straight into an href, so the scheme is never the admin's to choose:
+    # `javascript://` survives a naive check because it really does have a `//`, and the rest of
+    # the payload sits behind a JavaScript comment. Forcing https leaves a dead link, not a script.
+    test "gives every website https, so a scheme a browser would execute never reaches an href" do
+      for payload <- [
+            "javascript://%0Aalert(1)",
+            "JavaScript://x%0Aalert(1)",
+            "javascript:alert(1)",
+            "data://text/html,<script>alert(1)</script>",
+            "vbscript://x"
+          ] do
+        branding = organization(%{"about_website" => payload}) |> Branding.for_organization()
+
+        assert String.starts_with?(branding.about.website, "https://"),
+               "#{payload} kept its scheme"
+      end
     end
 
     test "refuses a logo that is not served over https" do

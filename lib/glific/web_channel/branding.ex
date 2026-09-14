@@ -150,13 +150,17 @@ defmodule Glific.WebChannel.Branding do
 
   defp trimmed(_value), do: nil
 
-  # An admin types "example.org"; the widget renders it as a link, and a href without a scheme
-  # resolves against the widget's own host.
+  # Always https. An admin types "example.org", and a href without a scheme resolves against the
+  # widget's own host — while a scheme of their choosing is one a browser might execute.
   @spec with_scheme(String.t() | nil) :: String.t() | nil
   defp with_scheme(nil), do: nil
 
   defp with_scheme(url) do
-    if String.match?(url, ~r{^[a-z][a-z0-9+.-]*://}i), do: url, else: "https://#{url}"
+    cond do
+      String.match?(url, ~r{^https://}i) -> url
+      String.match?(url, ~r{^http://}i) -> String.replace(url, ~r{^http://}i, "https://")
+      true -> "https://#{url}"
+    end
   end
 
   @spec color(term(), String.t()) :: String.t()
