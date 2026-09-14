@@ -74,6 +74,34 @@ defmodule Glific.Flows.ContactActionTest do
     assert message.flow_id == context.flow_id
   end
 
+  # The reply must carry the context's channel — that's what routes it to the web adapter, not
+  # the BSP. Drop `channel: context.channel` in ContactAction and this fails.
+  test "a text send on a web context produces a web message", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: attrs.organization_id,
+        channel: :web
+      })
+
+    context = Repo.preload(context, [:contact, :flow])
+
+    ContactAction.send_message(context, %Action{text: "web reply"}, [])
+
+    message =
+      Message |> where([m], m.contact_id == ^contact.id) |> Ecto.Query.last() |> Repo.one()
+
+    assert message.channel == :web
+    assert message.body == "web reply"
+    # A web message never gets a BSP id — nothing routes it to Gupshup.
+    assert is_nil(message.bsp_message_id)
+  end
+
   test "send message template", attrs do
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
