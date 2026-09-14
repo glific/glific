@@ -169,6 +169,52 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.id == flow_context_2.id
   end
 
+  describe "per-channel flow state (#5719)" do
+    setup %{organization_id: organization_id} do
+      %{flow: Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})}
+    end
+
+    # The bug this guards against corrupts state silently: a browser message resuming the WhatsApp
+    # conversation, or starting a WhatsApp flow, rather than a separate web one.
+    test "active_context is scoped by channel — a web message does not resume a whatsapp context",
+         %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      assert is_nil(FlowContext.active_context(contact.id, :web))
+      assert FlowContext.active_context(contact.id, :whatsapp).id == whatsapp_context.id
+    end
+
+    test "starting a web flow leaves the contact's whatsapp context untouched", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, _web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
+    end
+
+    test "mark_flows_complete scoped by channel completes only that channel's flows", %{
+      flow: flow
+    } do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      FlowContext.mark_flows_complete(contact.id, false, channel: :web)
+
+      assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
+      refute is_nil(Repo.get!(FlowContext, web_context.id).completed_at)
+    end
+  end
+
   test "load_context/2 will load all the nodes and actions in memory for the context",
        %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
