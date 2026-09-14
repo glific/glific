@@ -99,7 +99,7 @@ paths. **Oban workers and resolver by-id lookups have extra rules** — see
 - **Worktree symlinks**: `worktree.symlinkDirectories` symlinks `_build`, `deps`, `priv/cert`,
   `config/.env.dev`, and `config/dev.secret.exs` from the main checkout into isolated worktrees
 - **Skills** (`.claude/skills/`): `fix-flaky-tests`, `improve-code-coverage`,
-  `make-branch-ready-for-review`
+  `make-branch-ready-for-review`, `assess-ai-security-maturity`
 
 ## Code Quality & Formatting
 
