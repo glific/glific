@@ -213,6 +213,41 @@ defmodule Glific.Flows.FlowContextTest do
       assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
       refute is_nil(Repo.get!(FlowContext, web_context.id).completed_at)
     end
+
+    # An async webhook (e.g. TTS) parks a web flow and resumes it via wakeup_one, which completes
+    # newer contexts. Without channel scoping that would kill a WhatsApp flow the contact started
+    # while the web flow was parked.
+    test "wakeup_one completes newer contexts only on the waking flow's channel", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      past = DateTime.utc_now() |> DateTime.add(-3600) |> DateTime.truncate(:second)
+
+      FlowContext
+      |> where([fc], fc.id == ^web_context.id)
+      |> Repo.update_all(set: [inserted_at: past])
+
+      web_context = Repo.get!(FlowContext, web_context.id) |> Repo.preload([:contact, :flow])
+
+      base_attrs = %{
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        contact_id: contact.id,
+        organization_id: contact.organization_id,
+        node_uuid: web_context.node_uuid
+      }
+
+      {:ok, newer_whatsapp} =
+        FlowContext.create_flow_context(Map.put(base_attrs, :channel, :whatsapp))
+
+      {:ok, newer_web} = FlowContext.create_flow_context(Map.put(base_attrs, :channel, :web))
+
+      FlowContext.wakeup_one(web_context)
+
+      assert is_nil(Repo.get!(FlowContext, newer_whatsapp.id).completed_at)
+      refute is_nil(Repo.get!(FlowContext, newer_web.id).completed_at)
+    end
   end
 
   test "load_context/2 will load all the nodes and actions in memory for the context",

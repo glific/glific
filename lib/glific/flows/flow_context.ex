@@ -981,10 +981,12 @@ defmodule Glific.Flows.FlowContext do
         }
       )
 
-    # also mark all newer contexts as completed
+    # Mark newer contexts complete, but only on the waking flow's own channel: a parked web flow
+    # resuming must not complete a WhatsApp flow the contact started meanwhile, and vice versa.
     mark_flows_complete(context,
       after_insert_date: context.inserted_at,
       source: "wakeup_one",
+      channel: context.channel,
       event_meta: %{
         context_id: context.id,
         flow_id: context.flow_id,
