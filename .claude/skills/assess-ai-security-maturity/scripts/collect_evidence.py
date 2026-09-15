@@ -164,7 +164,11 @@ def skip(rel: str) -> bool:
     parts = set(Path(rel).parts)
     if parts & SKIP_DIR_PARTS:
         return True
-    return any(marker in rel for marker in ("priv/plts", "/fixtures/vcr", ".min.js"))
+    # A scanner must not report its own rule table. This file contains every sink
+    # pattern as a literal, so without this it flags itself — which is exactly the
+    # kind of finding that teaches people to ignore the tool.
+    markers = ("priv/plts", "/fixtures/vcr", ".min.js", ".claude/skills/")
+    return any(marker in rel for marker in markers)
 
 
 def read_lines(path: Path) -> list[str]:
