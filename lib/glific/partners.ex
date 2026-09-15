@@ -567,31 +567,14 @@ defmodule Glific.Partners do
   Fully populates an organization struct and writes it to the cache under both
   its id and shortcode keys.
 
-  Called from test setup after operations that invalidate the cache (e.g.
-  `create_credential/1`, `update_organization/2`) to ensure subsequent calls to
-  `organization/1` see the updated state without an extra DB round-trip. The
-  production miss-path (`fetch_and_cache_organization/1`) handles lazy population
-  safely in the caller's process, so this function is not required for correctness.
+  Public so the test harness can call it directly after operations that invalidate
+  the cache (e.g. `create_credential/1`, `update_organization/2`). In production
+  `organization/1` reaches it through `fetch_and_cache_organization/1` on a cache
+  miss, which runs in the caller's process so the DB work keeps its SQL Sandbox
+  ownership.
   """
   @spec fill_cache(Organization.t()) :: Organization.t()
   def fill_cache(organization) do
-    organization = build_org_data(organization)
-
-    Caches.set(
-      @global_organization_id,
-      [{:organization, organization.id}, {:organization, organization.shortcode}],
-      organization
-    )
-
-    # also update the flags table with updated values
-    Flags.init(organization)
-    organization
-  end
-
-  # Builds the fully-populated org struct without touching the cache.
-  # Used by fill_cache and fetch_and_cache_organization.
-  @spec build_org_data(Organization.t()) :: Organization.t()
-  defp build_org_data(organization) do
     Repo.put_organization_id(organization.id)
 
     organization =
@@ -665,16 +648,7 @@ defmodule Glific.Partners do
 
     case Repo.fetch_by(Organization, clauses, skip_organization_id: true) do
       {:ok, org} ->
-        org_data = build_org_data(org)
-        Flags.init(org_data)
-
-        Caches.set(
-          @global_organization_id,
-          [{:organization, org_data.id}, {:organization, org_data.shortcode}],
-          org_data
-        )
-
-        {:ok, org_data}
+        {:ok, fill_cache(org)}
 
       _ ->
         {:error, "Could not find an organization with #{cache_key}"}
