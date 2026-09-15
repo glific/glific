@@ -570,14 +570,14 @@ defmodule Glific.Flows do
           {:ok, Flow.t()} | {:error, String.t()}
   defp fetch_and_cache_flow(organization_id, {key, value, status}) do
     Repo.put_organization_id(organization_id)
-    Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
+    Logger.info("Loading flow cache: #{organization_id}, #{SafeLog.safe_inspect(key)}")
     args = make_args(key, value)
     flow = Flow.get_loaded_flow(organization_id, status, args)
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
     {:ok, flow}
   rescue
     Ecto.NoResultsError ->
-      {:error, "Flow not found for #{inspect({key, value, status})}"}
+      {:error, "Flow not found for #{SafeLog.safe_inspect({key, value, status})}"}
   end
 
   @doc """
