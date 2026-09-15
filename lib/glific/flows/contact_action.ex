@@ -117,7 +117,6 @@ defmodule Glific.Flows.ContactAction do
         interactive_template_id: interactive_template.id,
         interactive_content: interactive_content,
         media_id: media_id,
-        # Dispatched on by create_and_send_message/1: routes the reply to the widget or the BSP.
         channel: context.channel
       }
 
@@ -402,7 +401,6 @@ defmodule Glific.Flows.ContactAction do
       message_broadcast_id: context.message_broadcast_id,
       send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
       is_optin_flow: Flows.optin_flow?(context.flow),
-      # Dispatched on by create_and_send_message/1: routes the reply to the widget or the BSP.
       channel: channel_for(context, cid)
     }
 

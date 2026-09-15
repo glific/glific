@@ -22,9 +22,7 @@ defmodule Glific.Communications.WebMessage do
     Repo
   }
 
-  # The single source of truth for the web-channel switch, shared with the auth controller, socket
-  # and media upload — its resolve-org and live-read logic must not be duplicated (see its
-  # moduledoc), and #5772 extends it to also require an active credential.
+  # Shared web-channel switch — using it here rather than re-implementing keeps one source of truth.
   alias GlificWeb.WebChannel.Flag
 
   @doc """
