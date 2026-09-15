@@ -218,10 +218,13 @@ defmodule Glific.Flows.FlowContext do
     end
 
     # lets reset the entire flow tree complete if this context is a child
+    # Scoped to this context's channel so a web-flow error doesn't complete the contact's
+    # WhatsApp flow tree, or vice versa.
     if context.parent_id,
       do:
         mark_flows_complete(context,
           source: "reset_all_contexts",
+          channel: context.channel,
           event_meta: %{
             context_id: context.id,
             message: message

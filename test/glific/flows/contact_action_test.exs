@@ -4,6 +4,7 @@ defmodule Glific.Flows.ContactActionTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Fixtures,
     Flows.Action,
     Flows.ContactAction,
     Flows.FlowContext,
@@ -100,6 +101,34 @@ defmodule Glific.Flows.ContactActionTest do
     assert message.body == "web reply"
     # A web message never gets a BSP id — nothing routes it to Gupshup.
     assert is_nil(message.bsp_message_id)
+  end
+
+  # A broadcast/notify node in a web flow sends to a *different* contact (e.g. staff). The web
+  # channel is a per-contact socket that can't reach them, so the send must go over WhatsApp, not
+  # inherit the web trigger's channel and get silently dropped.
+  test "a send to a different contact from a web context goes over whatsapp", attrs do
+    [sender | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    other = Fixtures.contact_fixture(attrs)
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: sender.id,
+        organization_id: attrs.organization_id,
+        channel: :web
+      })
+
+    context = Repo.preload(context, [:contact, :flow])
+
+    ContactAction.send_message(context, %Action{text: "notify staff"}, [], other.id)
+
+    message = Message |> where([m], m.contact_id == ^other.id) |> Ecto.Query.last() |> Repo.one()
+
+    assert message.channel == :whatsapp
+    assert message.body == "notify staff"
   end
 
   test "send message template", attrs do

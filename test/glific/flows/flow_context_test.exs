@@ -268,6 +268,33 @@ defmodule Glific.Flows.FlowContextTest do
                )
              )
     end
+
+    # reset_all_contexts fires on ordinary error paths (loop guard, missing router category, failed
+    # send). A web sub-flow's error must not complete the contact's unrelated WhatsApp flow.
+    test "reset_all_contexts is scoped to the erroring context's channel", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, web_parent, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      {:ok, web_child} =
+        FlowContext.create_flow_context(%{
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          contact_id: contact.id,
+          organization_id: contact.organization_id,
+          node_uuid: web_parent.node_uuid,
+          parent_id: web_parent.id,
+          channel: :web
+        })
+
+      web_child |> Repo.preload([:contact, :flow]) |> FlowContext.reset_all_contexts("boom")
+
+      assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
+      refute is_nil(Repo.get!(FlowContext, web_parent.id).completed_at)
+    end
   end
 
   test "load_context/2 will load all the nodes and actions in memory for the context",

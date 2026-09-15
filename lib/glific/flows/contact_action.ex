@@ -329,7 +329,7 @@ defmodule Glific.Flows.ContactAction do
       send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
       # Carry the channel so the web clause of check_for_hsm_message/2 fires: templates need a BSP,
       # so a web flow refuses them here rather than leaking the rendered body over WhatsApp.
-      channel: context.channel,
+      channel: channel_for(context, cid),
       params: params
     }
 
@@ -403,12 +403,20 @@ defmodule Glific.Flows.ContactAction do
       send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
       is_optin_flow: Flows.optin_flow?(context.flow),
       # Dispatched on by create_and_send_message/1: routes the reply to the widget or the BSP.
-      channel: context.channel
+      channel: channel_for(context, cid)
     }
 
     attrs
     |> Messages.create_and_send_message()
     |> handle_message_result(context, messages, attrs)
+  end
+
+  # The reply's channel follows the recipient: the flow's own channel when replying to the flow's
+  # contact, but :whatsapp for a broadcast to a *different* contact (e.g. a notify-staff node) —
+  # the web channel is a live per-contact socket that can only reach the widget's owner.
+  @spec channel_for(FlowContext.t(), non_neg_integer()) :: atom()
+  defp channel_for(context, cid) do
+    if cid == context.contact_id, do: context.channel, else: :whatsapp
   end
 
   defp handle_message_result(result, context, messages, attrs) do
