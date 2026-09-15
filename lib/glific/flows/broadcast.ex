@@ -172,16 +172,21 @@ defmodule Glific.Flows.Broadcast do
           [
             Glific.Contacts.Contact.t()
           ],
-          map()
+          map(),
+          Keyword.t()
         ) :: :ok
-  def broadcast_contacts(flow, contacts, default_results \\ %{}) do
+  def broadcast_contacts(flow, contacts, default_results \\ %{}, opts \\ []) do
     Repo.put_process_state(flow.organization_id)
-    opts = opts(flow.organization_id) |> Keyword.put(:default_results, default_results)
+
+    broadcast_opts =
+      opts(flow.organization_id)
+      |> Keyword.put(:default_results, default_results)
+      |> Keyword.put(:channel, Keyword.get(opts, :channel, :whatsapp))
 
     broadcast_for_contacts(
       %{flow: flow, type: :flow},
       contacts,
-      opts
+      broadcast_opts
     )
   end
 
@@ -383,7 +388,8 @@ defmodule Glific.Flows.Broadcast do
       task_opts = [
         {:delay, opts[:delay] + delay_offset},
         {:message_broadcast_id, opts[:message_broadcast_id]},
-        {:default_results, opts[:default_results]}
+        {:default_results, opts[:default_results]},
+        {:channel, Keyword.get(opts, :channel, :whatsapp)}
       ]
 
       if attrs.type == :flow,
