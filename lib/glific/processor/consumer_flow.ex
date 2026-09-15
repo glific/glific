@@ -53,7 +53,7 @@ defmodule Glific.Processor.ConsumerFlow do
           body: body
         })
 
-    context = FlowContext.active_context(message.contact_id, message.channel)
+    context = FlowContext.active_context(message.contact_id, channel: message.channel)
 
     # if contact is not optout if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly

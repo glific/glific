@@ -331,7 +331,8 @@ defmodule Glific.Flows.FlowContext do
     # load that context and keep going
     if context.parent_id do
       # we load the parent context, and resume it with a message of "Completed"
-      parent = active_context(context.contact_id, context.channel, context.parent_id)
+      parent =
+        active_context(context.contact_id, channel: context.channel, parent_id: context.parent_id)
 
       # ensure the parent is still active. If the parent completed (or was terminated)
       # we don't get back a valid parent
@@ -852,8 +853,12 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Check if there is an active context (i.e. with a non null, node_uuid for this contact)
   """
-  @spec active_context(non_neg_integer, atom(), non_neg_integer | nil) :: FlowContext.t() | nil
-  def active_context(contact_id, channel \\ :whatsapp, parent_id \\ nil) do
+  @spec active_context(non_neg_integer, Keyword.t()) :: FlowContext.t() | nil
+  def active_context(contact_id, opts \\ []) do
+    # :channel and :parent_id as opts rather than positional, so a caller can't transpose them
+    # (both are terms, so the compiler would not catch active_context(id, parent_id)).
+    channel = Keyword.get(opts, :channel, :whatsapp)
+    parent_id = Keyword.get(opts, :parent_id)
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables

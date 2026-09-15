@@ -183,8 +183,8 @@ defmodule Glific.Flows.FlowContextTest do
       {:ok, whatsapp_context, _} =
         FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
 
-      assert is_nil(FlowContext.active_context(contact.id, :web))
-      assert FlowContext.active_context(contact.id, :whatsapp).id == whatsapp_context.id
+      assert is_nil(FlowContext.active_context(contact.id, channel: :web))
+      assert FlowContext.active_context(contact.id, channel: :whatsapp).id == whatsapp_context.id
     end
 
     test "starting a web flow leaves the contact's whatsapp context untouched", %{flow: flow} do
@@ -260,7 +260,13 @@ defmodule Glific.Flows.FlowContextTest do
       {:ok, child, _} = Flow.start_sub_flow(parent, flow.uuid, parent.id)
 
       assert child.channel == :web
-      refute is_nil(FlowContext.active_context(contact.id, child.channel, parent.id))
+
+      refute is_nil(
+               FlowContext.active_context(contact.id,
+                 channel: child.channel,
+                 parent_id: parent.id
+               )
+             )
     end
   end
 

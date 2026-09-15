@@ -15,13 +15,17 @@ defmodule Glific.Communications.WebMessage do
     Communications,
     Contacts,
     Contacts.Contact,
-    Flags,
     Messages,
     Messages.Message,
     Partners,
     Processor.MessageWorker,
     Repo
   }
+
+  # The single source of truth for the web-channel switch, shared with the auth controller, socket
+  # and media upload — its resolve-org and live-read logic must not be duplicated (see its
+  # moduledoc), and #5772 extends it to also require an active credential.
+  alias GlificWeb.WebChannel.Flag
 
   @doc """
   Callback when we receive a message from a browser contact over the web channel.
@@ -66,7 +70,7 @@ defmodule Glific.Communications.WebMessage do
   # inbox, but never enters the flow engine.
   @spec hand_to_flow_engine({:ok, Message.t()} | {:error, any()}, non_neg_integer()) :: :ok
   defp hand_to_flow_engine({:ok, message}, organization_id) do
-    if web_channel_enabled?(organization_id), do: enqueue_flow_job(message)
+    if Flag.web_channel_enabled?(organization_id), do: enqueue_flow_job(message)
     :ok
   end
 
@@ -85,14 +89,6 @@ defmodule Glific.Communications.WebMessage do
           "Could not enqueue inbound web message for flow processing: " <>
             Glific.SafeLog.safe_inspect(reason)
         )
-    end
-  end
-
-  @spec web_channel_enabled?(non_neg_integer()) :: boolean()
-  defp web_channel_enabled?(organization_id) do
-    case Partners.organization(organization_id) do
-      {:error, _reason} -> false
-      organization -> Flags.get_flag_enabled(:web_channel_enabled, organization)
     end
   end
 
