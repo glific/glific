@@ -23,19 +23,24 @@ on the web widget at the same time, and neither disturbs the other.
 
 ## Lifecycle: many entry points, one fork
 
+This PR is scoped to the **contact-triggered** case: a contact sends a keyword (or a mid-flow
+reply) and that runs a flow on the channel it arrived on. Staff-/trigger-initiated flow starts
+(pushing a flow *at* a contact, i.e. `start_contact_flow` / `broadcast_contacts`) are a separate
+concern (#5706) and are **not** in this PR — they stay on `:whatsapp` as before.
+
 ```
                       ENTRY POINTS  — each decides or carries a channel
- ┌──────────────────────────────────────────────────────────────────────────────┐
- │ inbound WEB msg      inbound WA msg     staff "start flow"    periodic / cron   │
- │ WebMessage           Gupshup           start_contact_flow    Periodic          │
- │ channel=:web         channel=:whatsapp channel opt(def :wa)  channel=msg.chan  │
- └──────┬───────────────────┬───────────────────┬──────────────────┬─────────────┘
-        │                   │                    │                  │
-        ▼                   ▼                    ▼                  ▼
-   MessageWorker      MessageWorker         Broadcast          ConsumerFlow
-        └───────┬───────────┘             .broadcast_contacts  .run_flows
-                ▼                                │                  │
-        ConsumerFlow.process_message ───────────┴──────────────────┘
+ ┌──────────────────────────────────────────────────────────────────┐
+ │ inbound WEB msg      inbound WA msg          periodic / cron        │
+ │ WebMessage           Gupshup                 Periodic               │
+ │ channel=:web         channel=:whatsapp       channel=msg.channel    │
+ └──────┬───────────────────┬───────────────────────┬─────────────────┘
+        │                   │                        │
+        ▼                   ▼                        ▼
+   MessageWorker      MessageWorker             ConsumerFlow
+        └───────┬───────────┘                   .run_flows
+                ▼                                    │
+        ConsumerFlow.process_message ───────────────┘
                 │   reads message.channel
                 ▼
    ┌─────────────────────────────────────────────────────────────┐
@@ -87,9 +92,13 @@ defaulting:
 | Sub-flow (`enter_flow` node) | `Flow.start_sub_flow` | inherit `context.channel` |
 | Optin flow | `ConsumerFlow.start_optin_flow` | inherit `message.channel` |
 | Periodic (default / out-of-office / weekday) | `Periodic.init_common_flow` | inherit `message.channel` |
-| Staff-initiated | `Flows.start_contact_flow` → `Broadcast.broadcast_contacts` | optional `:channel` opt (default `:whatsapp`) |
 | Resume (wait-for-time, async TTS webhook) | `FlowContext.wakeup_one` | complete newer contexts scoped by `channel` |
 | Error reset | `FlowContext.reset_all_contexts` | scope the tree completion by `channel` |
+
+Out of scope (a later PR, #5706): **staff-/trigger-initiated** starts
+(`Flows.start_contact_flow` / `Broadcast.broadcast_contacts` / triggers). Pushing a flow *at* a
+contact still runs on `:whatsapp`; letting staff start a flow on the web channel needs the
+GraphQL/console wiring and belongs on its own.
 
 ## Two invariants to remember
 

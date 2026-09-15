@@ -476,21 +476,6 @@ defmodule Glific.FLowsTest do
                Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
     end
 
-    # #5706: a staff-started flow can target the web channel, so its context — and therefore its
-    # replies — route to the widget instead of defaulting to whatsapp.
-    test "start_contact_flow/4 starts the flow on the given channel", attrs do
-      [flow | _tail] = Flows.list_flows(%{filter: attrs})
-      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{is_active: true})
-      contact = Fixtures.contact_fixture(attrs)
-
-      {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, channel: :web)
-
-      assert {:ok, flow_context} =
-               Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
-
-      assert flow_context.channel == :web
-    end
-
     test "start_group_flow/2 will setup the flow for a group of contacts", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
       group = Fixtures.group_fixture()
