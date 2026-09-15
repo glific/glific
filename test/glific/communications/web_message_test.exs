@@ -10,7 +10,8 @@ defmodule Glific.Communications.WebMessageTest do
     Fixtures,
     Messages.Message,
     Processor.MessageWorker,
-    Repo
+    Repo,
+    WebChannelFlagHelpers
   }
 
   setup do
@@ -194,9 +195,8 @@ defmodule Glific.Communications.WebMessageTest do
     assert after_message.bsp_status == before_message.bsp_status
   end
 
-  describe "no path to the flow engine or the BSP" do
-    # Reaching MessageWorker would run the flow engine, which today can only reply over
-    # WhatsApp — worse than no reply.
+  describe "with the web channel off, nothing reaches the flow engine" do
+    # Flag off (the suite default): the message is persisted but must not enter the flow engine.
     test "a text message never enqueues MessageWorker", %{contact: contact} do
       assert {:ok, _message} =
                WebMessage.receive_message(
@@ -243,6 +243,48 @@ defmodule Glific.Communications.WebMessageTest do
                )
 
       refute_enqueued(worker: MessageWorker, prefix: "global")
+    end
+  end
+
+  describe "with the web channel on, the message reaches the flow engine" do
+    # This is what lets a web keyword trigger its flow and a mid-flow reply advance it — the same
+    # MessageWorker path WhatsApp inbound uses.
+    test "a text message enqueues MessageWorker", %{contact: contact} do
+      WebChannelFlagHelpers.with_web_channel_enabled(contact.organization_id, fn ->
+        assert {:ok, message} =
+                 WebMessage.receive_message(
+                   %{
+                     sender: %{phone: contact.phone},
+                     organization_id: contact.organization_id,
+                     body: "hello there"
+                   },
+                   :text
+                 )
+
+        assert_enqueued(
+          worker: MessageWorker,
+          args: %{message_id: message.id, organization_id: contact.organization_id},
+          prefix: "global"
+        )
+      end)
+    end
+
+    test "a location message enqueues MessageWorker", %{contact: contact} do
+      WebChannelFlagHelpers.with_web_channel_enabled(contact.organization_id, fn ->
+        assert {:ok, message} =
+                 WebMessage.receive_message(
+                   %{
+                     sender: %{phone: contact.phone},
+                     organization_id: contact.organization_id,
+                     latitude: 12.34,
+                     longitude: 56.78,
+                     body: "https://www.google.com/maps?q=12.34,56.78"
+                   },
+                   :location
+                 )
+
+        assert_enqueued(worker: MessageWorker, args: %{message_id: message.id}, prefix: "global")
+      end)
     end
   end
 end
