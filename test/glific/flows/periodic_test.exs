@@ -147,8 +147,8 @@ defmodule Glific.Flows.PeriodicTest do
   test "init_common_flow returns {state, false} instead of crashing when the cached flow lookup errors",
        %{organization_id: organization_id} = attrs do
     # there is no flow (and hence no published revision) with this id, so
-    # Flows.get_cached_flow/2 will fail to load a flow from the DB, Cachex will
-    # catch the raised error and get_cached_flow/2 returns {:error, _} instead of {:ok, flow}
+    # Flows.get_cached_flow/2 rescues the Ecto.NoResultsError raised while loading
+    # from the DB and returns {:error, _} instead of {:ok, flow}
     non_existent_flow_id = 0
 
     message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
@@ -158,7 +158,7 @@ defmodule Glific.Flows.PeriodicTest do
     assert {^sentinel_state, false} =
              Periodic.init_common_flow(sentinel_state, non_existent_flow_id, message)
 
-    assert {:error, %Cachex.ExecutionError{}} =
+    assert {:error, "Flow not found for" <> _} =
              Flows.get_cached_flow(organization_id, {:flow_id, non_existent_flow_id, "published"})
   end
 end
