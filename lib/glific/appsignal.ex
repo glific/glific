@@ -8,7 +8,7 @@ defmodule Glific.Appsignal do
 
   alias Glific.Repo
 
-  @doc false
+  @doc "Telemetry callback for the Oban, Tesla and Ecto repo events attached in `Glific.Application`."
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, action, :exception], measurement, meta, _) do
     time = :os.system_time()
