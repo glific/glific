@@ -124,10 +124,7 @@ defmodule Glific.AI.Tools do
 
   @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   defp execute(module, name, args, user) do
-    put_tenant(Repo, user)
-    put_tenant(RepoReplica, user)
-
-    Repo.put_dynamic_repo(RepoReplica.get_dynamic_repo())
+    read_from_replica(user)
 
     read(module, name, args)
   rescue
@@ -136,10 +133,14 @@ defmodule Glific.AI.Tools do
       {:error, "The lookup failed: #{Exception.message(exception)}"}
   end
 
-  @spec put_tenant(module(), User.t()) :: :ok
-  defp put_tenant(repo, user) do
-    repo.put_organization_id(user.organization_id)
-    repo.put_current_user(user)
+  @spec read_from_replica(User.t()) :: :ok
+  defp read_from_replica(user) do
+    Enum.each([Repo, RepoReplica], fn repo ->
+      repo.put_organization_id(user.organization_id)
+      repo.put_current_user(user)
+    end)
+
+    Repo.put_dynamic_repo(RepoReplica.get_dynamic_repo())
     :ok
   end
 
