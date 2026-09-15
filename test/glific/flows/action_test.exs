@@ -2,7 +2,6 @@ defmodule Glific.Flows.ActionTest do
   alias Glific.Groups.WAGroups
   alias Glific.Messages
   use Glific.DataCase
-  import Mock
 
   alias Glific.{
     Contacts.Contact,
@@ -411,6 +410,77 @@ defmodule Glific.Flows.ActionTest do
     }
 
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  describe "process/3 — call_webhook wait_time read from the body" do
+    @webhook_json %{
+      "uuid" => "UUID 1",
+      "type" => "call_webhook",
+      "url" => "URL",
+      "method" => "METHOD",
+      "result_name" => "RESULT_NAME",
+      "headers" => %{"Content-Type" => "application/json"}
+    }
+
+    defp process_body(body) do
+      json = Map.put(@webhook_json, "body", body)
+      {action, _uuid_map} = Action.process(json, %{}, %Node{uuid: "Test UUID"})
+      action.wait_time
+    end
+
+    test "reads an integer wait_time out of the body" do
+      assert process_body(~s|{"speech": "@results.x", "wait_time": 120}|) == 120
+    end
+
+    test "reads a string wait_time, as the flow editor's json template leaves it" do
+      assert process_body(~s|{"speech": "", "wait_time": "120"}|) == 120
+    end
+
+    test "keeps the authored value even above the cap, so validate/3 can flag it" do
+      assert process_body(~s|{"wait_time": 600}|) == 600
+    end
+
+    test "ignores a blank, zero, negative, unparseable or non-scalar wait_time" do
+      for value <- [
+            ~s|""|,
+            ~s|"  "|,
+            "0",
+            ~s|"0"|,
+            "-30",
+            ~s|"-30"|,
+            ~s|"abc"|,
+            ~s|"60s"|,
+            "12.5",
+            "{}",
+            "[]",
+            "null",
+            "true"
+          ] do
+        assert process_body(~s|{"wait_time": | <> value <> "}") == nil
+      end
+    end
+
+    test "is nil when the body has no wait_time, is absent, or is not valid json" do
+      assert process_body(~s|{"speech": ""}|) == nil
+      assert process_body(nil) == nil
+      assert process_body("") == nil
+      assert process_body("not json at all") == nil
+      assert process_body(~s|["a", "list"]|) == nil
+    end
+
+    test "the auto-json template for every async webhook parses to no wait_time" do
+      templates =
+        Path.join(File.cwd!(), "priv/data/flows/webhook.json")
+        |> File.read!()
+        |> Jason.decode!()
+        |> Map.new(fn entry -> {entry["name"], entry["body"]} end)
+
+      for name <- ["speech_to_text", "text_to_speech", "filesearch-gpt", "voice-filesearch-gpt"] do
+        body = Map.fetch!(templates, name)
+        assert body =~ "wait_time", "#{name} template should offer a wait_time field"
+        assert process_body(body) == nil, "#{name} template should default, not park early"
+      end
+    end
   end
 
   test "process extracts the right values from json for send_broadcast" do
@@ -1528,70 +1598,6 @@ defmodule Glific.Flows.ActionTest do
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
   end
 
-  test "execute voice-filesearch-gpt action routes to unified voice webhook",
-       attrs do
-    Partners.organization(attrs.organization_id)
-
-    contact = Repo.get_by(Contact, %{name: "Default receiver"})
-
-    context =
-      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
-      |> Repo.preload([:contact, :flow])
-
-    action = %Action{
-      type: "call_webhook",
-      method: "FUNCTION",
-      url: "voice-filesearch-gpt",
-      headers: %{"Accept" => "application/json"},
-      body:
-        Jason.encode!(%{
-          "speech" => "https://example.com/audio.ogg",
-          "assistant_id" => "asst_123"
-        }),
-      result_name: "llm",
-      node_uuid: "Test UUID"
-    }
-
-    with_mock Webhook,
-      execute_unified_voice_filesearch: fn _action, _context -> {:wait, context, []} end do
-      result = Action.execute(action, context, [])
-      assert {:wait, ^context, []} = result
-      assert called(Webhook.execute_unified_voice_filesearch(action, context))
-    end
-  end
-
-  test "execute filesearch-gpt action routes to unified filesearch webhook",
-       attrs do
-    Partners.organization(attrs.organization_id)
-
-    contact = Repo.get_by(Contact, %{name: "Default receiver"})
-
-    context =
-      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
-      |> Repo.preload([:contact, :flow])
-
-    action = %Action{
-      type: "call_webhook",
-      method: "FUNCTION",
-      url: "filesearch-gpt",
-      headers: %{"Accept" => "application/json"},
-      body:
-        Jason.encode!(%{
-          "question" => "What is Glific?",
-          "assistant_id" => "asst_123"
-        }),
-      result_name: "filesearch",
-      node_uuid: "Test UUID"
-    }
-
-    with_mock Webhook,
-      execute_unified_filesearch: fn _action, _context -> {:wait, context, []} end do
-      result = Action.execute(action, context, [])
-      assert {:wait, ^context, []} = result
-      assert called(Webhook.execute_unified_filesearch(action, context))
-    end
-  end
-
   test "execute a wa group unsupported action",
        _attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
@@ -1608,5 +1614,215 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
+  end
+
+  describe "call_webhook await state (park_async_webhook)" do
+    setup %{organization_id: org_id} do
+      contact = Repo.get_by(Contact, %{name: "Default receiver"})
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: org_id,
+          node_uuid: node.uuid
+        })
+
+      %{context: Repo.preload(context, [:contact, :flow])}
+    end
+
+    test "an async webhook parks the flow with is_await_result + wakeup_at", %{context: context} do
+      action = %Action{
+        type: "call_webhook",
+        method: "FUNCTION",
+        url: "filesearch-gpt",
+        headers: %{"Content-Type" => "application/json"},
+        body: Jason.encode!(%{"question" => "hi", "assistant_id" => "asst_1"}),
+        result_name: "r"
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      assert parked.is_await_result == true
+      assert parked.wakeup_at != nil
+    end
+
+    test "a regular (non-async) webhook does not set is_await_result", %{context: context} do
+      action = %Action{
+        type: "call_webhook",
+        method: "POST",
+        url: "https://example.com/hook",
+        headers: %{"Content-Type" => "application/json"},
+        body: "{}",
+        result_name: "r"
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      assert parked.is_await_result == false
+    end
+
+    defp park_seconds(context, wait_time) do
+      action = %Action{
+        type: "call_webhook",
+        method: "FUNCTION",
+        url: "filesearch-gpt",
+        headers: %{"Content-Type" => "application/json"},
+        body: Jason.encode!(%{"question" => "hi", "assistant_id" => "asst_1"}),
+        result_name: "r",
+        wait_time: wait_time
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      DateTime.diff(parked.wakeup_at, DateTime.utc_now())
+    end
+
+    test "falls back to the webhook's default window when the node sets no wait_time",
+         %{context: context} do
+      assert_in_delta park_seconds(context, nil), 60, 5
+    end
+
+    test "honours the node's own wait_time over the default", %{context: context} do
+      assert_in_delta park_seconds(context, 240), 240, 5
+    end
+
+    test "caps the park at 5 minutes however long the node asks for", %{context: context} do
+      assert_in_delta park_seconds(context, 3600), 300, 5
+    end
+  end
+
+  describe "validate/3 — deprecated Bhashini webhooks" do
+    test "flags speech_to_text_with_bhasini with a Critical migration error" do
+      action = %Action{type: "call_webhook", url: "speech_to_text_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "speech_to_text_with_bhasini"
+      assert message =~ "speech_to_text"
+      assert message =~ "deprecated"
+    end
+
+    test "flags text_to_speech_with_bhasini and recommends the text_to_speech node" do
+      action = %Action{type: "call_webhook", url: "text_to_speech_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "text_to_speech_with_bhasini"
+      assert message =~ "text_to_speech"
+    end
+
+    test "flags nmt_tts_with_bhasini and recommends the text_to_speech node" do
+      action = %Action{type: "call_webhook", url: "nmt_tts_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "nmt_tts_with_bhasini"
+      assert message =~ "text_to_speech"
+    end
+
+    test "prepends the error onto the existing error list" do
+      action = %Action{type: "call_webhook", url: "speech_to_text_with_bhasini"}
+      existing = [{Webhook, "some other error", "Warning"}]
+
+      assert [{Webhook, _msg, "Critical"}, {Webhook, "some other error", "Warning"}] =
+               Action.validate(action, existing, %{})
+    end
+
+    test "does not flag the new speech_to_text / text_to_speech webhooks" do
+      for url <- ["speech_to_text", "text_to_speech"] do
+        action = %Action{type: "call_webhook", url: url}
+        assert Action.validate(action, [], %{}) == []
+      end
+    end
+  end
+
+  describe "validate/3 — call_webhook wait_time cap" do
+    test "warns with both the configured and the allowed wait time" do
+      action = %Action{type: "call_webhook", url: "filesearch-gpt", wait_time: 600}
+
+      assert [{Webhook, message, "Warning"}] = Action.validate(action, [], %{})
+      assert message =~ "wait_time of 600 seconds"
+      assert message =~ "allowed wait time of 300 seconds"
+    end
+
+    test "stays quiet at or below the cap, and when no wait_time is set" do
+      for wait_time <- [nil, 60, 300] do
+        action = %Action{type: "call_webhook", url: "filesearch-gpt", wait_time: wait_time}
+        assert Action.validate(action, [], %{}) == []
+      end
+    end
+
+    test "a deprecated webhook still reports the Critical migration error first" do
+      action = %Action{type: "call_webhook", url: "text_to_speech_with_bhasini", wait_time: 600}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "deprecated"
+    end
+  end
+
+  describe "validate_expressions/3 — action expression guard" do
+    setup %{organization_id: organization_id} do
+      %{flow: %{organization_id: organization_id}}
+    end
+
+    test "flags disallowed code in a set_run_result value", %{flow: flow} do
+      action = %Action{type: "set_run_result", value: ~s|<%= System.cmd("id", []) %>|}
+
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Action value has an unsupported expression"
+    end
+
+    test "flags disallowed code in enter_flow / interactive / template expressions", %{flow: flow} do
+      payload = ~s|<%= System.cmd("id", []) %>|
+
+      for {field, label} <- [
+            {:enter_flow_expression, "Enter flow expression"},
+            {:interactive_template_expression, "Interactive template expression"}
+          ] do
+        action = struct(Action, [{:type, "some_type"}, {field, payload}])
+        assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+        assert message =~ label
+      end
+
+      templating = %Glific.Flows.Templating{expression: payload}
+      action = %Action{type: "send_msg", templating: templating}
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Message template expression has an unsupported expression"
+    end
+
+    test "surfaces the specific interpreter reason to the author" do
+      # Fresh org so the ETS-cached flag never leaks into the shared org-1 tests;
+      # the DB write rolls back with the SQL sandbox (mirrors glific_test.exs).
+      organization = Fixtures.organization_fixture()
+      FunWithFlags.enable(:safe_expressions, for_actor: %{organization_id: organization.id})
+
+      flow = %{organization_id: organization.id}
+      action = %Action{type: "set_run_result", value: ~s|<%= System.cmd("id", []) %>|}
+
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Action value has an unsupported expression:"
+      assert message =~ "System.cmd/2"
+    end
+
+    test "ignores non-string values (set_contact_profile stores a map)", %{flow: flow} do
+      # action.value is not always a string: set_contact_profile holds a map. It is
+      # never evaluated as an expression, so validating it must not flag the flow.
+      action = %Action{
+        type: "set_contact_profile",
+        value: %{"name" => "@results.name", "type" => "@results.role"}
+      }
+
+      assert Action.validate_expressions(action, [], flow) == []
+    end
+
+    test "allows safe expressions and blank fields", %{flow: flow} do
+      safe = %Action{type: "set_run_result", value: "<%= 5 * 60 %>"}
+      assert Action.validate_expressions(safe, [], flow) == []
+
+      blank = %Action{type: "set_run_result", value: nil}
+      assert Action.validate_expressions(blank, [], flow) == []
+
+      plain = %Action{type: "set_run_result", value: "just some text"}
+      assert Action.validate_expressions(plain, [], flow) == []
+    end
   end
 end

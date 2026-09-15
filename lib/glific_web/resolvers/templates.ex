@@ -43,6 +43,17 @@ defmodule GlificWeb.Resolvers.Templates do
     {:ok, Templates.count_session_templates(args)}
   end
 
+  @doc """
+  Browse Meta's pre-approved WhatsApp template library, fetched live from the
+  organization's BSP partner API. Read-only passthrough — does not create any
+  session templates.
+  """
+  @spec template_library(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list(map())} | {:error, any}
+  def template_library(_, _args, %{context: %{current_user: user}}) do
+    Templates.search_library_templates(user.organization_id)
+  end
+
   @doc false
   @spec create_session_template(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -151,7 +162,7 @@ defmodule GlificWeb.Resolvers.Templates do
 
       {:error, reason} ->
         error_message =
-          "Failed to queue HSM sync job for organization #{organization_id}: #{inspect(reason)}"
+          "Failed to queue HSM sync job for organization #{organization_id}: #{Glific.SafeLog.safe_inspect(reason)}"
 
         Logger.error(error_message)
         {:error, error_message}
@@ -174,4 +185,23 @@ defmodule GlificWeb.Resolvers.Templates do
       Map.get(attr, :cc, %{})
     )
   end
+
+  @doc """
+  Translate an HSM draft's body/footer/buttons into the target
+  language, for the "Add new language" flow
+  """
+  @spec translate_session_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, String.t()}
+  def translate_session_template(_, params, %{context: %{current_user: user}}) do
+    params
+    |> Templates.translate_session_template(user.organization_id)
+    |> normalize_translate_error()
+  end
+
+  @spec normalize_translate_error({:ok, map()} | {:error, any}) ::
+          {:ok, map()} | {:error, String.t()}
+  defp normalize_translate_error({:error, [_source, message]}) when is_binary(message),
+    do: {:error, message}
+
+  defp normalize_translate_error(result), do: result
 end

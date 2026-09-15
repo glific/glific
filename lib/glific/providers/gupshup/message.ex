@@ -12,7 +12,6 @@ defmodule Glific.Providers.Gupshup.Message do
     Repo
   }
 
-  import Ecto.Query, warn: false
   require Logger
 
   @channel "whatsapp"
@@ -125,7 +124,7 @@ defmodule Glific.Providers.Gupshup.Message do
     # sometime the gupshup payload has a blank payload
     # or maybe a simulator or some test code
     if payload["sender"]["phone"] in [nil, ""] do
-      error = "Phone number is blank, #{inspect(payload)}"
+      error = "Phone number is blank, #{Glific.SafeLog.safe_inspect(payload)}"
       Glific.log_error(error)
       raise(RuntimeError, message: error)
     end
@@ -305,7 +304,14 @@ defmodule Glific.Providers.Gupshup.Message do
   defp create_oban_job(message, request_body, attrs) do
     attrs = to_minimal_map(attrs)
     worker_module = Communications.provider_worker(message.organization_id)
-    worker_args = %{message: Message.to_minimal_map(message), payload: request_body, attrs: attrs}
+    # organization_id is duplicated at the top level because Oban Pro builds the
+    # queue's partition key from top level arg keys only
+    worker_args = %{
+      message: Message.to_minimal_map(message),
+      payload: request_body,
+      attrs: attrs,
+      organization_id: message.organization_id
+    }
 
     worker_module.create_changeset(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()

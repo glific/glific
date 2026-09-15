@@ -72,7 +72,7 @@ defmodule Glific.Navanatech do
         {:ok, Jason.decode!(body)}
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response #{Glific.SafeLog.safe_inspect(response)}"}
     end
   end
 

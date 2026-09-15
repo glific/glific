@@ -12,8 +12,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   }
 
   use Tesla
+  use Publicist
   require Logger
 
+  alias Glific.SafeLog
   alias Plug.Conn.Query
   alias Tesla.Multipart
 
@@ -21,7 +23,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     @moduledoc """
     Custom Error module for Gupshup partner api failures
     """
-    defexception [:message]
+    defexception [:message, :reason]
+
+    @spec message(%__MODULE__{}) :: String.t()
+    def message(%Error{} = error) do
+      "#{error.message} reason: #{error.reason}"
+    end
   end
 
   plug(Tesla.Middleware.FormUrlencoded,
@@ -30,8 +37,23 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
+  # Gupshup file manager host used to download WhatsApp media by media id.
+  # Final URL: <@filemanager_url><app_id>/wa/media/<media_id>?download=true
+  # Returns the raw media bytes directly (one-step, no decryption).
+  @filemanager_url "https://filemanager.gupshup.io/wa/"
+  @library_templates_recv_timeout 30_000
 
-  @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
+  @modes [
+    "ENQUEUED",
+    "FAILED",
+    "READ",
+    "SENT",
+    "DELIVERED",
+    "OTHERS",
+    "DELETE",
+    "MESSAGE",
+    "TEMPLATE"
+  ]
 
   @doc """
   Fetches Partner token and App Access token to get tier information
@@ -52,7 +74,40 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
          }}
 
       error ->
-        {:error, "Error while getting the ratings. #{inspect(error)}"}
+        {:error, "Error while getting the ratings. #{Glific.SafeLog.safe_inspect(error)}"}
+    end
+  end
+
+  @doc """
+  Downloads WhatsApp Flow media (PhotoPicker / DocumentPicker uploads) by its
+  WhatsApp media id, returning the raw binary content.
+
+  The media id comes from a flow response, e.g.
+  `%{"id" => 913256141793852, "file_name" => "x.jpg", "mime_type" => "image/jpeg"}`.
+
+  Calls `GET <filemanager_url><app_id>/wa/media/<media_id>?download=true` with the
+  partner app token, which returns the raw bytes directly (no second fetch, no
+  decryption needed).
+
+  The request is never retried: Gupshup allows only 20 *failed* media requests per
+  app per hour and, once that is crossed, blocks every media request for the app
+  until the next hour window — so a retried failure costs the whole app's downloads.
+  """
+  @spec download_flow_media(non_neg_integer(), String.t() | non_neg_integer()) ::
+          {:ok, binary()} | {:error, String.t()}
+  def download_flow_media(org_id, media_id) do
+    with {:ok, app_id} <- app_id(org_id) do
+      Tesla.client([])
+      |> Tesla.get("#{@filemanager_url}#{app_id}/wa/media/#{media_id}?download=true",
+        headers: headers(:app_token, org_id: org_id)
+      )
+      |> case do
+        {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+          {:ok, body}
+
+        err ->
+          {:error, "flow media download failed for id #{media_id}: #{SafeLog.safe_inspect(err)}"}
+      end
     end
   end
 
@@ -178,7 +233,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:error, decoded_body["message"]}
 
       unmatched_response ->
-        Logger.error("#{inspect(unmatched_response)}")
+        Logger.error("#{Glific.SafeLog.safe_inspect(unmatched_response)}")
         {:error, "Something went wrong, not able to submit the template for approval."}
     end
   end
@@ -223,8 +278,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, file_name}
 
       {:error, err} ->
-        Logger.error("Error downloading file due to #{inspect(err)}")
-        {:error, "#{inspect(err)}"}
+        Logger.error("Error downloading file due to #{Glific.SafeLog.safe_inspect(err)}")
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
@@ -288,7 +343,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     rescue
       error ->
         Glific.log_exception(%Error{
-          message: "Error occurred while applying gupshup settings due to #{inspect(error)}"
+          message: "Error occurred while applying gupshup settings",
+          reason: error
         })
 
         :ok
@@ -305,6 +361,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       headers = [{"Authorization", token}]
       get(url, headers: headers)
     end
+  end
+
+  @doc """
+  Fetches Meta's pre-approved WhatsApp template library from Gupshup's
+  Partner API (`GET <app_url>/template/metalibrary`) — read-only, no query
+  filters; the UI searches/filters the cached result client-side instead.
+  """
+  @spec get_library_templates(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
+  def get_library_templates(org_id) do
+    (app_url!(org_id) <> "/template/metalibrary")
+    |> get_request(org_id: org_id, adapter: [recv_timeout: @library_templates_recv_timeout])
   end
 
   @global_organization_id 0
@@ -324,23 +391,36 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   defp fetch_partner_token do
     url = @partner_url <> "/login"
     credentials = Saas.isv_credentials()
+    client_secret = Application.get_env(:glific, :gupshup_partner_client_secret)
 
-    request_params = %{"email" => credentials["email"], "password" => credentials["password"]}
+    case client_secret do
+      secret when secret in [nil, ""] ->
+        Glific.log_exception(%Error{
+          message: "Partner token fetch failed",
+          reason: "Gupshup partner client secret is missing"
+        })
 
-    post(url, request_params, headers: [])
-    |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        res = Jason.decode!(body)
+        {:error, "Could not fetch the partner token"}
 
-        {:ok, token} =
-          Caches.set(@global_organization_id, "partner_token", res["token"],
-            ttl: :timer.hours(22)
-          )
+      _ ->
+        request_params = %{"email" => credentials["email"], "password" => client_secret}
 
-        {:ok, %{partner_token: token}}
+        post(url, request_params, headers: [])
+        |> case do
+          {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+            res = Jason.decode!(body)
 
-      {_status, response} ->
-        {:error, "Could not fetch the partner token #{inspect(response)}"}
+            {:ok, token} =
+              Caches.set(@global_organization_id, "partner_token", res["token"],
+                ttl: :timer.hours(22)
+              )
+
+            {:ok, %{partner_token: token}}
+
+          {_status, response} ->
+            Glific.log_exception(%Error{message: "Partner token fetch failed", reason: response})
+            {:error, "Could not fetch the partner token"}
+        end
     end
   end
 
@@ -367,7 +447,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, %{partner_app_token: app_token}}
 
       {:error, error} ->
-        {:error, "Could not fetch the partner app token #{inspect(error)}"}
+        {:error, "Could not fetch the partner app token #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -384,7 +464,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       error ->
         # in case we cant find the app token, log an error, but return a empty list so we proceed
-        Logger.error("Could not fetch partner app token: #{inspect(error)}")
+        Logger.error("Could not fetch partner app token: #{Glific.SafeLog.safe_inspect(error)}")
         []
     end
   end
@@ -431,22 +511,30 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, Jason.decode!(body)}
 
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
-    req_headers =
-      headers(Keyword.get(opts, :token_type, :app_token), opts)
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
-    get(url, headers: req_headers)
+    request_opts =
+      case Keyword.get(opts, :adapter, []) do
+        [] -> [headers: req_headers]
+        adapter_opts -> [headers: req_headers, opts: [adapter: adapter_opts]]
+      end
+
+    get(url, request_opts)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
 
+      {:error, :timeout} ->
+        {:error, "Gupshup partner API request timed out, please try again"}
+
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
@@ -460,7 +548,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, Jason.decode!(body)}
 
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
@@ -578,7 +666,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     else
       {:error, error} ->
         Glific.log_exception(%Error{
-          message: "Fetching app details for app #{app_name} failed due to #{error}"
+          message: "Fetching app details for app #{app_name} failed",
+          reason: error
         })
 
         "Fetching app details failed, please double check App name and API key are correct"
@@ -600,7 +689,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       {:error, error} ->
         Glific.log_exception(%Error{
-          message: "Fetching app details for app #{app_id} failed due to #{error}"
+          message: "Fetching app details for app #{app_id} failed",
+          reason: error
         })
 
         "Fetching app details failed, please double check App name, App ID and API key are correct"

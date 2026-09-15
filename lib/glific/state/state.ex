@@ -9,7 +9,6 @@ defmodule Glific.State do
   use GenServer
 
   require Logger
-  import Ecto.Query, warn: false
 
   alias Glific.{
     Communications,
@@ -255,7 +254,7 @@ defmodule Glific.State do
       fn {{id, fingerprint}, {entity, _time}}, {free, busy} ->
         if entity.id == entity_id do
           Logger.info(
-            "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id} by force."
+            "Releasing entity: #{Glific.SafeLog.safe_inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id} by force."
           )
 
           publish_data(entity.organization_id, id, entity_type)
@@ -283,7 +282,7 @@ defmodule Glific.State do
         if (user && user.id == id && user.fingerprint == fingerprint) ||
              DateTime.compare(time, expiry_time) == :lt do
           Logger.info(
-            "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id}."
+            "Releasing entity: #{Glific.SafeLog.safe_inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id}."
           )
 
           if can_publish_data?(user, id, entity_type) do

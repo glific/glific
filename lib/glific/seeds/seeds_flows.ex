@@ -1,8 +1,7 @@
 defmodule Glific.Seeds.SeedsFlows do
   @moduledoc false
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   require Logger
 
   alias Glific.{
@@ -179,15 +178,13 @@ defmodule Glific.Seeds.SeedsFlows do
     flow_files = [
       "other_options.json",
       "clear_variable.json",
-      "bhasini_asr.json",
       "consent_optout.json",
       "GPT_Vision.json",
       "geolocation.json",
       "ticketing_help.json",
       "consent_optin.json",
       "filesearch_GPT_textandvoice.json",
-      "direct_with_GPT.json",
-      "bhashini_text_to_speech.json"
+      "direct_with_GPT.json"
     ]
 
     Enum.each(flow_files, &process_flow_file(&1, organizations))
@@ -207,7 +204,6 @@ defmodule Glific.Seeds.SeedsFlows do
     Repo.put_organization_id(organization.id)
 
     flow_tag_map = %{
-      "bhasini_asr.json" => "Speech to Text",
       "consent_optout.json" => "Optout",
       "GPT_Vision.json" => "GPT",
       "clear_variable.json" => "Clear",
@@ -216,8 +212,7 @@ defmodule Glific.Seeds.SeedsFlows do
       "other_options.json" => "Other",
       "consent_optin.json" => "Optin",
       "filesearch_GPT_textandvoice.json" => "GPT filesearch",
-      "direct_with_GPT.json" => "GPT direct",
-      "bhashini_text_to_speech.json" => "Text to Speech"
+      "direct_with_GPT.json" => "GPT direct"
     }
 
     with [flow_data] <- Flows.import_flow(import_flow, organization.id),

@@ -2,9 +2,6 @@ defmodule Glific.Clients.Sarc do
   @moduledoc """
   Tweak GCS Bucket name based on group that the contact is in (if any) for SArC
   """
-
-  import Ecto.Query, warn: false
-
   alias Glific.{
     Contacts,
     Repo

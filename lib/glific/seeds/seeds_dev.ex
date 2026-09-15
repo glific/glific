@@ -122,9 +122,10 @@ if Code.ensure_loaded?(Faker) do
       end
     end
 
-    defp inspect_credential_error(%Ecto.Changeset{} = changeset), do: inspect(changeset.errors)
+    defp inspect_credential_error(%Ecto.Changeset{} = changeset),
+      do: Glific.SafeLog.safe_inspect(changeset.errors)
 
-    defp inspect_credential_error(other), do: inspect(other)
+    defp inspect_credential_error(other), do: Glific.SafeLog.safe_inspect(other)
 
     @doc """
     Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
@@ -1800,7 +1801,7 @@ if Code.ensure_loaded?(Faker) do
       if trusted_env?,
         do:
           Repo.insert!(%Role{
-            label: "Glific Admin",
+            label: "Glific_admin",
             description: "Super Admin Role for Glific",
             is_reserved: true,
             organization_id: organization.id

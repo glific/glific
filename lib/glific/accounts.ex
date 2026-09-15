@@ -2,8 +2,6 @@ defmodule Glific.Accounts do
   @moduledoc """
   The Accounts context.
   """
-
-  import Ecto.Query, warn: false
   alias Glific.Repo
 
   alias Glific.Users.User

@@ -2,7 +2,7 @@ defmodule Glific.Messages do
   @moduledoc """
   The Messages context.
   """
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
 
   require Logger
@@ -54,6 +54,24 @@ defmodule Glific.Messages do
   @spec count_messages(map()) :: integer
   def count_messages(args),
     do: Repo.count_filter(args, Message, &filter_with/2)
+
+  @doc """
+  Returns a page of a single contact's messages on a given channel, newest first.
+
+  Used by the web channel's `RoomChannel` to serve the initial (and "load more") message
+  history for a browser's own conversation.
+  """
+  @spec list_conversation_messages(non_neg_integer(), atom(), map()) :: [Message.t()]
+  def list_conversation_messages(contact_id, channel, %{limit: limit, offset: offset}) do
+    Message
+    |> where([m], m.contact_id == ^contact_id and m.channel == ^channel)
+    |> order_by([m], desc: m.message_number)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
+    |> Repo.preload(:media)
+    |> Enum.map(&put_clean_body/1)
+  end
 
   # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -309,6 +327,18 @@ defmodule Glific.Messages do
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
+  # No BSP to approve a template against, so refuse it rather than send its rendered body.
+  defp check_for_hsm_message(%{channel: channel} = attrs, contact)
+       when channel in [:web, "web"] do
+    if Map.get(attrs, :is_hsm) || Map.has_key?(attrs, :template_id) do
+      {:error, dgettext("errors", "HSM templates cannot be sent on the web channel.")}
+    else
+      contact
+      |> Contacts.can_send_message_to?(false, attrs)
+      |> do_send_message(attrs)
+    end
+  end
+
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
       attrs
@@ -439,12 +469,12 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
+  @spec create_and_send_otp_verification_message(Contact.t(), String.t(), map()) ::
           {:ok, Message.t()}
-  def create_and_send_otp_verification_message(contact, otp) do
+  def create_and_send_otp_verification_message(contact, otp, opts \\ %{}) do
     case Contacts.can_send_message_to?(contact, false) do
       {:ok, _} -> create_and_send_otp_session_message(contact, otp)
-      _ -> create_and_send_otp_template_message(contact, otp)
+      _ -> create_and_send_otp_template_message(contact, otp, opts)
     end
   end
 
@@ -459,9 +489,9 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
+  @spec create_and_send_otp_template_message(Contact.t(), String.t(), map()) ::
           {:ok, Message.t()}
-  def create_and_send_otp_template_message(contact, otp) do
+  def create_and_send_otp_template_message(contact, otp, opts \\ %{}) do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
@@ -473,6 +503,7 @@ defmodule Glific.Messages do
     parameters = [otp]
 
     %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
+    |> Map.merge(opts)
     |> create_and_send_hsm_message()
   end
 
@@ -629,7 +660,7 @@ defmodule Glific.Messages do
 
       {:error, error} ->
         {:error,
-         "Not able to fetch the template with id #{template_id}. ERROR: #{inspect(error)}"}
+         "Not able to fetch the template with id #{template_id}. ERROR: #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -833,6 +864,13 @@ defmodule Glific.Messages do
     if has_no_errors, do: do_create_message_media(changeset, attrs), else: {:error, changeset}
   end
 
+  # Dedup media by (url, caption, organization_id). Caption stays in the app
+  # lookup so that personalized captions on a shared media URL keep distinct
+  # rows — the caption sent to the contact is read from the media row
+  # (message.media.caption), so collapsing distinct captions would deliver the
+  # wrong one. Caption is only kept OUT of the btree index: indexing the full
+  # caption overflowed the 2704-byte row limit and crashed inbound media
+  # inserts on long captions (glific#5319).
   @spec do_create_message_media(Ecto.Changeset.t(), map()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_message_media(changeset, attrs) do
@@ -852,12 +890,9 @@ defmodule Glific.Messages do
     end
   end
 
-  defp add_caption(query, caption) when is_nil(caption), do: query
-
-  defp add_caption(query, caption) do
-    query
-    |> where([mm], mm.caption == ^caption)
-  end
+  @spec add_caption(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Queryable.t()
+  defp add_caption(query, nil), do: query
+  defp add_caption(query, caption), do: where(query, [mm], mm.caption == ^caption)
 
   @doc """
   Updates a message media.
@@ -1264,6 +1299,15 @@ defmodule Glific.Messages do
     end
   end
 
+  @document_content_types ~w(
+    application/msword
+    application/vnd.ms-excel
+    application/vnd.ms-powerpoint
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+    application/vnd.openxmlformats-officedocument.presentationml.presentation
+  )
+
   @size_limit %{
     "image" => 5120,
     "video" => 16_384,
@@ -1271,6 +1315,34 @@ defmodule Glific.Messages do
     "document" => 102_400,
     "sticker" => 100
   }
+
+  @doc """
+  The maximum accepted size, in KB, for an uploaded media `type` — the single source of truth
+  so a caller validating a file up front (e.g. the web channel's upload endpoint) cannot drift
+  from the limit enforced when a media URL is validated.
+  """
+  @spec media_size_limit(String.t()) :: pos_integer() | nil
+  def media_size_limit(type), do: @size_limit[type]
+
+  @doc """
+  Whether `content_type` is one accepted for media `type`, using the same content-type
+  families `do_validate_headers/3` checks for a fetched media URL — so a file accepted here
+  (e.g. the web channel's upload endpoint) cannot later fail that validation.
+  """
+  @spec valid_media_content_type?(String.t(), String.t() | nil) :: boolean()
+  def valid_media_content_type?("audio", content_type) when is_binary(content_type) do
+    # do_validate_headers/3's audio clause destructures on "/" and MatchErrors on a malformed
+    # content-type; a client-supplied upload can send anything, so guard the shape first.
+    case String.split(content_type, "/") do
+      [_mime_type, _ext] -> do_validate_headers(%{"content-type" => content_type}, "audio", "")
+      _ -> false
+    end
+  end
+
+  def valid_media_content_type?(type, content_type) when is_binary(content_type),
+    do: do_validate_headers(%{"content-type" => content_type}, type, "")
+
+  def valid_media_content_type?(_type, _content_type), do: false
 
   @spec do_validate_media(String.t(), String.t()) :: map()
   defp do_validate_media(url, type) do
@@ -1312,8 +1384,13 @@ defmodule Glific.Messages do
   end
 
   @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
-  defp do_validate_headers(headers, "document", _url),
-    do: String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"])
+  # Exact base type, not a substring: the previous check looked for "docx" and "xlxs", neither
+  # of which appears in the openxmlformats types actually sent.
+  defp do_validate_headers(headers, "document", _url) do
+    content_type = base_content_type(headers["content-type"])
+
+    String.contains?(content_type, "pdf") or content_type in @document_content_types
+  end
 
   ## sometimes webp files does not return any content type. We need to figure out another way to validate this
   defp do_validate_headers(headers, "sticker", url),
@@ -1331,6 +1408,12 @@ defmodule Glific.Messages do
   end
 
   defp do_validate_headers(_, _, _), do: false
+
+  @spec base_content_type(String.t() | nil) :: String.t()
+  defp base_content_type(nil), do: ""
+
+  defp base_content_type(content_type),
+    do: content_type |> String.split(";") |> hd() |> String.trim() |> String.downcase()
 
   @spec do_validate_size(Integer, String.t() | integer()) :: boolean
   defp do_validate_size(_size_limit, nil), do: false
@@ -1359,7 +1442,7 @@ defmodule Glific.Messages do
     mime_types = [
       {:image, ["png", "jpg", "jpeg"]},
       {:video, ["mp4", "3gp", "3gpp"]},
-      {:audio, ["mp3", "wav", "acc", "ogg"]},
+      {:audio, ["mp3", "wav", "aac", "ogg"]},
       {:document, ["pdf", "docx", "xlsx"]},
       {:sticker, ["webp"]}
     ]

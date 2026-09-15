@@ -6,8 +6,7 @@ defmodule Glific.WAConversations do
 
   require Logger
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Groups.WAGroup, Repo, WAGroup.WAMessage, WAMessages}
 
   @doc """
@@ -20,7 +19,7 @@ defmodule Glific.WAConversations do
     |> WAMessages.list_conversations()
   rescue
     ex ->
-      Logger.error("Search threw a Error: #{inspect(ex)}")
+      Logger.error("Search threw a Error: #{Glific.SafeLog.safe_inspect(ex)}")
       []
   end
 

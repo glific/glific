@@ -1,0 +1,25 @@
+meta {
+  name: Sync WhatsApp managed phone statuses
+  type: graphql
+  seq: 20
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation sync_wa_managed_phone_statuses {
+    sync_wa_managed_phone_statuses {
+      message
+      errors { key message }
+    }
+  }
+}

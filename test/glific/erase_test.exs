@@ -8,6 +8,7 @@ defmodule Glific.EraseTest do
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
+    Contacts.Contact,
     Contacts.ContactHistory,
     Erase,
     Fixtures,
@@ -20,6 +21,7 @@ defmodule Glific.EraseTest do
     Notifications.Notification,
     Partners.Organization,
     Repo,
+    Version,
     WhatsappForms.WhatsappFormRevision,
     WhatsappFormsRevisions
   }
@@ -278,6 +280,24 @@ defmodule Glific.EraseTest do
 
     assert {:ok, job} = Erase.delete_organization(organization.id)
     assert {:error, "Organization not deletable"} = perform_job(Erase, job.args)
+  end
+
+  test "sends an info notification with canonical severity on successful deletion" do
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+    assert :ok = perform_job(Erase, job.args)
+
+    assert latest_organization_notification().severity == Notifications.types()[:info]
+    assert latest_organization_notification().severity == "Information"
+  end
+
+  test "sends a critical notification with canonical severity when deletion fails" do
+    assert {:ok, job} = Erase.delete_organization(999_999_999)
+    assert {:error, "Organization not found"} = perform_job(Erase, job.args)
+
+    assert latest_organization_notification().severity == Notifications.types()[:critical]
+    assert latest_organization_notification().severity == "Critical"
   end
 
   test "enqueues organization deletion job correctly" do
@@ -578,5 +598,183 @@ defmodule Glific.EraseTest do
       assert Repo.get(Assistant, assistant.id) == nil
       assert Repo.get(AssistantConfigVersion, config_version.id) == nil
     end)
+  end
+
+  test "deletion order + preserved tables cover every org-scoped table exactly once" do
+    # Guards against schema drift: every org-scoped table must be either deleted
+    # (org_data_deletion_order/0) or deliberately preserved (org_data_preserved_tables/0).
+    # A new table missing from both would silently leave its rows behind on org deletion.
+    %{rows: rows} =
+      Repo.query!(
+        """
+        SELECT table_name
+        FROM information_schema.columns
+        WHERE column_name = 'organization_id'
+          AND table_schema = 'public'
+          AND table_name != 'organizations'
+        """,
+        [],
+        skip_organization_id: true
+      )
+
+    schema_tables = MapSet.new(rows, fn [table] -> table end)
+    deleted_tables = MapSet.new(Erase.org_data_deletion_order())
+    preserved_tables = MapSet.new(Erase.org_data_preserved_tables())
+    accounted_tables = MapSet.union(deleted_tables, preserved_tables)
+
+    assert [] == MapSet.difference(schema_tables, accounted_tables) |> Enum.sort(),
+           "org-scoped tables missing from both Erase.org_data_deletion_order/0 and org_data_preserved_tables/0"
+
+    assert [] == MapSet.difference(accounted_tables, schema_tables) |> Enum.sort(),
+           "Erase deletion/preserved lists reference tables that no longer exist"
+
+    assert [] == MapSet.intersection(deleted_tables, preserved_tables) |> Enum.sort(),
+           "a table appears in both Erase.org_data_deletion_order/0 and org_data_preserved_tables/0"
+  end
+
+  test "delete_all_organization_data deletes whatsapp_form_revisions that reference a user",
+       %{organization_id: organization_id} do
+    # whatsapp_form_revisions.user_id is a NOT NULL column with an ON DELETE SET NULL
+    # FK to users, so the revision must be deleted before users — and before contacts,
+    # which cascade-deletes users. Regression test: full deletion previously failed
+    # here with a not-null violation when contacts/users were deleted first.
+    Fixtures.whatsapp_form_fixture()
+
+    # Prove the rows actually exist first, otherwise the post-delete assertions
+    # below would pass vacuously and the test would not exercise the FK ordering.
+    assert count_for_org("users", organization_id) > 0
+    assert count_for_org("whatsapp_form_revisions", organization_id) > 0
+
+    {:ok, organization} = Repo.fetch(Organization, organization_id, skip_organization_id: true)
+    {:ok, _deleted} = Glific.Partners.delete_organization(organization)
+
+    assert :ok = Erase.delete_all_organization_data(organization_id)
+
+    assert 0 == count_for_org("whatsapp_form_revisions", organization_id)
+    assert 0 == count_for_org("users", organization_id)
+  end
+
+  describe "version purge" do
+    test "deletes versions older than the retention window and keeps the recent ones", attrs do
+      old = Enum.map(1..5, fn _ -> version_fixture(attrs, 120) end)
+      recent = Enum.map(1..3, fn _ -> version_fixture(attrs, 10) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 2,
+          max_rows_to_delete: 100,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 5} = perform_job(Erase, job.args)
+
+      assert [] == existing_version_ids(old)
+      assert length(existing_version_ids(recent)) == 3
+    end
+
+    test "stops once max_rows_to_delete is reached", attrs do
+      versions = Enum.map(1..6, fn _ -> version_fixture(attrs, 120) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 2,
+          max_rows_to_delete: 4,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 4} = perform_job(Erase, job.args)
+      assert length(existing_version_ids(versions)) == 2
+    end
+
+    test "completes cleanly when nothing is older than the retention window", attrs do
+      versions = Enum.map(1..3, fn _ -> version_fixture(attrs, 10) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 10,
+          max_rows_to_delete: 100,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 0} = perform_job(Erase, job.args)
+      assert length(existing_version_ids(versions)) == 3
+    end
+
+    test "refuses to run with a retention window below the minimum", attrs do
+      versions = Enum.map(1..3, fn _ -> version_fixture(attrs, 120) end)
+
+      assert {:error, message} = Erase.perform_version_purge(retention_days: 0)
+      assert message =~ "Refusing to purge versions"
+
+      refute_enqueued(worker: Erase, prefix: "global")
+
+      assert {:error, _message} =
+               perform_job(Erase, %{
+                 "purge" => "versions",
+                 "retention_days" => 0,
+                 "batch_size" => 10,
+                 "max_rows_to_delete" => 100,
+                 "sleep_after_delete?" => false
+               })
+
+      assert length(existing_version_ids(versions)) == 3
+    end
+
+    test "does not enqueue a second purge while one is still in flight" do
+      opts = [retention_days: 90, batch_size: 10, max_rows_to_delete: 100]
+
+      {:ok, first} = Erase.perform_version_purge(opts)
+      {:ok, second} = Erase.perform_version_purge(opts)
+
+      assert first.id == second.id
+      assert second.conflict?
+    end
+  end
+
+  defp version_fixture(attrs, days_ago) do
+    recorded_at =
+      DateTime.utc_now()
+      |> DateTime.add(-days_ago, :day)
+      |> DateTime.truncate(:second)
+
+    %Version{}
+    |> Version.changeset(%{
+      patch: %{},
+      entity_id: 1,
+      entity_schema: Contact,
+      action: :created,
+      recorded_at: recorded_at,
+      organization_id: attrs.organization_id
+    })
+    |> Repo.insert!()
+  end
+
+  defp existing_version_ids(versions) do
+    ids = Enum.map(versions, & &1.id)
+
+    Version
+    |> where([version], version.id in ^ids)
+    |> select([version], version.id)
+    |> Repo.all(skip_organization_id: true)
+  end
+
+  defp latest_organization_notification do
+    Notification
+    |> where([notification], notification.category == "Organization")
+    |> order_by([notification], desc: notification.id)
+    |> limit(1)
+    |> Repo.one(skip_organization_id: true)
+  end
+
+  defp count_for_org(table, organization_id) do
+    %{rows: [[count]]} =
+      Repo.query!("SELECT count(*) FROM #{table} WHERE organization_id = $1", [organization_id],
+        skip_organization_id: true
+      )
+
+    count
   end
 end

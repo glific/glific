@@ -1,0 +1,33 @@
+meta {
+  name: Import (bulk-add) contacts to a WhatsApp group
+  type: graphql
+  seq: 10
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation importWaGroupContacts($waGroupId: ID!, $type: ImportContactsTypeEnum!, $data: String!) {
+    importWaGroupContacts(waGroupId: $waGroupId, type: $type, data: $data) {
+      status
+      errors { message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "waGroupId": 1,
+    "type": "DATA",
+    "data": "phone,name\n919999999999,Alice\n"
+  }
+}

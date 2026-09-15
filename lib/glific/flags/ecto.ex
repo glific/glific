@@ -220,7 +220,7 @@ if Code.ensure_loaded?(Ecto) do
       case @repo.__adapter__() do
         Postgres -> :postgres
         # since we only support postgres
-        other -> raise "Ecto adapter #{inspect(other)} is not supported"
+        other -> raise "Ecto adapter #{Glific.SafeLog.safe_inspect(other)} is not supported"
       end
     end
 

@@ -85,10 +85,13 @@ defmodule GlificWeb.Resolvers.Flows do
       else: Glific.Metrics.increment("Export without auto translate")
 
     # load the flow
-    data =
+    {rows, _errors} =
       user.organization_id
       |> Flows.get_complete_flow(flow_id)
       |> Export.export_localization(add_translation)
+
+    data =
+      rows
       |> CSV.encode(delimiter: "\n")
       |> Enum.join("")
 
@@ -128,11 +131,12 @@ defmodule GlificWeb.Resolvers.Flows do
   def inline_flow_localization(_, %{id: flow_id}, %{
         context: %{current_user: user}
       }) do
-    user.organization_id
-    |> Flows.get_complete_flow(flow_id)
-    |> Export.translate()
-
-    {:ok, %{success: true}}
+    with {:ok, _result} <-
+           user.organization_id
+           |> Flows.get_complete_flow(flow_id)
+           |> Export.translate() do
+      {:ok, %{success: true}}
+    end
   end
 
   @doc false
@@ -189,7 +193,7 @@ defmodule GlificWeb.Resolvers.Flows do
     do: %{key: hd(error), message: hd(tl(error))}
 
   defp make_error(error),
-    do: %{key: "Database Error", message: inspect(error)}
+    do: %{key: "Database Error", message: Glific.SafeLog.safe_inspect(error)}
 
   @doc """
   Start a flow for a contact

@@ -46,7 +46,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     else
       {:error, reason} ->
         Logger.error(
-          "Certificate creation failed for org_id: #{org_id}, Error: #{inspect(reason)}"
+          "Certificate creation failed for org_id: #{org_id}, Error: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
@@ -124,16 +124,19 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
          ) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         case Jason.decode(response_body) do
-          {:ok, decoded_body} -> {:ok, decoded_body}
-          {:error, decode_error} -> {:error, "JSON decode error: #{inspect(decode_error)}"}
+          {:ok, decoded_body} ->
+            {:ok, decoded_body}
+
+          {:error, decode_error} ->
+            {:error, "JSON decode error: #{Glific.SafeLog.safe_inspect(decode_error)}"}
         end
 
       {:ok, %Tesla.Env{status: status_code, body: response_body}} ->
         {:error,
-         "Failed to copy slide. Status: #{status_code}, Response: #{inspect(response_body)}"}
+         "Failed to copy slide. Status: #{status_code}, Response: #{Glific.SafeLog.safe_inspect(response_body)}"}
 
       {:error, error} ->
-        {:error, "HTTP request failed while copying slide: #{inspect(error)}"}
+        {:error, "HTTP request failed while copying slide: #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -166,10 +169,11 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
       {:ok, %Tesla.Env{status: status_code, body: response_body}} ->
         {:error,
-         "Failed to update text. Status: #{status_code}, Response: #{inspect(response_body)}"}
+         "Failed to update text. Status: #{status_code}, Response: #{Glific.SafeLog.safe_inspect(response_body)}"}
 
       {:error, error} ->
-        {:error, "HTTP request failed while replacing text: #{inspect(error)}"}
+        {:error,
+         "HTTP request failed while replacing text: #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -185,10 +189,12 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
         Jason.decode(body)
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
-        {:error, "Failed to fetch thumbnail. Status: #{status}, Response: #{inspect(body)}"}
+        {:error,
+         "Failed to fetch thumbnail. Status: #{status}, Response: #{Glific.SafeLog.safe_inspect(body)}"}
 
       {:error, error} ->
-        {:error, "HTTP request failed while fetching thumbnail: #{inspect(error)}"}
+        {:error,
+         "HTTP request failed while fetching thumbnail: #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -214,11 +220,13 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
         {:ok, %Tesla.Env{status: status, body: body}} ->
           Logger.error(
-            "Failed to delete the template copy. Status: #{status}, Response: #{inspect(body)} "
+            "Failed to delete the template copy. Status: #{status}, Response: #{Glific.SafeLog.safe_inspect(body)} "
           )
 
         {:error, error} ->
-          Logger.error("Failed to delete the template copy: #{inspect(error)}")
+          Logger.error(
+            "Failed to delete the template copy: #{Glific.SafeLog.safe_inspect(error)}"
+          )
       end
     end)
   end

@@ -39,7 +39,7 @@ defmodule Glific.Communications do
     if is_struct(data) do
       Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}")
     else
-      Logger.info("Publishing: #{inspect(data)}, #{topic}:#{organization_id}")
+      Logger.info("Publishing: #{Glific.SafeLog.safe_inspect(data)}, #{topic}:#{organization_id}")
     end
 
     Absinthe.Subscription.publish(

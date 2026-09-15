@@ -36,7 +36,7 @@ defmodule Glific.Templates.TemplateWorker do
         # 5 mins
         period: 60 * 5,
         keys: [:organization_id],
-        states: [:available, :scheduled, :executing]
+        states: [:available, :scheduled, :executing, :retryable]
       ]
     )
     |> Oban.insert()
@@ -78,12 +78,12 @@ defmodule Glific.Templates.TemplateWorker do
 
       {:error, reason} ->
         Logger.error(
-          "Failed to sync HSM templates for org_id: #{org_id}, reason: #{inspect(reason)}"
+          "Failed to sync HSM templates for org_id: #{org_id}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         send_notification(
           org_id,
-          "Failed to sync HSM templates: #{inspect(reason)}",
+          "Failed to sync HSM templates: #{Glific.SafeLog.safe_inspect(reason)}",
           Notifications.types().critical
         )
     end

@@ -25,7 +25,7 @@ defmodule GlificWeb.StripeWebhook do
 
       {:error, error} ->
         conn
-        |> Conn.send_resp(:bad_request, inspect(error))
+        |> Conn.send_resp(:bad_request, Glific.SafeLog.safe_inspect(error))
         |> Conn.halt()
     end
   end

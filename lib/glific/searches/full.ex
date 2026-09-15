@@ -80,6 +80,9 @@ defmodule Glific.Search.Full do
       {:include_labels, label_ids}, query ->
         query |> run_include_labels(label_ids)
 
+      {:channel, channel}, query ->
+        query |> where([m: m], m.channel == ^channel)
+
       {:date_range, dates}, query ->
         query |> run_date_range(dates[:from], dates[:to])
 

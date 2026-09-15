@@ -9,8 +9,7 @@ defmodule Glific.Conversations do
   use Ecto.Schema
   require Logger
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Contacts.Contact, Messages, Messages.Message, Repo, Search.Full}
 
   @doc """
@@ -23,7 +22,7 @@ defmodule Glific.Conversations do
     |> Messages.list_conversations(count)
   rescue
     ex ->
-      Logger.error("Search threw a Error: #{inspect(ex)}")
+      Logger.error("Search threw a Error: #{Glific.SafeLog.safe_inspect(ex)}")
       []
   end
 
@@ -41,10 +40,19 @@ defmodule Glific.Conversations do
     query
     |> join(:inner, [m: m], c in Contact, as: :c, on: c.id == m.contact_id)
     |> where([m: m], m.contact_id in ^ids and m.receiver_id != m.sender_id)
+    |> filter_by_channel(args)
     |> apply_offset_or_date_range(args, length(ids), message_limit, message_offset)
     |> select([m: m], m.id)
     |> Repo.all(timeout: 10_000)
   end
+
+  # The message_number window below spans channels, so a contact whose recent traffic is on the
+  # other channel can come back with fewer than `limit` messages.
+  @spec filter_by_channel(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp filter_by_channel(query, %{filter: %{channel: channel}}) when not is_nil(channel),
+    do: where(query, [m: m], m.channel == ^channel)
+
+  defp filter_by_channel(query, _args), do: query
 
   @spec apply_offset_or_date_range(Ecto.Query.t(), map(), integer(), integer(), integer()) ::
           Ecto.Query.t()

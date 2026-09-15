@@ -168,6 +168,23 @@ defmodule Glific.GroupsTest do
              }
     end
 
+    test "export_collection/1 raises when the user is not assigned to the collection", attrs do
+      group = group_fixture(attrs)
+      admin_user = Repo.get_current_user()
+
+      {:ok, restricted_user} =
+        Fixtures.user_fixture(%{roles: ["staff"]})
+        |> Users.update_user(%{is_restricted: true})
+
+      Repo.put_current_user(restricted_user)
+
+      assert_raise RuntimeError, fn ->
+        Groups.export_collection(group.id)
+      end
+
+      Repo.put_current_user(admin_user)
+    end
+
     test "load_group_by_label", attrs do
       group_fixture(attrs)
 

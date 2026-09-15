@@ -2,8 +2,6 @@ defmodule Glific.Flows.WebhookTest do
   use Glific.DataCase, async: true
   use Oban.Pro.Testing, repo: Glific.Repo
 
-  import Mock
-
   alias Glific.Flows.{
     Action,
     FlowContext,
@@ -14,11 +12,8 @@ defmodule Glific.Flows.WebhookTest do
 
   alias Glific.{
     Fixtures,
-    Partners,
     Seeds.SeedsDev
   }
-
-  alias Glific.ThirdParty.Kaapi
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -462,6 +457,52 @@ defmodule Glific.Flows.WebhookTest do
     end
   end
 
+  describe "Webhook.parse_callback_response/1 Kaapi wording sanitization" do
+    test "rewrites 'contact Kaapi' to 'contact the Glific Team' in a text output message" do
+      params = %{
+        "data" => %{
+          "response" => %{
+            "output" => %{
+              "type" => "text",
+              "content" => %{
+                "value" =>
+                  "STT response is missing transcribed text. Gemini returned an empty result. If the issue persists, contact Kaapi."
+              }
+            }
+          }
+        },
+        "metadata" => %{"organization_id" => 1},
+        "success" => false
+      }
+
+      response = Webhook.parse_callback_response(params)
+
+      refute response["message"] =~ "contact Kaapi"
+      assert response["message"] =~ "contact the Glific Team"
+    end
+
+    test "applies the sanitizer to audio output messages too, as a no-op on base64 TTS content" do
+      audio_content = Base.encode64("contact Kaapi fake audio bytes")
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "output" => %{
+              "type" => "audio",
+              "content" => %{"value" => audio_content}
+            }
+          }
+        },
+        "metadata" => %{"organization_id" => 1},
+        "success" => true
+      }
+
+      response = Webhook.parse_callback_response(params)
+
+      assert response["message"] == audio_content
+    end
+  end
+
   test "execute a webhook with a POST request, consecutive webhook calls should not work",
        attrs do
     Tesla.Mock.mock(fn
@@ -706,99 +747,5 @@ defmodule Glific.Flows.WebhookTest do
     assert Webhook.execute(action, context) == nil
     [job] = all_enqueued(worker: Webhook, prefix: "global")
     assert job.queue == "custom_certificate"
-  end
-
-  test "nmt_tts webhook should run with lower priority",
-       attrs do
-    flow_uuid = Ecto.UUID.generate()
-
-    attrs = %{
-      flow_id: 1,
-      flow_uuid: flow_uuid,
-      contact_id: Fixtures.contact_fixture(attrs).id,
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, context} = FlowContext.create_flow_context(attrs)
-
-    context =
-      context
-      |> Repo.preload([:contact, :flow])
-      |> Map.put(:uuids_seen, %{flow_uuid => 1})
-
-    action = %Action{
-      headers: %{"Accept" => "application/json"},
-      method: "FUNCTION",
-      url: "nmt_tts_with_bhasini",
-      body: Jason.encode!(%{})
-    }
-
-    assert Webhook.execute(action, context) == nil
-    [job] = all_enqueued(worker: Webhook, prefix: "global")
-    assert job.queue == "gpt_webhook_queue"
-    assert job.priority == 2
-  end
-
-  describe "execute_unified_voice_filesearch/2 failure reporting" do
-    setup do
-      {:ok, _credential} =
-        Partners.create_credential(%{
-          organization_id: 1,
-          shortcode: "kaapi",
-          keys: %{},
-          secrets: %{"api_key" => "sk_test_key"},
-          is_active: true
-        })
-
-      Partners.get_organization!(1) |> Partners.fill_cache()
-      :ok
-    end
-
-    test "catches a raised exception, reports it to AppSignal, and reraises it" do
-      test_pid = self()
-
-      # With Kaapi creds present, unified_llm_and_wait injects the API key via
-      # Map.put(action.headers, ...). A nil headers map raises BadMapError -- exactly
-      # the kind of unexpected failure with_failure_reporting must catch and report.
-      action = %Action{headers: nil, method: "FUNCTION", url: "voice-filesearch-gpt", body: "{}"}
-      context = %FlowContext{organization_id: 1}
-
-      with_mocks([
-        {Kaapi, [],
-         [
-           fetch_kaapi_creds: fn _org_id -> {:ok, %{"api_key" => "sk_test_key"}} end
-         ]},
-        {Appsignal, [:passthrough],
-         [
-           send_error: fn exception, _stack, configurator ->
-             send(test_pid, {:appsignal_exception, exception})
-             configurator.(:fake_span)
-             :ok
-           end
-         ]},
-        {Appsignal.Span, [:passthrough],
-         [
-           set_sample_data: fn _span, key, value ->
-             send(test_pid, {:appsignal_tag, key, value})
-             :fake_span
-           end
-         ]}
-      ]) do
-        # The original exception is reraised after the failure is reported.
-        assert_raise BadMapError, fn ->
-          Webhook.execute_unified_voice_filesearch(action, context)
-        end
-      end
-
-      assert_receive {:appsignal_exception,
-                      %Webhook.SystemError{
-                        message: "Webhook system_error from unified-voice-llm-call"
-                      }}
-
-      assert_receive {:appsignal_tag, "tags", tags}
-      assert tags.organization_id == 1
-      assert tags.webhook_name == "unified-voice-llm-call"
-      assert tags.reason =~ "map"
-    end
   end
 end

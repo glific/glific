@@ -59,7 +59,7 @@ defmodule Glific.ASR.GoogleASR do
         successful_result_for_speech_to_text(result)
 
       res ->
-        Logger.info("Oops! Something is wrong, #{inspect(res["message"])}")
+        Logger.info("Oops! Something is wrong, #{Glific.SafeLog.safe_inspect(res["message"])}")
     end
   end
 

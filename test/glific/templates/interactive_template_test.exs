@@ -756,4 +756,51 @@ defmodule Glific.Templates.InteractiveTemplateTest do
             "Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc)."} ==
              InteractiveTemplates.update_interactive_template(interactive, attrs)
   end
+
+  describe "process_dynamic_interactive_content/3" do
+    @list_content %{
+      "type" => "list",
+      "items" => [
+        %{
+          "title" => "section",
+          "subtitle" => "section",
+          "options" => []
+        }
+      ]
+    }
+
+    test "populates both title and description for list options from params" do
+      params = [
+        %{"id" => "1", "label" => "Option one", "description" => "First option description"},
+        %{"id" => "2", "label" => "Option two", "description" => "Second option description"}
+      ]
+
+      %{"items" => [%{"options" => options}]} =
+        InteractiveTemplates.process_dynamic_interactive_content(@list_content, params, %{})
+
+      assert [
+               %{"title" => "Option one", "description" => "First option description"},
+               %{"title" => "Option two", "description" => "Second option description"}
+             ] = options
+    end
+
+    test "defaults description to empty string when not provided" do
+      params = [%{"id" => "1", "label" => "Option one"}]
+
+      %{"items" => [%{"options" => [option]}]} =
+        InteractiveTemplates.process_dynamic_interactive_content(@list_content, params, %{})
+
+      assert option["description"] == ""
+    end
+
+    test "trims description to the 72 char WhatsApp list limit" do
+      long_description = String.duplicate("a", 100)
+      params = [%{"id" => "1", "label" => "Option one", "description" => long_description}]
+
+      %{"items" => [%{"options" => [option]}]} =
+        InteractiveTemplates.process_dynamic_interactive_content(@list_content, params, %{})
+
+      assert String.length(option["description"]) == 72
+    end
+  end
 end

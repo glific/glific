@@ -23,7 +23,8 @@ defmodule Glific.WAGroup.WAManagedPhone do
   @optional_fields [
     :label,
     :status,
-    :product_id
+    :product_id,
+    :last_status_checked_at
   ]
 
   @type t() :: %__MODULE__{
@@ -38,6 +39,7 @@ defmodule Glific.WAGroup.WAManagedPhone do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           status: String.t() | nil,
           product_id: String.t() | nil,
+          last_status_checked_at: DateTime.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -52,6 +54,7 @@ defmodule Glific.WAGroup.WAManagedPhone do
 
     field :status, :string
     field :product_id, :string
+    field :last_status_checked_at, :utc_datetime_usec
 
     belongs_to(:organization, Organization)
     belongs_to(:contact, Contact)

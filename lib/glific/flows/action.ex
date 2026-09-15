@@ -6,7 +6,7 @@ defmodule Glific.Flows.Action do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Contacts,
@@ -36,6 +36,8 @@ defmodule Glific.Flows.Action do
     Templating,
     Webhook
   }
+
+  alias Glific.Flows.Webhooks.Registry, as: WebhooksRegistry
 
   require Logger
 
@@ -71,6 +73,20 @@ defmodule Glific.Flows.Action do
   @required_fields_set_results [:name, :category, :value | @required_field_common]
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
 
+  # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
+  # dropdown). Flows still referencing them must migrate to the new
+  # "speech_to_text" / "text_to_speech" nodes, so publishing them surfaces an error.
+  @deprecated_bhashini_webhooks %{
+    "speech_to_text_with_bhasini" => "speech_to_text",
+    "text_to_speech_with_bhasini" => "text_to_speech",
+    "nmt_tts_with_bhasini" => "text_to_speech"
+  }
+
+  # Upper bound on how long an async webhook node may park the flow. A parked contact sits in
+  # silence until the callback arrives or the window expires, so authors cannot push this past
+  # 5 minutes however long their webhook takes.
+  @max_webhook_wait_time 5 * 60
+
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
   @template_type ["send_msg", "send_broadcast"]
@@ -105,8 +121,8 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
-          ## this is a custom delay in minutes for wait for time nodes.
-          ## Currently we use this only for the wait for time node.
+          ## seconds to wait at this node: how long a wait for time/result node parks the
+          ## flow, or how long an async webhook node awaits its callback.
           wait_time: integer() | nil,
 
           # Google sheet node specific fields
@@ -332,7 +348,8 @@ defmodule Glific.Flows.Action do
       method: json["method"],
       result_name: json["result_name"],
       body: json["body"],
-      headers: json["headers"]
+      headers: json["headers"],
+      wait_time: webhook_wait_time(json["body"])
     })
   end
 
@@ -543,8 +560,58 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def validate(%{type: "call_webhook", url: url}, errors, _flow)
+      when is_map_key(@deprecated_bhashini_webhooks, url) do
+    replacement = Map.fetch!(@deprecated_bhashini_webhooks, url)
+
+    [
+      {Webhook,
+       "The '#{url}' webhook is deprecated. Please migrate this node to the '#{replacement}' node before publishing.",
+       "Critical"}
+      | errors
+    ]
+  end
+
+  def validate(%{type: "call_webhook", wait_time: wait_time}, errors, _flow)
+      when is_integer(wait_time) and wait_time > @max_webhook_wait_time do
+    [
+      {Webhook,
+       "You've configured a wait_time of #{wait_time} seconds which exceeds the allowed wait time of #{@max_webhook_wait_time} seconds. We will use the allowed wait time only.",
+       "Warning"}
+      | errors
+    ]
+  end
+
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
+
+  @doc """
+  Validate every author-authored expression field on an action against the same
+  guard the runtime uses (`Glific.validate_flow_expression/2`). All of these
+  fields reach `Glific.execute_eex/1` at runtime. Blank fields are ignored.
+  """
+  @spec validate_expressions(Action.t(), list(), map()) :: list()
+  def validate_expressions(action, errors, flow) do
+    [
+      {action.value, "Action value"},
+      {action.enter_flow_expression, "Enter flow expression"},
+      {action.interactive_template_expression, "Interactive template expression"},
+      {templating_expression(action), "Message template expression"}
+    ]
+    |> Enum.reduce(errors, fn {expression, label}, errors ->
+      case Glific.validate_flow_expression(expression, flow.organization_id) do
+        :ok ->
+          errors
+
+        {:error, reason} ->
+          [{EEx, "#{label} has an unsupported expression: #{reason}", "Critical"} | errors]
+      end
+    end)
+  end
+
+  @spec templating_expression(Action.t()) :: String.t() | nil
+  defp templating_expression(%{templating: %{expression: expression}}), do: expression
+  defp templating_expression(_action), do: nil
 
   @spec check_missing_interactive_template(list(), Action.t(), map()) :: list()
   defp check_missing_interactive_template(errors, action, flow) do
@@ -613,6 +680,32 @@ defmodule Glific.Flows.Action do
     _ -> :unknown
   end
 
+  ## The await window rides in the webhook body the author already edits, so no flow-editor
+  ## change is needed to expose it. Every webhook implementation allowlists the fields it
+  ## forwards, so this key never reaches Kaapi. Read at compile time, hence literals only --
+  ## an expression here would not have been substituted yet.
+  @spec webhook_wait_time(String.t() | nil) :: non_neg_integer() | nil
+  defp webhook_wait_time(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"wait_time" => value}} -> parse_wait_time(value)
+      _ -> nil
+    end
+  end
+
+  defp webhook_wait_time(_body), do: nil
+
+  @spec parse_wait_time(any()) :: non_neg_integer() | nil
+  defp parse_wait_time(value) when is_integer(value) and value > 0, do: value
+
+  defp parse_wait_time(value) when is_binary(value) do
+    case Integer.parse(String.trim(value)) do
+      {seconds, ""} when seconds > 0 -> seconds
+      _ -> nil
+    end
+  end
+
+  defp parse_wait_time(_value), do: nil
+
   ## Label formatter so that we can apply the dynamic label to the message
   @spec process_labels(list() | nil) :: list() | nil
   defp process_labels(labels) when is_list(labels) do
@@ -640,39 +733,12 @@ defmodule Glific.Flows.Action do
     {:ok, context, [message]}
   end
 
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "speech_to_text"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_kaapi_stt(action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "text_to_speech"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_kaapi_tts(action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "voice-filesearch-gpt"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_unified_voice_filesearch(action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "filesearch-gpt"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_unified_filesearch(action, context)
-  end
-
   def execute(%{type: "call_webhook"} = action, context, []) do
+    # Park BEFORE enqueuing the Oban job. The job's worker may fail the dispatch and call
+    # wakeup_one to resume the flow; if that ran before the await-state write committed, the
+    # stale park write would re-park an already-resumed flow. Committing the await state first
+    # closes that race.
+    context = park_async_webhook(action, context)
     Webhook.execute(action, context)
     {:wait, context, []}
   end
@@ -731,7 +797,7 @@ defmodule Glific.Flows.Action do
   def execute(action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     Logger.error(
-      "Unsupported action type: for flow_id #{inspect(context.flow_id)} wa_group_id #{inspect(context.wa_group_id)} and the message is #{inspect(messages)}"
+      "Unsupported action type: for flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} wa_group_id #{Glific.SafeLog.safe_inspect(context.wa_group_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
     )
 
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type} for WA group")
@@ -827,7 +893,7 @@ defmodule Glific.Flows.Action do
             {FlowContext.reset_one_context(context,
                source: "enter_flow",
                event_meta: %{
-                 "action" => "#{inspect(action)}",
+                 "action" => "#{Glific.SafeLog.safe_inspect(action)}",
                  "current_flow_uuid" => context.flow_uuid,
                  "new_flow" => flow_uuid
                }
@@ -908,6 +974,7 @@ defmodule Glific.Flows.Action do
               {:ok, _} =
                 Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                   event_label: "Added to collection: \"#{group["name"]}\"",
+                  channel: context.channel,
                   event_meta: %{
                     context_id: context.id,
                     group: %{
@@ -924,7 +991,9 @@ defmodule Glific.Flows.Action do
                 })
 
             _ ->
-              Logger.error("Could not parse action groups: #{inspect(action)}")
+              Logger.error(
+                "Could not parse action groups: #{Glific.SafeLog.safe_inspect(action)}"
+              )
           end
 
           []
@@ -942,6 +1011,7 @@ defmodule Glific.Flows.Action do
       {:ok, _} =
         Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
           event_label: "Removed from All the collections",
+          channel: context.channel,
           event_meta: %{
             context_id: context.id,
             group: %{
@@ -964,6 +1034,7 @@ defmodule Glific.Flows.Action do
             {:ok, _} =
               Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                 event_label: "Removed from collection: \"#{group["name"]}\"",
+                channel: context.channel,
                 event_meta: %{
                   context_id: context.id,
                   group: %{
@@ -1028,13 +1099,45 @@ defmodule Glific.Flows.Action do
 
   def execute(action, context, messages) do
     Logger.error(
-      "Unsupported action type: for flow_id #{inspect(context.flow_id)} contact_id #{inspect(context.contact_id)} and the message is #{inspect(messages)}"
+      "Unsupported action type: for flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} contact_id #{Glific.SafeLog.safe_inspect(context.contact_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
     )
 
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
   end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
+  # Async webhooks (STT/TTS/filesearch) park the flow at this node and are resumed by a
+  # Kaapi callback to FlowResumeController, which finds the parked context via
+  # FlowContext.await_context (is_await_result == true). So we must put the context into
+  # the await state here; wakeup_at also arms the timeout fallback if no callback arrives.
+  # Plain webhooks resume via the Oban worker's wakeup_one and don't need this.
+  @spec park_async_webhook(Action.t(), FlowContext.t()) :: FlowContext.t()
+  defp park_async_webhook(%{url: url} = action, context) do
+    case WebhooksRegistry.lookup(url) do
+      module when is_atom(module) and not is_nil(module) ->
+        if module.mode() == :async,
+          do: do_park(action, context, module.wait_time_default()),
+          else: context
+
+      _ ->
+        context
+    end
+  end
+
+  @spec do_park(Action.t(), FlowContext.t(), non_neg_integer()) :: FlowContext.t()
+  defp do_park(action, context, default_wait_time) do
+    wait_time = min(action.wait_time || default_wait_time, @max_webhook_wait_time)
+
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
+        is_background_flow: context.flow.is_background,
+        is_await_result: true
+      })
+
+    context
+  end
+
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
 
   defp add_flow_label(%{last_message: last_message}, flow_label) do

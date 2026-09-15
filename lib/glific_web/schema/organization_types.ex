@@ -5,8 +5,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Enums.OrganizationStatus, Partners, Repo, Settings.Language}
   alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 
@@ -31,7 +30,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
     field(:ai_evaluations_enabled, :boolean)
+    field(:ai_evaluation_v2_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
+    field(:superset_enabled, :boolean)
+    field(:prompt_generator_enabled, :boolean)
+    field(:template_v2_enabled, :boolean)
+    field(:template_library_enabled, :boolean)
+    field(:glific_ai_enabled, :boolean)
+    field(:web_channel_enabled, :boolean)
   end
 
   object :organization_export_result do
@@ -143,6 +149,11 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_trial_org, :boolean)
     field(:trial_expiration_date, :datetime)
     field(:assistant_config_versions_enabled, :boolean)
+    field(:is_prompt_generator_enabled, :boolean)
+    field(:is_template_v2_enabled, :boolean)
+    field(:is_template_library_enabled, :boolean)
+    field(:glific_ai_enabled, :boolean)
+    field(:web_channel_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 
@@ -312,23 +323,26 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.organization_services/3)
     end
 
+    # These export the whole organization via raw SQL, so neither prepare_query nor
+    # Repo.add_permission applies - a restricted staff user would read every contact
+    # and message in the org. The gate is the only available control.
     @desc "Export organization dynamic data"
     field :organization_export_data, :organization_export_result do
       arg(:filter, :export_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_data/3)
     end
 
     @desc "Export organization config data"
     field :organization_export_config, :organization_export_result do
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_config/3)
     end
 
     @desc "Export organization stats data"
     field :organization_export_stats, :organization_export_result do
       arg(:filter, :export_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_stats/3)
     end
 
@@ -361,7 +375,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :organization_mutations do
     field :create_organization, :organization_result do
       arg(:input, non_null(:organization_input))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.create_organization/3)
     end
 
@@ -374,13 +388,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :delete_organization_test_data, :organization_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.delete_organization_test_data/3)
     end
 
     field :delete_organization, :organization_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.delete_organization/3)
     end
 
@@ -391,17 +405,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.update_organization_status/3)
     end
 
-    field :delete_inactive_organization, :organization_result do
-      arg(:delete_organization_id, non_null(:id))
-      arg(:is_confirmed, non_null(:boolean))
-      middleware(Authorize, :admin)
-      resolve(&Resolvers.Partners.delete_inactive_organization/3)
-    end
-
     field :reset_organization, :string do
       arg(:reset_organization_id, non_null(:id))
       arg(:is_confirmed, non_null(:boolean))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.reset_organization/3)
     end
   end

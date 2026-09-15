@@ -4,8 +4,6 @@ defmodule Glific.Trackers.Tracker do
   """
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
-
   alias __MODULE__
 
   alias Glific.Partners.Organization
@@ -42,5 +40,6 @@ defmodule Glific.Trackers.Tracker do
     tracker
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:date, :period, :organization_id])
   end
 end

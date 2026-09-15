@@ -2,14 +2,15 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   use Tesla
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
+    Caches,
     Communications.Mailer,
     Contacts.Contact,
+    Flows.Translate.GoogleTranslate,
     Mails.MailLog,
     Mails.ReportGupshupMail,
     Notifications,
@@ -17,6 +18,7 @@ defmodule Glific.Templates do
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate
   }
@@ -146,7 +148,10 @@ defmodule Glific.Templates do
         do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)}),
         else: attrs
 
-    with :ok <- validate_hsm(attrs),
+    # derive a label from shortcode + language when the caller sends a blank one (e.g. HSMV2)
+    with {:ok, label} <- resolve_label(attrs),
+         attrs <- Map.put(attrs, :label, label),
+         :ok <- validate_hsm(attrs),
          :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
          :ok <- validate_template_length(attrs) do
       submit_for_approval(attrs)
@@ -155,6 +160,39 @@ defmodule Glific.Templates do
 
   def create_session_template(attrs),
     do: do_create_session_template(attrs)
+
+  @spec resolve_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
+  defp resolve_label(%{label: label}) when is_binary(label) and label != "", do: {:ok, label}
+  defp resolve_label(attrs), do: generate_unique_label(attrs)
+
+  @spec generate_unique_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
+  defp generate_unique_label(%{
+         shortcode: shortcode,
+         language_id: language_id,
+         organization_id: organization_id
+       })
+       when is_binary(shortcode) and shortcode != "" do
+    case Repo.get(Language, language_id) do
+      nil -> {:error, ["language_id", "does not exist"]}
+      language -> {:ok, make_unique_label("#{shortcode}_#{language.locale}", organization_id)}
+    end
+  end
+
+  defp generate_unique_label(attrs), do: {:ok, Map.get(attrs, :label)}
+
+  @spec make_unique_label(String.t(), non_neg_integer(), non_neg_integer() | nil) :: String.t()
+  defp make_unique_label(base_label, organization_id, suffix \\ nil) do
+    candidate = if suffix, do: "#{base_label}_#{suffix}", else: base_label
+
+    query =
+      from(t in SessionTemplate,
+        where: t.label == ^candidate and t.organization_id == ^organization_id
+      )
+
+    if Repo.exists?(query),
+      do: make_unique_label(base_label, organization_id, (suffix || 1) + 1),
+      else: candidate
+  end
 
   @spec validate_hsm(map()) :: :ok | {:error, [String.t()]}
   defp validate_hsm(%{shortcode: shortcode, category: _, example: _} = _attrs) do
@@ -271,7 +309,10 @@ defmodule Glific.Templates do
 
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
-    Logger.info("Submitting template for approval with attrs as #{inspect(attrs)}")
+    Logger.info(
+      "Submitting template for approval with attrs as #{Glific.SafeLog.safe_inspect(attrs)}"
+    )
+
     bsp_module = Provider.bsp_module(attrs.organization_id, :template)
     bsp_module.submit_for_approval(attrs)
   end
@@ -290,6 +331,48 @@ defmodule Glific.Templates do
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def bulk_apply_templates(org_id, data) do
     Provider.bsp_module(org_id, :template).bulk_apply_templates(org_id, data)
+  end
+
+  @doc """
+  Searches Meta's pre-approved WhatsApp template library, fetched live from the
+  organization's BSP partner API. Read-only passthrough for the frontend to
+  browse Meta's curated template catalog and prefill the create template form —
+  it does **not** create any `SessionTemplate` rows.
+
+  There's no caller-facing filtering: the BSP module fetches the org's full
+  eligible catalog (already narrowed to Utility templates, excluded topics, and
+  the org's active languages) and the UI searches/filters that cached payload
+  client-side. Results are cached per organization for a short window, since
+  the same catalog is otherwise re-fetched on every catalog open.
+  """
+  @spec search_library_templates(non_neg_integer()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  def search_library_templates(organization_id) do
+    # Active languages are part of the cache key (not just invalidated after the
+    # fact) so a stale entry can never outlive an org's language settings change:
+    # changing active_language_ids yields a new key instead of serving old results.
+    active_language_ids = Partners.organization(organization_id).active_language_ids
+    cache_key = {:template_library, active_language_ids}
+
+    case Caches.get(organization_id, cache_key, refresh_cache: false) do
+      {:ok, false} -> fetch_library_templates(organization_id, cache_key)
+      {:ok, templates} -> {:ok, templates}
+    end
+  end
+
+  @spec fetch_library_templates(non_neg_integer(), tuple()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  defp fetch_library_templates(organization_id, cache_key) do
+    bsp_module = Provider.bsp_module(organization_id, :template)
+
+    case bsp_module.search_library_templates(organization_id) do
+      {:ok, templates} = result ->
+        Caches.set(organization_id, cache_key, templates, ttl: :timer.minutes(20))
+        result
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -390,7 +473,7 @@ defmodule Glific.Templates do
     res = bsp_module.update_hsm_templates(organization_id)
 
     Logger.info(
-      "Templates has been sync for org id: #{organization_id} with response: #{inspect(res)}"
+      "Templates has been sync for org id: #{organization_id} with response: #{Glific.SafeLog.safe_inspect(res)}"
     )
 
     res
@@ -418,6 +501,35 @@ defmodule Glific.Templates do
           true
       end
     end)
+  end
+
+  @doc """
+  Applies a single HSM template status update pushed in real time by Gupshup's
+  `template-event` webhook (Meta approval / rejection), identified by the
+  template's `bsp_id`. Reuses the same reconciliation + notification path as the
+  periodic BSP sync, so an approval reflects within seconds instead of waiting
+  for the next daily sync.
+  """
+  @spec update_hsm_status(String.t(), non_neg_integer(), String.t(), String.t() | nil) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t() | String.t()}
+  def update_hsm_status(bsp_id, organization_id, status, reason \\ nil) do
+    case Repo.fetch_by(SessionTemplate, %{bsp_id: bsp_id, organization_id: organization_id}) do
+      {:ok, current_template} ->
+        template = %{
+          "bsp_id" => bsp_id,
+          "id" => bsp_id,
+          # the periodic sync stores status uppercase; the webhook sends it lowercase
+          "status" => String.upcase(status),
+          "category" => current_template.category,
+          "quality" => current_template.quality,
+          "reason" => reason
+        }
+
+        do_update_hsm(template, %{bsp_id => current_template})
+
+      _ ->
+        {:error, "Template with bsp_id #{bsp_id} not found"}
+    end
   end
 
   @spec existing_template?(map(), map(), Organization.t()) :: boolean()
@@ -543,7 +655,7 @@ defmodule Glific.Templates do
 
       {:error, error} ->
         Logger.error(
-          "Error adding new Session Template: #{inspect(error)} and attrs #{inspect(attrs)}"
+          "Error adding new Session Template: #{Glific.SafeLog.safe_inspect(error)} and attrs #{Glific.SafeLog.safe_inspect(attrs)}"
         )
     end
 
@@ -588,7 +700,7 @@ defmodule Glific.Templates do
         {:error, "No buttons found in containerMeta"}
 
       {:error, reason} ->
-        {:error, "Failed to decode containerMeta: #{inspect(reason)}"}
+        {:error, "Failed to decode containerMeta: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -685,7 +797,7 @@ defmodule Glific.Templates do
       }
     })
 
-    %{status: "REJECTED", reason: bsp_template["reason"]}
+    %{status: "REJECTED", reason: bsp_template["reason"], is_active: false}
   end
 
   defp change_template_status("FAILED", db_template, bsp_template) do
@@ -702,7 +814,7 @@ defmodule Glific.Templates do
       }
     })
 
-    %{status: "FAILED", reason: bsp_template["reason"]}
+    %{status: "FAILED", reason: bsp_template["reason"], is_active: false}
   end
 
   defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
@@ -899,6 +1011,50 @@ defmodule Glific.Templates do
       error -> {:ok, %{message: error}}
     end
   end
+
+  @doc """
+  Machine-translates an HSM draft's body/footer/button text into the target
+  language, using the anchor template's own language as the source. Returns
+  the translated strings and the resolved source language; it does not
+  create or update a SessionTemplate.
+  """
+  @spec translate_session_template(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def translate_session_template(params, organization_id) do
+    body = Map.get(params, :body) || ""
+    footer = Map.get(params, :footer)
+    buttons = Map.get(params, :buttons) || []
+    texts = [body, footer || ""] ++ buttons
+
+    with {:ok, language} <- Repo.fetch_by(Language, %{id: params.language_id}),
+         {:ok, anchor_template} <-
+           Repo.fetch_by(SessionTemplate, %{
+             id: params.template_id,
+             organization_id: organization_id
+           }),
+         {:ok, source_language} <- Repo.fetch_by(Language, %{id: anchor_template.language_id}),
+         :ok <- validate_distinct_languages(source_language, language),
+         {:ok, translated} <-
+           GoogleTranslate.translate(texts, source_language.label, language.label,
+             org_id: organization_id
+           ) do
+      [translated_body, translated_footer | translated_buttons] = translated
+
+      {:ok,
+       %{
+         body: translated_body,
+         footer: if(footer, do: translated_footer, else: nil),
+         buttons: translated_buttons,
+         source_language: source_language
+       }}
+    end
+  end
+
+  @spec validate_distinct_languages(Language.t(), Language.t()) :: :ok | {:error, String.t()}
+  defp validate_distinct_languages(%{locale: locale}, %{locale: locale}),
+    do: {:error, "Source and target language cannot be the same."}
+
+  defp validate_distinct_languages(_source, _target), do: :ok
 
   @doc """
   get template from EEx based on variables

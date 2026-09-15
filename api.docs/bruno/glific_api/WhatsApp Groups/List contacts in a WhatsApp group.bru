@@ -1,0 +1,34 @@
+meta {
+  name: List contacts in a WhatsApp group
+  type: graphql
+  seq: 6
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query listContactWaGroup($filter: ContactWaGroupFilter, $opts: Opts) {
+    listContactWaGroup(filter: $filter, opts: $opts) {
+      id
+      isAdmin
+      contact { id name phone }
+      waGroup { id label }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": { "waGroupId": 1 },
+    "opts": { "limit": 25, "offset": 0, "order": "ASC" }
+  }
+}

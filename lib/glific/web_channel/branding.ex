@@ -1,0 +1,107 @@
+defmodule Glific.WebChannel.Branding do
+  @moduledoc """
+  Per-organisation branding for the web channel — its theme, logo and display name.
+
+  "Theme" here means the colour palette only; branding is that plus the logo and the name.
+
+  One deployment serves every organisation and the widget is a single build, so branding is
+  read at runtime from the organisation's `web` credential rather than baked in. An
+  organisation that has not filled the credential in yet still gets a usable theme built from
+  its own name.
+
+  An organisation picks a named theme rather than a colour of its own. The widget holds the
+  matching palette, so the only thing that crosses this boundary is the name — which means an
+  organisation cannot produce an unreadable widget, and contrast is settled once here rather
+  than per organisation.
+  """
+
+  alias Glific.Partners.Organization
+
+  @provider_code "web_channel"
+
+  # Kept in step with THEMES in glific-web-channel's src/services/themes.ts, which holds the
+  # palette each of these names resolves to. A name the widget does not recognise falls back
+  # there too, so the two lists drifting degrades rather than breaks.
+  #
+  # `swatch` is display only — it is the sRGB rendering of that theme's `--primary`, so the
+  # Settings dropdown can show the colour beside the name. The widget still owns the real
+  # values; `shade` names the Tailwind colour both sides were taken from.
+  @themes [
+    %{id: "violet", label: "Violet", shade: "violet-600", swatch: "#7f22fe"},
+    %{id: "blue", label: "Blue", shade: "blue-600", swatch: "#155dfc"},
+    %{id: "green", label: "Green", shade: "green-700", swatch: "#008236"},
+    %{id: "teal", label: "Teal", shade: "teal-700", swatch: "#00786f"},
+    %{id: "rose", label: "Rose", shade: "rose-600", swatch: "#ec003f"},
+    %{id: "orange", label: "Orange", shade: "orange-500", swatch: "#ff6900"},
+    %{id: "amber", label: "Amber", shade: "amber-400", swatch: "#ffb900"},
+    %{id: "zinc", label: "Zinc", shade: "zinc-900", swatch: "#18181b"}
+  ]
+
+  @default_theme "zinc"
+
+  @type t() :: %{
+          theme: String.t(),
+          logo_url: String.t() | nil,
+          display_name: String.t()
+        }
+
+  @doc """
+  The themes an organisation may choose between, as the Settings dropdown renders them.
+  """
+  @spec themes() :: [%{id: String.t(), label: String.t(), shade: String.t(), swatch: String.t()}]
+  def themes, do: @themes
+
+  @doc """
+  The theme an organisation gets before it has chosen one.
+  """
+  @spec default_theme() :: String.t()
+  def default_theme, do: @default_theme
+
+  @doc """
+  The branding an organisation's web channel should render with.
+  """
+  @spec for_organization(Organization.t()) :: t()
+  def for_organization(organization) do
+    keys = branding_keys(organization)
+
+    %{
+      theme: theme(keys["theme"]),
+      logo_url: logo_url(keys["logo_url"]),
+      display_name: display_name(keys["display_name"], organization)
+    }
+  end
+
+  @spec branding_keys(Organization.t()) :: map()
+  defp branding_keys(organization) do
+    case organization.services[@provider_code] do
+      %{keys: keys} when is_map(keys) -> keys
+      _no_credential -> %{}
+    end
+  end
+
+  @spec theme(term()) :: String.t()
+  defp theme(name) when is_binary(name) do
+    name = name |> String.trim() |> String.downcase()
+    if Enum.any?(@themes, &(&1.id == name)), do: name, else: @default_theme
+  end
+
+  defp theme(_name), do: @default_theme
+
+  @spec logo_url(term()) :: String.t() | nil
+  defp logo_url(url) when is_binary(url) do
+    url = String.trim(url)
+    if String.starts_with?(url, "https://"), do: url
+  end
+
+  defp logo_url(_url), do: nil
+
+  @spec display_name(term(), Organization.t()) :: String.t()
+  defp display_name(name, organization) when is_binary(name) do
+    case String.trim(name) do
+      "" -> organization.name
+      name -> name
+    end
+  end
+
+  defp display_name(_name, organization), do: organization.name
+end

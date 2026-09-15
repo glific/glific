@@ -30,6 +30,7 @@ includes:
   - contact_group
   - message_group
   - user_group
+  - wa_groups
   - flows
   - import
   - saas

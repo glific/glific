@@ -4,9 +4,12 @@ query Assistants($filter: AssistantFilter, $opts: Opts) {
     name
     assistant_id
     temperature
+    effort
+    settings
     status
     new_version_in_progress
-    live_version_number
+    live_version_label
+    last_evaluation_summary
     vector_store {
       id
       knowledge_base_version_id

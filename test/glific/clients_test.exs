@@ -5,7 +5,6 @@ defmodule Glific.ClientsTest do
     Clients,
     Clients.Atecf,
     Clients.Bandhu,
-    Clients.CommonWebhook,
     Clients.KEF,
     Clients.ReapBenefit,
     Clients.Sarc,
@@ -125,9 +124,6 @@ defmodule Glific.ClientsTest do
                "organization_id" => attrs.organization_id
              })
            )
-
-    assert %{error: "Missing webhook function implementation"} ==
-             CommonWebhook.webhook("function", %{fields: "some fields"})
   end
 
   test "fetch_user_profiles webhook function" do
@@ -185,47 +181,6 @@ defmodule Glific.ClientsTest do
     }
 
     assert %{profile: _} = Bandhu.webhook("set_contact_profile", fields)
-  end
-
-  test "Common webhook function is executed first to ensure that all common functions are accesible for all clients" do
-    Tesla.Mock.mock(fn
-      %{method: :get} ->
-        %Tesla.Env{
-          headers: [
-            {"content-type", "image/png"},
-            {"content-length", "3209581"}
-          ],
-          method: :get,
-          status: 200
-        }
-
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            "choices" => [
-              %{
-                "message" => %{
-                  "content" =>
-                    "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\"",
-                  "role" => "assistant"
-                }
-              }
-            ],
-            "created" => 1_717_089_925,
-            "model" => "gpt-4o-2024-05-13"
-          }
-        }
-    end)
-
-    %{response: response} =
-      Clients.webhook("parse_via_gpt_vision", %{
-        "prompt" => "what's in the image",
-        "url" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
-      })
-
-    assert response ==
-             "This image depicts a scenic view of a sunset or sunrise with a field of flowers silhouetted against the light. The bright sun is low on the horizon, casting a warm glow and causing dramatic lighting and shadows among the silhouetted flowers and stems. The sky has a mix of colors, typical of such time of day, with clouds illuminated by the sun. The text overlaying the image reads \"JPEG This is Sample Image.\""
   end
 
   test "gcs_file_name/1 for ungrouped users, no schoolName in contact.fields" do

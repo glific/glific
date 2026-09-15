@@ -1,0 +1,35 @@
+meta {
+  name: Update groups in a collection
+  type: graphql
+  seq: 18
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateCollectionWaGroup($input: UpdateCollectionWaGroupInput!) {
+    updateCollectionWaGroup(input: $input) {
+      waGroupsDeleted
+      collectionWaGroups { id }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "groupId": 1,
+      "addWaGroupIds": [2],
+      "deleteWaGroupIds": []
+    }
+  }
+}

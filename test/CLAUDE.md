@@ -98,6 +98,12 @@ end
 - BSP (Gupshup/Maytapi), BigQuery, GCS, Dialogflow, Gemini, OpenAI calls **must** be mocked.
   A test that makes a real outbound call is a bug.
 
+## Variable naming
+
+Use descriptive, full names — never abbreviations — for test-local variables.
+Bad: `new_cv`, `org_id`, `kbv`. Good: `new_config_version`, `organization_id`, `knowledge_base_version`.
+This applies to all schema-level concepts: prefer `config_version` over `cv`, `knowledge_base` over `kb`, etc.
+
 ## Running & coverage
 
 ```bash

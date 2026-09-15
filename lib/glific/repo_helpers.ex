@@ -77,7 +77,7 @@ defmodule Glific.RepoHelpers do
       rescue
         Postgrex.Error ->
           error =
-            "list_filter threw an exception, args: #{inspect(args)}, object: #{inspect(object)}"
+            "list_filter threw an exception, args: #{Glific.SafeLog.safe_inspect(args)}, object: #{Glific.SafeLog.safe_inspect(object)}"
 
           Logger.error(error)
           Appsignal.send_error(:error, error, __STACKTRACE__)

@@ -7,7 +7,7 @@ defmodule Glific.Partners.Billing do
   use Ecto.Schema
   use Publicist
   import Ecto.Changeset
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
 
   alias __MODULE__
@@ -401,7 +401,7 @@ defmodule Glific.Partners.Billing do
         |> subscription(organization)
 
       {:error, error} ->
-        Logger.info("Error while updating the card. #{inspect(error)}")
+        Logger.info("Error while updating the card. #{Glific.SafeLog.safe_inspect(error)}")
         {:error, error.message}
     end
   end
@@ -422,7 +422,7 @@ defmodule Glific.Partners.Billing do
         update_subscription_details(subscription, organization.id, billing)
 
       {:error, stripe_error} ->
-        {:error, inspect(stripe_error)}
+        {:error, Glific.SafeLog.safe_inspect(stripe_error)}
     end
   end
 
@@ -596,11 +596,13 @@ defmodule Glific.Partners.Billing do
 
           true ->
             {:error,
-             dgettext("errors", "Not handling %{return} value", return: inspect(subscription))}
+             dgettext("errors", "Not handling %{return} value",
+               return: Glific.SafeLog.safe_inspect(subscription)
+             )}
         end
 
       {:error, stripe_error} ->
-        {:error, inspect(stripe_error)}
+        {:error, Glific.SafeLog.safe_inspect(stripe_error)}
     end
   end
 

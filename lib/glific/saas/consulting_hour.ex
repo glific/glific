@@ -5,8 +5,7 @@ defmodule Glific.Saas.ConsultingHour do
 
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias __MODULE__
 
   alias Glific.{
@@ -159,7 +158,7 @@ defmodule Glific.Saas.ConsultingHour do
     |> parse_delimiter(:content)
     |> Map.values()
     |> Enum.reduce("", fn key, acc ->
-      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
+      acc <> if is_binary(key), do: "#{key},", else: "#{Glific.SafeLog.safe_inspect(key)},"
     end)
   end
 

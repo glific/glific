@@ -8,10 +8,14 @@ defmodule Glific.TrackersTest do
     Trackers.Tracker
   }
 
-  setup do
+  setup %{organization_id: organization_id} do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
     SeedsDev.seed_users(organization)
+    # WorkerTracker GenServers can write tracker rows outside the sandbox transaction
+    # (they fire after the test's rollback window). Reset before each test so those
+    # committed rows don't cause unique-constraint violations.
+    Trackers.reset_tracker(organization_id)
     :ok
   end
 

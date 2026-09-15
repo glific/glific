@@ -3,7 +3,7 @@ defmodule Glific.Tickets do
   The Tickets context.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,
@@ -280,7 +280,7 @@ defmodule Glific.Tickets do
     @default_headers
     |> Enum.reduce("", fn key, acc ->
       value = Map.get(ticket, key)
-      acc <> if is_binary(value), do: "#{value},", else: "#{inspect(value)},"
+      acc <> if is_binary(value), do: "#{value},", else: "#{Glific.SafeLog.safe_inspect(value)},"
     end)
   end
 

@@ -4,12 +4,14 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
+  alias Glific.Assistants.Assistant
   alias Glific.Contacts.Contact
   alias Glific.Notifications
   alias Glific.Notifications.Notification
   alias Glific.Partners
   alias Glific.Partners.Organization
   alias Glific.Repo
+  alias Glific.SafeLog
   require Logger
 
   use Oban.Worker,
@@ -28,6 +30,9 @@ defmodule Glific.Erase do
 
   @batch_sleep 10_000
   @no_of_months 2
+
+  @version_batch_sleep 5_000
+  @min_version_retention_days 7
 
   @doc """
   Do the weekly DB cleaner tasks, typically in the middle of the night on sunday morning
@@ -70,6 +75,56 @@ defmodule Glific.Erase do
   end
 
   @doc """
+  Creates an Oban job that purges `versions` (ex_audit history) rows older than the
+  retention window.
+
+  Options, each defaulting to the `Glific.Erase` application config:
+
+  - `:retention_days` - keep versions recorded within this many days
+  - `:batch_size` - rows deleted per statement
+  - `:max_rows_to_delete` - upper bound on rows deleted in a single run
+  - `:sleep_after_delete?` - pause between batches to ease DB load (default `true`)
+
+  The job is unique across the `available`, `scheduled`, `executing` and `retryable`
+  states, so a fresh run is never enqueued while a previous one is still in flight.
+  """
+  @spec perform_version_purge(keyword()) ::
+          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset() | String.t()}
+  def perform_version_purge(opts \\ []) do
+    purge_config = Application.get_env(:glific, __MODULE__)
+
+    retention_days =
+      Keyword.get(opts, :retention_days) ||
+        Keyword.get(purge_config, :version_retention_days) |> Glific.parse_maybe_integer!()
+
+    batch_size =
+      Keyword.get(opts, :batch_size) ||
+        Keyword.get(purge_config, :version_delete_batch_size) |> Glific.parse_maybe_integer!()
+
+    max_rows_to_delete =
+      Keyword.get(opts, :max_rows_to_delete) ||
+        Keyword.get(purge_config, :max_version_rows_to_delete) |> Glific.parse_maybe_integer!()
+
+    with :ok <- validate_version_retention(retention_days) do
+      __MODULE__.new(
+        %{
+          purge: "versions",
+          retention_days: retention_days,
+          batch_size: batch_size,
+          max_rows_to_delete: max_rows_to_delete,
+          sleep_after_delete?: Keyword.get(opts, :sleep_after_delete?, true)
+        },
+        unique: [
+          period: :infinity,
+          keys: [:purge],
+          states: [:available, :scheduled, :executing, :retryable]
+        ]
+      )
+      |> Oban.insert()
+    end
+  end
+
+  @doc """
   Creates an Oban job for deleting an organization.
   This prevents UI timeouts when deleting organizations with large amounts of data.
   """
@@ -101,8 +156,26 @@ defmodule Glific.Erase do
     clean_whatsapp_form_revisions()
   end
 
+  # Must stay ahead of the message purge clause: both carry batch_size,
+  # max_rows_to_delete and sleep_after_delete? args.
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, any()}
+  @spec perform(Oban.Job.t()) :: :ok | {:ok, non_neg_integer()} | {:error, any()}
+  def perform(%Oban.Job{
+        args: %{
+          "purge" => "versions",
+          "retention_days" => retention_days,
+          "batch_size" => batch_size,
+          "max_rows_to_delete" => max_rows_to_delete,
+          "sleep_after_delete?" => sleep_after_delete?
+        }
+      }) do
+    with :ok <- validate_version_retention(retention_days) do
+      cutoff = DateTime.add(DateTime.utc_now(), -retention_days, :day)
+      delete_old_versions(cutoff, batch_size, max_rows_to_delete, sleep_after_delete?)
+    end
+  end
+
+  @impl Oban.Worker
   def perform(%Oban.Job{
         args: %{
           "batch_size" => batch_size,
@@ -141,10 +214,10 @@ defmodule Glific.Erase do
 
       {:error, reason} ->
         Logger.error(
-          "Failed to delete organization ID: #{organization_id}, reason: #{inspect(reason)}"
+          "Failed to delete organization ID: #{organization_id}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
-        send_failure_notification(organization_id, inspect(reason))
+        send_failure_notification(organization_id, Glific.SafeLog.safe_inspect(reason))
         {:error, reason}
     end
   end
@@ -168,7 +241,8 @@ defmodule Glific.Erase do
       "VACUUM (FULL, ANALYZE) contacts",
       "VACUUM (FULL, ANALYZE) contact_histories",
       "VACUUM (ANALYZE) messages",
-      "VACUUM (ANALYZE) messages_media"
+      "VACUUM (ANALYZE) messages_media",
+      "VACUUM (ANALYZE) versions"
     ]
     |> Enum.each(
       # need such a large timeout specifically to vacuum the messages
@@ -409,7 +483,7 @@ defmodule Glific.Erase do
         |> Repo.query!([], timeout: 400_000, skip_organization_id: true)
       rescue
         err ->
-          Logger.error("Messages purge timed out due to #{inspect(err)}")
+          Logger.error("Messages purge timed out due to #{Glific.SafeLog.safe_inspect(err)}")
           %{num_rows: 0}
       end
 
@@ -435,6 +509,84 @@ defmodule Glific.Erase do
         sleep_after_delete?,
         total_rows_deleted
       )
+    end
+  end
+
+  @spec validate_version_retention(any()) :: :ok | {:error, String.t()}
+  defp validate_version_retention(retention_days)
+       when is_integer(retention_days) and retention_days >= @min_version_retention_days,
+       do: :ok
+
+  defp validate_version_retention(retention_days) do
+    message =
+      "Refusing to purge versions: retention of #{SafeLog.safe_inspect(retention_days)} days is below the #{@min_version_retention_days} day minimum"
+
+    Glific.log_exception(%Error{message: message, reason: :invalid_version_retention})
+    {:error, message}
+  end
+
+  @spec delete_old_versions(
+          DateTime.t(),
+          pos_integer(),
+          pos_integer(),
+          boolean(),
+          non_neg_integer()
+        ) ::
+          {:ok, non_neg_integer()} | {:error, any()}
+  defp delete_old_versions(
+         cutoff,
+         batch_size,
+         max_rows_to_delete,
+         sleep_after_delete?,
+         total_rows_deleted \\ 0
+       ) do
+    start_time = System.monotonic_time(:millisecond)
+
+    query = """
+    WITH rows_to_delete AS (
+      SELECT id FROM versions WHERE recorded_at < $1 LIMIT $2
+    )
+    DELETE FROM versions WHERE id IN (SELECT id FROM rows_to_delete)
+    """
+
+    try do
+      %{num_rows: rows_deleted} =
+        Repo.query!(query, [cutoff, batch_size], timeout: 400_000, skip_organization_id: true)
+
+      duration_ms = System.monotonic_time(:millisecond) - start_time
+      total_rows_deleted = total_rows_deleted + rows_deleted
+
+      Appsignal.add_distribution_value("versions_purge_batch_duration_ms", duration_ms, %{
+        rows_deleted: rows_deleted
+      })
+
+      Logger.info("Versions deleted: #{rows_deleted} in #{duration_ms}ms")
+
+      if rows_deleted < batch_size or total_rows_deleted >= max_rows_to_delete do
+        Appsignal.increment_counter("versions_purged_count", total_rows_deleted)
+        Logger.info("Versions purge complete, total rows deleted: #{total_rows_deleted}")
+
+        {:ok, total_rows_deleted}
+      else
+        if sleep_after_delete?, do: Process.sleep(@version_batch_sleep)
+
+        delete_old_versions(
+          cutoff,
+          batch_size,
+          max_rows_to_delete,
+          sleep_after_delete?,
+          total_rows_deleted
+        )
+      end
+    rescue
+      err ->
+        Glific.log_exception(%Error{
+          message:
+            "Versions purge failed after deleting #{total_rows_deleted} rows, reason: #{SafeLog.safe_inspect(err)}",
+          reason: err
+        })
+
+        {:error, err}
     end
   end
 
@@ -489,6 +641,9 @@ defmodule Glific.Erase do
         "DELETE FROM knowledge_base_versions WHERE organization_id = #{organization_id}",
         "DELETE FROM knowledge_bases WHERE organization_id = #{organization_id}",
         "DELETE FROM assistants WHERE organization_id = #{organization_id}",
+        "DELETE FROM glific_ai_events WHERE organization_id = #{organization_id}",
+        "DELETE FROM glific_ai_messages WHERE organization_id = #{organization_id}",
+        "DELETE FROM glific_ai_conversations WHERE organization_id = #{organization_id}",
 
         # Keep NGO Main Account, SaaS Admin, and Simulator contacts
         "DELETE FROM contacts
@@ -516,7 +671,8 @@ defmodule Glific.Erase do
     rescue
       error ->
         Glific.log_exception(%Error{
-          message: "Trial cleanup failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+          message:
+            "Trial cleanup failed for org_id=#{organization_id}, reason=#{Glific.SafeLog.safe_inspect(error)}"
         })
 
         {:error, error}
@@ -524,31 +680,255 @@ defmodule Glific.Erase do
   end
 
   @doc """
-  Deletes ALL data associated with an organization by calling the database function
-  `delete_organization_data`. This function dynamically discovers all tables with
-  an `organization_id` column and deletes matching rows, ensuring any new tables
-  added in the future are automatically covered.
+  Deletes ALL data associated with an organization.
+
+  Every org-scoped table is deleted explicitly, one at a time, in topological
+  foreign-key order (child tables before parents — see `org_data_deletion_order/0`),
+  so no FK constraint is violated and no superuser-only trigger toggling is needed.
+
+  The deletes are intentionally NOT wrapped in a single transaction: deleting a large
+  org would otherwise hold locks on many tables for a long time. Each per-table DELETE
+  is idempotent and ordered, so a failed run can simply be retried and will delete
+  whatever rows remain. A few tables are deliberately preserved — see
+  `org_data_preserved_tables/0`.
+
+  The organization row itself is preserved (soft-deleted via `delete_organization/1`);
+  this only erases its data. Refuses to run if the org has not been soft-deleted.
   """
-  @spec delete_all_organization_data(non_neg_integer) :: :ok | {:error, any()}
+  @spec delete_all_organization_data(non_neg_integer | String.t()) :: :ok | {:error, any()}
   def delete_all_organization_data(organization_id) do
+    # Callers (e.g. the GraphQL resolver -> Oban job) may pass the id as a string.
+    # The ordered DELETEs bind it as a `bigint` query parameter, so coerce to an
+    # integer up front — Postgrex won't encode a string against a bigint column.
+    organization_id = Glific.parse_maybe_integer!(organization_id)
     Logger.info("Deleting all data for organization_id: #{organization_id}")
 
-    try do
-      Repo.query!("SELECT delete_organization_data(#{organization_id})", [],
-        timeout: 900_000,
-        skip_organization_id: true
-      )
-
+    with :ok <- ensure_soft_deleted(organization_id) do
+      delete_org_data_in_order(organization_id)
       Logger.info("Completed full data deletion for organization_id: #{organization_id}")
       :ok
-    rescue
-      error ->
-        Logger.error(
-          "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+    end
+  rescue
+    error ->
+      Glific.log_exception(%Error{
+        message:
+          "Full data deletion failed for org_id=#{organization_id}, reason=#{SafeLog.safe_inspect(error)}",
+        reason: error
+      })
+
+      {:error, error}
+  end
+
+  @doc """
+  Topological deletion order for every table carrying an `organization_id`.
+
+  Each table is deleted before any table whose deletion it would otherwise block.
+  Most CASCADE / SET NULL foreign keys self-resolve regardless of order; only these
+  impose an ordering (child deleted before parent):
+
+    * NO ACTION / RESTRICT foreign keys — deleting the parent fails while a child
+      references it:
+        * `contacts_tags`, `messages_tags`, `templates_tags`, `flows`,
+          `interactive_templates`, `session_templates` -> before `tags`
+        * `ai_evaluations` -> before `golden_qas`
+        * `whatsapp_forms` -> before `whatsapp_form_revisions`
+    * SET NULL foreign keys on a NOT NULL column — the implicit `SET NULL` violates
+      the NOT NULL constraint, so the parent can never be cascaded away first:
+        * `whatsapp_form_revisions` -> before `users`
+
+  These constraints also propagate through CASCADE chains: deleting `contacts`
+  cascade-deletes `users` (via `users.contact_id`), so `whatsapp_form_revisions`
+  must also be deleted before `contacts`. That is why the `whatsapp_forms` cluster
+  sits just ahead of `contacts`/`users` near the end of the list.
+
+  The two FK cycles (`organizations` <-> contacts/flows and
+  `assistants` <-> `assistant_config_versions`) are broken by `break_fk_cycles/1`.
+
+  This list is maintained by hand: when a new table with an `organization_id`
+  column is added, append it here — or to `org_data_preserved_tables/0` if its rows
+  should survive org deletion — to avoid drift against the live schema.
+  """
+  @spec org_data_deletion_order() :: [String.t()]
+  def org_data_deletion_order do
+    ~w(
+      ai_evaluations
+      ask_glific_conversations
+      assistant_config_version_knowledge_base_versions
+      assistant_config_versions
+      assistants
+      bigquery_jobs
+      certificate_templates
+      consulting_hours
+      contact_histories
+      contacts_fields
+      contacts_groups
+      contacts_tags
+      contacts_wa_groups
+      credentials
+      extensions
+      flow_contexts
+      flow_counts
+      flow_labels
+      flow_results
+      flow_revisions
+      flow_roles
+      flows
+      gcs_jobs
+      glific_ai_events
+      glific_ai_messages
+      glific_ai_conversations
+      golden_qas
+      group_roles
+      groups
+      intents
+      interactive_templates
+      issued_certificates
+      knowledge_base_versions
+      knowledge_bases
+      locations
+      mail_logs
+      message_broadcast_contacts
+      message_broadcasts
+      messages
+      messages_conversations
+      messages_media
+      messages_tags
+      notifications
+      organization_data
+      organization_eval_requests
+      profiles
+      prompt_generation_requests
+      role_permissions
+      roles
+      saas
+      saved_searches
+      session_templates
+      sheets
+      sheets_data
+      tags
+      templates_tags
+      tickets
+      translate_logs
+      trigger_logs
+      trigger_roles
+      triggers
+      user_jobs
+      user_roles
+      users_groups
+      users_tokens
+      versions
+      wa_groups
+      wa_groups_collections
+      wa_groups_phones
+      wa_managed_phones
+      wa_messages
+      wa_polls
+      wa_reactions
+      webhook_logs
+      whatsapp_forms
+      whatsapp_form_revisions
+      contacts
+      users
+      whatsapp_forms_responses
+    )
+  end
+
+  @doc """
+  Org-scoped tables whose rows are deliberately KEPT when an organization is deleted.
+
+  These are preserved on purpose, not by omission:
+
+    * `stats`, `trackers` — analytics we retain past the org's lifetime.
+    * `invoices`, `billings` — financial records kept for billing/audit history.
+
+  All of them reference only `organizations` (which is itself preserved, soft-deleted),
+  so keeping them is FK-safe. Together with `org_data_deletion_order/0` this must cover
+  exactly every org-scoped table (the drift test in erase_test.exs enforces that).
+  """
+  @spec org_data_preserved_tables() :: [String.t()]
+  def org_data_preserved_tables do
+    ~w(
+      billings
+      invoices
+      stats
+      trackers
+    )
+  end
+
+  @spec delete_org_data_in_order(non_neg_integer) :: :ok
+  defp delete_org_data_in_order(organization_id) do
+    break_fk_cycles(organization_id)
+
+    Enum.each(org_data_deletion_order(), fn table ->
+      start_time = System.monotonic_time(:millisecond)
+
+      %{num_rows: rows_deleted} =
+        Repo.query!("DELETE FROM #{table} WHERE organization_id = $1", [organization_id],
+          timeout: 300_000,
+          skip_organization_id: true
         )
 
-        {:error, error}
+      duration_ms = System.monotonic_time(:millisecond) - start_time
+
+      Appsignal.add_distribution_value("org_data_delete_table_duration_ms", duration_ms, %{
+        org_id: organization_id,
+        table: table
+      })
+
+      if rows_deleted > 0 do
+        Logger.info(
+          "Deleted #{rows_deleted} rows from #{table} for org #{organization_id} in #{duration_ms}ms"
+        )
+      end
+    end)
+
+    :ok
+  end
+
+  # Guard: refuse to erase data for an org that has not been soft-deleted yet.
+  @spec ensure_soft_deleted(non_neg_integer) :: :ok | {:error, String.t()}
+  defp ensure_soft_deleted(organization_id) do
+    case Repo.fetch(Organization, organization_id,
+           skip_organization_id: true,
+           include_deleted: true
+         ) do
+      {:ok, %Organization{deleted_at: nil}} ->
+        {:error,
+         "Organization #{organization_id} has not been soft-deleted. Call delete_organization first."}
+
+      {:ok, %Organization{}} ->
+        :ok
+
+      {:error, _reason} ->
+        {:error, "Organization #{organization_id} not found"}
     end
+  end
+
+  # Break the FK cycles before the ordered deletes:
+  #   * The organizations row is kept, so clear its references into to-be-deleted
+  #     tables (contact_id, newcontact_flow_id, optin_flow_id).
+  #   * assistants.active_config_version_id is a NO ACTION FK to assistant_config_versions,
+  #     which is deleted *before* assistants, so the pointer must be nulled first.
+  #
+  # whatsapp_forms.revision_id (RESTRICT -> whatsapp_form_revisions) does NOT need
+  # nulling: whatsapp_forms is deleted *before* whatsapp_form_revisions, and deleting
+  # the referencing form is always allowed under RESTRICT. The revisions then go via
+  # the NOT NULL CASCADE on whatsapp_form_revisions.whatsapp_form_id.
+  @spec break_fk_cycles(non_neg_integer) :: :ok
+  defp break_fk_cycles(organization_id) do
+    Organization
+    |> where([organization], organization.id == ^organization_id)
+    |> Repo.update_all(
+      [set: [contact_id: nil, newcontact_flow_id: nil, optin_flow_id: nil]],
+      skip_organization_id: true,
+      include_deleted: true
+    )
+
+    Assistant
+    |> where([assistant], assistant.organization_id == ^organization_id)
+    |> Repo.update_all([set: [active_config_version_id: nil]], skip_organization_id: true)
+
+    :ok
   end
 
   @spec send_success_notification(Organization.t()) ::
@@ -573,7 +953,7 @@ defmodule Glific.Erase do
     Notifications.create_notification(%{
       category: "Organization",
       message: message,
-      severity: severity,
+      severity: Notifications.types()[severity],
       organization_id: Glific.glific_organization_id(),
       entity: entity
     })

@@ -4,12 +4,17 @@ defmodule Glific.WhatsappFormResponsesTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Fixtures,
+    Flows.FlowContext,
+    GCS.GcsWorker,
     Messages,
     Partners,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Seeds.SeedsDev,
     Templates,
     WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse,
     WhatsappForms.WhatsappFormWorker,
     WhatsappFormsResponses
   }
@@ -45,6 +50,7 @@ defmodule Glific.WhatsappFormResponsesTest do
 
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_flows(organization)
     SeedsDev.seed_whatsapp_forms(organization)
 
     {:ok, temp} =
@@ -283,7 +289,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
-  test "write_to_google_sheet/2 returns error when Google API is not active",
+  test "write_to_google_sheet/2 errors when Google API is not active, worker does not retry",
        %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} when is_binary(url) ->
@@ -340,26 +346,588 @@ defmodule Glific.WhatsappFormResponsesTest do
       whatsapp_form =
         Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
+      payload = %{
+        "contact_number" => "919425010449",
+        "organization_id" => organization_id,
+        "raw_response" => %{
+          "flow_token" => "unused",
+          "screen_0_Choose_one_0" => "0_Yes"
+        },
+        "submitted_at" => "2025-12-20T09:46:24.000000Z",
+        "whatsapp_form_id" => whatsapp_form.id,
+        "whatsapp_form_name" => whatsapp_form.name
+      }
+
+      assert {:error, _reason} =
+               WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
+
       args = %Oban.Job{
         args: %{
           "organization_id" => organization_id,
-          "payload" => %{
-            "contact_number" => "919425010449",
-            "organization_id" => organization_id,
-            "raw_response" => %{
-              "flow_token" => "unused",
-              "screen_0_Choose_one_0" => "0_Yes"
-            },
-            "submitted_at" => "2025-12-20T09:46:24.000000Z",
-            "whatsapp_form_id" => whatsapp_form.id,
-            "whatsapp_form_name" => whatsapp_form.name
-          },
+          "payload" => payload,
           "whatsapp_form_id" => whatsapp_form.id
         }
       }
 
-      result = WhatsappFormWorker.perform(args)
-      assert {:error, _reason} = result
+      assert :ok = WhatsappFormWorker.perform(args)
+    end
+  end
+
+  @photo %{
+    "id" => 27_286_093_617_715_235,
+    "file_name" => "photo.jpg",
+    "mime_type" => "image/jpeg",
+    "sha256" => "GB5ASgGkjWWKqVRBtQ5flyIJRusvCdseiwZylfEd9gU="
+  }
+
+  describe "save_response_media/2" do
+    test "downloads media to GCS and adds gcs_url, leaving other fields untouched",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [@photo], "students_attended" => "115"}
+
+        enriched = WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+
+        assert [%{"gcs_url" => "https://gcs.test/photo.jpg"} = saved_photo] = enriched["photos"]
+        # original metadata is preserved alongside the new gcs_url
+        assert saved_photo["id"] == @photo["id"]
+        assert saved_photo["file_name"] == @photo["file_name"]
+        # non-media fields are untouched
+        assert enriched["students_attended"] == "115"
+      end
+    end
+
+    test "does not classify a list as media when items lack file_name",
+         %{organization_id: organization_id} do
+      # media_list?/1 requires id + mime_type + file_name; without file_name the
+      # list is not treated as media, so it is left untouched (no download attempt).
+      raw_response = %{"photos" => [%{"id" => 999, "mime_type" => "image/jpeg"}]}
+
+      assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+               raw_response
+    end
+
+    test "treats a mixed list (media map + non-map) as non-media without crashing",
+         %{organization_id: organization_id} do
+      # only the head is a media map; media_list?/1 must validate every item so a
+      # later non-map entry doesn't crash Map.has_key?/2 downstream.
+      raw_response = %{
+        "photos" => [
+          %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"},
+          "x"
+        ]
+      }
+
+      assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+               raw_response
+    end
+
+    test "marks the media as download_failed (no gcs_url) when the download fails",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:error, "429 Too Many Requests"} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [@photo]}
+
+        enriched = WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+
+        assert [saved_photo] = enriched["photos"]
+        refute Map.has_key?(saved_photo, "gcs_url")
+        assert saved_photo["download_failed"] == true
+      end
+    end
+
+    test "never re-downloads media that already failed once (no retry)",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [Map.put(@photo, "download_failed", true)]}
+
+        assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+                 raw_response
+
+        refute called(PartnerAPI.download_flow_media(:_, :_))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
+      end
+    end
+
+    test "leaves non-media list values and scalar values unchanged",
+         %{organization_id: organization_id} do
+      raw_response = %{"options" => ["option1", "option2"], "name" => "abc"}
+
+      # no PartnerAPI/GcsWorker calls happen for non-media fields
+      assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+               raw_response
+    end
+
+    test "returns the raw_response untouched when it is not a map",
+         %{organization_id: organization_id} do
+      assert WhatsappFormsResponses.save_response_media("not-a-map", organization_id) ==
+               "not-a-map"
+    end
+
+    test "skips re-download/re-upload for media that already has a gcs_url (retry-safe)",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/NEW.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        already_saved = %{
+          "photos" => [
+            %{
+              "id" => 1,
+              "file_name" => "existing.jpg",
+              "mime_type" => "image/jpeg",
+              "gcs_url" => "https://gcs.test/existing.jpg"
+            }
+          ]
+        }
+
+        result = WhatsappFormsResponses.save_response_media(already_saved, organization_id)
+
+        # gcs_url is preserved (not overwritten with the "NEW" url) ...
+        assert [%{"gcs_url" => "https://gcs.test/existing.jpg"}] = result["photos"]
+        # ... because the download/upload were never invoked
+        refute called(PartnerAPI.download_flow_media(:_, :_))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
+      end
+    end
+
+    test "marks the entry download_failed when its task dies, keeping the other uploads",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [
+           download_flow_media: fn _org, media_id ->
+             if media_id == 1, do: exit(:normal), else: {:ok, <<255, 216, 255>>}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/b.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{
+          "photos" => [
+            %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"},
+            %{"id" => 2, "file_name" => "b.jpg", "mime_type" => "image/jpeg"}
+          ]
+        }
+
+        enriched = WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+
+        assert [dead_photo, saved_photo] = enriched["photos"]
+
+        assert dead_photo["id"] == 1
+        assert dead_photo["download_failed"] == true
+        refute Map.has_key?(dead_photo, "gcs_url")
+
+        assert saved_photo["id"] == 2
+        assert saved_photo["gcs_url"] == "https://gcs.test/b.jpg"
+      end
+    end
+
+    test "downloads the media of one field concurrently, in order and within the cap",
+         %{organization_id: organization_id} do
+      {:ok, tracker} = Agent.start_link(fn -> %{in_flight: 0, peak: 0} end)
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [
+           download_flow_media: fn _org, _media_id ->
+             Agent.update(tracker, fn %{in_flight: in_flight, peak: peak} ->
+               running = in_flight + 1
+               %{in_flight: running, peak: max(peak, running)}
+             end)
+
+             Process.sleep(50)
+             Agent.update(tracker, fn state -> %{state | in_flight: state.in_flight - 1} end)
+
+             {:ok, <<255, 216, 255>>}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, remote, _org ->
+             {:ok, %{url: "https://gcs.test/#{Path.basename(remote)}", type: :image}}
+           end
+         ]}
+      ]) do
+        photos =
+          for id <- 1..10 do
+            %{"id" => id, "file_name" => "#{id}.jpg", "mime_type" => "image/jpeg"}
+          end
+
+        enriched =
+          WhatsappFormsResponses.save_response_media(%{"photos" => photos}, organization_id)
+
+        assert Enum.map(enriched["photos"], & &1["id"]) == Enum.to_list(1..10)
+
+        assert Enum.map(enriched["photos"], & &1["gcs_url"]) ==
+                 Enum.map(1..10, &"https://gcs.test/#{&1}-#{&1}.jpg")
+
+        peak = Agent.get(tracker, & &1.peak)
+        assert peak > 1, "expected the downloads to overlap, they ran one by one"
+        assert peak <= 3, "expected at most 3 downloads in flight, saw #{peak}"
+      end
+    end
+  end
+
+  describe "inject_media_into_flow_results/1" do
+    @uploaded_photo %{
+      "id" => 1,
+      "file_name" => "x.jpg",
+      "mime_type" => "image/jpeg",
+      "gcs_url" => "https://gcs.test/x.jpg"
+    }
+
+    test "injects the gcs_url into the contact's active flow result variable" do
+      flow_context =
+        Fixtures.flow_context_fixture(%{
+          results: %{
+            "orientation" => %{"students_attended" => "115", "photos" => "{\"id\":1}"}
+          }
+        })
+
+      # contact_id is threaded in by the worker; the helper does not re-fetch the row
+      payload = %{
+        "contact_id" => flow_context.contact_id,
+        "raw_response" => %{"photos" => [@uploaded_photo]}
+      }
+
+      assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
+
+      updated_context = Repo.get(FlowContext, flow_context.id)
+      # the photos variable is upgraded to the gcs_url
+      assert updated_context.results["orientation"]["photos"] == "https://gcs.test/x.jpg"
+      # other result fields are untouched
+      assert updated_context.results["orientation"]["students_attended"] == "115"
+    end
+
+    test "is a no-op (returns :ok) when the contact has no active flow context" do
+      contact = Fixtures.contact_fixture()
+
+      payload = %{
+        "contact_id" => contact.id,
+        "raw_response" => %{"photos" => [@uploaded_photo]}
+      }
+
+      assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
+    end
+
+    test "is a no-op when the response has no media field" do
+      payload = %{
+        "contact_id" => 0,
+        "raw_response" => %{"students_attended" => "115"}
+      }
+
+      assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
+    end
+
+    test "does not touch result entries that have no media field" do
+      flow_context =
+        Fixtures.flow_context_fixture(%{
+          results: %{"other" => %{"some_field" => "value"}}
+        })
+
+      payload = %{
+        "contact_id" => flow_context.contact_id,
+        "raw_response" => %{"photos" => [@uploaded_photo]}
+      }
+
+      assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
+
+      updated_context = Repo.get(FlowContext, flow_context.id)
+      assert updated_context.results == %{"other" => %{"some_field" => "value"}}
+    end
+
+    test "leaves the result untouched when only some media uploads succeeded (partial failure)" do
+      flow_context =
+        Fixtures.flow_context_fixture(%{
+          results: %{"orientation" => %{"photos" => "{\"id\":1}"}}
+        })
+
+      payload = %{
+        "contact_id" => flow_context.contact_id,
+        "raw_response" => %{
+          "photos" => [
+            %{
+              "id" => 1,
+              "file_name" => "a.jpg",
+              "mime_type" => "image/jpeg",
+              "gcs_url" => "https://gcs.test/a.jpg"
+            },
+            # second photo failed to upload — no gcs_url
+            %{"id" => 2, "file_name" => "b.jpg", "mime_type" => "image/jpeg"}
+          ]
+        }
+      }
+
+      assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
+
+      # all-or-nothing: photos is left as the original value, not a mixed "url, {json}"
+      updated_context = Repo.get(FlowContext, flow_context.id)
+      assert updated_context.results["orientation"]["photos"] == "{\"id\":1}"
+    end
+  end
+
+  describe "PartnerAPI.download_flow_media/2" do
+    @media_url "https://filemanager.gupshup.io/wa/Glific42/wa/media/123?download=true"
+
+    test "returns the raw media bytes on a 2xx response",
+         %{organization_id: organization_id} do
+      Fixtures.set_bsp_partner_tokens(organization_id)
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: @media_url} ->
+          %Tesla.Env{status: 200, body: <<255, 216, 255>>}
+      end)
+
+      assert {:ok, <<255, 216, 255>>} = PartnerAPI.download_flow_media(organization_id, 123)
+    end
+
+    test "returns an error tuple on a non-2xx response without retrying",
+         %{organization_id: organization_id} do
+      Fixtures.set_bsp_partner_tokens(organization_id)
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: @media_url} ->
+          send(test_pid, :media_request)
+
+          %Tesla.Env{
+            status: 429,
+            body: ~s({"status":"error","message":"Too Many Requests"})
+          }
+      end)
+
+      assert {:error, message} = PartnerAPI.download_flow_media(organization_id, 123)
+      assert message =~ "flow media download failed"
+
+      # a failed media request is never re-sent: 20 failures block the whole app
+      # for the rest of the hour
+      assert_received :media_request
+      refute_received :media_request
+    end
+  end
+
+  test "write_to_google_sheet/2 stringifies a list of media maps (photos) as JSON without crashing",
+       %{organization_id: organization_id} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} when is_binary(url) ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "values" => [
+                [
+                  "timestamp",
+                  "contact_phone_number",
+                  "whatsapp_form_id",
+                  "whatsapp_form_name",
+                  "photos"
+                ]
+              ]
+            })
+        }
+
+      %{method: :post, url: _url} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+              "updates" => %{"updatedRows" => 1}
+            })
+        }
+    end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      Partners.create_credential(%{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: organization_id
+      })
+
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+      payload = %{
+        "contact_number" => "919425010449",
+        "organization_id" => organization_id,
+        "raw_response" => %{
+          "photos" => [
+            %{
+              "id" => 1,
+              "file_name" => "a.jpg",
+              "mime_type" => "image/jpeg",
+              "gcs_url" => "https://gcs.test/a.jpg"
+            }
+          ],
+          "flow_token" => "unused"
+        },
+        "submitted_at" => "2026-03-17T12:47:36.000000Z",
+        "whatsapp_form_id" => whatsapp_form.id,
+        "whatsapp_form_name" => whatsapp_form.name
+      }
+
+      {:ok, values} = WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
+
+      photos_value = Enum.at(values, 4)
+      assert is_binary(photos_value)
+      # the photo map is JSON-encoded into the cell, gcs_url included
+      assert Jason.decode!(photos_value)["gcs_url"] == "https://gcs.test/a.jpg"
+    end
+  end
+
+  describe "persist_response_media/2 via WhatsappFormWorker.perform/1" do
+    test "logs and completes the job when the response row cannot be updated",
+         %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+      raw_response = %{"photos" => [@photo], "students_attended" => "115"}
+
+      {:ok, whatsapp_form_response} =
+        %WhatsappFormResponse{}
+        |> WhatsappFormResponse.changeset(%{
+          raw_response: raw_response,
+          submitted_at: DateTime.utc_now(),
+          contact_id: contact.id,
+          whatsapp_form_id: whatsapp_form.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]},
+        {WhatsappFormResponse, [:passthrough],
+         [
+           changeset: fn response, _attrs ->
+             response
+             |> Ecto.Changeset.change()
+             |> Ecto.Changeset.add_error(:raw_response, "forced failure")
+           end
+         ]}
+      ]) do
+        job = %Oban.Job{
+          args: %{
+            "organization_id" => organization_id,
+            "whatsapp_form_id" => whatsapp_form.id,
+            "payload" => %{
+              "whatsapp_form_response_id" => whatsapp_form_response.id,
+              "organization_id" => organization_id,
+              "contact_number" => contact.phone,
+              "raw_response" => raw_response,
+              "submitted_at" => "2026-03-17T12:47:36.000000Z",
+              "whatsapp_form_id" => whatsapp_form.id,
+              "whatsapp_form_name" => whatsapp_form.name
+            }
+          }
+        }
+
+        assert :ok = WhatsappFormWorker.perform(job)
+
+        assert called(PartnerAPI.download_flow_media(organization_id, @photo["id"]))
+        assert called(GcsWorker.upload_media(:_, :_, organization_id))
+      end
+
+      assert Repo.get(WhatsappFormResponse, whatsapp_form_response.id).raw_response ==
+               raw_response
+    end
+
+    test "leaves the payload untouched when the response row no longer exists",
+         %{organization_id: organization_id} do
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        job = %Oban.Job{
+          args: %{
+            "organization_id" => organization_id,
+            "whatsapp_form_id" => whatsapp_form.id,
+            "payload" => %{
+              "whatsapp_form_response_id" => 0,
+              "organization_id" => organization_id,
+              "contact_number" => "919425010449",
+              "raw_response" => %{"photos" => [@photo]},
+              "submitted_at" => "2026-03-17T12:47:36.000000Z",
+              "whatsapp_form_id" => whatsapp_form.id,
+              "whatsapp_form_name" => whatsapp_form.name
+            }
+          }
+        }
+
+        assert :ok = WhatsappFormWorker.perform(job)
+
+        refute called(PartnerAPI.download_flow_media(:_, :_))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
+      end
     end
   end
 end

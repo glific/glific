@@ -6,7 +6,9 @@ defmodule GlificWeb.KaapiController do
   use GlificWeb, :controller
   require Logger
 
+  alias Glific.AIEvaluations
   alias Glific.Assistants
+  alias Glific.PromptGenerator
 
   @doc """
   Handles the callback from Kaapi upon successful or failure of collection creation.
@@ -16,5 +18,55 @@ defmodule GlificWeb.KaapiController do
     Logger.info("Received knowledge base creation callback", params: params)
     Assistants.handle_knowledge_base_callback(params)
     send_resp(conn, 200, "Knowledge base version creation callback handled successfully")
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after LLM-based prompt generation completes.
+
+  Always returns 200 — Kaapi does not retry on non-2xx, and the request_id is treated as an
+  unguessable token (matching the auth posture of the knowledge_base_version callback above).
+  """
+  @spec prompt_generation_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def prompt_generation_callback(conn, params) do
+    PromptGenerator.handle_callback(params)
+    send_resp(conn, 200, "")
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after an assistant chat `send_message/3`
+  dispatch completes. Always returns 200 — same posture as `prompt_generation_callback/2`.
+  """
+  @spec assistant_chat_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def assistant_chat_callback(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        params
+      ) do
+    Assistants.handle_assistant_chat_callback(organization_id, params)
+    send_resp(conn, 200, "")
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after v2 evaluation prompt-improvement completes.
+
+  Always returns 200 — Kaapi does not retry on non-2xx, and job_id is treated as an
+  unguessable token (matching the auth posture of the other Kaapi callbacks above).
+  """
+  @spec improve_prompt_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def improve_prompt_callback(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        params
+      ) do
+    AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+    send_resp(conn, 200, "")
+  end
+
+  @doc "Handles Kaapi's async callback after a v2 evaluation run completes."
+  @spec evaluation_run_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def evaluation_run_callback(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        params
+      ) do
+    AIEvaluations.handle_evaluation_run_callback(organization_id, params)
+    send_resp(conn, 200, "")
   end
 end

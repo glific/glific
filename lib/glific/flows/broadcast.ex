@@ -6,8 +6,7 @@ defmodule Glific.Flows.Broadcast do
 
   use Publicist
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   require Logger
 
   alias Glific.{
@@ -103,7 +102,7 @@ defmodule Glific.Flows.Broadcast do
         WaGroupsCollections.list_wa_groups_collection(%{
           filter: %{group_id: group_id, organization_id: flow.organization_id}
         })
-        |> Repo.preload([:wa_group])
+        |> Repo.preload(wa_group: :primary_phone)
 
       wa_group_collections
       |> Enum.map(& &1.wa_group_id)
@@ -414,8 +413,8 @@ defmodule Glific.Flows.Broadcast do
             |> mark_message_broadcast_contact_processed(contact.id, "processed")
           else
             Logger.info("Could not start the flow for the contact.
-               Contact id : #{contact.id} opts: #{inspect(opts)}
-               response #{inspect(response)}")
+               Contact id : #{contact.id} opts: #{Glific.SafeLog.safe_inspect(opts)}
+               response #{Glific.SafeLog.safe_inspect(response)}")
           end
 
           :ok
@@ -473,8 +472,8 @@ defmodule Glific.Flows.Broadcast do
 
             {:error, error} ->
               Logger.info("Could not start the message for the contact.
-              Contact id : #{contact.id} opts: #{inspect(opts)}
-              error #{inspect(error)}")
+              Contact id : #{contact.id} opts: #{Glific.SafeLog.safe_inspect(opts)}
+              error #{Glific.SafeLog.safe_inspect(error)}")
           end
 
           :ok

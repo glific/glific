@@ -15,7 +15,7 @@ defmodule Glific.Partners do
 
   use Publicist
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
@@ -601,27 +601,43 @@ defmodule Glific.Partners do
   defp build_org_data(organization) do
     Repo.put_organization_id(organization.id)
 
+    organization =
+      organization
+      |> set_root_user()
+      |> set_credentials()
+      |> Repo.preload([:bsp, :contact])
+      |> set_bsp_info()
+      |> set_out_of_office_values()
+      |> Flags.set_out_of_office()
+      |> set_languages()
+      |> Flags.set_flow_uuid_display()
+      |> Flags.set_roles_and_permission()
+      |> Flags.set_open_ai_auto_translation_enabled()
+      |> Flags.set_auto_translation_enabled_for_google_trans()
+      |> Flags.set_contact_profile_enabled()
+      |> Flags.set_whatsapp_group_enabled()
+      |> Flags.set_ticketing_enabled()
+      |> Flags.set_certificate_enabled()
+      |> Flags.set_interactive_re_response_enabled()
+      |> Flags.set_is_ask_glific_enabled()
+      |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
+      |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
+      |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
+      |> Flags.set_flag_enabled(:is_template_v2_enabled)
+      |> Flags.set_flag_enabled(:is_template_library_enabled)
+      |> Flags.set_flag_enabled(:glific_ai_enabled)
+      |> Flags.set_flag_enabled(:web_channel_enabled)
+
+    Caches.set(
+      @global_organization_id,
+      [{:organization, organization.id}, {:organization, organization.shortcode}],
+      organization
+    )
+
+    # also update the flags table with updated values
+    Flags.init(organization)
     organization
-    |> set_root_user()
-    |> set_credentials()
-    |> Repo.preload([:bsp, :contact])
-    |> set_bsp_info()
-    |> set_out_of_office_values()
-    |> Flags.set_out_of_office()
-    |> set_languages()
-    |> Flags.set_flow_uuid_display()
-    |> Flags.set_roles_and_permission()
-    |> Flags.set_open_ai_auto_translation_enabled()
-    |> Flags.set_auto_translation_enabled_for_google_trans()
-    |> Flags.set_contact_profile_enabled()
-    |> Flags.set_whatsapp_group_enabled()
-    |> Flags.set_ticketing_enabled()
-    |> Flags.set_certificate_enabled()
-    |> Flags.set_interactive_re_response_enabled()
-    |> Flags.set_is_ask_glific_enabled()
-    |> Flags.set_is_whatsapp_forms_enabled()
-    |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
-    |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
   end
 
   @doc """
@@ -877,7 +893,7 @@ defmodule Glific.Partners do
     # If we fail, we need to mark the organization as failed
     # and log the error
     err ->
-      "Error occurred while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      "Error occurred while executing cron handler for organizations. Error: #{Glific.SafeLog.safe_inspect(err)}, handler: #{Glific.SafeLog.safe_inspect(handler)}, handler_args: #{Glific.SafeLog.safe_inspect(handler_args)}"
       |> Glific.log_error()
   end
 
@@ -1171,7 +1187,10 @@ defmodule Glific.Partners do
         {:ok, credential}
 
       {:error, reason} ->
-        Logger.error("Failed to enqueue credential update job: #{inspect(reason)}")
+        Logger.error(
+          "Failed to enqueue credential update job: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+
         {:error, "Failed to sync WhatsApp data to Glific. Please reach out to Glific Support"}
     end
   end
@@ -1285,10 +1304,15 @@ defmodule Glific.Partners do
 
         {:error, error} ->
           Logger.info(
-            "Error fetching token for: #{provider_shortcode}, error: #{inspect(error)}, org_id: #{organization_id}"
+            "Error fetching token for: #{provider_shortcode}, error: #{Glific.SafeLog.safe_inspect(error)}, org_id: #{organization_id}"
           )
 
-          handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
+          handle_token_error(
+            organization_id,
+            provider_shortcode,
+            "#{Glific.SafeLog.safe_inspect(error)}"
+          )
+
           nil
       end
     end
@@ -1308,7 +1332,7 @@ defmodule Glific.Partners do
   end
 
   defp handle_token_error(_organization_id, _provider_shortcode, error),
-    do: raise("Error fetching goth token' #{inspect(error)}")
+    do: raise("Error fetching goth token' #{Glific.SafeLog.safe_inspect(error)}")
 
   @doc """
   Disable a specific credential for the organization
@@ -1324,7 +1348,7 @@ defmodule Glific.Partners do
         Credential
         |> where([c], c.provider_id == ^provider.id)
         |> where([c], c.organization_id == ^organization_id)
-        |> Repo.update_all(set: [is_active: false])
+        |> Repo.update_all([set: [is_active: false]], skip_organization_id: true)
 
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
@@ -1343,6 +1367,40 @@ defmodule Glific.Partners do
 
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
+    end
+  end
+
+  @doc """
+  Re-enables a previously disabled credential for an organization and triggers the
+  appropriate sync callback (BigQuery schema sync or GCS bucket setup). If the callback
+  fails the credential is left inactive until the next retry.
+
+  Used by the weekly sync-disabled report to automatically restore service after alerting
+  the internal team.
+  """
+  @spec enable_credential(non_neg_integer(), String.t()) :: :ok | {:error, String.t()}
+  def enable_credential(organization_id, shortcode) do
+    credential_query =
+      from c in Credential,
+        join: p in Provider,
+        on: c.provider_id == p.id and p.shortcode == ^shortcode,
+        where: c.organization_id == ^organization_id
+
+    case Repo.one(credential_query, skip_organization_id: true) do
+      nil ->
+        {:error, "No #{shortcode} credential found for org #{organization_id}"}
+
+      credential ->
+        organization = get_organization!(organization_id)
+        remove_organization_cache(organization.id, organization.shortcode)
+
+        Credential
+        |> where([c], c.id == ^credential.id)
+        |> Repo.update_all([set: [is_active: true]], skip_organization_id: true)
+
+        Logger.info("Re-enabling #{shortcode} credential for org_id: #{organization_id}")
+        credential_update_callback(organization, %{credential | is_active: true}, shortcode)
+        :ok
     end
   end
 
@@ -1447,15 +1505,14 @@ defmodule Glific.Partners do
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
+      "maytapi" => organization.services["maytapi"] != nil,
       "flow_uuid_display" => Flags.get_flow_uuid_display(organization),
       "roles_and_permission" => Flags.get_roles_and_permission(organization),
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "whatsapp_forms_enabled" => Flags.get_whatsapp_forms_enabled?(organization),
-      "auto_translation_enabled" =>
-        Flags.get_open_ai_auto_translation_enabled(organization) or
-          Flags.get_google_auto_translation_enabled(organization),
+      "auto_translation_enabled" => Flags.get_google_auto_translation_enabled(organization),
       "certificate_enabled" => Flags.get_certificate_enabled(organization),
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
@@ -1463,10 +1520,19 @@ defmodule Glific.Partners do
       "high_trigger_tps_enabled" =>
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
       "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
+      "ai_evaluation_v2_enabled" =>
+        Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization),
       "assistant_config_versions_enabled" =>
         Flags.get_assistant_config_versions_enabled(organization),
-      "gpt_vision_base64_enabled" =>
-        Flags.get_flag_enabled(:is_gpt_vision_base64_enabled, organization)
+      "superset_enabled" =>
+        FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id}),
+      "prompt_generator_enabled" =>
+        Flags.get_flag_enabled(:is_prompt_generator_enabled, organization),
+      "template_v2_enabled" => Flags.get_flag_enabled(:is_template_v2_enabled, organization),
+      "template_library_enabled" =>
+        Flags.get_flag_enabled(:is_template_library_enabled, organization),
+      "glific_ai_enabled" => Flags.get_flag_enabled(:glific_ai_enabled, organization),
+      "web_channel_enabled" => Flags.get_flag_enabled(:web_channel_enabled, organization)
     }
   end
 
@@ -1490,6 +1556,7 @@ defmodule Glific.Partners do
           |> add_service("bigquery", service["bigquery"], org_id)
           |> add_service("google_cloud_storage", service["google_cloud_storage"], org_id)
           |> add_service("dialogflow", service["dialogflow"], org_id)
+          |> add_service("maytapi", service["maytapi"], org_id)
         end
       )
 

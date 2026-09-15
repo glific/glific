@@ -32,8 +32,6 @@ config :glific,
 
 config :goth, disabled: true
 
-config :glific, Poolboy, worker: Glific.Processor.ConsumerWorkerMock
-
 config :tesla, adapter: Tesla.Mock
 
 config :phoenix, :json_library, Jason
@@ -71,3 +69,30 @@ config :glific,
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Test
 
 config :glific, open_ai: "sk-test_api_key"
+
+config :glific, Glific.ThirdParty.Superset.ApiClient,
+  base_url: "https://moonshine.projecttech4dev.org/api/v1",
+  dashboard_id: "71f4c8d9-f9c6-4b9d-9b28-80c550681b7f",
+  guest_username: "glific-dev-embed",
+  username: "superset_username",
+  password: "superset_password"
+
+config :glific, gupshup_partner_client_secret: "test_client_secret"
+
+# Relax OTP rate limiting in tests (the suite fires many send_otp requests from the same IP).
+# The dedicated rate-limit test overrides this locally.
+config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1_000
+
+# Relax web channel OTP rate limiting in tests for the same reason.
+# The dedicated rate-limit test overrides this locally.
+config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1_000
+
+# Same, for the per-IP bucket. The dedicated rate-limit tests override these locally.
+config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 1_000
+
+# Relax web channel message rate limiting in tests for the same reason.
+config :glific, :web_channel_message_rate_limit, scale_ms: 10_000, count: 1_000
+
+# No org in the test suite has GCS credentials configured, so route web channel uploads to local
+# disk instead — never enabled in dev/prod.
+config :glific, :web_channel_local_media, true

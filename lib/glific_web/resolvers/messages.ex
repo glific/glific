@@ -4,6 +4,8 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
+  use Gettext, backend: GlificWeb.Gettext
+
   alias Glific.{
     Contacts.Contact,
     Groups.ContactGroups,
@@ -14,8 +16,7 @@ defmodule GlificWeb.Resolvers.Messages do
     Messages.MessageMedia,
     Providers.Maytapi,
     Repo,
-    Users.User,
-    WAGroup.WAManagedPhone
+    Users.User
   }
 
   @doc """
@@ -260,22 +261,39 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def send_message_in_wa_group(
         _,
-        %{input: %{wa_managed_phone_id: wa_managed_phone_id, wa_group_id: wa_group_id} = params},
+        %{input: %{wa_group_id: wa_group_id} = params},
         %{context: %{current_user: user}}
       ) do
-    with {:ok, wa_phone} <-
-           Repo.fetch_by(WAManagedPhone, %{
-             id: wa_managed_phone_id,
-             organization_id: user.organization_id
-           }),
-         {:ok, wa_group} <-
+    with {:ok, wa_group} <-
            Repo.fetch_by(WAGroup, %{
              id: wa_group_id,
              organization_id: user.organization_id
-           }) do
-      Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, params)
+           }),
+         {:ok, message} <- Maytapi.Message.create_and_send_wa_message(wa_group, params) do
+      {:ok, message}
+    else
+      {:error, reason} ->
+        Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "graphql_mutation"})
+
+        {:error, send_in_wa_group_error(reason)}
     end
   end
+
+  defp send_in_wa_group_error(:no_active_phones),
+    do:
+      dgettext(
+        "errors",
+        "No active phones are linked to this group. Reconnect a phone or add a backup before sending."
+      )
+
+  defp send_in_wa_group_error(:promotion_failed),
+    do:
+      dgettext(
+        "errors",
+        "Could not switch to a backup phone right now. Please retry."
+      )
+
+  defp send_in_wa_group_error(other), do: other
 
   @doc false
   @spec send_message_to_wa_group_collection(Absinthe.Resolution.t(), map(), map()) :: {:ok, any()}

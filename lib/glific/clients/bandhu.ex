@@ -2,11 +2,6 @@ defmodule Glific.Clients.Bandhu do
   @moduledoc """
   Tweak GCS Bucket name based on group that the contact is in (if any)
   """
-
-  import Ecto.Query, warn: false
-
-  alias Glific.Clients.CommonWebhook
-
   @housing_url "https://housing.bandhumember.work/api/housing/create_sql_glific_query"
 
   @doc """
@@ -60,9 +55,6 @@ defmodule Glific.Clients.Bandhu do
       "media_url" =>
         "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"
     }
-
-  def webhook("speech_to_text_with_bhasini", fields),
-    do: CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
 
   def webhook("housing_sql", fields) do
     header = [{"Content-Type", "application/json"}]

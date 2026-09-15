@@ -51,7 +51,10 @@ defmodule Glific.TrialAccount.TrialWorker do
       :ok
     else
       {:error, error} ->
-        Logger.error("Failed to process trial organization #{organization.id}: #{inspect(error)}")
+        Logger.error(
+          "Failed to process trial organization #{organization.id}: #{Glific.SafeLog.safe_inspect(error)}"
+        )
+
         {:error, error}
     end
   end

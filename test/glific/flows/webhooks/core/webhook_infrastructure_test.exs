@@ -10,6 +10,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     Registry
   }
 
+  alias Glific.Messages
+
   # --- Stub webhook modules ---------------------------------------------------
 
   defmodule StubWebhook do
@@ -135,8 +137,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       end
     end
 
-    test "reports to AppSignal on exception" do
-      {exception, _tags} =
+    test "reports to AppSignal on exception (tagged error_type exception)" do
+      {exception, tags} =
         capture_appsignal(fn ->
           assert_raise RuntimeError, fn ->
             Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
@@ -146,6 +148,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.SystemError{} = exception
+      assert tags.error_type == "exception"
     end
 
     test "tags include organization_id from ctx" do
@@ -171,12 +174,94 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     end
   end
 
-  # --- Dispatcher.dispatch_named/3 --------------------------------------------
+  # --- Instrumentation.around/3 (async webhooks) ------------------------------
+  # Async webhooks defer latency + success to callback time, so a successful ack
+  # records nothing; only a dispatch failure (which never reaches the callback) is
+  # recorded here.
 
-  describe "Dispatcher.dispatch_named/3" do
+  describe "Instrumentation.around/3 — async mode" do
+    test "a successful ack records nothing (deferred to callback)" do
+      result =
+        with_mocks([
+          {Appsignal, [:passthrough],
+           [
+             send_error: fn _ex, _stack, _conf -> flunk("should not report on async ack") end,
+             add_distribution_value: fn _name, _val, _tags ->
+               flunk("should not emit latency on async ack")
+             end
+           ]},
+          {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]}
+        ]) do
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
+            {:ok, %{success: true}}
+          end)
+        end
+
+      assert result == {:ok, %{success: true}}
+    end
+
+    test "an untyped dispatch failure fails safe to system (error_type unknown)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn ->
+            %{success: false, reason: "boom"}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert exception.message =~ "stub_async_infra"
+      assert tags.organization_id == 7
+      assert tags.error_type == "unknown"
+    end
+
+    test "a self-classified config dispatch failure routes to config with the flow-context ids" do
+      ctx = %{organization_id: 7, flow_id: 42, contact_id: 88, webhook_log_id: 99}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, ctx, fn ->
+            {:error, :invalid_media_url, "Media URL is invalid"}
+          end)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert tags.error_type == "invalid_media_url"
+      assert tags.reason == "Media URL is invalid"
+      assert tags.flow_id == 42
+      assert tags.contact_id == 88
+      assert tags.webhook_log_id == 99
+    end
+
+    test "a nil async ack fails safe to system (error_type unknown)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn -> nil end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
+    end
+
+    test "an exception reports SystemError and reraises" do
+      {exception, _tags} =
+        capture_appsignal(fn ->
+          assert_raise RuntimeError, "async boom", fn ->
+            Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
+              raise RuntimeError, "async boom"
+            end)
+          end
+        end)
+
+      assert %Errors.SystemError{} = exception
+    end
+  end
+
+  # --- Dispatcher.dispatch/3 --------------------------------------------
+
+  describe "Dispatcher.dispatch/3" do
     test "raises ArgumentError for unknown webhook name" do
       assert_raise ArgumentError, fn ->
-        Dispatcher.dispatch_named("totally_unknown_webhook_xyz", %{})
+        Dispatcher.dispatch("totally_unknown_webhook_xyz", %{})
       end
     end
 
@@ -208,15 +293,15 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
         result =
-          Dispatcher.dispatch_named("geolocation", %{
+          Dispatcher.dispatch("geolocation", %{
             "lat" => "12.9716",
             "long" => "77.5946",
             "organization_id" => 1
           })
 
-        assert is_map(result)
-        assert result.success == true
-        assert result.city == "Bangalore"
+        assert {:ok, address} = result
+        assert address.success == true
+        assert address.city == "Bangalore"
       end
     end
 
@@ -240,13 +325,14 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
         result =
-          Dispatcher.dispatch_named("geolocation", %{
+          Dispatcher.dispatch("geolocation", %{
             "lat" => "0.0",
             "long" => "0.0",
             "organization_id" => 1
           })
 
-        assert is_binary(result)
+        assert {:error, _type, reason} = result
+        assert is_binary(reason)
       end
     end
 
@@ -265,7 +351,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
            end
          ]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{"organization_id" => 1})
+        Dispatcher.dispatch("stub_infra", %{"organization_id" => 1})
       end
     end
 
@@ -279,7 +365,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]},
         {Registry, [:passthrough], [lookup!: fn _name -> StubWebhook end]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{"organization_id" => "42"})
+        Dispatcher.dispatch("stub_infra", %{"organization_id" => "42"})
       end
     end
 
@@ -293,7 +379,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]},
         {Registry, [:passthrough], [lookup!: fn _name -> StubWebhook end]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{})
+        Dispatcher.dispatch("stub_infra", %{})
       end
     end
 
@@ -307,15 +393,15 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]},
         {Registry, [:passthrough], [lookup!: fn _name -> StubWebhook end]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{"organization_id" => "not_a_number"})
+        Dispatcher.dispatch("stub_infra", %{"organization_id" => "not_a_number"})
       end
     end
   end
 
-  # --- Instrumentation.report_callback_failure/2 ------------------------------
+  # --- Instrumentation.report_callback_failure/3 ------------------------------
 
-  describe "Instrumentation.report_callback_failure/2" do
-    test "reports SystemError to AppSignal when success is false" do
+  describe "Instrumentation.report_callback_failure/3" do
+    test "a statusless callback failure fails safe to a system incident" do
       response = %{
         "organization_id" => 1,
         "webhook_name" => "kaapi_asr",
@@ -328,14 +414,47 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert %Errors.SystemError{} = exception
-      assert exception.message == "Webhook callback failure"
+      assert exception.message == "Webhook system_error from kaapi_asr"
       assert tags.organization_id == 1
       assert tags.webhook_name == "kaapi_asr"
       assert tags.reason == "ASR failed"
+      assert tags.error_type == "unknown"
+    end
+
+    test "a 4xx provider rejection is classified as a config error" do
+      response = %{"organization_id" => 1, "webhook_name" => "unified-llm-call"}
+
+      result = %{
+        "success" => false,
+        "reason" => "OpenAI bad request (code: 400): Invalid 'conversation.id'"
+      }
+
+      # The node classifies (StubAsyncWebhook.classify delegates to KaapiSupport.classify).
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(StubAsyncWebhook, result, response)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert exception.message == "Webhook config_error from unified-llm-call"
+      assert tags.error_type == "invalid_input"
+    end
+
+    test "a 5xx provider outage is classified as a system error" do
+      response = %{"organization_id" => 1, "webhook_name" => "unified-llm-call"}
+      result = %{"success" => false, "http_status" => 502, "reason" => "Bad gateway"}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(StubAsyncWebhook, result, response)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
     end
 
     test "is a no-op when success is true" do
@@ -349,7 +468,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       ]) do
         result = %{"success" => true}
         response = %{"webhook_name" => "kaapi_asr"}
-        assert :ok = Instrumentation.report_callback_failure(result, response)
+        assert :ok = Instrumentation.report_callback_failure(nil, result, response)
       end
     end
 
@@ -359,7 +478,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {_exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert tags.reason == "error from error key"
@@ -371,10 +490,77 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {_exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
-      assert tags.reason =~ "Kaapi callback failure"
+      # Provider-agnostic default: uses the webhook_name, not a hardcoded "Kaapi".
+      assert tags.reason =~ "kaapi_asr callback failure"
+    end
+
+    test "a failure payload missing the success key is still reported (not swallowed)" do
+      response = %{"organization_id" => 1, "webhook_name" => "kaapi_asr"}
+      result = %{"reason" => "malformed, no success key"}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(nil, result, response)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.reason == "malformed, no success key"
+    end
+  end
+
+  # --- Instrumentation.around_callback/4 --------------------------------------
+
+  describe "Instrumentation.around_callback/4" do
+    test "a raising callback still records failure telemetry, then reraises" do
+      result = %{"success" => true}
+      response = %{"organization_id" => 1, "webhook_name" => "stub_async_infra"}
+
+      {exception, _tags} =
+        capture_appsignal(fn ->
+          assert_raise RuntimeError, "callback boom", fn ->
+            Instrumentation.around_callback(StubAsyncWebhook, result, response, fn ->
+              raise RuntimeError, "callback boom"
+            end)
+          end
+        end)
+
+      # The rescue path marks the callback a failure and reports it before reraising.
+      assert %Errors.SystemError{} = exception
+    end
+  end
+
+  # --- Dispatcher.callback/3 --------------------------------------------------
+
+  describe "Dispatcher.callback/3" do
+    test "an unregistered/absent webhook name passes the response through" do
+      result = %{"success" => true}
+      response = %{"webhook_name" => "not_registered", "organization_id" => 1}
+
+      # No registered module → nil branch: the response is returned unchanged.
+      assert ^response = Dispatcher.callback("not_registered", result, response)
+    end
+
+    test "a registered async node runs its default callback (pass-through) inside instrumentation" do
+      result = %{"success" => true}
+      response = %{"webhook_name" => "speech_to_text", "organization_id" => 1}
+
+      # speech_to_text keeps the default callback/3 → response passes through; still instrumented.
+      assert ^response = Dispatcher.callback("speech_to_text", result, response)
+    end
+
+    test "a failed callback for a registered node classifies + reports without raising" do
+      result = %{"success" => false, "http_status" => 500, "reason" => "boom"}
+      response = %{"webhook_name" => "speech_to_text", "organization_id" => 1}
+
+      {exception, tags} =
+        capture_appsignal(fn -> Dispatcher.callback("speech_to_text", result, response) end)
+
+      # 5xx → system incident, classified via the node's classify/1 (→ KaapiSupport.classify).
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
     end
   end
 
@@ -457,6 +643,152 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     test "Error is a valid exception" do
       ex = %Errors.Error{message: "generic error"}
       assert Exception.message(ex) == "generic error"
+    end
+  end
+
+  # Config-vs-system routing for SYNC nodes: a typed `{:error, ErrorType.t(), msg}` return is
+  # mapped by Instrumentation → ErrorReporter to the right namespace. The node owns the verdict;
+  # there is no central heuristic. (Async / Kaapi classification is a separate, later change.)
+  describe "ErrorReporter routing (sync)" do
+    test "typed config failure → ConfigurationError under the config namespace" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :invalid_geocoding, "Invalid geocoding request. Invalid 'latlng' parameter."}
+          end)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert tags.error_type == "invalid_geocoding"
+    end
+
+    test "typed system failure → SystemError under the system namespace" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :missing_api_key, "Geocoding request was denied."}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "missing_api_key"
+    end
+
+    test "untyped sync failure fails safe to :unknown (system)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, "some failure the node did not classify"}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
+    end
+
+    test "typed upstream-blip failure reports a system incident (no retry — a blip is a real failure)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :rate_limited, "Geocoding quota exceeded."}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "rate_limited"
+    end
+
+    test "a malformed 3-tuple failure is still reported (not counted-but-invisible)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :some_type, %{not: "a binary"}}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
+    end
+  end
+
+  # Real-webhook failure reporting: a failing sync webhook dispatched through the framework
+  # surfaces the right exception (config vs system) to AppSignal with the right tags
+  # (webhook_name / organization_id / reason). Complements the stub-based around/3 tests above.
+  describe "Instrumentation reporting — real sync webhooks" do
+    test "reports a config error when parse_via_chat_gpt gets empty input" do
+      # ids arrive as strings (JSON/Oban) and must flow through build_context onto the failure tags
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "42",
+        "contact_id" => "88",
+        "webhook_log_id" => "99"
+      }
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          assert {:error, _type, "question_text is empty"} =
+                   Dispatcher.dispatch("parse_via_chat_gpt", fields)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert tags.webhook_name == "parse_via_chat_gpt"
+      assert tags.organization_id == 1
+      assert tags.reason == "question_text is empty"
+      assert tags.error_type == "empty_input"
+      assert tags.flow_id == 42
+      assert tags.contact_id == 88
+      assert tags.webhook_log_id == 99
+    end
+
+    test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do
+      fields = %{
+        "organization_id" => 1,
+        "url" => "https://example.com/image.jpg",
+        "response_format" => %{"type" => "json_objectz"}
+      }
+
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+        end)
+
+        {exception, tags} =
+          capture_appsignal(fn ->
+            assert {:error, _type, "response_format type should be json_schema or json_object"} =
+                     Dispatcher.dispatch("parse_via_gpt_vision", fields)
+          end)
+
+        assert %Errors.SystemError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "response_format type should be json_schema or json_object"
+      end
+    end
+
+    test "reports a config error when parse_via_gpt_vision gets an invalid media URL" do
+      with_mock(Messages,
+        validate_media: fn _, _ -> %{is_valid: false, message: "Media URL is invalid"} end
+      ) do
+        {exception, tags} =
+          capture_appsignal(fn ->
+            assert {:error, _type, "Media URL is invalid"} =
+                     Dispatcher.dispatch("parse_via_gpt_vision", %{
+                       "organization_id" => 1,
+                       "url" => "not-an-image"
+                     })
+          end)
+
+        assert %Errors.ConfigurationError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "Media URL is invalid"
+        assert tags.error_type == "invalid_media_url"
+      end
     end
   end
 

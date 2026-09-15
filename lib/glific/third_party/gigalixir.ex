@@ -30,12 +30,15 @@ defmodule Glific.Gigalixir do
         {:ok, "Domain successfully created!"}
 
       {:ok, %Tesla.Env{status: status, body: response_body}} when status >= 400 ->
-        Logger.error("Failed with status: '#{status}': #{inspect(response_body)}")
-        {:error, "Failed with status #{status}: #{inspect(response_body)}"}
+        Logger.error(
+          "Failed with status: '#{status}': #{Glific.SafeLog.safe_inspect(response_body)}"
+        )
+
+        {:error, "Failed with status #{status}: #{Glific.SafeLog.safe_inspect(response_body)}"}
 
       {:error, err} ->
-        Logger.error("Request failed: #{inspect(err)}")
-        {:error, "Request failed: #{inspect(err)}"}
+        Logger.error("Request failed: #{Glific.SafeLog.safe_inspect(err)}")
+        {:error, "Request failed: #{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 end

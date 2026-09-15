@@ -5,6 +5,7 @@ query AiEvaluations($filter: AiEvaluationFilter, $opts: Opts) {
     status
     failureReason
     results
+    duplicationFactor
     goldenQa {
       id
       name
@@ -12,7 +13,8 @@ query AiEvaluations($filter: AiEvaluationFilter, $opts: Opts) {
     }
     assistantConfigVersion {
       id
-      versionNumber
+      majorVersion
+      minorVersion
       assistant {
         id
         name

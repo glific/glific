@@ -8,7 +8,6 @@ defmodule Glific.Flows.MessageBroadcastContact do
 
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
   require Logger
 
   alias Glific.{

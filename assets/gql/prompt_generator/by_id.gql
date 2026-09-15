@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query promptGeneration($id: ID!) {
+  promptGeneration(id: $id) {
+    ...PromptGenerationFields
+
+    ...ErrorFields
+  }
+}

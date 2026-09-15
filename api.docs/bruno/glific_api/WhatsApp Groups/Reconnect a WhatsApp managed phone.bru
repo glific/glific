@@ -1,0 +1,35 @@
+meta {
+  name: Reconnect a WhatsApp managed phone
+  type: graphql
+  seq: 21
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation reconnect_wa_managed_phone($wa_managed_phone_id: ID!) {
+    reconnect_wa_managed_phone(wa_managed_phone_id: $wa_managed_phone_id) {
+      wa_managed_phone {
+        id
+        phone
+        status
+      }
+      errors { key message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "wa_managed_phone_id": 4
+  }
+}

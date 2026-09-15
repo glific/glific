@@ -3,10 +3,10 @@ defmodule Glific.Flows.Webhooks.Registry do
   Maps a webhook's name string (as it appears in flow JSON URLs) to the
   module that implements `Glific.Flows.Webhooks.Behaviour` for it.
 
-  Migration is incremental — only webhooks that have been ported live here.
-  `Glific.Clients.CommonWebhook` keeps its existing per-name clauses for
-  the unmigrated webhooks; once a webhook moves to this registry, its
-  CommonWebhook clause shrinks to a `Dispatcher.dispatch_named/3` call.
+  Every flow-webhook node is registered here and routed, via `Glific.Flows.Webhook`'s
+  internal dispatch, to its `Glific.Flows.Webhooks` implementation module through
+  `Dispatcher.dispatch/3`. Org-specific webhook functions (per-org client modules)
+  fall through to `Glific.Clients.webhook/2` instead.
 
   ## Why Registry is separate from Dispatcher
 
@@ -16,12 +16,27 @@ defmodule Glific.Flows.Webhooks.Registry do
   target Dispatcher itself, coupling test isolation to the orchestration
   layer. The indirection preserves a clean seam for both unit tests and
   integration tests.
+
+  ## webhook_name
+
+  `name/0` (the node URL / registry key) equals the observability `webhook_name`
+  used in Kaapi `request_metadata` and AppSignal metrics.
   """
 
   alias Glific.Flows.Webhooks
 
   @webhooks %{
-    "geolocation" => Webhooks.Geolocation
+    "geolocation" => Webhooks.Geolocation,
+    "speech_to_text" => Webhooks.SpeechToText,
+    "text_to_speech" => Webhooks.TextToSpeech,
+    "filesearch-gpt" => Webhooks.FilesearchGpt,
+    "voice-filesearch-gpt" => Webhooks.VoiceFilesearchGpt,
+    "parse_via_chat_gpt" => Webhooks.ParseViaChatGpt,
+    "parse_via_gpt_vision" => Webhooks.ParseViaGptVision,
+    "send_wa_group_poll" => Webhooks.SendWaGroupPoll,
+    "create_certificate" => Webhooks.CreateCertificate,
+    "get_buttons" => Webhooks.GetButtons,
+    "check_response" => Webhooks.CheckResponse
   }
 
   @doc """
@@ -38,7 +53,7 @@ defmodule Glific.Flows.Webhooks.Registry do
   @spec lookup!(String.t()) :: module()
   def lookup!(name) do
     case lookup(name) do
-      nil -> raise ArgumentError, "no webhook registered for #{inspect(name)}"
+      nil -> raise ArgumentError, "no webhook registered for #{Glific.SafeLog.safe_inspect(name)}"
       module -> module
     end
   end
@@ -46,4 +61,25 @@ defmodule Glific.Flows.Webhooks.Registry do
   @doc "List every webhook name registered so far. Used by tests."
   @spec names() :: [String.t()]
   def names, do: Map.keys(@webhooks)
+
+  @doc "True when `url` is a registered async webhook (parks the flow for a callback)."
+  @spec async?(String.t()) :: boolean()
+  def async?(url) do
+    case lookup(url) do
+      module when is_atom(module) and not is_nil(module) -> module.mode() == :async
+      _ -> false
+    end
+  end
+
+  @doc """
+  Returns the node-URL strings for all registered async webhooks (those whose
+  `mode/0` returns `:async`). Used by `Glific.Flows.FlowContext` to identify
+  async webhook nodes for timeout reporting.
+  """
+  @spec async_urls() :: [String.t()]
+  def async_urls do
+    @webhooks
+    |> Enum.filter(fn {_url, mod} -> mod.mode() == :async end)
+    |> Enum.map(fn {url, _mod} -> url end)
+  end
 end

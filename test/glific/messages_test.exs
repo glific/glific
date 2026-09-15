@@ -772,6 +772,94 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message"
     end
 
+    test "create and send message on the web channel is delivered over the socket, not the BSP",
+         attrs do
+      message_attrs =
+        %{body: "test message", flow: :outbound, type: :text, channel: :web}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      GlificWeb.Endpoint.subscribe("web_channel:#{message_attrs.receiver_id}")
+
+      assert {:ok, message} = Messages.create_and_send_message(message_attrs)
+
+      assert message.channel == :web
+
+      # Re-fetched: `send_message/2` answers with the struct it was handed, so delivery state has
+      # to be read back from the row the adapter actually wrote.
+      sent = Messages.get_message!(message.id)
+
+      # The two assertions that separate this from the BSP path, which would have run
+      # `handle_success_response/2` against the Tesla mock this describe block installs and left
+      # `:enqueued` plus an id from the mocked provider response.
+      assert sent.bsp_status == :sent
+      assert is_nil(sent.bsp_message_id)
+
+      assert_receive %Phoenix.Socket.Broadcast{
+        event: "new_message",
+        payload: %{body: "test message"}
+      }
+    end
+
+    test "an HSM cannot be sent on the web channel", attrs do
+      {:ok, hsm_template} =
+        Repo.fetch_by(SessionTemplate, %{
+          shortcode: "otp",
+          organization_id: attrs.organization_id
+        })
+
+      message_attrs =
+        %{
+          body: hsm_template.example,
+          flow: :outbound,
+          type: :text,
+          channel: :web,
+          is_hsm: true,
+          params: ["adding Anil as a payee", "1234", "15 minutes"],
+          template_id: hsm_template.id
+        }
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, "HSM templates cannot be sent on the web channel."} =
+               Messages.create_and_send_message(message_attrs)
+
+      # the string form, as it would arrive from a JSON-decoded caller, is refused identically
+      assert {:error, "HSM templates cannot be sent on the web channel."} =
+               Messages.create_and_send_message(Map.put(message_attrs, :channel, "web"))
+    end
+
+    test "a web channel send reaches a contact that has never opted in to WhatsApp", attrs do
+      message_attrs =
+        %{body: "hello", flow: :outbound, type: :text, channel: :web}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      # The state a browser-only contact is actually in after #5713: no opt-in, and the
+      # `bsp_status` both WhatsApp clauses of `can_send_message_to?/2` refuse.
+      {:ok, _receiver} =
+        message_attrs.receiver_id
+        |> Contacts.get_contact!()
+        |> Contacts.update_contact(%{
+          optin_time: nil,
+          optin_status: false,
+          bsp_status: :none,
+          last_message_at: nil
+        })
+
+      assert {:ok, _message} = Messages.create_and_send_message(message_attrs)
+    end
+
+    test "a web channel send is refused for a blocked contact", attrs do
+      message_attrs =
+        %{body: "hello", flow: :outbound, type: :text, channel: :web}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      {:ok, _receiver} =
+        message_attrs.receiver_id
+        |> Contacts.get_contact!()
+        |> Contacts.update_contact(%{status: :blocked})
+
+      assert {:error, _reason} = Messages.create_and_send_message(message_attrs)
+    end
+
     test "create and send message should send template message to contact through gupshup enterprise",
          attrs do
       enable_gupshup_enterprise(attrs)
@@ -1461,20 +1549,38 @@ defmodule Glific.MessagesTest do
       assert message_media.source_url == "some source_url"
       assert message_media.thumbnail == "some thumbnail"
       assert message_media.url == "some url"
+    end
 
-      assert {:ok, %MessageMedia{} = message_media} =
+    test "create_message_media/1 dedups by (url, caption, organization_id)", attrs do
+      assert {:ok, %MessageMedia{} = first_media} =
+               Messages.create_message_media(
+                 @valid_attrs
+                 |> Map.merge(%{organization_id: attrs.organization_id})
+               )
+
+      # Same url + same caption reuses the existing row.
+      assert {:ok, %MessageMedia{} = same_media} =
+               Messages.create_message_media(
+                 @valid_attrs
+                 |> Map.merge(%{organization_id: attrs.organization_id})
+               )
+
+      assert same_media.id == first_media.id
+
+      # Same url but a DIFFERENT caption inserts a new row, so personalized
+      # captions on a shared media URL stay distinct (glific#5319).
+      assert {:ok, %MessageMedia{} = other_media} =
                Messages.create_message_media(
                  @valid_attrs
                  |> Map.merge(%{
                    organization_id: attrs.organization_id,
-                   caption: "updated caption"
+                   caption: "a different caption"
                  })
                )
 
-      assert message_media.caption == "updated caption"
-      assert message_media.source_url == "some source_url"
-      assert message_media.thumbnail == "some thumbnail"
-      assert message_media.url == "some url"
+      assert other_media.id != first_media.id
+      assert other_media.caption == "a different caption"
+      assert Messages.count_messages_media() == 2
     end
 
     test "create_message_media/1 with invalid data returns error changeset", attrs do
@@ -1790,6 +1896,111 @@ defmodule Glific.MessagesTest do
 
       assert message.body ==
                "112233 is your verification code. For your security, do not share this code."
+    end
+  end
+
+  describe "list_conversation_messages/3" do
+    test "returns a contact's own messages on the given channel, newest first", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      web_message =
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          contact_id: contact.id,
+          receiver_id: Partners.organization_contact_id(attrs.organization_id),
+          flow: :inbound,
+          channel: :web,
+          organization_id: attrs.organization_id
+        })
+
+      _whatsapp_message =
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          contact_id: contact.id,
+          receiver_id: Partners.organization_contact_id(attrs.organization_id),
+          flow: :inbound,
+          organization_id: attrs.organization_id
+        })
+
+      messages =
+        Messages.list_conversation_messages(contact.id, :web, %{limit: 100, offset: 0})
+
+      assert Enum.map(messages, & &1.id) == [web_message.id]
+    end
+
+    test "paginates with limit/offset", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      for _ <- 1..3 do
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          contact_id: contact.id,
+          receiver_id: Partners.organization_contact_id(attrs.organization_id),
+          flow: :inbound,
+          channel: :web,
+          organization_id: attrs.organization_id
+        })
+      end
+
+      assert length(Messages.list_conversation_messages(contact.id, :web, %{limit: 2, offset: 0})) ==
+               2
+
+      assert length(Messages.list_conversation_messages(contact.id, :web, %{limit: 2, offset: 2})) ==
+               1
+    end
+  end
+
+  describe "media_size_limit/1 and valid_media_content_type?/2" do
+    test "returns the configured KB limit for a known type, nil for an unknown one" do
+      assert Messages.media_size_limit("image") == 5120
+      assert Messages.media_size_limit("document") == 102_400
+      assert Messages.media_size_limit("unknown") == nil
+    end
+
+    test "accepts a content type in the same family do_validate_media accepts" do
+      assert Messages.valid_media_content_type?("image", "image/png")
+      assert Messages.valid_media_content_type?("video", "video/mp4")
+      assert Messages.valid_media_content_type?("document", "application/pdf")
+      assert Messages.valid_media_content_type?("audio", "audio/mpeg")
+    end
+
+    # The old check looked for "docx" and "xlxs" (a typo), neither of which appears in the types
+    # Office documents are served as — so none had ever passed, on any channel.
+    test "accepts the content types Office documents are really served as" do
+      assert Messages.valid_media_content_type?(
+               "document",
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+             )
+
+      assert Messages.valid_media_content_type?(
+               "document",
+               "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+             )
+
+      assert Messages.valid_media_content_type?("document", "application/msword")
+      assert Messages.valid_media_content_type?("document", "application/vnd.ms-excel")
+    end
+
+    test "tolerates a charset parameter on a document content type" do
+      assert Messages.valid_media_content_type?("document", "application/pdf; charset=binary")
+    end
+
+    test "still refuses a document content type outside the allowlist" do
+      refute Messages.valid_media_content_type?("document", "text/html")
+      refute Messages.valid_media_content_type?("document", "application/zip")
+    end
+
+    test "rejects a mismatched or missing content type" do
+      refute Messages.valid_media_content_type?("image", "application/pdf")
+      refute Messages.valid_media_content_type?("image", nil)
+    end
+
+    test "excludes audio/ogg, matching do_validate_media's existing exclusion" do
+      refute Messages.valid_media_content_type?("audio", "audio/ogg")
+    end
+
+    test "does not crash on a malformed audio content type" do
+      refute Messages.valid_media_content_type?("audio", "audio")
     end
   end
 end

@@ -29,6 +29,7 @@ defmodule Glific.Flows.ContactSetting do
         {:ok, _} =
           Contacts.capture_history(contact, :contact_language_updated, %{
             event_label: "Changed contact language to #{language.label}",
+            channel: context.channel,
             event_meta: %{
               language: %{
                 id: language.id,
@@ -49,7 +50,7 @@ defmodule Glific.Flows.ContactSetting do
         Map.put(context, :contact, contact)
 
       [] ->
-        raise("Error! No language found with label #{inspect(language)}")
+        raise("Error! No language found with label #{Glific.SafeLog.safe_inspect(language)}")
     end
   end
 
@@ -86,6 +87,7 @@ defmodule Glific.Flows.ContactSetting do
     {:ok, _} =
       Contacts.capture_history(contact, :contact_name_updated, %{
         event_label: "contact name changed to #{name}",
+        channel: context.channel,
         event_meta: %{
           flow: %{
             id: context.flow.id,

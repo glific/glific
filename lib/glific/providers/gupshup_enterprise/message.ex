@@ -199,7 +199,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     # or maybe a simulator or some test code
     if is_nil(params["mobile"]) ||
          String.trim(params["mobile"]) == "" do
-      error = "Phone number is blank, #{inspect(params)}"
+      error = "Phone number is blank, #{Glific.SafeLog.safe_inspect(params)}"
       Logger.error(error)
 
       stacktrace =

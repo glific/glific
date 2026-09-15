@@ -4,6 +4,7 @@ mutation importFlow($flow: Json!) {
       flowName
       status
       assistantNodeUuids
+      invalidSheetNodeUuids
     }
   }
 }

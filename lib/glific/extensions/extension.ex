@@ -5,8 +5,6 @@ defmodule Glific.Extensions.Extension do
 
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
-
   alias __MODULE__
 
   alias Glific.{
@@ -113,7 +111,7 @@ defmodule Glific.Extensions.Extension do
     end
   rescue
     e ->
-      {:error, "Error in compiling file, #{inspect(e)}"}
+      {:error, "Error in compiling file, #{Glific.SafeLog.safe_inspect(e)}"}
   end
 
   @spec unload(String.t() | nil) :: :ok

@@ -22,6 +22,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
           failure_reason: String.t() | nil,
           results: map(),
           kaapi_evaluation_id: non_neg_integer() | nil,
+          duplication_factor: non_neg_integer() | nil,
           golden_qa_id: non_neg_integer() | nil,
           golden_qa: GoldenQA.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer() | nil,
@@ -44,7 +45,8 @@ defmodule Glific.AIEvaluations.AIEvaluation do
   @optional_fields [
     :failure_reason,
     :results,
-    :kaapi_evaluation_id
+    :kaapi_evaluation_id,
+    :duplication_factor
   ]
 
   schema "ai_evaluations" do
@@ -53,6 +55,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     field(:failure_reason, :string)
     field(:results, :map, default: %{})
     field(:kaapi_evaluation_id, :integer)
+    field(:duplication_factor, :integer, default: 1)
     belongs_to(:golden_qa, GoldenQA)
     belongs_to(:assistant_config_version, AssistantConfigVersion)
     belongs_to(:organization, Organization)

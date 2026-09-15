@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
   end
   """
 
-  test "create a new extension", %{user: user} = attrs do
+  test "create a new extension", %{glific_admin: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -65,7 +65,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert message =~ "has already been taken"
   end
 
-  test "update an extension", %{user: user} = attrs do
+  test "update an extension", %{glific_admin: user} = attrs do
     extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -87,7 +87,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert extensions["name"] == "Test extension"
   end
 
-  test "update an extension by organization id", %{user: user} = attrs do
+  test "update an extension by organization id", %{glific_admin: user} = attrs do
     Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -111,7 +111,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert extensions["name"] == "Test extension"
   end
 
-  test "delete an extension", %{user: user} = attrs do
+  test "delete an extension", %{glific_admin: user} = attrs do
     extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -129,7 +129,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert true == is_nil(error)
   end
 
-  test "get extension and test possible scenarios and errors", %{user: user} = attrs do
+  test "get extension and test possible scenarios and errors", %{glific_admin: user} = attrs do
     extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -160,7 +160,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
   end
 
   test "get extension by client_id and test possible scenarios and errors",
-       %{user: user} = attrs do
+       %{glific_admin: user} = attrs do
     Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -176,5 +176,112 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert extensions["isValid"] == true
     assert extensions["isActive"] == true
     assert extensions["name"] == "Test extension"
+  end
+
+  describe "authorization boundary for extensions raised to glific_admin" do
+    test "extension queries and mutations reject admin, manager, and staff, but allow glific_admin",
+         %{
+           user: admin_user,
+           manager: manager_user,
+           staff: staff_user,
+           glific_admin: glific_admin_user
+         } = attrs do
+      extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
+
+      for rejected_user <- [admin_user, manager_user, staff_user] do
+        {:ok, query_data} =
+          auth_query_gql_by(:by_id, rejected_user, variables: %{"id" => extension.id})
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:by_client_id, rejected_user,
+            variables: %{"clientId" => attrs.organization_id}
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:create, rejected_user,
+            variables: %{
+              "input" => %{
+                "clientId" => attrs.organization_id,
+                "code" => @code,
+                "isActive" => true,
+                "name" => "Rejected create attempt"
+              }
+            }
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:update, rejected_user,
+            variables: %{
+              "id" => extension.id,
+              "input" => %{
+                "clientId" => attrs.organization_id,
+                "isActive" => true,
+                "code" => @code
+              }
+            }
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:get_organization_extension, rejected_user,
+            variables: %{
+              "clientId" => attrs.organization_id,
+              "input" => %{
+                "clientId" => attrs.organization_id,
+                "isActive" => true,
+                "code" => @code
+              }
+            }
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:delete, rejected_user, variables: %{"id" => extension.id})
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+      end
+
+      # gate cleared for glific_admin — no rejected attempt above mutated the fixture
+      {:ok, query_data} =
+        auth_query_gql_by(:by_id, glific_admin_user, variables: %{"id" => extension.id})
+
+      assert get_in(query_data, [:errors]) == nil
+
+      fetched_extension = get_in(query_data, [:data, "extension", "extension"])
+      assert fetched_extension["id"] == to_string(extension.id)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:get_organization_extension, glific_admin_user,
+          variables: %{
+            "clientId" => attrs.organization_id,
+            "input" => %{
+              "clientId" => attrs.organization_id,
+              "isActive" => false,
+              "code" => @code
+            }
+          }
+        )
+
+      assert get_in(query_data, [:errors]) == nil
+
+      updated_extension =
+        get_in(query_data, [:data, "updateOrganizationExtension", "extension"])
+
+      assert updated_extension["isActive"] == false
+    end
   end
 end

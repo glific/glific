@@ -2,7 +2,7 @@ defmodule Glific.Jobs do
   @moduledoc """
   The Jobs context.
   """
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     BigQuery.BigQueryJob,

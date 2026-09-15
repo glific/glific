@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Caches,
     Fixtures,
     Mails.MailLog,
     Messages,
@@ -25,6 +26,9 @@ defmodule Glific.TemplatesTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.hsm_templates(organization)
+    active_language_ids = Partners.organization(organization.id).active_language_ids
+    Caches.remove(organization.id, [{:template_library, active_language_ids}])
+
     :ok
   end
 
@@ -97,8 +101,8 @@ defmodule Glific.TemplatesTest do
 
       {:ok, session_template} =
         attrs
-        |> Map.put(:language_id, language.id)
         |> Enum.into(@valid_attrs)
+        |> Map.put_new(:language_id, language.id)
         |> Templates.create_session_template()
 
       session_template
@@ -388,6 +392,201 @@ defmodule Glific.TemplatesTest do
       assert session_template.status == "PENDING"
       assert session_template.uuid == whatspp_hsm_uuid
       assert session_template.language_id == language.id
+    end
+
+    test "create_session_template/1 for HSM with blank label derives one from shortcode and language",
+         attrs do
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "AUTHENTICATION",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your OTP is {{1}}",
+            "elementName" => "otp_message",
+            "id" => "5c3b0b3a-97fa-454e-ac3b-8c9b94e53b4b",
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your OTP is [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "otp_message_en"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.label == "otp_message_en"
+    end
+
+    test "create_session_template/1 for HSM with blank label appends a suffix when the derived label is already taken",
+         attrs do
+      language = language_fixture()
+
+      # a different template that happens to already hold the label we'd otherwise derive.
+      session_template_fixture(
+        Map.merge(attrs, %{label: "otp_message_en", shortcode: "unrelated_shortcode"})
+      )
+
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "AUTHENTICATION",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your OTP is {{1}}",
+            "elementName" => "otp_message",
+            "id" => "6d4c1c4b-97fa-454e-ac3b-8c9b94e53b4b",
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your OTP is [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "otp_message_en_2"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.label == "otp_message_en_2"
+    end
+
+    test "create_session_template/1 for HSM with a non-blank label keeps it unchanged", attrs do
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "AUTHENTICATION",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your OTP is {{1}}",
+            "elementName" => "otp_message_custom",
+            "id" => "7e5d2d5c-97fa-454e-ac3b-8c9b94e53b4b",
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your OTP is [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "My Custom Title"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "My Custom Title",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message_custom",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.label == "My Custom Title"
+    end
+
+    test "create_session_template/1 for HSM with blank label and a non-existent language_id returns an error instead of raising",
+         attrs do
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: 999_999_999,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message_invalid_language",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error, ["language_id", "does not exist"]} =
+               Templates.create_session_template(attrs)
+    end
+
+    test "create_session_template/1 for HSM with blank label and no shortcode falls back to the incomplete-data error",
+         attrs do
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: language_fixture().id,
+        is_hsm: true,
+        type: :text,
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error,
+              [
+                "HSM approval",
+                "for HSM approval shortcode, category and example fields are required"
+              ]} = Templates.create_session_template(attrs)
     end
 
     test "create_session_template/1 for HSM data with image url, should submit it for approval",
@@ -2522,5 +2721,280 @@ defmodule Glific.TemplatesTest do
              Templates.create_session_template(attrs)
 
     assert session_template.footer == "footer"
+  end
+
+  test "translate_session_template/2 translates body, footer, and buttons into the target language",
+       attrs do
+    language = language_fixture(@valid_language_attrs_1)
+    anchor_template = session_template_fixture(attrs)
+
+    # GoogleTranslate.translate/4 fans each string out to its own Task via
+    # Task.async_stream, so a process-scoped Tesla.Mock.mock/1 (bound to this test
+    # process) would be invisible to those tasks; mock_global is required here.
+    Tesla.Mock.mock_global(fn env ->
+      translated =
+        cond do
+          String.contains?(env.body, "Thank you") -> "धन्यवाद"
+          String.contains?(env.body, "footer text") -> "पादलेख पाठ"
+          String.contains?(env.body, "Track Order") -> "आदेश को ट्रैक करें"
+          true -> "अनुवाद उपलब्ध नहीं है"
+        end
+
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => translated}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 template_id: anchor_template.id,
+                 language_id: language.id,
+                 body: "Thank you",
+                 footer: "footer text",
+                 buttons: ["Track Order"]
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "धन्यवाद"
+    assert result.footer == "पादलेख पाठ"
+    assert result.buttons == ["आदेश को ट्रैक करें"]
+  end
+
+  test "translate_session_template/2 returns nil footer and no buttons when none were provided",
+       attrs do
+    language = language_fixture(@valid_language_attrs_1)
+    anchor_template = session_template_fixture(attrs)
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "अनुवादित"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+
+    assert result.body == "अनुवादित"
+    assert result.footer == nil
+    assert result.buttons == []
+  end
+
+  test "translate_session_template/2 returns an error for an unknown language", attrs do
+    assert {:error, ["Elixir.Glific.Settings.Language", "Resource not found"]} =
+             Templates.translate_session_template(
+               %{language_id: 999_999, body: "Hello"},
+               attrs.organization_id
+             )
+  end
+
+  test "translate_session_template/2 derives the source language from the anchor template's own record, not from client input",
+       attrs do
+    source_language = language_fixture(%{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
+    target_language = language_fixture()
+    anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
+
+    test_pid = self()
+
+    Tesla.Mock.mock_global(fn env ->
+      send(test_pid, {:translate_request, Jason.decode!(env.body)})
+
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 template_id: anchor_template.id,
+                 language_id: target_language.id,
+                 body: "Namaste"
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "translated"
+    assert result.source_language.id == source_language.id
+
+    assert_receive {:translate_request, request}
+    assert request["source"] == source_language.locale
+    assert request["target"] == target_language.locale
+  end
+
+  test "translate_session_template/2 returns an error when the anchor template belongs to another organization",
+       attrs do
+    other_organization = Fixtures.organization_fixture()
+    language = language_fixture()
+
+    Repo.put_organization_id(other_organization.id)
+
+    anchor_template =
+      session_template_fixture(%{
+        organization_id: other_organization.id,
+        language_id: language.id
+      })
+
+    Repo.put_organization_id(attrs.organization_id)
+
+    assert {:error, _} =
+             Templates.translate_session_template(
+               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+  end
+
+  test "translate_session_template/2 returns a clear error when source and target languages are the same",
+       attrs do
+    language = language_fixture()
+    anchor_template = session_template_fixture(Map.put(attrs, :language_id, language.id))
+
+    assert {:error, "Source and target language cannot be the same."} =
+             Templates.translate_session_template(
+               %{template_id: anchor_template.id, language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+  end
+
+  test "translate_session_template/2 allows distinct locales that happen to share a label",
+       attrs do
+    source_language = language_fixture(%{label: "Hindi", locale: "hi_IN"})
+    target_language = language_fixture(%{label: "Hindi", locale: "hi_US"})
+    anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 template_id: anchor_template.id,
+                 language_id: target_language.id,
+                 body: "Hello"
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "translated"
+  end
+
+  test "search_library_templates/1 stops serving a stale cache when the org's active languages change",
+       attrs do
+    organization = Partners.get_organization!(attrs.organization_id)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_english",
+                  "category" => "UTILITY",
+                  "data" => "Hello {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_hindi",
+                  "category" => "UTILITY",
+                  "data" => "Namaste {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "hi",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, templates_before} = Templates.search_library_templates(attrs.organization_id)
+
+    assert templates_before |> Enum.map(& &1.element_name) |> Enum.sort() ==
+             ["utility_english", "utility_hindi"]
+
+    # Dropping Hindi from the org's active languages must be reflected
+    # immediately, not after the 20-minute cache TTL expires.
+    assert {:ok, _updated_organization} =
+             Partners.update_organization(organization, %{active_language_ids: [1]})
+
+    assert {:ok, templates_after} = Templates.search_library_templates(attrs.organization_id)
+
+    assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
+  end
+
+  test "search_library_templates/1 serves an identical second call from cache instead of refetching",
+       attrs do
+    {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        Agent.update(counter, &(&1 + 1))
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_cache_hit",
+                  "category" => "UTILITY",
+                  "data" => "Hi {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, first_call} = Templates.search_library_templates(attrs.organization_id)
+
+    assert {:ok, second_call} = Templates.search_library_templates(attrs.organization_id)
+
+    assert Enum.map(first_call, & &1.element_name) == ["utility_cache_hit"]
+    assert first_call == second_call
+
+    # the metalibrary endpoint must only be hit once - the second identical
+    # call is served from the {:ok, templates} -> {:ok, templates} cache branch
+    assert Agent.get(counter, & &1) == 1
   end
 end

@@ -32,8 +32,11 @@ defmodule Glific.Jobs.MinuteWorker do
     Templates,
     Trackers,
     TrialAccount.TrialWorker,
-    Triggers
+    Triggers,
+    WAManagedPhones
   }
+
+  alias Glific.Providers.Instrumentation
 
   @doc """
   Worker to implement cron job functionality as implemented by Oban. This
@@ -43,7 +46,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => job}} = args) do
-    Logger.info("Performing job: #{inspect(job)}")
+    Logger.info("Performing job: #{Glific.SafeLog.safe_inspect(job)}")
     services = Partners.get_organization_services()
     perform(args, services)
   end
@@ -70,7 +73,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&AIEvaluations.poll_and_update/1, nil, [])
 
       "wakeup_flows" ->
-        Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
+        FlowContext.wakeup_flows()
 
       "triggers_and_broadcast" ->
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
@@ -102,7 +105,12 @@ defmodule Glific.Jobs.MinuteWorker do
   end
 
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, _services)
-       when job in ["weekly_report", "weekly_tasks", "weekly_message_purge"] do
+       when job in [
+              "weekly_report",
+              "weekly_tasks",
+              "weekly_message_purge",
+              "weekly_version_purge"
+            ] do
     case job do
       "weekly_report" ->
         GCS.send_internal_media_sync_report()
@@ -114,6 +122,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "weekly_message_purge" ->
         Erase.perform_message_purge()
+
+      "weekly_version_purge" ->
+        Erase.perform_version_purge()
     end
 
     :ok
@@ -165,13 +176,18 @@ defmodule Glific.Jobs.MinuteWorker do
 
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
-        Partners.perform_all(&WAWorker.perform_periodic/1, nil, [], only_recent: true)
+        Partners.perform_all(&WAWorker.perform_periodic/1, nil, services["maytapi"],
+          only_recent: true
+        )
 
         Partners.perform_all(&Assistants.process_timeouts/1, nil, [])
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
         CollectionCount.collection_stats()
+        Instrumentation.check_inbound_staleness()
+
+        Partners.perform_all(&WAManagedPhones.reconcile_wa_managed_phone_statuses/1, nil, [])
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
