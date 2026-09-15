@@ -248,6 +248,20 @@ defmodule Glific.Flows.FlowContextTest do
       assert is_nil(Repo.get!(FlowContext, newer_whatsapp.id).completed_at)
       refute is_nil(Repo.get!(FlowContext, newer_web.id).completed_at)
     end
+
+    # A sub-flow started from a web parent must run on web too: otherwise its replies reach the BSP
+    # and, because the parent is looked up by channel, the :web parent is orphaned when it completes.
+    test "start_sub_flow inherits the parent's channel", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, parent, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+      parent = Repo.preload(parent, [:contact, :flow])
+
+      {:ok, child, _} = Flow.start_sub_flow(parent, flow.uuid, parent.id)
+
+      assert child.channel == :web
+      refute is_nil(FlowContext.active_context(contact.id, child.channel, parent.id))
+    end
   end
 
   test "load_context/2 will load all the nodes and actions in memory for the context",

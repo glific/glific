@@ -140,6 +140,36 @@ defmodule Glific.Flows.ContactActionTest do
     assert message.flow_id == context.flow_id
   end
 
+  # A template node in a web flow must be refused, not leaked: templates need a BSP, so a web
+  # context returns the guard error rather than sending the rendered body over WhatsApp.
+  test "a template send on a web context is refused, not delivered", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id,
+        channel: :web
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    action = %Action{
+      templating: %Templating{template: template, variables: ["var_1", "var_2", "var_3"]}
+    }
+
+    ContactAction.send_message(context, action, [])
+
+    refute Message |> where([m], m.contact_id == ^contact.id) |> Repo.exists?()
+  end
+
   test "send interactive message", attrs do
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})

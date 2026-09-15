@@ -540,6 +540,7 @@ defmodule Glific.Messages do
       is_hsm: Map.get(args, :is_hsm, false),
       flow_label: args[:flow_label],
       organization_id: session_template.organization_id,
+      channel: args[:channel],
       params: args[:params]
     }
 

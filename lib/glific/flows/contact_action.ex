@@ -327,6 +327,9 @@ defmodule Glific.Flows.ContactAction do
       is_hsm: true,
       flow_label: flow_label,
       send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
+      # Carry the channel so the web clause of check_for_hsm_message/2 fires: templates need a BSP,
+      # so a web flow refuses them here rather than leaking the rendered body over WhatsApp.
+      channel: context.channel,
       params: params
     }
 

@@ -66,11 +66,27 @@ defmodule Glific.Communications.WebMessage do
   # inbox, but never enters the flow engine.
   @spec hand_to_flow_engine({:ok, Message.t()} | {:error, any()}, non_neg_integer()) :: :ok
   defp hand_to_flow_engine({:ok, message}, organization_id) do
-    if web_channel_enabled?(organization_id), do: MessageWorker.make_job(message)
+    if web_channel_enabled?(organization_id), do: enqueue_flow_job(message)
     :ok
   end
 
   defp hand_to_flow_engine(_result, _organization_id), do: :ok
+
+  # MessageWorker runs with max_attempts: 1, so a dropped enqueue is the message's only chance at
+  # flow processing — log it rather than let it fail silently in the inbox.
+  @spec enqueue_flow_job(Message.t()) :: any()
+  defp enqueue_flow_job(message) do
+    case MessageWorker.make_job(message) do
+      {:ok, _job} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Could not enqueue inbound web message for flow processing: " <>
+            Glific.SafeLog.safe_inspect(reason)
+        )
+    end
+  end
 
   @spec web_channel_enabled?(non_neg_integer()) :: boolean()
   defp web_channel_enabled?(organization_id) do
