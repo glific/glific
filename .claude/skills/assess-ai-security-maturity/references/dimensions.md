@@ -74,7 +74,7 @@ them as a note, not as a level-0 finding, unless a prod path reaches them.
 **Question:** does each workload have its own identity, scoped to what it needs, for as
 short a time as it needs?
 
-Maps to `ASI03`, NIST SP 800-207A (non-person entities).
+Maps to `ASI03`, NIST SP 800-207A (identity-based segmentation over network-based).
 
 ### Evidence to gather
 

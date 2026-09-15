@@ -42,20 +42,33 @@ The Cloud Security Alliance publishes two complementary artefacts:
   *which controls should exist for this deployment*.
 - **AI Security Maturity Model (AISMM)** — five maturity levels across twelve practice areas
   in three domains, mapped to AICM. Answers *what the programme looks like at each stage*.
-  Published May 2026. Commentary treats Level 3 as the practical minimum for regulated
-  deployment.
+  Published 19 May 2026. Levels are **1 Initial, 2 Repeatable, 3 Defined, 4 Capable,
+  5 Efficient**. Domains are **Foundational** (governance, organization management, IAM,
+  security monitoring), **Structural** (infrastructure, model, application, data security)
+  and **Procedural** (risk and provider assessment, AI-supported development,
+  privacy/compliance/audit, incident response).
+
+  On what to aim for, CSA is explicit: *"Not every organization needs to be Level 5 across
+  the board, and very few should try."* Their guidance is Level 3–4 in the foundational and
+  structural categories, with selective 4–5 aligned to organizational risk. Do not repeat
+  the secondary-source claim that Level 3 is a regulated-industry minimum — CSA does not
+  say that.
 
 ### Level mapping
 
 This skill scores 0–4 per dimension. AISMM numbers its levels 1–5. The mapping:
 
-| This skill | AISMM | Shorthand |
-|-----------|-------|-----------|
+| This skill | AISMM level | What it means here |
+|-----------|-------------|--------------------|
 | 0 | below 1 | Absent — the control does not exist and the exposure is reachable |
-| 1 | 1 | Ad hoc / initial |
-| 2 | 2 | Defined — a documented, consistent pattern |
-| 3 | 3 | Enforced — departures fail the build or the deploy |
-| 4 | 4–5 | Measured and improving — monitored, with a tested response path |
+| 1 | 1 Initial | Ad hoc. Something exists in places, inconsistent and unenforced |
+| 2 | 2 Repeatable | A consistent pattern, but nothing prevents departing from it |
+| 3 | 3 Defined | Enforced — departures fail the build or the deploy |
+| 4 | 4 Capable / 5 Efficient | Enforced *and* monitored, with a tested response path and a metric |
+
+Note the vocabulary clash, and do not paper over it in a report: AISMM's level 3 is named
+*Defined*, while this skill uses "defined" for its own level 2 and reserves level 3 for
+*enforced*. When citing AISMM, use AISMM's names.
 
 Two deliberate differences from AISMM, worth stating in any report that cites it:
 
@@ -103,9 +116,16 @@ with rug pulls and tool shadowing. Use it when assessing `glific-mcp` specifical
 ## NIST SP 800-207 and 207A
 
 **SP 800-207** is the zero trust architecture baseline: verify explicitly, enforce least
-privilege, assume breach. **SP 800-207A** is the one to cite for agents, because it
-addresses non-person entities — which now includes agents, inference workers and automated
-pipelines.
+privilege, assume breach. **SP 800-207A** is *A Zero Trust Architecture Model for Access
+Control in Cloud-Native Applications in Multi-Cloud Environments* — it is not a document
+about AI agents, so do not cite it as one. What makes it the right reference anyway is its
+central shift: away from segmentation by **network parameters** and toward
+**identity-based segmentation**, with authentication and authorization policies built on
+**application and service identities**, not only user identities.
+
+That is the principle an agent workload needs. Network isolation that every workload shares
+one credential through is not isolation — which is precisely how 1,200 supposedly isolated
+evaluation agents found each other.
 
 NIST has been soliciting input for a demonstration project applying 800-207 to agent use
 cases, with MCP, OAuth 2.0/2.1, OpenID Connect and SPIFFE/SPIRE among the standards in
@@ -125,7 +145,14 @@ The practical content, consistent across all of them, and the thing worth checki
 
 ## EU AI Act
 
-High-risk obligations became binding **2 August 2026**. Relevant articles:
+**Get the dates right — the commonly quoted one is wrong.** 2 August 2026 is when the
+remainder of the Act starts applying generally. The Chapter III high-risk obligations
+themselves apply from **2 December 2027** for systems high-risk under Article 6(2) and
+**Annex III** (the use-case list: hiring, credit, education, essential services), and from
+**2 August 2028** for systems high-risk under Article 6(1) and **Annex I** (products already
+covered by Union harmonisation law).
+
+Relevant articles:
 
 | Article | Subject | Why it matters here |
 |---------|---------|---------------------|
@@ -136,10 +163,17 @@ High-risk obligations became binding **2 August 2026**. Relevant articles:
 | 15 | Accuracy, robustness, cybersecurity | Resilience across the **action layer**, not only model output |
 | 26 | Deployer obligations | Applies when using someone else's high-risk system |
 
-Article 15 is the one security engineers should read. If agents invoke APIs, that action
-layer is in scope for the cybersecurity and logging mandates, and in a multi-agent
-architecture the compliance boundary extends to every agent performing a high-risk function.
-Penalties for high-risk non-compliance reach €15M or 3% of global turnover.
+Article 15 is the one security engineers should read. Its own words: high-risk systems must
+be *"resilient against attempts by unauthorised third parties to alter their use, outputs or
+performance by exploiting system vulnerabilities"*, and it names the classes technical
+solutions must address — **data poisoning, model poisoning, adversarial examples,
+confidentiality attacks and model flaws**. Penalties for high-risk non-compliance reach €15M
+or 3% of global turnover.
+
+The reading that agents invoking APIs put that whole action layer in scope, and that in a
+multi-agent system the boundary extends to every agent performing a high-risk function, is a
+reasonable **interpretation** and widely argued — but it is commentary, not Article 15 text.
+Mark it as such rather than quoting it as the requirement.
 
 Whether Glific's use is high-risk is a legal determination, not one this skill makes. Note
 the exposure and route the question to someone who can answer it. Glific's social-sector
