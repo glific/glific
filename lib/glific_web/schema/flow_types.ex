@@ -217,6 +217,8 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:flow_id, non_null(:id))
       arg(:contact_id, non_null(:id))
       arg(:default_results, :json)
+      # Which channel the flow runs on; defaults to whatsapp so existing callers are unchanged.
+      arg(:channel, :message_channel_enum)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_contact_flow/3)
     end

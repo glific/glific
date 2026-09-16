@@ -511,6 +511,27 @@ defmodule GlificWeb.Schema.FlowTest do
     # will add test for success with integration tests
   end
 
+  test "Start flow for a contact on the web channel", %{manager: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    result =
+      auth_query_gql_by(:contact_flow, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id, "channel" => "WEB"}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
+
+    # the context the flow runs in — and therefore where its replies route — is the web channel
+    assert {:ok, flow_context} =
+             Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+    assert flow_context.channel == :web
+  end
+
   test "Resume flow for a contact", %{manager: user} = attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})

@@ -200,7 +200,12 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec start_contact_flow(
           Absinthe.Resolution.t(),
-          %{flow_id: integer | String.t(), contact_id: integer},
+          %{
+            :flow_id => integer | String.t(),
+            :contact_id => integer,
+            optional(:default_results) => map(),
+            optional(:channel) => atom()
+          },
           %{
             context: map()
           }
@@ -212,7 +217,10 @@ defmodule GlificWeb.Resolvers.Flows do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
-         {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact, params[:default_results]) do
+         {:ok, _flow} <-
+           Flows.start_contact_flow(flow_id, contact, params[:default_results],
+             channel: Map.get(params, :channel, :whatsapp)
+           ) do
       {:ok, %{success: true}}
     end
   end
