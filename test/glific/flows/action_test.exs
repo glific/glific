@@ -1248,6 +1248,45 @@ defmodule Glific.Flows.ActionTest do
       |> hd()
 
     assert new_flow_context.flow_uuid == "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+    # a different contact has no web session, so their flow runs on whatsapp
+    assert new_flow_context.channel == :whatsapp
+  end
+
+  test "execute a start_session targeting the flow's own contact inherits its channel", attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # the flow itself is running on the web channel, and the node targets that same contact
+    context =
+      %FlowContext{
+        contact_id: contact.id,
+        flow_id: 1,
+        organization_id: attrs.organization_id,
+        channel: :web
+      }
+      |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuid_map, %{"Test UUID" => {:node, %{is_terminal: false}}})
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "start_session",
+      groups: [],
+      contacts: [%{"name" => "Default receiver", "uuid" => to_string(contact.id)}],
+      create_contact: false,
+      flow: %{"name" => "Template Workflow", "uuid" => "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"}
+    }
+
+    assert {:ok, _context, _messages} = Action.execute(action, context, [])
+
+    new_flow_context =
+      FlowContext
+      |> where([fc], fc.contact_id == ^contact.id and fc.channel == :web)
+      |> order_by([fc], desc: fc.id)
+      |> Repo.all()
+      |> hd()
+
+    assert new_flow_context.flow_uuid == "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd"
+    assert new_flow_context.channel == :web
   end
 
   test "execute an action when type is wait_for_time", attrs do

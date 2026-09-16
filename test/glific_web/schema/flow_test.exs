@@ -532,6 +532,29 @@ defmodule GlificWeb.Schema.FlowTest do
     assert flow_context.channel == :web
   end
 
+  # An explicit `channel: null` is a present-but-nil arg; the resolver coalesces it to whatsapp
+  # rather than letting nil through (which would complete the contact's flows on every channel).
+  test "Start flow for a contact coalesces an explicit null channel to whatsapp",
+       %{manager: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    result =
+      auth_query_gql_by(:contact_flow, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id, "channel" => nil}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
+
+    assert {:ok, flow_context} =
+             Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+    assert flow_context.channel == :whatsapp
+  end
+
   test "Resume flow for a contact", %{manager: user} = attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})

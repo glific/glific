@@ -203,8 +203,8 @@ defmodule GlificWeb.Resolvers.Flows do
           %{
             :flow_id => integer | String.t(),
             :contact_id => integer,
-            optional(:channel) => atom(),
-            optional(:default_results) => map()
+            optional(:channel) => atom() | nil,
+            optional(:default_results) => map() | nil
           },
           %{
             context: map()
@@ -217,14 +217,8 @@ defmodule GlificWeb.Resolvers.Flows do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
-         # `||` coerces both an omitted key and an explicit `channel: null` to the default.
          {:ok, _flow} <-
-           Flows.start_contact_flow(
-             flow_id,
-             contact,
-             params[:default_results],
-             params[:channel] || :whatsapp
-           ) do
+           Flows.start_contact_flow(flow_id, contact, params[:default_results], params[:channel]) do
       {:ok, %{success: true}}
     end
   end

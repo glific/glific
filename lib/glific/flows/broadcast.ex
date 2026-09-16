@@ -297,7 +297,10 @@ defmodule Glific.Flows.Broadcast do
       bsp_limit: bsp_limit,
       limit: 500,
       offset: 0,
-      delay: 0
+      delay: 0,
+      # group/wa-group broadcasts have no web analog; broadcast_contacts overrides this for the
+      # contact-flow path with the channel it was started on.
+      channel: :whatsapp
     ]
   end
 
@@ -389,7 +392,7 @@ defmodule Glific.Flows.Broadcast do
         {:delay, opts[:delay] + delay_offset},
         {:message_broadcast_id, opts[:message_broadcast_id]},
         {:default_results, opts[:default_results]},
-        {:channel, Keyword.get(opts, :channel, :whatsapp)}
+        {:channel, opts[:channel]}
       ]
 
       if attrs.type == :flow,

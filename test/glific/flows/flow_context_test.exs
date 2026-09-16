@@ -295,7 +295,6 @@ defmodule Glific.Flows.FlowContextTest do
       assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
       refute is_nil(Repo.get!(FlowContext, web_parent.id).completed_at)
     end
-
   end
 
   test "load_context/2 will load all the nodes and actions in memory for the context",
