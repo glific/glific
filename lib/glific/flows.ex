@@ -767,9 +767,6 @@ defmodule Glific.Flows do
 
   def start_contact_flow(flow_id, %Contact{} = contact, default_results, channel)
       when is_integer(flow_id) do
-    # The single whatsapp fallback: every entry (GraphQL resolver, exotel, start_session) funnels
-    # through here, so an unspecified or explicit-nil channel is coalesced once, and everything
-    # downstream receives a concrete channel.
     channel = channel || :whatsapp
 
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do

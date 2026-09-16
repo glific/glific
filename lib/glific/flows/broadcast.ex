@@ -298,8 +298,6 @@ defmodule Glific.Flows.Broadcast do
       limit: 500,
       offset: 0,
       delay: 0,
-      # group/wa-group broadcasts have no web analog; broadcast_contacts overrides this for the
-      # contact-flow path with the channel it was started on.
       channel: :whatsapp
     ]
   end
