@@ -51,4 +51,26 @@ defmodule Glific.DialogflowTest do
 
     assert {:ok, "no token found"} == Dialogflow.get_intent_list(organization_id)
   end
+
+  test "request/4 returns an error instead of raising when credentials are invalid",
+       %{organization_id: organization_id} = _attrs do
+    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
+
+    {:ok, _credential} =
+      %Credential{}
+      |> Credential.changeset(%{
+        secrets: %{"service_account" => "not valid json"},
+        is_active: true,
+        provider_id: provider.id,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    organization = Partners.organization(organization_id)
+    Partners.remove_organization_cache(organization_id, organization.shortcode)
+    Glific.Caches.remove(organization_id, [{:provider_token, "dialogflow"}])
+
+    assert {:error, "Invalid or missing Dialogflow credentials"} ==
+             Dialogflow.request(organization_id, :get, "intents", "")
+  end
 end
