@@ -61,6 +61,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :skip_validation, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
+    field :channel, :message_channel_enum
     field :inserted_at, :datetime
     field :updated_at, :datetime
     field :last_published_at, :datetime
@@ -81,6 +82,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
   input_object :flow_input do
     field :name, :string
+    field :channel, :message_channel_enum
     field :keywords, list_of(:string)
     field :tag_id, :id
     field :ignore_keywords, :boolean
@@ -113,6 +115,9 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Match the status of flow revision"
     field(:status, :string)
+
+    @desc "Match the channel the flow runs on"
+    field(:channel, :message_channel_enum)
 
     @desc "Match the is_active flag of flow"
     field(:is_active, :boolean)

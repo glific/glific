@@ -13,6 +13,7 @@ defmodule Glific.Flows.Flow do
     AccessControl.Role,
     Contacts.Contact,
     Enums.FlowType,
+    Enums.MessageChannel,
     Flows,
     Flows.Action,
     Flows.FlowContext,
@@ -28,6 +29,7 @@ defmodule Glific.Flows.Flow do
   @required_fields [:name, :uuid, :organization_id]
   @optional_fields [
     :flow_type,
+    :channel,
     :keywords,
     :version_number,
     :uuid_map,
@@ -59,6 +61,7 @@ defmodule Glific.Flows.Flow do
           respond_no_response: boolean() | nil,
           is_template: boolean() | nil,
           flow_type: String.t() | nil,
+          channel: String.t() | atom() | nil,
           status: String.t(),
           skip_validation: boolean() | nil,
           definition: map() | nil,
@@ -83,6 +86,7 @@ defmodule Glific.Flows.Flow do
     # this is the flow editor version number
     field(:version_number, :string)
     field(:flow_type, FlowType)
+    field(:channel, MessageChannel, default: :whatsapp)
     field(:uuid, Ecto.UUID)
 
     field(:uuid_map, :map, virtual: true)

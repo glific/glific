@@ -139,6 +139,9 @@ defmodule Glific.Flows do
           )
         )
 
+      {:channel, channel}, query ->
+        from(q in query, where: q.channel == ^channel)
+
       {:is_active, is_active}, query ->
         from(q in query, where: q.is_active == ^is_active)
 
