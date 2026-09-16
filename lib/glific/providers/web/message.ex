@@ -13,6 +13,12 @@ defmodule Glific.Providers.Web.Message do
   persisted and still appears in the staff inbox; the widget picks it up from the history it
   fetches on its next join. There is no offline queue and no delivery receipt, so a web message
   never becomes `:delivered`.
+
+  Unlike the BSP adapters, this delivers immediately and does not honour a flow's `send_at`. The
+  inter-bubble delay exists to pace WhatsApp sends (human feel, anti-spam); a live browser chat
+  is expected to show replies promptly, and delivering inline keeps the bubbles strictly ordered
+  rather than risking reordering through a scheduled queue. Per-bubble pacing on web, if ever
+  wanted, is a deliberate follow-up.
   """
 
   alias Glific.{
