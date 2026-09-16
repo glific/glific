@@ -74,9 +74,11 @@ defmodule Glific.Caches do
   # and every later fetch of it blocks forever on an :infinity call. The caller is parked on this
   # fetch and so cannot check in underneath the fallback, which makes it the one safe lender.
   if Application.compile_env(:glific, :environment) == :test do
+    alias Ecto.Adapters.SQL.Sandbox
+
     @spec allow_db_access(pid()) :: any()
     defp allow_db_access(caller),
-      do: Ecto.Adapters.SQL.Sandbox.allow(Glific.Repo, caller, self())
+      do: Sandbox.allow(Glific.Repo, caller, self())
   else
     @spec allow_db_access(pid()) :: any()
     defp allow_db_access(_caller), do: :ok
