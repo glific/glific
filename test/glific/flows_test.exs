@@ -483,7 +483,7 @@ defmodule Glific.FLowsTest do
       assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{is_active: true})
       contact = Fixtures.contact_fixture(attrs)
 
-      {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, channel: :web)
+      {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, :web)
 
       assert {:ok, flow_context} =
                Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})

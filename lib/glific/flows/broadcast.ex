@@ -173,15 +173,15 @@ defmodule Glific.Flows.Broadcast do
             Glific.Contacts.Contact.t()
           ],
           map(),
-          Keyword.t()
+          atom()
         ) :: :ok
-  def broadcast_contacts(flow, contacts, default_results \\ %{}, opts \\ []) do
+  def broadcast_contacts(flow, contacts, default_results \\ %{}, channel \\ :whatsapp) do
     Repo.put_process_state(flow.organization_id)
 
     broadcast_opts =
       opts(flow.organization_id)
       |> Keyword.put(:default_results, default_results)
-      |> Keyword.put(:channel, Keyword.get(opts, :channel, :whatsapp))
+      |> Keyword.put(:channel, channel)
 
     broadcast_for_contacts(
       %{flow: flow, type: :flow},

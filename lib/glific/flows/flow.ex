@@ -711,11 +711,10 @@ defmodule Glific.Flows.Flow do
     |> Enum.each(fn contact_id ->
       contact = Repo.get_by(Contact, %{id: contact_id})
 
-      # Only the flow's own contact inherits its channel; a different contact has no web session,
-      # so their flow runs on whatsapp (mirrors ContactAction.channel_for/2).
+      # Only the flow's own contact inherits its channel; a different contact has no web session.
       channel = if contact.id == context.contact_id, do: context.channel, else: :whatsapp
 
-      Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results}, channel: channel)
+      Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results}, channel)
     end)
 
     group_ids =

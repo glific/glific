@@ -707,9 +707,7 @@ defmodule Glific.Flows.FlowContext do
     delay = Keyword.get(opts, :delay, 0)
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
-    # `|| :whatsapp` so an explicit nil (not just an absent key) still defaults — the column is
-    # NOT NULL and an unscoped mark_flows_complete would cross channels.
-    channel = Keyword.get(opts, :channel) || :whatsapp
+    channel = Keyword.get(opts, :channel, :whatsapp)
     initial_results = Keyword.get(opts, :results, default_results(opts))
 
     Logger.info(
@@ -799,9 +797,7 @@ defmodule Glific.Flows.FlowContext do
     if is_nil(parent_id) do
       mark_flows_complete(contact.id, flow.is_background,
         source: "init_context",
-        # `|| :whatsapp`: a nil here would make mark_flows_complete unscoped and complete the
-        # contact's flows on every channel.
-        channel: Keyword.get(opts, :channel) || :whatsapp,
+        channel: Keyword.get(opts, :channel, :whatsapp),
         event_meta: %{
           flow_id: flow.id,
           parent_id: parent_id,

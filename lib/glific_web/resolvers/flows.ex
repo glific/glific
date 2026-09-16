@@ -203,8 +203,8 @@ defmodule GlificWeb.Resolvers.Flows do
           %{
             :flow_id => integer | String.t(),
             :contact_id => integer,
-            optional(:default_results) => map(),
-            optional(:channel) => atom()
+            optional(:channel) => atom(),
+            optional(:default_results) => map()
           },
           %{
             context: map()
@@ -217,12 +217,13 @@ defmodule GlificWeb.Resolvers.Flows do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
+         # `||` coerces both an omitted key and an explicit `channel: null` to the default.
          {:ok, _flow} <-
-           Flows.start_contact_flow(flow_id, contact, params[:default_results],
-             # `||`, not a Map.get default: an explicit `channel: null` in the GraphQL variables is
-             # a present key with a nil value, which would otherwise flow through and, unscoped,
-             # complete the contact's running flows on every channel.
-             channel: params[:channel] || :whatsapp
+           Flows.start_contact_flow(
+             flow_id,
+             contact,
+             params[:default_results],
+             params[:channel] || :whatsapp
            ) do
       {:ok, %{success: true}}
     end

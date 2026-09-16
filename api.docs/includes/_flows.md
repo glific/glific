@@ -468,6 +468,7 @@ In case of errors, all the above functions return an error object like the below
 | --------- | --------------------- | -------- | ----------- |
 | flowId    | <a href="#id">ID</a>! | required |             |
 | contactId | <a href="#id">ID</a>! | required |             |
+| channel   | <a href="#messagechannelenum">MessageChannelEnum</a> | WHATSAPP | The channel the flow runs on (`WHATSAPP` or `WEB`). |
 
 ### Return Parameters
 
