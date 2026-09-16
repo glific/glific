@@ -415,8 +415,8 @@ In case of errors, all the above functions return an error object like the below
 ## Start flow for a contact
 
 ```graphql
-mutation startContactFlow($flowId: ID!, $contactId: ID!) {
-  startContactFlow(flowId: $flowId, contactId: $contactId) {
+mutation startContactFlow($flowId: ID!, $contactId: ID!, $channel: MessageChannelEnum) {
+  startContactFlow(flowId: $flowId, contactId: $contactId, channel: $channel) {
     success
     errors {
         key

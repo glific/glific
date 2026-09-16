@@ -219,7 +219,10 @@ defmodule GlificWeb.Resolvers.Flows do
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
          {:ok, _flow} <-
            Flows.start_contact_flow(flow_id, contact, params[:default_results],
-             channel: Map.get(params, :channel, :whatsapp)
+             # `||`, not a Map.get default: an explicit `channel: null` in the GraphQL variables is
+             # a present key with a nil value, which would otherwise flow through and, unscoped,
+             # complete the contact's running flows on every channel.
+             channel: params[:channel] || :whatsapp
            ) do
       {:ok, %{success: true}}
     end

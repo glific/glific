@@ -295,6 +295,24 @@ defmodule Glific.Flows.FlowContextTest do
       assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
       refute is_nil(Repo.get!(FlowContext, web_parent.id).completed_at)
     end
+
+    # An explicit nil channel (e.g. `channel: null` in GraphQL vars) must still default to whatsapp,
+    # not fall through as nil — which would make mark_flows_complete unscoped and complete the
+    # contact's flows on every channel, and then fail the NOT NULL insert.
+    test "init_context with an explicit nil channel defaults to whatsapp and stays scoped", %{
+      flow: flow
+    } do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: nil)
+
+      assert whatsapp_context.channel == :whatsapp
+      # the web context is untouched — nil did not complete every channel's flows
+      assert is_nil(Repo.get!(FlowContext, web_context.id).completed_at)
+    end
   end
 
   test "load_context/2 will load all the nodes and actions in memory for the context",
