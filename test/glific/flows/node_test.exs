@@ -1,5 +1,5 @@
 defmodule Glific.Flows.NodeTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Contacts,

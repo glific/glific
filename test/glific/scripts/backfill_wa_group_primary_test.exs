@@ -1,5 +1,5 @@
 defmodule Glific.Scripts.BackfillWAGroupPrimaryTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Fixtures,

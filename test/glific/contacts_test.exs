@@ -1,6 +1,6 @@
 defmodule Glific.ContactsTest do
   alias Glific.Fixtures
-  use Glific.DataCase, async: true
+  use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Faker.Phone

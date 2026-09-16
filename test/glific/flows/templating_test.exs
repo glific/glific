@@ -1,5 +1,5 @@
 defmodule Glific.Flows.TemplatingTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Flows.Templating,

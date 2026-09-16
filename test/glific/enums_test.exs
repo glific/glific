@@ -1,5 +1,5 @@
 defmodule Glific.EnumsTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   doctest Glific.Enums
 end

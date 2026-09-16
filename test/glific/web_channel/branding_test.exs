@@ -1,7 +1,7 @@
 defmodule Glific.WebChannel.BrandingTest do
   @moduledoc false
 
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.Partners.Organization
   alias Glific.WebChannel.Branding

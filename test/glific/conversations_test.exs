@@ -1,5 +1,5 @@
 defmodule Glific.ConversationsTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{

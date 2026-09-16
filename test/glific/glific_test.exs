@@ -1,5 +1,5 @@
 defmodule Glific.GlificTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   @checker %{
     "123" => {:ok, 123},

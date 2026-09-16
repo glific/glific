@@ -1,6 +1,6 @@
 defmodule GlificWeb.WebChannel.MessageSerializerTest do
   @moduledoc false
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{Fixtures, Repo}
   alias GlificWeb.WebChannel.MessageSerializer

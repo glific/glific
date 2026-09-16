@@ -1,5 +1,5 @@
 defmodule Glific.Flows.ExpressionTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
 
   alias Glific.Flows.Expression
 

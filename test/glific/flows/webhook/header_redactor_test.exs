@@ -1,5 +1,5 @@
 defmodule Glific.Flows.Webhook.HeaderRedactorTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
 
   alias Glific.Flows.Webhook.HeaderRedactor
 

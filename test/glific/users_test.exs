@@ -1,5 +1,5 @@
 defmodule Glific.UsersTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Fixtures,

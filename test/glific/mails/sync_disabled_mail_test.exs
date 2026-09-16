@@ -1,5 +1,5 @@
 defmodule Glific.Mails.SyncDisabledMailTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Mails.MailLog,

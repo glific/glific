@@ -1,5 +1,5 @@
 defmodule Glific.Flows.Webhooks.Implementations.GetButtonsTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
 
   alias Glific.Flows.Webhooks.GetButtons
 

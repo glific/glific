@@ -1,5 +1,5 @@
 defmodule GlificWeb.LayoutViewTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
 
   # When testing helpers, you may want to import Phoenix.HTML and
   # use functions such as safe_to_string() to convert the helper

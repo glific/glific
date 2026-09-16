@@ -1,5 +1,5 @@
 defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.Flows.Webhooks.Geolocation
 

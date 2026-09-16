@@ -1,5 +1,5 @@
 defmodule Glific.TaggersNumericTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Messages.Message,

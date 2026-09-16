@@ -1,5 +1,5 @@
 defmodule Glific.Jobs.InstrumentationTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.Jobs.Instrumentation
 

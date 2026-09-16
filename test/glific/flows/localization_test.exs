@@ -1,5 +1,5 @@
 defmodule Glific.Flows.LocalizationTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Flows.Localization,
