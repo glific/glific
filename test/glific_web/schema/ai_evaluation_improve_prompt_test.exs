@@ -166,6 +166,7 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
 
     test "improve -> callback creates a new :ready config version", %{
       staff: user,
+      organization_id: organization_id,
       evaluation: evaluation,
       assistant: assistant
     } do
@@ -182,7 +183,7 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
              ]) == "pending"
 
       {:ok, new_config_version} =
-        AIEvaluations.handle_improve_prompt_callback(%{
+        AIEvaluations.handle_improve_prompt_callback(organization_id, %{
           "success" => true,
           "data" => %{
             "job_id" => "job_schema_test",

@@ -293,6 +293,9 @@ defmodule Glific.Flows.Flow do
       parent_id: parent_id,
       delay: context.delay,
       uuids_seen: context.uuids_seen,
+      # A sub-flow inherits its parent's channel, so its replies route the same way and the parent
+      # is found again (by channel) when the child completes.
+      channel: context.channel,
       # lets keep only one level of results, rather than a lot of them
       results: %{"parent" => parent}
     )

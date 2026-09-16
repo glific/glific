@@ -321,7 +321,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec build_config_blob(map(), list(String.t()), non_neg_integer()) :: map()
   defp build_config_blob(params, knowledge_base_ids, organization_id) do
-    model = params.model || "gpt-4o"
+    model = params.model || default_model()
 
     base_params = %{
       "model" => model,
@@ -738,11 +738,12 @@ defmodule Glific.ThirdParty.Kaapi do
   @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
-  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
+  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  def get_evaluation_scores(evaluation_id, organization_id) do
+  def get_evaluation_scores(evaluation_id, organization_id, export_format \\ "row") do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <- ApiClient.get_evaluation_scores(evaluation_id, secrets["api_key"]) do
+         {:ok, result} <-
+           ApiClient.get_evaluation_scores(evaluation_id, secrets["api_key"], export_format) do
       {:ok, result}
     else
       {:error, :timeout} ->
@@ -818,6 +819,47 @@ defmodule Glific.ThirdParty.Kaapi do
 
         {:error, reason}
     end
+  end
+
+  @doc """
+  Get document details from Kaapi, including its signed download URL.
+  """
+  @spec get_document(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def get_document(document_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, body} <- ApiClient.get_document(document_id, secrets["api_key"]) do
+      validate_document_response(body, organization_id)
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message: "Failed to get document from Kaapi",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @spec validate_document_response(any(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp validate_document_response(
+         %{success: true, data: %{signed_url: signed_url}} = body,
+         _organization_id
+       )
+       when is_binary(signed_url) and signed_url != "" do
+    %{data: data} = body
+    {:ok, data}
+  end
+
+  defp validate_document_response(body, organization_id) do
+    Glific.log_exception(%Error{
+      message: "Kaapi document response missing signed_url",
+      organization_id: organization_id,
+      reason: safe_inspect(body)
+    })
+
+    {:error, "File download URL not available"}
   end
 
   @doc """
@@ -926,6 +968,75 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @recommended_models [
+    {"gpt-5.6-luna", "Best value"},
+    {"gpt-5-nano", "Fastest"},
+    {"gpt-5-mini", "Budget"},
+    {"gpt-5.6-terra", "All-rounder"},
+    {"gpt-5.4", "All-rounder"}
+  ]
+  @to_be_deprecated_models ~w(gpt-4o gpt-4o-mini)
+
+  # Deliberately still gpt-4o. Moving the default to gpt-5.6-luna changes the model every
+  # assistant created without an explicit one is persisted with, so it is held back from
+  # the dropdown categorisation change.
+  @default_model "gpt-4o"
+
+  @doc """
+  The model an assistant is created with when the caller supplies none.
+  """
+  @spec default_model() :: String.t()
+  def default_model, do: @default_model
+
+  @doc """
+  List active Kaapi models annotated with `category` and `badge`, in dropdown display order.
+  """
+  @spec list_models_with_metadata(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_models_with_metadata(organization_id) do
+    with {:ok, models} <- list_models(organization_id) do
+      {:ok, models |> Enum.map(&annotate_model/1) |> sort_models()}
+    end
+  end
+
+  @spec annotate_model(map()) :: map()
+  defp annotate_model(%{model_name: model_name} = model) do
+    metadata =
+      cond do
+        entry = List.keyfind(@recommended_models, model_name, 0) ->
+          %{category: "recommended", badge: elem(entry, 1)}
+
+        model_name in @to_be_deprecated_models ->
+          %{category: "to_be_deprecated", badge: "Deprecating"}
+
+        true ->
+          %{category: "all", badge: nil}
+      end
+
+    Map.merge(model, metadata)
+  end
+
+  @spec sort_models(list(map())) :: list(map())
+  defp sort_models(models) do
+    Enum.sort_by(models, fn %{model_name: model_name, category: category} ->
+      case category do
+        "recommended" ->
+          {0, recommended_index(model_name), ""}
+
+        "all" ->
+          {1, 0, model_name}
+
+        _ ->
+          {2, 0, model_name}
+      end
+    end)
+  end
+
+  @spec recommended_index(String.t()) :: non_neg_integer()
+  defp recommended_index(model_name) do
+    Enum.find_index(@recommended_models, &(elem(&1, 0) == model_name)) ||
+      length(@recommended_models)
+  end
+
   @spec fetch_and_cache_models(non_neg_integer(), tuple()) :: {:ok, list(map())} | {:error, any()}
   defp fetch_and_cache_models(organization_id, cache_key) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
@@ -949,10 +1060,10 @@ defmodule Glific.ThirdParty.Kaapi do
           non_neg_integer()
         ) :: {:ok, map()} | {:error, map() | binary()}
   defp handle_evaluation_dataset_v2_response(
-         {:ok, %{data: %{dataset_id: dataset_id, total_items: total_items}}},
+         {:ok, %{data: %{dataset_id: dataset_id, original_items: original_items}}},
          _organization_id
        ) do
-    {:ok, %{dataset_id: dataset_id, total_items: total_items}}
+    {:ok, %{dataset_id: dataset_id, original_items: original_items}}
   end
 
   defp handle_evaluation_dataset_v2_response({:error, reason}, organization_id) do

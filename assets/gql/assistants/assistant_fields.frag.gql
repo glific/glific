@@ -8,6 +8,7 @@ fragment AssistantFields on AssistantResult {
     settings
     status
     new_version_in_progress
+    last_evaluation_summary
     vector_store {
       id
       knowledge_base_version_id

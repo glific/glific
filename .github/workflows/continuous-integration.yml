@@ -115,6 +115,17 @@ jobs:
           path: priv/plts
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
+      # The build cache is keyed on mix.lock alone, so every branch that has not changed a
+      # dependency shares a key and runners restore each other's _build. ex_doc and doctor
+      # read modules from those artifacts, so an incremental compile on top of a build from a
+      # commit that predates a module reports it "not defined/available" — which is why
+      # ex_doc fails intermittently on unchanged code.
+      #
+      # Dropping only this app's artifacts keeps the expensive part (deps, ~200 packages)
+      # cached while guaranteeing glific itself is compiled from this commit. Costs ~20s.
+      - name: Discard stale build artifacts for this app
+        run: rm -rf _build/${MIX_ENV}/lib/glific
+
       - name: Run check
         run: mix check
 

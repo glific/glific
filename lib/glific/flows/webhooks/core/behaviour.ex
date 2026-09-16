@@ -31,6 +31,8 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @callback name() :: String.t()
   @callback mode() :: :sync | :async
   @callback call(fields :: map(), ctx :: ctx()) :: result()
+  # Seconds to await the callback when the flow node doesn't set its own `wait_time`. Both are
+  # capped at 5 minutes by `Glific.Flows.Action`.
   @callback wait_time_default() :: non_neg_integer()
 
   # Async callback phase (Kaapi POSTs back): `Dispatcher.callback` runs these through the same

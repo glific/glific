@@ -151,8 +151,9 @@ defmodule Glific.Flows.Router do
       :ok ->
         errors
 
-      {:error, _reason} ->
-        [{EEx, "Node #{node_uuid_sliced} has unsupported expression", "Critical"}] ++ errors
+      {:error, reason} ->
+        [{EEx, "Node #{node_uuid_sliced} has unsupported expression: #{reason}", "Critical"}] ++
+          errors
     end
   end
 
@@ -340,7 +341,10 @@ defmodule Glific.Flows.Router do
   @spec update_context_results(FlowContext.t(), String.t(), Message.t(), {Category.t(), boolean}) ::
           FlowContext.t()
   defp update_context_results(context, key, _msg, _) when key in ["", nil] do
-    Logger.info("invalid results key for context: #{Glific.SafeLog.safe_inspect(context)}")
+    Logger.info(
+      "invalid results key for flow_context_id: #{context.id}, organization_id: #{context.organization_id}, flow_id: #{context.flow_id}"
+    )
+
     context
   end
 

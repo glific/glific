@@ -14,6 +14,7 @@ defmodule Glific.Users do
     AccessControl.UserRole,
     Repo,
     Settings.Language,
+    Users.Roles,
     Users.User
   }
 
@@ -114,9 +115,11 @@ defmodule Glific.Users do
       |> check_access_role(attrs)
 
     # lets invalidate the tokens and socket for this user
-    # we do this ONLY if either the role or is_restricted has changed
+    # the cached credentials embed the roles, so a bare `roles` write has to
+    # invalidate too - otherwise a demotion does not take effect until the TTL expires
     if validate_add_role_ids?(attrs) ||
          updated?(user.is_restricted, attrs[:is_restricted]) ||
+         updated?(user.roles, attrs[:roles]) ||
          validate_delete_role_ids?(attrs) do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end
@@ -147,23 +150,30 @@ defmodule Glific.Users do
   defp check_access_role(false, attrs), do: attrs
 
   defp check_access_role(true, %{add_role_ids: add_role_ids} = attrs) do
-    roles =
-      Role
-      |> select([r], r.label)
-      |> where([r], r.id in ^add_role_ids)
-      |> Repo.all()
-
     role =
-      cond do
-        Enum.any?(roles, fn role -> role == "Admin" end) -> ["admin"]
-        Enum.any?(roles, fn role -> role == "Manager" end) -> ["manager"]
-        Enum.any?(roles, fn role -> role == "Staff" end) -> ["staff"]
-        Enum.any?(roles, fn role -> role == "No access" end) -> ["none"]
-        Enum.any?(roles, fn role -> role == "Glific Admin" end) -> ["glific_admin"]
-        true -> ["manager"]
+      add_role_ids
+      |> role_labels_by_ids()
+      |> Enum.map(&Roles.reserved/1)
+      |> Enum.reject(&is_nil/1)
+      |> case do
+        [] -> ["none"]
+        roles -> [roles |> Enum.max_by(&Roles.rank/1) |> Atom.to_string()]
       end
 
     Map.put(attrs, :roles, role)
+  end
+
+  @doc """
+  Labels of the access roles matching the given ids
+  """
+  @spec role_labels_by_ids(list()) :: [String.t()]
+  def role_labels_by_ids([]), do: []
+
+  def role_labels_by_ids(role_ids) do
+    Role
+    |> select([r], r.label)
+    |> where([r], r.id in ^role_ids)
+    |> Repo.all()
   end
 
   @spec update_user_roles(map(), User.t()) :: {:ok, User.t()}

@@ -10,6 +10,7 @@ defmodule Glific.GCS do
   alias Glific.{
     Communications.Mailer,
     GCS.GcsJob,
+    GCS.SignedUrl,
     Mails.MediaSyncMail,
     Messages.Message,
     Messages.MessageMedia,
@@ -20,8 +21,6 @@ defmodule Glific.GCS do
     Repo,
     RepoReplica
   }
-
-  alias Waffle.Storage.Google.CloudStorage
 
   @endpoint "https://storage.googleapis.com/storage/v1/b"
 
@@ -160,8 +159,12 @@ defmodule Glific.GCS do
   def put_bucket_name(bucket_name),
     do: Process.put(@gcs_bucket_key, bucket_name)
 
+  @doc """
+  The organization's raw `google_cloud_storage` credential secrets (`"bucket"`,
+  `"service_account"`, ...), or `%{}` if GCS isn't configured for it.
+  """
   @spec get_secrets(non_neg_integer()) :: map()
-  defp get_secrets(org_id) do
+  def get_secrets(org_id) do
     organization = Partners.organization(org_id)
 
     organization.services["google_cloud_storage"]
@@ -171,64 +174,37 @@ defmodule Glific.GCS do
     end
   end
 
-  @spec load_goth(map()) :: :ok
-  defp load_goth(service_account) do
-    Goth.Config.add_config(service_account)
-    Goth.Config.set(:client_email, service_account["client_email"])
-    Goth.Config.set("private_key", service_account["private_key"])
-  end
-
   @doc """
-  Generate a signed URL for a private file
+  A short-lived signed GET URL for a private file, valid for `opts[:expires_in]` seconds
+  (default 300).
+
+  Signs directly through `GCS.SignedUrl`, passing the organization's own service-account
+  credential as an argument, rather than through waffle's signer — that path (and the
+  `load_goth/1` this replaced) stashed the credential in `Goth.Config`'s single shared
+  `:default` slot, so two organizations signing around the same time could sign with each
+  other's identity.
   """
   @spec get_signed_url(String.t(), non_neg_integer, keyword) ::
-          {:ok, String.t()} | {:error, String.t()}
+          {:ok, String.t()} | {:error, :no_private_bucket | :gcs_not_configured | :signing_failed}
   def get_signed_url(file_name, organization_id, opts \\ []) do
     Repo.put_organization_id(organization_id)
-    gcs_secrets = get_secrets(organization_id)
 
-    if is_nil(gcs_secrets["private_bucket"]) do
-      Logger.info("no private bucket for org_id: #{organization_id}")
-      {:error, "no private bucket for org_id: #{organization_id}"}
-    else
-      put_bucket_name(gcs_secrets["private_bucket"])
+    case get_secrets(organization_id)["private_bucket"] do
+      nil ->
+        Logger.info("no private bucket for org_id: #{organization_id}")
+        {:error, :no_private_bucket}
 
-      case decode_service_account(gcs_secrets["service_account"]) do
-        {:ok, service_account} when is_map(service_account) ->
-          load_goth(service_account)
-
-          opts =
-            [signed: true, expires_in: 300]
-            |> Keyword.merge(opts)
-
-          url =
-            CloudStorage.url(
-              Glific.Media,
-              :original,
-              {%Waffle.File{file_name: file_name}, "#{organization_id}"},
-              opts
-            )
-
-          {:ok, url}
-
-        {:error, :missing} ->
-          Logger.info("no service account for org_id: #{organization_id}")
-          {:error, "no service account for org_id: #{organization_id}"}
-
-        _ ->
-          Logger.info("invalid service account JSON for org_id: #{organization_id}")
-          {:error, "invalid service account JSON for org_id: #{organization_id}"}
-      end
+      private_bucket ->
+        expires_in = Keyword.get(opts, :expires_in, 300)
+        SignedUrl.signed_get_url(organization_id, private_bucket, file_name, expires_in)
     end
   end
 
-  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
-  defp decode_service_account(nil), do: {:error, :missing}
-  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
-  defp decode_service_account(_value), do: {:error, :not_binary}
-
+  @doc """
+  The GCS bucket name configured for `org_id`, or `nil` if GCS isn't configured for it.
+  """
   @spec bucket_name(non_neg_integer()) :: String.t() | nil
-  defp bucket_name(org_id) do
+  def bucket_name(org_id) do
     case get_secrets(org_id) do
       %{"bucket" => bucket} -> bucket
       _ -> nil

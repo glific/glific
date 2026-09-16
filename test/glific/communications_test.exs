@@ -407,6 +407,18 @@ defmodule Glific.CommunicationsTest do
     end
   end
 
+  test "outbound job args carry organization_id at the top level for queue partitioning",
+       %{global_schema: global_schema} = attrs do
+    message = message_fixture(attrs)
+
+    Communications.Message.send_message(message)
+
+    assert [job] = all_enqueued(queue: :gupshup, worker: Worker, prefix: global_schema)
+    assert job.args["organization_id"] == message.organization_id
+
+    assert job.args["organization_id"] == job.args["message"]["organization_id"]
+  end
+
   test "send message in high tps queue if flag enabled for the org",
        %{global_schema: global_schema} = attrs do
     FunWithFlags.enable(:high_trigger_tps_enabled,

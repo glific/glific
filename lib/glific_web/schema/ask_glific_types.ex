@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:conversation_name, :string)
     field(:message_id, :string)
     field(:request_id, :string)
+    field(:skill, :string)
     field(:errors, list_of(:input_error))
   end
 
