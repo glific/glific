@@ -2,6 +2,8 @@ defmodule Glific.Caches do
   @moduledoc """
   Glific Cache management
   """
+  alias Glific.SafeLog
+
   @cache_bucket :glific_cache
 
   @behaviour Glific.Caches.CacheBehaviour
@@ -78,8 +80,11 @@ defmodule Glific.Caches do
   # it blocks forever on an :infinity call. Returning an error clears the flag so the next fetch
   # retries. Exceptions are deliberately left to the Courier's own rescue.
   @spec fallback_failed(any(), :exit | :throw, any()) :: {:error, String.t()}
-  defp fallback_failed(key, kind, reason),
-    do: Glific.log_error("Cache fallback for #{inspect(key)} #{kind}ed: #{inspect(reason)}")
+  defp fallback_failed(key, kind, reason) do
+    Glific.log_error(
+      "Cache fallback for #{SafeLog.safe_inspect(key)} #{kind}ed: #{SafeLog.safe_inspect(reason)}"
+    )
+  end
 
   # Cachex runs a fetch fallback in a process its Courier bare-spawns, so the process propagates
   # no $callers and owns no SQL Sandbox connection. Its queries survive only by borrowing whatever
