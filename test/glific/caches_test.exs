@@ -1,6 +1,8 @@
 defmodule Glific.CachesTest do
   use Glific.DataCase, async: true
 
+  import ExUnit.CaptureLog
+
   alias Glific.{
     Caches,
     Fixtures
@@ -20,6 +22,22 @@ defmodule Glific.CachesTest do
 
       assert {:commit, shortcode} = Caches.fetch(organization_id, "fetch db loader", loader)
       assert is_binary(shortcode)
+    end
+
+
+    test "a fallback that exits errors out and leaves the key fetchable" do
+      organization_id = Fixtures.get_org_id()
+      key = "fetch exiting loader"
+
+      capture_log(fn ->
+        assert {:error, _reason} = Caches.fetch(organization_id, key, fn _ -> exit(:boom) end)
+      end)
+
+      retry =
+        Task.async(fn -> Caches.fetch(organization_id, key, fn _ -> {:commit, "recovered"} end) end)
+
+      assert {:ok, {:commit, "recovered"}} =
+               Task.yield(retry, 5_000) || Task.shutdown(retry, :brutal_kill)
     end
   end
 
