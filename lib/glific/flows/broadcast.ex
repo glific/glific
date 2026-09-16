@@ -175,7 +175,7 @@ defmodule Glific.Flows.Broadcast do
           map(),
           atom()
         ) :: :ok
-  def broadcast_contacts(flow, contacts, default_results \\ %{}, channel \\ :whatsapp) do
+  def broadcast_contacts(flow, contacts, default_results, channel) do
     Repo.put_process_state(flow.organization_id)
 
     broadcast_opts =
