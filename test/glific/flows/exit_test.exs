@@ -1,5 +1,5 @@
 defmodule Glific.Flows.ExitTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
   alias Glific.Flows.{
     Exit,

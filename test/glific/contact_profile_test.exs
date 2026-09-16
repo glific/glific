@@ -1,5 +1,5 @@
 defmodule Glific.ContactProfilesTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
   import Glific.Fixtures
 
   alias Glific.{

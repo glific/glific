@@ -8,7 +8,7 @@ defmodule Glific.AI.WireFormatTest do
   receive it and check that it is coherent.
   """
 
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Glific.AI.{ChatMessage, Tools}
   alias Glific.AI.Provider.ReqLLM, as: Adapter

@@ -1,5 +1,5 @@
 defmodule Glific.Flows.CaseTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
   alias Glific.{
     Fixtures,

@@ -1,5 +1,5 @@
 defmodule Glific.Flows.Webhooks.Core.ErrorTypeTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Glific.Flows.Webhooks.ErrorType
 

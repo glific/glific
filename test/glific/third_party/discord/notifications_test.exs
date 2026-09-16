@@ -1,6 +1,6 @@
 defmodule Glific.ThirdParty.Discord.NotificationsTest do
   @moduledoc false
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
   alias Glific.ThirdParty.Discord.Notifications
 

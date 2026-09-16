@@ -6,6 +6,23 @@ defmodule Glific.CachesTest do
     Fixtures
   }
 
+  describe "fetch/3" do
+    # Cachex runs a fetch fallback in a process its Courier bare-spawns, which owns no SQL
+    # Sandbox connection and propagates no $callers. This test is async, so no shared mode
+    # exists for it to borrow either — the same missing ownership that, under a sync test,
+    # kills the fallback mid-query and wedges the key for the rest of the run.
+    test "loads through a fallback that queries the database" do
+      organization_id = Fixtures.get_org_id()
+
+      loader = fn _cache_key ->
+        {:commit, Glific.Partners.get_organization!(organization_id).shortcode}
+      end
+
+      assert {:commit, shortcode} = Caches.fetch(organization_id, "fetch db loader", loader)
+      assert is_binary(shortcode)
+    end
+  end
+
   describe "caches" do
     test "set/2 with a single key will generate the cache" do
       organization_id = Fixtures.get_org_id()

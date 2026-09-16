@@ -59,7 +59,27 @@ defmodule Glific.Caches do
   @spec fetch(non_neg_integer, any(), (any() -> any())) ::
           {:ok | :error | :commit | :ignore, any()}
   def fetch(organization_id, key, fallback_fn) do
-    Cachex.fetch(@cache_bucket, {organization_id, key}, fallback_fn)
+    caller = self()
+
+    Cachex.fetch(@cache_bucket, {organization_id, key}, fn cache_key ->
+      allow_db_access(caller)
+      fallback_fn.(cache_key)
+    end)
+  end
+
+  # Cachex runs a fetch fallback in a process its Courier bare-spawns, so the process propagates
+  # no $callers and owns no SQL Sandbox connection. Its queries survive only by borrowing whatever
+  # shared mode points at, and when that owner checks in mid-query the fallback *exits* — the
+  # Courier only rescues exceptions, so it never reports back, the key stays flagged in-flight,
+  # and every later fetch of it blocks forever on an :infinity call. The caller is parked on this
+  # fetch and so cannot check in underneath the fallback, which makes it the one safe lender.
+  if Application.compile_env(:glific, :environment) == :test do
+    @spec allow_db_access(pid()) :: any()
+    defp allow_db_access(caller),
+      do: Ecto.Adapters.SQL.Sandbox.allow(Glific.Repo, caller, self())
+  else
+    @spec allow_db_access(pid()) :: any()
+    defp allow_db_access(_caller), do: :ok
   end
 
   @doc """

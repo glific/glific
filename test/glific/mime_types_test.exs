@@ -7,7 +7,7 @@ defmodule Glific.MimeTypesTest do
   read at compile time from `config :mime, :types`.
   """
 
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Glific.Messages
 

@@ -1,5 +1,5 @@
 defmodule Glific.Users.RolesTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Glific.Users.Roles
 

@@ -1,5 +1,5 @@
 defmodule Glific.RepoTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
   use ExUnit.Case
 
   alias Glific.{

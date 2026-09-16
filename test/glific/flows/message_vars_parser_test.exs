@@ -1,5 +1,5 @@
 defmodule Glific.Flows.MessageVarParserTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
   alias Glific.Contacts
   alias Glific.Flows.MessageVarParser

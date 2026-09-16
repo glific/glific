@@ -1,5 +1,5 @@
 defmodule Glific.Flows.Webhooks.KaapiTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport

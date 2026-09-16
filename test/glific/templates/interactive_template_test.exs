@@ -1,5 +1,5 @@
 defmodule Glific.Templates.InteractiveTemplateTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
   alias Glific.Repo
   alias Glific.Templates.InteractiveTemplate

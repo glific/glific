@@ -1,5 +1,5 @@
 defmodule Glific.Flows.Webhooks.Implementations.CheckResponseTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Glific.Flows.Webhooks.CheckResponse
 

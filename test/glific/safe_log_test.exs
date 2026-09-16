@@ -1,6 +1,6 @@
 defmodule Glific.SafeLogTest do
   @moduledoc false
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Glific.SafeLog
 
