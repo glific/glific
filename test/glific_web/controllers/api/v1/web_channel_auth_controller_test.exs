@@ -238,7 +238,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
     test "takes effect without refilling the organization cache", %{conn: conn} do
       # Not using with_web_channel_enabled/1: it refills the cache, the step being asserted as
-      # unnecessary.
+      # unnecessary. The organization's own half of the switch is on and cached already; this
+      # test is about the flag alone.
+      Glific.WebChannelFlagHelpers.activate_web_channel(1)
       Partners.organization(1) |> Partners.fill_cache()
       assert Partners.organization(1).web_channel_enabled == false
 
