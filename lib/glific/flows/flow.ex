@@ -446,9 +446,12 @@ defmodule Glific.Flows.Flow do
 
   @spec web_channel_errors(list(), map()) :: list()
   defp web_channel_errors(errors, %{channel: channel} = flow) when channel in [:web, "web"] do
-    flow.definition["nodes"]
-    |> List.wrap()
-    |> Enum.flat_map(&(&1["actions"] || []))
+    actions =
+      flow.definition["nodes"]
+      |> List.wrap()
+      |> Enum.flat_map(&(&1["actions"] || []))
+
+    actions
     |> Enum.reduce(errors, fn action, acc ->
       case unsupported_web_action(action) do
         nil ->
@@ -463,9 +466,46 @@ defmodule Glific.Flows.Flow do
           ]
       end
     end)
+    |> subflow_channel_errors(actions, flow.organization_id)
   end
 
   defp web_channel_errors(errors, _flow), do: errors
+
+  # A sub-flow inherits its parent's channel at runtime (`start_sub_flow/3`), so a web flow that
+  # enters a WhatsApp flow would run that flow's WhatsApp-only nodes on the web channel — and a
+  # `send_broadcast` in there routes to WhatsApp silently rather than failing. Checking the
+  # referenced flow's own declared channel avoids walking its nodes: every flow is already
+  # validated against its own channel when it is published.
+  #
+  # Only statically-referenced sub-flows can be checked; `enter_flow_expression` resolves at
+  # runtime.
+  @spec subflow_channel_errors(list(), list(), non_neg_integer()) :: list()
+  defp subflow_channel_errors(errors, actions, organization_id) do
+    uuids =
+      actions
+      |> Enum.filter(&(&1["type"] == "enter_flow"))
+      |> Enum.map(&get_in(&1, ["flow", "uuid"]))
+      |> Enum.reject(&is_nil/1)
+
+    if uuids == [] do
+      errors
+    else
+      Flow
+      |> where([f], f.uuid in ^uuids)
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.channel != :web)
+      |> select([f], {f.uuid, f.name})
+      |> Repo.all()
+      |> Enum.reduce(errors, fn {uuid, name}, acc ->
+        [
+          {uuid,
+           "The sub-flow \"#{name}\" runs on WhatsApp, so a web flow cannot enter it. " <>
+             "Remove the node, or set that flow's channel to Web.", @blocking_category}
+          | acc
+        ]
+      end)
+    end
+  end
 
   @spec unsupported_web_action(map()) :: String.t() | nil
   defp unsupported_web_action(%{"type" => "send_msg"} = action) do

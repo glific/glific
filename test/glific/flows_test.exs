@@ -511,6 +511,59 @@ defmodule Glific.FLowsTest do
       end
     end
 
+    # A sub-flow inherits its parent's channel at runtime, so a web flow entering a whatsapp flow
+    # would run that flow's whatsapp-only nodes on web — and a broadcast in there routes to
+    # WhatsApp silently rather than failing.
+    test "publish_flow/2 refuses a web flow that enters a whatsapp sub-flow",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, parent} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      {:ok, parent} = Flows.update_flow(parent, %{channel: :web})
+
+      {:ok, sub_flow} =
+        Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: organization_id})
+
+      assert sub_flow.channel == :whatsapp
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: parent.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      enter_flow_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "enter_flow",
+        "flow" => %{"uuid" => sub_flow.uuid, "name" => sub_flow.name}
+      }
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [enter_flow_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:errors, errors} = Flows.publish_flow(parent, user.id)
+
+      assert Enum.any?(errors, fn error ->
+               error.category == "Blocking" and
+                 String.contains?(
+                   error.message,
+                   "runs on WhatsApp, so a web flow cannot enter it"
+                 )
+             end)
+
+      # marking the sub-flow web is the other way to resolve it
+      {:ok, _sub_flow} = Flows.update_flow(sub_flow, %{channel: :web})
+      Glific.Caches.remove(organization_id, [parent.uuid, sub_flow.uuid])
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(parent, user.id)
+    end
+
     test "publish_flow/2 leaves a whatsapp flow with the same node publishable",
          %{organization_id: organization_id} = _attrs do
       user = Repo.get_current_user()
