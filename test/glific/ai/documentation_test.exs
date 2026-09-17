@@ -10,6 +10,20 @@ defmodule Glific.AI.DocumentationTest do
       assert Documentation.count() > 100
     end
 
+    test "a complaint finds the playbook rather than a feature page" do
+      # The playbook is only useful if the words people complain in reach it,
+      # which depends on its headings. Renaming one silently loses diagnosis.
+      for complaint <- [
+            "my flow is not running",
+            "contact did not receive the message",
+            "webhook not firing",
+            "broadcast did not reach the collection"
+          ] do
+        documents = complaint |> Documentation.search(2) |> Enum.map(& &1.document)
+        assert "glific_diagnose_playbook" in documents, complaint
+      end
+    end
+
     test "a question in Glific's own words finds the section that answers it" do
       titles =
         "save a user's response so I can use it later in the flow"
