@@ -2,11 +2,13 @@ defmodule Glific.Communications.WebMessage do
   @moduledoc """
   Persists an inbound web-channel message and publishes it to the staff inbox subscription.
 
-  Deliberately publish-only, unlike WhatsApp inbound: this never hands the message to the flow
-  engine (`Communications.Message.process_message/1`). A web inbound message reaching a
-  WhatsApp-only flow reply would send an unopted-in browser visitor a WhatsApp message, which is
-  worse than no reply at all. Flow replies land with the "flows reply on web" ticket, which
-  introduces `Providers.Web.Message` and presence-gated delivery.
+  Persists the message, publishes it to the staff inbox, and — when the web channel is enabled —
+  hands it to the flow engine via `Processor.MessageWorker`, the same path WhatsApp inbound uses.
+
+  It deliberately does not route through `Communications.Message.receive_message/2`: that path is
+  shaped around a BSP payload and does provider bookkeeping (`bsp_message_id`, session status,
+  billing events) that has no meaning for a channel with no BSP. The flow it starts inherits
+  `channel: :web`, so its replies go back over the web socket rather than to WhatsApp (#5719).
   """
 
   alias Glific.{
@@ -16,8 +18,12 @@ defmodule Glific.Communications.WebMessage do
     Messages,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo
   }
+
+  # Shared web-channel switch — using it here rather than re-implementing keeps one source of truth.
+  alias GlificWeb.WebChannel.Flag
 
   @doc """
   Callback when we receive a message from a browser contact over the web channel.
@@ -46,11 +52,41 @@ defmodule Glific.Communications.WebMessage do
           status: :received
         })
 
-      case type do
-        :text -> receive_text(message_params)
-        :location -> receive_location(message_params)
-        _media -> receive_media(message_params)
-      end
+      result =
+        case type do
+          :text -> receive_text(message_params)
+          :location -> receive_location(message_params)
+          _media -> receive_media(message_params)
+        end
+
+      hand_to_flow_engine(result, organization_id)
+      result
+    end
+  end
+
+  # Flag-gated: with the web channel off, a web message is still persisted and shown in the
+  # inbox, but never enters the flow engine.
+  @spec hand_to_flow_engine({:ok, Message.t()} | {:error, any()}, non_neg_integer()) :: :ok
+  defp hand_to_flow_engine({:ok, message}, organization_id) do
+    if Flag.web_channel_enabled?(organization_id), do: enqueue_flow_job(message)
+    :ok
+  end
+
+  defp hand_to_flow_engine(_result, _organization_id), do: :ok
+
+  # MessageWorker runs with max_attempts: 1, so a dropped enqueue is the message's only chance at
+  # flow processing — log it rather than let it fail silently in the inbox.
+  @spec enqueue_flow_job(Message.t()) :: any()
+  defp enqueue_flow_job(message) do
+    case MessageWorker.make_job(message) do
+      {:ok, _job} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Could not enqueue inbound web message for flow processing: " <>
+            Glific.SafeLog.safe_inspect(reason)
+        )
     end
   end
 
