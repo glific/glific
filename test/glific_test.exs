@@ -52,6 +52,26 @@ defmodule GlificTest do
     end
   end
 
+  # Structured rendering lives in the safe interpreter, via Glific.Flows.ValueText.
+  # With :safe_expressions off the expression still goes through EEx, which calls
+  # to_string/1 internally and so keeps the old broken behaviour. These pin that
+  # gap deliberately: un-migrated orgs are NOT fixed, and a reader should not
+  # assume otherwise. Delete these if the legacy path is ever taught to render
+  # structured values.
+  describe "execute_eex/1 — structured values are NOT fixed on the legacy EEx path" do
+    test "a map still degrades to Invalid Code" do
+      assert Glific.execute_eex(~s|<%= %{"city" => "Pune"} %>|) == "Invalid Code"
+    end
+
+    test "a string list is still concatenated with no separator" do
+      assert Glific.execute_eex(~s|<%= ["Math", "Science"] %>|) == "MathScience"
+    end
+
+    test "an integer list is still rendered as a charlist" do
+      assert Glific.execute_eex("<%= [72, 105] %>") == "Hi"
+    end
+  end
+
   describe "execute_eex/1 with the :safe_expressions flag enabled" do
     setup do
       # Use a fresh org so the ETS-cached flag never collides with (or leaks into)

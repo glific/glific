@@ -5,6 +5,7 @@ defmodule Glific.Flows.MessageVarParser do
   require Logger
 
   alias Glific.{
+    Flows.ValueText,
     Partners,
     Repo
   }
@@ -88,6 +89,10 @@ defmodule Glific.Flows.MessageVarParser do
       else: bound(substitution["value"])
   end
 
+  # A list would otherwise reach `String.replace/3` as iodata: `["Math", "Science"]`
+  # silently concatenates to "MathScience", and a list of maps raises.
+  defp bound(substitution) when is_list(substitution), do: ValueText.to_text(substitution)
+
   defp bound(substitution), do: substitution
 
   # """
@@ -136,7 +141,7 @@ defmodule Glific.Flows.MessageVarParser do
     key = String.downcase(key)
 
     if is_map(value) && Map.has_key?(value, "input") && !is_map(value["input"]) do
-      replace = to_string(value["input"])
+      replace = ValueText.to_text(value["input"])
       String.replace(body, replace_prefix <> key, replace)
     else
       body

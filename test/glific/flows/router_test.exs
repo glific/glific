@@ -516,3 +516,137 @@ defmodule Glific.Flows.RouterTest do
     {:ok, _, _} = Router.execute(router, context, [])
   end
 end
+
+defmodule Glific.Flows.RouterStructuredOperandTest do
+  # async: false — the test enables :safe_expressions for the fixtures' org, and
+  # the flag is cached in ETS. Running serially keeps it from leaking into the
+  # async tests that assert the legacy EEx behaviour for the same org.
+  use Glific.DataCase, async: false
+
+  alias Glific.Fixtures
+
+  alias Glific.Flows.{
+    Flow,
+    FlowContext,
+    Node,
+    Router
+  }
+
+  @valid_attrs %{
+    flow_id: 1,
+    flow_uuid: Ecto.UUID.generate(),
+    uuid_map: %{},
+    node_uuid: Ecto.UUID.generate()
+  }
+
+  setup do
+    # Structured rendering lives in the safe interpreter, so an operand only
+    # reaches it when :safe_expressions is on for the org.
+    organization_id = Fixtures.get_org_id()
+    FunWithFlags.enable(:safe_expressions, for_actor: %{organization_id: organization_id})
+
+    # The toggle row rolls back with the SQL sandbox, but the ETS cache does not
+    # (900s TTL). on_exit runs after the sandbox connection is gone, so a
+    # FunWithFlags.disable/2 would fail on its DB write — cache a gate-less flag
+    # (which reads as disabled) instead. Scoped to this one flag deliberately:
+    # Cache.flush/0 would evict every other test's cached flags too.
+    on_exit(fn ->
+      FunWithFlags.Store.Cache.put(FunWithFlags.Flag.new(:safe_expressions, []))
+    end)
+
+    %{organization_id: organization_id}
+  end
+
+  defp flow_context_fixture(attrs) do
+    contact = Fixtures.contact_fixture()
+
+    {:ok, flow_context} =
+      attrs
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
+      |> Enum.into(@valid_attrs)
+      |> FlowContext.create_flow_context()
+
+    flow_context
+    |> Repo.preload(:contact)
+    |> Repo.preload(:flow)
+  end
+
+  # A switch router whose only case is `has_phrase "Pune"`, so the category it
+  # lands in tells us what the operand actually rendered to.
+  defp pune_router(operand) do
+    exit_uuid = Ecto.UUID.generate()
+
+    {node, uuid_map} =
+      Node.process(
+        %{
+          "uuid" => "Node UUID",
+          "actions" => [],
+          "exits" => [%{"uuid" => exit_uuid, "destination_uuid" => nil}]
+        },
+        %{},
+        %Flow{uuid: "Flow UUID 1", id: 1}
+      )
+
+    %{
+      "type" => "switch",
+      "operand" => operand,
+      "result_name" => "structured",
+      "default_category_uuid" => "Other Cat UUID",
+      "categories" => [
+        %{"uuid" => "Pune Cat UUID", "exit_uuid" => exit_uuid, "name" => "Has Pune"},
+        %{"uuid" => "Other Cat UUID", "exit_uuid" => exit_uuid, "name" => "Other"}
+      ],
+      "cases" => [
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "has_phrase",
+          "arguments" => ["Pune"],
+          "category_uuid" => "Pune Cat UUID"
+        }
+      ]
+    }
+    |> Router.process(uuid_map, node)
+  end
+
+  # The node's only exit has no destination, so executing it completes the flow
+  # and hands back a nil context — read the results off the persisted row.
+  defp route(operand) do
+    {router, uuid_map} = pune_router(operand)
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+
+    {:ok, _, _} = Router.execute(router, context, [])
+
+    Repo.get!(FlowContext, context.id).results["structured"]
+  end
+
+  # A map operand used to render as the literal string "Invalid Code", which
+  # matched no case and silently routed the contact to Other.
+  test "a map operand renders as JSON and matches its contents" do
+    result = route(~s|<%= %{"city" => "Pune", "grade" => 9} %>|)
+
+    assert result["input"] == ~s({"city":"Pune","grade":9})
+    assert result["category"] == "Has Pune"
+  end
+
+  test "a list operand renders comma separated and matches its contents" do
+    result = route(~s|<%= ["Nagpur", "Pune"] %>|)
+
+    assert result["input"] == "Nagpur, Pune"
+    assert result["category"] == "Has Pune"
+  end
+
+  test "a map operand that does not match still routes to the default category" do
+    result = route(~s|<%= %{"city" => "Nagpur"} %>|)
+
+    assert result["input"] == ~s({"city":"Nagpur"})
+    assert result["category"] == "Other"
+  end
+
+  test "a scalar pulled out of a map keeps working" do
+    result = route(~s|<%= Map.get(%{"city" => "Pune"}, "city") %>|)
+
+    assert result["input"] == "Pune"
+    assert result["category"] == "Has Pune"
+  end
+end
