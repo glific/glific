@@ -5,7 +5,7 @@ defmodule Glific.AI.Skills do
   Adding one is a module implementing `Glific.AI.Skill` plus a line in `@skills`.
   """
 
-  alias Glific.AI.{Skill, Tools}
+  alias Glific.AI.Tools
 
   @skills [
     Glific.AI.Skills.Knowledge,
@@ -71,8 +71,4 @@ defmodule Glific.AI.Skills do
   def catalogue do
     Enum.map(all(), &%{name: &1.name(), description: &1.description()})
   end
-
-  @doc false
-  @spec behaviour() :: module()
-  def behaviour, do: Skill
 end

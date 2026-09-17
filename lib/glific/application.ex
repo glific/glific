@@ -5,6 +5,7 @@ defmodule Glific.Application do
 
   use Application
 
+  alias Glific.AI.Documentation
   alias Glific.Communications.Mailer
 
   def start(_type, _args) do
@@ -81,6 +82,9 @@ defmodule Glific.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
+
+    Documentation.warm()
+
     Supervisor.start_link(children, opts)
   end
 
