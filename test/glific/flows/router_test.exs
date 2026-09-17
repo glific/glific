@@ -518,10 +518,15 @@ defmodule Glific.Flows.RouterTest do
 end
 
 defmodule Glific.Flows.RouterStructuredOperandTest do
+  @moduledoc "Router operands that render a structured value."
+
   # async: false — the test enables :safe_expressions for the fixtures' org, and
   # the flag is cached in ETS. Running serially keeps it from leaking into the
   # async tests that assert the legacy EEx behaviour for the same org.
   use Glific.DataCase, async: false
+
+  alias FunWithFlags.Flag
+  alias FunWithFlags.Store.Cache
 
   alias Glific.Fixtures
 
@@ -551,7 +556,7 @@ defmodule Glific.Flows.RouterStructuredOperandTest do
     # (which reads as disabled) instead. Scoped to this one flag deliberately:
     # Cache.flush/0 would evict every other test's cached flags too.
     on_exit(fn ->
-      FunWithFlags.Store.Cache.put(FunWithFlags.Flag.new(:safe_expressions, []))
+      Cache.put(Flag.new(:safe_expressions, []))
     end)
 
     %{organization_id: organization_id}

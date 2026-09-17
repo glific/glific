@@ -74,13 +74,8 @@ defmodule Glific.Flows.MessageVarParser do
     if substitution == nil, do: "@#{var}", else: substitution
   end
 
-  # `@results.foo.bar` reads `bar` out of the value saved for `foo`. A result holds the text its
-  # expression produced, so a saved JSON object arrives as a string and is decoded here on read.
-  #
-  # This has to live on the generic binding path rather than only in `parse_results/2`: `parse/2`
-  # resolves `@x.y.z` first, and when that finds nothing its `@x.y` pass matches the
-  # `@results.foo` prefix and substitutes the whole stored value, leaving a dangling `.bar`
-  # before `parse_results/2` is ever reached.
+  # Has to live here rather than in `parse_results/2`: `parse/2`'s `@x.y` pass would already have
+  # substituted the `@results.foo` prefix and left a dangling `.bar`.
   @spec nested_result(map(), [String.t()]) :: String.t() | nil
   defp nested_result(binding, ["results", name | path]) when path != [] do
     with result when is_map(result) <- safe_get_in(binding, ["results", name]),
@@ -168,12 +163,7 @@ defmodule Glific.Flows.MessageVarParser do
       else: body
   end
 
-  # `@results.foo` and `@results.foo.bar` are resolved in one pass, because the first is a prefix
-  # of the second: replacing it separately would leave a dangling `.bar`.
-  #
-  # `bar` is read out of the value saved for `foo`. A result holds the text its expression
-  # produced, so a JSON object arrives here as a string and is decoded on read rather than at save
-  # time — `@results.foo` renders exactly what it does today and no existing flow changes.
+  # One pass, because `@results.foo` is a prefix of `@results.foo.bar`.
   @spec replace_reference(String.t(), String.t(), any()) :: String.t()
   defp replace_reference(body, reference, input) do
     nested = decode_map(input)
@@ -186,19 +176,13 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   @spec resolve(String.t(), String.t(), any(), map() | nil) :: String.t()
-  # A bare `@results.foo` whose value is structured stays as it was: rendering a whole object into
-  # a beneficiary's message is almost never what the author meant.
   defp resolve(whole, "", input, _nested) when is_map(input), do: whole
 
   defp resolve(_whole, "", input, _nested), do: ValueText.to_text(input)
 
-  # No JSON to walk into, so keep the long-standing behaviour of substituting the value and
-  # leaving the unresolved suffix behind.
+  # Nothing to walk into, so keep the long-standing rendering rather than swallowing the suffix.
   defp resolve(_whole, suffix, input, nil), do: ValueText.to_text(input) <> suffix
 
-  # An unknown key is left intact here. Note this only shows through for a direct caller of
-  # `parse_results/2`: via `parse/2` the generic `@x.y` pass has already substituted the stored
-  # value, so a typo renders as the value plus its unresolved suffix.
   defp resolve(whole, suffix, _input, nested) do
     path = suffix |> String.trim_leading(".") |> String.split(".")
 

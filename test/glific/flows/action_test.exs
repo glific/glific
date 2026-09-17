@@ -822,10 +822,7 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.language_id == language.id
   end
 
-  # End to end rather than through the parser alone: a saved JSON object has to survive
-  # set_run_result -> update_results -> parse_context_string -> MessageVarParser and come out the
-  # other side as an outbound message body. Testing the parser in isolation missed a real bug,
-  # because `parse/2` resolves `@x.y.z` on a different path than `parse_results/2`.
+  # End to end, because testing the parser alone missed a real bug on this path.
   test "a saved json result is readable key-by-key in a later message", attrs do
     [flow | _tail] = Flows.list_flows(%{filter: attrs})
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
@@ -851,7 +848,6 @@ defmodule Glific.Flows.ActionTest do
 
     {:ok, context, _stream} = Action.execute(save_json, context, [])
 
-    # the whole object is still what a bare reference renders
     assert context.results["json"]["input"] ==
              ~s({"year":"2026-27","grade":12,"program":"Tejasvi"})
 
@@ -860,8 +856,6 @@ defmodule Glific.Flows.ActionTest do
           {"@results.json.grade", "12"},
           {"@results.json.program", "Tejasvi"}
         ] do
-      # a comprehension cannot rebind the outer context, and does not need to: each send only
-      # reads the results already saved on it
       {:ok, _ctx, _stream} =
         Action.execute(%Action{type: "send_msg", text: reference}, context, [])
 
