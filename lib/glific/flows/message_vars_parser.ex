@@ -158,37 +158,11 @@ defmodule Glific.Flows.MessageVarParser do
     value = results[key]
     key = String.downcase(key)
 
-    if is_map(value) && Map.has_key?(value, "input"),
-      do: replace_reference(body, replace_prefix <> key, value["input"]),
-      else: body
-  end
-
-  # One pass, because `@results.foo` is a prefix of `@results.foo.bar`.
-  @spec replace_reference(String.t(), String.t(), any()) :: String.t()
-  defp replace_reference(body, reference, input) do
-    nested = decode_map(input)
-
-    Regex.replace(
-      ~r/#{Regex.escape(reference)}((?:\.[a-zA-Z0-9_]+)*)/,
-      body,
-      fn whole, suffix -> resolve(whole, suffix, input, nested) end
-    )
-  end
-
-  @spec resolve(String.t(), String.t(), any(), map() | nil) :: String.t()
-  defp resolve(whole, "", input, _nested) when is_map(input), do: whole
-
-  defp resolve(_whole, "", input, _nested), do: ValueText.to_text(input)
-
-  # Nothing to walk into, so keep the long-standing rendering rather than swallowing the suffix.
-  defp resolve(_whole, suffix, input, nil), do: ValueText.to_text(input) <> suffix
-
-  defp resolve(whole, suffix, _input, nested) do
-    path = suffix |> String.trim_leading(".") |> String.split(".")
-
-    case safe_get_in(nested, path) do
-      nil -> whole
-      value -> ValueText.to_text(value)
+    if is_map(value) && Map.has_key?(value, "input") && !is_map(value["input"]) do
+      replace = ValueText.to_text(value["input"])
+      String.replace(body, replace_prefix <> key, replace)
+    else
+      body
     end
   end
 

@@ -497,6 +497,15 @@ defmodule Glific.Flows.MessageVarParserTest do
                ~s({"city":"Pune"}.zip)
     end
 
+    # A webhook result is stored as a map rather than as text, so there is nothing to decode.
+    test "reads a key out of a result already stored as a map" do
+      fields = %{
+        "results" => %{"j" => %{"input" => %{"grade" => 12}, "value" => %{"grade" => 12}}}
+      }
+
+      assert MessageVarParser.parse("@results.j.grade", fields) == "12"
+    end
+
     test "a non-json result keeps its long-standing rendering", _attrs do
       fields = %{"results" => %{"name" => result("Amisha")}}
 
