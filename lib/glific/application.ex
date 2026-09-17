@@ -26,6 +26,9 @@ defmodule Glific.Application do
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
 
+      # Tracks which web-channel contacts have a browser socket open
+      GlificWeb.WebChannel.Presence,
+
       # Start Mnesia to be used for pow cache store
       Pow.Store.Backend.MnesiaCache,
 
@@ -72,7 +75,7 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for Tesla success/failure call:
     attach_tesla_telemetry_event()
 
-    # Add this :telemetry.attach/4 for Ecto query timing:
+    # Add this :telemetry.attach/4 for Ecto DB connection errors:
     attach_repo_telemetry_event()
 
     # See https://hexdocs.pm/elixir/Supervisor.html

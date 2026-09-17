@@ -3,6 +3,7 @@ defmodule Glific.Flows.ContactFieldTest do
 
   alias Glific.{
     Contacts,
+    Fixtures,
     Flows.ContactField,
     Flows.FlowContext,
     Repo,
@@ -63,5 +64,29 @@ defmodule Glific.Flows.ContactFieldTest do
 
     updated_contact = Contacts.get_contact!(contact.id)
     assert updated_contact.fields == %{}
+  end
+
+  # Deliberately driven from a real persisted FlowContext rather than by passing a channel into
+  # `capture_history/3`: the failure this guards against is the plumbing being absent, in which
+  # case the `'whatsapp'` column default produces a perfectly valid-looking row and a test that
+  # supplied the value itself would still pass.
+  for channel <- [:web, :whatsapp] do
+    test "a flow event raised in a #{channel} context is recorded on that channel" do
+      context = Fixtures.flow_context_fixture(%{channel: unquote(channel)})
+
+      _ = ContactField.reset_contact_fields(context)
+
+      assert [%{channel: unquote(channel), event_type: "contact_fields_reset"}] =
+               Contacts.list_contact_history(%{filter: %{contact_id: context.contact_id}})
+    end
+
+    test "a contact field set in a #{channel} context is recorded on that channel" do
+      context = Fixtures.flow_context_fixture(%{channel: unquote(channel)})
+
+      _ = ContactField.add_contact_field(context, "age", "Age", "22", "string")
+
+      assert [%{channel: unquote(channel), event_type: "contact_fields_updated"}] =
+               Contacts.list_contact_history(%{filter: %{contact_id: context.contact_id}})
+    end
   end
 end

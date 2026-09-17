@@ -50,7 +50,7 @@ replica_ssl_opts =
 
 config :glific, Glific.RepoReplica,
   url: replica_url,
-  pool_size: env!("POOL_SIZE", :integer, 20),
+  pool_size: env!("REPLICA_POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
   ssl: replica_ssl_opts,
   prepare: :named,
