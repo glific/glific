@@ -689,6 +689,51 @@ defmodule Glific.FLowsTest do
       assert broadcast_results["key"] == default_results.key
     end
 
+    # An exported web flow that imported as a whatsapp flow would be mislabelled and would skip
+    # the web-channel publish checks. The payload is encoded and decoded so it matches a real
+    # import file, where every key is a string.
+    test "export_flow/1 and import_flow/2 round-trip the channel" do
+      user = Repo.get_current_user()
+      flow = flow_fixture()
+      {:ok, web_flow} = Flows.update_flow(flow, %{channel: :web})
+
+      payload = Flows.export_flow(web_flow.id) |> Jason.encode!() |> Jason.decode!()
+
+      [exported_flow | _] = payload["flows"]
+      assert exported_flow["channel"] == "web"
+
+      uuid = exported_flow["definition"]["uuid"]
+      Flows.delete_flow(web_flow)
+
+      Flows.import_flow(payload, user.organization_id)
+
+      {:ok, imported} =
+        Repo.fetch_by(Flow, %{uuid: uuid, organization_id: user.organization_id})
+
+      assert imported.channel == :web
+    end
+
+    # An export written before the column existed carries no channel at all.
+    test "import_flow/2 defaults a channel-less export to whatsapp" do
+      user = Repo.get_current_user()
+      flow = flow_fixture()
+
+      payload = Flows.export_flow(flow.id) |> Jason.encode!() |> Jason.decode!()
+
+      legacy_flows = Enum.map(payload["flows"], fn f -> Map.delete(f, "channel") end)
+      payload = Map.put(payload, "flows", legacy_flows)
+
+      uuid = hd(legacy_flows)["definition"]["uuid"]
+      Flows.delete_flow(flow)
+
+      Flows.import_flow(payload, user.organization_id)
+
+      {:ok, imported} =
+        Repo.fetch_by(Flow, %{uuid: uuid, organization_id: user.organization_id})
+
+      assert imported.channel == :whatsapp
+    end
+
     # The copy carries the source's nodes, so a copy of a web flow that came back as a whatsapp
     # flow would be mislabelled and would skip the web-channel publish checks.
     test "copy_flow/2 keeps the channel of the flow it copied" do

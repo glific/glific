@@ -1054,6 +1054,7 @@ defmodule Glific.Flows do
                name: flow_revision["definition"]["name"],
                uuid: flow_revision["definition"]["uuid"],
                keywords: flow_revision["keywords"],
+               channel: Map.get(flow_revision, "channel", "whatsapp"),
                organization_id: organization_id
              }),
            {cleaned_definition, assistant_node_uuids, invalid_sheet_node_uuids} <-
@@ -1428,7 +1429,8 @@ defmodule Glific.Flows do
         Map.put(
           results,
           "flows",
-          results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
+          results["flows"] ++
+            [%{definition: definition, keywords: flow.keywords, channel: flow.channel}]
         )
         |> Map.put(
           "contact_field",
