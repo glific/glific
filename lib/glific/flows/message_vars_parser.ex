@@ -63,13 +63,36 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     var = String.replace_trailing(var, ".", "")
+    keys = String.split(var, ".")
 
     substitution =
-      safe_get_in(binding, String.split(var, "."))
-      |> bound()
+      case safe_get_in(binding, keys) |> bound() do
+        nil -> nested_result(binding, keys)
+        found -> found
+      end
 
     if substitution == nil, do: "@#{var}", else: substitution
   end
+
+  # `@results.foo.bar` reads `bar` out of the value saved for `foo`. A result holds the text its
+  # expression produced, so a saved JSON object arrives as a string and is decoded here on read.
+  #
+  # This has to live on the generic binding path rather than only in `parse_results/2`: `parse/2`
+  # resolves `@x.y.z` first, and when that finds nothing its `@x.y` pass matches the
+  # `@results.foo` prefix and substitutes the whole stored value, leaving a dangling `.bar`
+  # before `parse_results/2` is ever reached.
+  @spec nested_result(map(), [String.t()]) :: String.t() | nil
+  defp nested_result(binding, ["results", name | path]) when path != [] do
+    with result when is_map(result) <- safe_get_in(binding, ["results", name]),
+         decoded when is_map(decoded) <- decode_map(result["input"] || result["value"]),
+         value when not is_nil(value) <- safe_get_in(decoded, path) do
+      ValueText.to_text(value)
+    else
+      _ -> nil
+    end
+  end
+
+  defp nested_result(_binding, _keys), do: nil
 
   @spec safe_get_in(term(), [String.t()]) :: term()
   defp safe_get_in(value, []), do: value
@@ -140,13 +163,62 @@ defmodule Glific.Flows.MessageVarParser do
     value = results[key]
     key = String.downcase(key)
 
-    if is_map(value) && Map.has_key?(value, "input") && !is_map(value["input"]) do
-      replace = ValueText.to_text(value["input"])
-      String.replace(body, replace_prefix <> key, replace)
-    else
-      body
+    if is_map(value) && Map.has_key?(value, "input"),
+      do: replace_reference(body, replace_prefix <> key, value["input"]),
+      else: body
+  end
+
+  # `@results.foo` and `@results.foo.bar` are resolved in one pass, because the first is a prefix
+  # of the second: replacing it separately would leave a dangling `.bar`.
+  #
+  # `bar` is read out of the value saved for `foo`. A result holds the text its expression
+  # produced, so a JSON object arrives here as a string and is decoded on read rather than at save
+  # time — `@results.foo` renders exactly what it does today and no existing flow changes.
+  @spec replace_reference(String.t(), String.t(), any()) :: String.t()
+  defp replace_reference(body, reference, input) do
+    nested = decode_map(input)
+
+    Regex.replace(
+      ~r/#{Regex.escape(reference)}((?:\.[a-zA-Z0-9_]+)*)/,
+      body,
+      fn whole, suffix -> resolve(whole, suffix, input, nested) end
+    )
+  end
+
+  @spec resolve(String.t(), String.t(), any(), map() | nil) :: String.t()
+  # A bare `@results.foo` whose value is structured stays as it was: rendering a whole object into
+  # a beneficiary's message is almost never what the author meant.
+  defp resolve(whole, "", input, _nested) when is_map(input), do: whole
+
+  defp resolve(_whole, "", input, _nested), do: ValueText.to_text(input)
+
+  # No JSON to walk into, so keep the long-standing behaviour of substituting the value and
+  # leaving the unresolved suffix behind.
+  defp resolve(_whole, suffix, input, nil), do: ValueText.to_text(input) <> suffix
+
+  # An unknown key is left intact here. Note this only shows through for a direct caller of
+  # `parse_results/2`: via `parse/2` the generic `@x.y` pass has already substituted the stored
+  # value, so a typo renders as the value plus its unresolved suffix.
+  defp resolve(whole, suffix, _input, nested) do
+    path = suffix |> String.trim_leading(".") |> String.split(".")
+
+    case safe_get_in(nested, path) do
+      nil -> whole
+      value -> ValueText.to_text(value)
     end
   end
+
+  @spec decode_map(any()) :: map() | nil
+  defp decode_map(input) when is_map(input), do: input
+
+  defp decode_map(input) when is_binary(input) do
+    case Jason.decode(input) do
+      {:ok, decoded} when is_map(decoded) -> decoded
+      _ -> nil
+    end
+  end
+
+  defp decode_map(_input), do: nil
 
   @spec do_parse_results(String.t(), String.t(), map()) :: String.t()
   defp do_parse_results(body, replace_prefix, results) when is_map(results) do

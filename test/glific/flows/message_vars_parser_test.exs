@@ -439,4 +439,100 @@ defmodule Glific.Flows.MessageVarParserTest do
       assert MessageVarParser.parse("@results.profile", fields) == "@results.profile"
     end
   end
+
+  describe "nested result access" do
+    # A result holds the text its expression produced, so a saved JSON object arrives as a string
+    # and is decoded on read. `@results.foo` therefore keeps rendering the raw text.
+    @json ~s({"year":"2026-27","grade":12,"program":"Tejasvi"})
+
+    # A saved result always carries `value` and `category` alongside `input`. Leaving them out
+    # made every test here pass while the real flow failed: `parse/2` resolves `@x.y.z` first and,
+    # finding nothing, its `@x.y` pass substitutes `bound(map)` — which reads `map["value"]` — and
+    # leaves a dangling `.z`. A fixture without `value` never reaches that branch.
+    defp result(input), do: %{"input" => input, "value" => input, "category" => ""}
+
+    defp json_fields, do: %{"results" => %{"json" => result(@json)}}
+
+    test "reads a key out of a saved json object", _attrs do
+      assert MessageVarParser.parse("Grade @results.json.grade", json_fields()) == "Grade 12"
+    end
+
+    test "resolves several keys in one body", _attrs do
+      assert MessageVarParser.parse(
+               "@results.json.program for @results.json.year",
+               json_fields()
+             ) == "Tejasvi for 2026-27"
+    end
+
+    # The bare reference is a prefix of the nested one, so this is the case that breaks if the
+    # two are resolved in separate passes.
+    test "still renders the whole value for a bare reference", _attrs do
+      assert MessageVarParser.parse("Whole @results.json", json_fields()) == "Whole #{@json}"
+    end
+
+    # An unknown key falls back to what `@results.json.anything` has always rendered: the stored
+    # value followed by the unresolved suffix. Leaving the reference untouched instead would need
+    # `parse/2`'s `@x.y` pass to skip anything followed by a dot, which would also stop
+    # substituting a variable that simply ends a sentence.
+    test "an unknown nested key falls back to the stored value" do
+      assert MessageVarParser.parse("@results.json.gradez", json_fields()) ==
+               "#{@json}.gradez"
+    end
+
+    @nested ~s({"student":{"address":{"city":"Pune"},"grade":12},"subjects":["Math","Science"]})
+
+    defp nested_fields, do: %{"results" => %{"j" => result(@nested)}}
+
+    test "reads two keys deep" do
+      assert MessageVarParser.parse("@results.j.student.grade", nested_fields()) == "12"
+    end
+
+    test "reads three keys deep" do
+      assert MessageVarParser.parse("@results.j.student.address.city", nested_fields()) == "Pune"
+    end
+
+    test "renders an object reached part-way down" do
+      assert MessageVarParser.parse("@results.j.student", nested_fields()) ==
+               ~s({"address":{"city":"Pune"},"grade":12})
+    end
+
+    test "renders a list reached by key" do
+      assert MessageVarParser.parse("@results.j.subjects", nested_fields()) == "Math, Science"
+    end
+
+    # `parse/2` matches at most five dot-separated segments (`@results` + a name + three keys), so
+    # a fourth key is never matched as part of the reference. The five-segment pass resolves the
+    # first three keys and the last one is left as text. Raising this means replacing those four
+    # ordered regex passes with one resolver plus an explicit longest-prefix fallback.
+    test "stops at three keys, leaving a fourth unresolved" do
+      assert MessageVarParser.parse("@results.j.student.address.zip", nested_fields()) ==
+               ~s({"city":"Pune"}.zip)
+    end
+
+    test "a non-json result keeps its long-standing rendering", _attrs do
+      fields = %{"results" => %{"name" => result("Amisha")}}
+
+      assert MessageVarParser.parse("@results.name.foo", fields) == "Amisha.foo"
+    end
+
+    test "mixes nested and plain references", _attrs do
+      fields = %{"results" => %{"json" => result(@json), "name" => result("Amisha")}}
+
+      assert MessageVarParser.parse("@results.name got @results.json.grade", fields) ==
+               "Amisha got 12"
+    end
+
+    test "renders a nested value that is itself structured", _attrs do
+      fields = %{"results" => %{"json" => result(~s({"subjects":["Math","Science"]}))}}
+
+      assert MessageVarParser.parse("@results.json.subjects", fields) == "Math, Science"
+    end
+
+    # A saved json array is not addressable by key, so it must not start swallowing suffixes.
+    test "a json array falls back to the plain rendering", _attrs do
+      fields = %{"results" => %{"list" => result(~s(["a","b"]))}}
+
+      assert MessageVarParser.parse("@results.list.0", fields) == ~s(["a","b"].0)
+    end
+  end
 end
