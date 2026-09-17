@@ -21,6 +21,7 @@ defmodule Glific.AI.Agent do
     AI.ChatMessage,
     AI.Event,
     AI.Instrumentation,
+    AI.Langfuse,
     AI.Message,
     AI.Provider,
     AI.Router,
@@ -44,6 +45,7 @@ defmodule Glific.AI.Agent do
   """
   @type run() :: %{
           usage: Provider.usage(),
+          last_call: Provider.usage(),
           step: pos_integer(),
           steps: non_neg_integer(),
           answer_event_id: non_neg_integer() | nil
@@ -191,7 +193,7 @@ defmodule Glific.AI.Agent do
           map()
         ) :: outcome()
   defp handle_reply(message, _user, _messages, %ChatMessage{tool_calls: []} = reply, run, _ctx) do
-    event = append(message, :assistant, reply.content, %{}, nil, run.step)
+    event = append(message, :assistant, reply.content, turn_usage(run), nil, run.step)
     {:ok, reply.content || "", %{run | answer_event_id: event.id}}
   end
 
@@ -209,11 +211,13 @@ defmodule Glific.AI.Agent do
     numbered = Enum.with_index(running)
 
     Enum.each(numbered, fn {call, index} ->
+      usage = if index == 0, do: turn_usage(run), else: %{}
+
       append(
         message,
         :tool_call,
         call.name,
-        %{"arguments" => call.args},
+        Map.merge(%{"arguments" => call.args}, usage),
         call.id,
         run.step + index * 2
       )
@@ -290,12 +294,14 @@ defmodule Glific.AI.Agent do
   defp finish({:ok, answer, run}, message, ctx) do
     record(message, %{status: :succeeded}, run, ctx)
     measure("succeeded", run, ctx)
+    Langfuse.trace_async(message.id)
     {:ok, answer, %{skill: ctx.skill.name(), answer_event_id: run.answer_event_id}}
   end
 
   defp finish({:stopped, reason, run}, message, ctx) do
     record(message, %{status: :failed, error: reason}, run, ctx)
     measure("failed", run, ctx)
+    Langfuse.trace_async(message.id)
     {:error, reason}
   end
 
@@ -355,7 +361,7 @@ defmodule Glific.AI.Agent do
     mine = Enum.filter(thread, fn {message_id, _, _, _} -> message_id == message.id end)
     highest = mine |> Enum.map(fn {_, step, _, _} -> step end) |> Enum.max(fn -> 0 end)
 
-    %{usage: usage, step: highest + 1, steps: 0, answer_event_id: nil}
+    %{usage: usage, last_call: @zero_usage, step: highest + 1, steps: 0, answer_event_id: nil}
   end
 
   @spec append(Message.t(), atom(), String.t() | nil, map(), String.t() | nil, pos_integer()) ::
@@ -384,10 +390,20 @@ defmodule Glific.AI.Agent do
   end
 
   @spec spend(run(), Provider.usage()) :: run()
+  @spec turn_usage(run()) :: map()
+  defp turn_usage(%{last_call: usage}) do
+    %{
+      "input_tokens" => usage.input_tokens,
+      "output_tokens" => usage.output_tokens,
+      "cost" => usage.cost
+    }
+  end
+
   defp spend(run, call) do
     %{
       run
-      | usage: %{
+      | last_call: call,
+        usage: %{
           input_tokens: run.usage.input_tokens + call.input_tokens,
           output_tokens: run.usage.output_tokens + call.output_tokens,
           cost: run.usage.cost + call.cost
