@@ -420,7 +420,7 @@ defmodule Glific.FLowsTest do
       assert Enum.any?(errors, fn error -> error.category == "Blocking" end)
 
       assert Enum.any?(errors, fn error ->
-               String.contains?(error.message, "only works on WhatsApp")
+               error.message == "Sending a message to somebody else"
              end)
 
       # the point of blocking: the publish must not have taken effect. A successful publish bumps
@@ -551,10 +551,7 @@ defmodule Glific.FLowsTest do
 
       assert Enum.any?(errors, fn error ->
                error.category == "Blocking" and
-                 String.contains?(
-                   error.message,
-                   "runs on WhatsApp, so a web flow cannot enter it"
-                 )
+                 String.contains?(error.message, "Entering the sub-flow")
              end)
 
       # marking the sub-flow web is the other way to resolve it

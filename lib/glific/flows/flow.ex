@@ -458,12 +458,7 @@ defmodule Glific.Flows.Flow do
           acc
 
         label ->
-          [
-            {action["uuid"],
-             "#{label} only works on WhatsApp, so it cannot be part of a web flow.",
-             @blocking_category}
-            | acc
-          ]
+          [{action["uuid"], label, @blocking_category} | acc]
       end
     end)
     |> subflow_channel_errors(actions, flow.organization_id)
@@ -498,9 +493,7 @@ defmodule Glific.Flows.Flow do
       |> Repo.all()
       |> Enum.reduce(errors, fn {uuid, name}, acc ->
         [
-          {uuid,
-           "The sub-flow \"#{name}\" runs on WhatsApp, so a web flow cannot enter it. " <>
-             "Remove the node, or set that flow's channel to Web.", @blocking_category}
+          {uuid, "Entering the sub-flow \"#{name}\", which runs on WhatsApp", @blocking_category}
           | acc
         ]
       end)
