@@ -42,9 +42,9 @@ defmodule Glific.AI.Documentation do
     having getting trying tried like want able
   ))
 
-  # Below this a match is coincidence rather than an answer. Measured against
-  # the support questions in `Glific.Scripts.DocumentationEval`: a real question
-  # scores 7 and up, an off-topic one scores 1.
+  # Below this a match is coincidence rather than an answer: measured against
+  # real support questions, an answerable one scores 7 and up and an off-topic
+  # one scores 1.
   @minimum_score 3
 
   @typedoc """

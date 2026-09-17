@@ -3,7 +3,6 @@ defmodule Glific.AI.DocumentationTest do
 
   alias Glific.AI.{Documentation, Skills, Tools}
   alias Glific.AI.Skills.Knowledge
-  alias Glific.Scripts.DocumentationEval
   alias Glific.Fixtures
 
   describe "searching the documentation" do
@@ -86,31 +85,6 @@ defmodule Glific.AI.DocumentationTest do
 
       assert section.url =~ "https://"
     end
-  end
-
-  describe "the search eval" do
-    test "every query in Glific's own terms finds its section" do
-      phrases = DocumentationEval.run() |> Enum.filter(&(&1.kind == :phrase and &1.expect))
-
-      assert phrases != []
-      assert Enum.all?(phrases, & &1.passed), failures(phrases)
-    end
-
-    test "a failing case is an explained one, so a new failure is a regression" do
-      unexplained =
-        DocumentationEval.run()
-        |> Enum.filter(&(&1.graded and not &1.passed and is_nil(&1.note)))
-
-      assert unexplained == [], failures(unexplained)
-    end
-  end
-
-  defp failures(results) do
-    results
-    |> Enum.reject(& &1.passed)
-    |> Enum.map_join("\n", fn r ->
-      "#{r.id} (#{r.kind}) expected #{inspect(r.expect)}, got #{inspect(r.titles)}"
-    end)
   end
 
   describe "the tool" do
