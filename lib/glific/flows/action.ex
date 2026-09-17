@@ -72,6 +72,7 @@ defmodule Glific.Flows.Action do
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
+  @required_fields_set_contact_fields [:fields | @required_field_common]
 
   # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
   # dropdown). Flows still referencing them must migrate to the new
@@ -109,6 +110,7 @@ defmodule Glific.Flows.Action do
           is_template: boolean,
           flow: map() | nil,
           field: map() | nil,
+          contact_fields: [map()] | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
@@ -165,6 +167,9 @@ defmodule Glific.Flows.Action do
     # fields for certain actions: set_contact_field, set_contact_language
     field(:field, :map)
     field(:language, :string)
+
+    # the repeatable {field, value} rows of a set_contact_fields action
+    field(:contact_fields, {:array, :map})
 
     field(:type, :string)
     field(:profile_type, :string)
@@ -321,6 +326,20 @@ defmodule Glific.Flows.Action do
         key: json["field"]["key"]
       }
     })
+  end
+
+  def process(%{"type" => "set_contact_fields"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_fields)
+
+    contact_fields =
+      Enum.map(json["fields"] || [], fn entry ->
+        field = entry["field"] || %{}
+        name = if is_nil(field["name"]), do: field["key"], else: field["name"]
+
+        %{name: name, key: field["key"], value: entry["value"]}
+      end)
+
+    process(json, uuid_map, node, %{contact_fields: contact_fields})
   end
 
   def process(%{"type" => "set_wa_group_field"} = json, uuid_map, node) do
@@ -530,6 +549,16 @@ defmodule Glific.Flows.Action do
          | errors
        ],
        else: errors
+  end
+
+  def validate(%{type: "set_contact_fields"} = action, errors, _flow) do
+    entries = updatable_contact_fields(action)
+    keys = Enum.map(entries, &contact_field_key/1)
+
+    errors
+    |> validate_contact_fields_present(entries)
+    |> validate_contact_fields_unique(keys)
+    |> validate_contact_fields_settings(action)
   end
 
   def validate(%{type: "set_contact_language"} = action, errors, _flow) do
@@ -863,6 +892,21 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def execute(%{type: "set_contact_fields"} = action, context, messages) do
+    entries =
+      action
+      |> updatable_contact_fields()
+      |> Enum.map(
+        &%{
+          key: contact_field_key(&1),
+          label: &1.name,
+          value: ContactField.parse_contact_field_value(context, &1.value)
+        }
+      )
+
+    {:ok, ContactField.add_contact_fields(context, entries), messages}
+  end
+
   def execute(%{type: "set_contact_profile"} = action, context, _messages) do
     {context, message} =
       @contact_profile
@@ -1160,6 +1204,53 @@ defmodule Glific.Flows.Action do
       |> Repo.update()
 
     nil
+  end
+
+  @spec updatable_contact_fields(Action.t()) :: [map()]
+  defp updatable_contact_fields(action) do
+    Enum.reject(
+      action.contact_fields || [],
+      &(&1.name in ["", nil] or contact_field_key(&1) == "settings")
+    )
+  end
+
+  @spec contact_field_key(map()) :: String.t()
+  defp contact_field_key(%{key: key}) when key not in ["", nil], do: key
+
+  defp contact_field_key(%{name: name}) when name not in ["", nil],
+    do: name |> String.downcase() |> String.replace(" ", "_")
+
+  defp contact_field_key(_entry), do: ""
+
+  @spec validate_contact_fields_present(list(), [map()]) :: list()
+  defp validate_contact_fields_present(errors, []),
+    do: [{Message, "Update contact fields node has no field to update", "Critical"} | errors]
+
+  defp validate_contact_fields_present(errors, _entries), do: errors
+
+  @spec validate_contact_fields_unique(list(), [String.t()]) :: list()
+  defp validate_contact_fields_unique(errors, keys) do
+    duplicates = keys -- Enum.uniq(keys)
+
+    if duplicates == [],
+      do: errors,
+      else: [
+        {Message, "Update contact fields node repeats #{Enum.join(Enum.uniq(duplicates), ", ")}",
+         "Warning"}
+        | errors
+      ]
+  end
+
+  @spec validate_contact_fields_settings(list(), Action.t()) :: list()
+  defp validate_contact_fields_settings(errors, action) do
+    if Enum.any?(action.contact_fields || [], &(contact_field_key(&1) == "settings")),
+      do: [
+        {Message,
+         "Opt in/opt out cannot be set from the update contact fields node, use the Update Contact node",
+         "Critical"}
+        | errors
+      ],
+      else: errors
   end
 
   @spec settings(FlowContext.t(), String.t()) :: FlowContext.t()

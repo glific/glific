@@ -4,6 +4,7 @@ defmodule Glific.Flows.ActionTest do
   use Glific.DataCase
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Fixtures,
     Flows,
@@ -979,6 +980,158 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields[action.field.key].value == "field1"
     assert updated_context.contact.fields[action.field.key].type == "string"
     assert updated_context.contact.fields[action.field.key].label == "Not Settings"
+  end
+
+  test "process extracts the right values from json for set_contact_fields action" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_contact_fields",
+      "fields" => [
+        %{"field" => %{"name" => "Age Group", "key" => "age_group"}, "value" => "18-25"},
+        %{"field" => %{"key" => "district"}, "value" => "Pune"}
+      ]
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_contact_fields"
+    assert action.node_uuid == node.uuid
+
+    assert action.contact_fields == [
+             %{name: "Age Group", key: "age_group", value: "18-25"},
+             %{name: "district", key: "district", value: "Pune"}
+           ]
+
+    # fields is required
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_fields"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "execute an action when type is set_contact_fields writes every field", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{
+        contact_id: contact.id,
+        flow_id: 1,
+        results: %{"name_result" => "Ravi", "age_result" => "22"}
+      }
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "New Name", key: "new_name", value: "@results.name_result"},
+        %{name: "Age Group", key: "age_group", value: "@results.age_result"},
+        %{name: "District", key: nil, value: "Pune"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    fields = updated_context.contact.fields
+
+    assert fields["new_name"].value == "Ravi"
+    assert fields["new_name"].label == "New Name"
+    assert fields["new_name"].type == "string"
+    assert fields["age_group"].value == "22"
+    # a missing key falls back to the snake cased name, same as the singular action
+    assert fields["district"].value == "Pune"
+
+    # each field gets its own history row
+    history =
+      Contacts.list_contact_history(%{
+        filter: %{contact_id: contact.id, event_type: "contact_fields_updated"}
+      })
+
+    assert length(history) == 3
+
+    assert Enum.sort(Enum.map(history, & &1.event_label)) == [
+             "Value for Age Group is updated to 22",
+             "Value for District is updated to Pune",
+             "Value for New Name is updated to Ravi"
+           ]
+
+    # and its definition is registered once
+    shortcodes =
+      ContactField.list_contacts_fields(%{filter: %{organization_id: contact.organization_id}})
+      |> Enum.map(& &1.shortcode)
+
+    assert "new_name" in shortcodes
+    assert "age_group" in shortcodes
+    assert "district" in shortcodes
+  end
+
+  test "execute set_contact_fields skips blank names and the settings key", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "Good Field", key: "good_field", value: "kept"},
+        %{name: "", key: nil, value: "dropped"},
+        %{name: "Settings", key: "settings", value: "optout"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.contact.fields["good_field"].value == "kept"
+    refute Map.has_key?(updated_context.contact.fields, "settings")
+    # the settings key must not opt the contact out through this node
+    assert updated_context.contact.optout_time == contact.optout_time
+    assert updated_context.contact.optout_method == contact.optout_method
+  end
+
+  test "execute set_contact_fields is a no-op when every row is blank", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: nil, key: nil, value: "dropped"}]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+    assert updated_context.contact.fields == contact.fields
+  end
+
+  test "validate set_contact_fields flags empty, duplicate and settings rows" do
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: []}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "no field to update" and severity == "Critical"
+           end)
+
+    duplicates = [
+      %{name: "Age Group", key: "age_group", value: "a"},
+      %{name: "Age Group", key: "age_group", value: "b"}
+    ]
+
+    assert Action.validate(
+             %Action{type: "set_contact_fields", contact_fields: duplicates},
+             [],
+             nil
+           )
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "repeats age_group" and severity == "Warning"
+           end)
+
+    settings = [%{name: "Settings", key: "settings", value: "optin"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: settings}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "Opt in/opt out" and severity == "Critical"
+           end)
   end
 
   test "execute an action when type is set_contact_profile to create and switch profile",
