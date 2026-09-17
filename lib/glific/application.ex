@@ -64,7 +64,12 @@ defmodule Glific.Application do
       ),
 
       # Dedicated hackney pool for Kaapi document uploads
-      :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
+      :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50),
+
+      # Builds the documentation index off the boot path: it is 60 ms and 1.6 MB,
+      # every node pays it, and a missing file should degrade search rather than
+      # stop the application starting. Temporary, so a failure is not retried.
+      {Task, &Documentation.warm/0}
     ]
 
     # Add this :telemetry.attach/4 for oban success/failure call:
@@ -82,8 +87,6 @@ defmodule Glific.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
-
-    Documentation.warm()
 
     Supervisor.start_link(children, opts)
   end

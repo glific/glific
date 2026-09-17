@@ -24,6 +24,16 @@ defmodule Glific.AI.Documentation do
 
   @index_key {__MODULE__, :index}
 
+  # Named rather than globbed: an index built from whatever happens to be in the
+  # directory differs between a developer's checkout and what ships. The label
+  # is what a citation says, so it never leaks a filename.
+  @documents [
+    {"glific_platform_guide", "Glific Platform Guide"},
+    {"glific_operations_manual", "Glific Operations Manual"},
+    {"glific_chatbot_knowledge_base", "Glific Knowledge Base"},
+    {"glific_diagnose_playbook", "Glific Diagnose Playbook"}
+  ]
+
   # A heading match is worth several body matches. It is also what finds the
   # notation the documents only ever write as a placeholder: someone asking
   # about `@results.input` reaches the section headed ".input vs .category",
@@ -47,6 +57,10 @@ defmodule Glific.AI.Documentation do
   # one scores 1.
   @minimum_score 3
 
+  # Roughly 375 tokens. p95 of the corpus is 2.2 KB, so most sections are
+  # returned whole and only the long ones are cut.
+  @max_body 1_500
+
   @typedoc """
   One section of a document, as a search result.
   """
@@ -66,20 +80,22 @@ defmodule Glific.AI.Documentation do
   preposition with it.
   """
   @spec search(String.t(), pos_integer()) :: [section()]
-  def search(query, limit \\ 5) do
+  def search(query, limit \\ 5), do: search_in(index(), query, limit)
+
+  @doc false
+  @spec search_in([map()], String.t(), pos_integer()) :: [section()]
+  def search_in(index, query, limit \\ 5) do
     case terms(query) do
       [] ->
         []
 
       terms ->
-        index()
+        index
         |> Enum.map(&{score(&1, terms), &1})
         |> Enum.filter(fn {score, _section} -> score >= @minimum_score end)
-        |> Enum.sort_by(fn {score, _section} -> -score end)
+        |> Enum.sort_by(&rank(&1, terms))
         |> Enum.take(limit)
-        |> Enum.map(fn {_score, section} ->
-          Map.take(section, [:document, :title, :path, :body, :url])
-        end)
+        |> Enum.map(fn {_score, section} -> present(section) end)
     end
   end
 
@@ -97,8 +113,35 @@ defmodule Glific.AI.Documentation do
   """
   @spec warm() :: :ok
   def warm do
-    _index = index()
-    :ok
+    :persistent_term.put(@index_key, build())
+  end
+
+  # Without IDF or length normalisation, ties are the common case rather than the
+  # exception, so the tail of every result set would otherwise be ordered by
+  # filename. A heading match is the stronger signal, and between two equally
+  # matched sections the shorter one is the more specific.
+  @spec rank({number(), map()}, [String.t()]) :: {number(), number(), non_neg_integer()}
+  defp rank({score, section}, terms) do
+    headings = Enum.count(terms, &heading_match?(section, &1))
+    {-score, -headings, byte_size(section.body)}
+  end
+
+  # The body is capped: a section can run to 12 KB, and the model is told two or
+  # three searches cost almost nothing. Same shape the flow and form tools use
+  # when they drop rows.
+  @spec present(map()) :: map()
+  defp present(section) do
+    described = Map.take(section, [:title, :path, :url])
+
+    if byte_size(section.body) > @max_body do
+      Map.merge(described, %{
+        body: binary_part(section.body, 0, @max_body),
+        truncated: true,
+        of: byte_size(section.body)
+      })
+    else
+      Map.put(described, :body, section.body)
+    end
   end
 
   @spec score(map(), [String.t()]) :: number()
@@ -115,18 +158,19 @@ defmodule Glific.AI.Documentation do
   # `@results.input`, so neither contains the other whole.
   @spec heading_match?(map(), String.t()) :: boolean()
   defp heading_match?(section, term) do
-    cond do
-      String.length(term) <= 3 ->
-        false
-
-      notation?(term) ->
-        String.contains?(section.heading, term) or
-          Enum.any?(String.split(term, "."), fn part ->
-            String.length(part) > 3 and String.contains?(section.heading, part)
-          end)
-
-      true ->
-        Enum.any?(inflections(term), &MapSet.member?(section.heading_terms, &1))
+    if notation?(term) do
+      # Substring matching is what needs a length guard: a two-letter fragment
+      # is contained in half the corpus.
+      String.length(term) > 3 and
+        (String.contains?(section.heading, term) or
+           Enum.any?(String.split(term, "."), fn part ->
+             String.length(part) > 3 and String.contains?(section.heading, part)
+           end))
+    else
+      # Whole-word membership cannot match a fragment, so short terms are safe
+      # here — and they are the ones that carry the topic: opt, hsm, api, otp,
+      # gcs, gpt.
+      Enum.any?(inflections(term), &MapSet.member?(section.heading_terms, &1))
     end
   end
 
@@ -156,27 +200,24 @@ defmodule Glific.AI.Documentation do
 
   # Built once and kept in `:persistent_term`: the documents do not change while
   # the node is running, and reads of a persistent term copy nothing.
+  # `warm/0` is the only writer. A cold reader builds its own copy and throws it
+  # away rather than storing it: `:persistent_term.put/2` makes every process in
+  # the node scan its heap, and concurrent cold callers would each pay for that
+  # with the same 1.6 MB term.
   @spec index() :: [map()]
-  defp index do
-    case :persistent_term.get(@index_key, nil) do
-      nil ->
-        built = build()
-        :persistent_term.put(@index_key, built)
-        built
+  defp index, do: :persistent_term.get(@index_key, nil) || build()
 
-      built ->
-        built
-    end
+  @doc false
+  @spec build([{String.t(), String.t()}], String.t()) :: [map()]
+  def build(documents, directory) do
+    Enum.flat_map(documents, fn {file, label} ->
+      directory |> Path.join(file <> ".md") |> sections(label)
+    end)
   end
 
   @spec build() :: [map()]
   defp build do
-    sections =
-      directory()
-      |> Path.join("*.md")
-      |> Path.wildcard()
-      |> Enum.sort()
-      |> Enum.flat_map(&sections/1)
+    sections = build(@documents, directory())
 
     if sections == [] do
       Logger.warning("Glific AI documentation is empty: nothing found in #{directory()}")
@@ -185,10 +226,8 @@ defmodule Glific.AI.Documentation do
     sections
   end
 
-  @spec sections(String.t()) :: [map()]
-  defp sections(path) do
-    document = Path.basename(path, ".md")
-
+  @spec sections(String.t(), String.t()) :: [map()]
+  defp sections(path, document) do
     path
     |> File.read!()
     |> headings()
@@ -202,26 +241,35 @@ defmodule Glific.AI.Documentation do
   defp headings(text) do
     text
     |> String.split("\n")
-    |> Enum.reduce([], &collect/2)
+    |> Enum.reduce({[], false}, &collect/2)
+    |> elem(0)
     |> Enum.reverse()
     |> Enum.map(fn {level, title, lines} ->
       {level, title, lines |> Enum.reverse() |> Enum.join("\n") |> String.trim()}
     end)
   end
 
-  @spec collect(String.t(), list()) :: list()
-  defp collect(line, acc) do
-    case Regex.run(~r/^(\#+)\s+(\S.*)$/, line) do
-      [_line, hashes, title] ->
-        [{String.length(hashes), String.trim(title), []} | acc]
+  # `{sections, inside_a_fence?}`: a `#` inside a code block is a shell or YAML
+  # comment, and treating it as a heading splits the section and orphans the
+  # rest of its body.
+  @spec collect(String.t(), {list(), boolean()}) :: {list(), boolean()}
+  defp collect(line, {acc, fenced?}) do
+    cond do
+      String.starts_with?(String.trim_leading(line), "```") ->
+        {append(acc, line), not fenced?}
 
-      nil ->
-        case acc do
-          [{level, title, lines} | rest] -> [{level, title, [line | lines]} | rest]
-          [] -> acc
-        end
+      not fenced? and Regex.run(~r/^(\#+)\s+(\S.*)$/, line) != nil ->
+        [_line, hashes, title] = Regex.run(~r/^(\#+)\s+(\S.*)$/, line)
+        {[{String.length(hashes), String.trim(title), []} | acc], fenced?}
+
+      true ->
+        {append(acc, line), fenced?}
     end
   end
+
+  @spec append(list(), String.t()) :: list()
+  defp append([{level, title, lines} | rest], line), do: [{level, title, [line | lines]} | rest]
+  defp append([], _line), do: []
 
   # A heading alone is often meaningless — "What & why", "Overall layout" — and
   # only means something under the one above it. The chain is carried down so a
@@ -248,8 +296,11 @@ defmodule Glific.AI.Documentation do
 
   @spec section({[String.t()], String.t(), String.t() | nil}, String.t()) :: map()
   defp section({path, body, url}, document) do
+    # Headings carry source references too, and a heading is what an answer
+    # cites by name, so it is the more visible of the two.
+    path = Enum.map(path, &strip_source_refs/1)
     title = List.last(path)
-    trail = Enum.join(path, " › ")
+    trail = Enum.join([document | path], " › ")
     heading = String.downcase(title)
 
     %{
@@ -258,10 +309,25 @@ defmodule Glific.AI.Documentation do
       path: trail,
       heading: heading,
       heading_terms: MapSet.new(terms(title)),
-      body: body,
+      body: strip_source_refs(body),
       url: url,
-      terms: MapSet.new(terms(title <> " " <> body))
+      terms: MapSet.new(terms(title <> " " <> strip_source_refs(body)))
     }
+  end
+
+  # The documents annotate facts with where in the codebase they came from —
+  # `contacts.ex:699`, `(from lib/glific/...)`. That is provenance for whoever
+  # wrote them and noise to whoever reads an answer, and the skill is told to
+  # give concrete steps, so an NGO can otherwise be handed an Elixir line
+  # number as an answer.
+  @source_ref ~r/\s*\((?:from\s+)?`[^`]*\.(?:ex|exs|ts|tsx)[^`]*`\)|\s*`[^`]*\.(?:ex|exs|ts|tsx)(?::[\d–—-]+)?`/u
+
+  @spec strip_source_refs(String.t()) :: String.t()
+  defp strip_source_refs(body) do
+    body
+    |> String.replace(@source_ref, "")
+    |> String.replace(~r/ +([,.;:])/u, "\\1")
+    |> String.replace(~r/[ \t]{2,}/u, " ")
   end
 
   @spec url(String.t()) :: String.t() | nil

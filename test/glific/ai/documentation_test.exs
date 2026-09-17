@@ -1,103 +1,93 @@
 defmodule Glific.AI.DocumentationTest do
+  @moduledoc """
+  The shipped corpus, and the tool and skill that reach it.
+
+  Deliberately tolerant about wording: the documents are prose and are meant to
+  be edited, so an assertion on a sentence would turn a documentation edit into
+  a failing build. Ranking behaviour is measured against a fixture corpus in
+  `Glific.AI.DocumentationRankingTest`, where the text is stable on purpose.
+  """
+
   use Glific.DataCase
 
   alias Glific.AI.{Documentation, Skills, Tools}
   alias Glific.AI.Skills.Knowledge
   alias Glific.Fixtures
 
-  describe "searching the documentation" do
-    test "the corpus is indexed" do
+  describe "the shipped corpus" do
+    test "every document in the manifest contributes sections" do
       assert Documentation.count() > 100
     end
 
-    test "a complaint finds the playbook rather than a feature page" do
-      # The playbook is only useful if the words people complain in reach it,
-      # which depends on its headings. Renaming one silently loses diagnosis.
+    test "every section carries a title and a trail" do
+      for section <- Documentation.search("flow", 10) do
+        assert section.title != ""
+        assert section.path =~ "›" or section.path == section.title
+      end
+    end
+
+    test "sections carry the page they came from, so an answer can cite it" do
+      sections =
+        ["publish a flow", "hsm template", "opt-in", "webhook"]
+        |> Enum.flat_map(&Documentation.search(&1, 5))
+
+      assert Enum.any?(sections, &(not is_nil(&1.url)))
+      assert Enum.all?(sections, &(is_nil(&1.url) or &1.url =~ ~r{^https?://}))
+    end
+
+    test "no body exceeds the cap, however long the source section is" do
+      for query <- ["flow", "template", "webhook", "contact", "message"],
+          section <- Documentation.search(query, 10) do
+        assert byte_size(section.body) <= 1_500, section.title
+      end
+    end
+
+    test "the filename never reaches the model" do
+      for section <- Documentation.search("flow", 5) do
+        refute Map.has_key?(section, :document)
+      end
+    end
+  end
+
+  describe "questions the corpus should answer" do
+    # Topic-level, not wording-level: each of these is a support subject the
+    # corpus is expected to cover at all. Rewording a section is fine; losing
+    # the subject is not.
+    @topics [
+      "how do I publish a flow",
+      "opt-in and opt-out",
+      "HSM template approval",
+      "webhook call from a flow",
+      "google sheet integration",
+      "collections and contact fields"
+    ]
+
+    test "each supported subject returns something" do
+      for topic <- @topics do
+        assert Documentation.search(topic, 3) != [], topic
+      end
+    end
+
+    test "a complaint reaches the diagnose playbook" do
       for complaint <- [
             "my flow is not running",
             "contact did not receive the message",
             "webhook not firing",
             "broadcast did not reach the collection"
           ] do
-        documents = complaint |> Documentation.search(2) |> Enum.map(& &1.document)
-        assert "glific_diagnose_playbook" in documents, complaint
+        paths = complaint |> Documentation.search(2) |> Enum.map(& &1.path)
+        assert Enum.any?(paths, &(&1 =~ "Diagnose Playbook")), complaint
       end
-    end
-
-    test "a question in Glific's own words finds the section that answers it" do
-      titles =
-        "save a user's response so I can use it later in the flow"
-        |> Documentation.search(3)
-        |> Enum.map(& &1.title)
-
-      assert Enum.any?(titles, &(&1 =~ "save a user's response"))
-    end
-
-    test "a heading match rescues notation the documents only write as a placeholder" do
-      # The documents write `@results.<name>`, so the literal `@results.input`
-      # appears in no section body. The heading does contain `.input`.
-      titles =
-        "@results.input vs @results.category"
-        |> Documentation.search(3)
-        |> Enum.map(& &1.title)
-
-      assert Enum.any?(titles, &(&1 =~ ".input"))
-    end
-
-    test "results carry the page they came from, so an answer can cite it" do
-      assert [_ | _] = sections = Documentation.search("wait for response node", 5)
-      assert Enum.any?(sections, &(&1.url =~ "https://"))
-      assert Enum.all?(sections, &(&1.document != ""))
-    end
-
-    test "the limit is honoured" do
-      assert length(Documentation.search("flow", 2)) == 2
-    end
-
-    test "nothing matching comes back empty rather than as noise" do
-      assert Documentation.search("zzzqqq unrelatedtoglific", 5) == []
     end
 
     test "a message with no topic in it returns nothing, not a plausible section" do
       for message <- [
-            "thanks!",
-            "got it, thank you so much for your help",
-            "can you explain that more?"
+            "zzzqqq unrelatedtoglific",
+            "what's the weather like in Mumbai today?",
+            "thanks, that worked!"
           ] do
         assert Documentation.search(message, 3) == [], "#{message} should not match"
       end
-    end
-
-    test "an off-topic question scores below the floor" do
-      assert Documentation.search("what's the weather like in Mumbai today?", 3) == []
-    end
-
-    test "a word ending a sentence is indexed without its full stop" do
-      # "...published flow." must be reachable as "flow", not only as "flow."
-      assert Documentation.search("flow.", 3) == Documentation.search("flow", 3)
-    end
-
-    test "a plain word must be a word of the heading, not a fragment of one" do
-      titles = "ignore" |> Documentation.search(5) |> Enum.map(& &1.title)
-
-      refute Enum.any?(titles, &(&1 =~ "ignore_keywords"))
-    end
-
-    test "a singular in the question reaches a plural in the heading" do
-      titles = "HSM template error sending" |> Documentation.search(3) |> Enum.map(& &1.title)
-
-      assert Enum.any?(titles, &(&1 =~ "HSM Template Errors"))
-    end
-
-    test "a subsection inherits the source url of the page above it" do
-      # "Screen: Flow list" carries no `Source:` line of its own; the "Flows"
-      # page above it does, and that is what an answer has to cite.
-      assert [section | _] =
-               "Screen: Flow list"
-               |> Documentation.search(3)
-               |> Enum.filter(&(&1.title =~ "Flow list"))
-
-      assert section.url =~ "https://"
     end
   end
 
@@ -107,46 +97,49 @@ defmodule Glific.AI.DocumentationTest do
     end
 
     test "returns sections for a query", %{user: user} do
-      assert {:ok, [section | _]} =
-               Tools.run("search_documentation", %{"query" => "collection"}, user)
+      assert {:ok, sections} =
+               Tools.run("search_documentation", %{"query" => "publish a flow"}, user)
 
-      assert is_binary(section.title)
-      assert is_binary(section.body)
+      assert [%{title: _, body: _} | _] = sections
     end
 
     test "a query matching nothing is an error the model can act on", %{user: user} do
       assert {:error, message} =
                Tools.run("search_documentation", %{"query" => "zzzqqq unrelatedtoglific"}, user)
 
-      assert message =~ "Glific's own terms"
+      assert message != ""
     end
 
     test "the limit is clamped so one search cannot flood the context", %{user: user} do
       assert {:ok, sections} =
-               Tools.run("search_documentation", %{"query" => "flow", "limit" => 50}, user)
+               Tools.run("search_documentation", %{"query" => "flow", "limit" => 500}, user)
 
       assert length(sections) <= 10
+    end
+
+    test "it holds no database connection", %{user: user} do
+      # The search is in-memory. Opening the gateway's read-only transaction for
+      # it would take a pooled connection for work that issues no SQL.
+      refute Glific.AI.Tools.Documentation.reads_database?()
+      assert {:ok, _} = Tools.run("search_documentation", %{"query" => "flow"}, user)
     end
   end
 
   describe "the skill that owns it" do
     test "the documentation is searchable from the skill that answers questions" do
-      names = Knowledge |> Skills.tools() |> Enum.map(& &1.name)
-
-      assert "search_documentation" in names
+      assert Glific.AI.Tools.Documentation in Skills.modules(Knowledge)
     end
 
     test "there is no separate documentation skill to route to" do
-      assert {:error, _} = Skills.fetch("documentation")
+      names = Enum.map(Skills.all(), & &1.name())
+      refute "documentation" in names
     end
 
     test "how the tool is called is documented on the tool, not per skill" do
-      # A skill that gains the tool later — a debug skill — inherits the
-      # vocabulary guidance instead of repeating it.
-      [spec] = Tools.all([Glific.AI.Tools.Documentation])
+      [spec] = Glific.AI.Tools.Documentation.specs()
 
-      assert spec.description =~ "translate first"
-      refute Knowledge.prompt() =~ "a programme, a campaign"
+      assert spec.description =~ "translate"
+      assert spec.description =~ "collection"
     end
   end
 end

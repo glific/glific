@@ -71,7 +71,7 @@ defmodule Glific.AI.Skills.Knowledge do
         📖 [<short title>](<url>)
 
     At most two links, and only ones that appeared in what you read. Never
-    invent a link, and never name the documents themselves.
+    invent a link.
     """
   end
 

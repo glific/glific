@@ -17,6 +17,9 @@ defmodule Glific.AI.Tools.Documentation do
 
   @behaviour Glific.AI.Tool
 
+  @impl Glific.AI.Tool
+  def reads_database?, do: false
+
   @doc """
   The documentation lookup this module offers.
   """
