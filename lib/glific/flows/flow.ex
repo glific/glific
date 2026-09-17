@@ -336,6 +336,7 @@ defmodule Glific.Flows.Flow do
           respond_other: f.respond_other,
           respond_no_response: f.respond_no_response,
           skip_validation: f.skip_validation,
+          channel: f.channel,
           organization_id: f.organization_id,
           definition: fr.definition,
           version: fr.version
@@ -419,8 +420,69 @@ defmodule Glific.Flows.Flow do
       |> dangling_nodes(flow, all_nodes)
       |> missing_flow_context_nodes(flow, all_nodes)
       |> missing_localization(flow, all_translation, action_to_node_map)
+      |> web_channel_errors(flow)
     end
   end
+
+  # Nodes with no equivalent on the web channel. A template needs a BSP to approve it (and a
+  # WhatsApp Form is a templated HSM, so it is covered by the same rule); a broadcast fans out to
+  # other contacts, which a per-contact browser socket cannot reach; the WA-group nodes run
+  # through a different provider entirely.
+  @web_unsupported_action_types %{
+    "send_broadcast" => "Sending a message to somebody else",
+    "set_wa_group_field" => "Updating a WhatsApp group field"
+  }
+
+  @web_unsupported_webhooks %{"send_wa_group_poll" => "Sending a WhatsApp group poll"}
+
+  @blocking_category "Blocking"
+
+  @doc """
+  Whether any of these validation errors must stop a publish rather than warn about it.
+  """
+  @spec blocking_errors?(list()) :: boolean()
+  def blocking_errors?(errors),
+    do: Enum.any?(errors, fn error -> elem(error, 2) == @blocking_category end)
+
+  @spec web_channel_errors(list(), map()) :: list()
+  defp web_channel_errors(errors, %{channel: channel} = flow) when channel in [:web, "web"] do
+    flow.definition["nodes"]
+    |> List.wrap()
+    |> Enum.flat_map(&(&1["actions"] || []))
+    |> Enum.reduce(errors, fn action, acc ->
+      case unsupported_web_action(action) do
+        nil ->
+          acc
+
+        label ->
+          [
+            {action["uuid"],
+             "#{label} only works on WhatsApp, so it cannot be part of a web flow.",
+             @blocking_category}
+            | acc
+          ]
+      end
+    end)
+  end
+
+  defp web_channel_errors(errors, _flow), do: errors
+
+  @spec unsupported_web_action(map()) :: String.t() | nil
+  defp unsupported_web_action(%{"type" => "send_msg"} = action) do
+    if templated_action?(action), do: "Sending a WhatsApp template (HSM)"
+  end
+
+  defp unsupported_web_action(%{"type" => "call_webhook", "url" => url}),
+    do: Map.get(@web_unsupported_webhooks, url)
+
+  defp unsupported_web_action(%{"type" => type}),
+    do: Map.get(@web_unsupported_action_types, type)
+
+  defp unsupported_web_action(_action), do: nil
+
+  @spec templated_action?(map()) :: boolean()
+  defp templated_action?(action),
+    do: is_map(action["templating"]) and map_size(action["templating"]) > 0
 
   @spec flow_objects(map(), atom()) :: MapSet.t()
   defp flow_objects(flow, type) do

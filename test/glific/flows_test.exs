@@ -385,6 +385,164 @@ defmodule Glific.FLowsTest do
       assert loaded_flow_new.keywords != loaded_flow.keywords
     end
 
+    test "publish_flow/2 refuses a web flow carrying a WhatsApp-only node, and publishes once it is removed",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      {:ok, flow} = Flows.update_flow(flow, %{channel: :web})
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      version_before = revision.version
+      clean_definition = revision.definition
+      [first_node | rest] = clean_definition["nodes"]
+
+      broadcast_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "send_broadcast",
+        "text" => "notify the team",
+        "contacts" => []
+      }
+
+      offending_definition =
+        Map.put(clean_definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [broadcast_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: offending_definition}) |> Repo.update()
+
+      assert {:errors, errors} = Flows.publish_flow(flow, user.id)
+      assert Enum.any?(errors, fn error -> error.category == "Blocking" end)
+
+      assert Enum.any?(errors, fn error ->
+               String.contains?(error.message, "only works on WhatsApp")
+             end)
+
+      # the point of blocking: the publish must not have taken effect. A successful publish bumps
+      # the revision's version, so an unchanged version is what proves nothing went live.
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      assert revision.version == version_before
+
+      # removing the node is what unblocks the publish
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: clean_definition}) |> Repo.update()
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      assert revision.version == version_before + 1
+    end
+
+    test "publish_flow/2 names every whatsapp-only node in a web flow",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      {:ok, flow} = Flows.update_flow(flow, %{channel: :web})
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      offending_actions = [
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "send_broadcast",
+          "text" => "notify the team",
+          "contacts" => []
+        },
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "send_msg",
+          "text" => "your appointment is confirmed",
+          # an expression-based templating map needs no stored template, but still marks the
+          # action as templated
+          "templating" => %{"uuid" => Ecto.UUID.generate(), "expression" => "@results.template"}
+        },
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "set_wa_group_field",
+          "field" => %{"key" => "group_name", "name" => "Group Name"},
+          "value" => "cohort 1"
+        },
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "call_webhook",
+          "url" => "send_wa_group_poll",
+          "method" => "FUNCTION",
+          "headers" => %{},
+          "result_name" => "poll_result"
+        }
+      ]
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ offending_actions) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:errors, errors} = Flows.publish_flow(flow, user.id)
+
+      blocking_messages =
+        errors
+        |> Enum.filter(fn error -> error.category == "Blocking" end)
+        |> Enum.map(fn error -> error.message end)
+
+      assert length(blocking_messages) == 4
+
+      for label <- [
+            "Sending a message to somebody else",
+            "Sending a WhatsApp template (HSM)",
+            "Updating a WhatsApp group field",
+            "Sending a WhatsApp group poll"
+          ] do
+        assert Enum.any?(blocking_messages, fn message -> String.starts_with?(message, label) end),
+               "expected a blocking error for #{label}"
+      end
+    end
+
+    test "publish_flow/2 leaves a whatsapp flow with the same node publishable",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      assert flow.channel == :whatsapp
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      broadcast_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "send_broadcast",
+        "text" => "notify the team",
+        "contacts" => []
+      }
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [broadcast_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
+    end
+
     test "publish_flow/1 updates the latest flow revision status",
          %{organization_id: organization_id} = _attrs do
       user = Repo.get_current_user()
@@ -529,6 +687,18 @@ defmodule Glific.FLowsTest do
 
       broadcast_results = message_broadcast.default_results
       assert broadcast_results["key"] == default_results.key
+    end
+
+    # The copy carries the source's nodes, so a copy of a web flow that came back as a whatsapp
+    # flow would be mislabelled and would skip the web-channel publish checks.
+    test "copy_flow/2 keeps the channel of the flow it copied" do
+      flow = flow_fixture()
+      {:ok, web_flow} = Flows.update_flow(flow, %{channel: :web})
+
+      assert {:ok, %Flow{} = copied_flow} =
+               Flows.copy_flow(web_flow, %{name: "copied web flow", keywords: []})
+
+      assert copied_flow.channel == :web
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do
