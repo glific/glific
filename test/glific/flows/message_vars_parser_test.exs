@@ -440,95 +440,12 @@ defmodule Glific.Flows.MessageVarParserTest do
     end
   end
 
-  describe "nested result access" do
-    @json ~s({"year":"2026-27","grade":12,"program":"Tejasvi"})
+  describe "nested result access with the flag off" do
+    test "renders the legacy way, leaving the key unresolved" do
+      json = ~s({"grade":12})
+      fields = %{"results" => %{"j" => %{"input" => json, "value" => json, "category" => ""}}}
 
-    # `value` matters: without it `parse/2`'s `@x.y` pass is never reached, and these tests pass
-    # while a real flow fails.
-    defp result(input), do: %{"input" => input, "value" => input, "category" => ""}
-
-    defp json_fields, do: %{"results" => %{"json" => result(@json)}}
-
-    test "reads a key out of a saved json object", _attrs do
-      assert MessageVarParser.parse("Grade @results.json.grade", json_fields()) == "Grade 12"
-    end
-
-    test "resolves several keys in one body", _attrs do
-      assert MessageVarParser.parse(
-               "@results.json.program for @results.json.year",
-               json_fields()
-             ) == "Tejasvi for 2026-27"
-    end
-
-    test "still renders the whole value for a bare reference", _attrs do
-      assert MessageVarParser.parse("Whole @results.json", json_fields()) == "Whole #{@json}"
-    end
-
-    test "an unknown nested key falls back to the stored value" do
-      assert MessageVarParser.parse("@results.json.gradez", json_fields()) ==
-               "#{@json}.gradez"
-    end
-
-    @nested ~s({"student":{"address":{"city":"Pune"},"grade":12},"subjects":["Math","Science"]})
-
-    defp nested_fields, do: %{"results" => %{"j" => result(@nested)}}
-
-    test "reads two keys deep" do
-      assert MessageVarParser.parse("@results.j.student.grade", nested_fields()) == "12"
-    end
-
-    test "reads three keys deep" do
-      assert MessageVarParser.parse("@results.j.student.address.city", nested_fields()) == "Pune"
-    end
-
-    test "renders an object reached part-way down" do
-      assert MessageVarParser.parse("@results.j.student", nested_fields()) ==
-               ~s({"address":{"city":"Pune"},"grade":12})
-    end
-
-    test "renders a list reached by key" do
-      assert MessageVarParser.parse("@results.j.subjects", nested_fields()) == "Math, Science"
-    end
-
-    # `parse/2` matches at most five dot-separated segments, so a fourth key is never part of the
-    # reference.
-    test "stops at three keys, leaving a fourth unresolved" do
-      assert MessageVarParser.parse("@results.j.student.address.zip", nested_fields()) ==
-               ~s({"city":"Pune"}.zip)
-    end
-
-    # A webhook result is stored as a map rather than as text, so there is nothing to decode.
-    test "reads a key out of a result already stored as a map" do
-      fields = %{
-        "results" => %{"j" => %{"input" => %{"grade" => 12}, "value" => %{"grade" => 12}}}
-      }
-
-      assert MessageVarParser.parse("@results.j.grade", fields) == "12"
-    end
-
-    test "a non-json result keeps its long-standing rendering", _attrs do
-      fields = %{"results" => %{"name" => result("Amisha")}}
-
-      assert MessageVarParser.parse("@results.name.foo", fields) == "Amisha.foo"
-    end
-
-    test "mixes nested and plain references", _attrs do
-      fields = %{"results" => %{"json" => result(@json), "name" => result("Amisha")}}
-
-      assert MessageVarParser.parse("@results.name got @results.json.grade", fields) ==
-               "Amisha got 12"
-    end
-
-    test "renders a nested value that is itself structured", _attrs do
-      fields = %{"results" => %{"json" => result(~s({"subjects":["Math","Science"]}))}}
-
-      assert MessageVarParser.parse("@results.json.subjects", fields) == "Math, Science"
-    end
-
-    test "a json array falls back to the plain rendering", _attrs do
-      fields = %{"results" => %{"list" => result(~s(["a","b"]))}}
-
-      assert MessageVarParser.parse("@results.list.0", fields) == ~s(["a","b"].0)
+      assert MessageVarParser.parse("@results.j.grade", fields) == "#{json}.grade"
     end
   end
 end

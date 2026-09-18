@@ -81,16 +81,27 @@ defmodule Glific.Flows.MessageVarParser do
   # substituted the `@results.foo` prefix and left a dangling `.bar`.
   @spec nested_result(map(), [String.t()]) :: String.t() | nil
   defp nested_result(binding, ["results", name | path]) when path != [] do
-    with result when is_map(result) <- safe_get_in(binding, ["results", name]),
-         decoded when is_map(decoded) <- decode_map(result["input"] || result["value"]),
-         value when not is_nil(value) <- safe_get_in(decoded, path) do
-      ValueText.to_text(value)
-    else
-      _ -> nil
+    if nested_results_enabled?() do
+      with result when is_map(result) <- safe_get_in(binding, ["results", name]),
+           decoded when is_map(decoded) <- decode_map(result["input"] || result["value"]),
+           value when not is_nil(value) <- safe_get_in(decoded, path) do
+        ValueText.to_text(value)
+      else
+        _ -> nil
+      end
     end
   end
 
   defp nested_result(_binding, _keys), do: nil
+
+  # Off by default: an org sees exactly the substitution it sees today until it opts in. Returning
+  # nil here is what the caller already treats as "unresolved", so the legacy rendering applies.
+  @spec nested_results_enabled?() :: boolean()
+  defp nested_results_enabled?,
+    do:
+      FunWithFlags.enabled?(:nested_flow_results,
+        for: %{organization_id: Repo.get_organization_id()}
+      )
 
   @spec safe_get_in(term(), [String.t()]) :: term()
   defp safe_get_in(value, []), do: value

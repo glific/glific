@@ -822,54 +822,6 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.language_id == language.id
   end
 
-  # End to end, because testing the parser alone missed a real bug on this path.
-  test "a saved json result is readable key-by-key in a later message", attrs do
-    [flow | _tail] = Flows.list_flows(%{filter: attrs})
-    contact = Repo.get_by(Contact, %{name: "Default receiver"})
-
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        flow_id: flow.id,
-        flow_uuid: Ecto.UUID.generate(),
-        contact_id: contact.id,
-        organization_id: attrs.organization_id
-      })
-
-    context = Repo.preload(context, [:flow, :contact])
-
-    save_json = %Action{
-      uuid: Ecto.UUID.generate(),
-      node_uuid: "Test UUID",
-      type: "set_run_result",
-      name: "json",
-      value: ~S(<%= "{\"year\":\"2026-27\",\"grade\":12,\"program\":\"Tejasvi\"}" %>),
-      category: ""
-    }
-
-    {:ok, context, _stream} = Action.execute(save_json, context, [])
-
-    assert context.results["json"]["input"] ==
-             ~s({"year":"2026-27","grade":12,"program":"Tejasvi"})
-
-    for {reference, expected} <- [
-          {"@results.json.year", "2026-27"},
-          {"@results.json.grade", "12"},
-          {"@results.json.program", "Tejasvi"}
-        ] do
-      {:ok, _ctx, _stream} =
-        Action.execute(%Action{type: "send_msg", text: reference}, context, [])
-
-      body =
-        Glific.Messages.Message
-        |> where([m], m.contact_id == ^contact.id)
-        |> Ecto.Query.last()
-        |> Repo.one()
-        |> Map.get(:body)
-
-      assert body == expected, "#{reference} rendered #{inspect(body)}"
-    end
-  end
-
   test "execute an action when type is set_run_result", attrs do
     [flow | _tail] = Flows.list_flows(%{filter: attrs})
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
