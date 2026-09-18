@@ -66,7 +66,10 @@ defmodule Glific.Flows.MessageVarParser do
     keys = String.split(var, ".")
 
     substitution =
-      case safe_get_in(binding, keys) |> bound() do
+    binding
+    |> safe_get_in(keys)
+    |> bound()
+    |> case do
         nil -> nested_result(binding, keys)
         found -> found
       end
