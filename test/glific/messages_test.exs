@@ -756,6 +756,32 @@ defmodule Glific.MessagesTest do
       assert error == "Receiver does not exist"
     end
 
+    test "create and send message without an explicit type and an empty body should error out instead of persisting a null-body text message",
+         attrs do
+      # `type` is intentionally omitted here, mirroring callers (e.g. the
+      # `create_and_send_message` GraphQL mutation) that don't set it explicitly.
+      # Without the fix, this silently defaults to `type: :text` deep inside
+      # `do_send_message/2` and saves a message with a `nil` body (issue #4848).
+      message_attrs =
+        %{flow: :outbound}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, error} = Messages.create_and_send_message(message_attrs)
+      assert error == "Could not send message with empty body"
+    end
+
+    test "create and send message with an explicit type: :text and an empty body should also error out",
+         attrs do
+      # Explicit `type: :text` must go through the same resolved-type validation path as
+      # the omitted-type case above, so both hit `notify/2` and return the same error.
+      message_attrs =
+        %{flow: :outbound, type: :text, body: ""}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, error} = Messages.create_and_send_message(message_attrs)
+      assert error == "Could not send message with empty body"
+    end
+
     test "create and send message should send message to contact through gupshup enterprise",
          attrs do
       enable_gupshup_enterprise(attrs)
