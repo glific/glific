@@ -73,6 +73,7 @@ defmodule Glific.Flows.Action do
   @required_fields_set_results [:name, :category, :value | @required_field_common]
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
   @required_fields_set_contact_fields [:fields | @required_field_common]
+  @bulk_contact_properties ["language"]
 
   # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
   # dropdown). Flows still referencing them must migrate to the new
@@ -336,7 +337,7 @@ defmodule Glific.Flows.Action do
         field = entry["field"] || %{}
         name = if is_nil(field["name"]), do: field["key"], else: field["name"]
 
-        %{name: name, key: field["key"], value: entry["value"]}
+        %{name: name, key: field["key"], value: entry["value"], property: entry["type"]}
       end)
 
     process(json, uuid_map, node, %{contact_fields: contact_fields})
@@ -556,9 +557,10 @@ defmodule Glific.Flows.Action do
     keys = Enum.map(entries, &contact_field_key/1)
 
     errors
-    |> validate_contact_fields_present(entries, consent_rows(action))
+    |> validate_contact_fields_present(entries, consent_rows(action) ++ property_rows(action))
     |> validate_contact_fields_unique(keys)
     |> validate_contact_fields_settings(action)
+    |> validate_contact_fields_properties(action)
   end
 
   def validate(%{type: "set_contact_language"} = action, errors, _flow) do
@@ -907,6 +909,7 @@ defmodule Glific.Flows.Action do
     context =
       context
       |> ContactField.add_contact_fields(entries)
+      |> maybe_set_language(action)
       |> maybe_set_consent(action)
 
     {:ok, context, messages}
@@ -1215,8 +1218,26 @@ defmodule Glific.Flows.Action do
   defp updatable_contact_fields(action) do
     Enum.reject(
       action.contact_fields || [],
-      &(&1.name in ["", nil] or contact_field_key(&1) == "settings")
+      &(&1.name in ["", nil] or contact_field_key(&1) == "settings" or property_row?(&1))
     )
+  end
+
+  @spec property_row?(map()) :: boolean()
+  defp property_row?(row), do: Map.get(row, :property) in @bulk_contact_properties
+
+  @spec property_rows(Action.t(), String.t()) :: [map()]
+  defp property_rows(action, property),
+    do: Enum.filter(action.contact_fields || [], &(Map.get(&1, :property) == property))
+
+  @spec maybe_set_language(FlowContext.t(), Action.t()) :: FlowContext.t()
+  defp maybe_set_language(context, action) do
+    case property_rows(action, "language") do
+      [%{value: value} | _rest] when value not in ["", nil] ->
+        ContactSetting.set_contact_language(context, value)
+
+      _ ->
+        context
+    end
   end
 
   @spec contact_field_key(map()) :: String.t()
@@ -1259,6 +1280,36 @@ defmodule Glific.Flows.Action do
   @spec consent_rows(Action.t()) :: [map()]
   defp consent_rows(action),
     do: Enum.filter(action.contact_fields || [], &(contact_field_key(&1) == "settings"))
+
+  @spec property_rows(Action.t()) :: [map()]
+  defp property_rows(action),
+    do: Enum.filter(action.contact_fields || [], &property_row?(&1))
+
+  @spec validate_contact_fields_properties(list(), Action.t()) :: list()
+  defp validate_contact_fields_properties(errors, action) do
+    Enum.reduce(@bulk_contact_properties, errors, fn property, acc ->
+      rows = property_rows(action, property)
+
+      acc
+      |> validate_property_once(rows, property)
+      |> validate_property_value(rows, property)
+    end)
+  end
+
+  @spec validate_property_once(list(), [map()], String.t()) :: list()
+  defp validate_property_once(errors, rows, property) when length(rows) > 1,
+    do: [
+      {Message, "Update contact fields node sets #{property} more than once", "Critical"} | errors
+    ]
+
+  defp validate_property_once(errors, _rows, _property), do: errors
+
+  @spec validate_property_value(list(), [map()], String.t()) :: list()
+  defp validate_property_value(errors, [%{value: value} | _rest], property)
+       when value in ["", nil],
+       do: [{Message, "#{String.capitalize(property)} is a required field", "Warning"} | errors]
+
+  defp validate_property_value(errors, _rows, _property), do: errors
 
   @spec maybe_set_consent(FlowContext.t(), Action.t()) :: FlowContext.t()
   defp maybe_set_consent(context, action) do
