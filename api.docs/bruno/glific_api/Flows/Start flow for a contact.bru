@@ -16,8 +16,8 @@ headers {
 }
 
 body:graphql {
-  mutation startContactFlow($flowId: ID!, $contactId: ID!) {
-    startContactFlow(flowId: $flowId, contactId: $contactId) {
+  mutation startContactFlow($flowId: ID!, $contactId: ID!, $channel: MessageChannelEnum) {
+    startContactFlow(flowId: $flowId, contactId: $contactId, channel: $channel) {
       success
       errors {
           key
@@ -52,6 +52,7 @@ docs {
   |-------------|---------|--------------------------------------------|
   | `flowId`    | ID      | The ID of the flow to be started.          |
   | `contactId` | ID      | The ID of the contact for which the flow will be started. |
+  | `channel`   | MessageChannelEnum | Optional. The channel the flow runs on (`WHATSAPP` or `WEB`). Defaults to `WHATSAPP` when omitted. |
   
   ## Request Example
   ```bash

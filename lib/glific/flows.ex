@@ -760,29 +760,32 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact and cache the result
   """
-  @spec start_contact_flow(Flow.t() | integer, Contact.t(), map()) ::
-          {:ok, Flow.t()} | {:error, String.t()}
+  @spec start_contact_flow(Flow.t() | integer, Contact.t(), map(), atom() | nil) ::
+          {:ok, Flow.t()} | {:error, [String.t()]}
 
-  def start_contact_flow(flow_id, contact, default_results \\ %{})
+  def start_contact_flow(flow_id, contact, default_results \\ %{}, channel \\ nil)
 
-  def start_contact_flow(flow_id, %Contact{} = contact, default_results)
+  def start_contact_flow(flow_id, %Contact{} = contact, default_results, channel)
       when is_integer(flow_id) do
+    channel = channel || :whatsapp
+
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
       {:ok, flow} ->
-        process_contact_flow([contact], flow, default_results)
+        process_contact_flow([contact], flow, default_results, channel)
 
       {:error, _error} ->
         {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
-  def start_contact_flow(%Flow{} = flow, %Contact{} = contact, default_results),
-    do: start_contact_flow(flow.id, contact, default_results)
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact, default_results, channel),
+    do: start_contact_flow(flow.id, contact, default_results, channel)
 
-  @spec process_contact_flow(list(), Flow.t(), map()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow, default_results) do
+  @spec process_contact_flow(list(), Flow.t(), map(), atom()) ::
+          {:ok, Flow.t()} | {:error, [String.t()]}
+  defp process_contact_flow(contacts, flow, default_results, channel) do
     if flow.is_active do
-      Broadcast.broadcast_contacts(flow, contacts, default_results)
+      Broadcast.broadcast_contacts(flow, contacts, default_results, channel)
       {:ok, flow}
     else
       {:error, ["Flow", dgettext("errors", "Flow is not active")]}
