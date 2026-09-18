@@ -34,6 +34,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   )
 
   load_gql(
+    :config_subscription,
+    GlificWeb.Schema,
+    "assets/gql/assistants/subscribe.gql"
+  )
+
+  load_gql(
     :set_live_version,
     GlificWeb.Schema,
     "assets/gql/assistants/set_live_version.gql"
@@ -501,8 +507,22 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           model: "gpt-4o",
           prompt: "Prompt v3",
           settings: %{},
-          status: :ready,
+          status: :failed,
+          failure_reason: "Invalid documents: unsupported format",
           bump_type: :major
+        })
+        |> Repo.insert()
+
+      {:ok, _legacy_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Legacy failed version",
+          settings: %{},
+          status: :failed
         })
         |> Repo.insert()
 
@@ -515,10 +535,16 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => assistant.id})
 
       versions = query_data.data["assistantVersions"]
-      assert length(versions) == 3
+      assert length(versions) == 4
 
       # Ordered newest first by major, then minor
-      assert Enum.map(versions, & &1["version_label"]) == ["2.0", "1.1", "1.0"]
+      assert Enum.map(versions, & &1["version_label"]) == ["2.1", "2.0", "1.1", "1.0"]
+      assert Enum.map(versions, & &1["status"]) == ["failed", "failed", "in_progress", "ready"]
+
+      assert Enum.map(versions, & &1["failure_reason"]) ==
+               [nil, "Invalid documents: unsupported format", nil, nil]
+
+      assert Enum.map(versions, & &1["is_live"]) == [false, false, false, true]
 
       # is_live reflects active_config_version_id
       live_version = Enum.find(versions, & &1["is_live"])
@@ -526,6 +552,24 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
       # versions without a linked knowledge base have no vector_store
       assert Enum.all?(versions, fn v -> is_nil(v["vector_store"]) end)
+
+      other_organization = Glific.Fixtures.organization_fixture()
+      Repo.put_organization_id(other_organization.id)
+
+      other_user =
+        Glific.Fixtures.user_fixture(%{
+          organization_id: other_organization.id,
+          roles: ["manager"]
+        })
+
+      {:ok, other_query_data} =
+        auth_query_gql_by(:assistant_versions, other_user,
+          variables: %{"assistant_id" => assistant.id}
+        )
+
+      other_versions = other_query_data.data["assistantVersions"]
+      assert other_versions == [] or Enum.all?(other_versions, &is_nil(&1["id"]))
+      assert Enum.all?(other_versions, &is_nil(&1["failure_reason"]))
     end
 
     test "concurrent inserts for the same assistant get unique, sequential version numbers", %{
@@ -640,6 +684,51 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       versions = query_data.data["assistantVersions"]
       # Absinthe returns a list with nil entries or an empty list when the resolver errors
       assert versions == [] or Enum.all?(versions, &is_nil(&1["id"]))
+    end
+  end
+
+  describe "assistantConfigVersionUpdated subscription" do
+    setup :enable_kaapi
+
+    test "publishes the persisted terminal failure to the organization's subscriber", %{
+      manager: user,
+      organization_id: organization_id
+    } do
+      assert {:ok, %{"subscribed" => subscription_id}} =
+               auth_query_gql_by(:config_subscription, user,
+                 operation_name: "assistantConfigVersionUpdated",
+                 context: %{current_user: user, pubsub: GlificWeb.Endpoint}
+               )
+
+      :ok = GlificWeb.Endpoint.subscribe(subscription_id)
+
+      failure_reason = "Invalid model requested"
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 400, body: %{error: failure_reason}}
+      end)
+
+      assert {:error, _reason} =
+               Assistants.create_assistant(%{
+                 name: "Subscription failure",
+                 organization_id: organization_id
+               })
+
+      assistant = Repo.get_by!(Assistant, name: "Subscription failure")
+      config_version = Repo.get!(AssistantConfigVersion, assistant.active_config_version_id)
+      assert config_version.status == :failed
+      assert config_version.failure_reason == failure_reason
+
+      assert_receive %Phoenix.Socket.Broadcast{
+                       topic: ^subscription_id,
+                       event: "subscription:data",
+                       payload: %{result: %{data: %{"assistantConfigVersionUpdated" => payload}}}
+                     },
+                     1_000
+
+      assert payload["id"] == to_string(config_version.id)
+      assert payload["status"] == "failed"
+      assert payload["failureReason"] == config_version.failure_reason
     end
   end
 

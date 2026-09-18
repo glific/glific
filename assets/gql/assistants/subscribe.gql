@@ -6,6 +6,7 @@ subscription assistantConfigVersionUpdated {
     prompt
     settings
     status
+    failureReason
     description
     vectorStore {
       id
