@@ -5,6 +5,7 @@ defmodule Glific.Flows.MessageVarParser do
   require Logger
 
   alias Glific.{
+    Flags,
     Flows.ValueText,
     Partners,
     Repo
@@ -66,10 +67,10 @@ defmodule Glific.Flows.MessageVarParser do
     keys = String.split(var, ".")
 
     substitution =
-    binding
-    |> safe_get_in(keys)
-    |> bound()
-    |> case do
+      binding
+      |> safe_get_in(keys)
+      |> bound()
+      |> case do
         nil -> nested_result(binding, keys)
         found -> found
       end
@@ -81,7 +82,11 @@ defmodule Glific.Flows.MessageVarParser do
   # substituted the `@results.foo` prefix and left a dangling `.bar`.
   @spec nested_result(map(), [String.t()]) :: String.t() | nil
   defp nested_result(binding, ["results", name | path]) when path != [] do
-    if nested_results_enabled?() do
+    # Off by default: with the flag off this returns nil, which the caller renders the legacy way.
+    if Flags.get_flag_enabled(
+         :nested_flow_results,
+         Partners.organization(Repo.get_organization_id())
+       ) do
       with result when is_map(result) <- safe_get_in(binding, ["results", name]),
            decoded when is_map(decoded) <- decode_map(result["input"] || result["value"]),
            value when not is_nil(value) <- safe_get_in(decoded, path) do
@@ -93,15 +98,6 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   defp nested_result(_binding, _keys), do: nil
-
-  # Off by default: an org sees exactly the substitution it sees today until it opts in. Returning
-  # nil here is what the caller already treats as "unresolved", so the legacy rendering applies.
-  @spec nested_results_enabled?() :: boolean()
-  defp nested_results_enabled?,
-    do:
-      FunWithFlags.enabled?(:nested_flow_results,
-        for: %{organization_id: Repo.get_organization_id()}
-      )
 
   @spec safe_get_in(term(), [String.t()]) :: term()
   defp safe_get_in(value, []), do: value

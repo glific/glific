@@ -17,6 +17,9 @@ defmodule Glific.Flows.MessageVarParserNestedTest do
   alias Glific.Messages.Message
   alias Glific.Repo
 
+  @json ~s({"year":"2026-27","grade":12,"program":"Tejasvi"})
+  @nested ~s({"student":{"address":{"city":"Pune"},"grade":12},"subjects":["Math","Science"]})
+
   setup do
     organization_id = Repo.get_organization_id()
     FunWithFlags.enable(:nested_flow_results, for_actor: %{organization_id: organization_id})
@@ -27,8 +30,6 @@ defmodule Glific.Flows.MessageVarParserNestedTest do
 
     %{organization_id: organization_id}
   end
-
-  @json ~s({"year":"2026-27","grade":12,"program":"Tejasvi"})
 
   # `value` matters: without it `parse/2`'s `@x.y` pass is never reached, and these tests pass
   # while a real flow fails.
@@ -55,8 +56,6 @@ defmodule Glific.Flows.MessageVarParserNestedTest do
     assert MessageVarParser.parse("@results.json.gradez", json_fields()) ==
              "#{@json}.gradez"
   end
-
-  @nested ~s({"student":{"address":{"city":"Pune"},"grade":12},"subjects":["Math","Science"]})
 
   defp nested_fields, do: %{"results" => %{"j" => result(@nested)}}
 
