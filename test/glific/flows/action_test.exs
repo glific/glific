@@ -990,7 +990,12 @@ defmodule Glific.Flows.ActionTest do
       "type" => "set_contact_fields",
       "fields" => [
         %{"field" => %{"name" => "Age Group", "key" => "age_group"}, "value" => "18-25"},
-        %{"field" => %{"key" => "district"}, "value" => "Pune"}
+        %{"field" => %{"key" => "district"}, "value" => "Pune"},
+        %{
+          "field" => %{"name" => "Language", "key" => "language"},
+          "value" => "hi",
+          "type" => "language"
+        }
       ]
     }
 
@@ -1000,9 +1005,11 @@ defmodule Glific.Flows.ActionTest do
     assert action.type == "set_contact_fields"
     assert action.node_uuid == node.uuid
 
+    # property is nil for an ordinary field row and set for a contact property row
     assert action.contact_fields == [
-             %{name: "Age Group", key: "age_group", value: "18-25"},
-             %{name: "district", key: "district", value: "Pune"}
+             %{name: "Age Group", key: "age_group", value: "18-25", property: nil},
+             %{name: "district", key: "district", value: "Pune", property: nil},
+             %{name: "Language", key: "language", value: "hi", property: "language"}
            ]
 
     # fields is required
