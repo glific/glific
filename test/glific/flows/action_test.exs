@@ -1065,7 +1065,7 @@ defmodule Glific.Flows.ActionTest do
     assert "district" in shortcodes
   end
 
-  test "execute set_contact_fields skips blank names and the settings key", _attrs do
+  test "execute set_contact_fields skips blank names", _attrs do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =
@@ -1076,8 +1076,28 @@ defmodule Glific.Flows.ActionTest do
       type: "set_contact_fields",
       contact_fields: [
         %{name: "Good Field", key: "good_field", value: "kept"},
-        %{name: "", key: nil, value: "dropped"},
-        %{name: "Settings", key: "settings", value: "optout"}
+        %{name: "", key: nil, value: "dropped"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.contact.fields["good_field"].value == "kept"
+    assert map_size(updated_context.contact.fields) == map_size(contact.fields || %{}) + 1
+  end
+
+  test "execute set_contact_fields opts the contact out via the settings key", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "Good Field", key: "good_field", value: "kept"},
+        %{name: "Consent status", key: "settings", value: "optout"}
       ]
     }
 
@@ -1085,9 +1105,29 @@ defmodule Glific.Flows.ActionTest do
 
     assert updated_context.contact.fields["good_field"].value == "kept"
     refute Map.has_key?(updated_context.contact.fields, "settings")
-    # the settings key must not opt the contact out through this node
-    assert updated_context.contact.optout_time == contact.optout_time
-    assert updated_context.contact.optout_method == contact.optout_method
+
+    {:ok, reloaded} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert reloaded.optout_time != nil
+    assert reloaded.status == :invalid
+    assert reloaded.bsp_status == :none
+    assert reloaded.optin_status == false
+  end
+
+  test "execute set_contact_fields sets a preference via the settings key", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: "Consent status", key: "settings", value: "preference1"}]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.contact.settings["preferences"]["preference1"] == true
   end
 
   test "execute set_contact_fields is a no-op when every row is blank", _attrs do
@@ -1126,11 +1166,21 @@ defmodule Glific.Flows.ActionTest do
              message =~ "repeats age_group" and severity == "Warning"
            end)
 
-    settings = [%{name: "Settings", key: "settings", value: "optin"}]
+    # a single consent row is allowed, and counts as the node doing something
+    settings = [%{name: "Consent status", key: "settings", value: "optin"}]
 
-    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: settings}, [], nil)
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: settings}, [], nil) ==
+             []
+
+    # but setting consent twice is ambiguous
+    twice = [
+      %{name: "Consent status", key: "settings", value: "optin"},
+      %{name: "Consent status", key: "settings", value: "optout"}
+    ]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: twice}, [], nil)
            |> Enum.any?(fn {_, message, severity} ->
-             message =~ "Opt in/opt out" and severity == "Critical"
+             message =~ "opt in/opt out more than once" and severity == "Critical"
            end)
   end
 

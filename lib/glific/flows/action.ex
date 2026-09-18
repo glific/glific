@@ -556,7 +556,7 @@ defmodule Glific.Flows.Action do
     keys = Enum.map(entries, &contact_field_key/1)
 
     errors
-    |> validate_contact_fields_present(entries)
+    |> validate_contact_fields_present(entries, consent_rows(action))
     |> validate_contact_fields_unique(keys)
     |> validate_contact_fields_settings(action)
   end
@@ -904,7 +904,12 @@ defmodule Glific.Flows.Action do
         }
       )
 
-    {:ok, ContactField.add_contact_fields(context, entries), messages}
+    context =
+      context
+      |> ContactField.add_contact_fields(entries)
+      |> maybe_set_consent(action)
+
+    {:ok, context, messages}
   end
 
   def execute(%{type: "set_contact_profile"} = action, context, _messages) do
@@ -1222,11 +1227,11 @@ defmodule Glific.Flows.Action do
 
   defp contact_field_key(_entry), do: ""
 
-  @spec validate_contact_fields_present(list(), [map()]) :: list()
-  defp validate_contact_fields_present(errors, []),
+  @spec validate_contact_fields_present(list(), [map()], [map()]) :: list()
+  defp validate_contact_fields_present(errors, [], []),
     do: [{Message, "Update contact fields node has no field to update", "Critical"} | errors]
 
-  defp validate_contact_fields_present(errors, _entries), do: errors
+  defp validate_contact_fields_present(errors, _entries, _consent_rows), do: errors
 
   @spec validate_contact_fields_unique(list(), [String.t()]) :: list()
   defp validate_contact_fields_unique(errors, keys) do
@@ -1243,14 +1248,27 @@ defmodule Glific.Flows.Action do
 
   @spec validate_contact_fields_settings(list(), Action.t()) :: list()
   defp validate_contact_fields_settings(errors, action) do
-    if Enum.any?(action.contact_fields || [], &(contact_field_key(&1) == "settings")),
+    if length(consent_rows(action)) > 1,
       do: [
-        {Message,
-         "Opt in/opt out cannot be set from the update contact fields node, use the Update Contact node",
-         "Critical"}
+        {Message, "Update contact fields node sets opt in/opt out more than once", "Critical"}
         | errors
       ],
       else: errors
+  end
+
+  @spec consent_rows(Action.t()) :: [map()]
+  defp consent_rows(action),
+    do: Enum.filter(action.contact_fields || [], &(contact_field_key(&1) == "settings"))
+
+  @spec maybe_set_consent(FlowContext.t(), Action.t()) :: FlowContext.t()
+  defp maybe_set_consent(context, action) do
+    case consent_rows(action) do
+      [] ->
+        context
+
+      [row | _rest] ->
+        settings(context, ContactField.parse_contact_field_value(context, row.value))
+    end
   end
 
   @spec settings(FlowContext.t(), String.t()) :: FlowContext.t()
