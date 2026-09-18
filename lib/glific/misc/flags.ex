@@ -513,7 +513,7 @@ defmodule Glific.Flags do
       :is_template_library_enabled,
       :glific_ai_enabled,
       :web_channel_enabled,
-      :bulk_contact_fields_enabled
+      :bulk_contact_update_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
