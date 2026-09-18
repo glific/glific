@@ -599,6 +599,7 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:is_template_library_enabled)
       |> Flags.set_flag_enabled(:glific_ai_enabled)
       |> Flags.set_flag_enabled(:web_channel_enabled)
+      |> Flags.set_flag_enabled(:bulk_contact_fields_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1511,7 +1512,9 @@ defmodule Glific.Partners do
       "template_library_enabled" =>
         Flags.get_flag_enabled(:is_template_library_enabled, organization),
       "glific_ai_enabled" => Flags.get_flag_enabled(:glific_ai_enabled, organization),
-      "web_channel_enabled" => Flags.get_flag_enabled(:web_channel_enabled, organization)
+      "web_channel_enabled" => Flags.get_flag_enabled(:web_channel_enabled, organization),
+      "bulk_contact_fields_enabled" =>
+        Flags.get_flag_enabled(:bulk_contact_fields_enabled, organization)
     }
   end
 
