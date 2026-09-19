@@ -395,4 +395,57 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert MessageVarParser.parse("hello @results.foo.bar", fields) ==
              "hello just_a_string.bar"
   end
+
+  describe "parse/2 — collection values" do
+    # A list reached String.replace/3 as iodata, so a webhook returning
+    # ["Math", "Science"] rendered as "MathScience" in the message body.
+    test "a list result is comma separated, not concatenated", _attrs do
+      fields = %{
+        "results" => %{
+          "courses" => %{"input" => ["Math", "Science", "Art"], "category" => "Success"}
+        }
+      }
+
+      assert MessageVarParser.parse("You are enrolled in @results.courses", fields) ==
+               "You are enrolled in Math, Science, Art"
+    end
+
+    test "a list reached through an explicit path is comma separated", _attrs do
+      fields = %{"results" => %{"courses" => %{"input" => ["Math", "Science"]}}}
+
+      assert MessageVarParser.parse("@results.courses.input", fields) == "Math, Science"
+    end
+
+    # to_string/1 on an integer list yields the raw bytes <<1, 2, 3>>.
+    test "an integer list is not rendered as a charlist", _attrs do
+      fields = %{"results" => %{"grades" => %{"input" => [1, 2, 3]}}}
+
+      assert MessageVarParser.parse("@results.grades", fields) == "1, 2, 3"
+    end
+
+    # String.replace/3 raises ArgumentError on a list of maps, which crashed the
+    # flow rather than degrading.
+    test "a list of maps renders instead of raising", _attrs do
+      fields = %{"results" => %{"items" => %{"input" => [%{"a" => "1"}]}}}
+
+      assert MessageVarParser.parse("@results.items", fields) == ~s({"a":"1"})
+    end
+
+    test "a map result is still left untouched", _attrs do
+      # Substitution is textual and can feed expression source, so injecting JSON
+      # here would corrupt the surrounding expression. Map support is separate.
+      fields = %{"results" => %{"profile" => %{"input" => %{"city" => "Pune"}}}}
+
+      assert MessageVarParser.parse("@results.profile", fields) == "@results.profile"
+    end
+  end
+
+  describe "nested result access with the flag off" do
+    test "renders the legacy way, leaving the key unresolved" do
+      json = ~s({"grade":12})
+      fields = %{"results" => %{"j" => %{"input" => json, "value" => json, "category" => ""}}}
+
+      assert MessageVarParser.parse("@results.j.grade", fields) == "#{json}.grade"
+    end
+  end
 end

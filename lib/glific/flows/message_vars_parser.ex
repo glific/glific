@@ -5,6 +5,8 @@ defmodule Glific.Flows.MessageVarParser do
   require Logger
 
   alias Glific.{
+    Flags,
+    Flows.ValueText,
     Partners,
     Repo
   }
@@ -62,13 +64,40 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     var = String.replace_trailing(var, ".", "")
+    keys = String.split(var, ".")
 
     substitution =
-      safe_get_in(binding, String.split(var, "."))
+      binding
+      |> safe_get_in(keys)
       |> bound()
+      |> case do
+        nil -> nested_result(binding, keys)
+        found -> found
+      end
 
     if substitution == nil, do: "@#{var}", else: substitution
   end
+
+  # Has to live here rather than in `parse_results/2`: `parse/2`'s `@x.y` pass would already have
+  # substituted the `@results.foo` prefix and left a dangling `.bar`.
+  @spec nested_result(map(), [String.t()]) :: String.t() | nil
+  defp nested_result(binding, ["results", name | path]) when path != [] do
+    # Off by default: with the flag off this returns nil, which the caller renders the legacy way.
+    if Flags.get_flag_enabled(
+         :nested_flow_results,
+         Partners.organization(Repo.get_organization_id())
+       ) do
+      with result when is_map(result) <- safe_get_in(binding, ["results", name]),
+           decoded when is_map(decoded) <- decode_map(result["input"] || result["value"]),
+           value when not is_nil(value) <- safe_get_in(decoded, path) do
+        ValueText.to_text(value)
+      else
+        _ -> nil
+      end
+    end
+  end
+
+  defp nested_result(_binding, _keys), do: nil
 
   @spec safe_get_in(term(), [String.t()]) :: term()
   defp safe_get_in(value, []), do: value
@@ -87,6 +116,10 @@ defmodule Glific.Flows.MessageVarParser do
       do: DateTime.to_string(substitution),
       else: bound(substitution["value"])
   end
+
+  # A list would otherwise reach `String.replace/3` as iodata: `["Math", "Science"]`
+  # silently concatenates to "MathScience", and a list of maps raises.
+  defp bound(substitution) when is_list(substitution), do: ValueText.to_text(substitution)
 
   defp bound(substitution), do: substitution
 
@@ -136,12 +169,24 @@ defmodule Glific.Flows.MessageVarParser do
     key = String.downcase(key)
 
     if is_map(value) && Map.has_key?(value, "input") && !is_map(value["input"]) do
-      replace = to_string(value["input"])
+      replace = ValueText.to_text(value["input"])
       String.replace(body, replace_prefix <> key, replace)
     else
       body
     end
   end
+
+  @spec decode_map(any()) :: map() | nil
+  defp decode_map(input) when is_map(input), do: input
+
+  defp decode_map(input) when is_binary(input) do
+    case Jason.decode(input) do
+      {:ok, decoded} when is_map(decoded) -> decoded
+      _ -> nil
+    end
+  end
+
+  defp decode_map(_input), do: nil
 
   @spec do_parse_results(String.t(), String.t(), map()) :: String.t()
   defp do_parse_results(body, replace_prefix, results) when is_map(results) do
