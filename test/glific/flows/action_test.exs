@@ -1162,13 +1162,18 @@ defmodule Glific.Flows.ActionTest do
 
     action = %Action{
       type: "set_contact_fields",
-      contact_fields: [%{name: "District", key: "district", value: "Pune"}]
+      contact_fields: [
+        %{name: "District", key: "district", value: "Pune"},
+        %{name: "Age Group", key: "age_group", value: "18-25"}
+      ]
     }
 
     assert {:ok, context, []} = Action.execute(action, context, [])
     assert context.contact.fields["district"].value == "Pune"
+    assert context.contact.fields["age_group"].value == "18-25"
 
-    # an empty value clears the field, the same way the singular action does
+    # an empty value clears the field, the same way the singular action does -
+    # a missing value is cleared too, since the editor may omit it entirely
     cleared = %Action{
       type: "set_contact_fields",
       contact_fields: [
