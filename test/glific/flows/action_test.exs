@@ -1153,6 +1153,35 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields == contact.fields
   end
 
+  test "execute set_contact_fields clears a field whose value is empty", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: "District", key: "district", value: "Pune"}]
+    }
+
+    assert {:ok, context, []} = Action.execute(action, context, [])
+    assert context.contact.fields["district"].value == "Pune"
+
+    # an empty value clears the field, the same way the singular action does
+    cleared = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: ""},
+        %{name: "Age Group", key: "age_group", value: nil}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(cleared, context, [])
+    assert context.contact.fields["district"].value == ""
+    assert context.contact.fields["age_group"].value == ""
+  end
+
   test "validate set_contact_fields flags empty, duplicate and settings rows" do
     assert Action.validate(%Action{type: "set_contact_fields", contact_fields: []}, [], nil)
            |> Enum.any?(fn {_, message, severity} ->
