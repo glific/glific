@@ -1191,6 +1191,231 @@ defmodule Glific.Flows.ActionTest do
            end)
   end
 
+  test "process extracts the right values from json for set_run_results action" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_run_results",
+      "results" => [
+        %{
+          "name" => "video_code",
+          "value" => "@contact.fields.video_code",
+          "category" => "@contact.fields.video_code"
+        },
+        %{"name" => "age_group", "value" => "@results.age", "category" => "Age"},
+        %{"name" => "district", "value" => "Pune"}
+      ]
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_run_results"
+    assert action.node_uuid == node.uuid
+
+    assert action.run_results == [
+             %{
+               name: "video_code",
+               value: "@contact.fields.video_code",
+               category: "@contact.fields.video_code"
+             },
+             %{name: "age_group", value: "@results.age", category: "Age"},
+             %{name: "district", value: "Pune", category: nil}
+           ]
+
+    # results is required
+    json = %{"uuid" => "UUID 1", "type" => "set_run_results"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "execute an action when type is set_run_results saves every result", attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    contact
+    |> ContactField.do_add_contact_field(
+      "video_code",
+      "video_code",
+      "shyness",
+      "string"
+    )
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id,
+      results: %{"age" => "22"}
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "set_run_results",
+      run_results: [
+        %{
+          name: "video_code",
+          value: "@contact.fields.video_code",
+          category: "@contact.fields.video_code"
+        },
+        %{name: "age_group", value: "@results.age", category: "Age"},
+        %{name: "static", value: "plain text", category: "Static"}
+      ],
+      flow: %{
+        "name" => "#{flow.name}",
+        "uuid" => "#{flow.uuid}"
+      }
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["video_code"]["value"] == "shyness"
+    assert updated_context.results["video_code"]["category"] == "shyness"
+    assert updated_context.results["age_group"]["value"] == "22"
+    assert updated_context.results["age_group"]["category"] == "Age"
+    assert updated_context.results["static"]["value"] == "plain text"
+    assert updated_context.results["static"]["input"] == "plain text"
+    assert updated_context.results["static"]["category"] == "Static"
+  end
+
+  test "execute an action for WA Group when type is set_run_results", attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      wa_group_id: wa_group.id,
+      organization_id: attrs.organization_id,
+      results: %{"result1" => "shyness"}
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :wa_group])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "set_run_results",
+      run_results: [
+        %{name: "video_code", value: "@results.result1", category: "Video"},
+        %{name: "second_code", value: "@results.result1", category: "Second"}
+      ],
+      flow: %{
+        "name" => flow.name,
+        "uuid" => flow.uuid
+      }
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["video_code"]["value"] == "shyness"
+    assert updated_context.results["video_code"]["category"] == "Video"
+    assert updated_context.results["second_code"]["value"] == "shyness"
+    assert updated_context.results["second_code"]["category"] == "Second"
+  end
+
+  test "execute set_run_results keeps the last value for a repeated name", attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      type: "set_run_results",
+      run_results: [
+        %{name: "video_code", value: "first", category: "First"},
+        %{name: "video_code", value: "second", category: "Second"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["video_code"]["value"] == "second"
+    assert updated_context.results["video_code"]["category"] == "Second"
+  end
+
+  test "execute set_run_results skips blank names and is a no-op when every row is blank",
+       attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      type: "set_run_results",
+      run_results: [
+        %{name: "kept", value: "kept value", category: "Kept"},
+        %{name: "", value: "dropped", category: "Dropped"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["kept"]["value"] == "kept value"
+    assert map_size(updated_context.results) == 1
+
+    blank = %Action{
+      type: "set_run_results",
+      run_results: [%{name: nil, value: "dropped", category: nil}]
+    }
+
+    assert {:ok, blank_context, []} = Action.execute(blank, context, [])
+    assert blank_context.results == context.results
+  end
+
+  test "validate set_run_results flags empty and duplicate rows" do
+    assert Action.validate(%Action{type: "set_run_results", run_results: []}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "no result to save" and severity == "Critical"
+           end)
+
+    # a blank name is not a result, so an all-blank node is still empty
+    blank = [%{name: "", value: "a", category: nil}]
+
+    assert Action.validate(%Action{type: "set_run_results", run_results: blank}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "no result to save" and severity == "Critical"
+           end)
+
+    duplicates = [
+      %{name: "video_code", value: "a", category: "A"},
+      %{name: "video_code", value: "b", category: "B"}
+    ]
+
+    assert Action.validate(%Action{type: "set_run_results", run_results: duplicates}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "repeats video_code" and severity == "Warning"
+           end)
+
+    distinct = [
+      %{name: "video_code", value: "a", category: "A"},
+      %{name: "age_group", value: "b", category: "B"}
+    ]
+
+    assert Action.validate(%Action{type: "set_run_results", run_results: distinct}, [], nil) == []
+  end
+
   test "execute an action when type is set_contact_profile to create and switch profile",
        _attrs do
     default_profile = Glific.Fixtures.profile_fixture()
@@ -2033,6 +2258,19 @@ defmodule Glific.Flows.ActionTest do
 
       plain = %Action{type: "set_run_result", value: "just some text"}
       assert Action.validate_expressions(plain, [], flow) == []
+    end
+
+    test "flags disallowed code in a set_run_results row value", %{flow: flow} do
+      action = %Action{
+        type: "set_run_results",
+        run_results: [
+          %{name: "safe", value: "<%= 5 * 60 %>", category: "Safe"},
+          %{name: "video_code", value: ~s|<%= System.cmd("id", []) %>|, category: "Bad"}
+        ]
+      }
+
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Result value for video_code has an unsupported expression"
     end
   end
 end
