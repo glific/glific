@@ -647,6 +647,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["ai_evaluation_v2_enabled"] == false
     assert services["glific_ai_enabled"] == false
     assert services["web_channel_enabled"] == false
+    assert services["bulk_result_update_enabled"] == false
   end
 
   test "update an organization with organization settings", %{user: user} do
