@@ -1153,6 +1153,104 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields == contact.fields
   end
 
+  test "execute set_contact_fields clears a field whose value is empty", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: "Pune"},
+        %{name: "Age Group", key: "age_group", value: "18-25"}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(action, context, [])
+    assert context.contact.fields["district"].value == "Pune"
+    assert context.contact.fields["age_group"].value == "18-25"
+
+    # an empty value clears the field, the same way the singular action does -
+    # a missing value is cleared too, since the editor may omit it entirely
+    cleared = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: ""},
+        %{name: "Age Group", key: "age_group", value: nil}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(cleared, context, [])
+    assert context.contact.fields["district"].value == ""
+    assert context.contact.fields["age_group"].value == ""
+  end
+
+  test "execute set_contact_fields sets the language property and ignores a blank one", _attrs do
+    [hindi | _] = Settings.list_languages(%{filter: %{label: "Hindi"}})
+    [english | _] = Settings.list_languages(%{filter: %{label: "English"}})
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # start from a known language so switching to Hindi actually proves something
+    {:ok, contact} = Contacts.update_contact(contact, %{language_id: english.id})
+    refute contact.language_id == hindi.id
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: "Pune", property: nil},
+        # the editor stores the iso code rather than the label
+        %{name: "Language", key: "language", value: "hi", property: "language"}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(action, context, [])
+    assert context.contact.language_id == hindi.id
+
+    # the property row drives the contact's language, it is not stored as a field
+    assert context.contact.fields["district"].value == "Pune"
+    refute Map.has_key?(context.contact.fields, "language")
+
+    # a blank language cannot clear the language, so it is left alone
+    blank = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: "Language", key: "language", value: "", property: "language"}]
+    }
+
+    assert {:ok, context, []} = Action.execute(blank, context, [])
+    assert context.contact.language_id == hindi.id
+    refute Map.has_key?(context.contact.fields, "language")
+  end
+
+  test "validate set_contact_fields flags a language row that has no value" do
+    empty = [%{name: "Language", key: "language", value: "", property: "language"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: empty}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "Language is a required field" and severity == "Warning"
+           end)
+
+    # a language row on its own is enough for the node to be doing something
+    filled = [%{name: "Language", key: "language", value: "hi", property: "language"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: filled}, [], nil) ==
+             []
+
+    # but setting it twice is ambiguous
+    twice = filled ++ [%{name: "Language", key: "language", value: "en", property: "language"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: twice}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "sets language more than once" and severity == "Critical"
+           end)
+  end
+
   test "validate set_contact_fields flags empty, duplicate and settings rows" do
     assert Action.validate(%Action{type: "set_contact_fields", contact_fields: []}, [], nil)
            |> Enum.any?(fn {_, message, severity} ->
