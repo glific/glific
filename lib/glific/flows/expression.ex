@@ -69,6 +69,8 @@ defmodule Glific.Flows.Expression do
   escape hatch — we return `{:error, _}`).
   """
 
+  alias Glific.Flows.ValueText
+
   # The complete set of callable functions, keyed `{alias, fun, arity}`.
   # Every entry must be pure, total, and cheap. Never add anything that evals
   # (`Code`/`EEx`), touches the OS (`System`/`File`/`:os`), reaches the `Repo`,
@@ -1398,9 +1400,7 @@ defmodule Glific.Flows.Expression do
   @spec reject(String.t()) :: no_return()
   defp reject(why), do: throw({:reject, why})
 
-  defp to_output(%Date{} = d), do: Date.to_string(d)
-  defp to_output(v) when is_binary(v), do: v
-  defp to_output(v), do: to_string(v)
+  defp to_output(v), do: ValueText.to_text(v)
 
   @spec safe_desc(Macro.t()) :: String.t()
   defp safe_desc(node) do

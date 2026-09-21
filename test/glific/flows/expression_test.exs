@@ -72,6 +72,47 @@ defmodule Glific.Flows.ExpressionTest do
     end
   end
 
+  describe "eval/2 — structured results" do
+    test "renders a map as JSON instead of failing" do
+      assert {:ok, ~s({"city":"Pune"})} = Expression.eval(~s|<%= %{"city" => "Pune"} %>|)
+    end
+
+    test "renders a nested map as JSON" do
+      assert {:ok, ~s({"a":{"b":1}})} = Expression.eval(~s|<%= %{"a" => %{"b" => 1}} %>|)
+    end
+
+    test "renders a map built from bindings" do
+      assert {:ok, ~s({"city":"Pune"})} =
+               Expression.eval("<%= @results.profile %>", %{
+                 "results" => %{"profile" => %{"city" => "Pune"}}
+               })
+    end
+
+    # to_string/1 treats an integer list as a charlist, so this used to render as
+    # the raw bytes <<1, 2, 3>> — silently, into a beneficiary's message.
+    test "renders an integer list as digits, not as a charlist" do
+      assert {:ok, "1, 2, 3"} = Expression.eval("<%= [1, 2, 3] %>")
+    end
+
+    test "renders a string list comma separated rather than concatenated" do
+      assert {:ok, "Math, Science"} = Expression.eval(~s|<%= ["Math", "Science"] %>|)
+    end
+
+    test "renders a collection derived from a binding" do
+      assert {:ok, "Math, Science"} =
+               Expression.eval("<%= Enum.take(@results, 2) %>", %{
+                 "results" => ["Math", "Science", "Art"]
+               })
+    end
+
+    test "a map result stays inside the output size limit check" do
+      big = Enum.into(1..500, %{}, fn n -> {"key_#{n}", String.duplicate("v", 40)} end)
+
+      assert {:error, "expression output too large"} =
+               Expression.eval("<%= @big %>", %{"big" => big})
+    end
+  end
+
   describe "eval/2 — prose is never parsed" do
     test "returns non-expression prose unchanged" do
       for text <- @prose do
