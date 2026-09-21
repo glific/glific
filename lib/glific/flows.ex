@@ -1465,7 +1465,17 @@ defmodule Glific.Flows do
 
   defp do_export_contact_fields(%{"actions" => actions}) do
     action = actions |> hd
-    if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
+
+    case action["type"] do
+      "set_contact_field" ->
+        [action["field"]["key"]]
+
+      "set_contact_fields" ->
+        Enum.map(action["fields"] || [], & &1["field"]["key"])
+
+      _ ->
+        []
+    end
   end
 
   @spec export_interactive_templates(map()) :: list()
