@@ -325,10 +325,6 @@ defmodule Glific.Messages do
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
-    # `type` defaults to `:text` here so callers that omit it (e.g. the
-    # `create_and_send_message` GraphQL mutation) are checked the same as an explicit
-    # `type: :text`, and we never persist a `:text` message with a `nil`/empty body
-    # (see issue #4848).
     attrs = Map.put_new(attrs, :type, :text)
 
     if attrs.type == :text && attrs[:body] in ["", nil] do
