@@ -57,6 +57,16 @@ defmodule Glific.Flows.MessageVarParserNestedTest do
              "#{@json}.gradez"
   end
 
+  # Documents a known limitation: @results.parent.* / @results.child.* are resolved by a
+  # separate scoped pass and are not read key-by-key, even with the flag on.
+  test "a parent-scoped json result is not read key-by-key" do
+    fields = %{"results" => %{"parent" => %{"json" => result(@json)}}}
+    rendered = MessageVarParser.parse("@results.parent.json.grade", fields)
+
+    refute rendered == "12"
+    assert rendered =~ ~s("grade":12)
+  end
+
   defp nested_fields, do: %{"results" => %{"j" => result(@nested)}}
 
   test "reads two keys deep" do
