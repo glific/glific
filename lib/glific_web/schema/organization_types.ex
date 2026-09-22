@@ -38,6 +38,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:template_library_enabled, :boolean)
     field(:glific_ai_enabled, :boolean)
     field(:web_channel_enabled, :boolean)
+    field(:bulk_contact_update_enabled, :boolean)
+    field(:bulk_flow_results_enabled, :boolean)
   end
 
   object :organization_export_result do
@@ -154,6 +156,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_template_library_enabled, :boolean)
     field(:glific_ai_enabled, :boolean)
     field(:web_channel_enabled, :boolean)
+    field(:bulk_contact_update_enabled, :boolean)
+    field(:bulk_flow_results_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 
