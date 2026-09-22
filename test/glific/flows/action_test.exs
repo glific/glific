@@ -4,6 +4,7 @@ defmodule Glific.Flows.ActionTest do
   use Glific.DataCase
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Fixtures,
     Flows,
@@ -981,6 +982,538 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields[action.field.key].label == "Not Settings"
   end
 
+  test "process extracts the right values from json for set_contact_fields action" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_contact_fields",
+      "fields" => [
+        %{"field" => %{"name" => "Age Group", "key" => "age_group"}, "value" => "18-25"},
+        %{"field" => %{"key" => "district"}, "value" => "Pune"},
+        %{
+          "field" => %{"name" => "Language", "key" => "language"},
+          "value" => "hi",
+          "type" => "language"
+        }
+      ]
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_contact_fields"
+    assert action.node_uuid == node.uuid
+
+    # property is nil for an ordinary field row and set for a contact property row
+    assert action.contact_fields == [
+             %{name: "Age Group", key: "age_group", value: "18-25", property: nil},
+             %{name: "district", key: "district", value: "Pune", property: nil},
+             %{name: "Language", key: "language", value: "hi", property: "language"}
+           ]
+
+    # fields is required
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_fields"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "execute an action when type is set_contact_fields writes every field", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{
+        contact_id: contact.id,
+        flow_id: 1,
+        results: %{"name_result" => "Ravi", "age_result" => "22"}
+      }
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "New Name", key: "new_name", value: "@results.name_result"},
+        %{name: "Age Group", key: "age_group", value: "@results.age_result"},
+        %{name: "District", key: nil, value: "Pune"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    fields = updated_context.contact.fields
+
+    assert fields["new_name"].value == "Ravi"
+    assert fields["new_name"].label == "New Name"
+    assert fields["new_name"].type == "string"
+    assert fields["age_group"].value == "22"
+    # a missing key falls back to the snake cased name, same as the singular action
+    assert fields["district"].value == "Pune"
+
+    # each field gets its own history row
+    history =
+      Contacts.list_contact_history(%{
+        filter: %{contact_id: contact.id, event_type: "contact_fields_updated"}
+      })
+
+    assert length(history) == 3
+
+    assert Enum.sort(Enum.map(history, & &1.event_label)) == [
+             "Value for Age Group is updated to 22",
+             "Value for District is updated to Pune",
+             "Value for New Name is updated to Ravi"
+           ]
+
+    # and its definition is registered once
+    shortcodes =
+      ContactField.list_contacts_fields(%{filter: %{organization_id: contact.organization_id}})
+      |> Enum.map(& &1.shortcode)
+
+    assert "new_name" in shortcodes
+    assert "age_group" in shortcodes
+    assert "district" in shortcodes
+  end
+
+  test "execute set_contact_fields skips blank names", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "Good Field", key: "good_field", value: "kept"},
+        %{name: "", key: nil, value: "dropped"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.contact.fields["good_field"].value == "kept"
+    assert map_size(updated_context.contact.fields) == map_size(contact.fields || %{}) + 1
+  end
+
+  test "execute set_contact_fields opts the contact out via the settings key", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "Good Field", key: "good_field", value: "kept"},
+        %{name: "Consent status", key: "settings", value: "optout"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.contact.fields["good_field"].value == "kept"
+    refute Map.has_key?(updated_context.contact.fields, "settings")
+
+    {:ok, reloaded} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert reloaded.optout_time != nil
+    assert reloaded.status == :invalid
+    assert reloaded.bsp_status == :none
+    assert reloaded.optin_status == false
+  end
+
+  test "execute set_contact_fields sets a preference via the settings key", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: "Consent status", key: "settings", value: "preference1"}]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.contact.settings["preferences"]["preference1"] == true
+  end
+
+  test "execute set_contact_fields is a no-op when every row is blank", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: nil, key: nil, value: "dropped"}]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+    assert updated_context.contact.fields == contact.fields
+  end
+
+  test "execute set_contact_fields clears a field whose value is empty", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: "Pune"},
+        %{name: "Age Group", key: "age_group", value: "18-25"}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(action, context, [])
+    assert context.contact.fields["district"].value == "Pune"
+    assert context.contact.fields["age_group"].value == "18-25"
+
+    # an empty value clears the field, the same way the singular action does -
+    # a missing value is cleared too, since the editor may omit it entirely
+    cleared = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: ""},
+        %{name: "Age Group", key: "age_group", value: nil}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(cleared, context, [])
+    assert context.contact.fields["district"].value == ""
+    assert context.contact.fields["age_group"].value == ""
+  end
+
+  test "execute set_contact_fields sets the language property and ignores a blank one", _attrs do
+    [hindi | _] = Settings.list_languages(%{filter: %{label: "Hindi"}})
+    [english | _] = Settings.list_languages(%{filter: %{label: "English"}})
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # start from a known language so switching to Hindi actually proves something
+    {:ok, contact} = Contacts.update_contact(contact, %{language_id: english.id})
+    refute contact.language_id == hindi.id
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: "Pune", property: nil},
+        # the editor stores the iso code rather than the label
+        %{name: "Language", key: "language", value: "hi", property: "language"}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(action, context, [])
+    assert context.contact.language_id == hindi.id
+
+    # the property row drives the contact's language, it is not stored as a field
+    assert context.contact.fields["district"].value == "Pune"
+    refute Map.has_key?(context.contact.fields, "language")
+
+    # a blank language cannot clear the language, so it is left alone
+    blank = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: "Language", key: "language", value: "", property: "language"}]
+    }
+
+    assert {:ok, context, []} = Action.execute(blank, context, [])
+    assert context.contact.language_id == hindi.id
+    refute Map.has_key?(context.contact.fields, "language")
+  end
+
+  test "validate set_contact_fields flags a language row that has no value" do
+    empty = [%{name: "Language", key: "language", value: "", property: "language"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: empty}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "Language is a required field" and severity == "Warning"
+           end)
+
+    # a language row on its own is enough for the node to be doing something
+    filled = [%{name: "Language", key: "language", value: "hi", property: "language"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: filled}, [], nil) ==
+             []
+
+    # but setting it twice is ambiguous
+    twice = filled ++ [%{name: "Language", key: "language", value: "en", property: "language"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: twice}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "sets language more than once" and severity == "Critical"
+           end)
+  end
+
+  test "validate set_contact_fields flags empty, duplicate and settings rows" do
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: []}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "no field to update" and severity == "Critical"
+           end)
+
+    duplicates = [
+      %{name: "Age Group", key: "age_group", value: "a"},
+      %{name: "Age Group", key: "age_group", value: "b"}
+    ]
+
+    assert Action.validate(
+             %Action{type: "set_contact_fields", contact_fields: duplicates},
+             [],
+             nil
+           )
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "repeats age_group" and severity == "Warning"
+           end)
+
+    # a single consent row is allowed, and counts as the node doing something
+    settings = [%{name: "Consent status", key: "settings", value: "optin"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: settings}, [], nil) ==
+             []
+
+    # but setting consent twice is ambiguous
+    twice = [
+      %{name: "Consent status", key: "settings", value: "optin"},
+      %{name: "Consent status", key: "settings", value: "optout"}
+    ]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: twice}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "opt in/opt out more than once" and severity == "Critical"
+           end)
+  end
+
+  test "process extracts the right values from json for set_run_results action" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_run_results",
+      "results" => [
+        %{
+          "name" => "video_code",
+          "value" => "@contact.fields.video_code",
+          "category" => "@contact.fields.video_code"
+        },
+        %{"name" => "age_group", "value" => "@results.age", "category" => "Age"},
+        %{"name" => "district", "value" => "Pune"}
+      ]
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_run_results"
+    assert action.node_uuid == node.uuid
+
+    assert action.run_results == [
+             %{
+               name: "video_code",
+               value: "@contact.fields.video_code",
+               category: "@contact.fields.video_code"
+             },
+             %{name: "age_group", value: "@results.age", category: "Age"},
+             %{name: "district", value: "Pune", category: nil}
+           ]
+
+    # results is required
+    json = %{"uuid" => "UUID 1", "type" => "set_run_results"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "execute an action when type is set_run_results saves every result", attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    contact
+    |> ContactField.do_add_contact_field(
+      "video_code",
+      "video_code",
+      "shyness",
+      "string"
+    )
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id,
+      results: %{"age" => "22"}
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "set_run_results",
+      run_results: [
+        %{
+          name: "video_code",
+          value: "@contact.fields.video_code",
+          category: "@contact.fields.video_code"
+        },
+        %{name: "age_group", value: "@results.age", category: "Age"},
+        %{name: "static", value: "plain text", category: "Static"}
+      ],
+      flow: %{
+        "name" => "#{flow.name}",
+        "uuid" => "#{flow.uuid}"
+      }
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["video_code"]["value"] == "shyness"
+    assert updated_context.results["video_code"]["category"] == "shyness"
+    assert updated_context.results["age_group"]["value"] == "22"
+    assert updated_context.results["age_group"]["category"] == "Age"
+    assert updated_context.results["static"]["value"] == "plain text"
+    assert updated_context.results["static"]["input"] == "plain text"
+    assert updated_context.results["static"]["category"] == "Static"
+  end
+
+  test "execute an action for WA Group when type is set_run_results", attrs do
+    [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      wa_group_id: wa_group.id,
+      organization_id: attrs.organization_id,
+      results: %{"result1" => "shyness"}
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :wa_group])
+
+    action = %Action{
+      uuid: "UUID 1",
+      node_uuid: "Test UUID",
+      type: "set_run_results",
+      run_results: [
+        %{name: "video_code", value: "@results.result1", category: "Video"},
+        %{name: "second_code", value: "@results.result1", category: "Second"}
+      ],
+      flow: %{
+        "name" => flow.name,
+        "uuid" => flow.uuid
+      }
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["video_code"]["value"] == "shyness"
+    assert updated_context.results["video_code"]["category"] == "Video"
+    assert updated_context.results["second_code"]["value"] == "shyness"
+    assert updated_context.results["second_code"]["category"] == "Second"
+  end
+
+  test "execute set_run_results keeps the last value for a repeated name", attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      type: "set_run_results",
+      run_results: [
+        %{name: "video_code", value: "first", category: "First"},
+        %{name: "video_code", value: "second", category: "Second"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["video_code"]["value"] == "second"
+    assert updated_context.results["video_code"]["category"] == "Second"
+  end
+
+  test "execute set_run_results skips blank names and is a no-op when every row is blank",
+       attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      type: "set_run_results",
+      run_results: [
+        %{name: "kept", value: "kept value", category: "Kept"},
+        %{name: "", value: "dropped", category: "Dropped"}
+      ]
+    }
+
+    assert {:ok, updated_context, []} = Action.execute(action, context, [])
+
+    assert updated_context.results["kept"]["value"] == "kept value"
+    assert map_size(updated_context.results) == 1
+
+    blank = %Action{
+      type: "set_run_results",
+      run_results: [%{name: nil, value: "dropped", category: nil}]
+    }
+
+    assert {:ok, blank_context, []} = Action.execute(blank, context, [])
+    assert blank_context.results == context.results
+  end
+
+  test "validate set_run_results flags empty and duplicate rows" do
+    assert Action.validate(%Action{type: "set_run_results", run_results: []}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "no result to save" and severity == "Critical"
+           end)
+
+    # a blank name is not a result, so an all-blank node is still empty
+    blank = [%{name: "", value: "a", category: nil}]
+
+    assert Action.validate(%Action{type: "set_run_results", run_results: blank}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "no result to save" and severity == "Critical"
+           end)
+
+    duplicates = [
+      %{name: "video_code", value: "a", category: "A"},
+      %{name: "video_code", value: "b", category: "B"}
+    ]
+
+    assert Action.validate(%Action{type: "set_run_results", run_results: duplicates}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "repeats video_code" and severity == "Warning"
+           end)
+
+    distinct = [
+      %{name: "video_code", value: "a", category: "A"},
+      %{name: "age_group", value: "b", category: "B"}
+    ]
+
+    assert Action.validate(%Action{type: "set_run_results", run_results: distinct}, [], nil) == []
+  end
+
   test "execute an action when type is set_contact_profile to create and switch profile",
        _attrs do
     default_profile = Glific.Fixtures.profile_fixture()
@@ -1823,6 +2356,19 @@ defmodule Glific.Flows.ActionTest do
 
       plain = %Action{type: "set_run_result", value: "just some text"}
       assert Action.validate_expressions(plain, [], flow) == []
+    end
+
+    test "flags disallowed code in a set_run_results row value", %{flow: flow} do
+      action = %Action{
+        type: "set_run_results",
+        run_results: [
+          %{name: "safe", value: "<%= 5 * 60 %>", category: "Safe"},
+          %{name: "video_code", value: ~s|<%= System.cmd("id", []) %>|, category: "Bad"}
+        ]
+      }
+
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Result value for video_code has an unsupported expression"
     end
   end
 end
