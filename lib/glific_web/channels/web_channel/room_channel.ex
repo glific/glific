@@ -16,7 +16,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
-    Repo
+    Repo,
+    WebChannel.Rooms
   }
 
   alias GlificWeb.WebChannel.{MessageSerializer, Presence, Token}
@@ -42,6 +43,10 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       Repo.put_process_state(socket.assigns.organization_id)
       schedule_sweep()
 
+      # Rooms.close_all/1 broadcasts here when an admin switches the channel off. A per-organization
+      # topic rather than Presence, which degrades to an empty list when its tracker is not running.
+      Phoenix.PubSub.subscribe(Glific.PubSub, Rooms.topic(socket.assigns.organization_id))
+
       # The channel process, not the socket: presence lives under a per-organization topic, and
       # untracks when this process dies.
       Presence.track_contact(
@@ -66,7 +71,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   end
 
   @impl true
-  @spec handle_info(:sweep_token, Phoenix.Socket.t()) ::
+  @spec handle_info(:sweep_token | :web_channel_disabled | atom(), Phoenix.Socket.t()) ::
           {:noreply, Phoenix.Socket.t()} | {:stop, :normal, Phoenix.Socket.t()}
   def handle_info(:sweep_token, socket) do
     now = System.system_time(:second)
@@ -86,6 +91,14 @@ defmodule GlificWeb.WebChannel.RoomChannel do
         schedule_sweep()
         {:noreply, socket}
     end
+  end
+
+  # The contact's token stays valid until it expires on its own; revoking it is its own ticket.
+  # What this guarantees is that no room is still serving messages after the switch, and that
+  # every open browser is told why rather than watching a chat go quiet.
+  def handle_info(:web_channel_disabled, socket) do
+    push(socket, "web_channel_disabled", %{})
+    {:stop, :normal, socket}
   end
 
   # ConsumerWorkerMock (test env) notifies its caller; swallow rather than crash the channel.

@@ -209,6 +209,10 @@ defmodule Glific.Partners.Organization do
     # A virtual field to conditionally enable the web channel for an organization
     field(:web_channel_enabled, :boolean, default: false, virtual: true)
 
+    field(:bulk_contact_update_enabled, :boolean, default: false, virtual: true)
+
+    field(:bulk_flow_results_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 
