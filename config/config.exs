@@ -118,6 +118,8 @@ oban_crontab = [
   # 21:00 Sat UTC is  02:30 SAT IST, running the msg purging a day before other DB purges
   # to test this in isolation
   {"0 21 * * FRI", Glific.Jobs.MinuteWorker, args: %{job: :weekly_message_purge}},
+  # 21:30 Fri UTC is 03:00 Sat IST, a day ahead of the versions VACUUM in :weekly_tasks
+  {"30 21 * * FRI", Glific.Jobs.MinuteWorker, args: %{job: :weekly_version_purge}},
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}},
   # We are sending report of previous week(MON to SUN)
