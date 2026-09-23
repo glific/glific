@@ -124,22 +124,13 @@ defmodule Glific.AI.Tools do
 
   @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   defp execute(module, name, args, user) do
-    # Bound outside the try: a variable set inside one is not safe to read from
-    # `after`. The caller's dynamic repository is process state, so a gateway
-    # that points it at the replica has to point it back, however the read ends.
-    caller_repo = Repo.get_dynamic_repo()
+    read_from_replica(user)
 
-    try do
-      read_from_replica(user)
-
-      read(module, name, args)
-    rescue
-      exception ->
-        Glific.log_exception(exception)
-        {:error, "The lookup failed: #{Exception.message(exception)}"}
-    after
-      Repo.put_dynamic_repo(caller_repo)
-    end
+    read(module, name, args)
+  rescue
+    exception ->
+      Glific.log_exception(exception)
+      {:error, "The lookup failed: #{Exception.message(exception)}"}
   end
 
   @spec read_from_replica(User.t()) :: :ok
