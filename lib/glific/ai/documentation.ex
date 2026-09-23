@@ -114,6 +114,14 @@ defmodule Glific.AI.Documentation do
   @spec warm() :: :ok
   def warm do
     :persistent_term.put(@index_key, build())
+  rescue
+    error ->
+      # Called from `Glific.Application.start/2`: an unreadable corpus file must
+      # cost Glific its documentation search, not its boot. The empty index is
+      # stored so searches come back empty instead of raising one at a time.
+      Glific.log_error("Glific AI documentation index could not be built: #{Exception.message(error)}")
+
+      :persistent_term.put(@index_key, [])
   end
 
   # Without IDF or length normalisation, ties are the common case rather than the
@@ -135,13 +143,23 @@ defmodule Glific.AI.Documentation do
 
     if byte_size(section.body) > @max_body do
       Map.merge(described, %{
-        body: binary_part(section.body, 0, @max_body),
+        body: clip(section.body, @max_body),
         truncated: true,
         of: byte_size(section.body)
       })
     else
       Map.put(described, :body, section.body)
     end
+  end
+
+  # The cap is in bytes, and a multibyte codepoint can straddle it. A result
+  # that is not valid UTF-8 fails `Jason.encode/1`, which is the contract
+  # `Glific.AI.Tool` results have to meet, so the last partial character goes.
+  @spec clip(String.t(), pos_integer()) :: String.t()
+  defp clip(body, max) do
+    part = binary_part(body, 0, max)
+
+    if String.valid?(part), do: part, else: clip(body, max - 1)
   end
 
   @spec score(map(), [String.t()]) :: number()

@@ -17,7 +17,9 @@ defmodule Glific.AI.Tools.Documentation do
 
   @behaviour Glific.AI.Tool
 
+  @doc "Reads the bundled documentation, never the organisation's data."
   @impl Glific.AI.Tool
+  @spec reads_database?() :: boolean()
   def reads_database?, do: false
 
   @doc """

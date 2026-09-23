@@ -26,6 +26,33 @@ defmodule Glific.AI.DocumentationRankingTest do
 
   defp top(index, query), do: index |> titles(query, 1) |> List.first()
 
+  describe "the body cap" do
+    test "a multibyte character straddling the cap does not yield invalid UTF-8" do
+      # The cap is counted in bytes. A section built so that a 3-byte character
+      # begins two bytes before the cap would, on a raw byte slice, come back
+      # with two thirds of that character - which is not valid UTF-8, and which
+      # `Jason.encode/1` refuses. A JSON-encodable result is what
+      # `Glific.AI.Tool` promises its caller.
+      filler = String.duplicate("truncation sentinel body text padding ", 30)
+      pad = 1498 - byte_size(filler)
+      body = filler <> String.duplicate("x", pad) <> "\u2194" <> " tail"
+
+      directory = Path.join(System.tmp_dir!(), "doc_cap_#{System.unique_integer([:positive])}")
+      File.mkdir_p!(directory)
+      on_exit(fn -> File.rm_rf!(directory) end)
+      File.write!(Path.join(directory, "capped.md"), "## Capped section\n\n" <> body)
+
+      [section] =
+        [{"capped", "Capped"}]
+        |> Documentation.build(directory)
+        |> Documentation.search_in("capped truncation sentinel", 1)
+
+      assert section.truncated
+      assert String.valid?(section.body), "a byte slice cut the multibyte character in half"
+      assert {:ok, _json} = Jason.encode(section)
+    end
+  end
+
   describe "the corpus is read as expected" do
     test "every fixture section is indexed", %{index: index} do
       assert length(index) >= 9
