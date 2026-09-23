@@ -167,7 +167,10 @@ config :glific,
 
 config :glific, Glific.Erase,
   msg_delete_batch_size: env!("MSG_DELETE_BATCH_SIZE", :integer, 100_000),
-  max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000)
+  max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000),
+  version_retention_days: env!("VERSION_RETENTION_DAYS", :integer, 90),
+  version_delete_batch_size: env!("VERSION_DELETE_BATCH_SIZE", :integer, 50_000),
+  max_version_rows_to_delete: env!("MAX_VERSION_ROWS_TO_DELETE", :integer, 5_000_000)
 
 # Percent of total job metrics to be sent to appsignal
 config :glific,
