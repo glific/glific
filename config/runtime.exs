@@ -298,6 +298,11 @@ search_repo_module =
 config :glific, Glific.Searches, repo_module: search_repo_module
 
 unless config_env() == :test do
+  config :glific, Glific.AI.Langfuse,
+    host: env!("LANGFUSE_BASE_URL", :string, nil),
+    public_key: env!("LANGFUSE_PUBLIC_KEY", :string, nil),
+    secret_key: env!("LANGFUSE_SECRET_KEY", :string, nil)
+
   config :glific, Glific.ThirdParty.Superset.ApiClient,
     base_url: env!("SUPERSET_URL", :string, "https://not-configured.invalid/api/v1"),
     dashboard_id: env!("SUPERSET_DASHBOARD_ID", :string, "this_is_not_a_dashboard_id"),
