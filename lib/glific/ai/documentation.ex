@@ -119,7 +119,7 @@ defmodule Glific.AI.Documentation do
       # Called from `Glific.Application.start/2`: an unreadable corpus file must
       # cost Glific its documentation search, not its boot. The empty index is
       # stored so searches come back empty instead of raising one at a time.
-      Glific.log_error("Glific AI documentation index could not be built: #{Exception.message(error)}")
+      Glific.log_exception(error)
 
       :persistent_term.put(@index_key, [])
   end
