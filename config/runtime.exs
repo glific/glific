@@ -299,7 +299,7 @@ config :glific, Glific.Searches, repo_module: search_repo_module
 
 unless config_env() == :test do
   config :glific, Glific.AI.Langfuse,
-    host: env!("LANGFUSE_BASE_URL", :string),
+    host: env!("LANGFUSE_BASE_URL", :string, nil),
     public_key: env!("LANGFUSE_PUBLIC_KEY", :string, nil),
     secret_key: env!("LANGFUSE_SECRET_KEY", :string, nil)
 

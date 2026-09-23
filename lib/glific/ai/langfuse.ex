@@ -26,7 +26,7 @@ defmodule Glific.AI.Langfuse do
   @traces_path "/api/public/otel/v1/traces"
   @scores_path "/api/public/scores"
   @realtime {"x-langfuse-ingestion-version", "4"}
-  @phone ~r/\b\d{10,15}\b/
+  @phone ~r/\+?\(?\d[\d\s().\-]{8,20}\d/
   @email ~r/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/
 
   @doc """
@@ -38,7 +38,7 @@ defmodule Glific.AI.Langfuse do
   """
   @spec trace_async(non_neg_integer()) :: :ok
   def trace_async(message_id) do
-    if config()[:public_key], do: Task.start(fn -> trace(message_id) end)
+    if configured?(), do: Task.start(fn -> trace(message_id) end)
     :ok
   end
 
@@ -47,7 +47,7 @@ defmodule Glific.AI.Langfuse do
   """
   @spec score_async(Event.t()) :: :ok
   def score_async(%Event{} = event) do
-    if config()[:public_key], do: Task.start(fn -> score(event) end)
+    if configured?(), do: Task.start(fn -> score(event) end)
     :ok
   end
 
@@ -73,14 +73,17 @@ defmodule Glific.AI.Langfuse do
   any good, so a bad answer can be found again and read in full.
   """
   @spec score(Event.t()) :: :ok | {:error, String.t()}
-  def score(%Event{data: %{"feedback" => feedback}} = event) do
+  def score(%Event{data: %{"feedback" => %{"rating" => rating}}} = event)
+      when is_binary(rating) and rating != "" do
+    feedback = event.data["feedback"]
+
     with {:ok, message} <- fetch(event.message_id) do
       post(@scores_path, %{
         id: hashed("glific_ai.score.#{event.id}", 16),
         traceId: trace_id(message),
         name: "user-feedback",
         dataType: "CATEGORICAL",
-        value: feedback["rating"],
+        value: rating,
         comment: mask(feedback["content"]),
         environment: environment()
       })
@@ -117,7 +120,23 @@ defmodule Glific.AI.Langfuse do
   def mask(text) when is_binary(text) do
     text
     |> String.replace(@email, "[email]")
-    |> String.replace(@phone, "[phone]")
+    |> mask_phones()
+  end
+
+  # A number reaches Glific written however the person typed it: `+919000000001`,
+  # `+91 90000 00001`, `(919) 000-0001`. Matching the separators as well means
+  # matching things that are not numbers at all, so the digit count decides, and
+  # an ISO date is spelled out as the one lookalike worth keeping.
+  @spec mask_phones(String.t()) :: String.t()
+  defp mask_phones(text) do
+    Regex.replace(@phone, text, fn match ->
+      digits = String.replace(match, ~r/\D/, "")
+
+      if String.length(digits) in 10..15 and
+           not Regex.match?(~r/^\d{4}-\d{2}/, String.trim(match)),
+         do: "[phone]",
+         else: match
+    end)
   end
 
   @spec fetch(non_neg_integer()) :: {:ok, Message.t()} | {:error, String.t()}
@@ -409,4 +428,17 @@ defmodule Glific.AI.Langfuse do
 
   @spec config() :: keyword()
   defp config, do: Application.get_env(:glific, __MODULE__, [])
+
+  @doc false
+  # All three or none. A missing secret key would post with an empty Basic Auth
+  # password, and an empty host would build a path with no host to send it to,
+  # both of which fail in the background where nobody is watching.
+  @spec configured?() :: boolean()
+  def configured? do
+    settings = config()
+
+    Enum.all?([:host, :public_key, :secret_key], fn key ->
+      is_binary(settings[key]) and String.trim(settings[key]) != ""
+    end)
+  end
 end

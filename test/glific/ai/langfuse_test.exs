@@ -208,6 +208,32 @@ defmodule Glific.AI.LangfuseTest do
       assert Langfuse.mask("her checkup is on Monday") == "her checkup is on Monday"
     end
 
+    test "redacts a number however the person wrote it" do
+      for written <- [
+            "+919000000001",
+            "+91 90000 00001",
+            "+91-90000-00001",
+            "(919) 000-0001",
+            "9000000001"
+          ] do
+        assert Langfuse.mask("reach her on " <> written) == "reach her on [phone]",
+               "#{written} left the platform intact"
+      end
+    end
+
+    test "leaves the identifiers a trace is read by alone" do
+      # Masking on separators as well as digits is what makes a number in any
+      # shape reachable; it must not take an id, a date or a UUID with it.
+      for kept <- [
+            "2026-09-23 14:18:00",
+            "flow_id 37740 node f1fub1",
+            "contact ids 6298936 and 6289903",
+            "uuid 44e1012d-7baf-43fc-87db-e35ac42ab097"
+          ] do
+        assert Langfuse.mask(kept) == kept
+      end
+    end
+
     test "redacts the phone number a tool was called with", %{message: message} do
       tool = message.id |> spans() |> named("get_contact")
 
@@ -220,6 +246,59 @@ defmodule Glific.AI.LangfuseTest do
     test "does nothing for an event nobody rated", %{message: message} do
       event = Repo.get_by!(Event, message_id: message.id, type: :user)
       assert Langfuse.score(event) == :ok
+    end
+
+    test "does nothing for feedback left without a rating", %{message: message} do
+      # Someone can write a comment and pick neither thumb. A categorical score
+      # has to carry a string value, so there is nothing to send.
+      event = Repo.get_by!(Event, message_id: message.id, type: :assistant)
+
+      {:ok, commented} =
+        event
+        |> Event.changeset(%{data: Map.put(event.data, "feedback", %{"content" => "unclear"})})
+        |> Repo.update()
+
+      assert Langfuse.score(commented) == :ok
+    end
+  end
+
+  describe "configuration" do
+    setup do
+      original = Application.get_env(:glific, Langfuse, [])
+      on_exit(fn -> Application.put_env(:glific, Langfuse, original) end)
+      :ok
+    end
+
+    test "an incomplete setting sends nothing" do
+      for settings <- [
+            [],
+            [host: "https://us.cloud.langfuse.com"],
+            [host: "https://us.cloud.langfuse.com", public_key: "pk-lf-x"],
+            [public_key: "pk-lf-x", secret_key: "sk-lf-x"],
+            [host: "", public_key: "pk-lf-x", secret_key: "sk-lf-x"],
+            [host: "https://us.cloud.langfuse.com", public_key: "pk-lf-x", secret_key: "  "]
+          ] do
+        Application.put_env(:glific, Langfuse, settings)
+
+        refute Langfuse.configured?(), "#{inspect(settings)} should not reach Langfuse"
+      end
+    end
+
+    test "the host and both keys together send" do
+      Application.put_env(:glific, Langfuse,
+        host: "https://us.cloud.langfuse.com",
+        public_key: "pk-lf-x",
+        secret_key: "sk-lf-x"
+      )
+
+      assert Langfuse.configured?()
+    end
+
+    test "an unconfigured project still answers the caller", %{message: message} do
+      Application.put_env(:glific, Langfuse, [])
+
+      assert Langfuse.trace_async(message.id) == :ok
+      assert Langfuse.score_async(%Event{message_id: message.id, data: %{}}) == :ok
     end
   end
 end
