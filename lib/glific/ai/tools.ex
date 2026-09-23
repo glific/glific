@@ -29,7 +29,8 @@ defmodule Glific.AI.Tools do
     Glific.AI.Tools.Triggers,
     Glific.AI.Tools.Assistants,
     Glific.AI.Tools.Groups,
-    Glific.AI.Tools.Forms
+    Glific.AI.Tools.Forms,
+    Glific.AI.Tools.Documentation
   ]
 
   @doc "Every feature module Glific AI reads through."
@@ -134,12 +135,25 @@ defmodule Glific.AI.Tools do
       {:error, "The lookup failed: #{Exception.message(exception)}"}
   end
 
+  # A tool that answers from memory issues no SQL, so opening a transaction for it
+  # would hold a pooled connection for nothing. The result is wrapped to match
+  # what `Repo.transaction/1` returns, so the caller reads the same either way.
+  @spec in_transaction(module(), (-> term())) :: {:ok, term()} | {:error, term()}
+  defp in_transaction(module, fun) do
+    if function_exported?(module, :reads_database?, 0) and not module.reads_database?() do
+      {:ok, fun.()}
+    else
+      Repo.transaction(fn ->
+        Repo.query!("SET LOCAL transaction_read_only = on")
+        fun.()
+      end)
+    end
+  end
+
   @spec read(module(), String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   defp read(module, name, args) do
-    Repo.transaction(fn ->
-      Repo.query!("SET LOCAL transaction_read_only = on")
-      module.run(name, args)
-    end)
+    module
+    |> in_transaction(fn -> module.run(name, args) end)
     |> case do
       {:ok, {:ok, result}} ->
         {:ok, result}
