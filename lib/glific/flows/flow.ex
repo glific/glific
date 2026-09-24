@@ -13,6 +13,7 @@ defmodule Glific.Flows.Flow do
     AccessControl.Role,
     Contacts.Contact,
     Enums.FlowType,
+    Enums.MessageChannel,
     Flows,
     Flows.Action,
     Flows.FlowContext,
@@ -28,6 +29,7 @@ defmodule Glific.Flows.Flow do
   @required_fields [:name, :uuid, :organization_id]
   @optional_fields [
     :flow_type,
+    :channel,
     :keywords,
     :version_number,
     :uuid_map,
@@ -59,6 +61,7 @@ defmodule Glific.Flows.Flow do
           respond_no_response: boolean() | nil,
           is_template: boolean() | nil,
           flow_type: String.t() | nil,
+          channel: String.t() | atom() | nil,
           status: String.t(),
           skip_validation: boolean() | nil,
           definition: map() | nil,
@@ -83,6 +86,7 @@ defmodule Glific.Flows.Flow do
     # this is the flow editor version number
     field(:version_number, :string)
     field(:flow_type, FlowType)
+    field(:channel, MessageChannel, default: :whatsapp)
     field(:uuid, Ecto.UUID)
 
     field(:uuid_map, :map, virtual: true)
@@ -332,6 +336,7 @@ defmodule Glific.Flows.Flow do
           respond_other: f.respond_other,
           respond_no_response: f.respond_no_response,
           skip_validation: f.skip_validation,
+          channel: f.channel,
           organization_id: f.organization_id,
           definition: fr.definition,
           version: fr.version
@@ -415,8 +420,102 @@ defmodule Glific.Flows.Flow do
       |> dangling_nodes(flow, all_nodes)
       |> missing_flow_context_nodes(flow, all_nodes)
       |> missing_localization(flow, all_translation, action_to_node_map)
+      |> web_channel_errors(flow)
     end
   end
+
+  # Nodes with no equivalent on the web channel. A template needs a BSP to approve it (and a
+  # WhatsApp Form is a templated HSM, so it is covered by the same rule); a broadcast fans out to
+  # other contacts, which a per-contact browser socket cannot reach; the WA-group nodes run
+  # through a different provider entirely.
+  @web_unsupported_action_types %{
+    "send_broadcast" => "Sending a message to somebody else",
+    "set_wa_group_field" => "Updating a WhatsApp group field"
+  }
+
+  @web_unsupported_webhooks %{"send_wa_group_poll" => "Sending a WhatsApp group poll"}
+
+  @blocking_category "Blocking"
+
+  @doc """
+  Whether any of these validation errors must stop a publish rather than warn about it.
+  """
+  @spec blocking_errors?(list()) :: boolean()
+  def blocking_errors?(errors),
+    do: Enum.any?(errors, fn error -> elem(error, 2) == @blocking_category end)
+
+  @spec web_channel_errors(list(), map()) :: list()
+  defp web_channel_errors(errors, %{channel: channel} = flow) when channel in [:web, "web"] do
+    actions =
+      flow.definition["nodes"]
+      |> List.wrap()
+      |> Enum.flat_map(&(&1["actions"] || []))
+
+    actions
+    |> Enum.reduce(errors, fn action, acc ->
+      case unsupported_web_action(action) do
+        nil ->
+          acc
+
+        label ->
+          [{action["uuid"], label, @blocking_category} | acc]
+      end
+    end)
+    |> subflow_channel_errors(actions, flow.organization_id)
+  end
+
+  defp web_channel_errors(errors, _flow), do: errors
+
+  # A sub-flow inherits its parent's channel at runtime (`start_sub_flow/3`), so a web flow that
+  # enters a WhatsApp flow would run that flow's WhatsApp-only nodes on the web channel — and a
+  # `send_broadcast` in there routes to WhatsApp silently rather than failing. Checking the
+  # referenced flow's own declared channel avoids walking its nodes: every flow is already
+  # validated against its own channel when it is published.
+  #
+  # Only statically-referenced sub-flows can be checked; `enter_flow_expression` resolves at
+  # runtime.
+  @spec subflow_channel_errors(list(), list(), non_neg_integer()) :: list()
+  defp subflow_channel_errors(errors, actions, organization_id) do
+    uuids =
+      actions
+      |> Enum.filter(&(&1["type"] == "enter_flow"))
+      |> Enum.map(&get_in(&1, ["flow", "uuid"]))
+      |> Enum.reject(&is_nil/1)
+
+    if uuids == [] do
+      errors
+    else
+      Flow
+      |> where([f], f.uuid in ^uuids)
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.channel != :web)
+      |> select([f], {f.uuid, f.name})
+      |> Repo.all()
+      |> Enum.reduce(errors, fn {uuid, name}, acc ->
+        [
+          {uuid, "Entering the sub-flow \"#{name}\", which runs on WhatsApp", @blocking_category}
+          | acc
+        ]
+      end)
+    end
+  end
+
+  @spec unsupported_web_action(map()) :: String.t() | nil
+  defp unsupported_web_action(%{"type" => "send_msg"} = action) do
+    if templated_action?(action), do: "Sending a WhatsApp template (HSM)"
+  end
+
+  defp unsupported_web_action(%{"type" => "call_webhook", "url" => url}),
+    do: Map.get(@web_unsupported_webhooks, url)
+
+  defp unsupported_web_action(%{"type" => type}),
+    do: Map.get(@web_unsupported_action_types, type)
+
+  defp unsupported_web_action(_action), do: nil
+
+  @spec templated_action?(map()) :: boolean()
+  defp templated_action?(action),
+    do: is_map(action["templating"]) and map_size(action["templating"]) > 0
 
   @spec flow_objects(map(), atom()) :: MapSet.t()
   defp flow_objects(flow, type) do

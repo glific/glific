@@ -3,6 +3,7 @@ mutation publishFlow($uuid: UUID4!) {
     success
     errors {
       message
+      category
     }
   }
 }
