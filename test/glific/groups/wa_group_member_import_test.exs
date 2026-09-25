@@ -114,4 +114,19 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
     user_job = Repo.get_by(UserJob, type: "wa_group_member_import")
     assert user_job.errors["errors"]["919900112233"] == "This number isn't on WhatsApp."
   end
+
+  test "rejects a member csv that is not valid utf-8, without creating a user job", %{
+    organization_id: organization_id,
+    wa_group: wa_group
+  } do
+    windows_codepage = <<"phone,name\n919900112233,Ren", 0xE9, "e\n">>
+
+    assert {:error, message} =
+             WAGroupMemberImport.import_members(organization_id, wa_group.id,
+               data: windows_codepage
+             )
+
+    assert message =~ "Line 2 of the file is not valid UTF-8"
+    refute Repo.get_by(UserJob, type: "wa_group_member_import")
+  end
 end
