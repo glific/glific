@@ -8,6 +8,7 @@ query AssistantVersions($assistant_id: ID!) {
     prompt
     settings
     status
+    failure_reason
     is_live
     description
     vector_store {
