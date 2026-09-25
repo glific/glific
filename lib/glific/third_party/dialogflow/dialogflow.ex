@@ -29,27 +29,32 @@ defmodule Glific.Dialogflow do
   """
   @spec request(non_neg_integer, atom, String.t(), String.t() | map) :: tuple
   def request(organization_id, method, path, body) do
-    %{url: url, id: id, email: email} = project_info(organization_id)
+    case Partners.get_goth_token(organization_id, "dialogflow") do
+      nil ->
+        {:error, "Invalid or missing Dialogflow credentials"}
 
-    dflow_url = "#{url}/#{id}/locations/global/agent/#{path}"
+      token ->
+        %{url: url, id: id} = project_info(organization_id)
+        dflow_url = "#{url}/#{id}/locations/global/agent/#{path}"
 
-    method
-    |> do_request(dflow_url, body(body), headers(email, organization_id))
-    |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, Jason.decode!(body)}
+        method
+        |> do_request(dflow_url, body(body), headers(token))
+        |> case do
+          {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+            {:ok, Jason.decode!(body)}
 
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
-        {:error, Jason.decode!(body)}
+          {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+            {:error, Jason.decode!(body)}
 
-      {:ok, %Tesla.Env{status: status, body: body}} when status >= 500 ->
-        {:error, Jason.decode!(body)}
+          {:ok, %Tesla.Env{status: status, body: body}} when status >= 500 ->
+            {:error, Jason.decode!(body)}
 
-      {:error, %Tesla.Error{reason: reason}} ->
-        {:error, reason}
+          {:error, %Tesla.Error{reason: reason}} ->
+            {:error, reason}
 
-      {:error, :timeout} ->
-        {:error, "Timeout"}
+          {:error, :timeout} ->
+            {:error, "Timeout"}
+        end
     end
   end
 
@@ -69,10 +74,8 @@ defmodule Glific.Dialogflow do
   # ---------------------------------------------------------------------------
   # Headers for all subsequent API calls
   # ---------------------------------------------------------------------------
-  @spec headers(String.t(), non_neg_integer) :: list
-  defp headers(_email, org_id) do
-    token = Partners.get_goth_token(org_id, "dialogflow")
-
+  @spec headers(Goth.Token.t()) :: list
+  defp headers(token) do
     [
       {"Authorization", "Bearer #{token.token}"},
       {"Content-Type", "application/json"}
@@ -97,15 +100,23 @@ defmodule Glific.Dialogflow do
         }
 
       credential ->
-        service_account = Jason.decode!(credential.secrets["service_account"])
+        case decode_service_account(credential.secrets["service_account"]) do
+          {:ok, service_account} when is_map(service_account) ->
+            %{
+              url: "https://dialogflow.googleapis.com/v2beta1/projects",
+              id: service_account["project_id"],
+              email: service_account["client_email"]
+            }
 
-        %{
-          url: "https://dialogflow.googleapis.com/v2beta1/projects",
-          id: service_account["project_id"],
-          email: service_account["client_email"]
-        }
+          _ ->
+            %{url: nil, id: nil, email: nil}
+        end
     end
   end
+
+  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
+  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
+  defp decode_service_account(_value), do: {:error, :not_binary}
 
   @doc """
   Execute a webhook action, could be either get or post for now
