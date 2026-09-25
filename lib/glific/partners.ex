@@ -35,6 +35,7 @@ defmodule Glific.Partners do
     Partners.Credential,
     Partners.Organization,
     Partners.OrganizationData,
+    Partners.OrganizationIndex,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.Gupshup.PartnerAPI,
@@ -401,6 +402,10 @@ defmodule Glific.Partners do
            organization
            |> Organization.changeset(attrs)
            |> Repo.update(skip_organization_id: true) do
+      # Again after the write: the bust above runs first, so it rebuilt the index from the rows
+      # this update is about to replace, and a renamed shortcode would resolve to nothing.
+      OrganizationIndex.refresh_on_change()
+
       # pin both new contact and optin flow id
       maybe_pin_flow(
         updated_organization.newcontact_flow_id,
@@ -1226,6 +1231,8 @@ defmodule Glific.Partners do
       @global_organization_id,
       ["organization_services"]
     )
+
+    OrganizationIndex.refresh_on_change()
   end
 
   @spec config(map()) :: map() | :error

@@ -227,12 +227,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp check_rate_limit(conn, phone) do
     with :ok <-
            check_bucket(
-             :web_channel_otp_rate_limit,
+             :rate_limit_web_channel_otp_phone,
              "web_channel_send_otp:#{phone}",
              @phone_throttled_message
            ) do
       check_bucket(
-        :web_channel_otp_ip_rate_limit,
+        :rate_limit_web_channel_otp_ip,
         "web_channel_send_otp_ip:#{GlificWeb.Tenants.remote_ip(conn)}",
         @ip_throttled_message
       )
@@ -241,13 +241,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec check_bucket(atom(), String.t(), String.t()) :: :ok | {:error, String.t()}
   defp check_bucket(config_key, key, message) do
-    config = Application.get_env(:glific, config_key, [])
-    scale_ms = Keyword.get(config, :scale_ms, 30_000)
-    count = Keyword.get(config, :count, 1)
-
-    case ExRated.check_rate(key, scale_ms, count) do
-      {:ok, _count} -> :ok
-      {:error, _limit} -> {:error, message}
+    case Glific.RateLimit.check(config_key, key) do
+      :ok -> :ok
+      {:error, :rate_limited} -> {:error, message}
     end
   end
 

@@ -75,7 +75,33 @@ config :glific,
   auth_username: env!("AUTH_USERNAME", :string!),
   auth_password: env!("AUTH_PASSWORD", :string!)
 
-config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
+# runtime.exs is evaluated after config/test.exs, so guarding this is what lets the test config
+# raise the limits out of the way of the suite.
+unless config_env() == :test do
+  # Only the count is tunable per environment; the window stays where config/config.exs sets it.
+  rate_limit = fn variable, scale_ms, default_count ->
+    [scale_ms: scale_ms, count: env!(variable, :integer, default_count)]
+  end
+
+  config :glific,
+    rate_limit_api_global: rate_limit.("RATE_LIMIT_API_GLOBAL", 60_000, 60),
+    rate_limit_api_authenticated: rate_limit.("RATE_LIMIT_API_AUTHENTICATED", 60_000, 180),
+    # 300 rather than the old 50, because that 50 was per address *and path*; one address now
+    # shares a single budget across every unauthenticated endpoint, and offices sit behind one
+    # egress.
+    rate_limit_api_unauthenticated: rate_limit.("RATE_LIMIT_API_UNAUTHENTICATED", 60_000, 300),
+    rate_limit_api_phone: rate_limit.("RATE_LIMIT_API_PHONE", 60_000, 300),
+    rate_limit_web_channel_api: rate_limit.("RATE_LIMIT_WEB_CHANNEL_API", 60_000, 1200),
+    rate_limit_web_channel_connect_ip:
+      rate_limit.("RATE_LIMIT_WEB_CHANNEL_CONNECT_IP", 60_000, 120),
+    rate_limit_web_channel_connect_total:
+      rate_limit.("RATE_LIMIT_WEB_CHANNEL_CONNECT_TOTAL", 60_000, 1000),
+    rate_limit_web_channel_upload_contact:
+      rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_CONTACT", 60_000, 6),
+    rate_limit_web_channel_upload_ip: rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_IP", 60_000, 60),
+    rate_limit_web_channel_upload_total:
+      rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_TOTAL", 60_000, 120)
+end
 
 config :glific, :bigquery_dedup_timeout_ms, env!("BIGQUERY_DEDUP_TIMEOUT_MS", :integer, 120_000)
 
@@ -291,6 +317,10 @@ if config_env() == :prod do
   config :glific, :gupshup_enterprise_webhook_ips, webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS")
   config :glific, :maytapi_webhook_ips, webhook_ips.("MAYTAPI_WEBHOOK_IPS")
 end
+
+# Configured in every environment so an address can be dropped locally too. Empty disables the plug.
+blocked_ips = webhook_ips.("BLOCKED_IPS")
+config :glific, :blocked_ips, blocked_ips
 
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
