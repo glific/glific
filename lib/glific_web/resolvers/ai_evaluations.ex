@@ -52,12 +52,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec list_kaapi_models(map(), map(), map()) :: {:ok, list(map())} | {:error, any()}
   def list_kaapi_models(_, _args, %{context: %{current_user: user}}) do
-    Kaapi.list_models(user.organization_id)
+    Kaapi.list_models_with_metadata(user.organization_id)
   end
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
-  @max_golden_qa_evaluations 80
+  @max_golden_qa_unique_items 100
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
   @ai_evaluation_create_success_metric "AI Evaluation Created"
@@ -119,9 +119,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
          {:ok, row_count} <- validate_csv_structure(file),
-         :ok <- validate_golden_qa_question_limit(row_count, factor),
+         :ok <- validate_golden_qa_question_limit(row_count),
          {:ok, kaapi_dataset} <- upload_dataset(dataset, user.organization_id) do
-      create_golden_qa_record(kaapi_dataset, name, file, factor, user)
+      create_golden_qa_record(kaapi_dataset, name, file, factor, row_count, user)
     else
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
@@ -162,16 +162,23 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec create_golden_qa_record(map(), String.t(), Plug.Upload.t(), integer(), map()) ::
+  @spec create_golden_qa_record(
+          map(),
+          String.t(),
+          Plug.Upload.t(),
+          integer(),
+          non_neg_integer(),
+          map()
+        ) ::
           {:ok, %{golden_qa: GoldenQA.t()}} | {:ok, %{errors: [%{message: String.t()}]}}
-  defp create_golden_qa_record(kaapi_dataset, name, file, factor, user) do
+  defp create_golden_qa_record(kaapi_dataset, name, file, factor, row_count, user) do
     case AIEvaluations.create_golden_qa(%{
            name: name,
            dataset_id: kaapi_dataset.dataset_id,
            duplication_factor: factor,
            file_name: file.filename,
            organization_id: user.organization_id,
-           total_items: Map.get(kaapi_dataset, :total_items, 0)
+           total_items: Map.get(kaapi_dataset, :original_items, row_count)
          }) do
       {:ok, golden_qa} ->
         {:ok, %{golden_qa: golden_qa}}
@@ -263,18 +270,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec validate_golden_qa_question_limit(non_neg_integer(), integer()) ::
-          :ok | {:error, String.t()}
-  defp validate_golden_qa_question_limit(count, factor) do
-    total = count * factor
-
-    if total <= @max_golden_qa_evaluations do
+  @spec validate_golden_qa_question_limit(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp validate_golden_qa_question_limit(count) do
+    if count <= @max_golden_qa_unique_items do
       :ok
     else
       {:error,
-       "The total number of evaluations (#{count} questions × #{factor} duplication factor = #{total}) " <>
-         "exceeds the maximum allowed limit of #{@max_golden_qa_evaluations}. " <>
-         "Please reduce the number of questions in the CSV or the duplication factor."}
+       "The CSV contains #{count} questions, which exceeds the maximum allowed limit of " <>
+         "#{@max_golden_qa_unique_items} unique questions. Please reduce the number of " <>
+         "questions in the CSV."}
     end
   end
 
@@ -318,18 +322,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def get_golden_qa(_, %{id: golden_qa_id, include_signed_url: include_signed_url}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, golden_qa} <- Repo.fetch(Glific.AIEvaluations.GoldenQA, golden_qa_id),
+    with {:ok, golden_qa} <-
+           Repo.fetch_by(GoldenQA, %{id: golden_qa_id, organization_id: user.organization_id}),
          {:ok, kaapi_data} <- fetch_kaapi_dataset(golden_qa, user, include_signed_url) do
       golden_qa_map =
-        %{
-          id: golden_qa.id,
-          name: golden_qa.name,
-          duplication_factor: golden_qa.duplication_factor,
-          file_name: golden_qa.file_name,
-          total_items: golden_qa.total_items,
-          inserted_at: golden_qa.inserted_at,
-          updated_at: golden_qa.updated_at
-        }
+        golden_qa
+        |> Map.from_struct()
         |> maybe_put_signed_url(kaapi_data)
 
       if include_signed_url, do: Metrics.increment("Golden QA Downloaded", user.organization_id)
@@ -504,7 +502,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     organization = Partners.organization(organization_id)
 
     if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      callback_url = Glific.api_callback_base(organization.shortcode) <> "/kaapi/evaluation_run"
+
       kaapi_input
+      |> Map.put(:callback_url, callback_url)
       |> Map.put(:duplication_factor, duplication_factor)
       |> Kaapi.create_evaluation_v2(organization_id)
     else

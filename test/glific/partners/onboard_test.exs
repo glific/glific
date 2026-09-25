@@ -142,6 +142,37 @@ defmodule Glific.OnboardTest do
     end
   end
 
+  test "every onboarded organization gets its own random signature phrase" do
+    with_mock(
+      GcsWorker,
+      upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end
+    ) do
+      first =
+        @valid_attrs
+        |> Map.put("shortcode", "signatureone")
+        |> Map.put("phone", "919917443001")
+        |> Onboard.setup()
+
+      second =
+        @valid_attrs
+        |> Map.put("shortcode", "signaturetwo")
+        |> Map.put("phone", "919917443002")
+        |> Onboard.setup()
+
+      assert first.is_valid == true
+      assert second.is_valid == true
+
+      phrases = Enum.map([first, second], & &1.organization.signature_phrase)
+
+      Enum.each(phrases, fn phrase ->
+        refute phrase in [nil, "", "Please change me, NOW!"]
+        assert byte_size(phrase) >= 32
+      end)
+
+      assert phrases |> Enum.uniq() |> length() == 2
+    end
+  end
+
   test "ensure that sending in valid parameters, update organization status" do
     with_mock(
       GcsWorker,

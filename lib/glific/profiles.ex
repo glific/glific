@@ -202,6 +202,7 @@ defmodule Glific.Profiles do
          context <- Map.put(context, :contact, contact) do
       Contacts.capture_history(context.contact.id, :profile_switched, %{
         event_label: "Switched profile to #{contact.active_profile.name}",
+        channel: context.channel,
         event_meta: %{
           method: "Switched profile via flow: #{context.flow.name}"
         }

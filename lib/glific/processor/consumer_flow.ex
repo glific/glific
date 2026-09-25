@@ -36,7 +36,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
     if is_draft,
       do:
-        mark_flows_complete(message.contact_id, %{
+        mark_flows_complete(message.contact_id, message.channel, %{
           is_draft: true,
           body: body
         })
@@ -48,12 +48,12 @@ defmodule Glific.Processor.ConsumerFlow do
 
     if is_template,
       do:
-        mark_flows_complete(message.contact_id, %{
+        mark_flows_complete(message.contact_id, message.channel, %{
           is_template: true,
           body: body
         })
 
-    context = FlowContext.active_context(message.contact_id)
+    context = FlowContext.active_context(message.contact_id, channel: message.channel)
 
     # if contact is not optout if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly
@@ -64,9 +64,11 @@ defmodule Glific.Processor.ConsumerFlow do
       else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
 
-  defp mark_flows_complete(contact_id, event_meta) do
+  # Scoped to the channel the keyword arrived on, so a browser keyword completes only web flows.
+  defp mark_flows_complete(contact_id, channel, event_meta) do
     FlowContext.mark_flows_complete(contact_id, false,
       source: "process_message",
+      channel: channel,
       event_meta: event_meta
     )
   end
@@ -148,7 +150,12 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows.get_cached_flow(message.organization_id, flow_params)
     |> case do
       {:ok, flow} ->
-        opts = Keyword.put(opts, :flow_keyword, message.body)
+        # Carry the triggering message's channel so the flow's replies route back over it.
+        opts =
+          opts
+          |> Keyword.put(:flow_keyword, message.body)
+          |> Keyword.put(:channel, message.channel)
+
         FlowContext.init_context(flow, message.contact, status, opts)
 
       {:error, _} ->
@@ -244,6 +251,7 @@ defmodule Glific.Processor.ConsumerFlow do
     ## remove all the previous flow context
     FlowContext.mark_flows_complete(message.contact_id, false,
       source: "start_optin_flow",
+      channel: message.channel,
       event_meta: %{
         message_id: message.id
       }
@@ -258,7 +266,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
     case Flows.get_cached_flow(message.organization_id, args) do
       {:ok, flow} when flow.is_active ->
-        FlowContext.init_context(flow, message.contact, @final_phrase, is_draft: false)
+        FlowContext.init_context(flow, message.contact, @final_phrase,
+          is_draft: false,
+          channel: message.channel
+        )
 
       _ ->
         nil

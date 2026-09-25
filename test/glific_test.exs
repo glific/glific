@@ -77,9 +77,10 @@ defmodule GlificTest do
     end
 
     test "an expression the interpreter cannot handle degrades to Invalid Code, not EEx" do
-      # `with` is not supported by the interpreter; the enabled path must reject it
-      # rather than silently falling back to EEx.
-      assert Glific.execute_eex("<%= with x <- 1, do: x %>") == "Invalid Code"
+      # A function-reference capture (&String.upcase/1) is not supported by the
+      # interpreter; the enabled path must reject it rather than silently falling
+      # back to EEx.
+      assert Glific.execute_eex("<%= Enum.map(@l, &String.upcase/1) %>") == "Invalid Code"
     end
 
     test "renders a string literal containing a denylisted substring (no denylist on this path)" do

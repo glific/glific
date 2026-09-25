@@ -48,7 +48,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   describe "create_knowledge_base/3" do
     setup :enable_kaapi
 
-    test "creates and returns knowledge base on success", %{staff: user} do
+    test "creates and returns knowledge base on success", %{manager: user} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -77,7 +77,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "returns knowledge base without creating one", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, knowledge_base} =
@@ -115,7 +115,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert response["status"] == "in_progress"
     end
 
-    test "returns error when kaapi api fails", %{staff: user} do
+    test "returns error when kaapi api fails", %{manager: user} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -138,7 +138,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert error[:message] == "Failed to create knowledge base"
     end
 
-    test "returns nil knowledge base when media_info is empty", %{staff: user} do
+    test "returns nil knowledge base when media_info is empty", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:create_knowledge_base, user, variables: %{"media_info" => []})
 
@@ -147,7 +147,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert Map.get(query_data, :errors) == nil
     end
 
-    test "returns nil knowledge base when media_info is empty, regardless of id", %{staff: user} do
+    test "returns nil knowledge base when media_info is empty, regardless of id", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:create_knowledge_base, user,
           variables: %{"id" => 0, "media_info" => []}
@@ -163,7 +163,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     setup :enable_kaapi
 
     test "returns all config versions for the organization", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, {assistant, _config_version}} = create_assistant_with_config_version(organization_id)
@@ -277,7 +277,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     setup :enable_kaapi
 
     test "initiates clone for a legacy assistant", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, {assistant, _config_version}} =
@@ -292,7 +292,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "initiates clone for a non-legacy assistant with version_id", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -364,7 +364,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "returns error when a clone is already in progress", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -442,7 +442,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert length(all_enqueued(worker: AssistantCloneWorker, prefix: "global")) == 1
     end
 
-    test "returns error when assistant not found", %{staff: user} do
+    test "returns error when assistant not found", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:clone_assistant, user, variables: %{"id" => -1})
 
@@ -453,8 +453,8 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   end
 
   describe "assistant_versions/3" do
-    test "returns all versions for an assistant ordered by version_number desc", %{
-      staff: user,
+    test "returns all versions for an assistant ordered by major/minor version desc", %{
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -462,6 +462,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
         |> Repo.insert()
 
+      # First insert for a new assistant is trigger-assigned major_version: 1, minor_version: 0
       {:ok, v1} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
@@ -471,11 +472,11 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           model: "gpt-4o",
           prompt: "Prompt v1",
           settings: %{},
-          status: :ready,
-          version_number: 1
+          status: :ready
         })
         |> Repo.insert()
 
+      # Second insert (default bump_type: :minor) is trigger-assigned minor_version: 1
       {:ok, _v2} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
@@ -485,8 +486,23 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           model: "gpt-4o",
           prompt: "Prompt v2",
           settings: %{},
-          status: :in_progress,
-          version_number: 2
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      # Third insert (bump_type: :major) is trigger-assigned major_version: 2, minor_version: 0,
+      # so ordering must sort by major first, not just minor
+      {:ok, _v3} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v3",
+          settings: %{},
+          status: :ready,
+          bump_type: :major
         })
         |> Repo.insert()
 
@@ -499,11 +515,10 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => assistant.id})
 
       versions = query_data.data["assistantVersions"]
-      assert length(versions) == 2
+      assert length(versions) == 3
 
-      # Ordered newest first
-      assert hd(versions)["version_number"] == 2
-      assert List.last(versions)["version_number"] == 1
+      # Ordered newest first by major, then minor
+      assert Enum.map(versions, & &1["version_label"]) == ["2.0", "1.1", "1.0"]
 
       # is_live reflects active_config_version_id
       live_version = Enum.find(versions, & &1["is_live"])
@@ -513,8 +528,45 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert Enum.all?(versions, fn v -> is_nil(v["vector_store"]) end)
     end
 
+    test "concurrent inserts for the same assistant get unique, sequential version numbers", %{
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Concurrent Assistant", organization_id: organization_id})
+        |> Repo.insert()
+
+      tasks =
+        Enum.map(1..5, fn index ->
+          Task.async(fn ->
+            Repo.put_organization_id(organization_id)
+
+            %AssistantConfigVersion{}
+            |> AssistantConfigVersion.changeset(%{
+              assistant_id: assistant.id,
+              organization_id: organization_id,
+              provider: "openai",
+              model: "gpt-4o",
+              prompt: "Prompt #{index}",
+              settings: %{},
+              status: :in_progress
+            })
+            |> Repo.insert()
+          end)
+        end)
+
+      results = Enum.map(tasks, &Task.await/1)
+      assert Enum.all?(results, &match?({:ok, %AssistantConfigVersion{}}, &1))
+
+      version_pairs =
+        Enum.map(results, fn {:ok, version} -> {version.major_version, version.minor_version} end)
+
+      assert Enum.uniq(version_pairs) |> length() == 5
+      assert Enum.sort(version_pairs) == [{1, 0}, {1, 1}, {1, 2}, {1, 3}, {1, 4}]
+    end
+
     test "returns vector_store linked to each version", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -531,8 +583,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           model: "gpt-4o",
           prompt: "Prompt v1",
           settings: %{},
-          status: :ready,
-          version_number: 1
+          status: :ready
         })
         |> Repo.insert()
 
@@ -582,7 +633,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert vs["size"] == "50 B"
     end
 
-    test "returns empty versions for a non-existent assistant", %{staff: user} do
+    test "returns empty versions for a non-existent assistant", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => 0})
 
@@ -593,13 +644,91 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   end
 
   describe "set_live_version/3" do
-    test "updates active_config_version_id when version is ready", %{
-      staff: user,
-      organization_id: organization_id
-    } do
+    test "promoting a draft version creates a new major version and repoints the live pointer",
+         %{
+           manager: user,
+           organization_id: organization_id
+         } do
       {:ok, assistant} =
         %Assistant{}
         |> Assistant.changeset(%{name: "Live Version Test", organization_id: organization_id})
+        |> Repo.insert()
+
+      # First insert is trigger-assigned major_version: 1, minor_version: 0 ("1.0")
+      {:ok, v1} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v1",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: v1.id})
+        |> Repo.update()
+
+      # Second insert (default bump_type: :minor) is trigger-assigned "1.1" -- a draft
+      {:ok, draft_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v2",
+          settings: %{},
+          status: :ready,
+          kaapi_version_number: 42
+        })
+        |> Repo.insert()
+
+      assert AssistantConfigVersion.version_label(v1) == "1.0"
+      assert AssistantConfigVersion.version_label(draft_version) == "1.1"
+
+      version_count_before = count_config_versions(assistant.id)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:set_live_version, user,
+          variables: %{"assistantId" => assistant.id, "versionId" => draft_version.id}
+        )
+
+      result = query_data.data["setLiveVersion"]["assistant"]
+      assert result["liveVersionLabel"] == "2.0"
+
+      new_live_version_id = String.to_integer(result["activeConfigVersionId"])
+      assert new_live_version_id != draft_version.id
+
+      # A brand new row was created for the promoted major version
+      assert count_config_versions(assistant.id) == version_count_before + 1
+
+      new_live_version = Repo.get!(AssistantConfigVersion, new_live_version_id)
+      assert AssistantConfigVersion.version_label(new_live_version) == "2.0"
+      assert new_live_version.status == draft_version.status
+      assert new_live_version.kaapi_version_number == draft_version.kaapi_version_number
+
+      updated_assistant = Repo.get!(Assistant, assistant.id)
+      assert updated_assistant.active_config_version_id == new_live_version_id
+
+      # The original draft row is untouched, still exists, and is not live
+      unchanged_draft_version = Repo.get!(AssistantConfigVersion, draft_version.id)
+      assert AssistantConfigVersion.version_label(unchanged_draft_version) == "1.1"
+      assert updated_assistant.active_config_version_id != draft_version.id
+    end
+
+    test "reactivating an already-major version repoints the live pointer without a new row",
+         %{
+           manager: user,
+           organization_id: organization_id
+         } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Rollback Test", organization_id: organization_id})
         |> Repo.insert()
 
       {:ok, v1} =
@@ -612,14 +741,9 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           prompt: "Prompt v1",
           settings: %{},
           status: :ready,
-          version_number: 1
+          bump_type: :major
         })
         |> Repo.insert()
-
-      {:ok, _assistant} =
-        assistant
-        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: v1.id})
-        |> Repo.update()
 
       {:ok, v2} =
         %AssistantConfigVersion{}
@@ -631,22 +755,38 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           prompt: "Prompt v2",
           settings: %{},
           status: :ready,
-          version_number: 2
+          bump_type: :major
         })
         |> Repo.insert()
 
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: v2.id})
+        |> Repo.update()
+
+      assert AssistantConfigVersion.version_label(v1) == "1.0"
+      assert AssistantConfigVersion.version_label(v2) == "2.0"
+
+      version_count_before = count_config_versions(assistant.id)
+
       {:ok, query_data} =
         auth_query_gql_by(:set_live_version, user,
-          variables: %{"assistantId" => assistant.id, "versionId" => v2.id}
+          variables: %{"assistantId" => assistant.id, "versionId" => v1.id}
         )
 
       result = query_data.data["setLiveVersion"]["assistant"]
-      assert result["activeConfigVersionId"] == to_string(v2.id)
-      assert result["liveVersionNumber"] == 2
+      assert result["activeConfigVersionId"] == to_string(v1.id)
+      assert result["liveVersionLabel"] == "1.0"
+
+      # Rolling back to an already-published major version does not create a new row
+      assert count_config_versions(assistant.id) == version_count_before
+
+      updated_assistant = Repo.get!(Assistant, assistant.id)
+      assert updated_assistant.active_config_version_id == v1.id
     end
 
     test "returns error when version is not in ready status", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -686,7 +826,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   describe "get_file/3" do
     setup :enable_kaapi
 
-    test "returns signed_url on success", %{staff: user} do
+    test "returns signed_url on success", %{manager: user} do
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -711,7 +851,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert result["signed_url"] == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
     end
 
-    test "returns a top-level error when kaapi fails", %{staff: user} do
+    test "returns a top-level error when kaapi fails", %{manager: user} do
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{status: 404, body: %{success: false, error: "Not Found"}}
@@ -724,6 +864,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert [error | _] = query_data.errors
       assert error[:message] =~ "status 404"
     end
+  end
+
+  defp count_config_versions(assistant_id) do
+    AssistantConfigVersion
+    |> where([config_version], config_version.assistant_id == ^assistant_id)
+    |> Repo.aggregate(:count)
   end
 
   defp enable_kaapi(%{organization_id: organization_id}) do

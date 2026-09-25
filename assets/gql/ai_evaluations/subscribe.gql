@@ -1,0 +1,11 @@
+subscription aiEvaluationUpdated {
+  aiEvaluationUpdated {
+    id
+    name
+    status
+    failureReason
+    results
+    insertedAt
+    updatedAt
+  }
+}

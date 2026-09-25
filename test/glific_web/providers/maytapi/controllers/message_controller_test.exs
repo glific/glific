@@ -1,15 +1,17 @@
 defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
-  alias Glific.Contacts
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     Communications.GroupMessage,
+    Contacts,
     Groups.WAGroup,
     Groups.WAGroupPhone,
     Groups.WAGroups,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo,
     Seeds.SeedsDev,
     WAGroup.WAMessage,
@@ -573,8 +575,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -945,8 +947,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)

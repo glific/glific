@@ -52,7 +52,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       %AssistantConfigVersion{}
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
-        version_number: 1,
         kaapi_version_number: 1,
         prompt: "You are a helpful voice assistant.",
         provider: "openai",

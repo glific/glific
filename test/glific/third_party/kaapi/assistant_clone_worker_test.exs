@@ -65,8 +65,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         model: "gpt-4o",
         prompt: "You are a helpful assistant",
         settings: %{"temperature" => 0.7},
-        status: :ready,
-        version_number: 1
+        status: :ready
       })
       |> Repo.insert()
 
@@ -178,7 +177,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
         cloned =
           Assistant
-          |> where([a], a.name == ^"Copy of #{assistant.name} Version 1")
+          |> where([a], a.name == ^"Copy of #{assistant.name} Version 1.0")
           |> Repo.one()
 
         assert cloned != nil
@@ -716,7 +715,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        filenames = cloned_kb_filenames(assistant, 1)
+        filenames = cloned_kb_filenames(assistant, "1.0")
 
         assert length(filenames) == 4
         assert "Report.pdf.txt" in filenames
@@ -750,7 +749,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        assert cloned_kb_filenames(assistant, 1) == ["content.md"]
+        assert cloned_kb_filenames(assistant, "1.0") == ["content.md"]
       end
     end
 
@@ -781,7 +780,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        assert cloned_kb_filenames(assistant, 1) == ["Good.pdf.txt"]
+        assert cloned_kb_filenames(assistant, "1.0") == ["Good.pdf.txt"]
       end
     end
 
@@ -812,7 +811,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        filenames = cloned_kb_filenames(assistant, 1)
+        filenames = cloned_kb_filenames(assistant, "1.0")
 
         assert length(filenames) == 2
         assert filenames == Enum.uniq(filenames)
@@ -923,8 +922,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
           model: "gpt-4o",
           prompt: "You are a non-legacy assistant",
           settings: %{"temperature" => 0.5},
-          status: :ready,
-          version_number: 2
+          status: :ready
         })
         |> Repo.insert()
 
@@ -971,7 +969,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
       cloned =
         Assistant
-        |> where([a], a.name == ^"Copy of #{assistant.name} Version 2")
+        |> where([a], a.name == ^"Copy of #{assistant.name} Version 1.1")
         |> Repo.one()
 
       assert cloned != nil
@@ -1018,7 +1016,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       {:ok, _existing} =
         %Assistant{}
         |> Assistant.changeset(%{
-          name: "Copy of #{assistant.name} Version 2",
+          name: "Copy of #{assistant.name} Version 1.1",
           organization_id: @org_id,
           kaapi_uuid: "existing_uuid"
         })
@@ -1034,7 +1032,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
       cloned =
         Assistant
-        |> where([a], a.name == ^"Copy of #{assistant.name} Version 2 (2)")
+        |> where([a], a.name == ^"Copy of #{assistant.name} Version 1.1 (2)")
         |> Repo.one()
 
       assert cloned != nil
@@ -1060,8 +1058,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
           model: "gpt-4o",
           prompt: "Assistant with no KB at all",
           settings: %{"temperature" => 0.5},
-          status: :ready,
-          version_number: 1
+          status: :ready
         })
         |> Repo.insert()
 
@@ -1092,7 +1089,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
       cloned =
         Assistant
-        |> where([a], a.name == ^"Copy of #{assistant_without_kb.name} Version 1")
+        |> where([a], a.name == ^"Copy of #{assistant_without_kb.name} Version 1.0")
         |> Repo.one()
 
       assert cloned != nil
@@ -1205,10 +1202,10 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
     end
   end
 
-  defp cloned_kb_filenames(source_assistant, version_number) do
+  defp cloned_kb_filenames(source_assistant, version_label) do
     cloned =
       Assistant
-      |> where([a], a.name == ^"Copy of #{source_assistant.name} Version #{version_number}")
+      |> where([a], a.name == ^"Copy of #{source_assistant.name} Version #{version_label}")
       |> Repo.one()
 
     cloned_config =

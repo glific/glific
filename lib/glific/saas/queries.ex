@@ -26,6 +26,8 @@ defmodule Glific.Saas.Queries do
   alias Pow.Ecto.Schema.Changeset
 
   @default_provider "gupshup"
+  @signature_phrase_bytes 32
+
   @doc """
   Main function to setup the organization entity in Glific
   """
@@ -173,7 +175,7 @@ defmodule Glific.Saas.Queries do
         "run_flow_each_time" => false,
         "allow_bot_number_update" => true
       },
-      signature_phrase: "Please change me, NOW!",
+      signature_phrase: generate_signature_phrase(),
       team_emails: %{
         "finance" => params["email"],
         "analytics" => params["email"],
@@ -193,6 +195,14 @@ defmodule Glific.Saas.Queries do
       {:error, errors} ->
         error(Glific.SafeLog.safe_inspect(errors), result, :global)
     end
+  end
+
+  # Deliberately not backfilled: existing organizations keep the secret they already have.
+  @spec generate_signature_phrase() :: String.t()
+  defp generate_signature_phrase do
+    @signature_phrase_bytes
+    |> :crypto.strong_rand_bytes()
+    |> Base.url_encode64(padding: false)
   end
 
   @spec contact(map(), map()) :: map()

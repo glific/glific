@@ -1,7 +1,7 @@
 defmodule GlificWeb.Schema.AssistantChatTypes do
   @moduledoc """
-  GraphQL surface for sending a chat message to an assistant's live Kaapi config
-  version (the "Try It Out" sandbox) and receiving the async reply over a
+  GraphQL surface for sending a chat message to a selected (default: live) Kaapi config
+  version of an assistant (the "Try It Out" sandbox) and receiving the async reply over a
   subscription. Dispatch (`send_assistant_message`) just queues the job on Kaapi and
   returns immediately; the actual answer arrives later via `assistant_chat_response`
   once Kaapi calls back.
@@ -27,11 +27,15 @@ defmodule GlificWeb.Schema.AssistantChatTypes do
     field(:assistant_id, non_null(:id))
     field(:message, non_null(:string))
     field(:conversation_id, :string)
+
+    @desc "Config version to chat with. Defaults to the assistant's live version."
+    field(:config_version_id, :id)
   end
 
   object :assistant_chat_mutations do
-    @desc "Send a chat message to an assistant's live config version via Kaapi. Returns
-    a job_id immediately; the reply is delivered over the assistant_chat_response subscription."
+    @desc "Send a chat message to the selected (default: live) config version of an assistant
+    via Kaapi. Returns a job_id immediately; the reply is delivered over the
+    assistant_chat_response subscription."
     field :send_assistant_message, :assistant_chat_result do
       arg(:input, non_null(:assistant_chat_input))
       middleware(Authorize, :staff)

@@ -46,6 +46,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :uuid, :string
     field :type, :message_type_enum
+    field :channel, :message_channel_enum
     field :flow, :message_flow_enum
     field :flow_label, :string
     field :bsp_message_id, :string
@@ -212,6 +213,10 @@ defmodule GlificWeb.Schema.MessageTypes do
   input_object :message_input do
     field :body, :string
     field :type, :message_type_enum
+
+    @desc "The channel to send on. Defaults to whatsapp."
+    field :channel, :message_channel_enum
+
     field :flow, :message_flow_enum
 
     field :sender_id, :id
