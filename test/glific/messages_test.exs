@@ -756,6 +756,26 @@ defmodule Glific.MessagesTest do
       assert error == "Receiver does not exist"
     end
 
+    test "create and send message without an explicit type and an empty body should error out instead of persisting a null-body text message",
+         attrs do
+      message_attrs =
+        %{flow: :outbound}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, error} = Messages.create_and_send_message(message_attrs)
+      assert error == "Could not send message with empty body"
+    end
+
+    test "create and send message with an explicit type: :text and an empty body should also error out",
+         attrs do
+      message_attrs =
+        %{flow: :outbound, type: :text, body: ""}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, error} = Messages.create_and_send_message(message_attrs)
+      assert error == "Could not send message with empty body"
+    end
+
     test "create and send message should send message to contact through gupshup enterprise",
          attrs do
       enable_gupshup_enterprise(attrs)
