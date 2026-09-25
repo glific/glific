@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Assistants do
   """
 
   alias Glific.Assistants
+  alias Glific.Assistants.AssistantConfigVersion
 
   require Logger
 
@@ -195,6 +196,13 @@ defmodule GlificWeb.Resolvers.Assistants do
   def resolve_vector_store(_parent, _args, _context) do
     {:ok, nil}
   end
+
+  @doc """
+  Display label for a config version, e.g. `"1.3"`.
+  """
+  @spec version_label(map(), map(), map()) :: {:ok, String.t() | nil}
+  def version_label(config_version, _args, _context),
+    do: {:ok, AssistantConfigVersion.version_label(config_version)}
 
   @doc """
   Calculate the total file size linked to the VectorStore.

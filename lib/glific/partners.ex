@@ -43,7 +43,8 @@ defmodule Glific.Partners do
     RepoReplica,
     Settings.Language,
     Stats,
-    Users.User
+    Users.User,
+    WebChannel.Rooms
   }
 
   # We cache organization info under this id since when we want to retrieve
@@ -591,12 +592,15 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_ask_glific_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
-      |> Flags.set_copy_node_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
       |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
       |> Flags.set_flag_enabled(:is_template_v2_enabled)
       |> Flags.set_flag_enabled(:is_template_library_enabled)
+      |> Flags.set_flag_enabled(:glific_ai_enabled)
+      |> Flags.set_flag_enabled(:web_channel_enabled)
+      |> Flags.set_flag_enabled(:bulk_contact_update_enabled)
+      |> Flags.set_flag_enabled(:bulk_flow_results_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1155,6 +1159,14 @@ defmodule Glific.Partners do
     end
   end
 
+  # Switching the web channel off has to reach the browsers already in a conversation; they hold
+  # a token that stays valid and a socket that would otherwise keep serving messages.
+  defp credential_update_callback(organization, credential, "web_channel") do
+    if !credential.is_active, do: Rooms.close_all(organization.id)
+
+    {:ok, credential}
+  end
+
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
 
   @doc """
@@ -1493,14 +1505,19 @@ defmodule Glific.Partners do
         Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization),
       "assistant_config_versions_enabled" =>
         Flags.get_assistant_config_versions_enabled(organization),
-      "copy_node_enabled" => Flags.get_copy_node_enabled(organization),
       "superset_enabled" =>
         FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id}),
       "prompt_generator_enabled" =>
         Flags.get_flag_enabled(:is_prompt_generator_enabled, organization),
       "template_v2_enabled" => Flags.get_flag_enabled(:is_template_v2_enabled, organization),
       "template_library_enabled" =>
-        Flags.get_flag_enabled(:is_template_library_enabled, organization)
+        Flags.get_flag_enabled(:is_template_library_enabled, organization),
+      "glific_ai_enabled" => Flags.get_flag_enabled(:glific_ai_enabled, organization),
+      "web_channel_enabled" => Flags.get_flag_enabled(:web_channel_enabled, organization),
+      "bulk_contact_update_enabled" =>
+        Flags.get_flag_enabled(:bulk_contact_update_enabled, organization),
+      "bulk_flow_results_enabled" =>
+        Flags.get_flag_enabled(:bulk_flow_results_enabled, organization)
     }
   end
 

@@ -47,5 +47,30 @@ defmodule Glific.OTPTest do
     test "rejects a code for a phone that was never issued one", %{phone: phone} do
       assert {:error, :does_not_exist} == OTP.verify_code(:auth, phone, "123456")
     end
+
+    test "accepts a :web_channel code verified under :web_channel", %{phone: phone} do
+      code = OTP.generate_code(:web_channel, phone)
+
+      assert :ok == OTP.verify_code(:web_channel, phone, code)
+    end
+
+    test "rejects a :web_channel code verified under :auth", %{phone: phone} do
+      web_channel_code = OTP.generate_code(:web_channel, phone)
+
+      assert {:error, :does_not_exist} == OTP.verify_code(:auth, phone, web_channel_code)
+    end
+
+    test "rejects an :auth code verified under :web_channel", %{phone: phone} do
+      auth_code = OTP.generate_code(:auth, phone)
+
+      assert {:error, :does_not_exist} == OTP.verify_code(:web_channel, phone, auth_code)
+    end
+
+    test "consumes a :web_channel code so it cannot be replayed", %{phone: phone} do
+      code = OTP.generate_code(:web_channel, phone)
+
+      assert :ok == OTP.verify_code(:web_channel, phone, code)
+      assert {:error, :does_not_exist} == OTP.verify_code(:web_channel, phone, code)
+    end
   end
 end

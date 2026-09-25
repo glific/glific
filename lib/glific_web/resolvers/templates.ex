@@ -191,8 +191,17 @@ defmodule GlificWeb.Resolvers.Templates do
   language, for the "Add new language" flow
   """
   @spec translate_session_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, map()} | {:error, any}
+          {:ok, map()} | {:error, String.t()}
   def translate_session_template(_, params, %{context: %{current_user: user}}) do
-    Templates.translate_session_template(params, user.organization_id)
+    params
+    |> Templates.translate_session_template(user.organization_id)
+    |> normalize_translate_error()
   end
+
+  @spec normalize_translate_error({:ok, map()} | {:error, any}) ::
+          {:ok, map()} | {:error, String.t()}
+  defp normalize_translate_error({:error, [_source, message]}) when is_binary(message),
+    do: {:error, message}
+
+  defp normalize_translate_error(result), do: result
 end

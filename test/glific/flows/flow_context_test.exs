@@ -1,5 +1,6 @@
 defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: false
+  use Oban.Pro.Testing, repo: Glific.Repo
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -18,7 +19,8 @@ defmodule Glific.Flows.FlowContextTest do
     Flow,
     FlowContext,
     FlowResult,
-    Node
+    Node,
+    WakeupWorker
   }
 
   @valid_attrs %{
@@ -167,6 +169,134 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.id == flow_context_2.id
   end
 
+  describe "per-channel flow state (#5719)" do
+    setup %{organization_id: organization_id} do
+      %{flow: Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})}
+    end
+
+    # The bug this guards against corrupts state silently: a browser message resuming the WhatsApp
+    # conversation, or starting a WhatsApp flow, rather than a separate web one.
+    test "active_context is scoped by channel — a web message does not resume a whatsapp context",
+         %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      assert is_nil(FlowContext.active_context(contact.id, channel: :web))
+      assert FlowContext.active_context(contact.id, channel: :whatsapp).id == whatsapp_context.id
+    end
+
+    test "starting a web flow leaves the contact's whatsapp context untouched", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, _web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
+    end
+
+    test "mark_flows_complete scoped by channel completes only that channel's flows", %{
+      flow: flow
+    } do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      FlowContext.mark_flows_complete(contact.id, false, channel: :web)
+
+      assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
+      refute is_nil(Repo.get!(FlowContext, web_context.id).completed_at)
+    end
+
+    # An async webhook (e.g. TTS) parks a web flow and resumes it via wakeup_one, which completes
+    # newer contexts. Without channel scoping that would kill a WhatsApp flow the contact started
+    # while the web flow was parked.
+    test "wakeup_one completes newer contexts only on the waking flow's channel", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      past = DateTime.utc_now() |> DateTime.add(-3600) |> DateTime.truncate(:second)
+
+      FlowContext
+      |> where([fc], fc.id == ^web_context.id)
+      |> Repo.update_all(set: [inserted_at: past])
+
+      web_context = Repo.get!(FlowContext, web_context.id) |> Repo.preload([:contact, :flow])
+
+      base_attrs = %{
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        contact_id: contact.id,
+        organization_id: contact.organization_id,
+        node_uuid: web_context.node_uuid
+      }
+
+      {:ok, newer_whatsapp} =
+        FlowContext.create_flow_context(Map.put(base_attrs, :channel, :whatsapp))
+
+      {:ok, newer_web} = FlowContext.create_flow_context(Map.put(base_attrs, :channel, :web))
+
+      FlowContext.wakeup_one(web_context)
+
+      assert is_nil(Repo.get!(FlowContext, newer_whatsapp.id).completed_at)
+      refute is_nil(Repo.get!(FlowContext, newer_web.id).completed_at)
+    end
+
+    # A sub-flow started from a web parent must run on web too: otherwise its replies reach the BSP
+    # and, because the parent is looked up by channel, the :web parent is orphaned when it completes.
+    test "start_sub_flow inherits the parent's channel", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, parent, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+      parent = Repo.preload(parent, [:contact, :flow])
+
+      {:ok, child, _} = Flow.start_sub_flow(parent, flow.uuid, parent.id)
+
+      assert child.channel == :web
+
+      refute is_nil(
+               FlowContext.active_context(contact.id,
+                 channel: child.channel,
+                 parent_id: parent.id
+               )
+             )
+    end
+
+    # reset_all_contexts fires on ordinary error paths (loop guard, missing router category, failed
+    # send). A web sub-flow's error must not complete the contact's unrelated WhatsApp flow.
+    test "reset_all_contexts is scoped to the erroring context's channel", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp_context, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, web_parent, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+
+      {:ok, web_child} =
+        FlowContext.create_flow_context(%{
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          contact_id: contact.id,
+          organization_id: contact.organization_id,
+          node_uuid: web_parent.node_uuid,
+          parent_id: web_parent.id,
+          channel: :web
+        })
+
+      web_child |> Repo.preload([:contact, :flow]) |> FlowContext.reset_all_contexts("boom")
+
+      assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
+      refute is_nil(Repo.get!(FlowContext, web_parent.id).completed_at)
+    end
+  end
+
   test "load_context/2 will load all the nodes and actions in memory for the context",
        %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
@@ -300,6 +430,102 @@ defmodule Glific.Flows.FlowContextTest do
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert flow_context.wakeup_at == nil
     assert flow_context.is_background_flow == false
+  end
+
+  describe "wakeup_flows/0" do
+    test "queues a wakeup job for an organization that has an overdue context",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      assert_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "does not queue a job for an organization whose only context isn't due yet",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      five_minutes_from_now = Timex.shift(Timex.now(), minutes: 5)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: five_minutes_from_now,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      refute_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "does not queue a job for an organization whose only overdue context is already completed",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        completed_at: Timex.now(),
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      refute_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "calling wakeup_flows/0 twice for the same overdue organization only ever queues one job",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+      FlowContext.wakeup_flows()
+
+      jobs =
+        all_enqueued(worker: WakeupWorker, prefix: "global")
+        |> Enum.filter(&(&1.args["organization_id"] == organization_id))
+
+      assert length(jobs) == 1
+    end
   end
 
   test "resume_contact_flow/3 will process all the context for the contact",

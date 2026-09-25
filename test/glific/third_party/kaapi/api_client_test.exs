@@ -313,6 +313,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     test "returns document data with signed_url" do
       mock(fn %Tesla.Env{method: :get, query: query} ->
         assert query[:include_url] == "true"
+        assert query[:download] == "true"
 
         %Tesla.Env{
           status: 200,

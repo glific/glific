@@ -329,7 +329,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     org_api_key
     |> client()
     |> Tesla.get("/api/v1/documents/:document_id",
-      query: [include_url: "true"],
+      query: [include_url: "true", download: "true"],
       opts: [path_params: [document_id: document_id]]
     )
     |> parse_kaapi_response()

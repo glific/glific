@@ -414,7 +414,7 @@ BEGIN
 
         UPDATE contacts SET
             last_communication_at = now,
-            last_message_at = now,
+            last_message_at = CASE WHEN NEW.channel = 'web' THEN last_message_at ELSE now END,
             last_message_number = var_message_number,
             is_org_read = false,
             is_org_replied = false,

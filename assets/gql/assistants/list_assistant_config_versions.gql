@@ -3,7 +3,8 @@ query AssistantConfigVersions {
     id
     assistantId
     kaapiUuid
-    versionNumber
+    majorVersion
+    minorVersion
     assistantName
     description
     prompt

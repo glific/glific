@@ -72,6 +72,9 @@ defmodule Glific.Flows.Action do
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
+  @required_fields_set_contact_fields [:fields | @required_field_common]
+  @required_fields_set_run_results [:results | @required_field_common]
+  @bulk_contact_properties ["language"]
 
   # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
   # dropdown). Flows still referencing them must migrate to the new
@@ -81,6 +84,11 @@ defmodule Glific.Flows.Action do
     "text_to_speech_with_bhasini" => "text_to_speech",
     "nmt_tts_with_bhasini" => "text_to_speech"
   }
+
+  # Upper bound on how long an async webhook node may park the flow. A parked contact sits in
+  # silence until the callback arrives or the window expires, so authors cannot push this past
+  # 5 minutes however long their webhook takes.
+  @max_webhook_wait_time 5 * 60
 
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
@@ -104,6 +112,8 @@ defmodule Glific.Flows.Action do
           is_template: boolean,
           flow: map() | nil,
           field: map() | nil,
+          contact_fields: [map()] | nil,
+          run_results: [map()] | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
@@ -116,8 +126,8 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
-          ## this is a custom delay in minutes for wait for time nodes.
-          ## Currently we use this only for the wait for time node.
+          ## seconds to wait at this node: how long a wait for time/result node parks the
+          ## flow, or how long an async webhook node awaits its callback.
           wait_time: integer() | nil,
 
           # Google sheet node specific fields
@@ -160,6 +170,12 @@ defmodule Glific.Flows.Action do
     # fields for certain actions: set_contact_field, set_contact_language
     field(:field, :map)
     field(:language, :string)
+
+    # the repeatable {field, value} rows of a set_contact_fields action
+    field(:contact_fields, {:array, :map})
+
+    # the repeatable {name, value, category} rows of a set_run_results action
+    field(:run_results, {:array, :map})
 
     field(:type, :string)
     field(:profile_type, :string)
@@ -318,6 +334,20 @@ defmodule Glific.Flows.Action do
     })
   end
 
+  def process(%{"type" => "set_contact_fields"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_fields)
+
+    contact_fields =
+      Enum.map(json["fields"] || [], fn entry ->
+        field = entry["field"] || %{}
+        name = if is_nil(field["name"]), do: field["key"], else: field["name"]
+
+        %{name: name, key: field["key"], value: entry["value"], property: entry["type"]}
+      end)
+
+    process(json, uuid_map, node, %{contact_fields: contact_fields})
+  end
+
   def process(%{"type" => "set_wa_group_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_wa_group_field)
 
@@ -343,7 +373,8 @@ defmodule Glific.Flows.Action do
       method: json["method"],
       result_name: json["result_name"],
       body: json["body"],
-      headers: json["headers"]
+      headers: json["headers"],
+      wait_time: webhook_wait_time(json["body"])
     })
   end
 
@@ -410,6 +441,17 @@ defmodule Glific.Flows.Action do
       category: json["category"],
       name: json["name"]
     })
+  end
+
+  def process(%{"type" => "set_run_results"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_run_results)
+
+    run_results =
+      Enum.map(json["results"] || [], fn entry ->
+        %{name: entry["name"], value: entry["value"], category: entry["category"]}
+      end)
+
+    process(json, uuid_map, node, %{run_results: run_results})
   end
 
   @default_wait_time -1
@@ -526,6 +568,25 @@ defmodule Glific.Flows.Action do
        else: errors
   end
 
+  def validate(%{type: "set_contact_fields"} = action, errors, _flow) do
+    entries = updatable_contact_fields(action)
+    keys = Enum.map(entries, &contact_field_key/1)
+
+    errors
+    |> validate_contact_fields_present(entries, consent_rows(action) ++ property_rows(action))
+    |> validate_contact_fields_unique(keys)
+    |> validate_contact_fields_settings(action)
+    |> validate_contact_fields_properties(action)
+  end
+
+  def validate(%{type: "set_run_results"} = action, errors, _flow) do
+    entries = savable_run_results(action)
+
+    errors
+    |> validate_run_results_present(entries)
+    |> validate_run_results_unique(Enum.map(entries, & &1.name))
+  end
+
   def validate(%{type: "set_contact_language"} = action, errors, _flow) do
     if is_nil(action.text) || action.text == "",
       do: [{Message, "Language is a required field", "Warning"} | errors],
@@ -566,6 +627,16 @@ defmodule Glific.Flows.Action do
     ]
   end
 
+  def validate(%{type: "call_webhook", wait_time: wait_time}, errors, _flow)
+      when is_integer(wait_time) and wait_time > @max_webhook_wait_time do
+    [
+      {Webhook,
+       "You've configured a wait_time of #{wait_time} seconds which exceeds the allowed wait time of #{@max_webhook_wait_time} seconds. We will use the allowed wait time only.",
+       "Warning"}
+      | errors
+    ]
+  end
+
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
@@ -582,6 +653,7 @@ defmodule Glific.Flows.Action do
       {action.interactive_template_expression, "Interactive template expression"},
       {templating_expression(action), "Message template expression"}
     ]
+    |> Enum.concat(run_result_expressions(action))
     |> Enum.reduce(errors, fn {expression, label}, errors ->
       case Glific.validate_flow_expression(expression, flow.organization_id) do
         :ok ->
@@ -596,6 +668,12 @@ defmodule Glific.Flows.Action do
   @spec templating_expression(Action.t()) :: String.t() | nil
   defp templating_expression(%{templating: %{expression: expression}}), do: expression
   defp templating_expression(_action), do: nil
+
+  @spec run_result_expressions(Action.t()) :: [{String.t() | nil, String.t()}]
+  defp run_result_expressions(%{run_results: run_results}) when is_list(run_results),
+    do: Enum.map(run_results, &{&1.value, "Result value for #{&1.name}"})
+
+  defp run_result_expressions(_action), do: []
 
   @spec check_missing_interactive_template(list(), Action.t(), map()) :: list()
   defp check_missing_interactive_template(errors, action, flow) do
@@ -663,6 +741,32 @@ defmodule Glific.Flows.Action do
     # in case any of the uuids don't exist, we just trap the exception
     _ -> :unknown
   end
+
+  ## The await window rides in the webhook body the author already edits, so no flow-editor
+  ## change is needed to expose it. Every webhook implementation allowlists the fields it
+  ## forwards, so this key never reaches Kaapi. Read at compile time, hence literals only --
+  ## an expression here would not have been substituted yet.
+  @spec webhook_wait_time(String.t() | nil) :: non_neg_integer() | nil
+  defp webhook_wait_time(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"wait_time" => value}} -> parse_wait_time(value)
+      _ -> nil
+    end
+  end
+
+  defp webhook_wait_time(_body), do: nil
+
+  @spec parse_wait_time(any()) :: non_neg_integer() | nil
+  defp parse_wait_time(value) when is_integer(value) and value > 0, do: value
+
+  defp parse_wait_time(value) when is_binary(value) do
+    case Integer.parse(String.trim(value)) do
+      {seconds, ""} when seconds > 0 -> seconds
+      _ -> nil
+    end
+  end
+
+  defp parse_wait_time(_value), do: nil
 
   ## Label formatter so that we can apply the dynamic label to the message
   @spec process_labels(list() | nil) :: list() | nil
@@ -752,6 +856,15 @@ defmodule Glific.Flows.Action do
     {:ok, updated_context, messages}
   end
 
+  def execute(%{type: "set_run_results"} = action, context, messages) do
+    results =
+      action
+      |> savable_run_results()
+      |> Map.new(&{&1.name, run_result(context, &1)})
+
+    {:ok, update_run_results(context, results), messages}
+  end
+
   def execute(action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     Logger.error(
@@ -819,6 +932,27 @@ defmodule Glific.Flows.Action do
     else
       execute(Map.put(action, :type, "set_contact_field_valid"), context, messages)
     end
+  end
+
+  def execute(%{type: "set_contact_fields"} = action, context, messages) do
+    entries =
+      action
+      |> updatable_contact_fields()
+      |> Enum.map(
+        &%{
+          key: contact_field_key(&1),
+          label: &1.name,
+          value: ContactField.parse_contact_field_value(context, &1.value)
+        }
+      )
+
+    context =
+      context
+      |> ContactField.add_contact_fields(entries)
+      |> maybe_set_language(action)
+      |> maybe_set_consent(action)
+
+    {:ok, context, messages}
   end
 
   def execute(%{type: "set_contact_profile"} = action, context, _messages) do
@@ -932,6 +1066,7 @@ defmodule Glific.Flows.Action do
               {:ok, _} =
                 Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                   event_label: "Added to collection: \"#{group["name"]}\"",
+                  channel: context.channel,
                   event_meta: %{
                     context_id: context.id,
                     group: %{
@@ -968,6 +1103,7 @@ defmodule Glific.Flows.Action do
       {:ok, _} =
         Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
           event_label: "Removed from All the collections",
+          channel: context.channel,
           event_meta: %{
             context_id: context.id,
             group: %{
@@ -990,6 +1126,7 @@ defmodule Glific.Flows.Action do
             {:ok, _} =
               Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                 event_label: "Removed from collection: \"#{group["name"]}\"",
+                channel: context.channel,
                 event_meta: %{
                   context_id: context.id,
                   group: %{
@@ -1081,9 +1218,11 @@ defmodule Glific.Flows.Action do
 
   @spec do_park(Action.t(), FlowContext.t(), non_neg_integer()) :: FlowContext.t()
   defp do_park(action, context, default_wait_time) do
+    wait_time = min(action.wait_time || default_wait_time, @max_webhook_wait_time)
+
     {:ok, context} =
       FlowContext.update_flow_context(context, %{
-        wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time || default_wait_time),
+        wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
         is_background_flow: context.flow.is_background,
         is_await_result: true
       })
@@ -1113,6 +1252,158 @@ defmodule Glific.Flows.Action do
       |> Repo.update()
 
     nil
+  end
+
+  @spec updatable_contact_fields(Action.t()) :: [map()]
+  defp updatable_contact_fields(action) do
+    Enum.reject(
+      action.contact_fields || [],
+      &(&1.name in ["", nil] or contact_field_key(&1) == "settings" or property_row?(&1))
+    )
+  end
+
+  @spec property_row?(map()) :: boolean()
+  defp property_row?(row), do: Map.get(row, :property) in @bulk_contact_properties
+
+  @spec property_rows(Action.t(), String.t()) :: [map()]
+  defp property_rows(action, property),
+    do: Enum.filter(action.contact_fields || [], &(Map.get(&1, :property) == property))
+
+  @spec maybe_set_language(FlowContext.t(), Action.t()) :: FlowContext.t()
+  defp maybe_set_language(context, action) do
+    case property_rows(action, "language") do
+      [%{value: value} | _rest] when value not in ["", nil] ->
+        ContactSetting.set_contact_language(context, value)
+
+      _ ->
+        context
+    end
+  end
+
+  @spec contact_field_key(map()) :: String.t()
+  defp contact_field_key(%{key: key}) when key not in ["", nil], do: key
+
+  defp contact_field_key(%{name: name}) when name not in ["", nil],
+    do: name |> String.downcase() |> String.replace(" ", "_")
+
+  defp contact_field_key(_entry), do: ""
+
+  @spec validate_contact_fields_present(list(), [map()], [map()]) :: list()
+  defp validate_contact_fields_present(errors, [], []),
+    do: [{Message, "Update contact fields node has no field to update", "Critical"} | errors]
+
+  defp validate_contact_fields_present(errors, _entries, _consent_rows), do: errors
+
+  @spec validate_contact_fields_unique(list(), [String.t()]) :: list()
+  defp validate_contact_fields_unique(errors, keys) do
+    duplicates = keys -- Enum.uniq(keys)
+
+    if duplicates == [],
+      do: errors,
+      else: [
+        {Message, "Update contact fields node repeats #{Enum.join(Enum.uniq(duplicates), ", ")}",
+         "Warning"}
+        | errors
+      ]
+  end
+
+  @spec validate_contact_fields_settings(list(), Action.t()) :: list()
+  defp validate_contact_fields_settings(errors, action) do
+    if length(consent_rows(action)) > 1,
+      do: [
+        {Message, "Update contact fields node sets opt in/opt out more than once", "Critical"}
+        | errors
+      ],
+      else: errors
+  end
+
+  @spec consent_rows(Action.t()) :: [map()]
+  defp consent_rows(action),
+    do: Enum.filter(action.contact_fields || [], &(contact_field_key(&1) == "settings"))
+
+  @spec property_rows(Action.t()) :: [map()]
+  defp property_rows(action),
+    do: Enum.filter(action.contact_fields || [], &property_row?(&1))
+
+  @spec validate_contact_fields_properties(list(), Action.t()) :: list()
+  defp validate_contact_fields_properties(errors, action) do
+    Enum.reduce(@bulk_contact_properties, errors, fn property, acc ->
+      rows = property_rows(action, property)
+
+      acc
+      |> validate_property_once(rows, property)
+      |> validate_property_value(rows, property)
+    end)
+  end
+
+  @spec validate_property_once(list(), [map()], String.t()) :: list()
+  defp validate_property_once(errors, rows, property) when length(rows) > 1,
+    do: [
+      {Message, "Update contact fields node sets #{property} more than once", "Critical"} | errors
+    ]
+
+  defp validate_property_once(errors, _rows, _property), do: errors
+
+  @spec validate_property_value(list(), [map()], String.t()) :: list()
+  defp validate_property_value(errors, [%{value: value} | _rest], property)
+       when value in ["", nil],
+       do: [{Message, "#{String.capitalize(property)} is a required field", "Warning"} | errors]
+
+  defp validate_property_value(errors, _rows, _property), do: errors
+
+  @spec validate_run_results_present(list(), [map()]) :: list()
+  defp validate_run_results_present(errors, []),
+    do: [{Message, "Save flow results node has no result to save", "Critical"} | errors]
+
+  defp validate_run_results_present(errors, _entries), do: errors
+
+  @spec validate_run_results_unique(list(), [String.t()]) :: list()
+  defp validate_run_results_unique(errors, names) do
+    duplicates = names -- Enum.uniq(names)
+
+    if duplicates == [],
+      do: errors,
+      else: [
+        {Message, "Save flow results node repeats #{Enum.join(Enum.uniq(duplicates), ", ")}",
+         "Warning"}
+        | errors
+      ]
+  end
+
+  @spec savable_run_results(Action.t()) :: [map()]
+  defp savable_run_results(action),
+    do: Enum.reject(action.run_results || [], &(&1.name in ["", nil]))
+
+  @spec run_result(FlowContext.t(), map()) :: map()
+  defp run_result(context, entry) do
+    value =
+      context
+      |> FlowContext.parse_context_string(entry.value)
+      |> Glific.execute_eex()
+
+    category = FlowContext.parse_context_string(context, entry.category)
+
+    %{
+      "input" => value,
+      "value" => value,
+      "category" => category,
+      "inserted_at" => DateTime.utc_now()
+    }
+  end
+
+  @spec update_run_results(FlowContext.t(), map()) :: FlowContext.t()
+  defp update_run_results(context, results) when results == %{}, do: context
+  defp update_run_results(context, results), do: FlowContext.update_results(context, results)
+
+  @spec maybe_set_consent(FlowContext.t(), Action.t()) :: FlowContext.t()
+  defp maybe_set_consent(context, action) do
+    case consent_rows(action) do
+      [] ->
+        context
+
+      [row | _rest] ->
+        settings(context, ContactField.parse_contact_field_value(context, row.value))
+    end
   end
 
   @spec settings(FlowContext.t(), String.t()) :: FlowContext.t()
