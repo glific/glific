@@ -156,19 +156,8 @@ config :tesla,
      pool: :glific_default_pool,
      connect_timeout: 5_000}
 
-# Every rate limit in the application, grouped by the surface it guards. Glific.RateLimit reads
-# these by name and raises if one is missing, so a limit can never quietly stop limiting.
-config :glific,
-  # Requests that match no route at all, per address.
-  rate_limit_api_global: [scale_ms: 60_000, count: 60],
-  # Per signed-in user, across the whole API.
-  rate_limit_api_authenticated: [scale_ms: 60_000, count: 180],
-  # Per address, across every unauthenticated endpoint. Offices sit behind one egress.
-  rate_limit_api_unauthenticated: [scale_ms: 60_000, count: 300],
-  # Charged in addition to the address, so rotating phone numbers buys nothing.
-  rate_limit_api_phone: [scale_ms: 60_000, count: 300],
-  # Staff registration OTP, per phone.
-  rate_limit_api_otp: [scale_ms: 30_000, count: 1]
+# Rate limits are defined in config/runtime.exs, which is evaluated after this file and would
+# override anything set here.
 
 config :glific, :pow,
   user: Glific.Users.User,
@@ -253,28 +242,6 @@ config :ex_audit,
   primitive_structs: [
     DateTime
   ]
-
-# The web channel is embedded on public sites, where a school, office or carrier NAT fronts many
-# unrelated beneficiaries on one address, so its per-address budgets are far looser than the API's.
-config :glific,
-  # Its four public HTTP endpoints, per address.
-  rate_limit_web_channel_api: [scale_ms: 60_000, count: 1200],
-  # Sign-in OTP per phone. This, not the address budget, is the anti-enumeration control.
-  rate_limit_web_channel_otp_phone: [scale_ms: 30_000, count: 1],
-  # Its per-address companion. A computer lab signing a class in at once must not be refused.
-  rate_limit_web_channel_otp_ip: [scale_ms: 60_000, count: 100],
-  # Inbound socket messages, per contact.
-  rate_limit_web_channel_message: [scale_ms: 10_000, count: 20],
-  # Socket connects, charged before the token is verified so a flood cannot make us do the work.
-  rate_limit_web_channel_connect_ip: [scale_ms: 60_000, count: 120],
-  # What the node will accept at all. Past this, connects are refused as server busy.
-  rate_limit_web_channel_connect_total: [scale_ms: 60_000, count: 1000],
-  # Signed upload URLs. Each is a writable grant into the organization's bucket, so there is a
-  # total across everybody too: no per-contact or per-address budget bounds storage abuse when
-  # many contacts are driven at once.
-  rate_limit_web_channel_upload_contact: [scale_ms: 60_000, count: 6],
-  rate_limit_web_channel_upload_ip: [scale_ms: 60_000, count: 60],
-  rate_limit_web_channel_upload_total: [scale_ms: 60_000, count: 120]
 
 config :mime, :types, %{
   "audio/amr" => ["amr"],

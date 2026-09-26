@@ -23,20 +23,8 @@ config :glific, :environment, :test
 # by default. A test that wants the production behaviour turns this on for its duration.
 config :glific, :refresh_organization_index, false
 
-# ExRated buckets are global and outlive a test, and every ConnTest request shares one address, so
-# the suite would start returning 429 partway through. Effectively off; tests that exercise rate
-# limiting set their own limit.
-config :glific,
-  rate_limit_api_global: [scale_ms: 60_000, count: 1_000_000],
-  rate_limit_api_unauthenticated: [scale_ms: 60_000, count: 1_000_000],
-  rate_limit_api_phone: [scale_ms: 60_000, count: 1_000_000],
-  rate_limit_web_channel_api: [scale_ms: 60_000, count: 1_000_000],
-  rate_limit_web_channel_connect_ip: [scale_ms: 60_000, count: 1_000],
-  rate_limit_web_channel_connect_total: [scale_ms: 60_000, count: 1_000_000],
-  rate_limit_web_channel_upload_contact: [scale_ms: 60_000, count: 1_000],
-  rate_limit_web_channel_upload_ip: [scale_ms: 60_000, count: 1_000]
-
-config :glific, :rate_limit_web_channel_upload_total, scale_ms: 60_000, count: 1_000
+# Rate limits are defined in config/runtime.exs, which raises them out of the suite's way under
+# :test. A test that wants one to fire sets it with Application.put_env/3 for its own duration.
 
 config :glific, Oban,
   prefix: "global",
@@ -98,20 +86,6 @@ config :glific, Glific.ThirdParty.Superset.ApiClient,
   password: "superset_password"
 
 config :glific, gupshup_partner_client_secret: "test_client_secret"
-
-# Relax OTP rate limiting in tests (the suite fires many send_otp requests from the same IP).
-# The dedicated rate-limit test overrides this locally.
-config :glific, :rate_limit_api_otp, scale_ms: 30_000, count: 1_000
-
-# Relax web channel OTP rate limiting in tests for the same reason.
-# The dedicated rate-limit test overrides this locally.
-config :glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1_000
-
-# Same, for the per-IP bucket. The dedicated rate-limit tests override these locally.
-config :glific, :rate_limit_web_channel_otp_ip, scale_ms: 60_000, count: 1_000
-
-# Relax web channel message rate limiting in tests for the same reason.
-config :glific, :rate_limit_web_channel_message, scale_ms: 10_000, count: 1_000
 
 # No org in the test suite has GCS credentials configured, so route web channel uploads to local
 # disk instead — never enabled in dev/prod.
