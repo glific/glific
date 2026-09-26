@@ -10,13 +10,21 @@ config :pbkdf2_elixir, :rounds, 1
 # Run `mix help test` for more information.
 config :glific, Glific.Repo, pool: Ecto.Adapters.SQL.Sandbox
 
-# Print only warnings and errors during test
+# Print only warnings and errors during test. :info and above are kept at compile time so
+# tests can raise the level and assert on a log line with ExUnit.CaptureLog.
 config :logger,
   level: :emergency,
-  compile_time_purge_matching: [[level_lower_than: :emergency]]
+  compile_time_purge_matching: [[level_lower_than: :info]]
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
+
+# The index lives in Cachex, which outlives a test's sandbox rollback, so writes do not rebuild it
+# by default. A test that wants the production behaviour turns this on for its duration.
+config :glific, :refresh_organization_index, false
+
+# Rate limits are defined in config/runtime.exs, which raises them out of the suite's way under
+# :test. A test that wants one to fire sets it with Application.put_env/3 for its own duration.
 
 config :glific, Oban,
   prefix: "global",
@@ -78,20 +86,6 @@ config :glific, Glific.ThirdParty.Superset.ApiClient,
   password: "superset_password"
 
 config :glific, gupshup_partner_client_secret: "test_client_secret"
-
-# Relax OTP rate limiting in tests (the suite fires many send_otp requests from the same IP).
-# The dedicated rate-limit test overrides this locally.
-config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1_000
-
-# Relax web channel OTP rate limiting in tests for the same reason.
-# The dedicated rate-limit test overrides this locally.
-config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1_000
-
-# Same, for the per-IP bucket. The dedicated rate-limit tests override these locally.
-config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 1_000
-
-# Relax web channel message rate limiting in tests for the same reason.
-config :glific, :web_channel_message_rate_limit, scale_ms: 10_000, count: 1_000
 
 # No org in the test suite has GCS credentials configured, so route web channel uploads to local
 # disk instead — never enabled in dev/prod.

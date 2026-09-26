@@ -227,8 +227,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "is rate limited per contact", %{contact: contact} do
       with_web_channel_enabled(fn ->
         rate_limit_key = "web_channel_message:#{contact.id}"
-        original_config = Application.get_env(:glific, :web_channel_message_rate_limit)
-        Application.put_env(:glific, :web_channel_message_rate_limit, scale_ms: 10_000, count: 1)
+        original_config = Application.get_env(:glific, :rate_limit_web_channel_message)
+        Application.put_env(:glific, :rate_limit_web_channel_message, scale_ms: 10_000, count: 1)
         ExRated.delete_bucket(rate_limit_key)
 
         try do
@@ -241,7 +241,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
           ref = push(socket, "new_message", %{"body" => "second"})
           assert_reply ref, :error, %{reason: "rate_limited"}
         after
-          Application.put_env(:glific, :web_channel_message_rate_limit, original_config)
+          Application.put_env(:glific, :rate_limit_web_channel_message, original_config)
           ExRated.delete_bucket(rate_limit_key)
         end
       end)

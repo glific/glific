@@ -10,7 +10,7 @@ defmodule GlificWeb.Tenants do
   inside and outside the organization without much boilerplate code.
   """
 
-  alias Glific.Partners
+  alias Glific.{Partners, Partners.OrganizationIndex}
 
   @doc """
   Returns the list of reserved organizations.
@@ -71,6 +71,15 @@ defmodule GlificWeb.Tenants do
   def organization_handler("api"), do: organization_handler()
 
   def organization_handler(shortcode) do
+    case OrganizationIndex.fetch(shortcode) do
+      {:ok, organization_id} -> organization_id
+      :error -> 0
+      :unavailable -> organization_from_database(shortcode)
+    end
+  end
+
+  @spec organization_from_database(String.t()) :: integer
+  defp organization_from_database(shortcode) do
     case Partners.organization(shortcode) do
       # lets stop resolving nil to glific to avoid any potential security issues
       nil ->

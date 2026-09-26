@@ -13,8 +13,8 @@ config :glific,
 
 # Configures Elixir's Logger
 config :logger, :default_formatter,
-  format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id, :user_id, :org_id, :params]
+  format: "$time [$level] $metadata$message\n",
+  metadata: [:request_id, :remote_ip, :user_id, :org_id, :params]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
@@ -156,7 +156,8 @@ config :tesla,
      pool: :glific_default_pool,
      connect_timeout: 5_000}
 
-config :glific, :max_rate_limit_request, 60
+# Rate limits are defined in config/runtime.exs, which is evaluated after this file and would
+# override anything set here.
 
 config :glific, :pow,
   user: Glific.Users.User,
@@ -241,21 +242,6 @@ config :ex_audit,
   primitive_structs: [
     DateTime
   ]
-
-# Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
-config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
-
-# Throttle web channel OTP requests separately from staff registration (default 1 / 30s), so the
-# two flows never share a rate-limit budget.
-config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1
-
-# The per-IP companion to the above. Deliberately loose: one carrier-grade NAT address can front
-# a whole district of beneficiaries, so this bounds enumeration from a single host rather than
-# throttling an individual.
-config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 20
-
-# Throttle inbound socket messages per contact (default 20 / 10s).
-config :glific, :web_channel_message_rate_limit, scale_ms: 10_000, count: 20
 
 config :mime, :types, %{
   "audio/amr" => ["amr"],

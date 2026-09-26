@@ -12,7 +12,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
 
   use GlificWeb, :controller
 
-  alias Glific.{GCS, GCS.SignedUrl, Messages, Providers.Web.Upload}
+  alias Glific.{GCS, GCS.SignedUrl, Messages, Providers.Web.Upload, RateLimit}
+  alias GlificWeb.Tenants
   alias Plug.Conn
 
   @allowed_types ~w(image audio video document)
@@ -30,7 +31,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
       when type in @allowed_types do
     organization_id = conn.assigns.web_channel_organization_id
 
-    with :ok <- validate_content_type(type, content_type),
+    with :ok <- check_rate_limits(conn),
+         :ok <- validate_content_type(type, content_type),
          :ok <- validate_size(type, size),
          {:ok, extension} <- Upload.extension_for(content_type),
          {:ok, bucket} <- fetch_bucket(organization_id),
@@ -60,6 +62,9 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
         )
 
         typed_error(conn, 503, "storage_unavailable", "Attachments are unavailable")
+
+      {:error, :rate_limited} ->
+        typed_error(conn, 429, "rate_limited", "Too many uploads. Please wait and try again.")
 
       {:error, :signing_failed} ->
         Glific.log_error(
@@ -111,6 +116,27 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
   end
 
   @spec typed_error(Conn.t(), non_neg_integer(), String.t(), String.t()) :: Conn.t()
+  # Three budgets, narrowest first. Each signed URL is a writable grant into the organization's
+  # bucket, so the overall one is what bounds storage abuse when many contacts are compromised at
+  # once — no per-contact or per-address limit can.
+  @spec check_rate_limits(Conn.t()) :: :ok | {:error, :rate_limited}
+  defp check_rate_limits(conn) do
+    contact_id = conn.assigns.web_channel_contact_id
+
+    with :ok <-
+           RateLimit.check(
+             :rate_limit_web_channel_upload_contact,
+             "web_channel_upload:#{contact_id}"
+           ),
+         :ok <-
+           RateLimit.check(
+             :rate_limit_web_channel_upload_ip,
+             "web_channel_upload_ip:#{Tenants.remote_ip(conn)}"
+           ) do
+      RateLimit.check(:rate_limit_web_channel_upload_total, "web_channel_upload:total")
+    end
+  end
+
   defp typed_error(conn, status, code, message) do
     conn
     |> put_status(status)
