@@ -27,16 +27,17 @@ real address, not the spoofed one.
 
 | Request | Expected | Was |
 |---|---|---|
-| Any path the router does not match | `404`, then `429` after `RATE_LIMIT_GLOBAL` (default 60) per minute per address | `404`, never throttled |
+| Any path the router does not match | `404`, then `429` after `RATE_LIMIT_API_GLOBAL` (default 60) per minute per address | `404`, never throttled |
 | Any path on a `Host` that resolves to no active organization | `404`, empty body | `403 Unauthorized` |
 | Any path from an address in `BLOCKED_IPS` | `404`, empty body | n/a — new |
 
-All limits are environment variables read at boot: `RATE_LIMIT_GLOBAL`,
-`RATE_LIMIT_UNAUTHENTICATED`, `RATE_LIMIT_AUTHENTICATED` and `RATE_LIMIT_PERIOD_SECONDS`.
-`RATE_LIMIT_AUTHENTICATED` replaces `MAX_RATE_LIMIT_REQUEST`, so **that variable has to be renamed
-in the Gigalixir config or the authenticated limit silently falls back to its default of 180.**
-`BLOCKED_IPS` is comma separated and a malformed entry refuses to boot, which is worth testing
-once.
+Each limit's count is an environment variable read at boot: `RATE_LIMIT_API_GLOBAL`,
+`RATE_LIMIT_API_UNAUTHENTICATED`, `RATE_LIMIT_API_PHONE`, `RATE_LIMIT_API_AUTHENTICATED` and the
+`RATE_LIMIT_WEB_CHANNEL_*` family. Windows are fixed in `config/config.exs`, so there is no period
+variable. `RATE_LIMIT_API_AUTHENTICATED` replaces `MAX_RATE_LIMIT_REQUEST`, so **that variable has
+to be renamed in the Gigalixir config or the authenticated limit silently falls back to its default
+of 180.** `BLOCKED_IPS` is comma separated and a malformed entry refuses to boot, which is worth
+testing once.
 
 **The unauthenticated bucket changed shape.** It was keyed on address *and path*, giving each
 endpoint its own budget; it is now the address alone, so one address shares a single budget across
@@ -58,6 +59,12 @@ the recorded or throttled address is the real caller.
 | `POST /api/v1/session` | writes `users.last_login_from` |
 | `POST /api/v1/onboard/setup` | records the originating address |
 | `/gupshup`, `/gupshup-enterprise`, `/maytapi` | allowlisted on the provider's published addresses |
+| `/web_socket` connects | throttled per address, and in total across the node |
+
+The socket is worth its own pass, because it reads the forwarded header itself rather than going
+through `RemoteIp` in the plug pipeline. Confirm two distinct client addresses get distinct
+budgets — if they share one, the deployed `x-forwarded-for` is not what we think it is — and that
+exhausting the node-wide total answers **503**, not 403.
 
 The BSP webhooks are the highest-consequence item on this list: they are how inbound WhatsApp
 arrives. Their filter reads `x-forwarded-for` directly and is unchanged, but confirm messages still
@@ -92,9 +99,10 @@ ways that could be wrong:
 
 ## 6. Not affected — do not spend time here
 
-- Websockets and longpoll: `/socket`, `/live`, `/web_socket`. Socket dispatch halts before any plug
-  added here, so subscriptions, LiveView and the web channel bypass all of it. They also therefore
-  carry no `remote_ip` in their log lines.
+- Websockets and longpoll for the staff API: `/socket` and `/live`. Socket dispatch halts before any
+  plug added here, so subscriptions and LiveView bypass all of it, and their log lines carry no
+  `remote_ip`. `/web_socket` bypasses the plugs too, but is **not** unaffected — it does its own
+  limiting, so see section 3.
 - Rate limiting for authenticated API users: the `:api` pipeline behaviour is unchanged.
 
 ## Known wrinkle, not a defect

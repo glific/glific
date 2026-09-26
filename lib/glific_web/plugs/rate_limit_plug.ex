@@ -21,9 +21,9 @@ defmodule GlificWeb.RateLimitPlug do
   match nothing. Its bucket is the source address alone rather than address and path, so sweeping
   many URLs buys a caller nothing. Over the limit answers 429.
 
-  All three limits and the window are environment variables, read at boot:
-  `RATE_LIMIT_GLOBAL`, `RATE_LIMIT_UNAUTHENTICATED`, `RATE_LIMIT_AUTHENTICATED` and
-  `RATE_LIMIT_PERIOD_SECONDS`.
+  Each limit's count is an environment variable read at boot — `RATE_LIMIT_API_GLOBAL`,
+  `RATE_LIMIT_API_UNAUTHENTICATED`, `RATE_LIMIT_API_AUTHENTICATED`, `RATE_LIMIT_API_PHONE` and
+  `RATE_LIMIT_WEB_CHANNEL_API` — while its window is fixed in `config/config.exs`.
   """
 
   alias GlificWeb.{Router, Tenants}

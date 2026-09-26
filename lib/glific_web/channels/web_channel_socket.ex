@@ -14,6 +14,8 @@ defmodule GlificWeb.WebChannelSocket do
 
   channel("web_channel:*", GlificWeb.WebChannel.RoomChannel)
 
+  @forwarding_headers ~w[x-forwarded-for]
+
   @impl true
   @spec connect(map(), Phoenix.Socket.t(), map()) :: {:ok, Phoenix.Socket.t()} | :error
   def connect(%{"token" => token}, socket, connect_info) do
@@ -69,21 +71,16 @@ defmodule GlificWeb.WebChannelSocket do
     end
   end
 
-  # Mirrors the endpoint's RemoteIp configuration: only the header gigalixir controls is trusted,
-  # and it appends, so the rightmost entry is the real caller.
+  # Selected by RemoteIp rather than by hand, so this agrees with conn.remote_ip everywhere else:
+  # taking the last entry would pick an appended private hop instead of the caller.
   @spec client_ip(map()) :: String.t()
   defp client_ip(connect_info) do
-    forwarded =
-      connect_info
-      |> Map.get(:x_headers, [])
-      |> Enum.filter(fn {name, _value} -> name == "x-forwarded-for" end)
-      |> Enum.flat_map(fn {_name, value} -> String.split(value, ",") end)
-      |> Enum.map(&String.trim/1)
-      |> Enum.reject(&(&1 == ""))
-
-    case List.last(forwarded) do
+    connect_info
+    |> Map.get(:x_headers, [])
+    |> RemoteIp.from(headers: @forwarding_headers)
+    |> case do
       nil -> peer_ip(connect_info)
-      address -> address
+      address -> address |> :inet_parse.ntoa() |> to_string()
     end
   end
 

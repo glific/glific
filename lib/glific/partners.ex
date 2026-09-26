@@ -314,6 +314,15 @@ defmodule Glific.Partners do
     %Organization{}
     |> Organization.changeset(attrs)
     |> Repo.insert(skip_organization_id: true)
+    |> case do
+      {:ok, organization} ->
+        # Without this a newly onboarded organization's host resolves to nothing until the next tick.
+        OrganizationIndex.refresh_on_change()
+        {:ok, organization}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -335,6 +344,7 @@ defmodule Glific.Partners do
     with {:ok, phone} <- Contacts.parse_phone_number(phone),
          {:ok, %{organization: updated_org}} <-
            update_org_contact_and_user(organization, phone, attrs) do
+      OrganizationIndex.refresh_on_change()
       {:ok, updated_org}
     else
       {:error, _step, reason, _changes_so_far} ->
@@ -348,7 +358,14 @@ defmodule Glific.Partners do
   end
 
   def update_organization(%Organization{} = organization, attrs) do
-    do_update_org(organization, attrs)
+    case do_update_org(organization, attrs) do
+      {:ok, updated_org} ->
+        OrganizationIndex.refresh_on_change()
+        {:ok, updated_org}
+
+      error ->
+        error
+    end
   end
 
   @spec update_org_contact_and_user(Organization.t(), String.t(), map()) ::
@@ -402,10 +419,6 @@ defmodule Glific.Partners do
            organization
            |> Organization.changeset(attrs)
            |> Repo.update(skip_organization_id: true) do
-      # Again after the write: the bust above runs first, so it rebuilt the index from the rows
-      # this update is about to replace, and a renamed shortcode would resolve to nothing.
-      OrganizationIndex.refresh_on_change()
-
       # pin both new contact and optin flow id
       maybe_pin_flow(
         updated_organization.newcontact_flow_id,

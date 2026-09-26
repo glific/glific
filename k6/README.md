@@ -38,9 +38,14 @@ resource sampler is shared.
 Start a local Glific server, then run the sampler alongside the script:
 
 ```bash
-k6/sample_resources.sh <label> 80 &        # BEAM/Postgres CPU + transaction delta
+# Sample for at least (2 * DURATION_S) + GAP_S, plus a little for startup and shutdown.
+# With the defaults (60s per scenario, 10s gap) that is 130s, so sample 140.
+k6/sample_resources.sh <label> 140 &       # BEAM/Postgres CPU + transaction delta
 k6 run -e LABEL=<label> k6/dos/dos_test.js
 ```
+
+A sampler that stops early reports CPU and a transaction delta for only part of the run, which is
+worse than no number at all.
 
 Results land in `k6/results/` as `<label>.json` (k6) and `<label>-resources.csv` (sampler). The
 sampler takes `PORT` (default `4000`) and `DB_NAME` (default `glific_dev`).

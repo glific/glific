@@ -15,8 +15,9 @@ import { Counter, Trend } from 'k6/metrics';
 //                 A miss is never cached, so before the fix each request costs a database
 //                 query and a raised exception. This is the scenario the fix is about.
 //
-// Neither scenario is rate limited on either branch: RateLimitPlug lives in the :api pipeline,
-// which unmatched paths never reach. A non-zero scan_status_429 would mean that changed.
+// Both scenarios use paths that match no route, so both are charged the RATE_LIMIT_API_GLOBAL
+// budget and a run should be mostly 429 once the first minute's allowance is spent. Raise that
+// limit if you want to measure what the work costs rather than what refusing it costs.
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:4000';
 const RATE = Number(__ENV.RATE || 200);
@@ -88,9 +89,12 @@ function record(res, trend) {
   else if (res.status === 429) status429.add(1);
   else statusOther.add(1);
 
+  // 429 is the expected answer once the allowance is spent, so it is not a failed check. What
+  // would be a failure is the server falling over, or answering something nobody predicted.
   check(res, {
     'answered without a server error': (r) => r.status > 0 && r.status < 500,
-    'not rate limited': (r) => r.status !== 429,
+    'answered with a status the limiter or router should produce': (r) =>
+      [404, 403, 429].includes(r.status),
   });
 }
 
@@ -141,8 +145,8 @@ export function handleSummary(data) {
     `  responses     404=${count(data, 'scan_status_404')}  403=${count(data, 'scan_status_403')}  429=${count(data, 'scan_status_429')}  other=${count(data, 'scan_status_other')}`,
     '',
     count(data, 'scan_status_429') === 0
-      ? '  No 429s: unmatched paths are not rate limited on this branch.'
-      : '  Saw 429s: something now rate limits unmatched paths.',
+      ? '  No 429s. Either nothing rate limits unmatched paths, or the limit was raised for this run.'
+      : '  Saw 429s: unmatched paths are rate limited, as expected with RATE_LIMIT_API_GLOBAL set.',
     '',
   ];
 

@@ -37,13 +37,30 @@ db_xact() {
     2>/dev/null || true
 }
 
-beam_cpu() {
-  ps -o %cpu= -p "$BEAM_PID" 2>/dev/null | tr -d ' ' || echo 0
+# ps's %cpu is an average over the process's life, not over the last second, so a long-running
+# beam would report roughly the same figure whatever this run does. Both readings below are
+# cumulative CPU *seconds*; the loop turns consecutive readings into per-interval percentages.
+hhmmss_to_seconds() {
+  awk -F: '{ n = NF; s = $n; if (n >= 2) s += $(n - 1) * 60; if (n >= 3) s += $(n - 2) * 3600 }
+           END { printf "%.2f", s + 0 }'
 }
 
-postgres_cpu() {
-  ps -A -o %cpu=,comm= 2>/dev/null |
-    awk '$2 ~ /postgres/ { total += $1 } END { printf "%.1f", total + 0 }'
+beam_cpu_seconds() {
+  ps -o cputime= -p "$BEAM_PID" 2>/dev/null | tr -d ' ' | hhmmss_to_seconds
+}
+
+postgres_cpu_seconds() {
+  ps -A -o cputime=,comm= 2>/dev/null |
+    awk '$2 ~ /postgres/ {
+           n = split($1, t, ":")
+           s = t[n]; if (n >= 2) s += t[n - 1] * 60; if (n >= 3) s += t[n - 2] * 3600
+           total += s
+         }
+         END { printf "%.2f", total + 0 }'
+}
+
+percent_since() {
+  awk -v now="$1" -v before="$2" 'BEGIN { d = now - before; if (d < 0) d = 0; printf "%.1f", d * 100 }'
 }
 
 XACT_START="$(db_xact)"
@@ -54,9 +71,18 @@ fi
 echo "elapsed_s,beam_cpu_pct,postgres_cpu_pct" > "$CSV"
 echo "Sampling pid $BEAM_PID on port $PORT for ${SECONDS_TO_SAMPLE}s -> $CSV"
 
+beam_before="$(beam_cpu_seconds)"
+postgres_before="$(postgres_cpu_seconds)"
+
 for elapsed in $(seq 0 $((SECONDS_TO_SAMPLE - 1))); do
-  echo "${elapsed},$(beam_cpu),$(postgres_cpu)" >> "$CSV"
   sleep 1
+  beam_now="$(beam_cpu_seconds)"
+  postgres_now="$(postgres_cpu_seconds)"
+
+  echo "${elapsed},$(percent_since "$beam_now" "$beam_before"),$(percent_since "$postgres_now" "$postgres_before")" >> "$CSV"
+
+  beam_before="$beam_now"
+  postgres_before="$postgres_now"
 done
 
 XACT_END="$(db_xact)"
