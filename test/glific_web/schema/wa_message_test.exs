@@ -431,14 +431,6 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
 
     assert %Plug.Conn{} = post(conn, "/maytapi", @error_event)
 
-    # the controller updates the status in a Task.Supervisor child, so wait for it
-    Glific.TaskSupervisor
-    |> Task.Supervisor.children()
-    |> Enum.each(fn pid ->
-      ref = Process.monitor(pid)
-      assert_receive {:DOWN, ^ref, :process, ^pid, _}, 5_000
-    end)
-
     assert %WAMessage{errors: _err, bsp_status: :error} =
              WAMessage
              |> where([wa], wa.poll_id == ^wa_poll.id)
