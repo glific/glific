@@ -46,5 +46,20 @@ defmodule Glific.CachesTest do
       assert {:ok, false} == Caches.get(organization_id, key1)
       assert {:ok, false} == Caches.get(organization_id, key2)
     end
+
+    test "fetch/3 returns an error when the fallback exits and keeps the key fetchable" do
+      organization_id = Fixtures.get_org_id()
+      key = "exiting fallback key"
+
+      assert {:error, error} =
+               Caches.fetch(organization_id, key, fn _ -> exit(:db_checkout_failed) end)
+
+      assert error =~ "Cache fallback exited"
+
+      assert {:commit, "loaded"} =
+               Caches.fetch(organization_id, key, fn _ -> {:commit, "loaded"} end)
+
+      assert {:ok, "loaded"} == Caches.get(organization_id, key)
+    end
   end
 end
