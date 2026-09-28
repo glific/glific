@@ -664,6 +664,7 @@ defmodule Glific.EraseTest do
           retention_days: 90,
           batch_size: 2,
           max_rows_to_delete: 100,
+          keep_per_entity: 0,
           sleep_after_delete?: false
         )
 
@@ -681,11 +682,66 @@ defmodule Glific.EraseTest do
           retention_days: 90,
           batch_size: 2,
           max_rows_to_delete: 4,
+          keep_per_entity: 0,
           sleep_after_delete?: false
         )
 
       assert {:ok, 4} = perform_job(Erase, job.args)
       assert length(existing_version_ids(versions)) == 2
+    end
+
+    test "keeps the latest versions of every entity even when they are expired", attrs do
+      busy_entity = Enum.map(1..5, fn _ -> version_fixture(attrs, 120, entity_id: 1) end)
+      quiet_entity = Enum.map(1..2, fn _ -> version_fixture(attrs, 120, entity_id: 2) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 10,
+          max_rows_to_delete: 100,
+          keep_per_entity: 3,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 2} = perform_job(Erase, job.args)
+
+      assert existing_version_ids(busy_entity) |> Enum.sort() ==
+               busy_entity |> Enum.take(-3) |> Enum.map(& &1.id)
+
+      assert length(existing_version_ids(quiet_entity)) == 2
+    end
+
+    test "applies max_rows_to_delete per organization so small orgs are fully purged", attrs do
+      other_organization = Fixtures.organization_fixture()
+
+      large_org = Enum.map(1..6, fn _ -> version_fixture(attrs, 120) end)
+
+      small_org =
+        Enum.map(1..2, fn _ ->
+          version_fixture(%{organization_id: other_organization.id}, 120)
+        end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 2,
+          max_rows_to_delete: 4,
+          keep_per_entity: 0,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 6} = perform_job(Erase, job.args)
+
+      assert length(existing_version_ids(large_org)) == 2
+      assert [] == existing_version_ids(small_org)
+    end
+
+    test "refuses to run with a negative keep_per_entity" do
+      assert {:error, message} =
+               Erase.perform_version_purge(retention_days: 90, keep_per_entity: -1)
+
+      assert message =~ "invalid versions kept per entity"
+      refute_enqueued(worker: Erase, prefix: "global")
     end
 
     test "completes cleanly when nothing is older than the retention window", attrs do
@@ -734,7 +790,7 @@ defmodule Glific.EraseTest do
     end
   end
 
-  defp version_fixture(attrs, days_ago) do
+  defp version_fixture(attrs, days_ago, opts \\ []) do
     recorded_at =
       DateTime.utc_now()
       |> DateTime.add(-days_ago, :day)
@@ -743,7 +799,7 @@ defmodule Glific.EraseTest do
     %Version{}
     |> Version.changeset(%{
       patch: %{},
-      entity_id: 1,
+      entity_id: Keyword.get(opts, :entity_id, 1),
       entity_schema: Contact,
       action: :created,
       recorded_at: recorded_at,
