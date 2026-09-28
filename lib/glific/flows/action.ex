@@ -73,6 +73,7 @@ defmodule Glific.Flows.Action do
   @required_fields_set_results [:name, :category, :value | @required_field_common]
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
   @required_fields_set_contact_fields [:fields | @required_field_common]
+  @required_fields_set_run_results [:results | @required_field_common]
   @bulk_contact_properties ["language"]
 
   # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
@@ -112,6 +113,7 @@ defmodule Glific.Flows.Action do
           flow: map() | nil,
           field: map() | nil,
           contact_fields: [map()] | nil,
+          run_results: [map()] | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
@@ -171,6 +173,9 @@ defmodule Glific.Flows.Action do
 
     # the repeatable {field, value} rows of a set_contact_fields action
     field(:contact_fields, {:array, :map})
+
+    # the repeatable {name, value, category} rows of a set_run_results action
+    field(:run_results, {:array, :map})
 
     field(:type, :string)
     field(:profile_type, :string)
@@ -438,6 +443,17 @@ defmodule Glific.Flows.Action do
     })
   end
 
+  def process(%{"type" => "set_run_results"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_run_results)
+
+    run_results =
+      Enum.map(json["results"] || [], fn entry ->
+        %{name: entry["name"], value: entry["value"], category: entry["category"]}
+      end)
+
+    process(json, uuid_map, node, %{run_results: run_results})
+  end
+
   @default_wait_time -1
   def process(%{"type" => type} = json, uuid_map, node)
       when type in @wait_for do
@@ -563,6 +579,14 @@ defmodule Glific.Flows.Action do
     |> validate_contact_fields_properties(action)
   end
 
+  def validate(%{type: "set_run_results"} = action, errors, _flow) do
+    entries = savable_run_results(action)
+
+    errors
+    |> validate_run_results_present(entries)
+    |> validate_run_results_unique(Enum.map(entries, & &1.name))
+  end
+
   def validate(%{type: "set_contact_language"} = action, errors, _flow) do
     if is_nil(action.text) || action.text == "",
       do: [{Message, "Language is a required field", "Warning"} | errors],
@@ -629,6 +653,7 @@ defmodule Glific.Flows.Action do
       {action.interactive_template_expression, "Interactive template expression"},
       {templating_expression(action), "Message template expression"}
     ]
+    |> Enum.concat(run_result_expressions(action))
     |> Enum.reduce(errors, fn {expression, label}, errors ->
       case Glific.validate_flow_expression(expression, flow.organization_id) do
         :ok ->
@@ -643,6 +668,12 @@ defmodule Glific.Flows.Action do
   @spec templating_expression(Action.t()) :: String.t() | nil
   defp templating_expression(%{templating: %{expression: expression}}), do: expression
   defp templating_expression(_action), do: nil
+
+  @spec run_result_expressions(Action.t()) :: [{String.t() | nil, String.t()}]
+  defp run_result_expressions(%{run_results: run_results}) when is_list(run_results),
+    do: Enum.map(run_results, &{&1.value, "Result value for #{&1.name}"})
+
+  defp run_result_expressions(_action), do: []
 
   @spec check_missing_interactive_template(list(), Action.t(), map()) :: list()
   defp check_missing_interactive_template(errors, action, flow) do
@@ -823,6 +854,15 @@ defmodule Glific.Flows.Action do
     updated_context = FlowContext.update_results(context, %{action.name => results})
 
     {:ok, updated_context, messages}
+  end
+
+  def execute(%{type: "set_run_results"} = action, context, messages) do
+    results =
+      action
+      |> savable_run_results()
+      |> Map.new(&{&1.name, run_result(context, &1)})
+
+    {:ok, update_run_results(context, results), messages}
   end
 
   def execute(action, %{wa_group_id: wa_group_id} = context, messages)
@@ -1310,6 +1350,50 @@ defmodule Glific.Flows.Action do
        do: [{Message, "#{String.capitalize(property)} is a required field", "Warning"} | errors]
 
   defp validate_property_value(errors, _rows, _property), do: errors
+
+  @spec validate_run_results_present(list(), [map()]) :: list()
+  defp validate_run_results_present(errors, []),
+    do: [{Message, "Save flow results node has no result to save", "Critical"} | errors]
+
+  defp validate_run_results_present(errors, _entries), do: errors
+
+  @spec validate_run_results_unique(list(), [String.t()]) :: list()
+  defp validate_run_results_unique(errors, names) do
+    duplicates = names -- Enum.uniq(names)
+
+    if duplicates == [],
+      do: errors,
+      else: [
+        {Message, "Save flow results node repeats #{Enum.join(Enum.uniq(duplicates), ", ")}",
+         "Warning"}
+        | errors
+      ]
+  end
+
+  @spec savable_run_results(Action.t()) :: [map()]
+  defp savable_run_results(action),
+    do: Enum.reject(action.run_results || [], &(&1.name in ["", nil]))
+
+  @spec run_result(FlowContext.t(), map()) :: map()
+  defp run_result(context, entry) do
+    value =
+      context
+      |> FlowContext.parse_context_string(entry.value)
+      |> Glific.execute_eex()
+
+    category = FlowContext.parse_context_string(context, entry.category)
+
+    %{
+      "input" => value,
+      "value" => value,
+      "category" => category,
+      "inserted_at" => DateTime.utc_now()
+    }
+  end
+
+  @spec update_run_results(FlowContext.t(), map()) :: FlowContext.t()
+  defp update_run_results(context, results) when results == %{}, do: context
+  defp update_run_results(context, results), do: FlowContext.update_results(context, results)
 
   @spec maybe_set_consent(FlowContext.t(), Action.t()) :: FlowContext.t()
   defp maybe_set_consent(context, action) do
