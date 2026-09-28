@@ -61,5 +61,22 @@ defmodule Glific.CachesTest do
 
       assert {:ok, "loaded"} == Caches.get(organization_id, key)
     end
+
+    test "fetch/3 keeps the key fetchable when a linked process in the fallback crashes" do
+      organization_id = Fixtures.get_org_id()
+      key = "linked crash fallback key"
+
+      crashing_fallback = fn _ ->
+        fn -> exit(:db_owner_exited) end
+        |> Task.async()
+        |> Task.await()
+      end
+
+      assert {:error, error} = Caches.fetch(organization_id, key, crashing_fallback)
+      assert error =~ "Cache fallback exited"
+
+      assert {:commit, "loaded"} =
+               Caches.fetch(organization_id, key, fn _ -> {:commit, "loaded"} end)
+    end
   end
 end

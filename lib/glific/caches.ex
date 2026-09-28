@@ -124,6 +124,9 @@ defmodule Glific.Caches do
   # checkout failure) leaves the key locked and every later fetch for it hangs forever.
   @spec safe_fallback((any() -> any()), any()) :: any()
   defp safe_fallback(fallback_fn, cache_key) do
+    # Linked processes (e.g. Ecto's parallel preload tasks) would otherwise kill this
+    # process outright on failure, bypassing the catch below.
+    Process.flag(:trap_exit, true)
     fallback_fn.(cache_key)
   catch
     :exit, reason ->
