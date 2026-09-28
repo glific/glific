@@ -136,7 +136,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  @wallet_name "4000202160_wallet"
+  @wallet_name "Wallet_274896"
   @doc """
     Transfer balance from ISV partner to app
   """
