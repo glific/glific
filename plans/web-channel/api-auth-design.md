@@ -320,8 +320,8 @@ discipline across 34 call sites. `phone` becomes nullable, but never synthetic.
 
 **`contacts.channels` as a denormalized index only.** A contact's channel set is derivable
 (`SELECT DISTINCT channel FROM contact_identities WHERE contact_id = ?`), but the staff inbox query
-filters on it, so carry a `{:array, :string}` column with a GIN index. This is the same shape
-`flows.channels` already uses, so the two models match.
+filters on it, so carry a `{:array, :string}` column with a GIN index. A contact genuinely has a
+set of channels, which is why this stays an array where `flows.channel` (§2.2) is a single value.
 
 **`contact_type` is left alone.** It is written by the Gupshup (`"WABA"`) and Maytapi (`"WA"`)
 controllers and consumed by `reports.ex` and the `stats_live` pie charts. Adding `channels` is
