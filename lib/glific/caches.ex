@@ -59,7 +59,63 @@ defmodule Glific.Caches do
   @spec fetch(non_neg_integer, any(), (any() -> any())) ::
           {:ok | :error | :commit | :ignore, any()}
   def fetch(organization_id, key, fallback_fn) do
-    Cachex.fetch(@cache_bucket, {organization_id, key}, fallback_fn)
+    Cachex.fetch(
+      @cache_bucket,
+      {organization_id, key},
+      debug_wrap(organization_id, key, fallback_fn)
+    )
+  end
+
+  # TEMP DEBUG: report when a Cachex fallback process dies abnormally or hangs
+  defp debug_wrap(organization_id, key, fallback_fn) do
+    caller = self()
+
+    caller_stack =
+      caller
+      |> Process.info(:current_stacktrace)
+      |> elem(1)
+      |> Enum.filter(fn {_m, _f, _a, loc} -> to_string(loc[:file]) =~ ~r/test\/|lib\/glific/ end)
+      |> Enum.map(fn {m, f, a, loc} -> "#{inspect(m)}.#{f}/#{a} #{loc[:file]}:#{loc[:line]}" end)
+
+    fn cache_key ->
+      worker = self()
+
+      spawn(fn ->
+        ref = Process.monitor(worker)
+
+        receive do
+          {:DOWN, ^ref, :process, _, :normal} ->
+            :ok
+
+          {:DOWN, ^ref, :process, _, reason} ->
+            IO.inspect(
+              %{
+                key: {organization_id, key},
+                reason: reason,
+                caller: caller,
+                caller_stack: caller_stack
+              },
+              label: "\n\n###### CACHEX FALLBACK DIED",
+              limit: :infinity
+            )
+        after
+          5_000 ->
+            IO.inspect(
+              %{
+                key: {organization_id, key},
+                worker_stack: Process.info(worker, :current_stacktrace),
+                caller: caller,
+                caller_alive?: Process.alive?(caller),
+                caller_stack: caller_stack
+              },
+              label: "\n\n###### CACHEX FALLBACK STUCK >5s",
+              limit: :infinity
+            )
+        end
+      end)
+
+      fallback_fn.(cache_key)
+    end
   end
 
   @doc """
