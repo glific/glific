@@ -145,9 +145,9 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-${{ hashFiles('mix.lock') }}
+          key: ${{ runner.os }}-mix-v2.4-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-
+            ${{ runner.os }}-mix-v2.4-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-
 
       - name: Setup backend (mix)
         env:
