@@ -32,13 +32,6 @@ defmodule Glific.Flows.ChannelCompatibility do
     do: Enum.any?(errors, &blocking_error?/1)
 
   @doc """
-  Whether this flow runs on the web channel.
-  """
-  @spec web?(map()) :: boolean()
-  def web?(%{channel: :web}), do: true
-  def web?(_flow), do: false
-
-  @doc """
   Refuse the actions and router on this node that its flow's channel cannot run.
   """
   @spec node_errors(list(), map(), map()) :: list()
@@ -53,10 +46,26 @@ defmodule Glific.Flows.ChannelCompatibility do
   end
 
   @doc """
-  A blocking validation error naming the node it came from.
+  Refuse a sub-flow that runs on a channel the flow entering it does not.
   """
+  @spec sub_flow_errors(list(), map(), map(), Ecto.UUID.t() | nil) :: list()
+  def sub_flow_errors(errors, sub_flow, flow, node_uuid) do
+    if web?(flow) and not web?(sub_flow),
+      do:
+        refuse(
+          errors,
+          ~s(Entering the sub-flow "#{sub_flow.name}", which runs on WhatsApp),
+          node_uuid
+        ),
+      else: errors
+  end
+
+  @spec web?(map()) :: boolean()
+  defp web?(%{channel: :web}), do: true
+  defp web?(_flow), do: false
+
   @spec error(String.t(), Ecto.UUID.t() | nil) :: tuple()
-  def error(message, node_uuid), do: {Flow, message, @blocking_category, node_uuid}
+  defp error(message, node_uuid), do: {Flow, message, @blocking_category, node_uuid}
 
   @spec router_errors(list(), map() | nil, Ecto.UUID.t() | nil) :: list()
   defp router_errors(errors, nil, _node_uuid), do: errors
