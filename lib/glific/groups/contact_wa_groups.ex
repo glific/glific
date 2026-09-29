@@ -240,6 +240,8 @@ defmodule Glific.Groups.ContactWAGroups do
           :ok -> %{acc | added: acc.added + 1}
           {:error, message} -> %{acc | failed: Map.put(acc.failed, phone, message)}
         end
+
+        Process.sleep(2000)
       end)
 
     {:ok, result}
