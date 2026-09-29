@@ -23,18 +23,21 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   @get_recv_timeout 30_000
 
   @doc """
-  Making Tesla get call and adding api key in header
+  Making Tesla get call and adding api key in header. `path` is a
+  `Tesla.Middleware.PathParams`-templated route (e.g. `/:product_id/:phone_id/getGroups`)
+  so AppSignal groups all calls to this endpoint under one entry instead of one per
+  product_id/phone_id combination.
   """
-  @spec maytapi_get(String.t(), String.t()) :: Tesla.Env.result()
-  def maytapi_get(url, token),
+  @spec maytapi_get(String.t(), keyword(), String.t()) :: Tesla.Env.result()
+  def maytapi_get(path, path_params, token),
     do:
       :read
       |> client()
-      |> Tesla.get(url,
+      |> Tesla.get(path,
         headers: headers(token),
-        opts: [adapter: [recv_timeout: @get_recv_timeout]]
+        opts: [adapter: [recv_timeout: @get_recv_timeout], path_params: path_params]
       )
-      |> log_on_failure(url)
+      |> log_on_failure(path, path_params)
 
   # Group operations (createGroup, group/add, group/remove)
   # trigger real WhatsApp actions on the device and can take well over the
@@ -56,16 +59,17 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   @create_group_error "Couldn't create the WhatsApp group. This usually means WhatsApp is temporarily blocking group creation from this number (a WhatsApp/Meta-side restriction). Try another linked number, or try again in a little while."
 
   @doc """
-  Making Tesla post call and adding api key in header
+  Making Tesla post call and adding api key in header. `path` is a
+  `Tesla.Middleware.PathParams`-templated route, same as `maytapi_get/3`.
   """
-  @spec maytapi_post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  def maytapi_post(url, payload, token) do
+  @spec maytapi_post(String.t(), keyword(), any(), String.t()) :: Tesla.Env.result()
+  def maytapi_post(path, path_params, payload, token) do
     client(:write)
-    |> Tesla.post(url, payload,
+    |> Tesla.post(path, payload,
       headers: headers(token),
-      opts: [adapter: [recv_timeout: @post_recv_timeout]]
+      opts: [adapter: [recv_timeout: @post_recv_timeout], path_params: path_params]
     )
-    |> log_on_failure(url)
+    |> log_on_failure(path, path_params)
   end
 
   @doc false
@@ -99,8 +103,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/getGroups"
-      maytapi_get(url, token)
+      maytapi_get(
+        "/:product_id/:phone_id/getGroups",
+        [product_id: product_id, phone_id: phone_id],
+        token
+      )
     end
   end
 
@@ -115,10 +122,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/listPhones"
-
-      url
-      |> maytapi_get(token)
+      "/:product_id/listPhones"
+      |> maytapi_get([product_id: product_id], token)
       |> handle_maytapi_response(:list_phones)
     end
   end
@@ -139,10 +144,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/screen"
-
-      url
-      |> maytapi_get(token)
+      "/:product_id/:phone_id/screen"
+      |> maytapi_get([product_id: product_id, phone_id: phone_id], token)
       |> handle_screen_response()
     end
   end
@@ -157,12 +160,10 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/logout"
-
       # logout takes no parameters. This client has no JSON middleware (see
       # `client/1`), so bodies are always pre-encoded strings — send an empty one.
-      url
-      |> maytapi_post("{}", token)
+      "/:product_id/:phone_id/logout"
+      |> maytapi_post([product_id: product_id, phone_id: phone_id], "{}", token)
       |> handle_maytapi_response()
     end
   end
@@ -214,9 +215,14 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/sendMessage"
       Glific.Metrics.increment("Sent WAGroup msg")
-      maytapi_post(url, Jason.encode!(payload), token)
+
+      maytapi_post(
+        "/:product_id/:phone_id/sendMessage",
+        [product_id: product_id, phone_id: phone_id],
+        Jason.encode!(payload),
+        token
+      )
     end
   end
 
@@ -229,9 +235,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
       token = secrets["token"]
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/group/remove"
 
-      maytapi_post(url, Jason.encode!(payload), token)
+      "/:product_id/:phone_id/group/remove"
+      |> maytapi_post([product_id: product_id, phone_id: phone_id], Jason.encode!(payload), token)
       |> handle_maytapi_response()
     end
   end
@@ -251,9 +257,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/group/add"
-
-      maytapi_post(url, Jason.encode!(payload), token)
+      "/:product_id/:phone_id/group/add"
+      |> maytapi_post([product_id: product_id, phone_id: phone_id], Jason.encode!(payload), token)
       |> handle_maytapi_response()
     end
   end
@@ -267,8 +272,12 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/setWebhook"
-      maytapi_post(url, Jason.encode!(payload), token)
+      maytapi_post(
+        "/:product_id/setWebhook",
+        [product_id: product_id],
+        Jason.encode!(payload),
+        token
+      )
     end
   end
 
@@ -289,9 +298,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/createGroup"
-
-      maytapi_post(url, Jason.encode!(payload), token)
+      "/:product_id/:phone_id/createGroup"
+      |> maytapi_post([product_id: product_id, phone_id: phone_id], Jason.encode!(payload), token)
       |> handle_maytapi_response(:create)
     end
   end
@@ -422,6 +430,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       |> Keyword.put(:should_retry, should_retry(retry_mode, standard_retry?))
 
     Tesla.client([
+      {Tesla.Middleware.BaseUrl, @maytapi_url},
+      Tesla.Middleware.KeepRequest,
+      Tesla.Middleware.PathParams,
       {Tesla.Middleware.Retry, opts},
       {Tesla.Middleware.Telemetry, metadata: %{provider: "maytapi", sampling_scale: 10}}
     ])
@@ -448,18 +459,24 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
   defp instance_not_ready?(_body), do: false
 
-  @spec log_on_failure(Tesla.Env.result(), String.t()) :: Tesla.Env.result()
-  defp log_on_failure({:ok, %Tesla.Env{status: status}} = result, _url)
+  @spec log_on_failure(Tesla.Env.result(), String.t(), keyword()) :: Tesla.Env.result()
+  defp log_on_failure({:ok, %Tesla.Env{status: status}} = result, _path, _path_params)
        when status in 200..299,
        do: result
 
-  defp log_on_failure({:ok, env} = result, url) do
-    Glific.log_error("Maytapi request failed (#{url}): #{SafeLog.safe_inspect(env)}")
+  defp log_on_failure({:ok, env} = result, path, path_params) do
+    Glific.log_error(
+      "Maytapi request failed (#{path} #{SafeLog.safe_inspect(path_params)}): #{SafeLog.safe_inspect(env)}"
+    )
+
     result
   end
 
-  defp log_on_failure({:error, reason} = result, url) do
-    Glific.log_error("Maytapi request failed (#{url}): #{SafeLog.safe_inspect(reason)}")
+  defp log_on_failure({:error, reason} = result, path, path_params) do
+    Glific.log_error(
+      "Maytapi request failed (#{path} #{SafeLog.safe_inspect(path_params)}): #{SafeLog.safe_inspect(reason)}"
+    )
+
     result
   end
 end
