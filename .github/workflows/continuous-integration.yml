@@ -131,15 +131,19 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: setup
 
     services:
       postgres:
-        image: postgres:13
+        image: postgres:15.18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: glific_test
+          # Match prod (en_US.UTF8) so text ORDER BY matches production sort order.
+          LANG: en_US.utf8
+          POSTGRES_INITDB_ARGS: "--locale=en_US.utf8 --encoding=UTF8"
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -147,6 +151,9 @@ jobs:
     env:
       MIX_ENV: test
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Force en_US.utf8 on ecto.create (test_full drops/recreates the DB).
+      # Must match prod collation so name/label ORDER BY asserts are stable.
+      DB_LOCALE: en_US.utf8
 
     strategy:
       matrix:
