@@ -1788,7 +1788,8 @@ defmodule Glific.Flows.ActionTest do
   test "execute a start_session targeting the flow's own contact inherits its channel", attrs do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
-    # the flow itself is running on the web channel, and the node targets that same contact
+    # unlike a notify-staff node, which targets a different contact and stays on whatsapp, this
+    # node targets the contact the web flow is already running for
     context =
       %FlowContext{
         contact_id: contact.id,
@@ -1813,7 +1814,7 @@ defmodule Glific.Flows.ActionTest do
 
     new_flow_context =
       FlowContext
-      |> where([fc], fc.contact_id == ^contact.id and fc.channel == :web)
+      |> where([fc], fc.contact_id == ^contact.id)
       |> order_by([fc], desc: fc.id)
       |> Repo.all()
       |> hd()
