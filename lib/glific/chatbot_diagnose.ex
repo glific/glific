@@ -500,7 +500,9 @@ defmodule Glific.ChatbotDiagnose do
   defp resolve_contact_by_name(name) do
     pattern = "%#{name}%"
 
-    case RepoReplica.one(from(c in Contact, where: ilike(c.name, ^pattern), select: c.id, limit: 1)) do
+    case RepoReplica.one(
+           from(c in Contact, where: ilike(c.name, ^pattern), select: c.id, limit: 1)
+         ) do
       nil -> :error
       id -> {:ok, id}
     end
