@@ -479,7 +479,8 @@ defmodule Glific.FLowsTest do
 
       definition =
         Map.put(revision.definition, "nodes", [
-          Map.put(first_node, "actions", first_node["actions"] ++ offending_actions) | rest
+          Map.put(first_node, "actions", first_node["actions"] ++ offending_actions)
+          | rest ++ [split_by_collection_node()]
         ])
 
       {:ok, _revision} =
@@ -492,12 +493,13 @@ defmodule Glific.FLowsTest do
         |> Enum.filter(fn error -> error.category == "Blocking" end)
         |> Enum.map(fn error -> error.message end)
 
-      assert length(blocking_messages) == 3
+      assert length(blocking_messages) == 4
 
       for label <- [
             "Sending a WhatsApp template (HSM)",
             "Updating a WhatsApp group field",
-            "Sending a WhatsApp group poll"
+            "Sending a WhatsApp group poll",
+            "Splitting by collection"
           ] do
         assert Enum.any?(blocking_messages, fn message -> String.starts_with?(message, label) end),
                "expected a blocking error for #{label}"
@@ -857,6 +859,26 @@ defmodule Glific.FLowsTest do
                  keyword != Glific.string_clean(keyword)
                end)
     end
+  end
+
+  defp split_by_collection_node do
+    exit_uuid = Ecto.UUID.generate()
+    other_category_uuid = Ecto.UUID.generate()
+
+    %{
+      "uuid" => Ecto.UUID.generate(),
+      "actions" => [],
+      "exits" => [%{"uuid" => exit_uuid, "destination_uuid" => nil}],
+      "router" => %{
+        "type" => "switch",
+        "operand" => "@contact.groups",
+        "cases" => [],
+        "categories" => [
+          %{"uuid" => other_category_uuid, "name" => "Other", "exit_uuid" => exit_uuid}
+        ],
+        "default_category_uuid" => other_category_uuid
+      }
+    }
   end
 
   defp expected_error(str) do

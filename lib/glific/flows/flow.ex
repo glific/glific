@@ -431,6 +431,8 @@ defmodule Glific.Flows.Flow do
 
   @web_unsupported_webhooks %{"send_wa_group_poll" => "Sending a WhatsApp group poll"}
 
+  @web_unsupported_router_operands %{"@contact.groups" => "Splitting by collection"}
+
   @blocking_category "Blocking"
 
   @doc """
@@ -442,25 +444,38 @@ defmodule Glific.Flows.Flow do
 
   @spec web_channel_errors(list(), map()) :: list()
   defp web_channel_errors(errors, %{channel: channel} = flow) when channel in [:web, "web"] do
-    actions =
-      flow.definition["nodes"]
-      |> List.wrap()
-      |> Enum.flat_map(&(&1["actions"] || []))
+    nodes = flow.definition["nodes"] |> List.wrap()
+    actions = Enum.flat_map(nodes, &(&1["actions"] || []))
 
-    actions
-    |> Enum.reduce(errors, fn action, acc ->
-      case unsupported_web_action(action) do
-        nil ->
-          acc
-
-        label ->
-          [{action["uuid"], label, @blocking_category} | acc]
-      end
-    end)
+    errors
+    |> unsupported_action_errors(actions)
+    |> unsupported_router_errors(nodes)
     |> subflow_channel_errors(actions, flow.organization_id)
   end
 
   defp web_channel_errors(errors, _flow), do: errors
+
+  @spec unsupported_action_errors(list(), list()) :: list()
+  defp unsupported_action_errors(errors, actions) do
+    Enum.reduce(actions, errors, fn action, acc ->
+      case unsupported_web_action(action) do
+        nil -> acc
+        label -> [{action["uuid"], label, @blocking_category} | acc]
+      end
+    end)
+  end
+
+  @spec unsupported_router_errors(list(), list()) :: list()
+  defp unsupported_router_errors(errors, nodes) do
+    Enum.reduce(nodes, errors, fn node, acc ->
+      operand = get_in(node, ["router", "operand"])
+
+      case Map.get(@web_unsupported_router_operands, operand) do
+        nil -> acc
+        label -> [{node["uuid"], label, @blocking_category} | acc]
+      end
+    end)
+  end
 
   # A sub-flow inherits its parent's channel at runtime (`start_sub_flow/3`), so a web flow that
   # enters a WhatsApp flow would run that flow's WhatsApp-only nodes on the web channel. Checking
