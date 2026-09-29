@@ -30,11 +30,13 @@ if Code.ensure_loaded?(Plug) do
     @doc """
     Global unauthorized error handler
     """
+    # 404 rather than 403 so an unresolvable host is indistinguishable from an unknown path,
+    # which stops a scanner using it to enumerate real Glific hosts.
     @spec send_error(Conn.t()) :: Conn.t()
     def send_error(conn) do
       conn
-      |> Conn.put_status(403)
-      |> Conn.send_resp(403, "Unauthorized")
+      |> Conn.put_status(404)
+      |> Conn.send_resp(404, "")
       |> Conn.halt()
     end
 
