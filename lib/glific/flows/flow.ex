@@ -425,13 +425,9 @@ defmodule Glific.Flows.Flow do
   end
 
   # Nodes with no equivalent on the web channel. A template needs a BSP to approve it (and a
-  # WhatsApp Form is a templated HSM, so it is covered by the same rule); a broadcast fans out to
-  # other contacts, which a per-contact browser socket cannot reach; the WA-group nodes run
+  # WhatsApp Form is a templated HSM, so it is covered by the same rule); the WA-group nodes run
   # through a different provider entirely.
-  @web_unsupported_action_types %{
-    "send_broadcast" => "Sending a message to somebody else",
-    "set_wa_group_field" => "Updating a WhatsApp group field"
-  }
+  @web_unsupported_action_types %{"set_wa_group_field" => "Updating a WhatsApp group field"}
 
   @web_unsupported_webhooks %{"send_wa_group_poll" => "Sending a WhatsApp group poll"}
 
@@ -467,9 +463,8 @@ defmodule Glific.Flows.Flow do
   defp web_channel_errors(errors, _flow), do: errors
 
   # A sub-flow inherits its parent's channel at runtime (`start_sub_flow/3`), so a web flow that
-  # enters a WhatsApp flow would run that flow's WhatsApp-only nodes on the web channel — and a
-  # `send_broadcast` in there routes to WhatsApp silently rather than failing. Checking the
-  # referenced flow's own declared channel avoids walking its nodes: every flow is already
+  # enters a WhatsApp flow would run that flow's WhatsApp-only nodes on the web channel. Checking
+  # the referenced flow's own declared channel avoids walking its nodes: every flow is already
   # validated against its own channel when it is published.
   #
   # Only statically-referenced sub-flows can be checked; `enter_flow_expression` resolves at

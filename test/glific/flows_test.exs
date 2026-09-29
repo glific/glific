@@ -401,16 +401,16 @@ defmodule Glific.FLowsTest do
       clean_definition = revision.definition
       [first_node | rest] = clean_definition["nodes"]
 
-      broadcast_action = %{
+      wa_group_action = %{
         "uuid" => Ecto.UUID.generate(),
-        "type" => "send_broadcast",
-        "text" => "notify the team",
-        "contacts" => []
+        "type" => "set_wa_group_field",
+        "field" => %{"key" => "group_name", "name" => "Group Name"},
+        "value" => "cohort 1"
       }
 
       offending_definition =
         Map.put(clean_definition, "nodes", [
-          Map.put(first_node, "actions", first_node["actions"] ++ [broadcast_action]) | rest
+          Map.put(first_node, "actions", first_node["actions"] ++ [wa_group_action]) | rest
         ])
 
       {:ok, _revision} =
@@ -420,7 +420,7 @@ defmodule Glific.FLowsTest do
       assert Enum.any?(errors, fn error -> error.category == "Blocking" end)
 
       assert Enum.any?(errors, fn error ->
-               error.message == "Sending a message to somebody else"
+               error.message == "Updating a WhatsApp group field"
              end)
 
       # the point of blocking: the publish must not have taken effect. A successful publish bumps
@@ -453,12 +453,6 @@ defmodule Glific.FLowsTest do
       [first_node | rest] = revision.definition["nodes"]
 
       offending_actions = [
-        %{
-          "uuid" => Ecto.UUID.generate(),
-          "type" => "send_broadcast",
-          "text" => "notify the team",
-          "contacts" => []
-        },
         %{
           "uuid" => Ecto.UUID.generate(),
           "type" => "send_msg",
@@ -498,10 +492,9 @@ defmodule Glific.FLowsTest do
         |> Enum.filter(fn error -> error.category == "Blocking" end)
         |> Enum.map(fn error -> error.message end)
 
-      assert length(blocking_messages) == 4
+      assert length(blocking_messages) == 3
 
       for label <- [
-            "Sending a message to somebody else",
             "Sending a WhatsApp template (HSM)",
             "Updating a WhatsApp group field",
             "Sending a WhatsApp group poll"
@@ -512,8 +505,7 @@ defmodule Glific.FLowsTest do
     end
 
     # A sub-flow inherits its parent's channel at runtime, so a web flow entering a whatsapp flow
-    # would run that flow's whatsapp-only nodes on web — and a broadcast in there routes to
-    # WhatsApp silently rather than failing.
+    # would run that flow's whatsapp-only nodes on web.
     test "publish_flow/2 refuses a web flow that enters a whatsapp sub-flow",
          %{organization_id: organization_id} = _attrs do
       user = Repo.get_current_user()
@@ -571,6 +563,38 @@ defmodule Glific.FLowsTest do
         Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
 
       assert flow.channel == :whatsapp
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      wa_group_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "set_wa_group_field",
+        "field" => %{"key" => "group_name", "name" => "Group Name"},
+        "value" => "cohort 1"
+      }
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [wa_group_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
+    end
+
+    test "publish_flow/2 allows a web flow to broadcast to another contact",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      {:ok, flow} = Flows.update_flow(flow, %{channel: :web})
 
       {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
       [first_node | rest] = revision.definition["nodes"]
