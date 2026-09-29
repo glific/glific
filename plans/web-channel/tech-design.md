@@ -854,7 +854,7 @@ Historical rows read `NULL`; `COALESCE(channel,'whatsapp')` is the documented id
 
 ### Backend — ExUnit on ChannelCase
 
-**Remove `lib/glific_web/channels/` from `coveralls.json`'s skip list.** That skip made sense when the directory held only a thin Absinthe socket declaration; `RoomChannel` contains an authorization check and must not be the one file that can lose coverage without CI noticing.
+**Remove `lib/glific_web/channels/` from `coveralls.json`'s skip list.** That skip made sense when the directory held only a thin Absinthe socket declaration; `RoomChannel` contains an authorization check and must not be the one file that can lose coverage without CI noticing. **This did not happen** — Phase 1 shipped with the skip in place, and it is the one live gap in its test coverage (§5 #16).
 
 Cases that matter more than line coverage:
 
@@ -868,7 +868,7 @@ Cases that matter more than line coverage:
 
 ### End-to-end — Playwright, scoped to the widget
 
-Playwright in `glific-web-channel`, which has no browser tests today. **Scope it there and leave the staff-side flows in Cypress** — the two suites should not overlap. Worth being explicit about the cost: two harnesses, two auth vocabularies, two sets of CI plumbing to maintain, and the existing Cypress rig already boots exactly the environment these tests need. The offsetting arguments are real — native WebSocket inspection, the trace viewer, and a greenfield repo where nothing has to be migrated.
+Playwright in `glific-web-channel`, which now has it `[Today]` — an `e2e/` suite with a typed support layer, though `ci.yml` does not yet run it. **Scope it there and leave the staff-side flows in Cypress** — the two suites should not overlap. Worth being explicit about the cost: two harnesses, two auth vocabularies, two sets of CI plumbing to maintain, and the existing Cypress rig already boots exactly the environment these tests need. The offsetting arguments are real — native WebSocket inspection, the trace viewer, and a greenfield repo where nothing has to be migrated.
 
 The new problem either way: the widget is a **third repo** that neither existing CI rig clones, so the cross-repo harness needs extending regardless of tool.
 
@@ -1097,7 +1097,7 @@ WhatsApp is a product question nobody has been asked.
 | 6 | **`Communications.WebMessage` is a fork** of `Communications.Message`, not a reuse | Every future ingest fix must be made twice, and one will be missed. It was forked because the original unconditionally does two WhatsApp-specific things: phone-keyed contact resolution, and `set_session_status(contact, :session)` — the 24-hour window, applied to every channel. #5775 widened the fork rather than closing it: the web path now enqueues `Processor.MessageWorker` itself, so the handoff to the flow engine exists in both modules | **Yes** for channel #3. This is the dispatch-seam work |
 | 7 | **The bare rescue.** `send_message/2` ends in `rescue _ -> log_error(message, "Could not send message to contact: Check Gupshup Setting")` | Any exception from any adapter is reported to the user as a Gupshup configuration problem. A new channel inherits a misleading error path on day one, and real bugs hide behind it | No, but fix it while building dispatch |
 | 8 | **`@type_to_token` has no catch-all** — an unmapped message type raises rather than returning an error | Why the Blocks type must be intercepted upstream. The clause ordering that does so is a correctness requirement enforced only by a comment | No |
-| 9 | **Telemetry events have no permanent handler.** All eight `[:glific, …]` events reach only LiveDashboard, while the page is open | Production emits them into the void. Anyone adding an event reasonably assumes it is being collected | No — but it must be fixed before web-channel metrics are trusted |
+| 9 | ~~Telemetry events have no permanent handler~~ — **resolved** `[Today]`. `lib/glific/application.ex` now attaches eleven handlers, one of which reports #5797's rate-limit breaches | It cost production metrics emitted into the void for as long as it stood. The rule it implies still applies to every new event: emitting is not collecting | — |
 | 10 | **No real latency is measured anywhere.** `[:glific, :message, :sent]` and `:received` hardcode `duration: 1`, with a source comment saying so | There is no baseline for "how fast is Glific today", so no way to tell whether the web channel made anything worse | No |
 | 11 | **Every web-channel action runs as the organisation's root user** | The highest-privilege principal in the tenant performs end-user actions. Sound only because the handlers are narrow and never act on a user-supplied id — an invariant nothing enforces | No, but it should be a named review item on every new handler |
 
