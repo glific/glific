@@ -15,6 +15,7 @@ defmodule Glific.Flows.Node do
 
   alias Glific.Flows.{
     Action,
+    ChannelCompatibility,
     Exit,
     Flow,
     FlowContext,
@@ -196,22 +197,20 @@ defmodule Glific.Flows.Node do
       )
 
     errors =
-      node.actions
-      |> Enum.reduce(
-        errors,
-        &Action.validate_channel(&1, &2, flow)
-      )
-
-    errors =
       node.exits
       |> Enum.reduce(
         errors,
         &Exit.validate(&1, &2, flow)
       )
 
-    if node.router,
-      do: Router.validate(node.router, errors, flow),
-      else: errors
+    errors =
+      if node.router,
+        do: Router.validate(node.router, errors, flow),
+        else: errors
+
+    # Last: a channel error carries the node uuid, so it is a 4-tuple the sibling validators'
+    # Keyword.t() contracts do not accept.
+    Enum.reduce(node.actions, errors, &ChannelCompatibility.action_errors(&2, &1, flow))
   end
 
   @doc """

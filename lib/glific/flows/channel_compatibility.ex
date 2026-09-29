@@ -6,6 +6,8 @@ defmodule Glific.Flows.ChannelCompatibility do
   the errors they produce.
   """
 
+  alias Glific.Flows.Flow
+
   @blocking_category "Blocking"
 
   @unsupported_action_types %{"set_wa_group_field" => "Updating a WhatsApp group field"}
@@ -37,32 +39,48 @@ defmodule Glific.Flows.ChannelCompatibility do
   def web?(_flow), do: false
 
   @doc """
-  The reason this action cannot run on the web channel, or nil when it can.
+  Refuse an action this flow's channel cannot run.
   """
-  @spec unsupported_action(map()) :: String.t() | nil
-  def unsupported_action(%{type: type, is_template: true}) when type in ["send_msg"],
-    do: @template_label
-
-  def unsupported_action(%{type: "call_webhook", url: url}),
-    do: Map.get(@unsupported_webhooks, url)
-
-  def unsupported_action(%{type: type}),
-    do: Map.get(@unsupported_action_types, type)
+  @spec action_errors(list(), map(), map()) :: list()
+  def action_errors(errors, action, flow) do
+    if web?(flow),
+      do: refuse(errors, unsupported_action(action), action.node_uuid),
+      else: errors
+  end
 
   @doc """
-  The reason this router cannot run on the web channel, or nil when it can.
+  Refuse a router this flow's channel cannot run.
   """
-  @spec unsupported_router(map()) :: String.t() | nil
-  def unsupported_router(%{operand: operand}),
-    do: Map.get(@unsupported_router_operands, operand)
-
-  def unsupported_router(_router), do: nil
+  @spec router_errors(list(), map(), map()) :: list()
+  def router_errors(errors, router, flow) do
+    if web?(flow),
+      do: refuse(errors, unsupported_router(router), router.node_uuid),
+      else: errors
+  end
 
   @doc """
   A blocking validation error naming the node it came from.
   """
-  @spec error(module(), String.t(), Ecto.UUID.t() | nil) :: tuple()
-  def error(key, message, node_uuid), do: {key, message, @blocking_category, node_uuid}
+  @spec error(String.t(), Ecto.UUID.t() | nil) :: tuple()
+  def error(message, node_uuid), do: {Flow, message, @blocking_category, node_uuid}
+
+  @spec refuse(list(), String.t() | nil, Ecto.UUID.t() | nil) :: list()
+  defp refuse(errors, nil, _node_uuid), do: errors
+  defp refuse(errors, message, node_uuid), do: [error(message, node_uuid) | errors]
+
+  @spec unsupported_action(map()) :: String.t() | nil
+  defp unsupported_action(%{type: type, is_template: true}) when type in ["send_msg"],
+    do: @template_label
+
+  defp unsupported_action(%{type: "call_webhook", url: url}),
+    do: Map.get(@unsupported_webhooks, url)
+
+  defp unsupported_action(%{type: type}),
+    do: Map.get(@unsupported_action_types, type)
+
+  @spec unsupported_router(map()) :: String.t() | nil
+  defp unsupported_router(%{operand: operand}),
+    do: Map.get(@unsupported_router_operands, operand)
 
   defp blocking_error?({_key, _message, @blocking_category}), do: true
   defp blocking_error?({_key, _message, @blocking_category, _node_uuid}), do: true

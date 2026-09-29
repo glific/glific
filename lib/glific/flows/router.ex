@@ -19,7 +19,6 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     ChannelCompatibility,
-    Flow,
     FlowContext,
     Localization,
     Node,
@@ -164,8 +163,7 @@ defmodule Glific.Flows.Router do
   """
   @spec validate(Router.t(), list(), map()) :: list()
   def validate(router, errors, flow) do
-    errors =
-      errors |> validate_eex(router, flow.organization_id) |> validate_channel(router, flow)
+    errors = validate_eex(errors, router, flow.organization_id)
 
     errors =
       router.categories
@@ -181,19 +179,12 @@ defmodule Glific.Flows.Router do
         &Case.validate(&1, &2, flow, router.wait)
       )
 
-    if router.wait,
-      do: Wait.validate(router.wait, errors, flow),
-      else: errors
-  end
+    errors =
+      if router.wait,
+        do: Wait.validate(router.wait, errors, flow),
+        else: errors
 
-  @spec validate_channel(list(), Router.t(), map()) :: list()
-  defp validate_channel(errors, router, flow) do
-    with true <- ChannelCompatibility.web?(flow),
-         label when is_binary(label) <- ChannelCompatibility.unsupported_router(router) do
-      [ChannelCompatibility.error(Flow, label, router.node_uuid) | errors]
-    else
-      _ -> errors
-    end
+    ChannelCompatibility.router_errors(errors, router, flow)
   end
 
   @reserved_messages ["No Response", "Exit Loop", "Success", "Failure"]
