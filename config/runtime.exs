@@ -75,7 +75,53 @@ config :glific,
   auth_username: env!("AUTH_USERNAME", :string!),
   auth_password: env!("AUTH_PASSWORD", :string!)
 
-config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
+# Every rate limit in the application, and the only place any of them is defined. They live here
+# rather than in config/config.exs because runtime.exs is evaluated last and would override it,
+# which makes a second copy of these numbers dead code that still looks authoritative.
+#
+# Under :test they are all raised out of the way: ExRated buckets are global and outlive a test,
+# so a real limit would make the suite start refusing partway through. A test that wants a limit
+# to fire sets it for its own duration with Application.put_env/3.
+rate_limit = fn variable, scale_ms, count ->
+  count = if config_env() == :test, do: 1_000_000, else: env!(variable, :integer, count)
+  [scale_ms: scale_ms, count: count]
+end
+
+config :glific,
+  # Requests that match no route at all, per address.
+  rate_limit_api_global: rate_limit.("RATE_LIMIT_API_GLOBAL", 60_000, 60),
+  # Per signed-in user, across the whole API. Replaces MAX_RATE_LIMIT_REQUEST.
+  rate_limit_api_authenticated: rate_limit.("RATE_LIMIT_API_AUTHENTICATED", 60_000, 180),
+  # Per address, across every unauthenticated endpoint. 300 rather than the old 50, because that
+  # 50 was per address *and path*, and offices sit behind one egress.
+  rate_limit_api_unauthenticated: rate_limit.("RATE_LIMIT_API_UNAUTHENTICATED", 60_000, 300),
+  # Charged in addition to the address, so rotating phone numbers buys nothing.
+  rate_limit_api_phone: rate_limit.("RATE_LIMIT_API_PHONE", 60_000, 300),
+  # Staff registration OTP, per phone.
+  rate_limit_api_otp: rate_limit.("RATE_LIMIT_API_OTP", 30_000, 1),
+  # The web channel is embedded on public sites, where a school, office or carrier NAT fronts many
+  # unrelated beneficiaries on one address, so its per-address budgets are far looser.
+  rate_limit_web_channel_api: rate_limit.("RATE_LIMIT_WEB_CHANNEL_API", 60_000, 1200),
+  # Sign-in OTP per phone. This, not the address budget, is the anti-enumeration control.
+  rate_limit_web_channel_otp_phone: rate_limit.("RATE_LIMIT_WEB_CHANNEL_OTP_PHONE", 30_000, 1),
+  # Its per-address companion. A computer lab signing a class in at once must not be refused.
+  rate_limit_web_channel_otp_ip: rate_limit.("RATE_LIMIT_WEB_CHANNEL_OTP_IP", 60_000, 100),
+  # Inbound socket messages, per contact.
+  rate_limit_web_channel_message: rate_limit.("RATE_LIMIT_WEB_CHANNEL_MESSAGE", 10_000, 20),
+  # Socket connects, charged before the token is verified so a flood cannot make us do the work.
+  rate_limit_web_channel_connect_ip:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_CONNECT_IP", 60_000, 120),
+  # What the node will accept at all. Past this, connects are refused as server busy.
+  rate_limit_web_channel_connect_total:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_CONNECT_TOTAL", 60_000, 1000),
+  # Signed upload URLs. Each is a writable grant into the organization's bucket, so there is a
+  # total across everybody too: no per-contact or per-address budget bounds storage abuse when
+  # many contacts are driven at once.
+  rate_limit_web_channel_upload_contact:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_CONTACT", 60_000, 6),
+  rate_limit_web_channel_upload_ip: rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_IP", 60_000, 60),
+  rate_limit_web_channel_upload_total:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_TOTAL", 60_000, 120)
 
 config :glific, :bigquery_dedup_timeout_ms, env!("BIGQUERY_DEDUP_TIMEOUT_MS", :integer, 120_000)
 
@@ -291,6 +337,10 @@ if config_env() == :prod do
   config :glific, :gupshup_enterprise_webhook_ips, webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS")
   config :glific, :maytapi_webhook_ips, webhook_ips.("MAYTAPI_WEBHOOK_IPS")
 end
+
+# Configured in every environment so an address can be dropped locally too. Empty disables the plug.
+blocked_ips = webhook_ips.("BLOCKED_IPS")
+config :glific, :blocked_ips, blocked_ips
 
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
