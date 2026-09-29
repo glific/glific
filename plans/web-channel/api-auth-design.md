@@ -248,10 +248,23 @@ forward and give it an unbounded life while every individual claim still looked 
 > own header and is the more natural-looking call. That is `alg: none` and HS/RS confusion, and it
 > is the single mistake most likely to be made when this code is next touched.
 
-**TTL is 24 hours, deliberately not the one hour of §2.4.** That cap is only survivable alongside
-the `token_expiring` / `renew_token` handshake in the same section, which is not built. Shortening
-this first would sign a beneficiary out mid-conversation with no route back. The two should be
-revisited together.
+**TTL is one hour, with a 24-hour ceiling on the session.** `[Today]` #5710. An earlier revision of
+this paragraph said the opposite — 24 hours, deliberately not the one hour of §2.4, because that cap
+was only survivable alongside a `token_expiring` / `renew_token` handshake that did not exist. The
+handshake was built with the OTP work, so the two moved together as intended:
+
+- `@ttl_seconds 3_600` on the minted token, matching §2.4's cap.
+- `@session_max_seconds 86_400` — renewal refuses once the session as a whole is a day old, so an
+  hour's TTL cannot be renewed indefinitely. `session_started_at` is a claim, so the ceiling
+  survives a renewal rather than being reset by one.
+- `@leeway_seconds 60` of clock slack on `iat`, `exp` and `session_started_at`.
+- The room pushes `token_expiring` once inside the renewal window and `session_expired` after
+  expiry plus grace; the widget renews over `POST /renew-token` and hands the new token back to the
+  channel with a `renew_token` push. See §4.4 of the technical design for the event list.
+
+**What is still not built** is the one-session-per-contact rule below: the token carries
+`session_id`, but nothing stores a current session or evicts a previous one, so two browsers can
+hold live sessions for the same contact.
 
 
 ## 3. Contact identity

@@ -30,7 +30,26 @@ Glific is a WhatsApp product. This describes the work that makes it **channel-pl
 
 ### Status markers
 
-This design spans shipped code, prototype code and intended work, so every non-obvious claim is marked: `[Today]` on `master`, in production · `[Prototype]` on `web-channel-prototype`, working, unmerged · `[Target]` agreed, not yet written · `[Risk]` a known hazard.
+This design spans shipped code and intended work, so every non-obvious claim is marked: `[Today]` on `master`, in production · `[Prototype]` on the abandoned `web-channel-prototype` branch, working but never merged · `[Target]` agreed, not yet written · `[Risk]` a known hazard.
+
+**Phase 1 has shipped.** This document was written before any of it existed, and has been revised
+as each piece landed rather than rewritten. What is on `master` as of 2026-09-29:
+
+| | PR |
+|---|---|
+| `web_channel_enabled` per-org feature flag | #5666 |
+| `messages.channel`, `flow_contexts.channel`, `flows.channels`, `message_broadcasts.channel` | #5709 |
+| Per-org branding at a runtime endpoint | #5675, #5772 |
+| OTP login over WhatsApp, JWT, renewal | #5710 |
+| Text, audio, image, file and location both ways | #5714 |
+| Web opt-in separated from WhatsApp; staff reply from the inbox | #5717 |
+| Brand colours, business profile, the organisation's own on/off switch | #5772 |
+| Flows reply on the web channel | #5775 |
+| Rate limiting across the API and the web channel | #5797 |
+
+A `[Prototype]` chip now means *the prototype branch had this and `master` does not* — the two
+remaining are the capability registry and the `:blocks` enum values, both Phase 2 (#5702).
+Phase 1's epic is #5659.
 
 ### The three claims this document makes
 
@@ -310,7 +329,9 @@ The clean statement: **identity is per-channel, profiles are per-contact, and ea
 
 ### A capability registry instead of `channel == "web"`
 
-What a channel can *render* is declared in one registry `[Prototype]` (`lib/glific/channels/channel_capability.ex`):
+What a channel can *render* is declared in one registry `[Target]` — the prototype's
+`lib/glific/channels/channel_capability.ex`, which `master` does not have. It arrives with custom
+nodes (#5704), the first feature that needs it:
 
 ```elixir
 @capabilities %{ blocks: MapSet.new(["web"]) }
@@ -346,16 +367,24 @@ Everything the omnichannel foundation needs, in one place. All additive; all rew
 
 | Table | Change | Status |
 |---|---|---|
-| `messages` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. No index — §2.2 and the review on #5660. Written, in review on `add-channel-columns` | `[Target]` |
-| `flow_contexts` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. This is what makes a flow reply on the channel it was triggered from — the inbound message's channel is written onto the context and every outbound send reads it back | `[Prototype]` |
-| `flows` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. Authored at creation and immutable after (§2.2). No backfill — the default is what every existing flow already is | `[Target]` |
+| `messages` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. No index — §2.2 and the review on #5660 | `[Today]` #5709 |
+| `flow_contexts` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. This is what makes a flow reply on the channel it was triggered from — the inbound message's channel is written onto the context and every outbound send reads it back | `[Today]` #5709, #5775 |
+| `flows` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. Authored at creation and immutable after (§2.2). Replaces the `channels` array #5709 shipped, which was never mapped into the Ecto schema and which nothing read | `[Target]` PR #5781 |
 | `contacts` | `channels` `{:array,:string}` with a GIN index — denormalised so the staff inbox can filter without a join. `phone` becomes nullable | `[Target]` |
-| `contact_identities` | New table (§2.2) | `[Target]` |
-| `message_broadcasts` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL` — the channel a scheduled or collection-initiated send runs on. Not derivable from `flow_id`, which is nullable | `[Target]` |
-| `message_type_enum` | `:blocks` added for custom nodes. Irreversible, as every PG enum value is — including `message_channel_enum`'s | `[Prototype]` |
-| `interactive_message_type_enum` | `:blocks` added, same caveat | `[Prototype]` |
+| `contact_identities` | New table (§2.2) | `[Target]` #5703 |
+| `message_broadcasts` | `channel` `message_channel_enum`, default `"whatsapp"`, `NOT NULL` — the channel a scheduled or collection-initiated send runs on. Not derivable from `flow_id`, which is nullable. **Shipped but dormant:** the column exists, nothing maps or writes it | `[Today]` #5709 |
+| `message_type_enum` | `:blocks` added for custom nodes. Irreversible, as every PG enum value is — including `message_channel_enum`'s. Deliberately unshipped until custom nodes are | `[Target]` #5704 |
+| `interactive_message_type_enum` | `:blocks` added, same caveat | `[Target]` #5704 |
 
-**Why the defaults matter.** Every existing row reads `"whatsapp"`, and the migrations do not bump `updated_at` — so nothing re-syncs downstream and no existing behaviour changes on deploy. `contact_type` is deliberately left alone: it is written by the Gupshup and Maytapi controllers and read by `reports.ex` and the stats dashboards, so adding `channels` is additive while replacing `contact_type` would be a downstream break for no present gain.
+**Why the defaults matter.** Every existing row reads `"whatsapp"`, and the migrations do not bump `updated_at` — so nothing re-syncs downstream and no existing behaviour changes on deploy.
+
+> **The default was never dropped, and that is now outstanding debt.** An earlier revision of this
+> section specified a sequence — ship with the default, stamp every insert path, then drop the
+> default and move `:channel` into `Message.@required_fields`, so a forgotten stamp fails as an
+> `{:error, changeset}` rather than becoming a silent WhatsApp send. #5709 shipped step one;
+> `:channel` is still in `@optional_fields` on `master` and the default is still in place. The
+> hazard the sequence existed to prevent is live: a new insert path that forgets the stamp routes
+> to WhatsApp and nothing complains. `contact_type` is deliberately left alone: it is written by the Gupshup and Maytapi controllers and read by `reports.ex` and the stats dashboards, so adding `channels` is additive while replacing `contact_type` would be a downstream break for no present gain.
 
 ---
 
@@ -496,17 +525,17 @@ Everything the web channel needs, including what §2.3 already covers, so this s
 
 | # | Change | Detail | Status |
 |---|---|---|---|
-| 1 | `messages.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL`; no index (§2.2) | `[Target]` |
-| 2 | `flow_contexts.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL` — carries the reply channel through a flow run | `[Target]` |
-| 3 | `flows.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL`. No backfill — the default is the backfill | `[Target]` |
-| 4 | `message_type_enum` | add `:blocks` | `[Prototype]` |
-| 5 | `interactive_message_type_enum` | add `:blocks` | `[Prototype]` |
-| 6 | `contact_identities` | New table — one row per human per channel (§2.2) | `[Target]` |
-| 7 | `contacts.phone` | Becomes nullable. Gated on the ~34-site lookup audit | `[Target]` |
+| 1 | `messages.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL`; no index (§2.2). The default was never dropped — see §2.3 | `[Today]` #5709 |
+| 2 | `flow_contexts.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL` — carries the reply channel through a flow run | `[Today]` #5709 |
+| 3 | `flows.channel` | `message_channel_enum`, default `"whatsapp"`, `NOT NULL`, authored and immutable. Replaces #5709's dormant `channels` array | `[Target]` PR #5781 |
+| 4 | `message_type_enum` | add `:blocks` | `[Target]` #5704 |
+| 5 | `interactive_message_type_enum` | add `:blocks` | `[Target]` #5704 |
+| 6 | `contact_identities` | New table — one row per human per channel (§2.2) | `[Target]` #5703 |
+| 7 | `contacts.phone` | Becomes nullable. Gated on the ~34-site lookup audit | `[Target]` #5703 |
 | 8 | `contacts.channels` | `{:array,:string}` + GIN index — denormalised for inbox filtering | `[Target]` |
-| 9 | Session store | `current_session_id` — the one-session-per-contact enforcement point (§4.5). Home is `contact_identities`; a minimal `web_channel_sessions` table until that lands | `[Target]` |
-| 10 | `organizations` theme | Per-org accent colour, logo URL and display name for the runtime theme endpoint (§4.8). A JSONB column or a small `web_channel_themes` table | `[Target]` |
-| 11 | WhatsApp opt-in consent | Consent value + timestamp on the contact, recorded at OTP time (US3). Existing opt-in fields may suffice — confirm before adding | `[Target]` |
+| 9 | Session store | `current_session_id` — the one-session-per-contact enforcement point (§4.5). **Not built.** The JWT carries `session_id` and `session_started_at`, and the 24-hour `session_max_seconds` bound is enforced on renewal, but nothing stores a current session or evicts a previous one | `[Target]` |
+| 10 | Branding storage | Shipped as the `web_channel` provider's credential rather than a new column or table: non-secret `keys` holding the two brand colours, logo URL, display name and the business profile (§4.8) | `[Today]` #5675, #5772 |
+| 11 | Web-channel opt-in | Shipped as its own concern rather than a field on the contact. `contacts.optin_*` keeps its WhatsApp meaning; web consent is captured in the widget and is not persisted server-side yet (#5713) | `[Today]` #5717 |
 | 12 | `messages.bsp_message_id` → `channel_message_id` | **Rename, not a new column.** Plus a re-scoped unique index and a redefinition of the `message_before_insert_callback` trigger, which references the old name (§4.4) | `[Target]` |
 
 > **#12 — why rename rather than add a column**
@@ -571,7 +600,13 @@ sequenceDiagram
 
 **The two things this diagram is really saying.** First, the flow engine is untouched — it runs exactly as it does for WhatsApp, and the only difference is that `FlowContext.channel` is `"web"`, so its sends route to the browser. Second, delivery is *presence-gated*: unlike a BSP there is no store-and-forward, so "recipient not connected" is a first-class outcome rather than an error.
 
-*Today the disconnected branch marks the message `bsp_status: :error` with no retry and no flow pause — the message is persisted and silently never delivered. That is the largest functional gap in the prototype and is item 1 in §5.*
+*This was the prototype's largest functional gap — the disconnected branch marked the message
+`bsp_status: :error`, so it was persisted and silently never delivered. **Closed** `[Today]` #5714,
+though not the way the diagram above draws it: `Providers.Web.Message` marks a send `:sent` and
+lets the widget pick it up from the history it fetches on its next join. There is no flow pause and
+no offline queue, and a web message never reaches `:delivered` because nothing acknowledges
+receipt. Delivery is best-effort by design, and the diagram's "pause flow at node, resume on
+reconnect" branch remains `[Target]`.*
 
 ## 4.4 APIs — what exists and what's needed
 
@@ -579,14 +614,24 @@ sequenceDiagram
 
 | Endpoint | Purpose | Status |
 |---|---|---|
-| `POST /api/v1/web_channel/request-otp` | Send an OTP to a phone number | `[Prototype]` |
-| `POST /api/v1/web_channel/verify-otp` | Verify; resolve or create the contact; return the socket token, an HS256 JWT (§4.5). Gains the WhatsApp opt-in flag (US3) | `[Prototype]` |
+| `GET /api/v1/web_channel/branding` | Per-org colours, logo, display name and business profile (§4.8). **Named `branding`, not `theme`** — it carries more than a palette | `[Today]` #5675, #5772 |
+| `POST /api/v1/web_channel/request-otp` | Send an OTP to a phone number | `[Today]` #5710 |
+| `POST /api/v1/web_channel/verify-otp` | Verify; resolve or create the contact; return the socket token, an HS256 JWT (§4.5) | `[Today]` #5710 |
+| `POST /api/v1/web_channel/renew-token` | Exchange a still-valid token for a fresh one, bounded by the 24-hour session maximum (§4.5) | `[Today]` #5710 |
 | `POST /api/v1/web_channel/upload-url` | Mints a pre-signed PUT URL; the browser uploads straight to the organisation's bucket and Glific never sees the bytes (§4.15) | `[Today]` |
-| `GET /api/v1/web_channel/theme` | Per-org accent, logo, display name (§4.8) | `[Target]` |
 | `GET /api/v1/web_channel/me` | `{contact_id, name}` — lets a client that doesn't know its own id derive the socket topic | `[Target]` |
 | `POST /api/v1/web_channel/logout` | Ends the session and evicts the socket | `[Target]` |
 
-`[Risk]` The OTP endpoints are legitimately public and now rate limited by phone *and* by IP. `/theme` is also public — it renders before login. `upload-url` has moved to the authenticated `:web_channel_api` pipeline, whose plug does both the token check and the feature-flag check, so a route added there inherits both; `/me` and `/logout` belong on the same pipeline.
+Two pipelines carry these. `:web_channel_public` holds branding, the OTP pair and renewal, and runs
+`RateLimitPlug` with the web channel's own budgets (#5797) — the channel sits on public sites where
+a school or carrier NAT fronts many unrelated beneficiaries, so sharing the staff budget would
+throttle real users. `:web_channel_api` holds `upload-url`, and its plug does the token check and
+the feature-flag check together, so a route added there inherits both; `/me` and `/logout` belong
+on it.
+
+**`branding` answers 200 whether or not the channel is on.** With it off it returns
+`enabled: false` plus the organisation's name and WhatsApp number, so the widget can tell a visitor
+where to go instead of guessing from a 404 (#5772). Every *other* web-channel endpoint refuses.
 
 ### Socket
 
@@ -594,15 +639,20 @@ Mounted at `/web_socket`, deliberately separate from the staff `/socket` (which 
 
 | Direction | Event | Payload |
 |---|---|---|
-| → server | `new_message` | `{body}` — gains `channel_message_id` for idempotency |
+| → server | `new_message` | `{body}` — gains `channel_message_id` for idempotency `[Target]` |
 | → server | `new_media_message` | `{type, url, content_type?, filename?, caption?}` |
 | → server | `new_location_message` | `{latitude, longitude}` |
-| → server | `blocks_response` | `{message_id, component, values, summary}` |
 | → server | `load_more` | `{offset}` — pages of 100 |
-| → server | `update_name` | `{name}` |
+| → server | `renew_token` | `{token}` — hands the channel a token renewed over REST, so the sweep below reads the new expiry |
 | ← client | `new_message` | Serialised message |
-| ← client | `contact_updated` | `{name}` — pushed when a flow captures the contact's name |
-| ← client | `session_ended` | `[Target]` — sent to a session being evicted (§4.5) |
+| ← client | `token_expiring` | Sent once, inside the renewal window, so the widget can renew before the sweep ends the session |
+| ← client | `session_expired` | The token has passed its expiry plus grace; the room stops |
+| ← client | `web_channel_disabled` | The organisation switched the channel off; the room stops and the widget signs the contact out (#5772) |
+| → server | `blocks_response` | `{message_id, component, values, summary}` — custom nodes `[Target]` #5704 |
+
+*Three events an earlier revision listed do not exist on `master` and were never built:
+`update_name`, `contact_updated` and `session_ended`. The eviction event is `session_expired`,
+which is about expiry rather than eviction — one session per contact (§4.5) is still unbuilt.*
 
 ### Two properties that are not obvious
 
@@ -718,21 +768,35 @@ Current usage is deliberately thin — six components (`button`, `card`, `dialog
 
 ## 4.8 Theming — per-organisation branding
 
-**Today there is effectively none** — the only per-org element is the NGO name fetched onto the login screen. No logo, no brand colour, no font override.
+**Shipped** `[Today]` #5675, #5772 — and wider than this section originally scoped it. What follows records what was built and where it departed from the plan.
 
 **But the substrate is ideal.** The widget contains *zero* hex, rgb or oklch literals and zero inline styles outside `src/index.css`; the whole palette funnels through about twenty CSS custom properties on `:root`. Overriding a handful of them at runtime retheme almost everything, including message bubbles.
 
 ### The decision: runtime fetch
 
-`GET /api/v1/web_channel/theme` at boot, writing tokens onto `:root` before first paint. **One build serves every NGO**, and a colour change takes effect on reload rather than requiring a redeploy. Build-time theming would mean a deploy per org — which does not scale to Glific's org count and makes "change our colour" an engineering ticket.
+`GET /api/v1/web_channel/branding` at boot, writing tokens onto `:root` before first paint. **One build serves every NGO**, and a colour change takes effect on reload rather than requiring a redeploy. Build-time theming would mean a deploy per org — which does not scale to Glific's org count and makes "change our colour" an engineering ticket.
 
 | Controllable | Maps to | Notes |
 |---|---|---|
-| Accent colour | `--primary` + a derived `--primary-foreground` | The foreground must be **computed**, not supplied — `--primary` is currently near-black, and an org accent without a matching foreground makes button text vanish |
-| Logo | Header and login card | Replaces the hardcoded Glific mark |
-| Display name | Login card, document title | Extends the mechanism that already exists |
+| Primary colour | `--primary` + a **computed** `--primary-foreground` | `Branding.readable_on/1` takes the primary's WCAG relative luminance and returns whichever of the widget's two neutrals contrasts with it more. Asserted to clear AA at both extremes, and measured in a browser on the built widget rather than off the stylesheet |
+| Secondary colour | `--brand-accent` | Decorative only — chip borders, selected rings. Deliberately *not* shadcn's `--secondary`, which is a surface colour with its own foreground; repainting that would put brand-coloured text on brand-coloured buttons |
+| Logo | Chat header, sign-in hero, About screen | A white rounded square, falling back to the organisation's initials. Also becomes the tab icon, so the Glific mark no longer leaks into an NGO's browser tab |
+| Display name | Hero, chat header, document title | |
+| Business profile | The About screen | Description, address, website, contact email and hours — the web equivalent of a WhatsApp business profile |
 
-**Scope is deliberately narrow.** Accent, logo and name are what NGOs actually ask for. Full palette control means every org can produce an unreadable widget, and contrast is an accessibility obligation, not a preference. The token structure makes background and radius additive later if wanted.
+**Scope widened once, deliberately.** This section originally specified accent, logo and name only,
+and argued that full palette control lets every org produce an unreadable widget. The resolution was
+not to narrow the palette but to *compute the part that has to be safe*: an author picks two
+colours, and the one that sits behind text has its foreground derived rather than chosen. The
+business profile came with it, because an organisation identified only by a name and a colour has
+nowhere to put an address.
+
+> **The generic credential form was not enough, and the plan flagged exactly this.** WC-05's
+> "verify personally" note asked whether the Settings page renders a provider credential form
+> generically from `provider.keys`, warning the ticket would double if not. It does, but the design
+> is sectioned, pairs the two colours side by side and carries a note about what each drives — so
+> the page is bespoke. Storage is still the `web_channel` credential, and field metadata still comes
+> from the provider row, so only the layout is hand-written.
 
 ***Implementation notes.** Values are `oklch()`, so a hex from an admin form needs conversion — or the tokens must accept arbitrary colour syntax. Override the *raw* vars (`--primary`), not the `--color-*` aliases, which are compiled through `@theme inline`. Hold first paint behind the fetch to avoid a flash of default styling. And the dark palette is currently **dead code** — a complete `.dark` block that nothing ever activates; decide whether theming activates it or it is deleted.*
 
@@ -784,9 +848,9 @@ Historical rows read `NULL`; `COALESCE(channel,'whatsapp')` is the documented id
 |---|---|
 | Backend unit | ExUnit, 233 files. Tesla.Mock is the standard for external HTTP (85 files). **`GlificWeb.ChannelCase` exists and has zero users** — the web channel is its first consumer |
 | Backend coverage | ExCoveralls → Codecov, project target **88.25%**, `if_ci_failed: error`. But `coveralls.json` skips `lib/glific_web/channels/` |
-| Widget unit | Vitest, 8 files / 67 tests, all passing. No CI in that repo at all |
+| Widget unit | Vitest. CI exists now `[Today]` — `ci.yml` runs typecheck, lint, unit tests and a production build, and `promote-production.yml` fast-forwards a release |
 | Full-stack e2e | Cypress — 24 specs, a typed ~25-command support layer, two symmetrical cross-repo CI rigs that boot a real backend + frontend + Postgres behind an ngrok tunnel, 3-way sharding, plus a production smoke test every 27 minutes wired to Instatus |
-| Load / performance | **None.** No benchee, k6, artillery or locust anywhere |
+| Load / performance | **k6** `[Today]` #5797 — `k6/dos/` drives a denial-of-service profile and was what measured the rate-limiting work (200 rps over 12,000 requests). Nothing yet exercises socket concurrency, which is what §4.14 asks for |
 
 ### Backend — ExUnit on ChannelCase
 
@@ -829,7 +893,7 @@ Glific's observability is AppSignal, with a well-established in-house pattern: `
 
 > **Two traps to avoid on day one**
 >
-> **1 · Emitting telemetry is not enough.** All eight existing `[:glific, …]` events have *no permanently attached handler* — they are consumed only by LiveDashboard, while someone has the page open. A new web-channel event without a matching `attach` in `lib/glific/application.ex` produces nothing in production.
+> **1 · Emitting telemetry is not enough.** This was true when it was written and is no longer: `lib/glific/application.ex` now attaches eleven handlers `[Today]`, and #5797's rate-limit breaches are reported through one of them. The rule still holds for anything new — an event without a matching `attach` produces nothing in production — but the mechanism is now there to attach to.
 >
 > **2 · Decide the namespace deliberately.** `ignore_namespaces` excludes the three highest-volume webhook paths from APM sampling. A web-channel namespace would *not* be excluded by default, so every socket event is sampled unless we say otherwise — which at socket volumes is a cost decision, not a detail.
 
@@ -1030,7 +1094,7 @@ WhatsApp is a product question nobody has been asked.
 
 | # | Debt | What it costs | Blocks? |
 |---|---|---|---|
-| 6 | **`Communications.WebMessage` is a fork** of `Communications.Message`, not a reuse | Every future ingest fix must be made twice, and one will be missed. It was forked because the original unconditionally does two WhatsApp-specific things: phone-keyed contact resolution, and `set_session_status(contact, :session)` — the 24-hour window, applied to every channel | **Yes** for channel #3. This is the dispatch-seam work |
+| 6 | **`Communications.WebMessage` is a fork** of `Communications.Message`, not a reuse | Every future ingest fix must be made twice, and one will be missed. It was forked because the original unconditionally does two WhatsApp-specific things: phone-keyed contact resolution, and `set_session_status(contact, :session)` — the 24-hour window, applied to every channel. #5775 widened the fork rather than closing it: the web path now enqueues `Processor.MessageWorker` itself, so the handoff to the flow engine exists in both modules | **Yes** for channel #3. This is the dispatch-seam work |
 | 7 | **The bare rescue.** `send_message/2` ends in `rescue _ -> log_error(message, "Could not send message to contact: Check Gupshup Setting")` | Any exception from any adapter is reported to the user as a Gupshup configuration problem. A new channel inherits a misleading error path on day one, and real bugs hide behind it | No, but fix it while building dispatch |
 | 8 | **`@type_to_token` has no catch-all** — an unmapped message type raises rather than returning an error | Why the Blocks type must be intercepted upstream. The clause ordering that does so is a correctness requirement enforced only by a comment | No |
 | 9 | **Telemetry events have no permanent handler.** All eight `[:glific, …]` events reach only LiveDashboard, while the page is open | Production emits them into the void. Anyone adding an event reasonably assumes it is being collected | No — but it must be fixed before web-channel metrics are trusted |
@@ -1045,8 +1109,8 @@ WhatsApp is a product question nobody has been asked.
 | 13 | **`+Q` is commented out** in `rel/vm.args.eex` | The default BEAM port ceiling (~65k) caps concurrent websockets below what the hardware could hold — a limit nobody chose (§4.14) | Not for MVP; yes at scale |
 | 14 | **PubSub has no distributed adapter** and release distribution is commented out | Latent at one replica. At two, web delivery and staff GraphQL subscriptions both break — silently (§4.14) | **Yes** before replica two |
 | 15 | **No `/health` or readiness endpoint** | No load-balancer socket draining, no HTTP-level uptime probe. Uptime is currently inferred from a Cypress smoke test running every 27 minutes | No |
-| 16 | **`coveralls.json` skips `lib/glific_web/channels/`** | Web-channel code would escape the 88.25% Codecov gate — including the module holding the only socket authorization check. **Being removed** as part of this work | No |
-| 17 | **`glific-web-channel` has no CI at all** — no `.github/` directory, no workflow, no coverage upload, despite 67 passing tests | Tests pass only when someone runs them locally | **Yes** before the widget is depended on |
+| 16 | **`coveralls.json` still skips `lib/glific_web/channels/`** | Web-channel code escapes the 88.25% Codecov gate — including `RoomChannel`, which holds the only socket authorization check. An earlier revision said this was "being removed as part of this work"; it was not, and Phase 1 shipped with the skip in place | No, but it is the one live gap in Phase 1's test coverage |
+| 17 | ~~`glific-web-channel` has no CI~~ — **resolved** `[Today]` | `ci.yml` runs typecheck, lint, unit tests and a production build on push and PR | — |
 
 ### Widget
 
@@ -1076,7 +1140,7 @@ WhatsApp is a product question nobody has been asked.
 | US1 `[Risk]` | First-time web visitor with no WhatsApp history completes phone + OTP and lands on a journey. No matching contact ⇒ create one. A declined WhatsApp opt-in never blocks web access | §4.4 OTP endpoints, §4.5 auth. Flow routing is org configuration — a split-by on history, or a default flow for new contacts | `[Prototype]` mostly working |
 | US2 `[Risk]` | Existing WhatsApp user tapping a web link is recognised by phone. No duplicate contact. Contact fields, flow variables and collection membership load. **Web starts its own journey** — no replay of WhatsApp progress | §2.2 identities · §2.3 per-channel history. The channel filter on `list_conversation_messages/3` is exactly what makes "own journey" true rather than aspirational | `[Prototype]` |
 | US3 `[Risk]` | Explicit, unchecked-by-default WhatsApp opt-in at the OTP step. Consent or decline recorded with a timestamp. If the number has no WhatsApp account, opt-in fails silently without erroring the OTP flow | **New — not previously in this design.** §4.2 #11, §4.4 `verify-otp` | `[Target]` |
-| US4a `[Prototype]` | Students sharing a household phone keep separate progress. "Contact profile nodes to be compatible with web channel" | §2.2 profiles vs identities · §4.5 profile support. Profiles are supported from the start; the token may name a `profile_id` | `[Target]` · flagged open in the source |
+| US4a `[Today]` in part | Students sharing a household phone keep separate progress. "Contact profile nodes to be compatible with web channel" | §2.2 profiles vs identities · §4.5 profile support. Profiles are supported from the start; the token may name a `profile_id` | `[Target]` · flagged open in the source |
 
 ***One tension to resolve in US2.** The story title says the user wants Glific to "load my existing history", but the acceptance criteria say web starts its own journey with no replay of WhatsApp progress. The criteria are what this design implements — shared *contact* data, separate *conversation*. Worth aligning the wording so nobody builds to the title.*
 
@@ -1101,7 +1165,7 @@ WhatsApp is a product question nobody has been asked.
 | US9 | Per-channel contact counts plus one combined, deduplicated reached / active / engaged figure | §4.11 — depends on `channel` reaching BigQuery, which is deferred to production rollout. Deduplication is natural because one human is one contact | `[Target]` |
 | US10 | Session metrics labelled or filterable as web-specific; WhatsApp-only contacts never show blank session fields | §4.11. "Session" means something different per channel — a web socket session versus WhatsApp's 24-hour window — so the labelling is the substance, not cosmetics | `[Target]` |
 | US12 | One contact profile showing activity across both channels | §2.1 — already true structurally; the staff UI needs to show the channel per message | `[Target]` |
-| US13 `[Prototype]` | Web-channel infrastructure cost alongside WhatsApp/Gupshup cost, attributed per org | **Out of scope for this design.** Ties to the separate Billing & Subscriptions work — the source note asks to confirm one dashboard, not two | Not covered |
+| US13 | Web-channel infrastructure cost alongside WhatsApp/Gupshup cost, attributed per org | **Out of scope for this design.** Ties to the separate Billing & Subscriptions work — the source note asks to confirm one dashboard, not two | Not covered |
 
 ### Epic 6 — Failure and recovery
 
@@ -1119,6 +1183,12 @@ WhatsApp is a product question nobody has been asked.
 # Part 7 — Implementation plan
 
 *Deployable increments, each one shippable to real users for feedback before the next begins.*
+
+> **This part is now a record of how Phase 1 was planned, not a live plan.** Phase 1 shipped —
+> the epic is #5659 and the PRs are listed under Status markers in Part 1. The estimates and the
+> chunking are kept because the assumptions behind them are worth checking against what the work
+> actually cost, not because anything here is still scheduled. **Phase 2 is #5702**, and its
+> sub-tickets are the live list.
 
 ## 7 MVP chunks and estimates
 
@@ -1231,6 +1301,13 @@ than rediscovered.
   That is superseded twice over: the scoping must include `contact_id`, and it is no longer a new
   column at all — it is the `bsp_message_id` rename (§4.2 #12, §4.4).
 - It does not carry the one-session-per-contact rule, the mandatory `jti`, or the `profile_id` claim.
+- §2.5's TTL paragraph has been corrected: the shipped token is one hour with a 24-hour session
+  ceiling, and the renewal handshake it said was unbuilt now exists (#5710).
+- **The `profile_id` claim is not built.** §4.5 here and §2.1 there both describe a token that may
+  name a profile; the shipped token carries `sub`, `channel`, `org_id`, `jti`, `session_started_at`,
+  `iat` and `exp` and no profile. Profiles still separate progress on web, because the database
+  triggers in §5 #2 stamp `profile_id` from `contacts.active_profile_id` — so US4a holds, but by a
+  different mechanism than either document describes.
 
 ## Corrected since earlier drafts
 
@@ -1245,3 +1322,19 @@ Recorded because each was stated wrongly at some point and someone may have read
 - **`channel` is a Postgres enum, not a varchar.** Earlier drafts recorded the varchar as settled
   and justified it as "no migration per channel". The column is `message_channel_enum`; adding a
   channel costs one `ALTER TYPE`. See §2.2 for the measurements that reopened it.
+- **A flow's channel is authored at creation, not derived on every save.** §2.2 argued the
+  derived case and argued it well. It was overruled because the flow editor filters its node
+  palette by channel, so the channel has to exist before there are nodes, and because product
+  asked for it to be something an author picks and sees. `flows.channel` replaces the `channels`
+  array #5709 shipped, which nothing ever read. It is also immutable once the flow exists.
+- **The endpoint is `/branding`, not `/theme`**, and it carries the business profile as well as
+  the palette. It answers 200 with `enabled: false` when the channel is off rather than 404, so the
+  widget can name the organisation and its WhatsApp number on the disabled page.
+- **`update_name`, `contact_updated` and `session_ended` are not socket events.** They were listed
+  in §4.4 and never built. The events that exist are in that table now.
+- **The `channel` default was never dropped.** §2.3 specified ship-with-default → stamp every
+  insert → drop the default and require the field. Only the first step happened, so a forgotten
+  stamp still becomes a silent WhatsApp send.
+- **Two organisation switches, not one.** `web_channel_enabled` is Glific's; an active
+  `web_channel` credential is the organisation's own, set on the Settings page. Both must be on,
+  and switching the second off closes every open room (#5772).
