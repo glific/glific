@@ -18,7 +18,6 @@ defmodule Glific.Flows.Router do
   alias Glific.Flows.{
     Case,
     Category,
-    ChannelCompatibility,
     FlowContext,
     Localization,
     Node,
@@ -179,12 +178,9 @@ defmodule Glific.Flows.Router do
         &Case.validate(&1, &2, flow, router.wait)
       )
 
-    errors =
-      if router.wait,
-        do: Wait.validate(router.wait, errors, flow),
-        else: errors
-
-    ChannelCompatibility.router_errors(errors, router, flow)
+    if router.wait,
+      do: Wait.validate(router.wait, errors, flow),
+      else: errors
   end
 
   @reserved_messages ["No Response", "Exit Loop", "Success", "Failure"]

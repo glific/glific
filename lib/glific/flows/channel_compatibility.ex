@@ -39,23 +39,17 @@ defmodule Glific.Flows.ChannelCompatibility do
   def web?(_flow), do: false
 
   @doc """
-  Refuse an action this flow's channel cannot run.
+  Refuse the actions and router on this node that its flow's channel cannot run.
   """
-  @spec action_errors(list(), map(), map()) :: list()
-  def action_errors(errors, action, flow) do
-    if web?(flow),
-      do: refuse(errors, unsupported_action(action), action.node_uuid),
-      else: errors
-  end
-
-  @doc """
-  Refuse a router this flow's channel cannot run.
-  """
-  @spec router_errors(list(), map(), map()) :: list()
-  def router_errors(errors, router, flow) do
-    if web?(flow),
-      do: refuse(errors, unsupported_router(router), router.node_uuid),
-      else: errors
+  @spec node_errors(list(), map(), map()) :: list()
+  def node_errors(errors, node, flow) do
+    if web?(flow) do
+      node.actions
+      |> Enum.reduce(errors, &refuse(&2, unsupported_action(&1), node.uuid))
+      |> router_errors(node.router, node.uuid)
+    else
+      errors
+    end
   end
 
   @doc """
@@ -63,6 +57,12 @@ defmodule Glific.Flows.ChannelCompatibility do
   """
   @spec error(String.t(), Ecto.UUID.t() | nil) :: tuple()
   def error(message, node_uuid), do: {Flow, message, @blocking_category, node_uuid}
+
+  @spec router_errors(list(), map() | nil, Ecto.UUID.t() | nil) :: list()
+  defp router_errors(errors, nil, _node_uuid), do: errors
+
+  defp router_errors(errors, router, node_uuid),
+    do: refuse(errors, unsupported_router(router), node_uuid)
 
   @spec refuse(list(), String.t() | nil, Ecto.UUID.t() | nil) :: list()
   defp refuse(errors, nil, _node_uuid), do: errors
