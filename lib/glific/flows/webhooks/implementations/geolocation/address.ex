@@ -2,8 +2,8 @@ defmodule Glific.Flows.Webhooks.Geolocation.Address do
   @moduledoc """
   Parsed geocoding result from Google Maps.
 
-  Internal to the geolocation webhook; encoded for flow results via `to_flow_map/1`
-  at the `Glific.Flows.Webhooks.ResultTranslator` boundary.
+  Internal to the geolocation webhook; the node converts it to the flow-facing map via
+  `to_flow_map/1` before returning `{:ok, map}`.
   """
 
   @enforce_keys [:city, :state, :country, :postal_code, :district, :address]

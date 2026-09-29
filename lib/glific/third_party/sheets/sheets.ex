@@ -3,7 +3,7 @@ defmodule Glific.Sheets do
   The Sheets context
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   require Logger
 
   alias Ecto.Multi

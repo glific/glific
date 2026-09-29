@@ -11,7 +11,7 @@ defmodule Glific.Flows.Webhooks.CheckResponseTest do
           "user_response" => "yes"
         })
 
-      assert result == %{response: true}
+      assert result == {:ok, %{response: true}}
     end
 
     test "returns false when the user response does not match" do
@@ -21,7 +21,7 @@ defmodule Glific.Flows.Webhooks.CheckResponseTest do
           "user_response" => "no"
         })
 
-      assert result == %{response: false}
+      assert result == {:ok, %{response: false}}
     end
   end
 end

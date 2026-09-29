@@ -5,8 +5,7 @@ defmodule Glific.Flows.WebhookLog do
   use Ecto.Schema
   import Ecto.Changeset
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.Groups.WAGroup
   alias __MODULE__
 

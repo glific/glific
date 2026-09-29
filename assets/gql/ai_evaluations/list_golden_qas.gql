@@ -1,0 +1,10 @@
+query GoldenQas($filter: GoldenQaFilter, $opts: Opts) {
+  goldenQas(filter: $filter, opts: $opts) {
+    id
+    name
+    fileName
+    totalItems
+    insertedAt
+    updatedAt
+  }
+}

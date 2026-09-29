@@ -25,6 +25,16 @@ defmodule GlificWeb.Endpoint do
 
   socket("/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]])
 
+  # Socket dispatch happens before the plug pipeline, so RemoteIp never runs for a connect and the
+  # forwarded headers are the only way WebChannelSocket can rate limit by address.
+  socket("/web_socket", GlificWeb.WebChannelSocket,
+    websocket: [
+      connect_info: [:x_headers, :peer_data],
+      error_handler: {GlificWeb.WebChannelSocket, :handle_connect_error, []}
+    ],
+    longpoll: false
+  )
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phx.digest
@@ -47,7 +57,17 @@ defmodule GlificWeb.Endpoint do
 
   plug(Phoenix.LiveDashboard.RequestLogger, param_key: "request_logger")
   plug(Plug.RequestId)
+
+  # Only gigalixir's x-forwarded-for is trusted; RemoteIp's other default headers are caller-set.
+  plug(RemoteIp, headers: ~w[x-forwarded-for])
+
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
+
+  # Ahead of the parsers and SubdomainPlug so a blocked caller costs no body buffering or org lookup.
+  plug(GlificWeb.Plugs.IPBlocklist)
+
+  # The :api pipeline copy only sees matched routes, so unrouted requests need this one at the edge.
+  plug(GlificWeb.RateLimitPlug, :global)
 
   plug(:parse_body)
 
@@ -81,10 +101,6 @@ defmodule GlificWeb.Endpoint do
 
   # we'll use the raw_body here for webhook
   plug(GlificWeb.StripeWebhook)
-
-  # gigalixir puts us behind a proxy, hence using this to get the right
-  # IP
-  plug(RemoteIp)
 
   plug(GlificWeb.Router)
 end

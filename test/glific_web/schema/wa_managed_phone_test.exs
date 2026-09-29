@@ -4,10 +4,23 @@ defmodule GlificWeb.Schema.WAManagedPhoneTest do
 
   alias Faker.Phone
 
-  alias Glific.Fixtures
+  alias Glific.{Fixtures, Partners}
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/wa_managed_phones/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/wa_managed_phones/list.gql")
+  load_gql(:screen, GlificWeb.Schema, "assets/gql/wa_managed_phones/screen.gql")
+  load_gql(:reconnect, GlificWeb.Schema, "assets/gql/wa_managed_phones/reconnect.gql")
+  load_gql(:sync_statuses, GlificWeb.Schema, "assets/gql/wa_managed_phones/sync_statuses.gql")
+
+  defp maytapi_credential(organization_id) do
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{"product_id" => "prod-123", "token" => "tok-123"},
+      is_active: true
+    })
+  end
 
   test "wa_managed_phones field returns list of wa_managed_phones", %{manager: user} = attrs do
     seed_wa_managed_phone = Fixtures.wa_managed_phone_fixture(attrs)
@@ -108,5 +121,81 @@ defmodule GlificWeb.Schema.WAManagedPhoneTest do
       )
 
     assert get_in(query_data, [:data, "countWaManagedPhones"]) == 1
+  end
+
+  test "whatsapp_phone_screen returns the QR payload for an admin",
+       %{glific_admin: user} = attrs do
+    phone = Fixtures.wa_managed_phone_fixture(attrs)
+    maytapi_credential(user.organization_id)
+
+    # Maytapi returns the screen as raw PNG bytes
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{status: 200, body: <<137, 80, 78, 71, 13, 10, 26, 10>>}
+    end)
+
+    result = auth_query_gql_by(:screen, user, variables: %{"wa_managed_phone_id" => phone.id})
+    assert {:ok, query_data} = result
+
+    code = get_in(query_data, [:data, "whatsapp_phone_screen", "wa_phone_screen", "code"])
+    assert String.starts_with?(code, "data:image/png;base64,")
+  end
+
+  test "whatsapp_phone_screen is rejected for a non-admin", %{manager: user} = attrs do
+    phone = Fixtures.wa_managed_phone_fixture(attrs)
+
+    result = auth_query_gql_by(:screen, user, variables: %{"wa_managed_phone_id" => phone.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors]) != nil
+  end
+
+  test "reconnect_wa_managed_phone logs the phone out for an admin",
+       %{glific_admin: user} = attrs do
+    phone = Fixtures.wa_managed_phone_fixture(attrs)
+
+    {:ok, phone} =
+      Glific.WAManagedPhones.update_wa_managed_phone(phone, %{status: "disconnected"})
+
+    maytapi_credential(user.organization_id)
+
+    Tesla.Mock.mock(fn _env -> %Tesla.Env{status: 200, body: ~s({"success":true})} end)
+
+    result = auth_query_gql_by(:reconnect, user, variables: %{"wa_managed_phone_id" => phone.id})
+    assert {:ok, query_data} = result
+
+    id = get_in(query_data, [:data, "reconnect_wa_managed_phone", "wa_managed_phone", "id"])
+    assert String.to_integer(id) == phone.id
+  end
+
+  test "reconnect_wa_managed_phone is rejected for a non-admin", %{staff: user} = attrs do
+    phone = Fixtures.wa_managed_phone_fixture(attrs)
+
+    result = auth_query_gql_by(:reconnect, user, variables: %{"wa_managed_phone_id" => phone.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors]) != nil
+  end
+
+  test "sync_wa_managed_phone_statuses reconciles statuses for a manager",
+       %{manager: user} = attrs do
+    Fixtures.wa_managed_phone_fixture(attrs)
+    maytapi_credential(user.organization_id)
+
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: ~s([{"id":242,"number":"9829627508","status":"active","type":"whatsapp"}])
+      }
+    end)
+
+    result = auth_query_gql_by(:sync_statuses, user)
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "sync_wa_managed_phone_statuses", "message"])
+    assert message =~ "refreshed"
+  end
+
+  test "sync_wa_managed_phone_statuses is rejected for staff", %{staff: user} do
+    result = auth_query_gql_by(:sync_statuses, user)
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors]) != nil
   end
 end

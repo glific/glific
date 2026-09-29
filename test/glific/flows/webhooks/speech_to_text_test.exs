@@ -241,7 +241,7 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
         %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_123"}}
       end)
 
-      assert SpeechToText.call(fields, %{}).success == true
+      assert {:ok, %{success: true}} = SpeechToText.call(fields, %{})
     end
 
     test "sends correct payload structure to Kaapi for STT", %{fields: fields} do
@@ -277,7 +277,7 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "stt-123"}}
       end)
 
-      assert SpeechToText.call(fields, %{}).success == true
+      assert {:ok, %{success: true}} = SpeechToText.call(fields, %{})
     end
 
     test "passes output_language to Kaapi when specified in fields", %{fields: fields} do
@@ -294,7 +294,8 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "stt-456"}}
       end)
 
-      assert SpeechToText.call(Map.put(fields, "output_language", "english"), %{}).success == true
+      assert {:ok, %{success: true}} =
+               SpeechToText.call(Map.put(fields, "output_language", "english"), %{})
     end
 
     test "returns failure result when Kaapi returns 200 with a success:false body", %{
@@ -305,10 +306,9 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
         %{method: :post} -> %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
-      result = SpeechToText.call(fields, %{})
-      assert result.success == false
-      assert result.error_type == "kaapi_logical_failure"
-      assert result.reason == "boom"
+      # error_type "kaapi_logical_failure" is a raw string, not a known ErrorType.t() atom, so
+      # to_result/1 fails it safe to :unknown; http_status is folded into the reason.
+      assert {:error, :unknown, "boom (HTTP 200)"} = SpeechToText.call(fields, %{})
     end
 
     test "returns failure result on a Kaapi 5xx response", %{fields: fields} do
@@ -317,12 +317,12 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      assert SpeechToText.call(fields, %{}).success == false
+      assert {:error, _error_type, _reason} = SpeechToText.call(fields, %{})
     end
 
     test "rejects empty speech URL without calling Kaapi", %{fields: fields} do
       assert SpeechToText.call(Map.put(fields, "speech", ""), %{}) ==
-               %{success: false, reason: "Media URL is invalid"}
+               {:error, :invalid_media_url, "Media URL is invalid"}
     end
 
     test "snoozes (does not call Kaapi) once the shared STT/TTS rate limit is exhausted", %{

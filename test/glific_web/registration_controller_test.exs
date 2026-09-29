@@ -7,6 +7,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    OTP,
     Partners.Saas,
     Repo,
     Seeds.SeedsDev,
@@ -163,12 +164,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send_otp is rate limited to one request per IP within the window", %{conn: conn} do
       rate_limit_key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
-      original_config = Application.get_env(:glific, :otp_rate_limit)
-      Application.put_env(:glific, :otp_rate_limit, scale_ms: 30_000, count: 1)
+      original_config = Application.get_env(:glific, :rate_limit_api_otp)
+      Application.put_env(:glific, :rate_limit_api_otp, scale_ms: 30_000, count: 1)
       ExRated.delete_bucket(rate_limit_key)
 
       on_exit(fn ->
-        Application.put_env(:glific, :otp_rate_limit, original_config)
+        Application.put_env(:glific, :rate_limit_api_otp, original_config)
         ExRated.delete_bucket(rate_limit_key)
       end)
 
@@ -606,6 +607,26 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["token_expiry_time"]
     end
 
+    test "with an otp minted by the trial signup flow", %{conn: conn} do
+      user = user_fixture()
+
+      # The trial flow mails its OTP to a self-declared address, so a code minted there must
+      # never authorize a password reset for the same phone.
+      invalid_params = %{
+        "user" => %{
+          "phone" => user.phone,
+          "password" => @new_password,
+          "otp" => OTP.generate_code(:trial, user.phone)
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+      assert json = json_response(conn, 500)
+      assert json["error"]["status"] == 500
+      assert json["error"]["message"] == "Couldn't update user password"
+      assert Repo.get!(Users.User, user.id).password_hash == user.password_hash
+    end
+
     test "with wrong otp", %{conn: conn} do
       user = user_fixture()
 
@@ -666,6 +687,20 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   describe "rate limit tests" do
     @password "Secret12345!"
     @max_unauth_requests 50
+
+    # config/test.exs raises the unauthenticated limit out of the suite's way, so a test that wants
+    # the limiter to actually fire has to ask for a real limit.
+    setup do
+      previous = Application.get_env(:glific, :rate_limit_api_unauthenticated)
+
+      Application.put_env(:glific, :rate_limit_api_unauthenticated,
+        scale_ms: 60_000,
+        count: @max_unauth_requests
+      )
+
+      on_exit(fn -> Application.put_env(:glific, :rate_limit_api_unauthenticated, previous) end)
+      :ok
+    end
 
     test "with invalid request", %{conn: conn} do
       receiver = Fixtures.contact_fixture()

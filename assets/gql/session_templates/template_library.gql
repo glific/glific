@@ -1,0 +1,12 @@
+query templateLibrary {
+  templateLibrary {
+    elementName
+    category
+    body
+    languageCode
+    industry
+    topic
+    usecase
+    containerMeta
+  }
+}

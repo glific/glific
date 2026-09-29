@@ -1,0 +1,9 @@
+mutation importWaGroupContacts($waGroupId: ID!, $type: ImportContactsTypeEnum!, $data: String!) {
+  importWaGroupContacts(waGroupId: $waGroupId, type: $type, data: $data) {
+    status
+    errors {
+      key
+      message
+    }
+  }
+}

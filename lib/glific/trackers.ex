@@ -3,7 +3,7 @@ defmodule Glific.Trackers do
   The Trackers context.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Partners.Saas,

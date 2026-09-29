@@ -8,7 +8,7 @@ config :glific, :environment, :prod
 
 # set the translator adapter
 # Move this to dynamic per organization at a later stage
-config :glific, :adaptors, translators: Glific.Flows.Translate.OpenAI
+config :glific, :adaptors, translators: Glific.Flows.Translate.GoogleTranslate
 
 config :appsignal, :config,
   otp_app: :glific,

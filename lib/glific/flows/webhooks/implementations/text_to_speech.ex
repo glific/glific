@@ -1,10 +1,7 @@
 defmodule Glific.Flows.Webhooks.TextToSpeech do
   @moduledoc """
-  Async webhook implementation for the `text_to_speech` flow node.
-
-  Runs inside the `Glific.Flows.Webhook` Oban worker (worker phase): it fires the
-  Kaapi TTS request and returns the Kaapi ack. Kaapi POSTs the generated audio to
-  `GlificWeb.Flows.FlowResumeController.flow_resume/2`, which resumes the parked flow.
+  Async webhook implementation for the `text_to_speech` flow node. Kaapi POSTs the generated
+  audio to `FlowResumeController.flow_resume/2`, which resumes the parked flow.
   """
 
   use Glific.Flows.Webhooks.Async, name: "text_to_speech"
@@ -14,12 +11,11 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
   alias Glific.ThirdParty.Kaapi
 
   @doc """
-  Fires the Kaapi TTS request. Enforces the shared per-org STT/TTS rate limit (returning
-  `{:snooze, seconds}` so the Oban worker reschedules when the budget is exhausted), builds the
-  signed callback metadata, and dispatches to Kaapi. Returns the Kaapi ack map (`%{success: …}`).
+  Fires the Kaapi TTS request, enforcing the shared per-org STT/TTS rate limit first. Returns
+  the Kaapi ack map (`%{success: …}`).
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: map() | {:snooze, pos_integer()}
+  @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
   def call(fields, _ctx) do
     with {:ok, {organization_id, flow_id, contact_id}} <-
            KaapiSupport.parse_flow_fields(fields),
@@ -37,8 +33,6 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
         voice: fields["voice"]
       }
 
-      Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-
       Kaapi.text_to_speech(
         organization_id,
         fields["text"],
@@ -46,9 +40,10 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
         request_metadata,
         tts_opts
       )
+      |> KaapiSupport.to_result()
     else
       {:snooze, _seconds} = snooze -> snooze
-      {:error, reason} -> %{success: false, reason: reason}
+      {:error, _error_type, _reason} = error -> error
     end
   end
 end

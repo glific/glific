@@ -1,0 +1,11 @@
+query get_file($file_id: String!) {
+    get_file(file_id: $file_id) {
+        file_id
+        filename
+        signed_url
+        errors {
+            key
+            message
+        }
+    }
+}

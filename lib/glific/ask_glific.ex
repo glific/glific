@@ -3,8 +3,9 @@ defmodule Glific.AskGlific do
   Glific AskGlific context module for business logic.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
+  alias Glific.AI
   alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
@@ -18,6 +19,9 @@ defmodule Glific.AskGlific do
     defexception [:message]
   end
 
+  # AppSignal namespace for AskGlific errors (enables a dedicated error-rate trigger).
+  @appsignal_namespace "ask_glific"
+
   @doc """
   Calls the Dify chat-messages API and fetches the answer for AskGlific bot.
   Supports conversation history via conversation_id.
@@ -27,6 +31,15 @@ defmodule Glific.AskGlific do
   def ask(params, user) do
     Glific.Metrics.increment("AskGlific Requests")
 
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.ask(params, user)
+    else
+      dify_ask(params, user)
+    end
+  end
+
+  @spec dify_ask(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_ask(params, user) do
     query = params |> Map.get(:query) |> to_string() |> String.trim()
     conversation_id = Map.get(params, :conversation_id, "")
     page_url = Map.get(params, :page_url, "")
@@ -54,6 +67,8 @@ defmodule Glific.AskGlific do
 
     case ApiClient.chat_messages(body) do
       {:ok, response} ->
+        record_outcome("success", System.monotonic_time(:millisecond) - start_time)
+
         answer = Map.get(response, "answer", "")
         resp_conversation_id = Map.get(response, "conversation_id", "")
         message_id = Map.get(response, "message_id", "")
@@ -79,6 +94,7 @@ defmodule Glific.AskGlific do
 
       {:error, reason} ->
         latency_ms = System.monotonic_time(:millisecond) - start_time
+        record_outcome("failure", latency_ms)
         report_failure(user, latency_ms, reason)
         {:error, reason}
     end
@@ -87,20 +103,16 @@ defmodule Glific.AskGlific do
   # Reports an AskGlific bot failure to AppSignal.
   @spec report_failure(map(), non_neg_integer(), any()) :: :ok
   defp report_failure(user, latency_ms, reason) do
-    exception = %Error{message: "AskGlific bot failed to respond"}
-
-    Appsignal.send_error(exception, [], fn span ->
-      span
-      |> Appsignal.Span.set_namespace("ask_glific")
-      |> Appsignal.Span.set_sample_data("tags", %{
+    %Error{message: "AskGlific bot failed to respond"}
+    |> Glific.log_exception(
+      namespace: @appsignal_namespace,
+      tags: %{
         organization_id: user.organization_id,
         user_id: user.id,
         latency_ms: latency_ms,
         reason: SafeLog.safe_inspect(reason)
-      })
-    end)
-
-    :ok
+      }
+    )
   end
 
   @doc """
@@ -108,6 +120,15 @@ defmodule Glific.AskGlific do
   """
   @spec submit_feedback(map(), map()) :: {:ok, map()} | {:error, String.t()}
   def submit_feedback(params, user) do
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.submit_feedback(params, user)
+    else
+      dify_feedback(params, user)
+    end
+  end
+
+  @spec dify_feedback(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_feedback(params, user) do
     message_id = Map.get(params, :message_id)
     rating = Map.get(params, :rating)
     content = Map.get(params, :content, "")
@@ -120,6 +141,7 @@ defmodule Glific.AskGlific do
 
     case ApiClient.message_feedback(message_id, body) do
       {:ok, _response} ->
+        record_feedback(rating)
         {:ok, %{success: true}}
 
       {:error, reason} ->
@@ -146,6 +168,15 @@ defmodule Glific.AskGlific do
   @spec get_conversations(map(), map()) ::
           {:ok, map()} | {:error, String.t()}
   def get_conversations(user, params \\ %{}) do
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.get_conversations(user, params)
+    else
+      dify_conversations(user, params)
+    end
+  end
+
+  @spec dify_conversations(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_conversations(user, params) do
     limit = Map.get(params, :limit, 20)
     last_id = Map.get(params, :last_id, "")
 
@@ -190,6 +221,15 @@ defmodule Glific.AskGlific do
   @spec get_messages(String.t(), map(), map()) ::
           {:ok, map()} | {:error, String.t()}
   def get_messages(conversation_id, user, params \\ %{}) do
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.get_messages(conversation_id, user, params)
+    else
+      dify_messages(conversation_id, user, params)
+    end
+  end
+
+  @spec dify_messages(String.t(), map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_messages(conversation_id, user, params) do
     limit = Map.get(params, :limit, 20)
     first_id = Map.get(params, :first_id, "")
 
@@ -263,4 +303,17 @@ defmodule Glific.AskGlific do
 
   @spec dify_user(map()) :: String.t()
   defp dify_user(user), do: "org-#{user.organization_id}-user-#{user.id}"
+
+  # Tracks request count and latency in AppSignal, mirroring prompt_generator_count/latency.
+  @spec record_outcome(String.t(), non_neg_integer()) :: :ok
+  defp record_outcome(status, latency_ms) do
+    Appsignal.increment_counter("ask_glific_count", 1, %{status: status})
+    Appsignal.add_distribution_value("ask_glific_latency", latency_ms, %{status: status})
+  end
+
+  # Tracks like/dislike feedback in AppSignal, keyed by the rating a user gave.
+  @spec record_feedback(String.t() | nil) :: :ok
+  defp record_feedback(rating) do
+    Appsignal.increment_counter("ask_glific_feedback_count", 1, %{rating: rating || "unknown"})
+  end
 end

@@ -5,13 +5,13 @@ defmodule Glific.ChatbotDiagnose do
   against the database with organization scoping, and returns results.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   require Logger
 
   alias Glific.{
     Contacts.Contact,
     Flows.Flow,
-    Repo
+    RepoReplica
   }
 
   # Map of allowed table names to their Ecto schema modules.
@@ -48,7 +48,6 @@ defmodule Glific.ChatbotDiagnose do
     "organization_data" => Glific.Partners.OrganizationData,
     "organizations" => Glific.Partners.Organization,
     "profiles" => Glific.Profiles.Profile,
-    "registrations" => Glific.Registrations.Registration,
     "roles" => Glific.AccessControl.Role,
     "saved_searches" => Glific.Searches.SavedSearch,
     "session_templates" => Glific.Templates.SessionTemplate,
@@ -81,7 +80,7 @@ defmodule Glific.ChatbotDiagnose do
   # Whitelisted fields per table. Only these fields can be selected/filtered.
   @allowed_fields %{
     "assistant_config_versions" =>
-      ~w(id version_number kaapi_version_number description prompt provider model status failure_reason assistant_id organization_id inserted_at updated_at)a,
+      ~w(id major_version minor_version bump_type kaapi_version_number description prompt provider model status failure_reason assistant_id organization_id inserted_at updated_at)a,
     "assistants" =>
       ~w(id name description kaapi_uuid assistant_display_id clone_status active_config_version_id organization_id inserted_at updated_at)a,
     "contact_histories" =>
@@ -122,7 +121,7 @@ defmodule Glific.ChatbotDiagnose do
     "message_broadcasts" =>
       ~w(id started_at completed_at type group_id message_id flow_id user_id organization_id inserted_at updated_at)a,
     "messages" =>
-      ~w(id uuid body flow_label flow type status clean_body is_hsm bsp_message_id bsp_status errors send_at sent_at message_number session_uuid sender_id receiver_id contact_id user_id group_id flow_id media_id organization_id profile_id message_broadcast_id template_id interactive_template_id inserted_at updated_at)a,
+      ~w(id uuid flow_label flow type status is_hsm bsp_message_id bsp_status errors send_at sent_at message_number session_uuid sender_id receiver_id contact_id user_id group_id flow_id media_id organization_id profile_id message_broadcast_id template_id interactive_template_id inserted_at updated_at)a,
     "messages_conversations" =>
       ~w(id conversation_id deduction_type is_billable message_id organization_id inserted_at updated_at)a,
     "messages_media" =>
@@ -135,8 +134,6 @@ defmodule Glific.ChatbotDiagnose do
       ~w(id name shortcode email is_active is_approved status timezone session_limit inserted_at updated_at)a,
     "profiles" =>
       ~w(id name type is_active is_default language_id contact_id organization_id inserted_at updated_at)a,
-    "registrations" =>
-      ~w(id org_details platform_details billing_frequency has_submitted has_confirmed organization_id inserted_at updated_at)a,
     "roles" => ~w(id description is_reserved label organization_id inserted_at updated_at)a,
     "saved_searches" =>
       ~w(id label shortcode is_reserved organization_id inserted_at updated_at)a,
@@ -172,7 +169,7 @@ defmodule Glific.ChatbotDiagnose do
     "wa_managed_phones" =>
       ~w(id label phone phone_id status product_id contact_id organization_id inserted_at updated_at)a,
     "wa_messages" =>
-      ~w(id uuid type flow status body bsp_status bsp_id errors message_number send_at sent_at is_dm flow_label contact_id group_id wa_group_id media_id wa_managed_phone_id organization_id message_broadcast_id inserted_at updated_at)a,
+      ~w(id uuid type flow status bsp_status bsp_id errors message_number send_at sent_at is_dm flow_label contact_id group_id wa_group_id media_id wa_managed_phone_id organization_id message_broadcast_id inserted_at updated_at)a,
     "wa_polls" =>
       ~w(id uuid label poll_content allow_multiple_answer organization_id inserted_at updated_at)a,
     "wa_reactions" =>
@@ -192,12 +189,12 @@ defmodule Glific.ChatbotDiagnose do
   @doc """
   Execute diagnostic queries for the given tables.
 
-  Sets the organization context in the process dictionary so the Repo
+  Sets the organization context in the process dictionary so the read replica
   auto-scopes all queries by organization_id.
   """
   @spec run(map(), String.t() | nil, non_neg_integer()) :: map()
   def run(tables, time_range, org_id) do
-    Repo.put_organization_id(org_id)
+    RepoReplica.put_organization_id(org_id)
     time_threshold = parse_time_range(time_range)
 
     # Pre-resolve virtual filter keys once
@@ -231,7 +228,7 @@ defmodule Glific.ChatbotDiagnose do
         limit
       )
       |> select_fields(fields)
-      |> Repo.all()
+      |> RepoReplica.all()
       |> Enum.map(&schema_to_map(&1, fields))
     else
       {:error, reason} ->
@@ -478,7 +475,7 @@ defmodule Glific.ChatbotDiagnose do
   end
 
   defp resolve_flow_by_uuid(uuid) do
-    case Repo.one(from(f in Flow, where: f.uuid == ^uuid, select: f.id, limit: 1)) do
+    case RepoReplica.one(from(f in Flow, where: f.uuid == ^uuid, select: f.id, limit: 1)) do
       nil -> :error
       id -> {:ok, id}
     end
@@ -487,14 +484,14 @@ defmodule Glific.ChatbotDiagnose do
   defp resolve_flow_by_name(name) do
     pattern = "%#{name}%"
 
-    case Repo.one(from(f in Flow, where: ilike(f.name, ^pattern), select: f.id, limit: 1)) do
+    case RepoReplica.one(from(f in Flow, where: ilike(f.name, ^pattern), select: f.id, limit: 1)) do
       nil -> :error
       id -> {:ok, id}
     end
   end
 
   defp resolve_contact_by_phone(phone) do
-    case Repo.one(from(c in Contact, where: c.phone == ^phone, select: c.id, limit: 1)) do
+    case RepoReplica.one(from(c in Contact, where: c.phone == ^phone, select: c.id, limit: 1)) do
       nil -> :error
       id -> {:ok, id}
     end
@@ -503,7 +500,9 @@ defmodule Glific.ChatbotDiagnose do
   defp resolve_contact_by_name(name) do
     pattern = "%#{name}%"
 
-    case Repo.one(from(c in Contact, where: ilike(c.name, ^pattern), select: c.id, limit: 1)) do
+    case RepoReplica.one(
+           from(c in Contact, where: ilike(c.name, ^pattern), select: c.id, limit: 1)
+         ) do
       nil -> :error
       id -> {:ok, id}
     end

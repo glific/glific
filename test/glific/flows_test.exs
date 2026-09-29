@@ -13,7 +13,7 @@ defmodule Glific.FLowsTest do
     Messages,
     Messages.Message,
     Processor.ConsumerFlow,
-    Processor.ConsumerWorker,
+    Processor.MessageWorker,
     Repo,
     Seeds.SeedsDev
   }
@@ -672,13 +672,13 @@ defmodule Glific.FLowsTest do
         }
     end)
 
-    state = ConsumerWorker.load_state(organization_id)
+    state = MessageWorker.load_state(organization_id)
 
     message = Fixtures.message_fixture(%{body: "👍", sender_id: contact.id})
-    ConsumerWorker.process_message(message, state)
+    MessageWorker.process_message(message, state)
 
     message = Fixtures.message_fixture(%{body: "2", sender_id: contact.id})
-    ConsumerWorker.process_message(message, state)
+    MessageWorker.process_message(message, state)
 
     db_context = Repo.get!(FlowContext, context.id)
     assert !is_nil(db_context.results)
@@ -818,5 +818,10 @@ defmodule Glific.FLowsTest do
     assert Enum.count(errors, fn error ->
              error.category == "Critical" and String.contains?(error.message, "expression")
            end) == 2
+
+    # Validation errors are reported to the author but do not block publishing:
+    # do_publish_flow/2 still runs and stamps the revision with the user.
+    {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+    assert revision.user_id == user.id
   end
 end

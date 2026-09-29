@@ -3,7 +3,7 @@ defmodule Glific.WhatsappForms do
   WhatsApp Forms context module. This module provides functions for managing WhatsApp forms.
   """
   require Logger
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Enums.WhatsappFormCategory,

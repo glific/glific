@@ -2,6 +2,8 @@ defmodule Glific.Caches do
   @moduledoc """
   Glific Cache management
   """
+  alias Glific.SafeLog
+
   @cache_bucket :glific_cache
 
   @behaviour Glific.Caches.CacheBehaviour
@@ -59,7 +61,24 @@ defmodule Glific.Caches do
   @spec fetch(non_neg_integer, any(), (any() -> any())) ::
           {:ok | :error | :commit | :ignore, any()}
   def fetch(organization_id, key, fallback_fn) do
-    Cachex.fetch(@cache_bucket, {organization_id, key}, fallback_fn)
+    Cachex.fetch(@cache_bucket, {organization_id, key}, &safe_fallback(fallback_fn, &1))
+  end
+
+  # Cachex 3.6's courier only rescues exceptions; an exit in the fallback (e.g. a DB
+  # checkout failure) leaves the key locked and every later fetch for it hangs forever.
+  @spec safe_fallback((any() -> any()), any()) :: any()
+  defp safe_fallback(fallback_fn, cache_key) do
+    # Linked processes (e.g. Ecto's parallel preload tasks) would otherwise kill this
+    # process outright on failure, bypassing the catch below.
+    Process.flag(:trap_exit, true)
+    fallback_fn.(cache_key)
+  catch
+    :exit, reason ->
+      error =
+        "Cache fallback exited for #{SafeLog.safe_inspect(cache_key)}: #{SafeLog.safe_inspect(reason)}"
+
+      Glific.log_error(error)
+      {:error, error}
   end
 
   @doc """

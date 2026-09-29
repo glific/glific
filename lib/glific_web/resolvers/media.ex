@@ -5,17 +5,64 @@ defmodule GlificWeb.Resolvers.Media do
   alias Glific.{GCS.GcsWorker, Users.User}
 
   @doc """
-  Upload a file given its extension
+  Upload a file given its extension.
+
+  A caller that knows what it is uploading may cap the size with `max_size_kb`. The client
+  checks too, so this is the backstop for a request that did not come from our form — the only
+  other bound is `Plug.Parsers`, which admits 20MB.
+
+  It may also name a `folder`, which files the object under `<folder>/<org id>/<uuid>.<ext>`
+  rather than the default message-attachment path. The organisation id is taken from the
+  request, never from the caller, so one org cannot write into another's prefix.
+
   """
   @spec upload(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def upload(
         _,
-        %{media: media, extension: extension, organization_id: organization_id},
+        %{media: media, extension: extension, organization_id: organization_id} = args,
         %{context: %{current_user: user}}
       ) do
-    GcsWorker.upload_media(media.path, remote_name(user, extension), organization_id)
-    |> handle_response()
+    with :ok <- within_size_limit(media.path, args[:max_size_kb]),
+         {:ok, remote} <- remote_path(args[:folder], user, extension, organization_id) do
+      GcsWorker.upload_media(media.path, remote, organization_id)
+      |> handle_response()
+    end
+  end
+
+  # Anchored, and with no "." allowed, so a folder can never climb out of its prefix.
+  @folder_format ~r{^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_-]*)*$}
+
+  @spec remote_path(String.t() | nil, User.t(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp remote_path(nil, user, extension, _organization_id),
+    do: {:ok, remote_name(user, extension)}
+
+  defp remote_path(folder, _user, extension, organization_id) do
+    if Regex.match?(@folder_format, folder),
+      do: {:ok, "#{folder}/#{organization_id}/#{Ecto.UUID.generate()}.#{extension}"},
+      else: {:error, "folder may only contain lowercase letters, digits, dashes and slashes."}
+  end
+
+  @spec within_size_limit(String.t(), integer() | nil) :: :ok | {:error, String.t()}
+  defp within_size_limit(_path, nil), do: :ok
+
+  # Absinthe's :integer is signed, and a negative limit would reject every upload — the
+  # comparison below is true for any size. Refuse the argument rather than the file.
+  defp within_size_limit(_path, max_size_kb) when max_size_kb <= 0,
+    do: {:error, "max_size_kb must be greater than zero."}
+
+  defp within_size_limit(path, max_size_kb) do
+    case File.stat(path) do
+      {:ok, %{size: size}} when size > max_size_kb * 1024 ->
+        {:error, "File is #{div(size, 1024)}KB. The limit is #{max_size_kb}KB."}
+
+      {:ok, _stat} ->
+        :ok
+
+      {:error, reason} ->
+        {:error, "Could not read the uploaded file: #{:file.format_error(reason)}"}
+    end
   end
 
   @doc """

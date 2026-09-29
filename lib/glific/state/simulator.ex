@@ -3,7 +3,7 @@ defmodule Glific.State.Simulator do
   Manage simulator state and allocation to ensure we can have multiple simulators
   run at the same time
   """
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Contacts,

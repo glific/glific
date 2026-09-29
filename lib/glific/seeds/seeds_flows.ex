@@ -1,8 +1,7 @@
 defmodule Glific.Seeds.SeedsFlows do
   @moduledoc false
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   require Logger
 
   alias Glific.{

@@ -11,7 +11,7 @@ defmodule Glific.Flows.Webhook.HeaderRedactor do
 
   We cannot allow-list header *names*, because a flow author can name a header
   anything. So redaction is driven by two independent signals, applied centrally
-  in `Glific.Flows.Webhook.create_log/4` so every webhook path is covered:
+  in `Glific.Flows.Webhooks.Request.create_log/4` so every webhook path is covered:
 
     1. **Key name** — the header name matches a well-known credential name
        (`authorization`, `x-api-key`, `*-token`, `secret`, `cookie`, …).

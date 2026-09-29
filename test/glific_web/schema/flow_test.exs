@@ -792,7 +792,7 @@ defmodule GlificWeb.Schema.FlowTest do
     wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group_1 =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })

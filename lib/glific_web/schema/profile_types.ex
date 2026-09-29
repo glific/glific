@@ -5,8 +5,6 @@ defmodule GlificWeb.Schema.ProfileTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers
-  import Ecto.Query, warn: false
-
   alias Glific.Repo
 
   alias GlificWeb.{

@@ -1,0 +1,18 @@
+mutation removeWaGroupContact($waGroupId: ID!, $contactId: ID!) {
+  removeWaGroupContact(waGroupId: $waGroupId, contactId: $contactId) {
+    waGroup {
+      id
+      label
+      bspId
+      contacts {
+        id
+        name
+        phone
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -142,11 +142,12 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
   # via the Dispatcher, independent of the Oban/flow-resume path above.
   describe "parse_via_chat_gpt dispatch" do
     test "failed due to empty question_text" do
-      assert "question_text is empty" = Dispatcher.dispatch("parse_via_chat_gpt", %{})
+      assert {:error, _type, "question_text is empty"} =
+               Dispatcher.dispatch("parse_via_chat_gpt", %{})
     end
 
     test "failed due to empty question_text: 2" do
-      assert "question_text is empty" =
+      assert {:error, _type, "question_text is empty"} =
                Dispatcher.dispatch("parse_via_chat_gpt", %{"question_text" => ""})
     end
 
@@ -172,11 +173,12 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
           }
       end)
 
-      assert %{
-               success: true,
-               parsed_msg:
-                 "1^2 = 1\n2^2 = 4\n3^2 = 9\n4^2 = 16\n5^2 = 25\n6^2 = 36\n7^2 = 49\n8^2 = 64\n9^2 = 81\n10^2 = 100\n\nMin: 1\nMax: 100"
-             } = Dispatcher.dispatch("parse_via_chat_gpt", fields)
+      assert {:ok,
+              %{
+                success: true,
+                parsed_msg:
+                  "1^2 = 1\n2^2 = 4\n3^2 = 9\n4^2 = 16\n5^2 = 25\n6^2 = 36\n7^2 = 49\n8^2 = 64\n9^2 = 81\n10^2 = 100\n\nMin: 1\nMax: 100"
+              }} = Dispatcher.dispatch("parse_via_chat_gpt", fields)
     end
 
     test "success with response_format as json_object" do
@@ -203,13 +205,14 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
           }
       end)
 
-      assert %{
-               success: true,
-               parsed_msg: %{
-                 "min" => %{"square" => 1, "number" => 1},
-                 "max" => %{"square" => 100, "number" => 10}
-               }
-             } = Dispatcher.dispatch("parse_via_chat_gpt", fields)
+      assert {:ok,
+              %{
+                success: true,
+                parsed_msg: %{
+                  "min" => %{"square" => 1, "number" => 1},
+                  "max" => %{"square" => 100, "number" => 10}
+                }
+              }} = Dispatcher.dispatch("parse_via_chat_gpt", fields)
     end
 
     test "success with response_format as json_schema" do
@@ -250,7 +253,8 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
           }
       end)
 
-      assert %{success: true, parsed_msg: %{"minimum_value" => "1", "maximum_value" => "10"}} =
+      assert {:ok,
+              %{success: true, parsed_msg: %{"minimum_value" => "1", "maximum_value" => "10"}}} =
                Dispatcher.dispatch("parse_via_chat_gpt", fields)
     end
   end

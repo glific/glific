@@ -20,11 +20,14 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:15.18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: glific_dev
+          # Match prod (en_US.UTF8) so text ORDER BY matches production sort order.
+          LANG: en_US.utf8
+          POSTGRES_INITDB_ARGS: "--locale=en_US.utf8 --encoding=UTF8"
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -58,7 +61,8 @@ jobs:
           sed -i 's/:max_rate_limit_request, 60/:max_rate_limit_request, 300/g' config/config.exs
 
       - name: Clone frontend
-        run: git clone https://github.com/glific/glific-frontend.git
+        run: |
+          git clone https://github.com/glific/glific-frontend.git
 
       - name: Use latest Node.js
         uses: actions/setup-node@v6
@@ -144,9 +148,9 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-${{ hashFiles('mix.lock') }}
+          key: ${{ runner.os }}-mix-v2.4-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-
+            ${{ runner.os }}-mix-v2.4-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-
 
       - name: Setup backend (mix)
         env:
@@ -165,10 +169,7 @@ jobs:
       - name: Setup cypress
         run: |
           cd glific-frontend
-          git clone https://github.com/glific/cypress-testing.git
-          cp -r cypress-testing/cypress ./cypress
-          cp cypress-testing/cypress.config.ts.example ./cypress.config.ts
-          yarn add cypress@15.15.0
+          cp cypress.config.ts.example cypress.config.ts
 
       - name: Run glific frontend
         run: |

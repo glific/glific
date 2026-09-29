@@ -15,6 +15,7 @@
   {"lib/glific_web/misc/http_signature.ex"},
   {"lib/glific/flags/ecto.ex"},
   {"test/support/channel_case.ex"},
+  {"test/support/fixtures/web_channel_fixtures.ex"},
   {"test/support/conn_case.ex"},
   {"test/support/data_case.ex"},
   {"lib/glific/clients/stir.ex"},

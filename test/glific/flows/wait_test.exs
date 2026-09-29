@@ -1,5 +1,5 @@
 defmodule Glific.Flows.WaitTest do
-  use ExUnit.Case, async: true
+  use Glific.DataCase
 
   alias Glific.Flows.{Flow, Wait}
 

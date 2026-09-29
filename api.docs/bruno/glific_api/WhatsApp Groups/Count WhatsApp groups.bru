@@ -1,0 +1,28 @@
+meta {
+  name: Count WhatsApp groups
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query waGroupsCount($filter: WaGroupFilter) {
+    waGroupsCount(filter: $filter)
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": { "term": "" }
+  }
+}

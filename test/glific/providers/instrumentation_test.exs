@@ -11,10 +11,12 @@ defmodule Glific.Providers.InstrumentationTest do
   alias Glific.Providers.InstrumentationTest.StubAdapter
 
   describe "adapter mixin defaults" do
-    test "supplies the provider tag and an identity classify_send/2" do
+    test "supplies the provider tag and identity classify_send/2 + classify_status/2" do
       assert StubAdapter.provider() == "stub"
-      assert StubAdapter.classify_send(:error, %{error_code: 472}) == :error
+      assert StubAdapter.classify_send(:error, %{error_code: 131_049}) == :error
       assert StubAdapter.classify_send(:success, %{}) == :success
+      assert StubAdapter.classify_status(:error, %{error_code: 131_049}) == :error
+      assert StubAdapter.classify_status(:delivered, %{}) == :delivered
     end
 
     test "injects track_* helpers that delegate to the core and return :ok",
@@ -26,6 +28,7 @@ defmodule Glific.Providers.InstrumentationTest do
       assert :ok = StubAdapter.track_send(:timeout)
       assert :ok = StubAdapter.track_receive("text handler", organization_id)
       assert :ok = StubAdapter.track_status(:delivered, organization_id)
+      assert :ok = StubAdapter.track_status(:error, organization_id, error_code: 131_049)
       assert :ok = StubAdapter.track_action("some_action", :success, organization_id)
       assert :ok = StubAdapter.track_action("some_action", :failure, organization_id)
     end

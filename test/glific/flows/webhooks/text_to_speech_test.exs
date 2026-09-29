@@ -220,7 +220,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
         %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_456"}}
       end)
 
-      assert TextToSpeech.call(fields, %{}).success == true
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
     end
 
     test "sends correct payload structure to Kaapi for TTS", %{fields: fields} do
@@ -249,7 +249,12 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
       end)
 
-      assert TextToSpeech.call(fields, %{}).success == true
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "tags malformed flow metadata as :invalid_input (config)", %{fields: fields} do
+      bad = Map.put(fields, "organization_id", "not-an-int")
+      assert {:error, :invalid_input, _reason} = TextToSpeech.call(bad, %{})
     end
   end
 

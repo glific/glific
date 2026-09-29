@@ -280,6 +280,24 @@ defmodule Glific.EraseTest do
     assert {:error, "Organization not deletable"} = perform_job(Erase, job.args)
   end
 
+  test "sends an info notification with canonical severity on successful deletion" do
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+    assert :ok = perform_job(Erase, job.args)
+
+    assert latest_organization_notification().severity == Notifications.types()[:info]
+    assert latest_organization_notification().severity == "Information"
+  end
+
+  test "sends a critical notification with canonical severity when deletion fails" do
+    assert {:ok, job} = Erase.delete_organization(999_999_999)
+    assert {:error, "Organization not found"} = perform_job(Erase, job.args)
+
+    assert latest_organization_notification().severity == Notifications.types()[:critical]
+    assert latest_organization_notification().severity == "Critical"
+  end
+
   test "enqueues organization deletion job correctly" do
     organization = Fixtures.organization_fixture(%{is_active: false})
 
@@ -632,6 +650,14 @@ defmodule Glific.EraseTest do
 
     assert 0 == count_for_org("whatsapp_form_revisions", organization_id)
     assert 0 == count_for_org("users", organization_id)
+  end
+
+  defp latest_organization_notification do
+    Notification
+    |> where([notification], notification.category == "Organization")
+    |> order_by([notification], desc: notification.id)
+    |> limit(1)
+    |> Repo.one(skip_organization_id: true)
   end
 
   defp count_for_org(table, organization_id) do

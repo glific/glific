@@ -3,7 +3,7 @@ defmodule Glific.Flows do
   The Flows context.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
 
   require Logger
@@ -631,7 +631,7 @@ defmodule Glific.Flows do
 
       # we had an error saving to the DB
       elem(result, 0) == :error ->
-        Logger.info("Error while publishing the flow. #{Glific.SafeLog.safe_inspect(result)}")
+        Logger.info("Error while publishing the flow. #{SafeLog.safe_inspect(result)}")
         result
 
       # We had an error validating the flow
@@ -1465,7 +1465,17 @@ defmodule Glific.Flows do
 
   defp do_export_contact_fields(%{"actions" => actions}) do
     action = actions |> hd
-    if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
+
+    case action["type"] do
+      "set_contact_field" ->
+        [action["field"]["key"]]
+
+      "set_contact_fields" ->
+        Enum.map(action["fields"] || [], & &1["field"]["key"])
+
+      _ ->
+        []
+    end
   end
 
   @spec export_interactive_templates(map()) :: list()

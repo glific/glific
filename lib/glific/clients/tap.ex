@@ -3,7 +3,7 @@ defmodule Glific.Clients.Tap do
   Tweak GCS Bucket name based on group that the contact is in (if any)
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,

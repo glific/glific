@@ -2096,6 +2096,109 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the organizations table (SaaS dataset only), used to join cross-org
+  tables for the org name/status.
+
+  Excludes PII (email, team_emails), secrets (signature_phrase) and config blobs
+  (setting, fields, out_of_office, regx_flow).
+  """
+  @spec organization_schema :: list()
+  def organization_schema do
+    [
+      %{
+        description: "Unique ID for the organization",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the organization",
+        name: "name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Shortcode of the organization",
+        name: "shortcode",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Current lifecycle status of the organization",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is active",
+        name: "is_active",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is approved",
+        name: "is_approved",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is suspended",
+        name: "is_suspended",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp until which the organization is suspended",
+        name: "suspended_until",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is a trial organization",
+        name: "is_trial_org",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Expiration date of the trial",
+        name: "trial_expiration_date",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp when the organization was soft-deleted",
+        name: "deleted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the organization was created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the organization was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for message conversation table
   """
   @spec message_conversation_schema :: list()
@@ -2704,87 +2807,6 @@ defmodule Glific.BigQuery.Schema do
           mode: "NULLABLE"
         }
       ]
-  end
-
-  @doc """
-  Schema for the registration table
-  """
-  @spec registration_schema :: list()
-  def registration_schema do
-    [
-      %{
-        description: "JSON object for storing details about the organization.",
-        name: "org_details",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "JSON object for storing details about the Gupshup platform.",
-        name: "platform_details",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "JSON object for storing billing details.",
-        name: "finance_poc",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "JSON object for storing submitter details",
-        name: "submitter",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "JSON object for storing signing authority details.",
-        name: "signing_authority",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Frequency of billing one of yearly, monthly, quarterly",
-        name: "billing_frequency",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "IP address of the submitter",
-        name: "ip_address",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Flag indicating if the registration has been submitted.",
-        name: "has_submitted",
-        type: "Boolean",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Flag indicating if the user agreed or disagreed with the T&C",
-        name: "terms_agreed",
-        type: "Boolean",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Flag indicating if user agrees to create a support staff account",
-        name: "support_staff_account",
-        type: "Boolean",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "if the user disputed the T&C",
-        name: "is_disputed",
-        type: "Boolean",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Time when the record entry was first made",
-        name: "inserted_at",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      }
-    ]
   end
 
   @doc """

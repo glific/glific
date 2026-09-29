@@ -1,0 +1,11 @@
+subscription assistantChatResponse {
+  assistantChatResponse {
+    requestId
+    conversationId
+    answer
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -3,7 +3,7 @@ mutation SetLiveVersion($assistantId: ID!, $versionId: ID!) {
     assistant {
       id
       activeConfigVersionId
-      liveVersionNumber
+      liveVersionLabel
     }
     errors {
       key

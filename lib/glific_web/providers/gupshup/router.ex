@@ -32,6 +32,9 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     sticker
     contact
     location
+  template-event  # type == template-event
+    # payload.type
+    status-update
   """
   scope "/gupshup", Controllers do
     scope "/user-event" do
@@ -66,6 +69,11 @@ defmodule GlificWeb.Providers.Gupshup.Router do
 
     scope "/billing-event" do
       post("/conversations", BillingEventController, :conversations)
+      post("/*unknown", DefaultController, :unknown)
+    end
+
+    scope "/template-event" do
+      post("/status-update", TemplateEventController, :status_update)
       post("/*unknown", DefaultController, :unknown)
     end
 

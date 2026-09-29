@@ -303,6 +303,24 @@ defmodule Glific.Flows.RouterTest do
     {:ok, _, _} = Router.execute(router, context, [])
   end
 
+  test "validate/3 surfaces the specific interpreter reason for a bad operand", %{
+    organization_id: organization_id
+  } do
+    router = %Router{
+      type: "switch",
+      operand: ~s|<%= System.cmd("id", []) %>|,
+      node_uuid: Ecto.UUID.generate(),
+      categories: [],
+      cases: [],
+      wait: nil
+    }
+
+    assert [{EEx, message, "Critical"}] =
+             Router.validate(router, [], %Flow{organization_id: organization_id})
+
+    assert message =~ "has unsupported expression:"
+  end
+
   test "router with split by expression with EEx code for wa_group flow", attrs do
     flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()

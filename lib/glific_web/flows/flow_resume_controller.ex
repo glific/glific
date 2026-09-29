@@ -1,54 +1,55 @@
 defmodule GlificWeb.Flows.FlowResumeController do
   @moduledoc """
-  Receives callbacks from 3rd-party async webhooks (Kaapi STT/TTS, filesearch,
-  voice unified-LLM) and resumes the parked flow.
-
-  This controller is intentionally thin: it pulls the organization context off
-  the connection, parses/normalises the callback body, and hands the actual
-  resume work to `Glific.Flows.Webhook` — the inbound counterpart of the
-  webhook execute/perform path. All validation, logging, telemetry and flow
-  resumption live there.
+  Receives callbacks from 3rd-party async webhooks (Kaapi STT/TTS, filesearch, voice unified-LLM)
+  and resumes the parked flow. Stays thin: parses the callback and hands off to
+  `Glific.Flows.Webhook` for validation, logging, telemetry and flow resumption.
   """
 
   use GlificWeb, :controller
   use Publicist
 
-  alias Glific.Flows.Webhook
+  alias Glific.{Flows.Webhook, Repo}
 
   @doc """
-  Resume a flow after an async webhook (e.g. Kaapi STT/TTS) calls back.
+  Resume a flow after any async webhook calls back. Every Kaapi node (STT, TTS, filesearch-gpt,
+  voice) posts back to `/webhook/flow_resume` — `Webhook.resume` dispatches to the node's
+  `handle_callback/3`.
   """
   @spec flow_resume(Plug.Conn.t(), map) :: Plug.Conn.t()
   def flow_resume(
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    # Parse + TTS upload run in the request process (not the supervised task) to
-    # avoid transferring large audio binaries between processes.
-    # https://elixirmerge.com/p/the-impact-of-data-transfer-on-performance-in-elixirs-task-async
-    # TODO: Move `Webhook.maybe_upload_tts_audio/1` out of this controller. It is
-    # TTS-specific and breaches this module's contract as a thin, generic resume
-    # handler, so it belongs in a more appropriate place. To be addressed during the
-    # speech-to-speech integration.
-    response = result |> Webhook.parse_callback_response() |> Webhook.maybe_upload_tts_audio()
+    # Stamp arrival before parse/upload and the task hop, so the voice filesearch leg
+    # (arrival - dispatch) reflects true arrival rather than that overhead.
+    callback_received_ts = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    run_supervised(fn -> Webhook.resume(organization_id, result, response) end)
+    parsed = Webhook.parse_callback_response(result)
 
-    json(conn, "")
+    # Validate before spawning: an unsigned callback must not reach the base64 decode or GCS.
+    # Rejections answer 200 — the caller learns nothing and Kaapi has no retry to trigger.
+    if Webhook.valid_callback?(organization_id, parsed),
+      do: resume(conn, organization_id, result, parsed, callback_received_ts),
+      else: json(conn, "")
   end
 
-  @doc """
-  Callback for voice unified LLM calls. Resumes the flow after voice
-  post-processing (NMT + TTS) shapes the Kaapi response.
-  """
-  @spec voice_flow_resume(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def voice_flow_resume(
-        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
-        result
-      ) do
-    response = Webhook.parse_callback_response(result)
+  # The GCS round trip blocked the response and Kaapi timed out waiting on it.
+  # put_process_state/1 is needed because the task runs outside the request process: the plug's
+  # organization_id is out of scope, and the GCS error path writes org-scoped rows.
+  # TODO: move maybe_upload_tts_audio/1 out of this controller — it's TTS-specific and
+  # breaches the thin/generic contract; revisit during the speech-to-speech integration.
+  @spec resume(Plug.Conn.t(), non_neg_integer(), map(), map(), integer()) :: Plug.Conn.t()
+  defp resume(conn, organization_id, result, parsed, callback_received_ts) do
+    run_supervised(fn ->
+      Repo.put_process_state(organization_id)
 
-    run_supervised(fn -> Webhook.voice_resume(organization_id, result, response) end)
+      response =
+        parsed
+        |> Webhook.maybe_upload_tts_audio()
+        |> Map.put("callback_received_ts", callback_received_ts)
+
+      Webhook.resume(organization_id, result, response)
+    end)
 
     json(conn, "")
   end

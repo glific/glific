@@ -6,8 +6,7 @@ defmodule Glific.WAConversations do
 
   require Logger
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Groups.WAGroup, Repo, WAGroup.WAMessage, WAMessages}
 
   @doc """

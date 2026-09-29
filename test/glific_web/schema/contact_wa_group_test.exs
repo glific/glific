@@ -5,10 +5,15 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
   alias Glific.{
     Contacts,
     Fixtures,
+    Groups,
+    Groups.CollectionPrimaryPhone,
     Groups.ContactWAGroups,
     Groups.WAGroupPhone,
     Groups.WAGroups,
+    Groups.WaGroupsCollections,
+    Jobs.UserJob,
     Partners,
+    Repo,
     Seeds.SeedsDev,
     WAGroup.WAManagedPhone
   }
@@ -55,12 +60,26 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     "assets/gql/wa_groups/with_phones.gql"
   )
 
+  load_gql(:import_members, GlificWeb.Schema, "assets/gql/wa_groups/import.gql")
+
+  load_gql(
+    :set_primary_phone_for_collection,
+    GlificWeb.Schema,
+    "assets/gql/contact_wa_groups/set_primary_phone_for_collection.gql"
+  )
+
+  load_gql(
+    :collection_primary_report,
+    GlificWeb.Schema,
+    "assets/gql/contact_wa_groups/collection_primary_report.gql"
+  )
+
   test "create wa group contacts", %{user: user} do
     wa_managed_phone =
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -89,7 +108,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -117,9 +136,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       %{method: :post} ->
         %Tesla.Env{
           status: 200,
-          body: %{
-            success: true
-          }
+          body: Jason.encode!(%{success: true})
         }
     end)
 
@@ -164,7 +181,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -201,6 +218,29 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
   end
 
   test "sync contacts in wa groups", %{staff: user} do
+    Tesla.Mock.mock(fn
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             ~s([{"id":242,"number":"918454812345","status":"active","type":"whatsapp","name":""}])
+         }}
+
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/242/getGroups"
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: ~s({"count":0,"data":[],"limit":500,"success":true,"total":0})
+         }}
+    end)
+
     result = auth_query_gql_by(:sync, user)
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "syncWaGroupContacts", "message"])
@@ -255,7 +295,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -303,18 +343,10 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
         })
 
       wa_group =
-        Fixtures.wa_group_fixture(%{
+        Fixtures.wa_group_with_primary_fixture(%{
           organization_id: user.organization_id,
           wa_managed_phone_id: first_phone.id
         })
-
-      Fixtures.wa_group_phone_fixture(%{
-        wa_group_id: wa_group.id,
-        wa_managed_phone_id: first_phone.id,
-        organization_id: user.organization_id,
-        is_primary: true,
-        is_active: true
-      })
 
       Fixtures.wa_group_phone_fixture(%{
         wa_group_id: wa_group.id,
@@ -491,6 +523,214 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       assert {:ok, query_data} = result
       [error] = query_data[:errors]
       assert error.message =~ "Unauthorized" or error.message =~ "permission"
+    end
+  end
+
+  describe "importWaGroupContacts" do
+    setup %{glific_admin: user} do
+      wa_managed_phone =
+        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+      wa_group =
+        Fixtures.wa_group_fixture(%{
+          organization_id: user.organization_id,
+          wa_managed_phone_id: wa_managed_phone.id
+        })
+
+      %{wa_group: wa_group}
+    end
+
+    test "an admin kicks off a background CSV import", %{glific_admin: user, wa_group: wa_group} do
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert is_nil(query_data[:errors])
+      status = get_in(query_data, [:data, "importWaGroupContacts", "status"])
+      assert status =~ "in progress"
+    end
+
+    test "is rejected for a non-admin", %{staff: user, wa_group: wa_group} do
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      [error] = query_data[:errors]
+      assert error.message =~ "Unauthorized" or error.message =~ "permission"
+    end
+
+    test "rejects a wa_group the caller's org does not own", %{
+      glific_admin: user,
+      wa_group: wa_group
+    } do
+      # the org-scoped by-id lookup must reject an id outside the caller's org
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id + 1_000_000),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      errors = get_in(query_data, [:data, "importWaGroupContacts", "errors"])
+      assert [%{"message" => message} | _] = errors
+      assert message =~ "Resource not found"
+    end
+  end
+
+  # Add a WA group to `collection`, optionally seeding the phone's membership.
+  defp add_collection_group(collection, phone, organization_id, suffix, member?) do
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: organization_id,
+        wa_managed_phone_id: phone.id,
+        label: "Group #{suffix}",
+        bsp_id: "coll-#{suffix}@g.us"
+      })
+
+    {:ok, _} =
+      WaGroupsCollections.create_wa_groups_collection(%{
+        group_id: collection.id,
+        wa_group_id: wa_group.id,
+        organization_id: organization_id
+      })
+
+    if member? do
+      Fixtures.wa_group_phone_fixture(%{
+        wa_group_id: wa_group.id,
+        wa_managed_phone_id: phone.id,
+        organization_id: organization_id,
+        is_active: true,
+        is_primary: false
+      })
+    end
+
+    wa_group
+  end
+
+  describe "setPrimaryPhoneForCollection" do
+    setup %{user: user} do
+      organization_id = user.organization_id
+
+      {:ok, phone} =
+        %{organization_id: organization_id}
+        |> Fixtures.wa_managed_phone_fixture()
+        |> WAManagedPhone.changeset(%{status: "active"})
+        |> Repo.update()
+
+      {:ok, collection} =
+        Groups.create_group(%{label: "Broadcast collection", organization_id: organization_id})
+
+      %{organization_id: organization_id, phone: phone, collection: collection}
+    end
+
+    test "enqueues a background job when the phone is a member of a group", %{
+      user: user,
+      organization_id: organization_id,
+      phone: phone,
+      collection: collection
+    } do
+      add_collection_group(collection, phone, organization_id, 1, true)
+
+      result =
+        auth_query_gql_by(:set_primary_phone_for_collection, user,
+          variables: %{
+            "collectionId" => to_string(collection.id),
+            "waManagedPhoneId" => to_string(phone.id)
+          }
+        )
+
+      assert {:ok, query_data} = result
+      data = get_in(query_data, [:data, "setPrimaryPhoneForCollection"])
+      assert data["status"] =~ "background"
+      assert data["userJobId"]
+
+      assert [%UserJob{type: type}] =
+               UserJob.list_user_jobs(%{filter: %{organization_id: organization_id}})
+
+      assert type == CollectionPrimaryPhone.job_type()
+    end
+
+    test "errors (no job) when the phone is a member of no group in the collection", %{
+      user: user,
+      organization_id: organization_id,
+      phone: phone,
+      collection: collection
+    } do
+      add_collection_group(collection, phone, organization_id, 2, false)
+
+      result =
+        auth_query_gql_by(:set_primary_phone_for_collection, user,
+          variables: %{
+            "collectionId" => to_string(collection.id),
+            "waManagedPhoneId" => to_string(phone.id)
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert query_data[:errors]
+      assert UserJob.list_user_jobs(%{filter: %{organization_id: organization_id}}) == []
+    end
+
+    test "is rejected for non-admin roles (manager)", %{
+      manager: manager,
+      organization_id: organization_id,
+      phone: phone,
+      collection: collection
+    } do
+      add_collection_group(collection, phone, organization_id, 3, true)
+
+      result =
+        auth_query_gql_by(:set_primary_phone_for_collection, manager,
+          variables: %{
+            "collectionId" => to_string(collection.id),
+            "waManagedPhoneId" => to_string(phone.id)
+          }
+        )
+
+      assert {:ok, query_data} = result
+      [error] = query_data[:errors]
+      assert error.message =~ "Unauthorized" or error.message =~ "permission"
+    end
+
+    test "waGroupCollectionPrimaryReport returns the skip CSV for a completed job", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      user_job =
+        UserJob.create_user_job(%{
+          status: "success",
+          type: CollectionPrimaryPhone.job_type(),
+          total_tasks: 1,
+          tasks_done: 1,
+          all_tasks_created: true,
+          organization_id: organization_id,
+          errors: %{"errors" => %{"Group X (#7)" => "not_a_member"}}
+        })
+
+      result =
+        auth_query_gql_by(:collection_primary_report, user,
+          variables: %{"userJobId" => to_string(user_job.id)}
+        )
+
+      assert {:ok, query_data} = result
+      csv = get_in(query_data, [:data, "waGroupCollectionPrimaryReport", "csvRows"])
+      assert csv =~ "Group,Reason"
+      assert csv =~ "Group X (#7),not_a_member"
     end
   end
 end

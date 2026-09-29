@@ -1,0 +1,9 @@
+mutation sync_wa_managed_phone_statuses {
+  sync_wa_managed_phone_statuses {
+    message
+    errors {
+      key
+      message
+    }
+  }
+}

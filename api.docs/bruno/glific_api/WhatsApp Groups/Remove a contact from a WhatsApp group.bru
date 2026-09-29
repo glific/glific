@@ -1,0 +1,32 @@
+meta {
+  name: Remove a contact from a WhatsApp group
+  type: graphql
+  seq: 11
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation removeWaGroupContact($waGroupId: ID!, $contactId: ID!) {
+    removeWaGroupContact(waGroupId: $waGroupId, contactId: $contactId) {
+      waGroup { id label }
+      errors { key message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "waGroupId": 1,
+    "contactId": 2
+  }
+}

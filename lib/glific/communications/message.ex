@@ -13,6 +13,7 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo,
     WhatsappFormsResponses
   }
@@ -48,7 +49,7 @@ defmodule Glific.Communications.Message do
 
     with {:ok, _} <-
            apply(
-             Communications.provider_handler(message.organization_id),
+             message_handler(message),
              @type_to_token[message.type],
              [message, attrs]
            ) do
@@ -70,8 +71,23 @@ defmodule Glific.Communications.Message do
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
     _ ->
-      log_error(message, "Could not send message to contact: Check Gupshup Setting")
+      log_error(message, send_failure_reason(message))
   end
+
+  # The only thing standing between a web-channel message and the organization's WhatsApp BSP.
+  # The recipient is a browser visitor who has consented to be messaged on the web and, since
+  # #5713, explicitly not on WhatsApp — so the channel decides the handler, never the org's
+  # BSP credential.
+  @spec message_handler(Message.t()) :: atom()
+  defp message_handler(%Message{channel: :web}), do: Glific.Providers.Web.Message
+  defp message_handler(message), do: Communications.provider_handler(message.organization_id)
+
+  @spec send_failure_reason(Message.t()) :: String.t()
+  defp send_failure_reason(%Message{channel: :web}),
+    do: "Could not deliver message on the web channel"
+
+  defp send_failure_reason(_message),
+    do: "Could not send message to contact: Check Gupshup Setting"
 
   @spec log_error(Message.t(), String.t()) :: {:error, String.t()}
   defp log_error(message, reason) do
@@ -395,22 +411,10 @@ defmodule Glific.Communications.Message do
 
   defp publish_simulator(message, _type), do: message
 
-  # lets have a default timeout of 5 seconds for each call
-  @timeout 5000
-
-  @spec error(String.t(), any(), any(), list() | nil, boolean()) :: nil
-  defp error(error, e, r \\ nil, stacktrace \\ nil, send_to_appsignal \\ true) do
-    error = error <> ": #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
-    Logger.error(error)
-
-    stacktrace =
-      if stacktrace == nil,
-        do: Process.info(self(), :current_stacktrace) |> elem(1),
-        else: stacktrace
-
-    if send_to_appsignal do
-      Appsignal.send_error(:error, error, stacktrace)
-    end
+  @spec error(String.t(), any(), any()) :: nil
+  defp error(error, e, r \\ nil) do
+    "#{error}: #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
+    |> Glific.log_error()
 
     nil
   end
@@ -419,36 +423,10 @@ defmodule Glific.Communications.Message do
   defp process_message(nil), do: :ok
 
   defp process_message(message) do
-    # lets transfer the organization id and current user to the poolboy worker
-    process_state = {
-      Repo.get_organization_id(),
-      Repo.get_current_user()
-    }
-
-    self = self()
-
-    # We don't want to block the input pipeline, and we are unsure how long the consumer worker
-    # will take. So we run it as a separate task
-    # We will also set a short timeout for both the genserver and the poolboy transaction
-    Task.start(fn ->
-      :poolboy.transaction(
-        Glific.Application.message_poolname(),
-        fn pid ->
-          try do
-            GenServer.call(pid, {message, process_state, self}, @timeout)
-          catch
-            e, r ->
-              error(
-                "Poolboy genserver caught error while processing the message for flow.",
-                e,
-                r,
-                __STACKTRACE__,
-                false
-              )
-          end
-        end
-      )
-    end)
+    case MessageWorker.make_job(message) do
+      {:ok, _job} -> :ok
+      {:error, err} -> error("Enqueue message processing error", err)
+    end
   end
 
   @spec process_errors(Message.t(), map(), integer | nil) :: any
