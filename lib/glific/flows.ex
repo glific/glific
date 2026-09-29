@@ -27,7 +27,7 @@ defmodule Glific.Flows do
     Users.User
   }
 
-  alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
+  alias Glific.Flows.{Broadcast, ChannelCompatibility, Flow, FlowContext, FlowRevision}
 
   @doc """
   Returns the list of flows.
@@ -626,14 +626,14 @@ defmodule Glific.Flows do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
 
-    if Flow.blocking_errors?(errors),
+    # Channel-incompatible nodes are refused rather than warned about: the other validation
+    # errors are advisory and still publish, but a flow carrying a node its own channel cannot
+    # run would go live broken.
+    if ChannelCompatibility.blocking_errors?(errors),
       do: {:errors, format_flow_errors(errors)},
       else: do_publish_validated_flow(flow, user_id, errors)
   end
 
-  # Channel-incompatible nodes are refused rather than warned about: the other validation errors
-  # are advisory and still publish, but a flow carrying a node its own channel cannot run would
-  # go live broken.
   @spec do_publish_validated_flow(Flow.t(), non_neg_integer(), list()) ::
           {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
   defp do_publish_validated_flow(%Flow{} = flow, user_id, errors) do
@@ -687,10 +687,27 @@ defmodule Glific.Flows do
   @spec format_flow_errors(list()) :: list()
   defp format_flow_errors(errors) when is_list(errors) do
     ## we can think about the warning based on keys
-    Enum.reduce(errors, [], fn error, acc ->
-      [%{key: elem(error, 0), message: elem(error, 1), category: elem(error, 2)} | acc]
-    end)
+    Enum.reduce(errors, [], fn error, acc -> [format_flow_error(error) | acc] end)
   end
+
+  @spec format_flow_error(tuple()) :: map()
+  defp format_flow_error({key, message, category, node_uuid}),
+    do: %{
+      key: key,
+      message: message,
+      category: category,
+      node_uuid: node_uuid,
+      blocking: category == ChannelCompatibility.blocking_category()
+    }
+
+  defp format_flow_error({key, message, category}),
+    do: %{
+      key: key,
+      message: message,
+      category: category,
+      node_uuid: nil,
+      blocking: category == ChannelCompatibility.blocking_category()
+    }
 
   # Get version of last published flow revision
   # Archive the last published flow revision

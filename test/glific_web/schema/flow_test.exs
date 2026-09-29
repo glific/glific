@@ -533,8 +533,9 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:publish, user, variables: %{"uuid" => Ecto.UUID.generate()})
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
+    error = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0)])
+    assert error["message"] == "Resource not found"
+    assert error["blocking"] == false
   end
 
   test "Publish a flow which has warnings", %{manager: user} do
@@ -543,8 +544,11 @@ defmodule GlificWeb.Schema.FlowTest do
 
     result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
     assert {:ok, query_data} = result
-    assert is_list(get_in(query_data, [:data, "publishFlow", "errors"]))
+    errors = get_in(query_data, [:data, "publishFlow", "errors"])
+    assert is_list(errors)
     assert get_in(query_data, [:data, "publishFlow", "success"]) == false
+
+    assert Enum.all?(errors, fn error -> error["blocking"] == false end)
   end
 
   test "Start flow for a contact", %{manager: user} = attrs do

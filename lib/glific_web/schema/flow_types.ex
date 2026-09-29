@@ -28,6 +28,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :key, non_null(:string)
     field :message, non_null(:string)
     field :category, non_null(:string)
+    field :blocking, non_null(:boolean)
+    field :node_uuid, :string
   end
 
   object :export_flow do

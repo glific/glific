@@ -196,6 +196,13 @@ defmodule Glific.Flows.Node do
       )
 
     errors =
+      node.actions
+      |> Enum.reduce(
+        errors,
+        &Action.validate_channel(&1, &2, flow)
+      )
+
+    errors =
       node.exits
       |> Enum.reduce(
         errors,

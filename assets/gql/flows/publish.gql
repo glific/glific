@@ -4,6 +4,8 @@ mutation publishFlow($uuid: UUID4!) {
     errors {
       message
       category
+      blocking
+      nodeUuid
     }
   }
 }

@@ -188,18 +188,18 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  # `category` is non-null in the schema, so it has to be set here too: a caller that selects it
-  # gets the whole error nullified otherwise.
-  @spec make_error(any) :: map()
+  # `category` and `blocking` are non-null in the schema, so they have to be set here too: a
+  # caller that selects them gets the whole error nullified otherwise.
+  @spec make_error(any) :: [map()]
   defp make_error(error) when is_list(error),
-    do: %{key: hd(error), message: hd(tl(error)), category: "Critical"}
+    do: [publish_error(hd(error), hd(tl(error)))]
 
   defp make_error(error),
-    do: %{
-      key: "Database Error",
-      message: Glific.SafeLog.safe_inspect(error),
-      category: "Critical"
-    }
+    do: [publish_error("Database Error", Glific.SafeLog.safe_inspect(error))]
+
+  @spec publish_error(any(), String.t()) :: map()
+  defp publish_error(key, message),
+    do: %{key: key, message: message, category: "Critical", blocking: false, node_uuid: nil}
 
   @doc """
   Start a flow for a contact

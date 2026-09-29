@@ -394,7 +394,9 @@ defmodule Glific.FLowsTest do
       {:ok, flow} =
         Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
 
-      {:ok, flow} = Flows.update_flow(flow, %{channel: :web})
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      flow = set_channel(flow, :web)
 
       {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
       version_before = revision.version
@@ -447,7 +449,9 @@ defmodule Glific.FLowsTest do
       {:ok, flow} =
         Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
 
-      {:ok, flow} = Flows.update_flow(flow, %{channel: :web})
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      flow = set_channel(flow, :web)
 
       {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
       [first_node | rest] = revision.definition["nodes"]
@@ -517,7 +521,9 @@ defmodule Glific.FLowsTest do
       {:ok, parent} =
         Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
 
-      {:ok, parent} = Flows.update_flow(parent, %{channel: :web})
+      on_exit(fn -> clear_flow_cache(parent) end)
+
+      parent = set_channel(parent, :web)
 
       {:ok, sub_flow} =
         Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: organization_id})
@@ -549,7 +555,7 @@ defmodule Glific.FLowsTest do
              end)
 
       # marking the sub-flow web is the other way to resolve it
-      {:ok, _sub_flow} = Flows.update_flow(sub_flow, %{channel: :web})
+      set_channel(sub_flow, :web)
       Glific.Caches.remove(organization_id, [parent.uuid, sub_flow.uuid])
 
       assert {:ok, %Flow{}} = Flows.publish_flow(parent, user.id)
@@ -563,6 +569,8 @@ defmodule Glific.FLowsTest do
 
       {:ok, flow} =
         Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(flow) end)
 
       assert flow.channel == :whatsapp
 
@@ -587,6 +595,41 @@ defmodule Glific.FLowsTest do
       assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
     end
 
+    test "update_flow/2 refuses to move a flow to another channel",
+         %{organization_id: organization_id} = _attrs do
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      assert flow.channel == :whatsapp
+
+      assert {:error, changeset} = Flows.update_flow(flow, %{channel: :web})
+
+      assert "cannot be changed after the flow is created" in errors_on(changeset).channel
+
+      {:ok, flow} = Repo.fetch_by(Flow, %{id: flow.id})
+      assert flow.channel == :whatsapp
+
+      assert {:ok, flow} = Flows.update_flow(flow, %{channel: :whatsapp, is_pinned: true})
+      assert flow.is_pinned
+    end
+
+    test "create_flow/1 accepts the channel the flow is created on",
+         %{organization_id: organization_id} = _attrs do
+      assert {:ok, flow} =
+               Flows.create_flow(%{
+                 name: "Web only flow",
+                 keywords: ["webonly"],
+                 channel: :web,
+                 organization_id: organization_id
+               })
+
+      assert flow.channel == :web
+    end
+
     test "publish_flow/2 allows a web flow to broadcast to another contact",
          %{organization_id: organization_id} = _attrs do
       user = Repo.get_current_user()
@@ -596,7 +639,9 @@ defmodule Glific.FLowsTest do
       {:ok, flow} =
         Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
 
-      {:ok, flow} = Flows.update_flow(flow, %{channel: :web})
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      flow = set_channel(flow, :web)
 
       {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
       [first_node | rest] = revision.definition["nodes"]
@@ -771,7 +816,7 @@ defmodule Glific.FLowsTest do
     test "export_flow/1 and import_flow/2 round-trip the channel" do
       user = Repo.get_current_user()
       flow = flow_fixture()
-      {:ok, web_flow} = Flows.update_flow(flow, %{channel: :web})
+      web_flow = set_channel(flow, :web)
 
       payload = Flows.export_flow(web_flow.id) |> Jason.encode!() |> Jason.decode!()
 
@@ -814,7 +859,7 @@ defmodule Glific.FLowsTest do
     # flow would be mislabelled and would skip the web-channel publish checks.
     test "copy_flow/2 keeps the channel of the flow it copied" do
       flow = flow_fixture()
-      {:ok, web_flow} = Flows.update_flow(flow, %{channel: :web})
+      web_flow = set_channel(flow, :web)
 
       assert {:ok, %Flow{} = copied_flow} =
                Flows.copy_flow(web_flow, %{name: "copied web flow", keywords: []})
@@ -859,6 +904,26 @@ defmodule Glific.FLowsTest do
                  keyword != Glific.string_clean(keyword)
                end)
     end
+  end
+
+  # Cachex is process-global and the Ecto sandbox does not roll it back, so a published
+  # mutation of a seeded flow stays visible to every later test.
+  defp clear_flow_cache(flow) do
+    keys =
+      for status <- ["draft", "published"],
+          key <-
+            [{:flow_uuid, flow.uuid, status}, {:flow_id, flow.id, status}] ++
+              Enum.map(flow.keywords, &{:flow_keyword, &1, status}),
+          do: key
+
+    Glific.Caches.remove(flow.organization_id, keys)
+  end
+
+  # The changeset refuses a channel change on a persisted flow.
+  defp set_channel(flow, channel) do
+    updated = flow |> Ecto.Changeset.change(channel: channel) |> Repo.update!()
+    clear_flow_cache(flow)
+    updated
   end
 
   defp split_by_collection_node do

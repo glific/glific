@@ -27,6 +27,7 @@ defmodule Glific.Flows.Action do
   }
 
   alias Glific.Flows.{
+    ChannelCompatibility,
     ContactAction,
     ContactField,
     ContactSetting,
@@ -511,10 +512,10 @@ defmodule Glific.Flows.Action do
     )
   end
 
-  def validate(%{type: "enter_flow"} = action, errors, _flow) do
+  def validate(%{type: "enter_flow"} = action, errors, flow) do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
-      {:ok, _} -> errors
+      {:ok, sub_flow} -> sub_flow_channel_errors(action, errors, flow, sub_flow)
       _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"} | errors]
     end
   end
@@ -584,6 +585,31 @@ defmodule Glific.Flows.Action do
 
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
+
+  @doc """
+  Refuse an action the flow's own channel cannot run.
+  """
+  @spec validate_channel(Action.t(), list(), map()) :: list()
+  def validate_channel(action, errors, flow) do
+    with true <- ChannelCompatibility.web?(flow),
+         label when is_binary(label) <- ChannelCompatibility.unsupported_action(action) do
+      [ChannelCompatibility.error(Flow, label, action.node_uuid) | errors]
+    else
+      _ -> errors
+    end
+  end
+
+  # Only statically-referenced sub-flows can be checked; `enter_flow_expression` resolves at
+  # runtime.
+  @spec sub_flow_channel_errors(Action.t(), list(), map(), Flow.t()) :: list()
+  defp sub_flow_channel_errors(action, errors, flow, sub_flow) do
+    if ChannelCompatibility.web?(flow) and not ChannelCompatibility.web?(sub_flow) do
+      message = "Entering the sub-flow \"#{sub_flow.name}\", which runs on WhatsApp"
+      [ChannelCompatibility.error(Flow, message, action.node_uuid) | errors]
+    else
+      errors
+    end
+  end
 
   @doc """
   Validate every author-authored expression field on an action against the same
