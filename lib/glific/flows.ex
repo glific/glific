@@ -27,7 +27,9 @@ defmodule Glific.Flows do
     Users.User
   }
 
-  alias Glific.Flows.{Broadcast, ChannelCompatibility, Flow, FlowContext, FlowRevision}
+  alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
+
+  @blocking_category "Blocking"
 
   @doc """
   Returns the list of flows.
@@ -629,10 +631,18 @@ defmodule Glific.Flows do
     # Channel-incompatible nodes are refused rather than warned about: the other validation
     # errors are advisory and still publish, but a flow carrying a node its own channel cannot
     # run would go live broken.
-    if ChannelCompatibility.blocking_errors?(errors),
+    if blocking_errors?(errors),
       do: {:errors, format_flow_errors(errors)},
       else: do_publish_validated_flow(flow, user_id, errors)
   end
+
+  @spec blocking_errors?(list()) :: boolean()
+  defp blocking_errors?(errors), do: Enum.any?(errors, &blocking_error?/1)
+
+  @spec blocking_error?(tuple()) :: boolean()
+  defp blocking_error?({_key, _message, @blocking_category}), do: true
+  defp blocking_error?({_key, _message, @blocking_category, _node_uuid}), do: true
+  defp blocking_error?(_error), do: false
 
   @spec do_publish_validated_flow(Flow.t(), non_neg_integer(), list()) ::
           {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
@@ -697,7 +707,7 @@ defmodule Glific.Flows do
       message: message,
       category: category,
       node_uuid: node_uuid,
-      blocking: category == ChannelCompatibility.blocking_category()
+      blocking: category == @blocking_category
     }
 
   defp format_flow_error({key, message, category}),
@@ -706,7 +716,7 @@ defmodule Glific.Flows do
       message: message,
       category: category,
       node_uuid: nil,
-      blocking: category == ChannelCompatibility.blocking_category()
+      blocking: category == @blocking_category
     }
 
   # Get version of last published flow revision

@@ -2,8 +2,8 @@ defmodule Glific.Flows.ChannelCompatibility do
   @moduledoc """
   Which flow nodes a channel can run, and the severity tier a mismatch reports at.
 
-  `Action` and `Router` consult it while validating; `Flows.publish_flow/2` reads the tier off
-  the errors they produce.
+  `Action` and `Node` consult it while validating. A mismatch is tagged `"Blocking"`, the
+  category `Glific.Flows` refuses a publish on.
   """
 
   alias Glific.Flows.Flow
@@ -19,27 +19,14 @@ defmodule Glific.Flows.ChannelCompatibility do
   @template_label "Sending a WhatsApp template (HSM)"
 
   @doc """
-  The category string that stops a publish rather than warning about it.
-  """
-  @spec blocking_category :: String.t()
-  def blocking_category, do: @blocking_category
-
-  @doc """
-  Whether any of these validation errors must stop a publish.
-  """
-  @spec blocking_errors?(list()) :: boolean()
-  def blocking_errors?(errors),
-    do: Enum.any?(errors, &blocking_error?/1)
-
-  @doc """
   Refuse the actions and router on this node that its flow's channel cannot run.
   """
-  @spec node_errors(list(), map(), map()) :: list()
-  def node_errors(errors, node, flow) do
+  @spec check_node(list(), map(), map()) :: list()
+  def check_node(errors, node, flow) do
     if web?(flow) do
       node.actions
       |> Enum.reduce(errors, &refuse(&2, unsupported_action(&1), node.uuid))
-      |> router_errors(node.router, node.uuid)
+      |> check_router(node.router, node.uuid)
     else
       errors
     end
@@ -48,8 +35,8 @@ defmodule Glific.Flows.ChannelCompatibility do
   @doc """
   Refuse a sub-flow that runs on a channel the flow entering it does not.
   """
-  @spec sub_flow_errors(list(), map(), map(), Ecto.UUID.t() | nil) :: list()
-  def sub_flow_errors(errors, sub_flow, flow, node_uuid) do
+  @spec check_sub_flow(list(), map(), map(), Ecto.UUID.t() | nil) :: list()
+  def check_sub_flow(errors, sub_flow, flow, node_uuid) do
     if web?(flow) and not web?(sub_flow),
       do:
         refuse(
@@ -67,10 +54,10 @@ defmodule Glific.Flows.ChannelCompatibility do
   @spec error(String.t(), Ecto.UUID.t() | nil) :: tuple()
   defp error(message, node_uuid), do: {Flow, message, @blocking_category, node_uuid}
 
-  @spec router_errors(list(), map() | nil, Ecto.UUID.t() | nil) :: list()
-  defp router_errors(errors, nil, _node_uuid), do: errors
+  @spec check_router(list(), map() | nil, Ecto.UUID.t() | nil) :: list()
+  defp check_router(errors, nil, _node_uuid), do: errors
 
-  defp router_errors(errors, router, node_uuid),
+  defp check_router(errors, router, node_uuid),
     do: refuse(errors, unsupported_router(router), node_uuid)
 
   @spec refuse(list(), String.t() | nil, Ecto.UUID.t() | nil) :: list()
@@ -90,8 +77,4 @@ defmodule Glific.Flows.ChannelCompatibility do
   @spec unsupported_router(map()) :: String.t() | nil
   defp unsupported_router(%{operand: operand}),
     do: Map.get(@unsupported_router_operands, operand)
-
-  defp blocking_error?({_key, _message, @blocking_category}), do: true
-  defp blocking_error?({_key, _message, @blocking_category, _node_uuid}), do: true
-  defp blocking_error?(_error), do: false
 end

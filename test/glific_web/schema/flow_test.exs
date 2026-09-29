@@ -521,7 +521,9 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
-  test "Publish flow", %{manager: user} do
+  test "Publish a valid flow, and report an unknown uuid as a non-blocking error", %{
+    manager: user
+  } do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: user.organization_id})
 

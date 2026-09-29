@@ -210,7 +210,7 @@ defmodule Glific.Flows.Node do
 
     # Last: a channel error carries the node uuid, so it is a 4-tuple the sibling validators'
     # Keyword.t() contracts do not accept.
-    ChannelCompatibility.node_errors(errors, node, flow)
+    ChannelCompatibility.check_node(errors, node, flow)
   end
 
   @doc """

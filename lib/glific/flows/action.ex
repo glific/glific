@@ -516,7 +516,7 @@ defmodule Glific.Flows.Action do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
       {:ok, sub_flow} ->
-        ChannelCompatibility.sub_flow_errors(errors, sub_flow, flow, action.node_uuid)
+        ChannelCompatibility.check_sub_flow(errors, sub_flow, flow, action.node_uuid)
 
       _ ->
         [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"} | errors]
