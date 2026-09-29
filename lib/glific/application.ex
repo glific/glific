@@ -44,6 +44,9 @@ defmodule Glific.Application do
         start: {Cachex, :start_link, [:glific_cache, []]}
       },
 
+      # After Cachex, which it publishes the shortcode index into
+      Glific.Partners.OrganizationIndex,
+
       # Add the flow metrics caching code
       Glific.Metrics,
 
