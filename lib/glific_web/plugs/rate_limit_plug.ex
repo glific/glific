@@ -4,11 +4,11 @@ defmodule GlificWeb.RateLimitPlug do
 
   Mounted twice, because the two jobs need different places in the stack:
 
-      plug(GlificWeb.RateLimitPlug, :global)   # GlificWeb.Endpoint
-      plug(GlificWeb.RateLimitPlug)            # the :api pipeline
+      plug(GlificWeb.RateLimitPlug, :unrouted)   # GlificWeb.Endpoint
+      plug(GlificWeb.RateLimitPlug)              # the :api pipeline
 
   The `:api` pipeline only runs once the router has matched a route, so a request for a path that
-  matches nothing never reached this plug at all and was unlimited. The `:global` mode closes
+  matches nothing never reached this plug at all and was unlimited. The `:unrouted` mode closes
   that, and has to live in the endpoint to do so.
 
   It cannot simply be the same mode mounted earlier. `:current_user` is assigned by
@@ -17,13 +17,13 @@ defmodule GlificWeb.RateLimitPlug do
   bucket. The default mode also reads `conn.params`, which is unfetched before `Plug.Parsers`. And
   it would newly throttle the BSP webhooks, which are high volume from a handful of addresses.
 
-  So `:global` asks the router whether the path matches anything and only counts the requests that
-  match nothing. Its bucket is the source address alone rather than address and path, so sweeping
-  many URLs buys a caller nothing. Over the limit answers 429.
+  So `:unrouted` asks the router whether the path matches anything and only counts the requests
+  that match nothing. Its bucket is the source address alone rather than address and path, so
+  sweeping many URLs buys a caller nothing. Over the limit answers 429.
 
-  Each limit's count is an environment variable read at boot — `RATE_LIMIT_API_GLOBAL`,
-  `RATE_LIMIT_API_UNAUTHENTICATED`, `RATE_LIMIT_API_AUTHENTICATED`, `RATE_LIMIT_API_PHONE` and
-  `RATE_LIMIT_WEB_CHANNEL_API` — while its window is fixed in `config/config.exs`.
+  Each limit's count is an environment variable read at boot — `RATE_LIMIT_API_UNROUTED`,
+  `RATE_LIMIT_API_UNAUTHENTICATED`, `RATE_LIMIT_API_AUTHENTICATED_PER_SEC` and
+  `RATE_LIMIT_WEB_CHANNEL_API` — while its window is fixed in `config/runtime.exs`.
   """
 
   alias GlificWeb.{Router, Tenants}
@@ -37,10 +37,10 @@ defmodule GlificWeb.RateLimitPlug do
 
   @doc false
   @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
-  def call(conn, :global) do
+  def call(conn, :unrouted) do
     if matched_route?(conn) or internal_caller?(conn),
       do: conn,
-      else: rate_limit(conn, :rate_limit_api_global, "Global: #{Tenants.remote_ip(conn)}")
+      else: rate_limit(conn, :rate_limit_api_unrouted, "Unrouted: #{Tenants.remote_ip(conn)}")
   end
 
   # The web channel is embedded on public sites, where a school or office puts many unrelated
@@ -53,7 +53,7 @@ defmodule GlificWeb.RateLimitPlug do
   def call(conn, _opts) do
     case conn.assigns[:current_user] do
       nil -> rate_limit_unauthenticated(conn)
-      user -> rate_limit(conn, :rate_limit_api_authenticated, "User: #{user.id}")
+      user -> rate_limit(conn, :rate_limit_api_authenticated_per_sec, "User: #{user.id}")
     end
   end
 
@@ -107,23 +107,11 @@ defmodule GlificWeb.RateLimitPlug do
   # by varying the path, and on routes with a glob segment the path is caller-controlled, so the
   # number of live ExRated buckets was unbounded from unauthenticated traffic.
   defp rate_limit_unauthenticated(conn) do
-    conn
-    |> rate_limit(:rate_limit_api_unauthenticated, "Unauthenticated: #{Tenants.remote_ip(conn)}")
-    |> rate_limit_phone()
-  end
-
-  defp rate_limit_phone(%Conn{halted: true} = conn), do: conn
-
-  # Charged in addition to the address bucket, not instead of it: on its own it let one address
-  # rotate phone numbers for an unlimited number of attempts.
-  defp rate_limit_phone(conn) do
-    case get_in(conn.params, ["user", "phone"]) do
-      phone when is_binary(phone) ->
-        rate_limit(conn, :rate_limit_api_phone, "Authorization: " <> phone)
-
-      _no_phone ->
-        conn
-    end
+    rate_limit(
+      conn,
+      :rate_limit_api_unauthenticated,
+      "Unauthenticated: #{Tenants.remote_ip(conn)}"
+    )
   end
 
   defp render_error(conn) do

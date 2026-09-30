@@ -457,7 +457,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       with_web_channel_enabled(fn ->
         rate_limit_key = "web_channel_send_otp:#{@reachable_phone}"
         original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
-        Application.put_env(:glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1)
+
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
         ExRated.delete_bucket(rate_limit_key)
 
         on_exit(fn ->
@@ -500,7 +505,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       with_web_channel_enabled(fn ->
         rate_limit_key = "web_channel_send_otp:#{@reachable_phone}"
         original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
-        Application.put_env(:glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1)
+
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
         ExRated.delete_bucket(rate_limit_key)
 
         on_exit(fn ->
@@ -540,7 +550,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         other_phone = "917834811232"
         keys = ["web_channel_send_otp:#{@reachable_phone}", "web_channel_send_otp:#{other_phone}"]
         original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
-        Application.put_env(:glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1)
+
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
         Enum.each(keys, &ExRated.delete_bucket/1)
 
         on_exit(fn ->
@@ -605,16 +620,27 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         web_channel_key = "web_channel_send_otp:#{@reachable_phone}"
         staff_key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
 
-        original_web_channel_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+        original_web_channel_config =
+          Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+
         original_staff_config = Application.get_env(:glific, :rate_limit_api_otp)
 
-        Application.put_env(:glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1)
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
         Application.put_env(:glific, :rate_limit_api_otp, scale_ms: 30_000, count: 1)
         ExRated.delete_bucket(web_channel_key)
         ExRated.delete_bucket(staff_key)
 
         on_exit(fn ->
-          Application.put_env(:glific, :rate_limit_web_channel_otp_phone, original_web_channel_config)
+          Application.put_env(
+            :glific,
+            :rate_limit_web_channel_otp_phone,
+            original_web_channel_config
+          )
+
           Application.put_env(:glific, :rate_limit_api_otp, original_staff_config)
           ExRated.delete_bucket(web_channel_key)
           ExRated.delete_bucket(staff_key)
