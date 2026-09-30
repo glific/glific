@@ -425,12 +425,9 @@ defmodule Glific.FLowsTest do
                error.message == "Updating a WhatsApp group field"
              end)
 
-      # the point of blocking: the publish must not have taken effect. A successful publish bumps
-      # the revision's version, so an unchanged version is what proves nothing went live.
       {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
       assert revision.version == version_before
 
-      # removing the node is what unblocks the publish
       {:ok, _revision} =
         revision |> FlowRevision.changeset(%{definition: clean_definition}) |> Repo.update()
 
@@ -461,8 +458,6 @@ defmodule Glific.FLowsTest do
           "uuid" => Ecto.UUID.generate(),
           "type" => "send_msg",
           "text" => "your appointment is confirmed",
-          # an expression-based templating map needs no stored template, but still marks the
-          # action as templated
           "templating" => %{"uuid" => Ecto.UUID.generate(), "expression" => "@results.template"}
         },
         %{
@@ -510,8 +505,6 @@ defmodule Glific.FLowsTest do
       end
     end
 
-    # A sub-flow inherits its parent's channel at runtime, so a web flow entering a whatsapp flow
-    # would run that flow's whatsapp-only nodes on web.
     test "publish_flow/2 refuses a web flow that enters a whatsapp sub-flow",
          %{organization_id: organization_id} = _attrs do
       user = Repo.get_current_user()
@@ -554,7 +547,6 @@ defmodule Glific.FLowsTest do
                  String.contains?(error.message, "Entering the sub-flow")
              end)
 
-      # marking the sub-flow web is the other way to resolve it
       set_channel(sub_flow, :web)
       Glific.Caches.remove(organization_id, [parent.uuid, sub_flow.uuid])
 
@@ -825,9 +817,6 @@ defmodule Glific.FLowsTest do
       assert broadcast_results["key"] == default_results.key
     end
 
-    # An exported web flow that imported as a whatsapp flow would be mislabelled and would skip
-    # the web-channel publish checks. The payload is encoded and decoded so it matches a real
-    # import file, where every key is a string.
     test "export_flow/1 and import_flow/2 round-trip the channel" do
       user = Repo.get_current_user()
       flow = flow_fixture()
@@ -849,7 +838,6 @@ defmodule Glific.FLowsTest do
       assert imported.channel == :web
     end
 
-    # An export written before the column existed carries no channel at all.
     test "import_flow/2 defaults a channel-less export to whatsapp" do
       user = Repo.get_current_user()
       flow = flow_fixture()
@@ -870,8 +858,6 @@ defmodule Glific.FLowsTest do
       assert imported.channel == :whatsapp
     end
 
-    # The copy carries the source's nodes, so a copy of a web flow that came back as a whatsapp
-    # flow would be mislabelled and would skip the web-channel publish checks.
     test "copy_flow/2 keeps the channel of the flow it copied" do
       flow = flow_fixture()
       web_flow = set_channel(flow, :web)
@@ -921,8 +907,6 @@ defmodule Glific.FLowsTest do
     end
   end
 
-  # Cachex is process-global and the Ecto sandbox does not roll it back, so a published
-  # mutation of a seeded flow stays visible to every later test.
   defp clear_flow_cache(flow) do
     keys =
       for status <- ["draft", "published"],
@@ -934,7 +918,6 @@ defmodule Glific.FLowsTest do
     Glific.Caches.remove(flow.organization_id, keys)
   end
 
-  # The changeset refuses a channel change on a persisted flow.
   defp set_channel(flow, channel) do
     updated = flow |> Ecto.Changeset.change(channel: channel) |> Repo.update!()
     clear_flow_cache(flow)

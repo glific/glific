@@ -144,8 +144,6 @@ defmodule Glific.Flows.Flow do
     validate_keywords(changeset, get_change(changeset, :keywords))
   end
 
-  # Enforced here rather than in the form: `:channel` is part of `:flow_input`, which
-  # `updateFlow` accepts.
   @spec validate_channel_unchanged(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_channel_unchanged(%Ecto.Changeset{data: %Flow{id: nil}} = changeset),
     do: changeset

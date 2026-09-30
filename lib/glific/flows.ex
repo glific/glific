@@ -628,9 +628,6 @@ defmodule Glific.Flows do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
 
-    # Channel-incompatible nodes are refused rather than warned about: the other validation
-    # errors are advisory and still publish, but a flow carrying a node its own channel cannot
-    # run would go live broken.
     if blocking_errors?(errors),
       do: {:errors, format_flow_errors(errors)},
       else: do_publish_validated_flow(flow, user_id, errors)
@@ -864,7 +861,6 @@ defmodule Glific.Flows do
       |> Map.merge(%{
         version_number: flow.version_number,
         flow_type: flow.flow_type,
-        # the copy carries the source's nodes, so it has to carry the source's channel too
         channel: flow.channel,
         organization_id: flow.organization_id,
         uuid: Ecto.UUID.generate()

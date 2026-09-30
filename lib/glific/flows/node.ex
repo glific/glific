@@ -208,8 +208,6 @@ defmodule Glific.Flows.Node do
         do: Router.validate(node.router, errors, flow),
         else: errors
 
-    # Last: a channel error carries the node uuid, so it is a 4-tuple the sibling validators'
-    # Keyword.t() contracts do not accept.
     ChannelCompatibility.check_node(errors, node, flow)
   end
 

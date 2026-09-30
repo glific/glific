@@ -188,8 +188,6 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  # `category` and `blocking` are non-null in the schema, so they have to be set here too: a
-  # caller that selects them gets the whole error nullified otherwise.
   @spec make_error(any) :: [map()]
   defp make_error(error) when is_list(error),
     do: [publish_error(hd(error), hd(tl(error)))]
