@@ -15,7 +15,7 @@ import { Counter, Trend } from 'k6/metrics';
 //                 A miss is never cached, so before the fix each request costs a database
 //                 query and a raised exception. This is the scenario the fix is about.
 //
-// Both scenarios use paths that match no route, so both are charged the RATE_LIMIT_API_GLOBAL
+// Both scenarios use paths that match no route, so both are charged the RATE_LIMIT_API_UNROUTED
 // budget and a run should be mostly 429 once the first minute's allowance is spent. Raise that
 // limit if you want to measure what the work costs rather than what refusing it costs.
 
@@ -156,7 +156,7 @@ export function handleSummary(data) {
     '',
     count(data, 'scan_status_429') === 0
       ? '  No 429s. Either nothing rate limits unmatched paths, or the limit was raised for this run.'
-      : '  Saw 429s: unmatched paths are rate limited, as expected with RATE_LIMIT_API_GLOBAL set.',
+      : '  Saw 429s: unmatched paths are rate limited, as expected with RATE_LIMIT_API_UNROUTED set.',
     '',
   ];
 
