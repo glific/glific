@@ -2,13 +2,12 @@ defmodule Glific.Flows.ChannelCompatibility do
   @moduledoc """
   Which flow nodes a channel can run, and the severity tier a mismatch reports at.
 
-  `Action` and `Node` consult it while validating. A mismatch is tagged `"Blocking"`, the
-  category `Glific.Flows` refuses a publish on.
+  `Action` and `Node` consult it while validating. A mismatch is tagged with
+  `Flows.blocking_category/0`, the tier the publish gate refuses on.
   """
 
+  alias Glific.Flows
   alias Glific.Flows.Flow
-
-  @blocking_category "Blocking"
 
   @unsupported_action_types %{"set_wa_group_field" => "Updating a WhatsApp group field"}
 
@@ -52,7 +51,7 @@ defmodule Glific.Flows.ChannelCompatibility do
   defp web?(_flow), do: false
 
   @spec error(String.t(), Ecto.UUID.t() | nil) :: tuple()
-  defp error(message, node_uuid), do: {Flow, message, @blocking_category, node_uuid}
+  defp error(message, node_uuid), do: {Flow, message, Flows.blocking_category(), node_uuid}
 
   @spec check_router(list(), map() | nil, Ecto.UUID.t() | nil) :: list()
   defp check_router(errors, nil, _node_uuid), do: errors

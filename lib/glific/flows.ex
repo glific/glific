@@ -636,6 +636,12 @@ defmodule Glific.Flows do
       else: do_publish_validated_flow(flow, user_id, errors)
   end
 
+  @doc """
+  The validation-error category that stops a publish rather than warning about it.
+  """
+  @spec blocking_category :: String.t()
+  def blocking_category, do: @blocking_category
+
   @spec blocking_errors?(list()) :: boolean()
   defp blocking_errors?(errors), do: Enum.any?(errors, &blocking_error?/1)
 
