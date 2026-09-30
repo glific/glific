@@ -224,7 +224,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   """
   @spec create_and_send_verification_code(Contact.t()) :: {:ok, String.t()}
   def create_and_send_verification_code(contact) do
-    code = OTP.generate_code(:auth, contact.phone) |> IO.inspect()
+    code = OTP.generate_code(:auth, contact.phone)
     Glific.Messages.create_and_send_otp_verification_message(contact, code)
     {:ok, code}
   end
