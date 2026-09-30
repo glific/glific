@@ -44,6 +44,9 @@ defmodule Glific.Application do
         start: {Cachex, :start_link, [:glific_cache, []]}
       },
 
+      # After Cachex, which it publishes the shortcode index into
+      Glific.Partners.OrganizationIndex,
+
       # Add the flow metrics caching code
       Glific.Metrics,
 
@@ -75,7 +78,7 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for Tesla success/failure call:
     attach_tesla_telemetry_event()
 
-    # Add this :telemetry.attach/4 for Ecto query timing:
+    # Add this :telemetry.attach/4 for Ecto DB connection errors:
     attach_repo_telemetry_event()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
