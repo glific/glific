@@ -1,22 +1,52 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${GIGALIXIR_APP:?GIGALIXIR_APP is required}"
-: "${TARGET_SIZE:?TARGET_SIZE is required}"
-: "${GIGALIXIR_USERNAME:?GIGALIXIR_USERNAME is required}"
-: "${GIGALIXIR_PASSWORD:?GIGALIXIR_PASSWORD is required}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-900}"
 POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-15}"
+REQUEST_TIMEOUT_SECONDS="${REQUEST_TIMEOUT_SECONDS:-30}"
+DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
+LAST_LOG_FILE=$(mktemp)
+
+log() {
+  echo "[$(date -u +%FT%TZ)] $*"
+  # Kept in a file so lines logged inside $(...) subshells still reach the failure notification.
+  printf '%s' "$*" >"$LAST_LOG_FILE"
+}
+
+http() { curl -sS --connect-timeout 10 --max-time "$REQUEST_TIMEOUT_SECONDS" "$@"; }
+
+notify_failure() {
+  local exit_code=$? last_log message
+  last_log=$(cat "$LAST_LOG_FILE" 2>/dev/null || true)
+  rm -f "$LAST_LOG_FILE"
+
+  if [[ $exit_code -ne 0 && -n "$DISCORD_WEBHOOK_URL" ]]; then
+    message="🚨 Gigalixir resize failed: \`${GIGALIXIR_APP:-unset}\` → size ${TARGET_SIZE:-unset} (exit ${exit_code})
+Last step: ${last_log:-none, check the job logs}
+Execution: ${CLOUD_RUN_EXECUTION:-local run}"
+
+    http -o /dev/null --fail -H 'Content-Type: application/json' \
+      -d "$(jq -nc --arg content "${message:0:1900}" '{content: $content}')" \
+      "$DISCORD_WEBHOOK_URL" || echo "Failed to send Discord notification" >&2
+  fi
+
+  # Re-raise the original status so Cloud Run still sees the failure.
+  exit "$exit_code"
+}
+
+trap notify_failure EXIT
+
+for var in GIGALIXIR_APP TARGET_SIZE GIGALIXIR_USERNAME GIGALIXIR_PASSWORD; do
+  [[ -n "${!var:-}" ]] || { log "${var} is required"; exit 1; }
+done
 
 API="https://api.gigalixir.com/api/apps/${GIGALIXIR_APP}"
-
-log() { echo "[$(date -u +%FT%TZ)] $*"; }
 
 uri_encode() { jq -rn --arg v "$1" '$v | @uri'; }
 
 fetch_api_key() {
   local response code body
-  response=$(curl -sS -w '\n%{http_code}' \
+  response=$(http -w '\n%{http_code}' \
     -u "$(uri_encode "$GIGALIXIR_USERNAME"):$(uri_encode "$GIGALIXIR_PASSWORD")" \
     "https://api.gigalixir.com/api/login")
   code=${response##*$'\n'}
@@ -24,6 +54,7 @@ fetch_api_key() {
 
   case "$code" in
     200) jq -r '.data.key' <<<"$body" ;;
+    000) log "Login failed: no response from Gigalixir" >&2; return 1 ;;
     303) log "Login failed: account has two-factor auth enabled, which this job cannot complete" >&2; return 1 ;;
     *) log "Login failed with HTTP ${code}: ${body}" >&2; return 1 ;;
   esac
@@ -32,7 +63,7 @@ fetch_api_key() {
 API_KEY=$(fetch_api_key)
 
 api() {
-  curl -sS --fail-with-body -u "${GIGALIXIR_USERNAME}:${API_KEY}" \
+  http --fail-with-body -u "${GIGALIXIR_USERNAME}:${API_KEY}" \
     -H 'Content-Type: application/json' "$@"
 }
 
