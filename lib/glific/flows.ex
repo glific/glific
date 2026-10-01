@@ -29,8 +29,6 @@ defmodule Glific.Flows do
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
 
-  @blocking_category "Blocking"
-
   @doc """
   Returns the list of flows.
 
@@ -633,18 +631,11 @@ defmodule Glific.Flows do
       else: do_publish_validated_flow(flow, user_id, errors)
   end
 
-  @doc """
-  The validation-error category that stops a publish rather than warning about it.
-  """
-  @spec blocking_category :: String.t()
-  def blocking_category, do: @blocking_category
-
   @spec blocking_errors?(list()) :: boolean()
   defp blocking_errors?(errors), do: Enum.any?(errors, &blocking_error?/1)
 
   @spec blocking_error?(tuple()) :: boolean()
-  defp blocking_error?({_key, _message, @blocking_category}), do: true
-  defp blocking_error?({_key, _message, @blocking_category, _node_uuid}), do: true
+  defp blocking_error?({:channel, _key, _message, _node_uuid}), do: true
   defp blocking_error?(_error), do: false
 
   @spec do_publish_validated_flow(Flow.t(), non_neg_integer(), list()) ::
@@ -704,13 +695,22 @@ defmodule Glific.Flows do
   end
 
   @spec format_flow_error(tuple()) :: map()
+  defp format_flow_error({:channel, key, message, node_uuid}),
+    do: %{
+      key: key,
+      message: message,
+      category: "Critical",
+      node_uuid: node_uuid,
+      blocking: true
+    }
+
   defp format_flow_error({key, message, category, node_uuid}),
     do: %{
       key: key,
       message: message,
       category: category,
       node_uuid: node_uuid,
-      blocking: category == @blocking_category
+      blocking: false
     }
 
   defp format_flow_error({key, message, category}),
@@ -719,7 +719,7 @@ defmodule Glific.Flows do
       message: message,
       category: category,
       node_uuid: nil,
-      blocking: category == @blocking_category
+      blocking: false
     }
 
   # Get version of last published flow revision

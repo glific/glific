@@ -419,7 +419,7 @@ defmodule Glific.FLowsTest do
         revision |> FlowRevision.changeset(%{definition: offending_definition}) |> Repo.update()
 
       assert {:errors, errors} = Flows.publish_flow(flow, user.id)
-      assert Enum.any?(errors, fn error -> error.category == "Blocking" end)
+      assert Enum.any?(errors, fn error -> error.blocking end)
 
       assert Enum.any?(errors, fn error ->
                error.message == "Updating a WhatsApp group field"
@@ -489,7 +489,7 @@ defmodule Glific.FLowsTest do
 
       blocking_messages =
         errors
-        |> Enum.filter(fn error -> error.category == "Blocking" end)
+        |> Enum.filter(fn error -> error.blocking end)
         |> Enum.map(fn error -> error.message end)
 
       assert length(blocking_messages) == 4
@@ -543,7 +543,7 @@ defmodule Glific.FLowsTest do
       assert {:errors, errors} = Flows.publish_flow(parent, user.id)
 
       assert Enum.any?(errors, fn error ->
-               error.category == "Blocking" and
+               error.blocking and
                  String.contains?(error.message, "Entering the sub-flow")
              end)
 
