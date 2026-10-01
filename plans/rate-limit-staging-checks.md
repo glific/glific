@@ -17,12 +17,12 @@ Two infrastructure facts were confirmed rather than assumed: Gigalixir **appends
 
 **The one measurement that matters here:** make an external request and confirm `remote_ip=` is
 your own public address. If every line carries the *same* address, everything keyed on the caller —
-the global bucket, the IP blocklist, OTP throttling, `users.last_login_from` — is attributing
+the unrouted bucket, the IP blocklist, OTP throttling, `users.last_login_from` — is attributing
 traffic to the proxy instead. Check this first.
 
 Already confirmed on staging: external requests do log a public address, and some traffic arrives
 from inside Gigalixir's network carrying only a private one. That second case is expected, and
-those callers are exempt from the global limit — see section 2.
+those callers are exempt from the unrouted limit — see section 2.
 
 A second, cheaper check: `GET /aws.env` with a spoofed `X-Real-IP` and `X-Client-IP` must log the
 real address, not the spoofed one.
@@ -31,7 +31,7 @@ real address, not the spoofed one.
 
 | Request | Expected | Was |
 |---|---|---|
-| Any path the router does not match | `404`, then `429` after `RATE_LIMIT_API_GLOBAL` (default 60) per minute per address | `404`, never throttled |
+| Any path the router does not match | `404`, then `429` after `RATE_LIMIT_API_UNROUTED` (default 60) per minute per address | `404`, never throttled |
 | Any path on a `Host` that resolves to no active organization | `404`, empty body | `403 Unauthorized` |
 | Any path from an address in `BLOCKED_IPS` | `404`, empty body | n/a — new |
 | An unrouted path from a **private** address (a health check) | `404` forever, never `429` | n/a — new |
@@ -40,21 +40,20 @@ The last row is the exemption: `RemoteIp` skips reserved ranges, so a private `r
 caller is inside the platform. They are indistinguishable from one another, so one bucket would
 throttle them collectively, and refusing a health check is how an instance gets restarted.
 
-Each limit's count is an environment variable read at boot: `RATE_LIMIT_API_GLOBAL`,
-`RATE_LIMIT_API_UNAUTHENTICATED`, `RATE_LIMIT_API_PHONE`, `RATE_LIMIT_API_AUTHENTICATED` and the
+Each limit's count is an environment variable read at boot: `RATE_LIMIT_API_UNROUTED`,
+`RATE_LIMIT_API_UNAUTHENTICATED`, `RATE_LIMIT_API_AUTHENTICATED_PER_SEC` and the
 `RATE_LIMIT_WEB_CHANNEL_*` family. Every limit is defined in `config/runtime.exs` and nowhere else;
-windows are fixed there, so there is no period variable. `RATE_LIMIT_API_AUTHENTICATED` replaces `MAX_RATE_LIMIT_REQUEST`, so **that variable has
+windows are fixed there, so there is no period variable. `RATE_LIMIT_API_AUTHENTICATED_PER_SEC` replaces `MAX_RATE_LIMIT_REQUEST`, so **that variable has
 to be renamed in the Gigalixir config or the authenticated limit silently falls back to its default
-of 180.** `BLOCKED_IPS` is comma separated and a malformed entry refuses to boot, which is worth
+of 80/s.** `BLOCKED_IPS` is comma separated and a malformed entry refuses to boot, which is worth
 testing once.
 
 **The unauthenticated bucket changed shape.** It was keyed on address *and path*, giving each
 endpoint its own budget; it is now the address alone, so one address shares a single budget across
 every unauthenticated endpoint. The default was raised from 50 to 300 to compensate, but an office
 behind one egress address is the case to watch: log in, request OTPs and use the web channel from
-one address in quick succession and confirm nothing 429s. The per-phone budget is now charged *in
-addition to* the address budget rather than instead of it, so rotating phone numbers no longer buys
-extra attempts.
+one address in quick succession and confirm nothing 429s. The per-phone budget is removed, so
+`RATE_LIMIT_API_PHONE` can be deleted from Gigalixir.
 
 ## 3. Endpoints that read the client address
 
@@ -110,7 +109,7 @@ organization's GCS bucket, so it is the one worth a deliberate try.
 
 ## 6. Observability
 
-A breach logs at **warning** with the limit's name — `Rate limit exceeded: rate_limit_api_global` —
+A breach logs at **warning** with the limit's name — `Rate limit exceeded: rate_limit_api_unrouted` —
 and increments the AppSignal counter `rate_limit_exceeded`, tagged with that name. Confirm both
 appear after deliberately tripping something, and that the counter's tags contain the limit name
 only: never an address, phone number or contact id.
@@ -135,8 +134,8 @@ ways that could be wrong:
   plug added here, so subscriptions and LiveView bypass all of it, and their log lines carry no
   `remote_ip`. `/web_socket` bypasses the plugs too, but is **not** unaffected — it does its own
   limiting, so see sections 3 and 5.
-- The authenticated budget's *shape*: still one bucket per signed-in user at 180/min. Only the
-  variable that sets it changed name, which section 2 covers.
+- The authenticated budget's *shape*: still one bucket per signed-in user, now 80/s rather than
+  180/min. Its variable changed name, which section 2 covers.
 
 ## Known wrinkle, not a defect
 
