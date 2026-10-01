@@ -89,14 +89,13 @@ end
 
 config :glific,
   # Requests that match no route at all, per address.
-  rate_limit_api_global: rate_limit.("RATE_LIMIT_API_GLOBAL", 60_000, 60),
+  rate_limit_api_unrouted: rate_limit.("RATE_LIMIT_API_UNROUTED", 60_000, 60),
   # Per signed-in user, across the whole API. Replaces MAX_RATE_LIMIT_REQUEST.
-  rate_limit_api_authenticated: rate_limit.("RATE_LIMIT_API_AUTHENTICATED", 60_000, 180),
+  rate_limit_api_authenticated_per_sec:
+    rate_limit.("RATE_LIMIT_API_AUTHENTICATED_PER_SEC", 1_000, 80),
   # Per address, across every unauthenticated endpoint. 300 rather than the old 50, because that
   # 50 was per address *and path*, and offices sit behind one egress.
   rate_limit_api_unauthenticated: rate_limit.("RATE_LIMIT_API_UNAUTHENTICATED", 60_000, 300),
-  # Charged in addition to the address, so rotating phone numbers buys nothing.
-  rate_limit_api_phone: rate_limit.("RATE_LIMIT_API_PHONE", 60_000, 300),
   # Staff registration OTP, per phone.
   rate_limit_api_otp: rate_limit.("RATE_LIMIT_API_OTP", 30_000, 1),
   # The web channel is embedded on public sites, where a school, office or carrier NAT fronts many

@@ -4,9 +4,9 @@ defmodule GlificWeb.RateLimitPlugTest do
   @limit 5
 
   setup do
-    previous = Application.get_env(:glific, :rate_limit_api_global)
-    Application.put_env(:glific, :rate_limit_api_global, scale_ms: 60_000, count: @limit)
-    on_exit(fn -> Application.put_env(:glific, :rate_limit_api_global, previous) end)
+    previous = Application.get_env(:glific, :rate_limit_api_unrouted)
+    Application.put_env(:glific, :rate_limit_api_unrouted, scale_ms: 60_000, count: @limit)
+    on_exit(fn -> Application.put_env(:glific, :rate_limit_api_unrouted, previous) end)
     :ok
   end
 
@@ -153,8 +153,8 @@ defmodule GlificWeb.RateLimitPlugTest do
     assert 429 in statuses
   end
 
-  # Inbound WhatsApp arrives here, in bursts far above the global budget. The route is a forward,
-  # so the router matches it and the global limiter never counts it — but the consequence of
+  # Inbound WhatsApp arrives here, in bursts far above the unrouted budget. The route is a forward,
+  # so the router matches it and the unrouted limiter never counts it — but the consequence of
   # getting that wrong is dropped messages, so it is pinned.
   test "never limits the BSP webhooks, whatever the volume", %{organization_id: organization_id} do
     statuses =

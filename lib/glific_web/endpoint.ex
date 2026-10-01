@@ -67,7 +67,7 @@ defmodule GlificWeb.Endpoint do
   plug(GlificWeb.Plugs.IPBlocklist)
 
   # The :api pipeline copy only sees matched routes, so unrouted requests need this one at the edge.
-  plug(GlificWeb.RateLimitPlug, :global)
+  plug(GlificWeb.RateLimitPlug, :unrouted)
 
   plug(:parse_body)
 
