@@ -137,6 +137,11 @@ for var in "${required_vars[@]}"; do
   [[ -n "${!var:-}" ]] || { log "${var} is required"; exit 1; }
 done
 
+if [[ -n "$SMOKE_TEST_URL" && "$SMOKE_TEST_URL" != https://* ]]; then
+  log "SMOKE_TEST_URL must use https:// so the smoke-test credentials are encrypted in transit"
+  exit 1
+fi
+
 API="https://api.gigalixir.com/api/apps/${GIGALIXIR_APP}"
 
 uri_encode() { jq -rn --arg v "$1" '$v | @uri'; }
@@ -169,7 +174,7 @@ app_status() { api "${API}/status" | jq '.data'; }
 smoke_test() {
   local attempt response code body
   for ((attempt = 1; attempt <= SMOKE_TEST_ATTEMPTS; attempt++)); do
-    response=$(http -w '\n%{http_code}' -H 'Content-Type: application/json' \
+    response=$(http --proto '=https' -w '\n%{http_code}' -H 'Content-Type: application/json' \
       -d "$(jq -nc --arg phone "$SMOKE_TEST_PHONE" --arg password "$SMOKE_TEST_PASSWORD" \
         '{user: {phone: $phone, password: $password}}')" \
       "${SMOKE_TEST_URL%/}/api/v1/session") || response=$'\n000'
