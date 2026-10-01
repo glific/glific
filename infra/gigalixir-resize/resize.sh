@@ -25,17 +25,36 @@ log() {
 
 http() { curl -sS --connect-timeout 10 --max-time "$REQUEST_TIMEOUT_SECONDS" "$@"; }
 
-# Same embed layout and colours as bin/gigalixir-verify-deploy.sh. $1=progress|ok|fail, $2=reason.
+discord_title() {
+  local app=${GIGALIXIR_APP:-unknown}
+  case "$1" in
+    progress) echo "🟡 ${app} resizing ${DIRECTION}" ;;
+    ok) echo "🟢 ${app} resized ${DIRECTION}" ;;
+    smoke_fail) echo "🔴 ${app} smoke test failed after resizing ${DIRECTION}" ;;
+    fail) echo "🔴 ${app} resize failed" ;;
+  esac
+}
+
+# Same embed layout and colours as bin/gigalixir-verify-deploy.sh.
+# $1=progress|ok|smoke_fail|fail, $2=reason. $1=ping posts only a role mention plus the $2 text.
 discord_payload() {
-  local kind=$1 reason=${2:-} app=${GIGALIXIR_APP:-unknown} color title
+  local kind=$1 reason=${2:-} color
+
+  if [[ "$kind" == ping ]]; then
+    jq -nc --arg text "$reason" --arg role "$DISCORD_MENTION_ROLE_ID" \
+      '{content: ((if $role == "" then "" else "<@&\($role)> " end) + $text),
+        allowed_mentions: {roles: (if $role == "" then [] else [$role] end)}}'
+    return
+  fi
+
   case "$kind" in
-    progress) color=16705372; title="🟡 ${app} resizing ${DIRECTION}" ;;
-    ok) color=3066993; title="🟢 ${app} resized ${DIRECTION}" ;;
-    fail) color=15158332; title="🔴 ${app} resize failed" ;;
+    progress) color=16705372 ;;
+    ok) color=3066993 ;;
+    smoke_fail | fail) color=15158332 ;;
   esac
 
   jq -nc \
-    --arg title "$title" \
+    --arg title "$(discord_title "$kind")" \
     --argjson color "$color" \
     --arg reason "${reason:0:1000}" \
     --arg role "$DISCORD_MENTION_ROLE_ID" \
@@ -88,11 +107,21 @@ notify_failure() {
 
   if [[ $exit_code -ne 0 ]]; then
     last_log=${last_log:-unknown, check the job logs}
-    [[ -n "$STARTED_AT" ]] && DURATION="$((SECONDS - STARTED_AT))s"
-    [[ "$SMOKE_RESULT" == "Pending" ]] && SMOKE_RESULT="Not run"
-    discord_edit fail "$last_log"
-    # Edits don't notify anyone, so failures always get a fresh message that pings the role.
-    discord_post fail "$last_log" >/dev/null
+
+    if [[ "$SMOKE_RESULT" == "Running" ]]; then
+      # The resize itself succeeded: keep its message green and report the smoke test on its own.
+      SMOKE_RESULT="Failed"
+      discord_edit ok
+      discord_post smoke_fail "$last_log" >/dev/null
+    elif [[ -n "$DISCORD_MESSAGE_ID" ]]; then
+      DURATION="$((SECONDS - STARTED_AT))s"
+      [[ "$SMOKE_RESULT" == "Pending" ]] && SMOKE_RESULT="Not run"
+      discord_edit fail "$last_log"
+      # Edits don't notify anyone, so a short follow-up pings the role to point at the updated message.
+      discord_post ping "$(discord_title fail), see the message above" >/dev/null
+    else
+      discord_post fail "$last_log" >/dev/null
+    fi
   fi
 
   # Re-raise the original status so Cloud Run still sees the failure.
@@ -195,12 +224,14 @@ while ((SECONDS < deadline)); do
     ' <<<"$status" >/dev/null; then
     log "${GIGALIXIR_APP} is size ${TARGET_SIZE} and healthy"
     NODE=$(jq -r '[.pods[].name] | join(", ")' <<<"$status")
+    DURATION="$((SECONDS - STARTED_AT))s"
+
     if [[ -n "$SMOKE_TEST_URL" ]]; then
-      SMOKE_RESULT="Failed"
+      SMOKE_RESULT="Running"
+      discord_edit ok
       smoke_test
       SMOKE_RESULT="Passed"
     fi
-    DURATION="$((SECONDS - STARTED_AT))s"
     discord_edit ok
     exit 0
   fi
