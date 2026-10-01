@@ -1,0 +1,36 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      [
+        "build",
+        "-t",
+        "${_IMAGE}:${SHORT_SHA}",
+        "-t",
+        "${_IMAGE}:latest",
+        "infra/gigalixir-resize",
+      ]
+
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "--all-tags", "${_IMAGE}"]
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        for job in ${_JOBS}; do
+          if gcloud run jobs describe "$$job" --region "${_REGION}" >/dev/null 2>&1; then
+            gcloud run jobs update "$$job" --region "${_REGION}" --image "${_IMAGE}:${SHORT_SHA}"
+          else
+            echo "Job $$job does not exist yet, skipping"
+          fi
+        done
+
+substitutions:
+  _REGION: asia-south1
+  _IMAGE: asia-south1-docker.pkg.dev/${PROJECT_ID}/glific-infra/gigalixir-resize
+  _JOBS: gigalixir-size-up gigalixir-size-down
+
+options:
+  dynamicSubstitutions: true
+  logging: CLOUD_LOGGING_ONLY
