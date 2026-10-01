@@ -188,12 +188,16 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  @spec make_error(any) :: map()
+  @spec make_error(any) :: [map()]
   defp make_error(error) when is_list(error),
-    do: %{key: hd(error), message: hd(tl(error))}
+    do: [publish_error(hd(error), hd(tl(error)))]
 
   defp make_error(error),
-    do: %{key: "Database Error", message: Glific.SafeLog.safe_inspect(error)}
+    do: [publish_error("Database Error", Glific.SafeLog.safe_inspect(error))]
+
+  @spec publish_error(any(), String.t()) :: map()
+  defp publish_error(key, message),
+    do: %{key: key, message: message, category: "Critical", blocking: false, node_uuid: nil}
 
   @doc """
   Start a flow for a contact
