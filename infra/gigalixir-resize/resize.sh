@@ -5,7 +5,17 @@ TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-900}"
 POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-15}"
 REQUEST_TIMEOUT_SECONDS="${REQUEST_TIMEOUT_SECONDS:-30}"
 DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
+DISCORD_MENTION_ROLE_ID="${DISCORD_MENTION_ROLE_ID:-}"
+SMOKE_TEST_URL="${SMOKE_TEST_URL:-}"
+SMOKE_TEST_ATTEMPTS="${SMOKE_TEST_ATTEMPTS:-3}"
 LAST_LOG_FILE=$(mktemp)
+DISCORD_MESSAGE_ID=""
+FROM_SIZE=""
+DIRECTION=""
+NODE=""
+DURATION=""
+SMOKE_RESULT=""
+STARTED_AT=""
 
 log() {
   echo "[$(date -u +%FT%TZ)] $*"
@@ -15,19 +25,74 @@ log() {
 
 http() { curl -sS --connect-timeout 10 --max-time "$REQUEST_TIMEOUT_SECONDS" "$@"; }
 
+# Same embed layout and colours as bin/gigalixir-verify-deploy.sh. $1=progress|ok|fail, $2=reason.
+discord_payload() {
+  local kind=$1 reason=${2:-} app=${GIGALIXIR_APP:-unknown} color title
+  case "$kind" in
+    progress) color=16705372; title="🟡 ${app} resizing ${DIRECTION}" ;;
+    ok) color=3066993; title="🟢 ${app} resized ${DIRECTION}" ;;
+    fail) color=15158332; title="🔴 ${app} resize failed" ;;
+  esac
+
+  jq -nc \
+    --arg title "$title" \
+    --argjson color "$color" \
+    --arg reason "${reason:0:1000}" \
+    --arg role "$DISCORD_MENTION_ROLE_ID" \
+    --arg size "${FROM_SIZE:-?} → ${TARGET_SIZE:-?}" \
+    --arg duration "$DURATION" \
+    --arg smoke "$SMOKE_RESULT" \
+    --arg node "$NODE" \
+    --arg execution "${CLOUD_RUN_EXECUTION:-local run}" \
+    --arg ts "$(date -u +%FT%TZ)" \
+    '{
+       content: (if $role == "" then "" else "<@&\($role)>" end),
+       allowed_mentions: {roles: (if $role == "" then [] else [$role] end)},
+       embeds: [
+         {title: $title, color: $color, timestamp: $ts,
+          fields: ([
+            {name: "Size", value: $size, inline: true},
+            {name: "Duration", value: $duration, inline: true},
+            {name: "Smoke test", value: $smoke, inline: true},
+            {name: "Node", value: $node, inline: false},
+            {name: "Execution", value: $execution, inline: false}
+          ] | map(select(.value != "")))}
+         + (if $reason == "" then {} else {description: $reason} end)
+       ]
+     }'
+}
+
+# Prints the new message's id so it can be edited later. Never fails the job.
+discord_post() {
+  [[ -n "$DISCORD_WEBHOOK_URL" ]] || return 0
+  local separator='?'
+  [[ "$DISCORD_WEBHOOK_URL" == *\?* ]] && separator='&'
+  http --fail -H 'Content-Type: application/json' -d "$(discord_payload "$@")" \
+    "${DISCORD_WEBHOOK_URL}${separator}wait=true" | jq -r '.id // empty' ||
+    echo "Failed to send Discord notification" >&2
+}
+
+discord_edit() {
+  [[ -n "$DISCORD_WEBHOOK_URL" && -n "$DISCORD_MESSAGE_ID" ]] || return 0
+  local query=""
+  [[ "$DISCORD_WEBHOOK_URL" == *\?* ]] && query="?${DISCORD_WEBHOOK_URL#*\?}"
+  http -o /dev/null --fail -X PATCH -H 'Content-Type: application/json' -d "$(discord_payload "$@")" \
+    "${DISCORD_WEBHOOK_URL%%\?*}/messages/${DISCORD_MESSAGE_ID}${query}" ||
+    echo "Failed to update Discord notification" >&2
+}
+
 notify_failure() {
-  local exit_code=$? last_log message
+  local exit_code=$? last_log
   last_log=$(cat "$LAST_LOG_FILE" 2>/dev/null || true)
   rm -f "$LAST_LOG_FILE"
 
-  if [[ $exit_code -ne 0 && -n "$DISCORD_WEBHOOK_URL" ]]; then
-    message="🚨 Gigalixir resize failed: \`${GIGALIXIR_APP:-unset}\` → size ${TARGET_SIZE:-unset} (exit ${exit_code})
-Last step: ${last_log:-none, check the job logs}
-Execution: ${CLOUD_RUN_EXECUTION:-local run}"
-
-    http -o /dev/null --fail -H 'Content-Type: application/json' \
-      -d "$(jq -nc --arg content "${message:0:1900}" '{content: $content}')" \
-      "$DISCORD_WEBHOOK_URL" || echo "Failed to send Discord notification" >&2
+  if [[ $exit_code -ne 0 ]]; then
+    last_log=${last_log:-unknown, check the job logs}
+    [[ -n "$STARTED_AT" ]] && DURATION="$((SECONDS - STARTED_AT))s"
+    [[ "$SMOKE_RESULT" == "Pending" ]] && SMOKE_RESULT="Not run"
+    discord_edit fail "$last_log"
+    # Edits don't notify anyone, so failures always get a fresh message that pings the role.
+    discord_post fail "$last_log" >/dev/null
   fi
 
   # Re-raise the original status so Cloud Run still sees the failure.
@@ -36,7 +101,10 @@ Execution: ${CLOUD_RUN_EXECUTION:-local run}"
 
 trap notify_failure EXIT
 
-for var in GIGALIXIR_APP TARGET_SIZE GIGALIXIR_USERNAME GIGALIXIR_PASSWORD; do
+required_vars=(GIGALIXIR_APP TARGET_SIZE GIGALIXIR_USERNAME GIGALIXIR_PASSWORD)
+[[ -n "$SMOKE_TEST_URL" ]] && required_vars+=(SMOKE_TEST_PHONE SMOKE_TEST_PASSWORD)
+
+for var in "${required_vars[@]}"; do
   [[ -n "${!var:-}" ]] || { log "${var} is required"; exit 1; }
 done
 
@@ -69,6 +137,29 @@ api() {
 
 app_status() { api "${API}/status" | jq '.data'; }
 
+smoke_test() {
+  local attempt response code body
+  for ((attempt = 1; attempt <= SMOKE_TEST_ATTEMPTS; attempt++)); do
+    response=$(http -w '\n%{http_code}' -H 'Content-Type: application/json' \
+      -d "$(jq -nc --arg phone "$SMOKE_TEST_PHONE" --arg password "$SMOKE_TEST_PASSWORD" \
+        '{user: {phone: $phone, password: $password}}')" \
+      "${SMOKE_TEST_URL%/}/api/v1/session") || response=$'\n000'
+    code=${response##*$'\n'}
+    body=${response%$'\n'*}
+
+    if [[ "$code" == 200 ]] && jq -e '.data.access_token | length > 0' <<<"$body" >/dev/null 2>&1; then
+      log "Smoke test passed: logged in to ${SMOKE_TEST_URL}"
+      return 0
+    fi
+
+    log "Smoke test attempt ${attempt}/${SMOKE_TEST_ATTEMPTS} failed with HTTP ${code}"
+    ((attempt < SMOKE_TEST_ATTEMPTS)) && sleep "$POLL_INTERVAL_SECONDS"
+  done
+
+  log "Smoke test failed: could not log in to ${SMOKE_TEST_URL} after resizing to ${TARGET_SIZE}"
+  return 1
+}
+
 current=$(app_status)
 
 if jq -e --argjson t "$TARGET_SIZE" '.size == $t' <<<"$current" >/dev/null; then
@@ -79,7 +170,13 @@ fi
 # Resizing replaces the pod, so the resize is only done once none of these old pods remain.
 old_pods=$(jq -c '[.pods[].name]' <<<"$current")
 
-log "Resizing ${GIGALIXIR_APP} from $(jq -r '.size' <<<"$current") to ${TARGET_SIZE}"
+FROM_SIZE=$(jq -r '.size | tostring | sub("\\.0$"; "")' <<<"$current")
+DIRECTION=$(jq -r --argjson t "$TARGET_SIZE" 'if .size < $t then "up" else "down" end' <<<"$current")
+STARTED_AT=$SECONDS
+[[ -n "$SMOKE_TEST_URL" ]] && SMOKE_RESULT="Pending" || SMOKE_RESULT="Not configured"
+
+log "Resizing ${GIGALIXIR_APP} from ${FROM_SIZE} to ${TARGET_SIZE}"
+DISCORD_MESSAGE_ID=$(discord_post progress)
 api -X PUT "${API}/scale" -d "$(jq -nc --argjson size "$TARGET_SIZE" '{size: $size}')" >/dev/null
 
 deadline=$((SECONDS + TIMEOUT_SECONDS))
@@ -97,6 +194,14 @@ while ((SECONDS < deadline)); do
       and all(.pods[]; .status == "Healthy" and (.name as $n | ($old | any(. == $n)) | not))
     ' <<<"$status" >/dev/null; then
     log "${GIGALIXIR_APP} is size ${TARGET_SIZE} and healthy"
+    NODE=$(jq -r '[.pods[].name] | join(", ")' <<<"$status")
+    if [[ -n "$SMOKE_TEST_URL" ]]; then
+      SMOKE_RESULT="Failed"
+      smoke_test
+      SMOKE_RESULT="Passed"
+    fi
+    DURATION="$((SECONDS - STARTED_AT))s"
+    discord_edit ok
     exit 0
   fi
 
