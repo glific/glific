@@ -3,8 +3,8 @@ set -euo pipefail
 
 : "${GIGALIXIR_APP:?GIGALIXIR_APP is required}"
 : "${TARGET_SIZE:?TARGET_SIZE is required}"
-: "${GIGALIXIR_EMAIL:?GIGALIXIR_EMAIL is required}"
-: "${GIGALIXIR_API_KEY:?GIGALIXIR_API_KEY is required}"
+: "${GIGALIXIR_USERNAME:?GIGALIXIR_USERNAME is required}"
+: "${GIGALIXIR_PASSWORD:?GIGALIXIR_PASSWORD is required}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-900}"
 POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-15}"
 
@@ -12,8 +12,27 @@ API="https://api.gigalixir.com/api/apps/${GIGALIXIR_APP}"
 
 log() { echo "[$(date -u +%FT%TZ)] $*"; }
 
+uri_encode() { jq -rn --arg v "$1" '$v | @uri'; }
+
+fetch_api_key() {
+  local response code body
+  response=$(curl -sS -w '\n%{http_code}' \
+    -u "$(uri_encode "$GIGALIXIR_USERNAME"):$(uri_encode "$GIGALIXIR_PASSWORD")" \
+    "https://api.gigalixir.com/api/login")
+  code=${response##*$'\n'}
+  body=${response%$'\n'*}
+
+  case "$code" in
+    200) jq -r '.data.key' <<<"$body" ;;
+    303) log "Login failed: account has two-factor auth enabled, which this job cannot complete" >&2; return 1 ;;
+    *) log "Login failed with HTTP ${code}: ${body}" >&2; return 1 ;;
+  esac
+}
+
+API_KEY=$(fetch_api_key)
+
 api() {
-  curl -sS --fail-with-body -u "${GIGALIXIR_EMAIL}:${GIGALIXIR_API_KEY}" \
+  curl -sS --fail-with-body -u "${GIGALIXIR_USERNAME}:${API_KEY}" \
     -H 'Content-Type: application/json' "$@"
 }
 
