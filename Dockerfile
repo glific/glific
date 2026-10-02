@@ -77,4 +77,4 @@ RUN mix compile
 RUN test -f _build/dev/lib/glific/ebin/Elixir.Glific.FunWithFlags.Store.Persistent.Ecto.beam \
     || (echo "BUILD CHECK: Glific.FunWithFlags.Store.Persistent.Ecto beam MISSING after compile" && exit 1)
 
-ENTRYPOINT ["/bin/sh", "/app/glific/config/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/app/glific/docker/entrypoint.sh"]

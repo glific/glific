@@ -9,7 +9,7 @@
 | `backend`       | `glific` @ `master`               | Elixir/Phoenix API + socket           |
 | `admin-console` | `glific-frontend` @ `master`      | Staff console (Vite/React)            |
 
-The backend builds from this repo's `Dockerfile` + `config/entrypoint.sh`; the staff console
+The backend builds from this repo's `Dockerfile` + `docker/entrypoint.sh`; the staff console
 builds from its own repo's `Dockerfile` + `nginx.conf`.
 
 ## Prerequisites
@@ -36,7 +36,7 @@ builds from its own repo's `Dockerfile` + `nginx.conf`.
   dev-only config. `BASE_URL` is the endpoint host, which `GlificWeb.SubdomainPlug` matches as the
   root host to resolve the seeded `glific` org; `REQUEST_ORIGIN` / `REQUEST_ORIGIN_WILDCARD`
   allow-list the staff console so its WebSocket handshake passes Phoenix's `check_origin`.
-- **First boot vs redeploy:** `config/entrypoint.sh` waits for Postgres, then loads the schema
+- **First boot vs redeploy:** `docker/entrypoint.sh` waits for Postgres, then loads the schema
   and seeds on a *fresh* database (detected by querying the DB itself) and only runs migrations
   on later boots — so data on the `pg-data` volume survives redeploys.
 - **DB SSL:** `config/runtime.exs` reads `ENABLE_DB_SSL` in one place; the manifest sets it to
