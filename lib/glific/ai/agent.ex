@@ -222,7 +222,7 @@ defmodule Glific.AI.Agent do
     results =
       numbered
       |> Task.async_stream(
-        fn {call, index} -> run_tool(message, user, call, run.step + index * 2 + 1, modules) end,
+        fn {call, _index} -> run_tool(user, call, modules) end,
         max_concurrency: max(length(running), 1),
         timeout: limits()[:max_run_duration_ms],
         on_timeout: :kill_task,
@@ -230,7 +230,7 @@ defmodule Glific.AI.Agent do
       )
       |> Enum.zip(numbered)
       |> Enum.map(fn
-        {{:ok, result}, _} -> result
+        {{:ok, body}, {call, index}} -> recorded(message, call, run.step + index * 2 + 1, body)
         {{:exit, reason}, {call, index}} -> died(message, call, run.step + index * 2 + 1, reason)
       end)
 
@@ -272,15 +272,20 @@ defmodule Glific.AI.Agent do
     "The lookup stopped before it finished."
   end
 
-  @spec run_tool(Message.t(), User.t(), ChatMessage.tool_call(), pos_integer(), [module()]) ::
-          ChatMessage.t()
-  defp run_tool(message, user, %{id: id, name: name, args: args}, step, modules) do
-    body =
-      case Tools.run(name, args, user, modules) do
-        {:ok, result} -> encode(result)
-        {:error, reason} -> Jason.encode!(%{error: reason})
-      end
+  # Runs in its own task and only ever reads. The tool_result event is written by
+  # the caller, which is what lets the task point its reads at the read replica:
+  # the process carries that away with it when it finishes.
+  @spec run_tool(User.t(), ChatMessage.tool_call(), [module()]) :: String.t()
+  defp run_tool(user, %{name: name, args: args}, modules) do
+    case Tools.run(name, args, user, modules) do
+      {:ok, result} -> encode(result)
+      {:error, reason} -> Jason.encode!(%{error: reason})
+    end
+  end
 
+  @spec recorded(Message.t(), ChatMessage.tool_call(), pos_integer(), String.t()) ::
+          ChatMessage.t()
+  defp recorded(message, %{id: id, name: name}, step, body) do
     append(message, :tool_result, nil, %{"output" => body}, id, step)
     ChatMessage.tool_result(id, name, body)
   end
