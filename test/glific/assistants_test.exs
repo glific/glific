@@ -1234,6 +1234,36 @@ defmodule Glific.AssistantsTest do
   end
 
   describe "create_assistant/1" do
+    test "persists initial Kaapi failure reasons without changing the error return",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+      fallback = "Assistant configuration could not be created. Please contact support."
+
+      for {body, expected_reason} <- [
+            {%{error: "Invalid model requested"}, "Invalid model requested"},
+            {%{}, fallback},
+            {%{error: nil}, fallback},
+            {%{error: ""}, fallback},
+            {%{error: " \n\t"}, fallback},
+            {%{error: %{code: "invalid_config"}}, fallback}
+          ] do
+        Tesla.Mock.mock(fn %{method: :post} ->
+          %Tesla.Env{status: 400, body: body}
+        end)
+
+        name = "Failed Assistant #{Ecto.UUID.generate()}"
+
+        assert Assistants.create_assistant(%{name: name, organization_id: organization_id}) ==
+                 {:error,
+                  "Kaapi config creation failed for assistant, Reason: #{Glific.SafeLog.safe_inspect(%{status: 400, body: body})}"}
+
+        assistant = Repo.get_by!(Assistant, name: name)
+        config_version = Repo.get!(AssistantConfigVersion, assistant.active_config_version_id)
+        assert config_version.status == :failed
+        assert config_version.failure_reason == expected_reason
+      end
+    end
+
     test "creates assistant and config version with nil kaapi_uuid",
          %{organization_id: organization_id} do
       {:ok, kb} =
@@ -1328,6 +1358,7 @@ defmodule Glific.AssistantsTest do
 
       assert assistant.name == "No KB Assistant"
       assert config_version.status == :ready
+      assert is_nil(config_version.failure_reason)
     end
 
     test "uses default values when optional params are missing",
@@ -2381,6 +2412,52 @@ defmodule Glific.AssistantsTest do
   describe "end-to-end: create assistant — failure cases" do
     setup [:enable_kaapi]
 
+    test "FAILED KB callbacks use the same nonblank reason in storage and notifications",
+         %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn _request -> flunk("Failed KB must not register with Kaapi") end)
+      fallback = "Knowledge base creation failed with status FAILED"
+
+      for {error_fields, expected_reason} <- [
+            {%{"error_message" => "Invalid documents: unsupported format"},
+             "Invalid documents: unsupported format"},
+            {%{}, fallback},
+            {%{"error_message" => nil}, fallback},
+            {%{"error_message" => ""}, fallback},
+            {%{"error_message" => " \n\t"}, fallback}
+          ] do
+        job_id = Ecto.UUID.generate()
+
+        {_knowledge_base, knowledge_base_version} =
+          create_knowledge_base_version(organization_id, :in_progress, job_id, [])
+
+        {:ok, %{assistant: assistant, config_version: config_version}} =
+          Assistants.create_assistant(%{
+            knowledge_base_version_id: knowledge_base_version.id,
+            organization_id: organization_id
+          })
+
+        assert is_nil(config_version.failure_reason)
+
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => Map.merge(%{"job_id" => job_id, "status" => "FAILED"}, error_fields)
+        })
+
+        config_version = Repo.get!(AssistantConfigVersion, config_version.id)
+        assert config_version.status == :failed
+        assert config_version.failure_reason == expected_reason
+
+        notification =
+          Notification
+          |> Repo.all()
+          |> Enum.find(&(&1.entity["config_version_id"] == config_version.id))
+
+        assert notification.entity["failure_reason"] == expected_reason
+
+        assert notification.message ==
+                 "Knowledge Base creation failed for assistant \"#{assistant.name}\". Reason: #{expected_reason}. Please try again."
+      end
+    end
+
     test "create assistant -> FAILED KB callback -> config version marked as failed with real error",
          %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
@@ -2570,8 +2647,10 @@ defmodule Glific.AssistantsTest do
   describe "end-to-end: callback arrives before save — failure cases" do
     setup [:enable_kaapi]
 
-    test "FAILED KB callback first, then assistant creation -> config stays in_progress with failed KB",
+    test "FAILED KB callback first, then assistant creation -> config fails with a dependency reason",
          %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn _request -> flunk("Failed KB must not register with Kaapi") end)
+
       {:ok, kb} =
         Assistants.create_knowledge_base(%{
           name: "Test KB",
@@ -2616,7 +2695,13 @@ defmodule Glific.AssistantsTest do
 
       # No Kaapi registration since KB failed — kaapi_uuid stays nil
       assert is_nil(assistant.kaapi_uuid)
+      config_version = Repo.get!(AssistantConfigVersion, config_version.id)
       assert config_version.status == :failed
+
+      assert config_version.failure_reason ==
+               "The linked knowledge base failed to process. Please check its files before creating another version."
+
+      refute config_version.failure_reason =~ "Document parsing failed"
     end
 
     test "SUCCESSFUL KB callback first, then assistant creation fails to register with Kaapi",
@@ -2669,6 +2754,39 @@ defmodule Glific.AssistantsTest do
 
   describe "end-to-end: update assistant" do
     setup [:enable_kaapi, :setup_assistant_with_kb]
+
+    test "updating with an already-failed KB explains the new version and retains the live version",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: original_config_version
+         } do
+      Tesla.Mock.mock(fn _request -> flunk("Failed KB must not register with Kaapi") end)
+
+      {_knowledge_base, knowledge_base_version} =
+        create_knowledge_base_version(organization_id, :failed, "failed_before_update", [])
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 knowledge_base_version_id: knowledge_base_version.id,
+                 organization_id: organization_id
+               })
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([version], version.assistant_id == ^assistant.id)
+        |> where([version], version.id != ^original_config_version.id)
+        |> Repo.one!()
+
+      assert new_config_version.status == :failed
+
+      assert new_config_version.failure_reason ==
+               "The linked knowledge base failed to process. Please check its files before creating another version."
+
+      assert Repo.get!(Assistant, assistant.id).active_config_version_id ==
+               original_config_version.id
+    end
 
     test "update assistant with same KB -> new config version registered with Kaapi",
          %{

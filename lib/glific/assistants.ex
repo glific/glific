@@ -97,6 +97,7 @@ defmodule Glific.Assistants do
            prompt: version.prompt,
            settings: version.settings,
            status: version.status,
+           failure_reason: version.failure_reason,
            is_live: version.id == assistant.active_config_version_id,
            description: version.description,
            vector_store_data: build_vector_store_data(version),
@@ -523,7 +524,14 @@ defmodule Glific.Assistants do
         {:ok, %{assistant: updated_assistant, config_version: updated_config_version}}
 
       {:error, error} ->
-        update_config_version_status(config_version, %{status: :failed})
+        update_config_version_status(config_version, %{
+          status: :failed,
+          failure_reason:
+            normalize_failure_reason(
+              error,
+              "Assistant configuration could not be created. Please contact support."
+            )
+        })
 
         Glific.log_exception(%Error{
           message:
@@ -977,6 +985,11 @@ defmodule Glific.Assistants do
       provider: "openai",
       settings: kaapi_config.settings,
       status: status,
+      failure_reason:
+        if(status == :failed,
+          do:
+            "The linked knowledge base failed to process. Please check its files before creating another version."
+        ),
       organization_id: kaapi_config.organization_id
     })
   end
@@ -984,6 +997,16 @@ defmodule Glific.Assistants do
   @spec kaapi_error_message(map() | any()) :: String.t()
   defp kaapi_error_message(%{body: %{error: message}}) when is_binary(message), do: message
   defp kaapi_error_message(_value), do: "Unknown error occurred, please retry again."
+
+  @spec normalize_failure_reason(any(), String.t()) :: String.t()
+  defp normalize_failure_reason(%{body: %{error: message}}, fallback),
+    do: normalize_failure_reason(message, fallback)
+
+  defp normalize_failure_reason(message, fallback) when is_binary(message) do
+    if String.trim(message) == "", do: fallback, else: message
+  end
+
+  defp normalize_failure_reason(_message, fallback), do: fallback
 
   @spec generate_assistant_name(String.t() | nil) :: String.t()
   defp generate_assistant_name(name) when name in [nil, ""] do
@@ -1410,7 +1433,11 @@ defmodule Glific.Assistants do
         assistant_config_versions: :assistant
       ])
 
-    failure_reason = error_message || "Knowledge base creation failed with status #{status}"
+    failure_reason =
+      normalize_failure_reason(
+        error_message,
+        "Knowledge base creation failed with status #{status}"
+      )
 
     case knowledge_base_version.assistant_config_versions do
       [config_version] ->
