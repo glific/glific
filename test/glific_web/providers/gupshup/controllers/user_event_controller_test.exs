@@ -40,7 +40,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
   describe "opted_in" do
     setup do
       contact_payload = %{
-        "phone" => Phone.EnUs.phone(),
+        "phone" => "918456732453",
         "type" => "opted-in"
       }
 
