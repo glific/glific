@@ -75,6 +75,46 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
+  test "get_token/1 returns cleanly instead of raising KeyError when service_account is nil",
+       attrs do
+    {:ok, credential} =
+      Partners.get_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "google_cloud_storage"
+      })
+
+    {:ok, _updated_credential} =
+      credential
+      |> Ecto.Changeset.change(secrets: %{"service_account" => nil})
+      |> Repo.update()
+
+    organization = Partners.organization(attrs.organization_id)
+    Partners.remove_organization_cache(attrs.organization_id, organization.shortcode)
+    Glific.Caches.remove(attrs.organization_id, [{:provider_token, "google_cloud_storage"}])
+
+    assert :ok == GCS.get_token(to_string(attrs.organization_id))
+  end
+
+  test "get_token/1 returns cleanly instead of raising when service_account is valid JSON but not an object",
+       attrs do
+    {:ok, credential} =
+      Partners.get_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "google_cloud_storage"
+      })
+
+    {:ok, _updated_credential} =
+      credential
+      |> Ecto.Changeset.change(secrets: %{"service_account" => "null"})
+      |> Repo.update()
+
+    organization = Partners.organization(attrs.organization_id)
+    Partners.remove_organization_cache(attrs.organization_id, organization.shortcode)
+    Glific.Caches.remove(attrs.organization_id, [{:provider_token, "google_cloud_storage"}])
+
+    assert :ok == GCS.get_token(to_string(attrs.organization_id))
+  end
+
   test "upload_media/3 returns an error tuple (no crash) when the GCS upload raises", attrs do
     with_mock(
       Waffle.Storage.Google.CloudStorage,

@@ -1800,6 +1800,69 @@ defmodule Glific.PartnersTest do
       end
     end
 
+    test "get_goth_token/2 returns nil instead of raising when service_account is not a JSON string",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+
+      {:ok, _credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{"service_account" => nil},
+          is_active: true,
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      organization = Partners.organization(organization_id)
+      Partners.remove_organization_cache(organization_id, organization.shortcode)
+      Glific.Caches.remove(organization_id, [{:provider_token, "google_cloud_storage"}])
+
+      assert nil == Partners.get_goth_token(organization_id, "google_cloud_storage")
+    end
+
+    test "get_goth_token/2 returns nil instead of raising when service_account is a binary but not valid JSON",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+
+      {:ok, _credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{"service_account" => "not valid json{{{"},
+          is_active: true,
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      organization = Partners.organization(organization_id)
+      Partners.remove_organization_cache(organization_id, organization.shortcode)
+      Glific.Caches.remove(organization_id, [{:provider_token, "google_cloud_storage"}])
+
+      assert nil == Partners.get_goth_token(organization_id, "google_cloud_storage")
+    end
+
+    test "get_goth_token/2 returns nil instead of raising when service_account is valid JSON but not an object",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+
+      {:ok, _credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{"service_account" => "[]"},
+          is_active: true,
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      organization = Partners.organization(organization_id)
+      Partners.remove_organization_cache(organization_id, organization.shortcode)
+      Glific.Caches.remove(organization_id, [{:provider_token, "google_cloud_storage"}])
+
+      assert nil == Partners.get_goth_token(organization_id, "google_cloud_storage")
+    end
+
     test "disable_credential/2 should disable the credentials and create notification",
          %{organization_id: organization_id} = _attrs do
       provider = provider_fixture()
