@@ -756,6 +756,29 @@ defmodule Glific.MessagesTest do
       assert error == "Receiver does not exist"
     end
 
+    test "create_and_send_message rejects nil body when type is not provided", attrs do
+      # When type is omitted entirely, the message should not be persisted with a null body.
+      # This reproduces the bug from issue #4848: callers that omit both type and body
+      # bypass the null-body check because the guard only matches %{type: :text}.
+      attrs_without_type = %{
+        body: nil,
+        flow: :outbound
+      }
+
+      message_attrs = Map.merge(attrs_without_type, foreign_key_constraint(attrs))
+      assert {:error, _} = Messages.create_and_send_message(message_attrs)
+    end
+
+    test "create_and_send_message rejects empty body when type is not provided", attrs do
+      attrs_without_type = %{
+        body: "",
+        flow: :outbound
+      }
+
+      message_attrs = Map.merge(attrs_without_type, foreign_key_constraint(attrs))
+      assert {:error, _} = Messages.create_and_send_message(message_attrs)
+    end
+
     test "create and send message should send message to contact through gupshup enterprise",
          attrs do
       enable_gupshup_enterprise(attrs)
