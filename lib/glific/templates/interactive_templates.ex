@@ -13,6 +13,9 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   import Ecto.Query
 
+  @button_title_limit 20
+  @list_title_limit 24
+
   @doc """
   Returns the list of interactive templates
 
@@ -621,7 +624,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     interactive_content
     |> get_in(["items"])
     |> hd()
-    |> Map.put("options", build_list_items(params, 24))
+    |> Map.put("options", build_list_items(params, @list_title_limit))
     |> then(&Map.put(interactive_content, "items", [&1]))
     |> process_dynamic_attachments(attachment)
   end
@@ -631,7 +634,7 @@ defmodule Glific.Templates.InteractiveTemplates do
         params,
         attachment
       ) do
-    Map.put(interactive_content, "options", build_list_items(params, 20))
+    Map.put(interactive_content, "options", build_list_items(params, @button_title_limit))
     |> process_dynamic_attachments(attachment)
   end
 
