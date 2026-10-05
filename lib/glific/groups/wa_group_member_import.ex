@@ -9,6 +9,7 @@ defmodule Glific.Groups.WAGroupMemberImport do
   """
 
   alias Glific.{
+    CSV.Encoding,
     Groups.WAGroup,
     Groups.WAGroupMemberImportWorker,
     Jobs.UserJob,
@@ -113,8 +114,11 @@ defmodule Glific.Groups.WAGroupMemberImport do
     |> decode_csv()
   end
 
-  defp decode_csv(stream),
-    do: CSV.decode(stream, headers: true, field_transform: &String.trim/1)
+  defp decode_csv(stream) do
+    stream
+    |> Encoding.strip_bom()
+    |> CSV.decode(headers: true, field_transform: &String.trim/1)
+  end
 
   @spec fetch_data_as_string(Keyword.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
   defp fetch_data_as_string(opts) do
@@ -123,18 +127,28 @@ defmodule Glific.Groups.WAGroupMemberImport do
     data = Keyword.get(opts, :data)
 
     cond do
-      file_path != nil -> {:ok, file_path |> Path.expand() |> File.stream!()}
-      url != nil -> fetch_url(url)
-      data != nil -> {:ok, string_stream(data)}
+      file_path != nil -> file_path |> Path.expand() |> File.stream!() |> validated_stream()
+      url != nil -> with {:ok, body} <- fetch_url(url), do: validated_stream(body)
+      data != nil -> validated_stream(data)
     end
+  end
+
+  @spec validated_stream(String.t() | Enumerable.t()) ::
+          {:ok, Enumerable.t()} | {:error, String.t()}
+  defp validated_stream(data) when is_binary(data) do
+    with :ok <- Encoding.validate(data), do: {:ok, string_stream(data)}
+  end
+
+  defp validated_stream(stream) do
+    with :ok <- Encoding.validate(stream), do: {:ok, stream}
   end
 
   # Download the CSV, handling failures instead of raising — this runs
   # synchronously from the resolver, so a flaky URL must not become a 500.
-  @spec fetch_url(String.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
+  @spec fetch_url(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   defp fetch_url(url) do
     case Tesla.get(url) do
-      {:ok, %Tesla.Env{status: 200, body: body}} -> {:ok, string_stream(body)}
+      {:ok, %Tesla.Env{status: 200, body: body}} -> {:ok, body}
       _ -> {:error, "Could not download the member CSV from the given URL."}
     end
   end

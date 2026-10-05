@@ -420,6 +420,43 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "File size must not exceed 1MB"
     end
 
+    test "rejects a csv saved in a windows codepage", %{staff: user} do
+      upload = golden_qa_upload(<<"question,answer\nWhat is a caf", 0xE9, "?,A place\n">>)
+
+      args = %{input: %{name: "valid_name", file: upload, duplication_factor: 2}}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: message}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert message =~ "Line 2 of the file is not valid UTF-8"
+    end
+
+    test "strips the excel bom from the uploaded file, not just from our own read", %{
+      staff: user
+    } do
+      upload =
+        golden_qa_upload(<<0xEF, 0xBB, 0xBF>> <> "question,answer\nWhat is Glific?,A platform\n")
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{dataset_name: "bom_dataset", dataset_id: "77001"}}
+        }
+      end)
+
+      args = %{input: %{name: "bom_dataset", file: upload, duplication_factor: 1}}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: golden_qa}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert golden_qa.total_items == 1
+
+      # Kaapi is sent this file straight off disk, so the BOM has to be gone from it
+      refute String.starts_with?(File.read!(upload.path), <<0xEF, 0xBB, 0xBF>>)
+    end
+
     test "returns errors when file path is unreadable", %{staff: user} do
       upload = %Plug.Upload{
         path: "/nonexistent/path/to/file.csv",
@@ -2271,6 +2308,19 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     content = Enum.join(["question,answer" | rows], "\n") <> "\n"
     File.write!(path, content)
     path
+  end
+
+  defp golden_qa_upload(contents) do
+    path =
+      Path.join(
+        System.tmp_dir!(),
+        "golden_qa_upload_#{System.unique_integer([:positive])}.csv"
+      )
+
+    File.write!(path, contents)
+    on_exit(fn -> File.rm(path) end)
+
+    %Plug.Upload{path: path, content_type: "text/csv", filename: "golden_qa.csv"}
   end
 
   defp write_golden_qa_csv_with_long_answer(line_break_count) do
