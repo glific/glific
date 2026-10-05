@@ -406,6 +406,62 @@ defmodule GlificWeb.Schema.FlowTest do
              "The keyword `testkeyword` was already used in the `Flow Test Name` Flow."
   end
 
+  test "flows field returns list of flows filtered by channel", %{manager: user} do
+    auth_query_gql_by(:create, user,
+      variables: %{
+        "input" => %{
+          "name" => "Web Only Flow",
+          "keywords" => ["web_only"],
+          "description" => "desc",
+          "channel" => "WEB"
+        }
+      }
+    )
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"channel" => "WEB"}})
+    assert {:ok, query_data} = result
+    flows = get_in(query_data, [:data, "flows"])
+    assert length(flows) == 1
+    assert get_in(flows, [Access.at(0), "name"]) == "Web Only Flow"
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"channel" => "WHATSAPP"}})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "flows"])
+           |> Enum.all?(fn flow -> flow["channel"] == "WHATSAPP" end)
+  end
+
+  test "create a flow with the channel it runs on", %{manager: user} do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "name" => "Web Flow",
+            "keywords" => ["web_flow"],
+            "description" => "desc",
+            "channel" => "WEB"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "createFlow", "flow", "channel"]) == "WEB"
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "name" => "Unstated Channel Flow",
+            "keywords" => ["unstated"],
+            "description" => "desc"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "createFlow", "flow", "channel"]) == "WHATSAPP"
+  end
+
   test "create a flow with is_template field", %{manager: user} do
     name = "Flow Test Name"
     keywords = ["test_keyword"]
@@ -465,7 +521,9 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
-  test "Publish flow", %{manager: user} do
+  test "Publish a valid flow, and report an unknown uuid as a non-blocking error", %{
+    manager: user
+  } do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: user.organization_id})
 
@@ -477,8 +535,9 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:publish, user, variables: %{"uuid" => Ecto.UUID.generate()})
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
+    error = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0)])
+    assert error["message"] == "Resource not found"
+    assert error["blocking"] == false
   end
 
   test "Publish a flow which has warnings", %{manager: user} do
@@ -487,8 +546,11 @@ defmodule GlificWeb.Schema.FlowTest do
 
     result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
     assert {:ok, query_data} = result
-    assert is_list(get_in(query_data, [:data, "publishFlow", "errors"]))
+    errors = get_in(query_data, [:data, "publishFlow", "errors"])
+    assert is_list(errors)
     assert get_in(query_data, [:data, "publishFlow", "success"]) == false
+
+    assert Enum.all?(errors, fn error -> error["blocking"] == false end)
   end
 
   test "Start flow for a contact", %{manager: user} = attrs do
@@ -509,6 +571,50 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
 
     # will add test for success with integration tests
+  end
+
+  test "Start flow for a contact on the web channel", %{manager: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    result =
+      auth_query_gql_by(:contact_flow, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id, "channel" => "WEB"}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
+
+    # the context the flow runs in — and therefore where its replies route — is the web channel
+    assert {:ok, flow_context} =
+             Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+    assert flow_context.channel == :web
+  end
+
+  # An explicit `channel: null` is a present-but-nil arg; the resolver coalesces it to whatsapp
+  # rather than letting nil through (which would complete the contact's flows on every channel).
+  test "Start flow for a contact coalesces an explicit null channel to whatsapp",
+       %{manager: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    result =
+      auth_query_gql_by(:contact_flow, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id, "channel" => nil}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
+
+    assert {:ok, flow_context} =
+             Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+    assert flow_context.channel == :whatsapp
   end
 
   test "Resume flow for a contact", %{manager: user} = attrs do
