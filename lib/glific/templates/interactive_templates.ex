@@ -477,10 +477,7 @@ defmodule Glific.Templates.InteractiveTemplates do
       )
 
   @spec meet_waba_title_spec(String.t()) :: String.t()
-  defp meet_waba_title_spec(str), do: str |> String.slice(0..1024)
-
-  @spec meet_waba_button_spec(String.t()) :: String.t()
-  defp meet_waba_button_spec(str), do: str |> String.slice(0..20)
+  defp meet_waba_title_spec(str), do: trim_field(str, 1024)
 
   @spec do_get_interactive_body(map(), String.t(), String.t()) :: String.t()
   defp do_get_interactive_body(interactive_content, "quick_reply", type)
@@ -624,7 +621,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     interactive_content
     |> get_in(["items"])
     |> hd()
-    |> Map.put("options", build_list_items(params))
+    |> Map.put("options", build_list_items(params, 24))
     |> then(&Map.put(interactive_content, "items", [&1]))
     |> process_dynamic_attachments(attachment)
   end
@@ -634,7 +631,7 @@ defmodule Glific.Templates.InteractiveTemplates do
         params,
         attachment
       ) do
-    Map.put(interactive_content, "options", build_list_items(params))
+    Map.put(interactive_content, "options", build_list_items(params, 20))
     |> process_dynamic_attachments(attachment)
   end
 
@@ -643,12 +640,12 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   ## We might need to move this function to gupshup provider
   ## since this is specific to that only but this is fine for now.
-  @spec build_list_items(list()) :: list()
-  defp build_list_items(params) do
+  @spec build_list_items(list(), pos_integer()) :: list()
+  defp build_list_items(params, title_limit) do
     Enum.map(params, fn
       param when is_map(param) ->
         %{
-          "title" => param["label"] |> meet_waba_button_spec(),
+          "title" => trim_field(param["label"], title_limit),
           "description" => trim_field(param["description"], 72) || "",
           "type" => "text",
           "id" => param["id"] || "",
@@ -657,7 +654,7 @@ defmodule Glific.Templates.InteractiveTemplates do
 
       param ->
         %{
-          "title" => param |> meet_waba_button_spec(),
+          "title" => trim_field(param, title_limit),
           "description" => "",
           "type" => "text"
         }
