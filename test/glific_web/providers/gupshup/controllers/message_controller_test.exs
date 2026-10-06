@@ -3,6 +3,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use Oban.Testing, repo: Glific.Repo
 
   import Ecto.Query
+  import ExUnit.CaptureLog
   import Mock
 
   alias Glific.{
@@ -737,14 +738,24 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
          %{conn: conn} do
       bsp_message_id = "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFNDAA"
 
-      conn2 =
-        post(
-          conn,
-          "/gupshup/message/whatsapp_form_response",
-          whatsapp_form_response_payload(bsp_message_id, nil)
-        )
+      level = Logger.level()
+      Logger.configure(level: :error)
+      on_exit(fn -> Logger.configure(level: level) end)
 
-      assert conn2.status == 200
+      log =
+        capture_log(fn ->
+          conn2 =
+            post(
+              conn,
+              "/gupshup/message/whatsapp_form_response",
+              whatsapp_form_response_payload(bsp_message_id, nil)
+            )
+
+          assert conn2.status == 200
+        end)
+
+      assert log =~
+               "Failed to create WhatsApp form response: bsp_message_id=#{bsp_message_id}, reason=\"WhatsApp form response has no context id\""
 
       assert {:error, _} =
                Repo.fetch_by(Message, %{
