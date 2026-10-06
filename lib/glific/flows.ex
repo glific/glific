@@ -139,6 +139,9 @@ defmodule Glific.Flows do
           )
         )
 
+      {:channel, channel}, query ->
+        from(q in query, where: q.channel == ^channel)
+
       {:is_active, is_active}, query ->
         from(q in query, where: q.is_active == ^is_active)
 
@@ -622,6 +625,22 @@ defmodule Glific.Flows do
   def publish_flow(%Flow{} = flow, user_id) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+
+    if blocking_errors?(errors),
+      do: {:errors, format_flow_errors(errors)},
+      else: do_publish_validated_flow(flow, user_id, errors)
+  end
+
+  @spec blocking_errors?(list()) :: boolean()
+  defp blocking_errors?(errors), do: Enum.any?(errors, &blocking_error?/1)
+
+  @spec blocking_error?(tuple()) :: boolean()
+  defp blocking_error?({:channel, _key, _message, _node_uuid}), do: true
+  defp blocking_error?(_error), do: false
+
+  @spec do_publish_validated_flow(Flow.t(), non_neg_integer(), list()) ::
+          {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
+  defp do_publish_validated_flow(%Flow{} = flow, user_id, errors) do
     result = do_publish_flow(flow, user_id)
 
     cond do
@@ -672,10 +691,36 @@ defmodule Glific.Flows do
   @spec format_flow_errors(list()) :: list()
   defp format_flow_errors(errors) when is_list(errors) do
     ## we can think about the warning based on keys
-    Enum.reduce(errors, [], fn error, acc ->
-      [%{key: elem(error, 0), message: elem(error, 1), category: elem(error, 2)} | acc]
-    end)
+    Enum.reduce(errors, [], fn error, acc -> [format_flow_error(error) | acc] end)
   end
+
+  @spec format_flow_error(tuple()) :: map()
+  defp format_flow_error({:channel, key, message, node_uuid}),
+    do: %{
+      key: key,
+      message: message,
+      category: "Critical",
+      node_uuid: node_uuid,
+      blocking: true
+    }
+
+  defp format_flow_error({key, message, category, node_uuid}),
+    do: %{
+      key: key,
+      message: message,
+      category: category,
+      node_uuid: node_uuid,
+      blocking: false
+    }
+
+  defp format_flow_error({key, message, category}),
+    do: %{
+      key: key,
+      message: message,
+      category: category,
+      node_uuid: nil,
+      blocking: false
+    }
 
   # Get version of last published flow revision
   # Archive the last published flow revision
@@ -816,6 +861,7 @@ defmodule Glific.Flows do
       |> Map.merge(%{
         version_number: flow.version_number,
         flow_type: flow.flow_type,
+        channel: flow.channel,
         organization_id: flow.organization_id,
         uuid: Ecto.UUID.generate()
       })
@@ -1040,6 +1086,7 @@ defmodule Glific.Flows do
                name: flow_revision["definition"]["name"],
                uuid: flow_revision["definition"]["uuid"],
                keywords: flow_revision["keywords"],
+               channel: Map.get(flow_revision, "channel", "whatsapp"),
                organization_id: organization_id
              }),
            {cleaned_definition, assistant_node_uuids, invalid_sheet_node_uuids} <-
@@ -1414,7 +1461,8 @@ defmodule Glific.Flows do
         Map.put(
           results,
           "flows",
-          results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
+          results["flows"] ++
+            [%{definition: definition, keywords: flow.keywords, channel: flow.channel}]
         )
         |> Map.put(
           "contact_field",
