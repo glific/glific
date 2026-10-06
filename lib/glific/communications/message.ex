@@ -334,40 +334,57 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
+  # The form response and its message are inserted in one transaction so a duplicate
+  # bsp_message_id (Gupshup retries) rolls back the form response and its sheet-write job too.
   @spec receive_whatsapp_form_response(map()) :: :ok | {:error, any()}
   defp receive_whatsapp_form_response(%{organization_id: organization_id} = message_params) do
-    case WhatsappFormsResponses.create_whatsapp_form_response(message_params) do
-      {:ok, form_response} ->
-        Glific.Metrics.increment("WhatsApp Form Response Received", organization_id)
-
-        message_attrs = %{
-          flow: :inbound,
-          type: :whatsapp_form_response,
-          organization_id: message_params.organization_id,
-          sender_id: form_response.contact_id,
-          receiver_id: Partners.organization_contact_id(message_params.organization_id),
-          contact_id: form_response.contact_id,
-          body: "",
-          whatsapp_form_response_id: form_response.id,
-          bsp_message_id: message_params.bsp_message_id,
-          bsp_status: :delivered,
-          status: :received,
-          context_id: message_params.context_id
-        }
-
-        {:ok, message} = Messages.create_message(message_attrs)
-
+    Repo.transaction(fn ->
+      with {:ok, form_response} <-
+             WhatsappFormsResponses.create_whatsapp_form_response(message_params),
+           {:ok, message} <-
+             create_whatsapp_form_response_message(message_params, form_response) do
         message
-        |> publish_data(:received_message)
-        |> process_message()
-
-      {:error, reason} ->
+      else
+        {:error, %Ecto.Changeset{data: %Message{}} = changeset} -> Repo.rollback(changeset)
+        {:error, reason} -> Repo.rollback({:form_response, reason})
+      end
+    end)
+    |> case do
+      {:error, {:form_response, reason}} ->
         Logger.error(
-          "Failed to create WhatsApp form response: #{Glific.SafeLog.safe_inspect(reason)}"
+          "Failed to create WhatsApp form response: bsp_message_id=#{message_params.bsp_message_id}, reason=#{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
+
+      {:ok, _message} = result ->
+        Glific.Metrics.increment("WhatsApp Form Response Received", organization_id)
+        handle_inbound_create_result(result, message_params)
+
+      result ->
+        handle_inbound_create_result(result, message_params)
     end
+  end
+
+  @spec create_whatsapp_form_response_message(map(), map()) ::
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  defp create_whatsapp_form_response_message(message_params, form_response) do
+    attrs = %{
+      flow: :inbound,
+      type: :whatsapp_form_response,
+      organization_id: message_params.organization_id,
+      sender_id: form_response.contact_id,
+      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      contact_id: form_response.contact_id,
+      body: "",
+      whatsapp_form_response_id: form_response.id,
+      bsp_message_id: message_params.bsp_message_id,
+      bsp_status: :delivered,
+      status: :received,
+      context_id: message_params.context_id
+    }
+
+    Messages.create_message(attrs)
   end
 
   # preload the context message if it exists, so frontend can do the right thing

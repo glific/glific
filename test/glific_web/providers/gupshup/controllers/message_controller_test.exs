@@ -2,11 +2,13 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
   use Oban.Testing, repo: Glific.Repo
 
+  import Ecto.Query
   import Mock
 
   alias Glific.{
     Contacts,
     Contacts.Location,
+    Fixtures,
     Messages,
     Messages.Message,
     Processor.MessageWorker,
@@ -730,6 +732,138 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       assert error == ["Elixir.Glific.Messages.Message", "Resource not found"]
     end
+
+    test "WhatsApp form response without context returns 200 and stores nothing",
+         %{conn: conn} do
+      bsp_message_id = "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFNDAA"
+
+      conn2 =
+        post(
+          conn,
+          "/gupshup/message/whatsapp_form_response",
+          whatsapp_form_response_payload(bsp_message_id, nil)
+        )
+
+      assert conn2.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(Message, %{
+                 bsp_message_id: bsp_message_id,
+                 organization_id: conn.assigns[:organization_id]
+               })
+
+      assert Repo.aggregate(WhatsappFormResponse, :count) == 0
+    end
+
+    test "duplicate WhatsApp form response stores a single response and message",
+         %{conn: conn} do
+      {:ok, whatsapp_form} = Fixtures.whatsapp_form_fixture()
+
+      organization_id = conn.assigns[:organization_id]
+
+      {:ok, template} =
+        Templates.create_session_template(%{
+          label: "Whatsapp Form Template",
+          type: :text,
+          body: "Hello World",
+          language_id: 1,
+          organization_id: organization_id,
+          uuid: "3982792f-a178-442d-be4b-3eadbb804727",
+          buttons: [
+            %{
+              "text" => "RATE",
+              "type" => "FLOW",
+              "flow_id" => whatsapp_form.meta_flow_id,
+              "flow_action" => "NAVIGATE",
+              "navigate_screen" => "RATE"
+            }
+          ]
+        })
+
+      {:ok, _message} =
+        Messages.create_message(%{
+          body: "Hello| [Open] ",
+          flow: :outbound,
+          type: :text,
+          sender_id: 1,
+          receiver_id: 2,
+          contact_id: 1,
+          organization_id: organization_id,
+          bsp_message_id: "0e74fb92-eb8a-415a-bccd-42ee768665e1",
+          template_id: template.id
+        })
+
+      bsp_message_id = "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFNDEA"
+
+      payload =
+        whatsapp_form_response_payload(bsp_message_id, %{
+          "from" => "919917443994",
+          "gs_id" => "0e74fb92-eb8a-415a-bccd-42ee768665e1",
+          "id" => "031AGDymvDNTGOEfndITwX"
+        })
+
+      assert post(conn, "/gupshup/message/whatsapp_form_response", payload).status == 200
+
+      with_mock Elixir.Appsignal,
+                [:passthrough],
+                increment_counter: fn _, _, _ -> :ok end do
+        assert post(conn, "/gupshup/message/whatsapp_form_response", payload).status == 200
+
+        assert called(
+                 Elixir.Appsignal.increment_counter(
+                   "duplicate_inbound_message",
+                   1,
+                   %{org_id: organization_id}
+                 )
+               )
+      end
+
+      assert [_message] =
+               Repo.all(from(m in Message, where: m.bsp_message_id == ^bsp_message_id))
+
+      assert Repo.aggregate(WhatsappFormResponse, :count) == 1
+
+      assert [_job] =
+               all_enqueued(worker: Glific.WhatsappForms.WhatsappFormWorker, prefix: "global")
+    end
+  end
+
+  defp whatsapp_form_response_payload(bsp_message_id, context) do
+    message =
+      %{
+        "from" => "919917443994",
+        "id" => bsp_message_id,
+        "interactive" => %{
+          "nfm_reply" => %{
+            "body" => "Sent",
+            "name" => "flow",
+            "response_json" => "{\"screen_0_Choose_one_0\":\"0_Yes\",\"flow_token\":\"unused\"}"
+          },
+          "type" => "nfm_reply"
+        },
+        "timestamp" => "1763015605",
+        "type" => "interactive"
+      }
+      |> then(fn message ->
+        if context, do: Map.put(message, "context", context), else: message
+      end)
+
+    %{
+      "entry" => [
+        %{
+          "changes" => [
+            %{
+              "field" => "messages",
+              "value" => %{
+                "contacts" => [%{"profile" => %{"name" => "Smit"}, "wa_id" => "919917443994"}],
+                "messages" => [message]
+              }
+            }
+          ],
+          "id" => "122037724131744"
+        }
+      ]
+    }
   end
 
   describe "duplicate message handling" do
