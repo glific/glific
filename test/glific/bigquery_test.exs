@@ -903,28 +903,28 @@ defmodule Glific.BigQueryTest do
   test "queue_table_data/3 JSON-encodes list and map profile field values", %{
     organization_id: organization_id
   } do
-    field_inserted_at = "2026-03-19T10:00:00Z"
+    inserted_at = "2026-03-19T10:00:00Z"
 
     profile =
       profile_fixture(%{
         "fields" => %{
-          "list_field" => %{
-            "label" => "",
-            "inserted_at" => field_inserted_at,
+          "string_field" => %{
+            "label" => "Name",
+            "inserted_at" => inserted_at,
             "type" => "string",
-            "value" => ["a", "b", ""]
+            "value" => "John"
           },
           "map_field" => %{
-            "label" => "Preferences",
-            "inserted_at" => field_inserted_at,
+            "label" => "Settings",
+            "inserted_at" => inserted_at,
             "type" => "string",
-            "value" => %{"enabled" => true}
+            "value" => %{"email_notifications" => "allowed", "push_notifications" => false}
           },
-          "string_field" => %{
-            "label" => "Nickname",
-            "inserted_at" => field_inserted_at,
+          "list_field" => %{
+            "label" => "",
+            "inserted_at" => inserted_at,
             "type" => "string",
-            "value" => "Max"
+            "value" => ["a", "b", ""]
           }
         }
       })
@@ -961,9 +961,9 @@ defmodule Glific.BigQueryTest do
     values_by_label = Map.new(row["fields"], &{&1["label"], &1["value"]})
 
     assert values_by_label == %{
-             "" => ~s(["a","b",""]),
-             "Preferences" => ~s({"enabled":true}),
-             "Nickname" => "Max"
+             "Name" => "John",
+             "Settings" => ~s({"email_notifications":"allowed","push_notifications":false}),
+             "" => ~s(["a","b",""])
            }
 
     assert %BigQueryJob{table_id: table_id} =
