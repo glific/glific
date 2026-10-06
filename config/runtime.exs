@@ -32,8 +32,19 @@ db_ssl_opts = fn db_type ->
   end
 end
 
-primary_url = env!("DATABASE_URL", :string!)
-primary_ssl_opts = db_ssl_opts.("PRIMARY")
+csql_proxy? = env!("GIGALIXIR__CLOUD_SQL_PROXY_SIDECAR", :string, "false") == "true"
+
+proxy_url = fn url, port ->
+  url |> URI.parse() |> Map.merge(%{host: "127.0.0.1", port: port}) |> URI.to_string()
+end
+
+primary_env_url = env!("DATABASE_URL", :string!)
+replica_env_url = env!("READ_REPLICA_DATABASE_URL", :string!, primary_env_url)
+
+{primary_url, primary_ssl_opts} =
+  if csql_proxy?,
+    do: {proxy_url.(primary_env_url, 5432), false},
+    else: {primary_env_url, db_ssl_opts.("PRIMARY")}
 
 config :glific, Glific.Repo,
   url: primary_url,
@@ -43,10 +54,12 @@ config :glific, Glific.Repo,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
-replica_url = env!("READ_REPLICA_DATABASE_URL", :string!, primary_url)
-
-replica_ssl_opts =
-  if primary_url != replica_url, do: db_ssl_opts.("REPLICA"), else: primary_ssl_opts
+{replica_url, replica_ssl_opts} =
+  cond do
+    replica_env_url == primary_env_url -> {primary_url, primary_ssl_opts}
+    csql_proxy? -> {proxy_url.(replica_env_url, 5433), false}
+    true -> {replica_env_url, db_ssl_opts.("REPLICA")}
+  end
 
 config :glific, Glific.RepoReplica,
   url: replica_url,
