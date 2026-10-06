@@ -434,14 +434,14 @@ defmodule GlificWeb.Schema.AssistantTest do
   defp create_unified_assistant(attrs) do
     defaults = %{
       name: "Test Assistant",
-      kaapi_uuid: "asst_test_#{:rand.uniform(10000)}",
+      kaapi_uuid: "asst_test_#{System.unique_integer([:positive])}",
       model: "gpt-4o",
       instructions: "You are a helpful assistant",
       temperature: 1.0,
       status: :ready,
       kb_name: "Default KB",
-      knowledge_base_version_id: "vs_default_#{:rand.uniform(10000)}",
-      llm_service_id: "vs_default_#{:rand.uniform(10000)}",
+      knowledge_base_version_id: "vs_default_#{System.unique_integer([:positive])}",
+      llm_service_id: "vs_default_#{System.unique_integer([:positive])}",
       files: %{},
       kb_status: :completed,
       size: 0
