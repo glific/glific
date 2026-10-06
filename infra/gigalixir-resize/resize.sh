@@ -8,6 +8,7 @@ DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
 DISCORD_MENTION_ROLE_ID="${DISCORD_MENTION_ROLE_ID:-}"
 SMOKE_TEST_URL="${SMOKE_TEST_URL:-}"
 SMOKE_TEST_ATTEMPTS="${SMOKE_TEST_ATTEMPTS:-3}"
+APPSIGNAL_CPU_COUNT=""
 LAST_LOG_FILE=$(mktemp)
 DISCORD_MESSAGE_ID=""
 FROM_SIZE=""
@@ -62,6 +63,7 @@ discord_payload() {
     --arg duration "$DURATION" \
     --arg smoke "$SMOKE_RESULT" \
     --arg node "$NODE" \
+    --arg cpus "$APPSIGNAL_CPU_COUNT" \
     --arg execution "${CLOUD_RUN_EXECUTION:-local run}" \
     --arg ts "$(date -u +%FT%TZ)" \
     '{
@@ -73,6 +75,7 @@ discord_payload() {
             {name: "Size", value: $size, inline: true},
             {name: "Duration", value: $duration, inline: true},
             {name: "Smoke test", value: $smoke, inline: true},
+            {name: "AppSignal CPUs", value: $cpus, inline: true},
             {name: "Node", value: $node, inline: false},
             {name: "Execution", value: $execution, inline: false}
           ] | map(select(.value != "")))}
@@ -142,6 +145,16 @@ if [[ -n "$SMOKE_TEST_URL" && "$SMOKE_TEST_URL" != https://* ]]; then
   exit 1
 fi
 
+if [[ ! "$TARGET_SIZE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+  log "TARGET_SIZE must be a number, got '${TARGET_SIZE}'"
+  exit 1
+fi
+
+# A Gigalixir replica gets 2 CPUs per 3 units of size. AppSignal parses this with
+# binary_to_float, so "8" crashes the app on boot while "8.0" works.
+APPSIGNAL_CPU_COUNT=$(jq -rn --argjson size "$TARGET_SIZE" \
+  '$size * 2 / 3 * 100 | round / 100 | tostring | if test("\\.") then . else . + ".0" end')
+
 API="https://api.gigalixir.com/api/apps/${GIGALIXIR_APP}"
 
 uri_encode() { jq -rn --arg v "$1" '$v | @uri'; }
@@ -208,6 +221,14 @@ FROM_SIZE=$(jq -r '.size | tostring | sub("\\.0$"; "")' <<<"$current")
 DIRECTION=$(jq -r --argjson t "$TARGET_SIZE" 'if .size < $t then "up" else "down" end' <<<"$current")
 STARTED_AT=$SECONDS
 [[ -n "$SMOKE_TEST_URL" ]] && SMOKE_RESULT="Pending" || SMOKE_RESULT="Not configured"
+
+# avoid_restart: the resize below restarts the app, which picks up the new value in that same restart.
+if ! api -X POST "${API}/configs" \
+  -d "$(jq -nc --arg v "$APPSIGNAL_CPU_COUNT" '{configs: {APPSIGNAL_CPU_COUNT: $v}, avoid_restart: true}')" >/dev/null; then
+  log "Failed to set APPSIGNAL_CPU_COUNT=${APPSIGNAL_CPU_COUNT} on ${GIGALIXIR_APP}, not resizing"
+  exit 1
+fi
+log "Set APPSIGNAL_CPU_COUNT=${APPSIGNAL_CPU_COUNT} on ${GIGALIXIR_APP}"
 
 log "Resizing ${GIGALIXIR_APP} from ${FROM_SIZE} to ${TARGET_SIZE}"
 DISCORD_MESSAGE_ID=$(discord_post progress)
