@@ -3,26 +3,18 @@ defmodule Glific.Contacts.Import do
   The Contact Importer Module
   """
   import Ecto.Query
-  alias GlificWeb.Schema.Middleware.Authorize
 
   alias Glific.{
     Contacts,
     Contacts.BulkImportWorker,
     Contacts.Contact,
-    Contacts.ContactHistory,
-    Flows.ContactField,
     Groups,
-    Groups.ContactGroup,
     Groups.GroupContacts,
     Jobs.UserJob,
     Notifications,
     Partners,
-    Repo,
-    Settings,
-    Users.User
+    Repo
   }
-
-  use Publicist
 
   @contact_job_chunk_size 100
 
@@ -68,38 +60,6 @@ defmodule Glific.Contacts.Import do
     }
 
     handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-  end
-
-  @doc """
-  Deletes/updates or add the given contact
-  """
-  @spec process_data(User.t() | map(), map(), map()) :: {:ok, map()} | {:error, map()}
-  def process_data(user, %{delete: "1"} = contact, _attrs) do
-    if Authorize.valid_role?(user.roles, :manager) || user.upload_contacts == true do
-      case Repo.get_by(Contact, %{phone: contact.phone}) do
-        nil ->
-          {:error, %{contact.phone => "Contact does not exist"}}
-
-        contact ->
-          {:ok, contact} = Contacts.delete_contact(contact)
-          {:ok, %{contact.phone => "Contact has been deleted as per flag in csv"}}
-      end
-    else
-      {:error, %{contact.phone => "This user #{user.name} doesn't have enough permission"}}
-    end
-  end
-
-  def process_data(user, contact_attrs, attrs) do
-    case attrs.type do
-      "import_contact" ->
-        {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
-        may_update_contact(contact_attrs)
-        optin_contact(user, contact, contact_attrs)
-        {:ok, %{contact.phone => "New contact has been created and marked as opted in"}}
-
-      "move_contact" ->
-        may_update_contact(contact_attrs)
-    end
   end
 
   @doc """
@@ -291,23 +251,6 @@ defmodule Glific.Contacts.Import do
     data["collection"]
   end
 
-  @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
-  defp add_contact_fields(contact, fields) do
-    Enum.reduce(fields, contact, fn {field, value}, contact ->
-      field = Glific.string_snake_case(field)
-
-      if value === "",
-        do: contact,
-        else:
-          ContactField.do_add_contact_field(
-            contact,
-            field,
-            field,
-            value
-          )
-    end)
-  end
-
   @spec fetch_contact_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
   defp fetch_contact_data_as_string(opts) do
     file_path = Keyword.get(opts, :file_path, nil)
@@ -395,133 +338,5 @@ defmodule Glific.Contacts.Import do
     })
 
     :ok
-  end
-
-  @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
-  defp may_update_contact(contact_attrs) do
-    with {:ok, old_contact} <- Repo.fetch_by(Contact, %{phone: contact_attrs.phone}),
-         {:ok, contact} <- Contacts.maybe_update_contact(contact_attrs) do
-      create_group_and_contact_fields(contact_attrs, contact)
-
-      capture_language_history(
-        contact,
-        old_contact.language_id,
-        contact_attrs.language_id
-      )
-
-      {:ok, %{contact.phone => "Contact has been updated"}}
-    else
-      {:error, error} when is_list(error) ->
-        {:error, %{contact_attrs.phone => "Contact not found."}}
-
-      {:error, %Ecto.Changeset{}} ->
-        {:error, %{contact_attrs.phone => "Contact upload failed."}}
-    end
-  end
-
-  @spec create_group_and_contact_fields(map(), Contact.t()) :: :ok | {:ok, ContactGroup.t()}
-  defp create_group_and_contact_fields(contact_attrs, contact) do
-    collection_label_check(contact, contact_attrs.collection)
-
-    if contact_attrs[:contact_fields] not in [%{}] do
-      add_contact_fields(contact, contact_attrs[:contact_fields])
-    end
-  end
-
-  @spec collection_label_check(Contact.t(), String.t()) :: boolean() | :ok
-  defp collection_label_check(_contact, nil), do: false
-
-  defp collection_label_check(contact, collection) when is_binary(collection) do
-    if String.length(collection) != 0 do
-      collection = String.split(collection, ",")
-
-      add_multiple_group(collection, contact.organization_id)
-      add_contact_to_groups(collection, contact)
-    end
-  end
-
-  @spec add_contact_to_groups(list(), Contact.t()) :: :ok
-  defp add_contact_to_groups(collection, contact) do
-    collection
-    |> Groups.load_group_by_label()
-    |> Enum.each(fn group ->
-      Groups.create_contact_group(%{
-        contact_id: contact.id,
-        group_id: group.id,
-        organization_id: contact.organization_id
-      })
-    end)
-  end
-
-  @spec add_multiple_group(list(), non_neg_integer()) :: :ok
-  defp add_multiple_group(collection, organization_id) do
-    collection
-    |> Enum.each(fn label -> Groups.get_or_create_group_by_label(label, organization_id) end)
-  end
-
-  @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
-  defp optin_contact(user, contact, contact_attrs) do
-    current_time = DateTime.utc_now()
-
-    if should_optin_contact?(user, contact) do
-      contact_attrs
-      |> Contacts.contact_opted_in(contact_attrs.organization_id, current_time, method: "Import")
-      |> case do
-        {:ok, contact} ->
-          contact
-
-        {:error, error} ->
-          %{phone: contact.phone, error: "#{error}: #{contact.phone}"}
-      end
-    else
-      %{
-        phone: contact.phone,
-        error:
-          "Not able to optin the contact #{contact.phone}. Contact is either already opted in, opted out, or you lack permission"
-      }
-    end
-  end
-
-  ## later we can have one more column to say that force optin
-  @spec should_optin_contact?(User.t(), Contact.t()) :: boolean()
-  defp should_optin_contact?(user, contact) do
-    cond do
-      Map.get(contact, :optin_time) != nil ->
-        false
-
-      contact.optout_time != nil ->
-        false
-
-      Authorize.valid_role?(user.roles, :manager) || user.upload_contacts ->
-        true
-
-      true ->
-        false
-    end
-  end
-
-  @spec capture_language_history(
-          Contact.t(),
-          non_neg_integer() | String.t(),
-          non_neg_integer() | String.t()
-        ) ::
-          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()} | nil
-  defp capture_language_history(contact, old_language_id, language_id) do
-    changed_language = Settings.get_language!(language_id)
-    old_language = Settings.get_language!(old_language_id)
-
-    if changed_language.id != old_language.id do
-      Contacts.capture_history(contact, :contact_language_updated, %{
-        event_label:
-          "Changed contact language to #{changed_language.label} from #{old_language.label}, via import.",
-        event_meta: %{
-          language: %{
-            id: changed_language.id,
-            label: changed_language.label,
-            old_language: old_language.id
-          }
-        }
-      })
-    end
   end
 end

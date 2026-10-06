@@ -14,6 +14,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     Seeds.SeedsDev,
     Templates,
     WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse,
     WhatsappForms.WhatsappFormWorker,
     WhatsappFormsResponses
   }
@@ -288,7 +289,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
-  test "write_to_google_sheet/2 returns error when Google API is not active",
+  test "write_to_google_sheet/2 errors when Google API is not active, worker does not retry",
        %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} when is_binary(url) ->
@@ -345,26 +346,30 @@ defmodule Glific.WhatsappFormResponsesTest do
       whatsapp_form =
         Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
+      payload = %{
+        "contact_number" => "919425010449",
+        "organization_id" => organization_id,
+        "raw_response" => %{
+          "flow_token" => "unused",
+          "screen_0_Choose_one_0" => "0_Yes"
+        },
+        "submitted_at" => "2025-12-20T09:46:24.000000Z",
+        "whatsapp_form_id" => whatsapp_form.id,
+        "whatsapp_form_name" => whatsapp_form.name
+      }
+
+      assert {:error, _reason} =
+               WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
+
       args = %Oban.Job{
         args: %{
           "organization_id" => organization_id,
-          "payload" => %{
-            "contact_number" => "919425010449",
-            "organization_id" => organization_id,
-            "raw_response" => %{
-              "flow_token" => "unused",
-              "screen_0_Choose_one_0" => "0_Yes"
-            },
-            "submitted_at" => "2025-12-20T09:46:24.000000Z",
-            "whatsapp_form_id" => whatsapp_form.id,
-            "whatsapp_form_name" => whatsapp_form.name
-          },
+          "payload" => payload,
           "whatsapp_form_id" => whatsapp_form.id
         }
       }
 
-      result = WhatsappFormWorker.perform(args)
-      assert {:error, _reason} = result
+      assert :ok = WhatsappFormWorker.perform(args)
     end
   end
 
@@ -426,7 +431,7 @@ defmodule Glific.WhatsappFormResponsesTest do
                raw_response
     end
 
-    test "leaves the media unchanged (no gcs_url) when the download fails",
+    test "marks the media as download_failed (no gcs_url) when the download fails",
          %{organization_id: organization_id} do
       with_mocks([
         {PartnerAPI, [:passthrough],
@@ -444,6 +449,29 @@ defmodule Glific.WhatsappFormResponsesTest do
 
         assert [saved_photo] = enriched["photos"]
         refute Map.has_key?(saved_photo, "gcs_url")
+        assert saved_photo["download_failed"] == true
+      end
+    end
+
+    test "never re-downloads media that already failed once (no retry)",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [Map.put(@photo, "download_failed", true)]}
+
+        assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+                 raw_response
+
+        refute called(PartnerAPI.download_flow_media(:_, :_))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
       end
     end
 
@@ -492,6 +520,87 @@ defmodule Glific.WhatsappFormResponsesTest do
         # ... because the download/upload were never invoked
         refute called(PartnerAPI.download_flow_media(:_, :_))
         refute called(GcsWorker.upload_media(:_, :_, :_))
+      end
+    end
+
+    test "marks the entry download_failed when its task dies, keeping the other uploads",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [
+           download_flow_media: fn _org, media_id ->
+             if media_id == 1, do: exit(:normal), else: {:ok, <<255, 216, 255>>}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/b.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{
+          "photos" => [
+            %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"},
+            %{"id" => 2, "file_name" => "b.jpg", "mime_type" => "image/jpeg"}
+          ]
+        }
+
+        enriched = WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+
+        assert [dead_photo, saved_photo] = enriched["photos"]
+
+        assert dead_photo["id"] == 1
+        assert dead_photo["download_failed"] == true
+        refute Map.has_key?(dead_photo, "gcs_url")
+
+        assert saved_photo["id"] == 2
+        assert saved_photo["gcs_url"] == "https://gcs.test/b.jpg"
+      end
+    end
+
+    test "downloads the media of one field concurrently, in order and within the cap",
+         %{organization_id: organization_id} do
+      {:ok, tracker} = Agent.start_link(fn -> %{in_flight: 0, peak: 0} end)
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [
+           download_flow_media: fn _org, _media_id ->
+             Agent.update(tracker, fn %{in_flight: in_flight, peak: peak} ->
+               running = in_flight + 1
+               %{in_flight: running, peak: max(peak, running)}
+             end)
+
+             Process.sleep(50)
+             Agent.update(tracker, fn state -> %{state | in_flight: state.in_flight - 1} end)
+
+             {:ok, <<255, 216, 255>>}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, remote, _org ->
+             {:ok, %{url: "https://gcs.test/#{Path.basename(remote)}", type: :image}}
+           end
+         ]}
+      ]) do
+        photos =
+          for id <- 1..10 do
+            %{"id" => id, "file_name" => "#{id}.jpg", "mime_type" => "image/jpeg"}
+          end
+
+        enriched =
+          WhatsappFormsResponses.save_response_media(%{"photos" => photos}, organization_id)
+
+        assert Enum.map(enriched["photos"], & &1["id"]) == Enum.to_list(1..10)
+
+        assert Enum.map(enriched["photos"], & &1["gcs_url"]) ==
+                 Enum.map(1..10, &"https://gcs.test/#{&1}-#{&1}.jpg")
+
+        peak = Agent.get(tracker, & &1.peak)
+        assert peak > 1, "expected the downloads to overlap, they ran one by one"
+        assert peak <= 3, "expected at most 3 downloads in flight, saw #{peak}"
       end
     end
   end
@@ -595,24 +704,29 @@ defmodule Glific.WhatsappFormResponsesTest do
   end
 
   describe "PartnerAPI.download_flow_media/2" do
+    @media_url "https://filemanager.gupshup.io/wa/Glific42/wa/media/123?download=true"
+
     test "returns the raw media bytes on a 2xx response",
          %{organization_id: organization_id} do
       Fixtures.set_bsp_partner_tokens(organization_id)
 
       Tesla.Mock.mock(fn
-        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/media/123"} ->
+        %{method: :get, url: @media_url} ->
           %Tesla.Env{status: 200, body: <<255, 216, 255>>}
       end)
 
       assert {:ok, <<255, 216, 255>>} = PartnerAPI.download_flow_media(organization_id, 123)
     end
 
-    test "returns an error tuple on a non-2xx response",
+    test "returns an error tuple on a non-2xx response without retrying",
          %{organization_id: organization_id} do
       Fixtures.set_bsp_partner_tokens(organization_id)
+      test_pid = self()
 
       Tesla.Mock.mock(fn
-        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/media/123"} ->
+        %{method: :get, url: @media_url} ->
+          send(test_pid, :media_request)
+
           %Tesla.Env{
             status: 429,
             body: ~s({"status":"error","message":"Too Many Requests"})
@@ -621,6 +735,11 @@ defmodule Glific.WhatsappFormResponsesTest do
 
       assert {:error, message} = PartnerAPI.download_flow_media(organization_id, 123)
       assert message =~ "flow media download failed"
+
+      # a failed media request is never re-sent: 20 failures block the whole app
+      # for the rest of the hour
+      assert_received :media_request
+      refute_received :media_request
     end
   end
 
@@ -705,6 +824,110 @@ defmodule Glific.WhatsappFormResponsesTest do
       assert is_binary(photos_value)
       # the photo map is JSON-encoded into the cell, gcs_url included
       assert Jason.decode!(photos_value)["gcs_url"] == "https://gcs.test/a.jpg"
+    end
+  end
+
+  describe "persist_response_media/2 via WhatsappFormWorker.perform/1" do
+    test "logs and completes the job when the response row cannot be updated",
+         %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+      raw_response = %{"photos" => [@photo], "students_attended" => "115"}
+
+      {:ok, whatsapp_form_response} =
+        %WhatsappFormResponse{}
+        |> WhatsappFormResponse.changeset(%{
+          raw_response: raw_response,
+          submitted_at: DateTime.utc_now(),
+          contact_id: contact.id,
+          whatsapp_form_id: whatsapp_form.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]},
+        {WhatsappFormResponse, [:passthrough],
+         [
+           changeset: fn response, _attrs ->
+             response
+             |> Ecto.Changeset.change()
+             |> Ecto.Changeset.add_error(:raw_response, "forced failure")
+           end
+         ]}
+      ]) do
+        job = %Oban.Job{
+          args: %{
+            "organization_id" => organization_id,
+            "whatsapp_form_id" => whatsapp_form.id,
+            "payload" => %{
+              "whatsapp_form_response_id" => whatsapp_form_response.id,
+              "organization_id" => organization_id,
+              "contact_number" => contact.phone,
+              "raw_response" => raw_response,
+              "submitted_at" => "2026-03-17T12:47:36.000000Z",
+              "whatsapp_form_id" => whatsapp_form.id,
+              "whatsapp_form_name" => whatsapp_form.name
+            }
+          }
+        }
+
+        assert :ok = WhatsappFormWorker.perform(job)
+
+        assert called(PartnerAPI.download_flow_media(organization_id, @photo["id"]))
+        assert called(GcsWorker.upload_media(:_, :_, organization_id))
+      end
+
+      assert Repo.get(WhatsappFormResponse, whatsapp_form_response.id).raw_response ==
+               raw_response
+    end
+
+    test "leaves the payload untouched when the response row no longer exists",
+         %{organization_id: organization_id} do
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        job = %Oban.Job{
+          args: %{
+            "organization_id" => organization_id,
+            "whatsapp_form_id" => whatsapp_form.id,
+            "payload" => %{
+              "whatsapp_form_response_id" => 0,
+              "organization_id" => organization_id,
+              "contact_number" => "919425010449",
+              "raw_response" => %{"photos" => [@photo]},
+              "submitted_at" => "2026-03-17T12:47:36.000000Z",
+              "whatsapp_form_id" => whatsapp_form.id,
+              "whatsapp_form_name" => whatsapp_form.name
+            }
+          }
+        }
+
+        assert :ok = WhatsappFormWorker.perform(job)
+
+        refute called(PartnerAPI.download_flow_media(:_, :_))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
+      end
     end
   end
 end

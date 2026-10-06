@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "8.12.4",
+      version: "8.13.4",
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -102,6 +102,7 @@ defmodule Glific.MixProject do
       {:gettext, "~> 0.22"},
       {:decimal, "~> 2.0"},
       {:jason, "~> 1.4"},
+      {:jose, "~> 1.11"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
       {:dialyxir, "~> 1.2", only: [:dev | @test_envs], runtime: false},
@@ -136,6 +137,7 @@ defmodule Glific.MixProject do
       {:fun_with_flags_ui, "~> 1.0"},
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal_phoenix, "~> 2.3"},
+      {:appsignal, "~> 2.17.6", override: true},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},

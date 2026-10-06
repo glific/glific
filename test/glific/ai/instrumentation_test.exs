@@ -39,4 +39,15 @@ defmodule Glific.AI.InstrumentationTest do
 
     assert ^reply = around(reply: reply)
   end
+
+  test "every caller reaches the provider through the instrumented path" do
+    for module <- [Glific.AI.Agent, Glific.AI.Router] do
+      source = module.module_info(:compile)[:source] |> to_string() |> File.read!()
+
+      refute source =~ "Provider.impl().generate",
+             "#{inspect(module)} calls the provider directly, so its calls are not measured"
+
+      assert source =~ "AI.generate("
+    end
+  end
 end

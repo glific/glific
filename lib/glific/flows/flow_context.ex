@@ -15,6 +15,7 @@ defmodule Glific.Flows.FlowContext do
   alias __MODULE__
   alias Glific.Contacts
   alias Glific.Contacts.Contact
+  alias Glific.Enums.MessageChannel
   alias Glific.Flows
   alias Glific.Flows.Flow
   alias Glific.Flows.FlowResult
@@ -54,7 +55,8 @@ defmodule Glific.Flows.FlowContext do
     :profile_id,
     :reason,
     :node,
-    :wa_group_id
+    :wa_group_id,
+    :channel
   ]
 
   # we store one more than the number of messages specified here
@@ -73,6 +75,7 @@ defmodule Glific.Flows.FlowContext do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           status: String.t() | nil,
+          channel: atom() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           message_broadcast_id: non_neg_integer | nil,
@@ -106,6 +109,11 @@ defmodule Glific.Flows.FlowContext do
     field(:flow_uuid, Ecto.UUID)
 
     field(:status, :string, default: "published")
+
+    # Mapped here rather than in #5660, which added the column but had nothing reading it. The
+    # value decides which channel a flow's history events and outbound sends are attributed to,
+    # so it has to survive a reload rather than being re-derived per call site.
+    field(:channel, MessageChannel, default: :whatsapp)
 
     field(:wakeup_at, :utc_datetime, default: nil)
     field(:completed_at, :utc_datetime, default: nil)
@@ -210,10 +218,13 @@ defmodule Glific.Flows.FlowContext do
     end
 
     # lets reset the entire flow tree complete if this context is a child
+    # Scoped to this context's channel so a web-flow error doesn't complete the contact's
+    # WhatsApp flow tree, or vice versa.
     if context.parent_id,
       do:
         mark_flows_complete(context,
           source: "reset_all_contexts",
+          channel: context.channel,
           event_meta: %{
             context_id: context.id,
             message: message
@@ -282,6 +293,7 @@ defmodule Glific.Flows.FlowContext do
       {:ok, _} =
         Contacts.capture_history(context.contact, :contact_flow_ended, %{
           event_label: event_label,
+          channel: context.channel,
           event_meta:
             %{
               context_id: context.id,
@@ -322,7 +334,8 @@ defmodule Glific.Flows.FlowContext do
     # load that context and keep going
     if context.parent_id do
       # we load the parent context, and resume it with a message of "Completed"
-      parent = active_context(context.contact_id, context.parent_id)
+      parent =
+        active_context(context.contact_id, channel: context.channel, parent_id: context.parent_id)
 
       # ensure the parent is still active. If the parent completed (or was terminated)
       # we don't get back a valid parent
@@ -534,6 +547,13 @@ defmodule Glific.Flows.FlowContext do
   defp add_date_clause(query, after_insert),
     do: query |> where([fc], fc.inserted_at > ^after_insert)
 
+  # nil completes every channel's flows (terminate/clear paths); a channel narrows it to that one.
+  @spec maybe_scope_by_channel(Ecto.Queryable.t(), atom() | nil) :: Ecto.Queryable.t()
+  defp maybe_scope_by_channel(query, nil), do: query
+
+  defp maybe_scope_by_channel(query, channel),
+    do: query |> where([fc], fc.channel == ^channel)
+
   @doc """
   Set all other flows for the same wa_group as completed on waking up
   """
@@ -610,6 +630,7 @@ defmodule Glific.Flows.FlowContext do
     FlowContext
     |> where([fc], fc.contact_id == ^contact_id)
     |> where([fc], is_nil(fc.completed_at))
+    |> maybe_scope_by_channel(Keyword.get(opts, :channel))
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.is_background_flow == false)
@@ -686,6 +707,7 @@ defmodule Glific.Flows.FlowContext do
     delay = Keyword.get(opts, :delay, 0)
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
+    channel = Keyword.get(opts, :channel, :whatsapp)
     initial_results = Keyword.get(opts, :results, default_results(opts))
 
     Logger.info(
@@ -709,7 +731,8 @@ defmodule Glific.Flows.FlowContext do
         uuid_map: flow.uuid_map,
         delay: delay,
         uuids_seen: uuids_seen,
-        wakeup_at: wakeup_at
+        wakeup_at: wakeup_at,
+        channel: channel
       })
 
     context =
@@ -769,10 +792,12 @@ defmodule Glific.Flows.FlowContext do
   def init_context(flow, contact, status, opts) do
     Glific.Metrics.increment("Flows Started")
     parent_id = Keyword.get(opts, :parent_id)
-    # set all previous context to be completed if we are not starting a sub flow
+    # Scoped by channel: starting a web flow must not complete a WhatsApp flow the contact is
+    # mid-way through, and vice versa.
     if is_nil(parent_id) do
       mark_flows_complete(contact.id, flow.is_background,
         source: "init_context",
+        channel: Keyword.get(opts, :channel, :whatsapp),
         event_meta: %{
           flow_id: flow.id,
           parent_id: parent_id,
@@ -797,6 +822,7 @@ defmodule Glific.Flows.FlowContext do
     {:ok, _} =
       Contacts.capture_history(contact, :contact_flow_started, %{
         event_label: "Flow Started",
+        channel: context.channel,
         event_meta: %{
           context_id: context.id,
           flow: %{
@@ -830,16 +856,23 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Check if there is an active context (i.e. with a non null, node_uuid for this contact)
   """
-  @spec active_context(non_neg_integer, non_neg_integer | nil) :: FlowContext.t() | nil
-  def active_context(contact_id, parent_id \\ nil) do
+  @spec active_context(non_neg_integer, Keyword.t()) :: FlowContext.t() | nil
+  def active_context(contact_id, opts \\ []) do
+    # :channel and :parent_id as opts rather than positional, so a caller can't transpose them
+    # (both are terms, so the compiler would not catch active_context(id, parent_id)).
+    channel = Keyword.get(opts, :channel, :whatsapp)
+    parent_id = Keyword.get(opts, :parent_id)
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables
     # We should not wake up those contexts which are waiting on time
+    #
+    # Scoped by channel so a web message can't resume a contact's WhatsApp context, or vice versa.
     query =
       from(fc in FlowContext,
         where:
           fc.contact_id == ^contact_id and
+            fc.channel == ^channel and
             not is_nil(fc.node_uuid) and
             is_nil(fc.completed_at) and
             fc.is_background_flow == false,
@@ -956,10 +989,12 @@ defmodule Glific.Flows.FlowContext do
         }
       )
 
-    # also mark all newer contexts as completed
+    # Mark newer contexts complete, but only on the waking flow's own channel: a parked web flow
+    # resuming must not complete a WhatsApp flow the contact started meanwhile, and vice versa.
     mark_flows_complete(context,
       after_insert_date: context.inserted_at,
       source: "wakeup_one",
+      channel: context.channel,
       event_meta: %{
         context_id: context.id,
         flow_id: context.flow_id,

@@ -36,6 +36,9 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Flow Type enum"
   enum(:flow_type_enum, values: Glific.Enums.flow_type_const())
 
+  @desc "The Message Channel enum"
+  enum(:message_channel_enum, values: Glific.Enums.message_channel_const())
+
   @desc "The Message Flow enum"
   enum(:message_flow_enum, values: Glific.Enums.message_flow_const())
 

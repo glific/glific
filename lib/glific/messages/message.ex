@@ -25,13 +25,14 @@ defmodule Glific.Messages.Message do
     WhatsappForms.WhatsappFormResponse
   }
 
-  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
+  alias Glific.Enums.{MessageChannel, MessageFlow, MessageStatus, MessageType}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | atom() | nil,
+          channel: String.t() | atom() | nil,
           is_hsm: boolean | nil,
           template: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           flow: String.t() | nil,
@@ -89,6 +90,7 @@ defmodule Glific.Messages.Message do
   ]
   @optional_fields [
     :uuid,
+    :channel,
     :body,
     :flow_label,
     :clean_body,
@@ -122,6 +124,7 @@ defmodule Glific.Messages.Message do
     field(:flow_label, :string)
     field(:flow, MessageFlow)
     field(:type, MessageType)
+    field(:channel, MessageChannel, default: :whatsapp)
     field(:status, MessageStatus)
 
     field(:send_by, :string, virtual: true)

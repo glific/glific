@@ -26,7 +26,12 @@ defmodule GlificWeb.Schema.SearchTest do
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
     Fixtures.wa_managed_phone_fixture(%{organization_id: org.id})
+    # Restored on the way out: this is a global, and leaving it set makes every later test in the
+    # run search through the replica, which has no current user in its process.
+    original = Application.get_env(:glific, Glific.Searches)
     Application.put_env(:glific, Glific.Searches, %{repo_module: RepoReplica})
+    on_exit(fn -> Application.put_env(:glific, Glific.Searches, original) end)
+
     :ok
   end
 

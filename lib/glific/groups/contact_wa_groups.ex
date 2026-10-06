@@ -19,6 +19,8 @@ defmodule Glific.Groups.ContactWAGroups do
   import Ecto.Query
   @primary_key false
 
+  @add_member_interval_ms 2000
+
   @type t() :: %__MODULE__{
           wa_group_contacts: [ContactWAGroup.t()],
           number_deleted: non_neg_integer
@@ -235,7 +237,12 @@ defmodule Glific.Groups.ContactWAGroups do
           {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
   defp do_add_members(org_id, wa_group, acting_phone_id, phones) do
     result =
-      Enum.reduce(phones, %{added: 0, failed: %{}}, fn phone, acc ->
+      phones
+      |> Enum.with_index()
+      |> Enum.reduce(%{added: 0, failed: %{}}, fn {phone, index}, acc ->
+        # Maytapi rate-limits back-to-back group/add calls
+        if index > 0, do: Process.sleep(@add_member_interval_ms)
+
         case add_member(org_id, wa_group, acting_phone_id, phone) do
           :ok -> %{acc | added: acc.added + 1}
           {:error, message} -> %{acc | failed: Map.put(acc.failed, phone, message)}

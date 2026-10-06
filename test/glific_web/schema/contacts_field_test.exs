@@ -152,8 +152,12 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert {:ok, query_data} = result
     contacts_fields = get_in(query_data, [:data, "contactsFields"])
     assert length(contacts_fields) > 0
-    [contacts_field | _] = contacts_fields
-    assert get_in(contacts_field, ["name"]) == "Name"
+    names = Enum.map(contacts_fields, &get_in(&1, ["name"]))
+
+    # list_contacts_fields/1 orders by inserted_at, and the default fields are seeded
+    # in a single batch with an identical timestamp. Those ties make the position of
+    # any one field unstable, so assert membership rather than which field is first.
+    assert "Name" in names
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"name" => "Name"}})
     assert {:ok, query_data} = result

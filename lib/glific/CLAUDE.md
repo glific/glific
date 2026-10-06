@@ -60,9 +60,14 @@ directly from the web layer. Use the `Repo` helper functions instead of hand-wri
   for web requests, in `DataCase`/`ConnCase` for tests, and **manually inside every Oban worker**).
 - To run a genuinely cross-org query, pass `skip_organization_id: true` as a repo opt — do this
   rarely and deliberately (SaaS/admin/cron paths only).
-- **In Oban workers you must call `Repo.put_process_state(org_id)`** (or `put_organization_id`)
-  at the top of `perform/1` — the job runs in a fresh process with no org context. Forgetting
-  this is the #1 source of "works in dev, leaks/empties in prod" bugs. See `Contacts.ImportWorker`.
+- **In Oban workers you must restore tenant context at the top of `perform/1`** — the job runs in
+  a fresh process with no org context, and forgetting this is the #1 source of "works in dev,
+  leaks/empties in prod" bugs. Use `Repo.put_process_state(org_id)`, which sets the org id _and_
+  the org's root user; `Repo.put_organization_id(org_id)` sets only the org id, so reach for it
+  only when the worker genuinely has no current-user needs. A worker that queries `RepoReplica`
+  must set the state on that repo as well — see `BigQuery.BigQueryWorker`. Cron fan-out is the
+  exception: `Partners.perform_all/4` already calls `put_process_state/1` per org, so branches of
+  `Jobs.MinuteWorker` don't repeat it.
 
 ## Oban workers (background jobs)
 

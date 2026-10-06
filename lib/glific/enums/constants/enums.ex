@@ -67,6 +67,9 @@ defmodule Glific.Enums.Constants do
         :whatsapp_form_response
       ]
 
+      # the channel a message was sent or received on
+      @message_channel_const [:whatsapp, :web]
+
       # the different possible types of interactive message
       @interactive_message_type_const [:list, :quick_reply, :location_request_message]
 
@@ -142,8 +145,9 @@ defmodule Glific.Enums.Constants do
       @ai_evaluation_status_const [:create_in_progress, :processing, :failed, :completed]
 
       # Glific AI — see the schemas under Glific.AI
-      @glific_ai_event_type_const [:user, :assistant, :tool_call, :tool_result]
+      @glific_ai_event_type_const [:user, :assistant, :tool_call, :tool_result, :routing]
       @glific_ai_message_status_const [:pending, :running, :succeeded, :failed, :cancelled]
+      @glific_ai_conversation_kind_const [:chat, :skill_run]
     end
   end
 end

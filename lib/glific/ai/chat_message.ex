@@ -11,7 +11,7 @@ defmodule Glific.AI.ChatMessage do
   @type role :: :system | :user | :assistant | :tool
 
   @typedoc """
-  A tool the model asked us to run. `id` is the provider's identifier for the
+  A tool the model asked to be run. `id` is the provider's identifier for the
   call, and pairing the eventual result back to it is what lets a conversation
   be replayed faithfully.
   """

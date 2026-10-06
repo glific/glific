@@ -684,6 +684,17 @@ defmodule Glific.Contacts do
   Specifically designed for when we are trying to optin an opted out contact
   """
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
+  # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
+  # contact that has only ever existed in a browser sits at `:none`, which both clauses above
+  # refuse. A web contact is reachable over their open socket regardless, so the only thing left
+  # to check when staff reply is that the contact is not blocked.
+  def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
+      when channel in [:web, "web"] do
+    if contact.status == :blocked,
+      do: {:error, dgettext("errors", "Contact is blocked.")},
+      else: {:ok, nil}
+  end
+
   def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
     if is_hsm do
       if contact.bsp_status in [:session_and_hsm, :hsm, :session],
@@ -698,6 +709,17 @@ defmodule Glific.Contacts do
            {:error,
             "Cannot send session message to contact, invalid BSP status or not messaged in 24 hour window."}
     end
+  end
+
+  # The web channel OTP is transactional — the person asked for it by typing their own number into
+  # a login form — so it is exempt from the marketing opt-in that #5713 stopped a web login from
+  # creating. Without this exemption a first-time visitor could never be sent a code at all:
+  # `optin_time` is nil and `bsp_status` is `:none` on a contact that has only ever existed on the
+  # web, which fails both clauses above.
+  def can_send_message_to?(contact, _is_hsm, %{is_web_channel_otp: true} = _attrs) do
+    if contact.status == :blocked,
+      do: {:error, dgettext("errors", "Contact is blocked.")},
+      else: {:ok, nil}
   end
 
   def can_send_message_to?(contact, is_hsm, _), do: can_send_message_to?(contact, is_hsm)
@@ -1041,6 +1063,9 @@ defmodule Glific.Contacts do
 
       {:event_label, event_label}, query ->
         from(q in query, where: ilike(q.event_label, ^"%#{event_label}%"))
+
+      {:channel, channel}, query ->
+        from(q in query, where: q.channel == ^channel)
 
       _, query ->
         query
