@@ -26,7 +26,10 @@ defmodule Glific.AI.Langfuse do
   @traces_path "/api/public/otel/v1/traces"
   @scores_path "/api/public/scores"
   @realtime {"x-langfuse-ingestion-version", "4"}
-  @phone ~r/\+?\(?\d[\d\s().\-]{8,20}\d/
+  # A space joins digit groups only behind a `+` or a bracket. Without that
+  # guard two unrelated ids sitting side by side — "6298936 6289903" — read as
+  # one fourteen-digit number and both are lost.
+  @phone ~r/[+(]\d[\d\s().\-]{8,20}\d|\d[\d().\-]{8,20}\d/
   @email ~r/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/
 
   @doc """
@@ -38,7 +41,7 @@ defmodule Glific.AI.Langfuse do
   """
   @spec trace_async(non_neg_integer()) :: :ok
   def trace_async(message_id) do
-    if configured?(), do: Task.start(fn -> trace(message_id) end)
+    if configured?(), do: background(fn -> trace(message_id) end)
     :ok
   end
 
@@ -47,7 +50,7 @@ defmodule Glific.AI.Langfuse do
   """
   @spec score_async(Event.t()) :: :ok
   def score_async(%Event{} = event) do
-    if configured?(), do: Task.start(fn -> score(event) end)
+    if configured?(), do: background(fn -> score(event) end)
     :ok
   end
 
@@ -110,7 +113,12 @@ defmodule Glific.AI.Langfuse do
   end
 
   @doc """
-  Redacts direct identifiers from text bound for Langfuse.
+  Redacts phone numbers and email addresses from text bound for Langfuse.
+
+  Those two only. A trace still carries whatever the tools returned — a contact
+  name, a contact field, the body of a message — because an observation is the
+  tool's own JSON. Narrowing that is an allowlist on the way out, not a wider
+  pattern here.
 
   Public so what leaves the platform can be asserted in tests.
   """
@@ -428,6 +436,14 @@ defmodule Glific.AI.Langfuse do
 
   @spec config() :: keyword()
   defp config, do: Application.get_env(:glific, __MODULE__, [])
+
+  # Supervised rather than bare, so a trace in flight is shut down with the tree
+  # on a rolling restart instead of being killed with its caller.
+  @spec background((-> any())) :: :ok
+  defp background(fun) do
+    Task.Supervisor.start_child(Glific.TaskSupervisor, fun)
+    :ok
+  end
 
   @doc false
   # All three or none. A missing secret key would post with an empty Basic Auth

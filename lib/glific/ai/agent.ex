@@ -389,7 +389,6 @@ defmodule Glific.AI.Agent do
     end
   end
 
-  @spec spend(run(), Provider.usage()) :: run()
   @spec turn_usage(run()) :: map()
   defp turn_usage(%{last_call: usage}) do
     %{
@@ -399,6 +398,7 @@ defmodule Glific.AI.Agent do
     }
   end
 
+  @spec spend(run(), Provider.usage()) :: run()
   defp spend(run, call) do
     %{
       run

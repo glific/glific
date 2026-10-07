@@ -214,7 +214,8 @@ defmodule Glific.AI.LangfuseTest do
             "+91 90000 00001",
             "+91-90000-00001",
             "(919) 000-0001",
-            "9000000001"
+            "9000000001",
+            "90000-00001"
           ] do
         assert Langfuse.mask("reach her on " <> written) == "reach her on [phone]",
                "#{written} left the platform intact"
@@ -228,6 +229,9 @@ defmodule Glific.AI.LangfuseTest do
             "2026-09-23 14:18:00",
             "flow_id 37740 node f1fub1",
             "contact ids 6298936 and 6289903",
+            # Two short ids side by side: with whitespace in the separator class
+            # these merged into one fourteen-digit match and both were lost.
+            "contact ids 6298936 6289903",
             "uuid 44e1012d-7baf-43fc-87db-e35ac42ab097"
           ] do
         assert Langfuse.mask(kept) == kept
