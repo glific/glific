@@ -32,7 +32,7 @@ db_ssl_opts = fn db_type ->
   end
 end
 
-csql_proxy? = env!("GIGALIXIR__CLOUD_SQL_PROXY_SIDECAR", :string, "false") == "true"
+csql_proxy? = env!("GIGALIXIR__CLOUD_SQL_PROXY_SIDECAR", :boolean, false)
 
 proxy_url = fn url, port ->
   url |> URI.parse() |> Map.merge(%{host: "127.0.0.1", port: port}) |> URI.to_string()
