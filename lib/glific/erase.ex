@@ -5,7 +5,7 @@ defmodule Glific.Erase do
   import Ecto.Query
 
   alias Glific.Assistants.Assistant
-  alias Glific.Contacts.Contact
+  alias Glific.Contacts
   alias Glific.Notifications
   alias Glific.Notifications.Notification
   alias Glific.Partners
@@ -361,7 +361,7 @@ defmodule Glific.Erase do
     Repo.put_process_state(org_id)
 
     with "y" <- String.trim_trailing(get_value, "\n") |> String.downcase(),
-         {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+         {:ok, contact} <- Contacts.fetch_by_phone(phone) do
       Logger.warning(
         "Deleting beneficiary data for contact #{phone} and organization_id #{org_id}"
       )

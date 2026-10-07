@@ -7,6 +7,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
 
   alias Glific.{
     Communications,
+    Contacts,
     Messages.Message
   }
 
@@ -170,24 +171,38 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
-  defp send_message(payload, message, %{has_buttons: true, parsed_body: parsed_body} = attrs) do
+  defp send_message(payload, message, attrs) do
+    case Contacts.whatsapp_phone(message.receiver) do
+      {:ok, send_to} -> do_send_message(payload, message, attrs, send_to)
+      {:error, :no_phone} -> {:error, "Contact has no WhatsApp number."}
+    end
+  end
+
+  @spec do_send_message(map(), Message.t(), map(), String.t()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  defp do_send_message(
+         payload,
+         message,
+         %{has_buttons: true, parsed_body: parsed_body} = attrs,
+         send_to
+       ) do
     encoded_message =
       payload
       |> Map.put(:msg, parsed_body)
       |> Jason.encode!()
 
-    %{"send_to" => message.receiver.phone, "message" => encoded_message}
+    %{"send_to" => send_to, "message" => encoded_message}
     |> then(&create_oban_job(message, &1, attrs))
   end
 
-  defp send_message(payload, message, attrs) do
+  defp do_send_message(payload, message, attrs, send_to) do
     ## gupshup does not allow null in the caption.
     attrs =
       if Map.has_key?(attrs, :caption) and is_nil(attrs[:caption]),
         do: Map.put(attrs, :caption, ""),
         else: attrs
 
-    %{"send_to" => message.receiver.phone, "message" => Jason.encode!(payload)}
+    %{"send_to" => send_to, "message" => Jason.encode!(payload)}
     |> then(&create_oban_job(message, &1, attrs))
   end
 

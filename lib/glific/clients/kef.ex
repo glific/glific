@@ -624,7 +624,9 @@ defmodule Glific.Clients.KEF do
   end
 
   # We need the ending part of the file name to be phonenumber
-  @spec generate_filename(String.t(), String.t()) :: String.t()
+  @spec generate_filename(String.t(), String.t() | nil) :: String.t()
+  defp generate_filename(remote_name, nil), do: generate_filename(remote_name, "")
+
   defp generate_filename(remote_name, phone_number) do
     [datetime, _, _, message_id] = String.split(remote_name, "_")
     [message_id, ext] = String.split(message_id, ".")

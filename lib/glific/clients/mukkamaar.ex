@@ -6,7 +6,7 @@ defmodule Glific.Clients.MukkaMaar do
   alias GoogleApi.BigQuery.V2.Api.Jobs
 
   alias Glific.{
-    Contacts.Contact,
+    Contacts,
     Flows.FlowContext,
     Repo
   }
@@ -30,9 +30,9 @@ defmodule Glific.Clients.MukkaMaar do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("update_contact_categories", fields) do
-    phone = String.trim(fields["phone"])
+    phone = String.trim(fields["phone"] || "")
 
-    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+    with {:ok, contact} <- Contacts.fetch_by_phone(phone) do
       list =
         FlowContext
         |> where([fc], fc.contact_id == ^contact.id and is_nil(fc.completed_at))

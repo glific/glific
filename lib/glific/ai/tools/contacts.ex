@@ -284,7 +284,13 @@ defmodule Glific.AI.Tools.Contacts do
 
   @spec find(map()) :: {:ok, Contact.t()} | {:error, String.t()}
   defp find(%{contact_id: id}), do: fetch([id: id], "id #{id}")
-  defp find(%{phone: phone}), do: fetch([phone: phone], "phone #{phone}")
+
+  defp find(%{phone: phone}) do
+    case Contacts.fetch_by_phone(phone) do
+      {:ok, contact} -> {:ok, contact}
+      {:error, _} -> {:error, "No contact with phone #{phone} exists in this organisation."}
+    end
+  end
 
   defp find(_args),
     do: {:error, "Give either contact_id or phone to identify the contact."}

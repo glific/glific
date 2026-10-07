@@ -704,7 +704,9 @@ defmodule Glific do
   @doc """
   mask last 5 digit of a phone number
   """
-  @spec mask_phone_number(String.t()) :: String.t()
+  @spec mask_phone_number(String.t() | integer() | nil) :: String.t()
+  def mask_phone_number(nil), do: ""
+
   def mask_phone_number(phone) when is_integer(phone) do
     phone
     |> Integer.to_string()

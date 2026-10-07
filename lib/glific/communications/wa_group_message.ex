@@ -378,6 +378,17 @@ defmodule Glific.Communications.GroupMessage do
   """
   @spec receive_reaction_msg(map(), non_neg_integer()) :: any()
   def receive_reaction_msg(params, org_id) do
+    case Map.get(params, "reactorId") do
+      reactor_id when is_binary(reactor_id) and reactor_id != "" ->
+        do_receive_reaction_msg(params, org_id)
+
+      _ ->
+        {:error, "Reaction has no reactor id"}
+    end
+  end
+
+  @spec do_receive_reaction_msg(map(), non_neg_integer()) :: any()
+  defp do_receive_reaction_msg(params, org_id) do
     contact = Map.get(params, "reactorId")
     reaction = Map.get(params, "reaction")
     msg_id = Map.get(params, "msgId")

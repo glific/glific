@@ -41,7 +41,7 @@
       # If you create your own checks, you must specify the source files for
       # them here, so they can be loaded by Credo before running the analysis.
       #
-      requires: ["./.credo/checks/no_raw_inspect.ex"],
+      requires: ["./.credo/checks/no_raw_inspect.ex", "./.credo/checks/contact_phone_lookup.ex"],
       #
       # If you want to enforce a style guide and need a more traditional linting
       # experience, you can change `strict` to `true` below:
@@ -166,7 +166,10 @@
           #
           # Forbid raw `inspect/1,2`; use `Glific.SafeLog.safe_inspect/1` so
           # credentials and other P2 data are never written to logs.
-          {GlificCredo.Checks.NoRawInspect, []}
+          {GlificCredo.Checks.NoRawInspect, []},
+          # Forbid looking a contact up by phone outside `Glific.Contacts`; use
+          # `Contacts.fetch_by_phone/2` so a nil phone never reaches the query.
+          {GlificCredo.Checks.ContactPhoneLookup, []}
         ],
         disabled: [
           #

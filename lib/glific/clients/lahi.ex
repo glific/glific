@@ -19,7 +19,7 @@ defmodule Glific.Clients.Lahi do
   def gcs_file_name(media) do
     contact = Contact |> where([c], c.id == ^media["contact_id"]) |> Repo.one()
 
-    phone_number = contact.phone
+    phone_number = contact.phone || ""
     datetime = Timex.now("Asia/Calcutta")
     strftime_str = Timex.format!(datetime, "%FT%T%:z", :strftime)
     phone_number <> "/" <> strftime_str <> Path.extname(media["remote_name"])

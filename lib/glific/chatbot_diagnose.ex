@@ -490,6 +490,8 @@ defmodule Glific.ChatbotDiagnose do
     end
   end
 
+  defp resolve_contact_by_phone(phone) when phone in [nil, ""], do: :error
+
   defp resolve_contact_by_phone(phone) do
     case RepoReplica.one(from(c in Contact, where: c.phone == ^phone, select: c.id, limit: 1)) do
       nil -> :error

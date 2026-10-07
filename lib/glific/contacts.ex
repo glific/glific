@@ -255,6 +255,9 @@ defmodule Glific.Contacts do
 
   """
   @spec get_contact_by_phone!(String.t()) :: Contact.t()
+  def get_contact_by_phone!(phone) when phone in [nil, ""],
+    do: raise(ArgumentError, "A phone number is required to look up a contact by phone")
+
   def get_contact_by_phone!(phone) do
     Contact
     |> where([c], c.phone == ^phone)
@@ -431,11 +434,20 @@ defmodule Glific.Contacts do
   defp handle_phone_error(sender, changeset) do
     map = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
 
-    if Map.get(map, :phone) == ["has already been taken"] do
-      Repo.fetch_by(Contact, %{phone: sender.phone})
+    with ["has already been taken"] <- Map.get(map, :phone),
+         {:ok, contact} <- fetch_by_phone(sender.phone) do
+      {:ok, contact}
     else
-      {:error, changeset}
+      _ -> {:error, changeset}
     end
+  end
+
+  @spec missing_phone_error(map()) :: {:error, Ecto.Changeset.t()}
+  defp missing_phone_error(attrs) do
+    %Contact{}
+    |> Ecto.Changeset.change(Map.take(attrs, [:organization_id]))
+    |> Ecto.Changeset.add_error(:phone, "can't be blank")
+    |> Ecto.Changeset.apply_action(:insert)
   end
 
   @doc """
@@ -447,8 +459,11 @@ defmodule Glific.Contacts do
   """
   @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_contact(sender) do
-    case Repo.get_by(Contact, %{phone: sender.phone}) do
-      nil ->
+    case fetch_by_phone(Map.get(sender, :phone)) do
+      {:error, :no_phone} ->
+        missing_phone_error(sender)
+
+      {:error, :not_found} ->
         case create_contact(sender) do
           {:ok, contact} -> {:ok, contact}
           # there is a small chance that due to the opt-in and first message
@@ -457,7 +472,7 @@ defmodule Glific.Contacts do
           {:error, changeset} -> handle_phone_error(sender, changeset)
         end
 
-      contact ->
+      {:ok, contact} ->
         # If either the sender name have changed or if we need to update contact_type, we need to update the contact
         case get_contact_update_attrs(contact, sender) do
           nil ->
@@ -474,14 +489,16 @@ defmodule Glific.Contacts do
   """
   @spec maybe_update_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
-  def maybe_update_contact(%{phone: nil}) do
-    {:error, "Phone number is missing"}
-  end
-
   def maybe_update_contact(sender) do
-    case Repo.get_by(Contact, %{phone: sender.phone}) do
-      nil -> {:error, "Contact #{sender.phone} was not found and hence not added"}
-      contact -> update_contact(contact, sender)
+    case fetch_by_phone(Map.get(sender, :phone)) do
+      {:error, :no_phone} ->
+        {:error, "Phone number is missing"}
+
+      {:error, :not_found} ->
+        {:error, "Contact #{sender.phone} was not found and hence not added"}
+
+      {:ok, contact} ->
+        update_contact(contact, sender)
     end
   end
 
@@ -516,12 +533,15 @@ defmodule Glific.Contacts do
 
     attrs = Map.merge(contact_attrs, attrs)
 
-    Repo.get_by(Contact, %{phone: phone})
+    fetch_by_phone(phone)
     |> case do
-      nil ->
+      {:error, :no_phone} ->
+        missing_phone_error(attrs)
+
+      {:error, :not_found} ->
         create_contact(attrs)
 
-      contact ->
+      {:ok, contact} ->
         # we ignore the optin from the BSP if we are already opted in
         if ignore_optin?(contact, opts),
           do: {:ok, contact},
@@ -582,12 +602,16 @@ defmodule Glific.Contacts do
     if simulator_contact?(phone) do
       :ok
     else
-      case Repo.get_by(Contact, %{phone: phone}) do
-        nil ->
+      case fetch_by_phone(phone) do
+        {:error, :no_phone} ->
+          Logger.error("Cannot opt out a contact without a phone number")
+          :error
+
+        {:error, :not_found} ->
           Logger.error("Contact does not exist with phone: #{phone}")
           :error
 
-        contact ->
+        {:ok, contact} ->
           capture_history(contact.id, :contact_opted_out, %{
             event_label: "contact opted out, via #{method}",
             event_meta: %{
@@ -614,15 +638,12 @@ defmodule Glific.Contacts do
   def number_does_not_exist(contact_id, method \\ "Number does not exist") do
     contact = get_contact!(contact_id)
 
-    update_contact(
-      contact,
-      opted_out_attrs(
-        contact.phone,
-        contact.organization_id,
-        DateTime.utc_now(),
-        method
+    with {:ok, phone} <- whatsapp_phone(contact) do
+      update_contact(
+        contact,
+        opted_out_attrs(phone, contact.organization_id, DateTime.utc_now(), method)
       )
-    )
+    end
   end
 
   @doc """
@@ -635,6 +656,9 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact, true = _is_hsm) do
     cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
       contact.status != :valid ->
         {:error, dgettext("errors", "Contact status is not valid.")}
 
@@ -664,6 +688,9 @@ defmodule Glific.Contacts do
   """
   def can_send_message_to?(contact, false = _is_hsm) do
     cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
       contact.status != :valid ->
         {:error, dgettext("errors", "Contact status is not valid.")}
 
@@ -696,18 +723,15 @@ defmodule Glific.Contacts do
   end
 
   def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
-    if is_hsm do
-      if contact.bsp_status in [:session_and_hsm, :hsm, :session],
-        do: {:ok, nil},
-        else:
-          {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
-    else
-      if contact.bsp_status in [:session_and_hsm, :session] &&
-           Glific.in_past_time(contact.last_message_at, :hours, 24),
-         do: {:ok, nil},
-         else:
-           {:error,
-            "Cannot send session message to contact, invalid BSP status or not messaged in 24 hour window."}
+    cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
+      is_hsm ->
+        optin_flow_hsm_check(contact)
+
+      true ->
+        optin_flow_session_check(contact)
     end
   end
 
@@ -717,12 +741,37 @@ defmodule Glific.Contacts do
   # `optin_time` is nil and `bsp_status` is `:none` on a contact that has only ever existed on the
   # web, which fails both clauses above.
   def can_send_message_to?(contact, _is_hsm, %{is_web_channel_otp: true} = _attrs) do
-    if contact.status == :blocked,
-      do: {:error, dgettext("errors", "Contact is blocked.")},
-      else: {:ok, nil}
+    cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
+      contact.status == :blocked ->
+        {:error, dgettext("errors", "Contact is blocked.")}
+
+      true ->
+        {:ok, nil}
+    end
   end
 
   def can_send_message_to?(contact, is_hsm, _), do: can_send_message_to?(contact, is_hsm)
+
+  @spec optin_flow_hsm_check(Contact.t()) :: {:ok | :error, String.t() | nil}
+  defp optin_flow_hsm_check(contact) do
+    if contact.bsp_status in [:session_and_hsm, :hsm, :session],
+      do: {:ok, nil},
+      else:
+        {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
+  end
+
+  @spec optin_flow_session_check(Contact.t()) :: {:ok | :error, String.t() | nil}
+  defp optin_flow_session_check(contact) do
+    if contact.bsp_status in [:session_and_hsm, :session] &&
+         Glific.in_past_time(contact.last_message_at, :hours, 24),
+       do: {:ok, nil},
+       else:
+         {:error,
+          "Cannot send session message to contact, invalid BSP status or not messaged in 24 hour window."}
+  end
 
   @doc """
   Get contact's current location
@@ -828,6 +877,7 @@ defmodule Glific.Contacts do
     cond do
       contact.status == :blocked -> true
       simulator_contact?(contact.phone) -> false
+      whatsapp_phone(contact) == {:error, :no_phone} -> false
       Clients.blocked?(contact.phone, contact.organization_id) -> true
       true -> false
     end
@@ -839,8 +889,14 @@ defmodule Glific.Contacts do
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
-    bsp_module = Provider.bsp_module(organization_id, :contact)
-    bsp_module.optin_contact(attrs)
+    case whatsapp_phone(attrs) do
+      {:ok, _phone} ->
+        bsp_module = Provider.bsp_module(organization_id, :contact)
+        bsp_module.optin_contact(attrs)
+
+      {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+    end
   end
 
   @doc """
@@ -989,8 +1045,37 @@ defmodule Glific.Contacts do
   @doc """
   Lets centralize the code to detect simulator messages and interaction
   """
-  @spec simulator_contact?(String.t()) :: boolean
+  @spec simulator_contact?(String.t() | nil) :: boolean
+  def simulator_contact?(nil), do: false
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
+
+  @doc """
+  Looks a contact up by phone; a nil or empty phone returns `{:error, :no_phone}` without querying.
+  """
+  @spec fetch_by_phone(String.t() | nil, non_neg_integer() | nil) ::
+          {:ok, Contact.t()} | {:error, :no_phone | :not_found}
+  def fetch_by_phone(phone, organization_id \\ nil)
+
+  def fetch_by_phone(phone, _organization_id) when phone in [nil, ""], do: {:error, :no_phone}
+
+  def fetch_by_phone(phone, organization_id) do
+    clauses =
+      if organization_id,
+        do: %{phone: phone, organization_id: organization_id},
+        else: %{phone: phone}
+
+    case Repo.get_by(Contact, clauses) do
+      nil -> {:error, :not_found}
+      contact -> {:ok, contact}
+    end
+  end
+
+  @doc """
+  The only way to get the number a contact is reached on over WhatsApp.
+  """
+  @spec whatsapp_phone(Contact.t() | map()) :: {:ok, String.t()} | {:error, :no_phone}
+  def whatsapp_phone(%{phone: phone}) when is_binary(phone) and phone != "", do: {:ok, phone}
+  def whatsapp_phone(_contact), do: {:error, :no_phone}
 
   @doc """
   create new contact history record.
