@@ -4,7 +4,7 @@ defmodule Glific.AI.Tools do
 
   Every tool call goes through `run/4`, the only entry point: authorisation,
   read-only enforcement and error handling are applied here rather than repeated
-  in each tool, so a new tool cannot forget them.
+  in each tool.
 
   What `run/4` guarantees:
 
@@ -15,6 +15,12 @@ defmodule Glific.AI.Tools do
       exceptions all come back as `{:error, message}` for the model to read.
     * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
       step and cost ceilings bound a whole run.
+
+  One thing here is declared rather than enforced. A tool runs inside a
+  read-only transaction unless it answers `false` to `Glific.AI.Tool.reads_database?/0`,
+  which exists so a tool that issues no SQL does not hold a pooled connection to
+  prove it. A tool that opts out and then reads the database is not stopped by
+  anything in this module, so the declaration has to be true.
   """
 
   alias Glific.{AI.Tool, Repo, SafeLog, Users.User}

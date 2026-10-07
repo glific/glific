@@ -334,16 +334,35 @@ defmodule Glific.AI.Documentation do
   end
 
   # The documents annotate facts with where in the codebase they came from —
-  # `contacts.ex:699`, `(from lib/glific/...)`. That is provenance for whoever
-  # wrote them and noise to whoever reads an answer, and the skill is told to
-  # give concrete steps, so an NGO can otherwise be handed an Elixir line
-  # number as an answer.
-  @source_ref ~r/\s*\((?:from\s+)?`[^`]*\.(?:ex|exs|ts|tsx)[^`]*`\)|\s*`[^`]*\.(?:ex|exs|ts|tsx)(?::[\d–—-]+)?`/u
+  # `(from lib/glific/...)`, `(lines 14-79)`, `contacts.ex:699`. That is
+  # provenance for whoever wrote them and noise to whoever reads an answer, and
+  # the skill is told to give concrete steps, so an NGO can otherwise be handed
+  # an Elixir line number as an answer.
+  #
+  # An aside goes entirely. A path that is the object of its sentence keeps the
+  # path and loses only the line numbers: removing it outright left sentences
+  # like "Routes are defined in." behind.
+  @source_aside ~r/\s*\((?:from\s+)?[^)]*\.(?:ex|exs|ts|tsx)[^)]*\)|\s*\(lines?\s+\d+[\d\s–—-]*\)/u
+  @source_lines ~r/(`[^`]*\.(?:ex|exs|ts|tsx)):[\d\s,–—-]+(`)/u
+
+  # Everything between fences is an example: two spaces there are indentation,
+  # and a path is part of the code rather than provenance about it.
+  @fence ~r/```.*?```/s
 
   @spec strip_source_refs(String.t()) :: String.t()
   defp strip_source_refs(body) do
-    body
-    |> String.replace(@source_ref, "")
+    @fence
+    |> Regex.split(body, include_captures: true)
+    |> Enum.map_join(&normalise/1)
+  end
+
+  @spec normalise(String.t()) :: String.t()
+  defp normalise("```" <> _rest = fenced), do: fenced
+
+  defp normalise(prose) do
+    prose
+    |> String.replace(@source_aside, "")
+    |> String.replace(@source_lines, "\\1\\2")
     |> String.replace(~r/ +([,.;:])/u, "\\1")
     |> String.replace(~r/[ \t]{2,}/u, " ")
   end

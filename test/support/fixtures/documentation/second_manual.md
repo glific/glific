@@ -35,3 +35,21 @@ not a section named after the comment.
 
 Three-letter topics that a length guard would hide. The body deliberately
 avoids repeating them so that only the heading carries the signal.
+
+## Normalising
+
+### Provenance and indentation
+
+Routes are defined in `router_sentinel.ex:146,176`, which the reader needs to
+keep as a sentence. The schema lives at `schema_sentinel.ex` (lines 14-79).
+Delivery is retried twice (from `worker_sentinel.ex:12`).
+
+```json
+{
+  "nested": {
+    "deeper": "indentation_sentinel"
+  }
+}
+```
+
+Two  spaces  between  these  prose  words  should  collapse.

@@ -26,6 +26,37 @@ defmodule Glific.AI.DocumentationRankingTest do
 
   defp top(index, query), do: index |> titles(query, 1) |> List.first()
 
+  describe "normalising a section" do
+    test "a fenced example keeps its indentation", %{index: index} do
+      # The prose rule that collapses runs of spaces must not reach inside a
+      # fence: two spaces there are the structure of the example.
+      section = Enum.find(index, &(&1.title == "Provenance and indentation"))
+
+      assert section.body =~ ~s(  "nested": {)
+      assert section.body =~ ~s(    "deeper": "indentation_sentinel")
+    end
+
+    test "runs of spaces in prose still collapse", %{index: index} do
+      section = Enum.find(index, &(&1.title == "Provenance and indentation"))
+
+      assert section.body =~ "Two spaces between these prose words should collapse."
+    end
+
+    test "an aside goes, and a path that carries the sentence stays", %{index: index} do
+      section = Enum.find(index, &(&1.title == "Provenance and indentation"))
+
+      # The object of the sentence survives, without its line numbers: removing
+      # it outright left "Routes are defined in." in the shipped corpus.
+      assert section.body =~ "Routes are defined in `router_sentinel.ex`,"
+      assert section.body =~ "The schema lives at `schema_sentinel.ex`."
+      assert section.body =~ "Delivery is retried twice."
+
+      refute section.body =~ "146,176"
+      refute section.body =~ "lines 14-79"
+      refute section.body =~ "worker_sentinel"
+    end
+  end
+
   describe "the body cap" do
     test "a multibyte character straddling the cap does not yield invalid UTF-8" do
       # The cap is counted in bytes. A section built so that a 3-byte character
