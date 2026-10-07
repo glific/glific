@@ -8,10 +8,18 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
   is the single function that refuses a nil phone before querying, so every phone lookup must go
   through it.
 
-  The check flags `Repo.get_by/2`, `Repo.get_by!/2` and `Repo.fetch_by/2` (on `Repo` or
-  `RepoReplica`, aliased or fully qualified) whose queryable is `Contact` and whose clauses carry a
-  `:phone` key. Test files and the modules in `:excluded_modules` (by default `Glific.Contacts`,
-  which implements the lookup) are exempt.
+  The check flags:
+
+    * `Repo.get_by/2`, `Repo.get_by!/2` and `Repo.fetch_by/2` (on `Repo` or `RepoReplica`, aliased
+      or fully qualified) whose queryable is `Contact` and whose clauses carry a `:phone` key;
+    * `from(c in Contact, where: ...)` whose `where`/`or_where` compares `c.phone` with `==` or is a
+      keyword list with a `:phone` key;
+    * `where/3` and `or_where/3` on a `Contact` queryable, called directly or at any stage of a
+      pipeline that starts at `Contact`, whose condition compares the first binding's `phone`.
+
+  `is_nil(c.phone)` is not flagged: selecting phone-less contacts is a legitimate query. Test files
+  and the modules in `:excluded_modules` (by default `Glific.Contacts`, which implements the lookup)
+  are exempt.
 
   See the [Credo guide on adding checks](https://credo.hexdocs.pm/adding_checks.html).
   """
@@ -26,6 +34,8 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
       A contact lookup keyed on phone, such as
 
           Repo.get_by(Contact, %{phone: phone})
+          from(c in Contact, where: c.phone == ^phone)
+          Contact |> where([c], c.phone == ^phone)
 
       raises when `phone` is nil, and the tempting fix (`where: is_nil(c.phone)`) silently
       returns an arbitrary phone-less contact.
@@ -41,6 +51,7 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
 
   @repo_modules [:Repo, :RepoReplica]
   @lookup_functions [:get_by, :get_by!, :fetch_by]
+  @where_functions [:where, :or_where]
 
   @doc false
   @impl true
@@ -92,7 +103,84 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
     end
   end
 
+  defp traverse(
+         {:from, meta, [{:in, _, [{binding, _, context}, queryable]}, opts]} = ast,
+         issues,
+         issue_meta
+       )
+       when is_atom(binding) and is_atom(context) and is_list(opts) do
+    phone_lookup? =
+      contact?(queryable) and
+        Enum.any?(opts, fn
+          {function, condition} when function in @where_functions ->
+            phone_condition?(condition, binding)
+
+          _option ->
+            false
+        end)
+
+    {ast, add_issue_if(issues, phone_lookup?, issue_meta, meta, :from)}
+  end
+
+  defp traverse(
+         {:|>, _, [queryable, {function, meta, [bindings, condition]}]} = ast,
+         issues,
+         issue_meta
+       )
+       when function in @where_functions do
+    phone_lookup? =
+      contact?(pipeline_head(queryable)) and binding_phone_condition?(bindings, condition)
+
+    {ast, add_issue_if(issues, phone_lookup?, issue_meta, meta, function)}
+  end
+
+  defp traverse({function, meta, [queryable, bindings, condition]} = ast, issues, issue_meta)
+       when function in @where_functions do
+    phone_lookup? = contact?(queryable) and binding_phone_condition?(bindings, condition)
+    {ast, add_issue_if(issues, phone_lookup?, issue_meta, meta, function)}
+  end
+
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+
+  defp add_issue_if(issues, true, issue_meta, meta, function),
+    do: [issue_for(issue_meta, meta, function) | issues]
+
+  defp add_issue_if(issues, false, _issue_meta, _meta, _function), do: issues
+
+  defp pipeline_head({:|>, _, [left, _right]}), do: pipeline_head(left)
+  defp pipeline_head(queryable), do: queryable
+
+  defp contact?({:__aliases__, _, parts}) when is_list(parts), do: List.last(parts) == :Contact
+  defp contact?(_queryable), do: false
+
+  defp binding_phone_condition?([{binding, _, context} | _], condition)
+       when is_atom(binding) and is_atom(context),
+       do: phone_condition?(condition, binding)
+
+  defp binding_phone_condition?(_bindings, _condition), do: false
+
+  defp phone_condition?(condition, binding) when is_list(condition) do
+    phone_key?(condition) or Enum.any?(condition, &phone_condition?(&1, binding))
+  end
+
+  defp phone_condition?(condition, binding) do
+    {_ast, found?} =
+      Macro.prewalk(condition, false, fn
+        {:==, _, [left, right]} = node, found? ->
+          {node, found? or phone_field?(left, binding) or phone_field?(right, binding)}
+
+        node, found? ->
+          {node, found?}
+      end)
+
+    found?
+  end
+
+  defp phone_field?({{:., _, [{binding, _, context}, :phone]}, _, []}, binding)
+       when is_atom(context),
+       do: true
+
+  defp phone_field?(_ast, _binding), do: false
 
   defp phone_clause?({:%{}, _, pairs}) when is_list(pairs), do: phone_key?(pairs)
   defp phone_clause?(pairs) when is_list(pairs), do: phone_key?(pairs)
@@ -104,7 +192,7 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
     format_issue(
       issue_meta,
       message:
-        "Use `Glific.Contacts.fetch_by_phone/2` instead of `Repo.#{function}(Contact, phone: ...)` so a nil phone never reaches the query.",
+        "Use `Glific.Contacts.fetch_by_phone/2` instead of looking a contact up by phone with `#{function}` so a nil phone never reaches the query.",
       trigger: "#{function}",
       line_no: meta[:line],
       column: meta[:column]
