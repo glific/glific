@@ -553,6 +553,39 @@ defmodule GlificWeb.Schema.FlowTest do
     assert Enum.all?(errors, fn error -> error["blocking"] == false end)
   end
 
+  test "Publish a flow with a dangling node returns the dangling node uuid as the key", %{
+    manager: user
+  } do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: user.organization_id})
+
+    {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+
+    dangling_node = %{
+      "uuid" => "0808cc85-a9dd-424c-bd5e-040fbbcc6d42",
+      "actions" => [],
+      "exits" => [%{"uuid" => Ecto.UUID.generate(), "destination_uuid" => nil}]
+    }
+
+    definition = Map.update!(revision.definition, "nodes", &(&1 ++ [dangling_node]))
+
+    {:ok, _revision} =
+      revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
+    assert {:ok, query_data} = result
+    assert query_data[:errors] == nil
+
+    error =
+      query_data
+      |> get_in([:data, "publishFlow", "errors"])
+      |> Enum.find(&(&1["message"] == "Your flow has dangling nodes"))
+
+    assert error["key"] == "0808cc85-a9dd-424c-bd5e-040fbbcc6d42"
+    assert error["category"] == "Warning"
+    assert error["blocking"] == false
+  end
+
   test "Start flow for a contact", %{manager: user} = attrs do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
