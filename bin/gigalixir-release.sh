@@ -2,9 +2,10 @@
 #
 # gigalixir-release.sh - drive a version bump through PR, GitHub release and deploy.
 #
-# Replaces the manual production release checklist. Stops at three confirmations
-# (bump, merge, deploy) and refuses to continue when the repo is not in a clean,
-# up-to-date state. Ends by handing off to gigalixir-verify-deploy.sh, so the
+# Replaces the manual production release checklist. Stops at two confirmations
+# (bump, deploy) and refuses to continue when the repo is not in a clean,
+# up-to-date state. The bump PR is opened with the version-bump label and merged
+# by the auto-merge-bump workflow, so no admin rights are needed. Ends by handing off to gigalixir-verify-deploy.sh, so the
 # release is not "done" until the app has held the new version for five minutes.
 #
 # Works in both glific (mix.exs) and glific-frontend (package.json).
@@ -34,6 +35,8 @@ ENV_NAME="" APP="" REMOTE="" NEW_VERSION="" BUMP="" RELEASE_TITLE=""
 BASE_BRANCH="master" DRY_RUN=0 ASSUME_YES=0
 SKIP_RELEASE=0 SKIP_VERIFY=0
 STABLE_WINDOW=300
+MERGE_TIMEOUT=600
+readonly BUMP_LABEL="version-bump"
 
 CURRENT_VERSION="" VERSION_FILE="" PROJECT_KIND=""
 BRANCH="" PR_NUMBER="" DEPLOY_SHA=""
@@ -260,7 +263,8 @@ open_pr() {
    branch   ${BRANCH}
    change   ${VERSION_FILE}  ${CURRENT_VERSION} -> ${NEW_VERSION}
    push     origin ${BRANCH}
-   PR       "${title}" into ${BASE_BRANCH}
+   PR       "${title}" into ${BASE_BRANCH}, labelled ${BUMP_LABEL}
+   merge    squash-merged by the auto-merge-bump workflow
   --------------------------------------------------
 EOF
   confirm "Create this bump PR?" || abort "declined at the bump step"
@@ -272,12 +276,12 @@ EOF
   run git push --set-upstream origin "$BRANCH" || die "push failed"
 
   if [ "$DRY_RUN" -eq 1 ]; then
-    log "[dry-run] gh pr create --base ${BASE_BRANCH} --head ${BRANCH} --title '${title}'"
+    log "[dry-run] gh pr create --base ${BASE_BRANCH} --head ${BRANCH} --title '${title}' --label ${BUMP_LABEL}"
     PR_NUMBER="DRYRUN"
     return 0
   fi
 
-  gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$title" \
+  gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$title" --label "$BUMP_LABEL" \
     --body "Version bump ${CURRENT_VERSION} -> ${NEW_VERSION}, opened by bin/gigalixir-release.sh." \
     || die "gh pr create failed"
 
@@ -289,31 +293,31 @@ EOF
 merge_pr() {
   step "Merge"
 
-  cat <<EOF
-
-  -- About to do -----------------------------------
-   merge    PR #${PR_NUMBER} (squash) into ${BASE_BRANCH}
-   delete   branch ${BRANCH}
-EOF
-  [ "$ENV_NAME" = "staging" ] && printf '   note     merging may also trigger the CI deploy to staging\n'
-  printf -- '  --------------------------------------------------\n'
-
-  confirm "Merge PR #${PR_NUMBER}?" || abort "declined at the merge step"
-
-  # Always --admin: a version-bump PR does not wait for CI/reviews. Requires admin or
-  run gh pr merge "$PR_NUMBER" --squash --delete-branch --admin \
-    || die "gh pr merge failed (need admin/bypass permission on ${BASE_BRANCH})"
-
-  run git checkout "$BASE_BRANCH" || die "could not switch back to ${BASE_BRANCH}"
-  run git pull --ff-only origin "$BASE_BRANCH" || die "git pull failed"
-
   if [ "$DRY_RUN" -eq 1 ]; then
+    log "[dry-run] wait for the auto-merge-bump workflow to merge PR #${PR_NUMBER}"
     DEPLOY_SHA=$(git rev-parse HEAD)
-    log "[dry-run] would now be at the squashed merge commit"
-  else
-    DEPLOY_SHA=$(git rev-parse HEAD)
-    log "merged; ${BASE_BRANCH} is now at ${DEPLOY_SHA:0:7}"
+    return 0
   fi
+
+  log "waiting up to ${MERGE_TIMEOUT}s for the auto-merge-bump workflow to merge PR #${PR_NUMBER}"
+  local deadline=$((SECONDS + MERGE_TIMEOUT)) state=""
+  while :; do
+    state=$(gh pr view "$PR_NUMBER" --json state -q .state) || die "could not read PR #${PR_NUMBER}"
+    case "$state" in
+      MERGED) break ;;
+      CLOSED) die "PR #${PR_NUMBER} was closed without merging" ;;
+    esac
+    [ "$SECONDS" -lt "$deadline" ] \
+      || die "PR #${PR_NUMBER} not merged after ${MERGE_TIMEOUT}s - check the auto-merge-bump workflow run"
+    sleep 10
+  done
+
+  git checkout "$BASE_BRANCH" || die "could not switch back to ${BASE_BRANCH}"
+  git pull --ff-only origin "$BASE_BRANCH" || die "git pull failed"
+  git branch -D "$BRANCH" >/dev/null 2>&1
+
+  DEPLOY_SHA=$(git rev-parse HEAD)
+  log "merged; ${BASE_BRANCH} is now at ${DEPLOY_SHA:0:7}"
 }
 
 create_release() {
