@@ -39,7 +39,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, String.t()}
+  @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, any()}
   def send_message(message, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
@@ -63,11 +63,11 @@ defmodule Glific.Communications.Message do
 
         publish_message(message)
 
-      {:error, reason} when is_binary(reason) ->
-        log_error(message, reason)
+      {:error, :no_phone} ->
+        log_error(message, "Contact has no WhatsApp number.")
 
-      {:error, _reason} ->
-        log_error(message, send_failure_reason(message))
+      error ->
+        error
     end
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message

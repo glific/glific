@@ -1952,34 +1952,32 @@ defmodule Glific.ContactsTest do
       refute Contacts.simulator_contact?(nil)
     end
 
-    test "fetch_by_identity/3 refuses a nil or empty identifier without querying",
-         %{organization_id: organization_id} do
-      assert {:error, :no_identifier} ==
-               Contacts.fetch_by_identity(organization_id, :whatsapp, nil)
-
-      assert {:error, :no_identifier} ==
-               Contacts.fetch_by_identity(organization_id, :whatsapp, "")
+    test "fetch_by_identity/2 refuses a nil or empty identifier without querying" do
+      assert {:error, :no_identifier} == Contacts.fetch_by_identity(:whatsapp, nil)
+      assert {:error, :no_identifier} == Contacts.fetch_by_identity(:whatsapp, "")
     end
 
-    test "fetch_by_identity/3 finds a WhatsApp contact by phone within its organization",
-         %{organization_id: organization_id} do
+    test "fetch_by_identity/2 finds a WhatsApp contact by phone", %{
+      organization_id: organization_id
+    } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %Contact{id: id}} =
-               Contacts.fetch_by_identity(organization_id, :whatsapp, contact.phone)
-
+      assert {:ok, %Contact{id: id}} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
       assert id == contact.id
-
-      assert {:error, :not_found} ==
-               Contacts.fetch_by_identity(organization_id, :whatsapp, "919999900000")
+      assert {:error, :not_found} == Contacts.fetch_by_identity(:whatsapp, "919999900000")
     end
 
-    test "fetch_by_identity/3 requires an organization", %{organization_id: organization_id} do
+    test "fetch_by_identity/2 only finds contacts in the current organization", %{
+      organization_id: organization_id
+    } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      other_organization = Fixtures.organization_fixture()
 
-      assert_raise FunctionClauseError, fn ->
-        Contacts.fetch_by_identity(nil, :whatsapp, contact.phone)
-      end
+      Repo.put_organization_id(other_organization.id)
+      assert {:error, :not_found} == Contacts.fetch_by_identity(:whatsapp, contact.phone)
+
+      Repo.put_organization_id(organization_id)
+      assert {:ok, %Contact{}} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
     end
 
     test "whatsapp_phone/1 returns the phone only when there is one, and only for a contact" do

@@ -526,7 +526,7 @@ defmodule Glific.Contacts.BulkImport do
     phone = row["phone"]
 
     if Authorize.valid_role?(params.user.roles, :manager) || params.user.upload_contacts do
-      case Contacts.fetch_by_identity(params.organization_id, :whatsapp, phone) do
+      case Contacts.fetch_by_identity(:whatsapp, phone) do
         {:error, _} ->
           Map.put(errors, phone, "Contact does not exist")
 

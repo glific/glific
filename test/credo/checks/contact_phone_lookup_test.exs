@@ -28,6 +28,22 @@ defmodule GlificCredo.Checks.ContactPhoneLookupTest do
     assert [_] = issues("RepoReplica.fetch_by(Glific.Contacts.Contact, %{phone: phone})")
   end
 
+  test "flags Repo lookups with options and piped from Contact" do
+    assert [_] = issues("Repo.fetch_by(Contact, %{phone: phone}, skip_organization_id: true)")
+    assert [_] = issues("Contact |> Repo.get_by(%{phone: phone})")
+    assert [_] = issues("Contact |> Repo.get_by!(phone: phone)")
+
+    assert [_] =
+             issues(
+               "Contact |> RepoReplica.fetch_by(%{phone: phone}, skip_organization_id: true)"
+             )
+  end
+
+  test "is best-effort: clauses held in a variable are not flagged" do
+    assert [] = issues("clauses = %{phone: phone}\n    Repo.get_by(Contact, clauses)")
+    assert [] = issues("Contact |> Repo.get_by(%{id: phone})")
+  end
+
   test "flags from/2 queries on Contact that compare phone" do
     assert [_] = issues("from(c in Contact, where: c.phone == ^phone)")
     assert [_] = issues("from(c in Contact, where: ^phone == c.phone, select: c.id)")

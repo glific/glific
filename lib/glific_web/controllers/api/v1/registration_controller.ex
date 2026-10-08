@@ -65,7 +65,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   defp create_user(conn, user_params) do
     organization_id = conn.assigns[:organization_id]
 
-    case Contacts.fetch_by_identity(organization_id, :whatsapp, user_params["phone"]) do
+    case Contacts.fetch_by_identity(:whatsapp, user_params["phone"]) do
       {:ok, contact} -> register_user(conn, user_params, contact, organization_id)
       {:error, _reason} -> {:error, ["Contact not found"]}
     end
@@ -145,7 +145,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
             handle_registration_otp(conn, organization_id, phone)
 
           "false" ->
-            handle_non_registration_otp(conn, organization_id, phone)
+            handle_non_registration_otp(conn, phone)
         end
 
       {:error, message} ->
@@ -187,12 +187,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  defp handle_non_registration_otp(conn, organization_id, phone) do
+  defp handle_non_registration_otp(conn, phone) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
 
     case existing_user do
       {:ok, _user} ->
-        with {:ok, contact} <- Contacts.fetch_by_identity(organization_id, :whatsapp, phone),
+        with {:ok, contact} <- Contacts.fetch_by_identity(:whatsapp, phone),
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
              true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do

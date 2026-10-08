@@ -5,17 +5,22 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
   `contacts.phone` can be NULL (a contact who only logs in with a username), and a phone lookup
   with a nil phone is either a crash (`Repo.get_by/2` raises on nil) or, if someone "fixes" that
   with `is_nil(c.phone)`, a lookup that matches every phone-less contact.
-  `Contacts.fetch_by_identity/3` is the single function that refuses a nil identifier before
+  `Contacts.fetch_by_identity/2` is the single function that refuses a nil identifier before
   querying, so every phone lookup must go through it.
 
   The check flags:
 
-    * `Repo.get_by/2`, `Repo.get_by!/2` and `Repo.fetch_by/2` (on `Repo` or `RepoReplica`, aliased
-      or fully qualified) whose queryable is `Contact` and whose clauses carry a `:phone` key;
+    * `Repo.get_by`, `Repo.get_by!` and `Repo.fetch_by` (on `Repo` or `RepoReplica`, aliased or
+      fully qualified, with or without options, called directly or piped from `Contact`) whose
+      queryable is `Contact` and whose clauses are a literal map or keyword list with a `:phone` key;
     * `from(c in Contact, where: ...)` whose `where`/`or_where` compares `c.phone` with `==` or is a
       keyword list with a `:phone` key;
     * `where/3` and `or_where/3` on a `Contact` queryable, called directly or at any stage of a
       pipeline that starts at `Contact`, whose condition compares the first binding's `phone`.
+
+  The check is best-effort: it reads syntax, not types, so it misses clauses held in a variable,
+  `dynamic/2`, queries built from a variable (`from(c in query)`), named or joined bindings, and
+  reads of `contact.phone` as a send destination. Review those by hand.
 
   `is_nil(c.phone)` is not flagged: selecting phone-less contacts is a legitimate query. Test files
   and the modules in `:excluded_modules` (by default `Glific.Contacts`, which implements the lookup)
@@ -40,7 +45,7 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
       raises when `phone` is nil, and the tempting fix (`where: is_nil(c.phone)`) silently
       returns an arbitrary phone-less contact.
 
-      Use `Glific.Contacts.fetch_by_identity(organization_id, :whatsapp, phone)` instead. It
+      Use `Glific.Contacts.fetch_by_identity(:whatsapp, phone)` instead. It
       returns `{:error, :no_identifier}` for a nil or empty phone without querying,
       `{:error, :not_found}` when no contact matches, and `{:ok, contact}` otherwise.
       """,
@@ -89,18 +94,28 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
   defp collect_module_names(ast, names), do: {ast, names}
 
   defp traverse(
-         {{:., _, [{:__aliases__, meta, repo_parts}, function]}, _,
-          [{:__aliases__, _, queryable_parts}, clauses]} = ast,
+         {{:., _, [{:__aliases__, meta, repo_parts}, function]}, _, [queryable, clauses | _opts]} =
+           ast,
          issues,
          issue_meta
        )
-       when function in @lookup_functions and is_list(repo_parts) and is_list(queryable_parts) do
-    if List.last(repo_parts) in @repo_modules and List.last(queryable_parts) == :Contact and
-         phone_clause?(clauses) do
-      {ast, [issue_for(issue_meta, meta, function) | issues]}
-    else
-      {ast, issues}
-    end
+       when function in @lookup_functions and is_list(repo_parts) do
+    phone_lookup? = repo_lookup?(repo_parts, queryable, clauses)
+    {ast, add_issue_if(issues, phone_lookup?, issue_meta, meta, function)}
+  end
+
+  defp traverse(
+         {:|>, _,
+          [
+            queryable,
+            {{:., _, [{:__aliases__, meta, repo_parts}, function]}, _, [clauses | _opts]}
+          ]} = ast,
+         issues,
+         issue_meta
+       )
+       when function in @lookup_functions and is_list(repo_parts) do
+    phone_lookup? = repo_lookup?(repo_parts, pipeline_head(queryable), clauses)
+    {ast, add_issue_if(issues, phone_lookup?, issue_meta, meta, function)}
   end
 
   defp traverse(
@@ -141,6 +156,9 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
   end
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+
+  defp repo_lookup?(repo_parts, queryable, clauses),
+    do: List.last(repo_parts) in @repo_modules and contact?(queryable) and phone_clause?(clauses)
 
   defp add_issue_if(issues, true, issue_meta, meta, function),
     do: [issue_for(issue_meta, meta, function) | issues]
@@ -192,7 +210,7 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
     format_issue(
       issue_meta,
       message:
-        "Use `Glific.Contacts.fetch_by_identity/3` instead of looking a contact up by phone with `#{function}` so a nil phone never reaches the query.",
+        "Use `Glific.Contacts.fetch_by_identity/2` instead of looking a contact up by phone with `#{function}` so a nil phone never reaches the query.",
       trigger: "#{function}",
       line_no: meta[:line],
       column: meta[:column]

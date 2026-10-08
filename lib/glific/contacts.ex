@@ -435,7 +435,7 @@ defmodule Glific.Contacts do
     map = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
 
     with ["has already been taken"] <- Map.get(map, :phone),
-         {:ok, contact} <- fetch_by_identity(sender.organization_id, :whatsapp, sender.phone) do
+         {:ok, contact} <- fetch_by_identity(:whatsapp, sender.phone) do
       {:ok, contact}
     else
       _ -> {:error, changeset}
@@ -458,8 +458,8 @@ defmodule Glific.Contacts do
   avoid updating the contact to skip the DB call, and only do so if the name has changed
   """
   @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_create_contact(%{organization_id: organization_id} = sender) do
-    case fetch_by_identity(organization_id, :whatsapp, Map.get(sender, :phone)) do
+  def maybe_create_contact(sender) do
+    case fetch_by_identity(:whatsapp, Map.get(sender, :phone)) do
       {:error, :no_identifier} ->
         missing_phone_error(sender)
 
@@ -490,9 +490,7 @@ defmodule Glific.Contacts do
   @spec maybe_update_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
   def maybe_update_contact(sender) do
-    organization_id = Map.get(sender, :organization_id, Repo.get_organization_id())
-
-    case fetch_by_identity(organization_id, :whatsapp, Map.get(sender, :phone)) do
+    case fetch_by_identity(:whatsapp, Map.get(sender, :phone)) do
       {:error, :no_identifier} ->
         {:error, "Phone number is missing"}
 
@@ -535,8 +533,8 @@ defmodule Glific.Contacts do
 
     attrs = Map.merge(contact_attrs, attrs)
 
-    organization_id
-    |> fetch_by_identity(:whatsapp, phone)
+    :whatsapp
+    |> fetch_by_identity(phone)
     |> case do
       {:error, :no_identifier} ->
         missing_phone_error(attrs)
@@ -605,7 +603,7 @@ defmodule Glific.Contacts do
     if simulator_contact?(phone) do
       :ok
     else
-      case fetch_by_identity(organization_id, :whatsapp, phone) do
+      case fetch_by_identity(:whatsapp, phone) do
         {:error, :no_identifier} ->
           Logger.error("Cannot opt out a contact without a phone number")
           :error
@@ -1053,15 +1051,13 @@ defmodule Glific.Contacts do
   @doc """
   Looks a contact up by its login on a channel; a nil or empty identifier is refused without querying.
   """
-  @spec fetch_by_identity(non_neg_integer(), :whatsapp, String.t() | nil) ::
+  @spec fetch_by_identity(:whatsapp, String.t() | nil) ::
           {:ok, Contact.t()} | {:error, :no_identifier | :not_found}
-  def fetch_by_identity(organization_id, _channel, identifier)
-      when is_integer(organization_id) and identifier in [nil, ""],
-      do: {:error, :no_identifier}
+  def fetch_by_identity(_channel, identifier) when identifier in [nil, ""],
+    do: {:error, :no_identifier}
 
-  def fetch_by_identity(organization_id, :whatsapp, phone)
-      when is_integer(organization_id) and is_binary(phone) do
-    case Repo.get_by(Contact, %{phone: phone, organization_id: organization_id}) do
+  def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
+    case Repo.get_by(Contact, %{phone: phone}) do
       nil -> {:error, :not_found}
       contact -> {:ok, contact}
     end

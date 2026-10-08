@@ -168,14 +168,12 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @spec send_message(map(), Message.t(), map()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t() | String.t() | :no_phone}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
-    case Contacts.whatsapp_phone(message.receiver) do
-      {:ok, send_to} -> do_send_message(payload, message, attrs, send_to)
-      {:error, :no_phone} -> {:error, "Contact has no WhatsApp number."}
-    end
+    with {:ok, send_to} <- Contacts.whatsapp_phone(message.receiver),
+         do: do_send_message(payload, message, attrs, send_to)
   end
 
   @spec do_send_message(map(), Message.t(), map(), String.t()) ::

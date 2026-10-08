@@ -32,8 +32,7 @@ defmodule Glific.Clients.MukkaMaar do
   def webhook("update_contact_categories", fields) do
     phone = String.trim(fields["phone"] || "")
 
-    with {:ok, contact} <-
-           Contacts.fetch_by_identity(fields["organization_id"], :whatsapp, phone) do
+    with {:ok, contact} <- Contacts.fetch_by_identity(:whatsapp, phone) do
       list =
         FlowContext
         |> where([fc], fc.contact_id == ^contact.id and is_nil(fc.completed_at))

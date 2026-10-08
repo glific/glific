@@ -286,7 +286,7 @@ defmodule Glific.AI.Tools.Contacts do
   defp find(%{contact_id: id}), do: fetch([id: id], "id #{id}")
 
   defp find(%{phone: phone}) do
-    case Contacts.fetch_by_identity(Repo.get_organization_id(), :whatsapp, phone) do
+    case Contacts.fetch_by_identity(:whatsapp, phone) do
       {:ok, contact} ->
         {:ok, contact}
 

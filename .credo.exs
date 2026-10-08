@@ -168,7 +168,7 @@
           # credentials and other P2 data are never written to logs.
           {GlificCredo.Checks.NoRawInspect, []},
           # Forbid looking a contact up by phone outside `Glific.Contacts`; use
-          # `Contacts.fetch_by_identity/3` so a nil phone never reaches the query.
+          # `Contacts.fetch_by_identity/2` so a nil phone never reaches the query.
           {GlificCredo.Checks.ContactPhoneLookup, []}
         ],
         disabled: [

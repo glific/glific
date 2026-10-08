@@ -142,6 +142,22 @@ defmodule Glific.CommunicationsTest do
              |> Enum.any?(&(&1.message == "Contact has no WhatsApp number."))
     end
 
+    test "an ordinary provider error is returned without marking the message or notifying",
+         attrs do
+      message =
+        attrs
+        |> Map.merge(%{body: Faker.Lorem.sentence(4097)})
+        |> message_fixture()
+
+      notifications_before = Repo.aggregate(Glific.Notifications.Notification, :count)
+
+      assert {:error, "Message size greater than 4096 characters"} =
+               Communications.Message.send_message(message)
+
+      refute Messages.get_message!(message.id).status == :error
+      assert notifications_before == Repo.aggregate(Glific.Notifications.Notification, :count)
+    end
+
     test "send message should return error when characters limit is reached when sending media message",
          attrs do
       message_media =

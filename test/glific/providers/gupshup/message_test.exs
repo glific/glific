@@ -17,6 +17,6 @@ defmodule Glific.Providers.Gupshup.MessageTest do
       receiver: %Contact{phone: nil}
     }
 
-    assert {:error, "Contact has no WhatsApp number."} == Gupshup.Message.send_text(message)
+    assert {:error, :no_phone} == Gupshup.Message.send_text(message)
   end
 end
