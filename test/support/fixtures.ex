@@ -24,6 +24,8 @@ defmodule Glific.Fixtures do
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
     Contacts,
+    Contacts.Contact,
+    Contacts.ContactIdentity,
     Contacts.ContactsField,
     Extensions.Extension,
     Flows,
@@ -112,6 +114,45 @@ defmodule Glific.Fixtures do
       |> Contacts.create_contact()
 
     contact
+  end
+
+  @doc false
+  @spec contact_without_phone_fixture(map()) :: Contact.t()
+  def contact_without_phone_fixture(attrs \\ %{}) do
+    valid_attrs = %{
+      name: Person.name(),
+      status: :valid,
+      bsp_status: :none,
+      contact_type: nil,
+      organization_id: get_org_id(),
+      language_id: 1
+    }
+
+    %Contact{}
+    |> Contact.changeset(Enum.into(attrs, valid_attrs))
+    |> Repo.insert!()
+  end
+
+  @doc false
+  @spec contact_identity_fixture(map()) :: ContactIdentity.t()
+  def contact_identity_fixture(attrs \\ %{}) do
+    organization_id = Map.get(attrs, :organization_id, get_org_id())
+
+    contact_id =
+      Map.get_lazy(attrs, :contact_id, fn ->
+        contact_without_phone_fixture(%{organization_id: organization_id}).id
+      end)
+
+    valid_attrs = %{
+      contact_id: contact_id,
+      organization_id: organization_id,
+      channel: :web,
+      identifier: "user_#{System.unique_integer([:positive])}"
+    }
+
+    %ContactIdentity{}
+    |> ContactIdentity.changeset(Enum.into(attrs, valid_attrs))
+    |> Repo.insert!()
   end
 
   @doc false
