@@ -4,6 +4,7 @@ defmodule Glific.AI.ToolsTest do
   alias Glific.{
     AI.Tools,
     AI.Tools.Reference,
+    Docs.Index,
     Fixtures,
     Flows.Flow,
     Flows.FlowRevision,
@@ -64,7 +65,7 @@ defmodule Glific.AI.ToolsTest do
   defp modules, do: Tools.modules() ++ [Misbehaving]
 
   setup do
-    Glific.Docs.Index.warm()
+    Index.warm()
     user = Fixtures.user_fixture(%{organization_id: 1})
     flow = Fixtures.flow_fixture(%{organization_id: 1, name: "Registration flow"})
     contact = Fixtures.contact_fixture(%{organization_id: 1})

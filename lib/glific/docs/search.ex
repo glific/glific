@@ -19,6 +19,13 @@ defmodule Glific.Docs.Search do
 
   @leg_depth 30
 
+  # Floors, without which either leg answers any string at all. An off-topic
+  # question tops out near 0.44 cosine and 4 points of overlap, where a real one
+  # starts around 0.52 and 5: one stray word — "today" against a calendar
+  # section — is a point of overlap and nothing more.
+  @minimum_similarity 0.45
+  @minimum_overlap 5
+
   # A heading states what its section answers.
   @heading_weight 4
 
@@ -57,7 +64,12 @@ defmodule Glific.Docs.Search do
     |> Enum.map(fn {{chunk, legs}, rank} -> %{chunk: chunk, rank: rank, legs: legs} end)
   end
 
-  @doc "The lexical leg on its own."
+  @doc """
+  The lexical leg on its own.
+
+  A one-word query is held to a heading match rather than to the full floor,
+  since that is the most it can score.
+  """
   @spec lexical_leg(String.t(), [Index.entry()]) :: [Chunk.t()]
   def lexical_leg(question, entries) do
     terms = terms(question)
@@ -65,9 +77,11 @@ defmodule Glific.Docs.Search do
     if terms == [] do
       []
     else
+      floor = min(@minimum_overlap, @heading_weight * length(terms))
+
       entries
       |> Enum.map(&{overlap(&1.chunk, terms), &1.chunk})
-      |> Enum.reject(&(elem(&1, 0) == 0))
+      |> Enum.filter(&(elem(&1, 0) >= floor))
       |> Enum.sort_by(fn {score, chunk} -> {-score, byte_size(chunk.body)} end)
       |> Enum.take(@leg_depth)
       |> Enum.map(&elem(&1, 1))
@@ -88,7 +102,9 @@ defmodule Glific.Docs.Search do
 
   def semantic_leg(_question, entries, vector) do
     entries
+    |> Enum.reject(&is_nil(&1.vector))
     |> Enum.map(&{Index.similarity(&1.vector, vector), &1.chunk})
+    |> Enum.filter(&(elem(&1, 0) >= @minimum_similarity))
     |> Enum.sort_by(&(-elem(&1, 0)))
     |> Enum.take(@leg_depth)
     |> Enum.map(&elem(&1, 1))

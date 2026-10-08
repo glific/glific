@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.Glific.Docs.Index do
-  @shortdoc "Embeds the shipped documentation into priv/glific_ai/embeddings.etf"
+  @shortdoc "Embeds the shipped documentation into priv/docs_kb/embeddings.etf"
 
   @moduledoc """
   Rebuilds the documentation embedding artifact.

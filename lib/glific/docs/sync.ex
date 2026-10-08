@@ -18,23 +18,37 @@ defmodule Glific.Docs.Sync do
   @doc """
   Downloads every document, returning which ones changed.
 
-  An unchanged file is left alone so its chunks keep their hashes and the next
+  Nothing is written until every document has arrived, so a failure halfway
+  through cannot leave the corpus half from one revision and half from another.
+  An unchanged file is left alone, so its chunks keep their hashes and the next
   index reuses their embeddings.
   """
   @spec run() :: {:ok, %{changed: [String.t()], unchanged: [String.t()]}} | {:error, term()}
   def run do
-    Indexer.documents()
-    |> Enum.reduce_while({[], []}, fn document, {changed, unchanged} ->
+    with {:ok, fetched} <- fetch_all(Indexer.documents()) do
+      {:ok, Enum.reduce(fetched, %{changed: [], unchanged: []}, &write/2)}
+    end
+  end
+
+  # A test supplies a plug here rather than reaching GitHub.
+  defp request_options do
+    Keyword.merge(
+      [retry: :transient, max_retries: 2],
+      Application.get_env(:glific, :docs_sync_request_options, [])
+    )
+  end
+
+  @spec fetch_all([String.t()]) :: {:ok, [{String.t(), String.t()}]} | {:error, String.t()}
+  defp fetch_all(documents) do
+    Enum.reduce_while(documents, {:ok, []}, fn document, {:ok, acc} ->
       case fetch(document) do
-        {:ok, :changed} -> {:cont, {[document | changed], unchanged}}
-        {:ok, :unchanged} -> {:cont, {changed, [document | unchanged]}}
-        {:error, reason} -> {:halt, {:error, document, reason}}
+        {:ok, body} ->
+          {:cont, {:ok, [{document, body} | acc]}}
+
+        {:error, reason} ->
+          {:halt, {:error, "#{document}: #{SafeLog.safe_inspect(reason)}"}}
       end
     end)
-    |> case do
-      {:error, document, reason} -> {:error, "#{document}: #{SafeLog.safe_inspect(reason)}"}
-      {changed, unchanged} -> {:ok, %{changed: changed, unchanged: unchanged}}
-    end
   end
 
   @doc "Where a document is read from."
@@ -43,21 +57,21 @@ defmodule Glific.Docs.Sync do
     do: "https://raw.githubusercontent.com/#{@repository}/#{@branch}/#{document}.md"
 
   defp fetch(document) do
-    case Req.get(url(document), retry: :transient, max_retries: 2) do
-      {:ok, %{status: 200, body: body}} when is_binary(body) -> write(document, body)
+    case Req.get(url(document), request_options()) do
+      {:ok, %{status: 200, body: body}} when is_binary(body) -> {:ok, body}
       {:ok, %{status: status}} -> {:error, "HTTP #{status}"}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp write(document, body) do
+  defp write({document, body}, acc) do
     path = Path.join([File.cwd!(), "priv", "docs_kb", "#{document}.md"])
 
     if File.exists?(path) and File.read!(path) == body do
-      {:ok, :unchanged}
+      Map.update!(acc, :unchanged, &[document | &1])
     else
       File.write!(path, body)
-      {:ok, :changed}
+      Map.update!(acc, :changed, &[document | &1])
     end
   end
 end

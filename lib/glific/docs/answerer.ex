@@ -127,8 +127,19 @@ defmodule Glific.Docs.Answerer do
 
   defp truncate(body) when byte_size(body) <= @max_context_body, do: body
 
-  defp truncate(body),
-    do: binary_part(body, 0, @max_context_body) <> "\n… (section continues)"
+  defp truncate(body) do
+    body
+    |> binary_part(0, @max_context_body)
+    |> whole_characters()
+    |> Kernel.<>("\n… (section continues)")
+  end
+
+  # The cut lands mid-character whenever a multibyte one spans the boundary.
+  defp whole_characters(binary) do
+    if String.valid?(binary),
+      do: binary,
+      else: binary |> binary_part(0, byte_size(binary) - 1) |> whole_characters()
+  end
 
   # The question never enters the payload: a support message carries names and
   # phone numbers, and telemetry handlers log.

@@ -36,26 +36,47 @@ defmodule Glific.Docs.Chunker do
   defp nodes(markdown) do
     markdown
     |> String.split("\n")
-    |> Enum.reduce({[], false}, &collect/2)
+    |> Enum.reduce({[], nil}, &collect/2)
     |> elem(0)
     |> Enum.reverse()
     |> Enum.map(fn {level, title, lines} -> {level, title, Enum.reverse(lines)} end)
   end
 
-  # `{nodes, inside_a_fence?}` — a heading seen while fenced is example text.
-  defp collect(line, {acc, fenced?}) do
-    cond do
-      String.starts_with?(line, "```") ->
-        {prepend(acc, line), not fenced?}
+  # `{nodes, open_fence}` — a heading seen inside a fence is example text.
+  defp collect(line, {acc, fence}) do
+    marker = fence_marker(line)
 
-      not fenced? and Regex.run(~r/^(\#+)\s+(\S.*)$/, line) != nil ->
+    cond do
+      is_nil(fence) and marker != nil ->
+        {prepend(acc, line), marker}
+
+      fence != nil ->
+        {prepend(acc, line), if(closes?(fence, marker, line), do: nil, else: fence)}
+
+      Regex.run(~r/^(\#+)\s+(\S.*)$/, line) != nil ->
         [_, hashes, title] = Regex.run(~r/^(\#+)\s+(\S.*)$/, line)
-        {[{String.length(hashes), String.trim(title), []} | acc], fenced?}
+        {[{String.length(hashes), String.trim(title), []} | acc], fence}
 
       true ->
-        {prepend(acc, line), fenced?}
+        {prepend(acc, line), fence}
     end
   end
+
+  @spec fence_marker(String.t()) :: {String.t(), pos_integer()} | nil
+  defp fence_marker(line) do
+    case Regex.run(~r/^\s{0,3}(`{3,}|~{3,})/, line) do
+      [_, run] -> {String.first(run), String.length(run)}
+      nil -> nil
+    end
+  end
+
+  # A fence closes only on its own character, at least as long, and alone on its line.
+  defp closes?(_open, nil, _line), do: false
+
+  defp closes?({char, length}, {char, closing}, line) when closing >= length,
+    do: String.trim(line) == String.duplicate(char, closing)
+
+  defp closes?(_open, _marker, _line), do: false
 
   defp prepend([], _line), do: []
   defp prepend([{level, title, lines} | rest], line), do: [{level, title, [line | lines]} | rest]

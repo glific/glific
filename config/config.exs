@@ -264,13 +264,13 @@ config :glific, Glific.AI.Agent,
   max_run_cost_usd: "0.50",
   max_run_duration_ms: 120_000
 
-# Import environment specific config. This must remain at the bottom
-# of this file so it overrides the configuration defined above.
-import_config "#{Mix.env()}.exs"
-
 # The documentation assistant. The embedding model and width must match what
 # `mix glific.docs.index` last wrote, or the stored vectors rank at random.
 config :glific, Glific.Docs,
   embedding_model: "openai:text-embedding-3-small",
   embedding_dimensions: 256,
   answer_model: "anthropic:claude-haiku-4-5"
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
+import_config "#{Mix.env()}.exs"

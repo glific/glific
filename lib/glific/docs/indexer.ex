@@ -20,8 +20,6 @@ defmodule Glific.Docs.Indexer do
     glific_chatbot_knowledge_base
     glific_platform_guide
     glific_operations_manual
-    diagnose_playbook
-    bigquery_tables
   )
 
   @source_dir "docs_kb"
@@ -103,10 +101,21 @@ defmodule Glific.Docs.Indexer do
   @spec dimensions() :: pos_integer()
   def dimensions, do: config(:embedding_dimensions, 256)
 
-  @doc "Embeds one piece of text the same way the artifact was built."
+  @doc """
+  Embeds one piece of text the way the artifact was built.
+
+  Reads the model and width back from the artifact rather than from config: a
+  build run with `--model` or `--dimensions` stores vectors those options chose,
+  and comparing them against a query embedded by a different model ranks at
+  random rather than failing.
+  """
   @spec embed(String.t()) :: {:ok, binary()} | {:error, term()}
   def embed(text) do
-    case ReqLLM.embed(model(), text, embed_opts()) do
+    metadata = Index.metadata()
+    model = Map.get(metadata, :model, model())
+    dimensions = Map.get(metadata, :dimensions, dimensions())
+
+    case ReqLLM.embed(model, text, embed_opts(dimensions)) do
       {:ok, floats} when is_list(floats) -> {:ok, Index.pack(floats)}
       {:error, reason} -> {:error, reason}
     end
@@ -114,10 +123,11 @@ defmodule Glific.Docs.Indexer do
 
   # Glific holds the OpenAI key as OPEN_AI_KEY; req_llm looks for
   # OPENAI_API_KEY. Passed per call so no deployment needs it twice.
-  @spec embed_opts(pos_integer() | nil) :: keyword()
-  defp embed_opts(dimensions \\ nil) do
-    [provider_options: [dimensions: dimensions || dimensions()]]
+  @spec embed_opts(pos_integer()) :: keyword()
+  defp embed_opts(dimensions) do
+    [provider_options: [dimensions: dimensions]]
     |> then(&if(key = api_key(), do: Keyword.put(&1, :api_key, key), else: &1))
+    |> Keyword.merge(Application.get_env(:glific, :docs_embedding_request_options, []))
   end
 
   defp api_key do

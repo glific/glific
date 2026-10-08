@@ -38,10 +38,20 @@ defmodule Glific.AI.Tools.DocumentationTest do
     end
 
     test "a query matching nothing is an error the model can act on", %{user: user} do
+      # Both legs have to come back empty for this: the lexical one because no
+      # term matches, the semantic one because nothing clears the floor.
       assert {:error, message} =
                Tools.run("search_documentation", %{"query" => "zzzqqq unrelatedtoglific"}, user)
 
       assert message =~ "Nothing in the documentation"
+    end
+
+    test "an off-topic question does not come back with sections anyway", %{user: user} do
+      for question <- ["what is the weather in Mumbai today", "write me a poem about cats"] do
+        assert {:error, _message} =
+                 Tools.run("search_documentation", %{"query" => question}, user),
+               question
+      end
     end
 
     test "it returns sections rather than a composed answer", %{user: user} do

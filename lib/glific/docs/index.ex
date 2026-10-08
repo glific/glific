@@ -10,18 +10,19 @@ defmodule Glific.Docs.Index do
   similarity a plain dot product.
 
   `mix glific.docs.index` writes the artifact, so boot needs no embedding
-  provider. Without it the index is empty and search falls back to its lexical
-  leg rather than failing.
+  provider. Without it the documents are chunked at boot and carry no vectors,
+  which leaves the lexical leg of a search working and the semantic leg silent.
   """
 
   require Logger
 
-  alias Glific.Docs.Chunk
+  alias Glific.Docs.{Chunk, Indexer}
 
   @index_key {__MODULE__, :entries}
   @artifact "docs_kb/embeddings.etf"
 
-  @type entry() :: %{chunk: Chunk.t(), vector: binary()}
+  @typedoc "A chunk and its vector. `vector` is nil when no artifact was built."
+  @type entry() :: %{chunk: Chunk.t(), vector: binary() | nil}
 
   @doc "Reads the artifact into `:persistent_term`. Called once on boot."
   @spec warm() :: :ok
@@ -30,7 +31,7 @@ defmodule Glific.Docs.Index do
     :ok
   end
 
-  @doc "Every indexed chunk with its vector, or `[]` when no artifact has been built."
+  @doc "Every indexed chunk with its vector."
   @spec entries() :: [entry()]
   def entries, do: :persistent_term.get(@index_key, nil) || read_artifact()
 
@@ -72,12 +73,19 @@ defmodule Glific.Docs.Index do
     for value <- floats, into: <<>>, do: <<value / divisor::float-32-little>>
   end
 
-  @doc "Cosine similarity of two packed vectors."
+  @doc """
+  Cosine similarity of two packed vectors.
+
+  Returns `0.0` for vectors of different widths: they come from different
+  embedding models, and scoring the overlap would rank them at random.
+  """
   @spec similarity(binary(), binary()) :: float()
-  def similarity(left, right), do: dot(left, right, 0.0)
+  def similarity(left, right) when byte_size(left) == byte_size(right),
+    do: dot(left, right, 0.0)
+
+  def similarity(_left, _right), do: 0.0
 
   defp dot(<<>>, _right, acc), do: acc
-  defp dot(_left, <<>>, acc), do: acc
 
   defp dot(<<a::float-32-little, left::binary>>, <<b::float-32-little, right::binary>>, acc),
     do: dot(left, right, acc + a * b)
@@ -94,7 +102,17 @@ defmodule Glific.Docs.Index do
 
       {:error, reason} ->
         Logger.info("docs index not built (#{reason}); semantic search is disabled")
-        []
+        unembedded()
     end
+  end
+
+  # Chunking the markdown costs a few hundred milliseconds and no network, so a
+  # deployment that never ran the task still answers from the lexical leg.
+  defp unembedded do
+    Enum.map(Indexer.all_chunks(), &%{chunk: &1, vector: nil})
+  rescue
+    exception ->
+      Logger.warning("docs could not be chunked: #{Exception.message(exception)}")
+      []
   end
 end

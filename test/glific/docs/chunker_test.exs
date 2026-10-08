@@ -117,6 +117,44 @@ defmodule Glific.Docs.ChunkerTest do
   end
 
   describe "code fences" do
+    test "a longer fence is not closed by a shorter one" do
+      markdown = """
+      ## 1.1 Nested example
+
+      #{String.duplicate("Prose long enough for this section to stand alone. ", 5)}
+
+      ````markdown
+      ```elixir
+      # still inside the outer fence
+      ```
+      ## Not a heading
+      ````
+
+      #{String.duplicate("Prose after the example, also long enough. ", 5)}
+      """
+
+      assert [chunk] = Chunker.chunk(markdown, "doc")
+      assert chunk.body =~ "## Not a heading"
+      assert chunk.body =~ "Prose after the example"
+    end
+
+    test "a tilde fence hides a heading too" do
+      markdown = """
+      ## 1.1 Tilde example
+
+      #{String.duplicate("Prose long enough for this section to stand alone. ", 5)}
+
+      ~~~
+      ## Not a heading either
+      ~~~
+
+      #{String.duplicate("Prose after the example, also long enough. ", 5)}
+      """
+
+      assert [chunk] = Chunker.chunk(markdown, "doc")
+      assert chunk.body =~ "## Not a heading either"
+    end
+
     test "a # inside a fence is not a heading" do
       markdown = """
       ## 1.1 Running the indexer
@@ -198,7 +236,7 @@ defmodule Glific.Docs.ChunkerTest do
   end
 
   describe "the other shipped documents" do
-    for document <- ~w(glific_platform_guide glific_operations_manual diagnose_playbook) do
+    for document <- ~w(glific_platform_guide glific_operations_manual) do
       test "#{document} chunks without losing its headings" do
         document = unquote(document)
         path = Application.app_dir(:glific, "priv/docs_kb/#{document}.md")
