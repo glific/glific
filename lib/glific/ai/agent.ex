@@ -193,7 +193,11 @@ defmodule Glific.AI.Agent do
           map()
         ) :: outcome()
   defp handle_reply(message, _user, _messages, %ChatMessage{tool_calls: []} = reply, run, _ctx) do
-    event = append(message, :assistant, reply.content, turn_usage(run), nil, run.step)
+    event =
+      run
+      |> turn_usage()
+      |> then(&append(message, :assistant, reply.content, &1, nil, run.step))
+
     {:ok, reply.content || "", %{run | answer_event_id: event.id}}
   end
 
@@ -213,14 +217,9 @@ defmodule Glific.AI.Agent do
     Enum.each(numbered, fn {call, index} ->
       usage = if index == 0, do: turn_usage(run), else: %{}
 
-      append(
-        message,
-        :tool_call,
-        call.name,
-        Map.merge(%{"arguments" => call.args}, usage),
-        call.id,
-        run.step + index * 2
-      )
+      %{"arguments" => call.args}
+      |> Map.merge(usage)
+      |> then(&append(message, :tool_call, call.name, &1, call.id, run.step + index * 2))
     end)
 
     results =
