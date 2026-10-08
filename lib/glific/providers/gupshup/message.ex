@@ -7,6 +7,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   alias Glific.{
     Communications,
+    Contacts,
     Messages.Message,
     Partners,
     Repo
@@ -270,10 +271,17 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t() | String.t() | :no_phone}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
+    with {:ok, destination} <- Contacts.whatsapp_phone(message.receiver),
+         do: do_send_message(payload, message, attrs, destination)
+  end
+
+  @spec do_send_message(map(), Message.t(), map(), String.t()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  defp do_send_message(payload, message, attrs, destination) do
     # sending the node reference also with message, so that we can track when we
     # receive the response incase of a particular message
     payload = Map.put(payload, "msgid", message.uuid)
@@ -281,7 +289,7 @@ defmodule Glific.Providers.Gupshup.Message do
     request_body =
       %{"channel" => @channel}
       |> Map.merge(format_sender(message))
-      |> Map.put(:destination, message.receiver.phone)
+      |> Map.put(:destination, destination)
       |> Map.put("message", Jason.encode!(payload))
 
     ## gupshup does not allow null in the caption.

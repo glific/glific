@@ -26,42 +26,36 @@ defmodule Glific.Communications.WebMessage do
   alias GlificWeb.WebChannel.Flag
 
   @doc """
-  Callback when we receive a message from a browser contact over the web channel.
+  Callback when we receive a message from the contact the web socket authenticated.
 
-  Contacts are shared across channels — this creates/reuses the contact by phone the same way
-  WhatsApp inbound does. It never calls `Contacts.set_session_status/2`: that tracks the
-  WhatsApp 24-hour session window, which has no meaning for a channel with no BSP.
+  It never calls `Contacts.set_session_status/2`: that tracks the WhatsApp 24-hour session window,
+  which has no meaning for a channel with no BSP.
   """
-  @spec receive_message(map(), atom()) ::
+  @spec receive_message(Contact.t(), map(), atom()) ::
           {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
-  def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
+  def receive_message(%Contact{} = contact, message_params, type \\ :text) do
+    message_params =
+      message_params
+      |> Map.merge(create_message_metadata(contact))
+      |> Map.merge(%{
+        type: type,
+        flow: :inbound,
+        channel: :web,
+        bsp_status: :delivered,
+        status: :received
+      })
+
     # Returns rather than raises throughout: the caller is a socket handler, and a raise there
     # takes the channel down instead of replying.
-    with {:ok, contact} <-
-           message_params.sender
-           |> Map.put(:organization_id, organization_id)
-           |> Contacts.maybe_create_contact() do
-      message_params =
-        message_params
-        |> Map.merge(create_message_metadata(contact, message_params))
-        |> Map.merge(%{
-          type: type,
-          flow: :inbound,
-          channel: :web,
-          bsp_status: :delivered,
-          status: :received
-        })
+    result =
+      case type do
+        :text -> receive_text(message_params)
+        :location -> receive_location(message_params)
+        _media -> receive_media(message_params)
+      end
 
-      result =
-        case type do
-          :text -> receive_text(message_params)
-          :location -> receive_location(message_params)
-          _media -> receive_media(message_params)
-        end
-
-      hand_to_flow_engine(result, organization_id)
-      result
-    end
+    hand_to_flow_engine(result, contact.organization_id)
+    result
   end
 
   # Flag-gated: with the web channel off, a web message is still persisted and shown in the
@@ -164,12 +158,12 @@ defmodule Glific.Communications.WebMessage do
     |> Communications.publish_data(:received_message, organization_id)
   end
 
-  @spec create_message_metadata(Contact.t(), map()) :: map()
-  defp create_message_metadata(contact, message_params) do
+  @spec create_message_metadata(Contact.t()) :: map()
+  defp create_message_metadata(contact) do
     %{
       sender_id: contact.id,
       contact_id: contact.id,
-      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      receiver_id: Partners.organization_contact_id(contact.organization_id),
       organization_id: contact.organization_id
     }
   end

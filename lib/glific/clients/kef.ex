@@ -62,12 +62,12 @@ defmodule Glific.Clients.KEF do
         # KEF wants media coming through campaign flow to have
         # a different GCS files structure
         if media["flow_id"] == @campaign_flow_id do
-          "#{get_campaign_folder_structure(contact.fields)}#{media_subfolder}/#{generate_filename(media["remote_name"], contact.phone)}"
+          "#{get_campaign_folder_structure(contact.fields)}#{media_subfolder}/#{generate_filename(media["remote_name"], Contacts.file_key(contact))}"
         else
           folder_structure = get_folder_structure(media, contact_type, contact.fields)
 
           "2024/#{folder_structure}/#{media_subfolder}/" <>
-            generate_filename(media["remote_name"], contact.phone)
+            generate_filename(media["remote_name"], Contacts.file_key(contact))
         end
 
       {:error, _} ->
@@ -625,10 +625,10 @@ defmodule Glific.Clients.KEF do
 
   # We need the ending part of the file name to be phonenumber
   @spec generate_filename(String.t(), String.t()) :: String.t()
-  defp generate_filename(remote_name, phone_number) do
+  defp generate_filename(remote_name, file_key) do
     [datetime, _, _, message_id] = String.split(remote_name, "_")
     [message_id, ext] = String.split(message_id, ".")
-    datetime <> "_" <> message_id <> "_" <> phone_number <> "." <> ext
+    datetime <> "_" <> message_id <> "_" <> file_key <> "." <> ext
   end
 
   @spec get_campaign_folder_structure(map()) :: String.t()
