@@ -5,7 +5,9 @@ defmodule Glific.Providers.Gupshup.WorkerTest do
   alias Glific.Caches
   alias Glific.Fixtures
   alias Glific.Messages
+  alias Glific.Messages.Message
   alias Glific.Providers.Gupshup.V3
+  alias Glific.Providers.Gupshup.Worker
   alias Glific.Settings.Language
   alias Glific.Templates.SessionTemplate
 
@@ -84,6 +86,39 @@ defmodule Glific.Providers.Gupshup.WorkerTest do
     sent_message = Messages.get_message!(message.id)
     assert sent_message.bsp_message_id == "gupshup-v3-id"
     assert sent_message.bsp_status == :enqueued
+
+    FunWithFlags.disable(:is_gupshup_v3_template_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+  end
+
+  test "a V3 send with a translation that no longer exists marks the message errored",
+       %{organization_id: organization_id, template: template, contact: contact} do
+    FunWithFlags.enable(:is_gupshup_v3_template_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+
+    Req.Test.stub(V3.ApiClient, fn _conn -> flunk("no V3 request should be sent") end)
+
+    message = Fixtures.message_fixture(%{flow: :outbound, receiver_id: contact.id})
+    message_args = message |> Message.to_minimal_map() |> Jason.encode!() |> Jason.decode!()
+
+    assert :ok =
+             perform_job(Worker, %{
+               "message" => message_args,
+               "payload" => %{"destination" => contact.phone},
+               "attrs" => %{
+                 "is_hsm" => true,
+                 "button_type" => "whatsapp_form",
+                 "template_id" => template.id,
+                 "template_uuid" => Ecto.UUID.generate(),
+                 "template_type" => "text",
+                 "params" => ["Asha"]
+               },
+               "organization_id" => organization_id
+             })
+
+    assert Messages.get_message!(message.id).bsp_status == :error
 
     FunWithFlags.disable(:is_gupshup_v3_template_enabled,
       for_actor: %{organization_id: organization_id}
