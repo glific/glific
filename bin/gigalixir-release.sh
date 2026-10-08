@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 #
-# gigalixir-release.sh - drive a version bump through PR, GitHub release and deploy.
+# gigalixir-release.sh - drive a version bump, GitHub release and deploy.
 #
-# Replaces the manual production release checklist. Stops at three confirmations
-# (bump, merge, deploy) and refuses to continue when the repo is not in a clean,
-# up-to-date state. Ends by handing off to gigalixir-verify-deploy.sh, so the
-# release is not "done" until the app has held the new version for five minutes.
+# Replaces the manual production release checklist. Stops at two confirmations
+# (bump, deploy) and refuses to continue when the repo is not in a clean,
+# up-to-date state. The bump commit is pushed to master by the bump-version
+# workflow (a GitHub App on the ruleset bypass list), so no admin rights are
+# needed. Ends by handing off to gigalixir-verify-deploy.sh, so the release is
+# not "done" until the app has held the new version for five minutes.
 #
 # Works in both glific (mix.exs) and glific-frontend (package.json).
 #
@@ -34,12 +36,14 @@ ENV_NAME="" APP="" REMOTE="" NEW_VERSION="" BUMP="" RELEASE_TITLE=""
 BASE_BRANCH="master" DRY_RUN=0 ASSUME_YES=0
 SKIP_RELEASE=0 SKIP_VERIFY=0
 STABLE_WINDOW=300
+BUMP_TIMEOUT=600
+readonly BUMP_WORKFLOW="bump-version.yml"
 
-CURRENT_VERSION="" VERSION_FILE="" PROJECT_KIND=""
-BRANCH="" PR_NUMBER="" DEPLOY_SHA=""
+CURRENT_VERSION="" VERSION_FILE="" VERSION_PATTERN="" PROJECT_KIND=""
+DEPLOY_SHA=""
 DISCORD_WEBHOOK=""
 
-usage() { sed -n '2,19p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
+usage() { sed -n '2,21p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
 
 die() {
   printf '\n%s\n' "error: $*" >&2
@@ -74,7 +78,6 @@ confirm() {
 
 abort() {
   printf '\nAborted%s.\n' "${1:+ - $1}"
-  [ -n "$BRANCH" ] && printf 'Branch %s may still exist locally and on origin.\n' "$BRANCH"
   exit 1
 }
 
@@ -115,18 +118,21 @@ parse_args() {
   [ -n "$REMOTE" ] || die "--remote could not be resolved; pass it explicitly"
 }
 
+read_version() { grep -m1 -E "$VERSION_PATTERN" | sed -E 's/.*"([^"]+)".*/\1/'; }
+
 detect_project() {
   if [ -f mix.exs ]; then
     PROJECT_KIND="elixir"
     VERSION_FILE="mix.exs"
-    CURRENT_VERSION=$(grep -m1 -E '^\s*version: *"[0-9]' mix.exs | sed -E 's/.*"([^"]+)".*/\1/')
+    VERSION_PATTERN='^\s*version: *"[0-9]'
   elif [ -f package.json ]; then
     PROJECT_KIND="node"
     VERSION_FILE="package.json"
-    CURRENT_VERSION=$(grep -m1 -E '^\s*"version": *"[0-9]' package.json | sed -E 's/.*"([^"]+)".*/\1/')
+    VERSION_PATTERN='^\s*"version": *"[0-9]'
   else
     die "no mix.exs or package.json here - run this from the repo root"
   fi
+  CURRENT_VERSION=$(read_version <"$VERSION_FILE")
 
   [[ "$CURRENT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] \
     || die "could not read a semver out of ${VERSION_FILE} (got '${CURRENT_VERSION}')"
@@ -208,112 +214,46 @@ choose_version() {
 
   git rev-parse -q --verify "refs/tags/v${NEW_VERSION}" >/dev/null \
     && die "tag v${NEW_VERSION} already exists locally"
-
-  # A leftover branch from an earlier aborted run would make `git checkout -b` fail;
-  # suffix -2, -3, ... until we find a name free both locally and on origin.
-  BRANCH="chore/bump-version-${NEW_VERSION}"
-  local suffix=2
-  while git rev-parse --verify --quiet "refs/heads/${BRANCH}" >/dev/null \
-        || git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; do
-    BRANCH="chore/bump-version-${NEW_VERSION}-${suffix}"
-    suffix=$((suffix + 1))
-  done
 }
 
-# Rewrites only the first version line, then proves exactly one file and one line
-# changed. A stray sed match in a 300-line mix.exs is not something to discover
-# after the PR is merged.
-write_version() {
-  local line_no
-  if [ "$PROJECT_KIND" = "elixir" ]; then
-    line_no=$(grep -n -m1 -E '^\s*version: *"[0-9]' "$VERSION_FILE" | cut -d: -f1)
-  else
-    line_no=$(grep -n -m1 -E '^\s*"version": *"[0-9]' "$VERSION_FILE" | cut -d: -f1)
-  fi
-  [ -n "$line_no" ] || die "could not locate the version line in ${VERSION_FILE}"
-
-  if [ "$DRY_RUN" -eq 1 ]; then
-    printf '  [dry-run] %s:%s  %s -> %s\n' "$VERSION_FILE" "$line_no" "$CURRENT_VERSION" "$NEW_VERSION"
-    return 0
-  fi
-
-  sed -i.bak "${line_no}s/${CURRENT_VERSION}/${NEW_VERSION}/" "$VERSION_FILE" || die "sed failed"
-  rm -f "${VERSION_FILE}.bak"
-
-  local changed
-  changed=$(git diff --name-only)
-  [ "$changed" = "$VERSION_FILE" ] || die "expected only ${VERSION_FILE} to change, got: ${changed:-nothing}"
-  [ "$(git diff --numstat | awk '{print $1"/"$2}')" = "1/1" ] \
-    || die "expected a one-line change in ${VERSION_FILE}; run 'git diff' and reset"
-
-  log "${VERSION_FILE}:${line_no}  ${CURRENT_VERSION} -> ${NEW_VERSION}"
-}
-
-open_pr() {
-  step "Pull request"
-
-  local title="Bump version from ${CURRENT_VERSION} to ${NEW_VERSION}"
+trigger_bump() {
+  step "Version bump"
 
   cat <<EOF
 
   -- About to do -----------------------------------
-   branch   ${BRANCH}
+   trigger  ${BUMP_WORKFLOW} on ${BASE_BRANCH}
    change   ${VERSION_FILE}  ${CURRENT_VERSION} -> ${NEW_VERSION}
-   push     origin ${BRANCH}
-   PR       "${title}" into ${BASE_BRANCH}
+   commit   pushed to ${BASE_BRANCH} by the release bot
   --------------------------------------------------
 EOF
-  confirm "Create this bump PR?" || abort "declined at the bump step"
+  confirm "Bump ${BASE_BRANCH} to ${NEW_VERSION}?" || abort "declined at the bump step"
 
-  run git checkout -b "$BRANCH" || die "could not create branch ${BRANCH}"
-  write_version
-  run git add "$VERSION_FILE"
-  run git commit -m "$title" || die "commit failed"
-  run git push --set-upstream origin "$BRANCH" || die "push failed"
+  run gh workflow run "$BUMP_WORKFLOW" --ref "$BASE_BRANCH" -f version="$NEW_VERSION" \
+    || die "could not trigger the ${BUMP_WORKFLOW} workflow"
+}
+
+wait_for_bump() {
+  step "Wait for bump"
 
   if [ "$DRY_RUN" -eq 1 ]; then
-    log "[dry-run] gh pr create --base ${BASE_BRANCH} --head ${BRANCH} --title '${title}'"
-    PR_NUMBER="DRYRUN"
+    log "[dry-run] wait for origin/${BASE_BRANCH} to reach ${NEW_VERSION}"
+    DEPLOY_SHA=$(git rev-parse HEAD)
     return 0
   fi
 
-  gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$title" \
-    --body "Version bump ${CURRENT_VERSION} -> ${NEW_VERSION}, opened by bin/gigalixir-release.sh." \
-    || die "gh pr create failed"
+  log "waiting up to ${BUMP_TIMEOUT}s for origin/${BASE_BRANCH} to reach ${NEW_VERSION}"
+  local deadline=$((SECONDS + BUMP_TIMEOUT))
+  until git fetch --quiet origin "$BASE_BRANCH" \
+        && [ "$(git show "origin/${BASE_BRANCH}:${VERSION_FILE}" | read_version)" = "$NEW_VERSION" ]; do
+    [ "$SECONDS" -lt "$deadline" ] \
+      || die "${BASE_BRANCH} not bumped after ${BUMP_TIMEOUT}s - check the ${BUMP_WORKFLOW} workflow run"
+    sleep 10
+  done
 
-  PR_NUMBER=$(gh pr view "$BRANCH" --json number -q .number) || die "could not read the new PR number"
-  log "opened PR #${PR_NUMBER}"
-}
-
-
-merge_pr() {
-  step "Merge"
-
-  cat <<EOF
-
-  -- About to do -----------------------------------
-   merge    PR #${PR_NUMBER} (squash) into ${BASE_BRANCH}
-   delete   branch ${BRANCH}
-EOF
-  [ "$ENV_NAME" = "staging" ] && printf '   note     merging may also trigger the CI deploy to staging\n'
-  printf -- '  --------------------------------------------------\n'
-
-  confirm "Merge PR #${PR_NUMBER}?" || abort "declined at the merge step"
-
-  # Always --admin: a version-bump PR does not wait for CI/reviews. Requires admin or
-  run gh pr merge "$PR_NUMBER" --squash --delete-branch --admin \
-    || die "gh pr merge failed (need admin/bypass permission on ${BASE_BRANCH})"
-
-  run git checkout "$BASE_BRANCH" || die "could not switch back to ${BASE_BRANCH}"
-  run git pull --ff-only origin "$BASE_BRANCH" || die "git pull failed"
-
-  if [ "$DRY_RUN" -eq 1 ]; then
-    DEPLOY_SHA=$(git rev-parse HEAD)
-    log "[dry-run] would now be at the squashed merge commit"
-  else
-    DEPLOY_SHA=$(git rev-parse HEAD)
-    log "merged; ${BASE_BRANCH} is now at ${DEPLOY_SHA:0:7}"
-  fi
+  git pull --ff-only origin "$BASE_BRANCH" || die "git pull failed"
+  DEPLOY_SHA=$(git rev-parse HEAD)
+  log "bumped; ${BASE_BRANCH} is now at ${DEPLOY_SHA:0:7}"
 }
 
 create_release() {
@@ -340,7 +280,7 @@ create_release() {
   fi
 
   gh release create "$tag" --target "$BASE_BRANCH" --title "$RELEASE_TITLE" --generate-notes \
-    || die "gh release create failed (the merge is already done - fix and re-run with --skip-release once created)"
+    || die "gh release create failed (${BASE_BRANCH} is already bumped - create the release manually, then deploy)"
 
   log "released ${tag}"
 }
@@ -424,12 +364,12 @@ main() {
   [ "$DRY_RUN" -eq 1 ] && printf '\n*** DRY RUN - nothing will be changed, pushed or deployed ***\n'
   preflight
 
-  # Only production is a versioned release (bump -> PR -> merge -> GitHub release).
+  # Only production is a versioned release (bump -> GitHub release).
   # staging / frontend-staging just deploy the current master and verify - no ceremony.
   if [ "$ENV_NAME" = "production" ]; then
     choose_version
-    open_pr
-    merge_pr
+    trigger_bump
+    wait_for_bump
     create_release
   else
     DEPLOY_SHA=$(git rev-parse HEAD)
