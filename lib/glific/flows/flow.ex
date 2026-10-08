@@ -466,7 +466,7 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.size(dangling) == 0,
       do: errors,
-      else: [{dangling, "Your flow has dangling nodes", "Warning"} | errors]
+      else: [{Enum.join(dangling, ","), "Your flow has dangling nodes", "Warning"} | errors]
   end
 
   @spec missing_flow_context_nodes(list(), map(), MapSet.t()) :: list()
