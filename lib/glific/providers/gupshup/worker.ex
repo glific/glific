@@ -10,13 +10,20 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   alias Glific.{
     Contacts,
+    Flags,
     Messages.Message,
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.ResponseHandler,
-    Providers.Worker
+    Providers.Gupshup.V3,
+    Providers.Gupshup.V3.TemplatePayload,
+    Providers.Worker,
+    Repo,
+    Settings.Language,
+    Templates.SessionTemplate,
+    WhatsappFormsResponses
   }
 
   @doc """
@@ -80,17 +87,43 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   @spec process_gupshup(non_neg_integer(), map(), Message.t(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
-  defp process_gupshup(
-         org_id,
-         payload,
-         message,
-         %{
-           "is_hsm" => true,
-           "params" => params,
-           "template_uuid" => template_uuid,
-           "template_type" => template_type
-         } = _attrs
-       ) do
+  defp process_gupshup(org_id, payload, message, %{"is_hsm" => true} = attrs) do
+    cond do
+      attrs["button_type"] == "whatsapp_form" and v3_template_enabled?(org_id) ->
+        send_v3_template(org_id, payload, message, attrs)
+
+      Map.has_key?(attrs, "template_uuid") ->
+        send_v2_template(org_id, payload, message, attrs)
+
+      # is_hsm alone also marks a plain message sent as HSM; only template sends carry template_uuid.
+      true ->
+        send_message(org_id, payload, message)
+    end
+  end
+
+  defp process_gupshup(org_id, payload, message, _attrs),
+    do: send_message(org_id, payload, message)
+
+  @spec v3_template_enabled?(non_neg_integer()) :: boolean()
+  defp v3_template_enabled?(org_id) do
+    organization = Partners.organization(org_id)
+    Flags.get_flag_enabled(:is_gupshup_v3_template_enabled, organization)
+  end
+
+  @spec send_message(non_neg_integer(), map(), map()) :: :ok | {:error, String.t()}
+  defp send_message(org_id, payload, message) do
+    org_id
+    |> ApiClient.send_message(payload)
+    |> ResponseHandler.handle_response(message)
+  end
+
+  @spec send_v2_template(non_neg_integer(), map(), map(), map()) ::
+          :ok | {:error, String.t()}
+  defp send_v2_template(org_id, payload, message, %{
+         "params" => params,
+         "template_uuid" => template_uuid,
+         "template_type" => template_type
+       }) do
     template_payload =
       %{
         "source" => payload["source"],
@@ -107,13 +140,47 @@ defmodule Glific.Providers.Gupshup.Worker do
     |> ResponseHandler.handle_response(message)
   end
 
-  defp process_gupshup(org_id, payload, message, _attrs) do
-    ApiClient.send_message(
-      org_id,
-      payload
-    )
+  @spec send_v3_template(non_neg_integer(), map(), map(), map()) ::
+          :ok | {:error, String.t()}
+  defp send_v3_template(org_id, payload, message, attrs) do
+    template =
+      SessionTemplate
+      |> Repo.get!(attrs["template_id"])
+      |> Repo.preload(:language)
+
+    body =
+      TemplatePayload.build(template, %{
+        destination: payload["destination"],
+        language: template_language(template, attrs["template_uuid"]),
+        params: attrs["params"],
+        media: template_media(payload, attrs["template_type"]),
+        flow_token: WhatsappFormsResponses.encode_flow_token(message["id"])
+      })
+
+    org_id
+    |> V3.ApiClient.send_message(body)
     |> ResponseHandler.handle_response(message)
   end
+
+  # A translated template is sent with its translation's uuid, keyed by language id.
+  @spec template_language(SessionTemplate.t(), String.t()) :: String.t()
+  defp template_language(%{uuid: uuid} = template, uuid), do: template.language.locale
+
+  defp template_language(template, template_uuid) do
+    {language_id, _translation} =
+      Enum.find(template.translations, fn {_language_id, translation} ->
+        translation["uuid"] == template_uuid
+      end)
+
+    Repo.get!(Language, language_id).locale
+  end
+
+  @spec template_media(map(), String.t()) :: {String.t(), map()} | nil
+  defp template_media(payload, template_type)
+       when template_type in ["image", "video", "document"],
+       do: {template_type, create_template_type_data(payload, template_type)}
+
+  defp template_media(_payload, _template_type), do: nil
 
   @spec check_media_template(map(), map(), String.t()) :: map()
   defp check_media_template(template_payload, payload, template_type)
