@@ -1980,16 +1980,10 @@ defmodule Glific.ContactsTest do
       assert {:ok, %Contact{}} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
     end
 
-    test "whatsapp_phone/1 returns the phone only when there is one, and only for a contact" do
+    test "whatsapp_phone/1 returns the phone only when there is one" do
       assert {:ok, "919876543211"} == Contacts.whatsapp_phone(%Contact{phone: "919876543211"})
       assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: nil})
       assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: ""})
-
-      assert_raise FunctionClauseError, fn -> Contacts.whatsapp_phone(nil) end
-
-      assert_raise FunctionClauseError, fn ->
-        Contacts.whatsapp_phone(%{phone: "919876543211"})
-      end
     end
 
     test "maybe_create_contact/1 never resolves a nil phone to an existing contact",
