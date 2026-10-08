@@ -250,6 +250,22 @@ defmodule Glific.WhatsappFormResponsesTest do
       assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
     end
 
+    test "create_whatsapp_form_response/1 falls back to the context when there is no flow_token",
+         %{organization_id: organization_id} do
+      raw_response =
+        @valid_attrs_for_create.raw_response
+        |> Jason.decode!()
+        |> Map.delete("flow_token")
+        |> Jason.encode!()
+
+      attrs =
+        @valid_attrs_for_create
+        |> Map.merge(%{organization_id: organization_id, raw_response: raw_response})
+
+      assert {:ok, _whatsapp_form_response} =
+               WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+    end
+
     test "create_whatsapp_form_response/1 returns an error when the flow_token's message does not exist",
          %{organization_id: organization_id} do
       flow_token = WhatsappFormsResponses.encode_flow_token(0)

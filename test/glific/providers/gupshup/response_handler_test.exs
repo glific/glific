@@ -96,6 +96,18 @@ defmodule Glific.Providers.Gupshup.ResponseHandlerTest do
       assert reloaded.bsp_status == :error
       assert reloaded.errors == body
     end
+
+    test "4xx with a plain text body still marks the message errored" do
+      message = send_message(%{is_hsm: true})
+
+      assert :ok =
+               ResponseHandler.handle_response(
+                 {:ok, %Req.Response{status: 401, body: "Unauthorized"}},
+                 message
+               )
+
+      assert reload(message).bsp_status == :error
+    end
   end
 
   describe "handle_response/2 — transport errors" do
