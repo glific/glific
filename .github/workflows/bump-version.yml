@@ -1,0 +1,57 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version (X.Y.Z)"
+        required: true
+        type: string
+
+concurrency:
+  group: bump-version
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_KEY }}
+
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Bump the mix.exs version and push to master
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          NEW: ${{ inputs.version }}
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+
+          [[ $NEW =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "'$NEW' is not X.Y.Z"
+          OLD=$(grep -m1 -E '^\s*version: "[0-9]' mix.exs | sed -E 's/.*"([^"]+)".*/\1/')
+          [ "$OLD" != "$NEW" ] || fail "Version is already $NEW"
+          [ "$(printf '%s\n%s\n' "$OLD" "$NEW" | sort -V | tail -1)" = "$NEW" ] \
+            || fail "New version $NEW is not higher than $OLD"
+
+          sed -i -E "0,/^(\s*version: \")[0-9.]+(\",)$/s//\1${NEW}\2/" mix.exs
+          [ "$(git diff --numstat | awk '{print $1"/"$2"/"$3}')" = "1/1/mix.exs" ] \
+            || fail "Expected a one-line change to mix.exs"
+
+          BOT_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${BOT_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git commit -am "Bump version from $OLD to $NEW"
+          git push origin HEAD:master
+
+          echo "✅ Bumped $OLD -> $NEW"
