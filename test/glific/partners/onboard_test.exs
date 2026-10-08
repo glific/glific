@@ -602,15 +602,6 @@ defmodule Glific.OnboardTest do
     }
 
     Tesla.Mock.mock(fn
-      %{method: :get} ->
-        {:error,
-         %Tesla.Env{
-           status: 500,
-           body: %{
-             _server_messages: "[{\"message\":\"reason\"}]"
-           }
-         }}
-
       %{method: :post, url: _} ->
         {:ok,
          %Tesla.Env{
