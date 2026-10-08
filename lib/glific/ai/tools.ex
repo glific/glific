@@ -4,7 +4,7 @@ defmodule Glific.AI.Tools do
 
   Every tool call goes through `run/4`, the only entry point: authorisation,
   read-only enforcement and error handling are applied here rather than repeated
-  in each tool, so a new tool cannot forget them.
+  in each tool.
 
   What `run/4` guarantees:
 
@@ -15,6 +15,12 @@ defmodule Glific.AI.Tools do
       exceptions all come back as `{:error, message}` for the model to read.
     * **Results are bounded.** Each tool clamps its own `limit`, and the agent's
       step and cost ceilings bound a whole run.
+
+  One thing here is declared rather than enforced. A tool runs inside a
+  read-only transaction unless it answers `false` to `Glific.AI.Tool.reads_database?/0`,
+  which exists so a tool that issues no SQL does not hold a pooled connection to
+  prove it. A tool that opts out and then reads the database is not stopped by
+  anything in this module, so the declaration has to be true.
   """
 
   alias Glific.{AI.Tool, Repo, SafeLog, Users.User}
@@ -29,7 +35,8 @@ defmodule Glific.AI.Tools do
     Glific.AI.Tools.Triggers,
     Glific.AI.Tools.Assistants,
     Glific.AI.Tools.Groups,
-    Glific.AI.Tools.Forms
+    Glific.AI.Tools.Forms,
+    Glific.AI.Tools.Documentation
   ]
 
   @doc "Every feature module Glific AI reads through."
@@ -134,12 +141,25 @@ defmodule Glific.AI.Tools do
       {:error, "The lookup failed: #{Exception.message(exception)}"}
   end
 
+  # A tool that answers from memory issues no SQL, so opening a transaction for it
+  # would hold a pooled connection for nothing. The result is wrapped to match
+  # what `Repo.transaction/1` returns, so the caller reads the same either way.
+  @spec in_transaction(module(), (-> term())) :: {:ok, term()} | {:error, term()}
+  defp in_transaction(module, fun) do
+    if function_exported?(module, :reads_database?, 0) and not module.reads_database?() do
+      {:ok, fun.()}
+    else
+      Repo.transaction(fn ->
+        Repo.query!("SET LOCAL transaction_read_only = on")
+        fun.()
+      end)
+    end
+  end
+
   @spec read(module(), String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   defp read(module, name, args) do
-    Repo.transaction(fn ->
-      Repo.query!("SET LOCAL transaction_read_only = on")
-      module.run(name, args)
-    end)
+    module
+    |> in_transaction(fn -> module.run(name, args) end)
     |> case do
       {:ok, {:ok, result}} ->
         {:ok, result}

@@ -329,7 +329,8 @@ defmodule Glific.AI.ToolsTest do
         "get_flow" => %{"flow_id" => flow.id, "status" => "draft"},
         "list_reference" => %{"kind" => "tags"},
         "get_group_chat" => %{"wa_group_id" => wa_group.id},
-        "get_assistant" => %{"assistant_id" => assistant.id}
+        "get_assistant" => %{"assistant_id" => assistant.id},
+        "search_documentation" => %{"query" => "flow"}
       }
 
       failures =
