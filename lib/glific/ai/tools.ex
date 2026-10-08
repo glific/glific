@@ -29,7 +29,8 @@ defmodule Glific.AI.Tools do
     Glific.AI.Tools.Triggers,
     Glific.AI.Tools.Assistants,
     Glific.AI.Tools.Groups,
-    Glific.AI.Tools.Forms
+    Glific.AI.Tools.Forms,
+    Glific.AI.Tools.Documentation
   ]
 
   @doc "Every feature module Glific AI reads through."

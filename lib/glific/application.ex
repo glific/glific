@@ -6,6 +6,7 @@ defmodule Glific.Application do
   use Application
 
   alias Glific.Communications.Mailer
+  alias Glific.Docs
 
   def start(_type, _args) do
     children = [
@@ -84,6 +85,11 @@ defmodule Glific.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
+
+    # Read once into :persistent_term so every process searching the
+    # documentation reads it without copying it.
+    Docs.Index.warm()
+
     Supervisor.start_link(children, opts)
   end
 

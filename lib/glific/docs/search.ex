@@ -1,0 +1,161 @@
+defmodule Glific.Docs.Search do
+  @moduledoc """
+  Finds the documentation chunks that answer a question.
+
+  Two retrievers run over the corpus and are merged. The semantic leg matches
+  wording that shares no words with the section — "the bot stopped replying"
+  against "Flow is not triggering". The lexical leg matches exact tokens like
+  `@results.parent.state.input`, which an embedding blurs.
+
+  They merge by rank rather than by score: cosine similarity and term overlap
+  are not on the same scale, so there is no fixed weighting between them.
+  """
+
+  alias Glific.Docs.{Chunk, Index, Indexer}
+
+  # Standard reciprocal-rank-fusion constant: a chunk ranked well by both legs
+  # beats one ranked first by a single leg.
+  @rrf_k 60
+
+  @leg_depth 30
+
+  # A heading states what its section answers.
+  @heading_weight 4
+
+  # Chapter 19 holds the corrections to commonly wrong answers.
+  @boosted_sections ["19"]
+  @boost_ranks 3
+
+  @stopwords MapSet.new(~w(
+    the a an and or but if is are was were be been being of in on at to for
+    with from by as it its this that these those i we you they he she them us
+    my our your their can could will would should do does did have has had
+    not no yes so then than there here what which who whom when where why how
+    me am any all some more most other into about also very just only own same
+    don now get got please hi hello thanks thank team need help issue problem
+    having getting trying tried like want able there's i'm we're
+  ))
+
+  @type result() :: %{chunk: Chunk.t(), rank: pos_integer(), legs: [atom()]}
+
+  @doc """
+  Returns the chunks most likely to answer `question`, best first.
+
+  Falls back to the lexical leg alone when no embedding is available.
+  """
+  @spec find(String.t(), keyword()) :: [result()]
+  def find(question, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 5)
+    entries = Index.entries()
+
+    lexical = lexical_leg(question, entries)
+    semantic = semantic_leg(question, entries, Keyword.get(opts, :query_vector))
+
+    fuse(%{lexical: lexical, semantic: semantic})
+    |> Enum.take(limit)
+    |> Enum.with_index(1)
+    |> Enum.map(fn {{chunk, legs}, rank} -> %{chunk: chunk, rank: rank, legs: legs} end)
+  end
+
+  @doc "The lexical leg on its own."
+  @spec lexical_leg(String.t(), [Index.entry()]) :: [Chunk.t()]
+  def lexical_leg(question, entries) do
+    terms = terms(question)
+
+    if terms == [] do
+      []
+    else
+      entries
+      |> Enum.map(&{overlap(&1.chunk, terms), &1.chunk})
+      |> Enum.reject(&(elem(&1, 0) == 0))
+      |> Enum.sort_by(fn {score, chunk} -> {-score, byte_size(chunk.body)} end)
+      |> Enum.take(@leg_depth)
+      |> Enum.map(&elem(&1, 1))
+    end
+  end
+
+  @doc "The semantic leg on its own."
+  @spec semantic_leg(String.t(), [Index.entry()], binary() | nil) :: [Chunk.t()]
+  def semantic_leg(question, entries, query_vector \\ nil)
+  def semantic_leg(_question, [], _query_vector), do: []
+
+  def semantic_leg(question, entries, nil) do
+    case Indexer.embed(question) do
+      {:ok, vector} -> semantic_leg(question, entries, vector)
+      {:error, _reason} -> []
+    end
+  end
+
+  def semantic_leg(_question, entries, vector) do
+    entries
+    |> Enum.map(&{Index.similarity(&1.vector, vector), &1.chunk})
+    |> Enum.sort_by(&(-elem(&1, 0)))
+    |> Enum.take(@leg_depth)
+    |> Enum.map(&elem(&1, 1))
+  end
+
+  @doc """
+  Reciprocal rank fusion of named result lists.
+
+  Each list contributes `1 / (k + rank)` to every chunk it ranks.
+  """
+  @spec fuse(%{atom() => [Chunk.t()]}) :: [{Chunk.t(), [atom()]}]
+  def fuse(legs) do
+    legs
+    |> Enum.reduce(%{}, fn {leg, chunks}, acc ->
+      chunks
+      |> Enum.with_index(1)
+      |> Enum.reduce(acc, fn {chunk, rank}, inner ->
+        rank = rank - boost(chunk)
+        contribution = 1.0 / (@rrf_k + max(rank, 1))
+
+        Map.update(
+          inner,
+          chunk.content_hash,
+          {chunk, contribution, [leg]},
+          fn {existing, score, found} -> {existing, score + contribution, [leg | found]} end
+        )
+      end)
+    end)
+    |> Map.values()
+    |> Enum.sort_by(fn {_chunk, score, _legs} -> -score end)
+    |> Enum.map(fn {chunk, _score, legs} -> {chunk, Enum.reverse(legs)} end)
+  end
+
+  @doc """
+  Splits a question into the terms worth matching on.
+
+  Notation survives whole: `@results.parent.state.input` is one term, not five.
+  """
+  @spec terms(String.t()) :: [String.t()]
+  def terms(question) do
+    question
+    |> String.downcase()
+    |> then(&Regex.scan(~r/[@a-z0-9][a-z0-9._\-]*/u, &1))
+    |> Enum.map(&List.first/1)
+    |> Enum.map(&String.trim(&1, "."))
+    |> Enum.reject(&(&1 == "" or String.length(&1) < 2 or MapSet.member?(@stopwords, &1)))
+    |> Enum.uniq()
+  end
+
+  defp overlap(chunk, terms) do
+    heading = String.downcase(chunk.heading_path)
+    body = String.downcase(chunk.body)
+
+    Enum.reduce(terms, 0, fn term, score ->
+      cond do
+        String.contains?(heading, term) -> score + @heading_weight
+        String.contains?(body, term) -> score + 1
+        true -> score
+      end
+    end)
+  end
+
+  defp boost(%Chunk{section_path: nil}), do: 0
+
+  defp boost(%Chunk{section_path: path}) do
+    if Enum.any?(@boosted_sections, &(path == &1 or String.starts_with?(path, &1 <> "."))),
+      do: @boost_ranks,
+      else: 0
+  end
+end
