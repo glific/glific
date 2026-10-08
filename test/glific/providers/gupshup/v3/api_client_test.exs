@@ -72,6 +72,46 @@ defmodule Glific.Providers.Gupshup.V3.ApiClientTest do
     assert {:ok, "fresh-app-token"} = Caches.get(organization_id, "partner_app_token")
   end
 
+  test "send_message/2 uses the cached partner token to fetch the app token",
+       %{organization_id: organization_id, app_id: app_id} do
+    Caches.set(0, "partner_token", "cached-partner-token")
+    token_path = "/partner/app/#{app_id}/token"
+
+    Req.Test.stub(ApiClient, fn conn ->
+      case conn.request_path do
+        ^token_path ->
+          assert Plug.Conn.get_req_header(conn, "authorization") == ["cached-partner-token"]
+          Req.Test.json(conn, %{"token" => %{"token" => "fresh-app-token"}})
+
+        "/partner/account/login" ->
+          flunk("the cached partner token should be used instead of logging in")
+
+        _message_path ->
+          Req.Test.json(conn, %{"messages" => [%{"id" => "gupshup-v3-id"}]})
+      end
+    end)
+
+    assert {:ok, %Req.Response{status: 200}} =
+             ApiClient.send_message(organization_id, @message_body)
+  end
+
+  test "send_message/2 returns an error without sending when the app token request fails",
+       %{organization_id: organization_id, app_id: app_id} do
+    Caches.set(0, "partner_token", "cached-partner-token")
+    token_path = "/partner/app/#{app_id}/token"
+
+    Req.Test.stub(ApiClient, fn conn ->
+      assert conn.request_path == token_path
+
+      conn
+      |> Plug.Conn.put_status(403)
+      |> Req.Test.json(%{"status" => "error", "message" => "Forbidden"})
+    end)
+
+    assert {:error, "Could not fetch the partner app token" <> _} =
+             ApiClient.send_message(organization_id, @message_body)
+  end
+
   test "send_message/2 returns an error without sending when the login fails",
        %{organization_id: organization_id} do
     Req.Test.stub(ApiClient, fn conn ->

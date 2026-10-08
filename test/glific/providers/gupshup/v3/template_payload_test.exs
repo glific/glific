@@ -74,6 +74,17 @@ defmodule Glific.Providers.Gupshup.V3.TemplatePayloadTest do
            ] = payload["template"]["components"]
   end
 
+  test "build/2 leaves out the button component when there is no flow_token" do
+    payload =
+      TemplatePayload.build(@form_template, %{
+        destination: "919917443994",
+        language: "en",
+        params: ["Asha"]
+      })
+
+    assert [%{"type" => "body"}] = payload["template"]["components"]
+  end
+
   test "build/2 leaves out the button component when the template has no flow button" do
     template = %SessionTemplate{shortcode: "welcome", buttons: []}
 
