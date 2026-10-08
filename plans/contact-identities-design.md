@@ -88,6 +88,7 @@ token {sub:"asha_07", phone:"+91…"}  or  {sub:"asha_07", contact_id: 42}
      target = contact by phone, or contact by contact_id (must be in this org)
      target found → insert identity on target (link), even if it already has other web identities
      otherwise    → create new contact (4.3)
+     unique conflict on (org, web, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
 Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
 is never moved by a token · an identity always takes its `organization_id` from its contact.
