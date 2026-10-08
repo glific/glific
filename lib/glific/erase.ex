@@ -610,6 +610,7 @@ defmodule Glific.Erase do
       certificate_templates
       consulting_hours
       contact_histories
+      contact_identities
       contacts_fields
       contacts_groups
       contacts_tags

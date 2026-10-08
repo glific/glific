@@ -2066,4 +2066,80 @@ defmodule Glific.ContactsTest do
       assert %Contact{masked_phone: nil} = Contact.populate_masked_phone(%Contact{phone: nil})
     end
   end
+
+  describe "persisted contacts without a phone" do
+    test "several can exist in one organization", %{organization_id: organization_id} do
+      first = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      second = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert [nil, nil] == Enum.map([first, second], &Repo.reload!(&1).phone)
+    end
+
+    test "can be updated, including blocked", %{organization_id: organization_id} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{name: "Ravi", phone: nil}} =
+               Contacts.update_contact(contact, %{name: "Ravi"})
+
+      assert {:ok, %Contact{status: :blocked}} =
+               Contacts.update_contact(contact, %{status: :blocked})
+    end
+
+    test "can be given a phone later", %{organization_id: organization_id} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{phone: "919876543299"}} =
+               Contacts.update_contact(contact, %{phone: "919876543299"})
+    end
+
+    test "a contact's phone can be changed but not removed", %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      for phone <- [nil, ""] do
+        assert {:error, changeset} = Contacts.update_contact(contact, %{phone: phone})
+        assert %{phone: ["can't be removed once set"]} = errors_on(changeset)
+      end
+
+      assert {:ok, %Contact{phone: "919876543298"}} =
+               Contacts.update_contact(contact, %{phone: "919876543298"})
+    end
+
+    test "create_contact/1 still requires a phone", %{organization_id: organization_id} do
+      assert {:error, changeset} =
+               Contacts.create_contact(%{name: "No phone", organization_id: organization_id})
+
+      assert %{phone: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "upsert/1 refuses a missing phone instead of inserting a phone-less contact",
+         %{organization_id: organization_id} do
+      assert_raise Ecto.InvalidChangesetError, fn ->
+        Contacts.upsert(%{name: "No phone", organization_id: organization_id})
+      end
+    end
+
+    test "upsert/1 still matches an existing contact on phone", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{id: id}} =
+               Contacts.upsert(%{
+                 phone: contact.phone,
+                 name: "Renamed",
+                 organization_id: organization_id
+               })
+
+      assert id == contact.id
+    end
+
+    test "maybe_create_contact/1 never returns a stored phone-less contact for a nil phone",
+         %{organization_id: organization_id} do
+      Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Contacts.maybe_create_contact(%{phone: nil, organization_id: organization_id})
+    end
+  end
 end

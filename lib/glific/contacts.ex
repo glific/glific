@@ -266,7 +266,8 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a contact.
+  Creates a contact from a phone-based entry point, so the phone is required. A contact without a
+  phone is only created together with its login identity.
 
   ## Examples
 
@@ -292,6 +293,7 @@ defmodule Glific.Contacts do
 
     %Contact{}
     |> Contact.changeset(attrs)
+    |> Ecto.Changeset.validate_required([:phone])
     |> Repo.insert()
   end
 
@@ -407,7 +409,8 @@ defmodule Glific.Contacts do
 
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
-  it returns the existing contact, else it creates a new one
+  it returns the existing contact, else it creates a new one. The phone is the conflict target,
+  so it is required: a nil phone would never conflict and would insert a phone-less contact.
   """
   @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(%{organization_id: organization_id} = attrs) do
@@ -420,7 +423,9 @@ defmodule Glific.Contacts do
 
     contact =
       Repo.insert!(
-        change_contact(%Contact{}, Map.merge(other_attrs, attrs)),
+        %Contact{}
+        |> change_contact(Map.merge(other_attrs, attrs))
+        |> Ecto.Changeset.validate_required([:phone]),
         returning: true,
         on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
         conflict_target: [:phone, :organization_id]
