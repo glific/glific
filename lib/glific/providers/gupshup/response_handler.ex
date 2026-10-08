@@ -49,7 +49,6 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
   def handle_response(error, message) do
     track_send(send_outcome(error), message)
 
-    # Adding log when API Client fails
     Logger.error(
       "Error calling API Client for org_id: #{message["organization_id"]} error: #{Glific.SafeLog.safe_inspect(error)}"
     )
