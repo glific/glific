@@ -13,7 +13,12 @@ defmodule Glific.SafeLog do
   The primary target is `%Tesla.Env{}`: its `__client__` field holds the
   middleware chain, which includes `Tesla.Middleware.Headers` pre-processors
   that carry live `Authorization: Bearer …` tokens. Stripping that one field
-  is sufficient to make any Tesla response safe to inspect.
+  is sufficient to make any Tesla response safe to inspect. Results are often
+  logged still wrapped as `{:ok, env}` or `{:error, env}`, so those are stripped too.
+
+  `%Req.Response{}` needs no stripping: it holds only the status, the response
+  headers and body, and Req's private data. The request and its `authorization`
+  header live in `%Req.Request{}`, which never reaches a logged result.
 
   ## Usage
 
@@ -26,8 +31,9 @@ defmodule Glific.SafeLog do
   require Logger
 
   @doc """
-  Like `inspect/1` but strips the `__client__` field from any `%Tesla.Env{}`
-  before formatting, so OAuth tokens in middleware headers are never logged.
+  Like `inspect/1` but strips the `__client__` field from a `%Tesla.Env{}`, bare or
+  wrapped in a result tuple, before formatting, so OAuth tokens in middleware headers
+  are never logged.
 
   All other terms pass through unchanged.
 
@@ -45,5 +51,6 @@ defmodule Glific.SafeLog do
   """
   @spec safe_inspect(term()) :: String.t()
   def safe_inspect(%Tesla.Env{} = env), do: inspect(%{env | __client__: nil})
+  def safe_inspect({tag, %Tesla.Env{} = env}), do: inspect({tag, %{env | __client__: nil}})
   def safe_inspect(term), do: inspect(term)
 end
