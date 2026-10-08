@@ -148,31 +148,37 @@ defmodule Glific.Providers.Gupshup.Worker do
       |> Repo.get!(attrs["template_id"])
       |> Repo.preload(:language)
 
-    body =
-      TemplatePayload.build(template, %{
-        destination: payload["destination"],
-        language: template_language(template, attrs["template_uuid"]),
-        params: attrs["params"],
-        media: template_media(payload, attrs["template_type"]),
-        flow_token: WhatsappFormsResponses.encode_flow_token(message["id"])
-      })
+    with {:ok, language} <- template_language(template, attrs["template_uuid"]) do
+      body =
+        TemplatePayload.build(template, %{
+          destination: payload["destination"],
+          language: language,
+          params: attrs["params"],
+          media: template_media(payload, attrs["template_type"]),
+          flow_token: WhatsappFormsResponses.encode_flow_token(message["id"])
+        })
 
-    org_id
-    |> V3.ApiClient.send_message(body)
+      V3.ApiClient.send_message(org_id, body)
+    end
     |> ResponseHandler.handle_response(message)
   end
 
   # A translated template is sent with its translation's uuid, keyed by language id.
-  @spec template_language(SessionTemplate.t(), String.t()) :: String.t()
-  defp template_language(%{uuid: uuid} = template, uuid), do: template.language.locale
+  @spec template_language(SessionTemplate.t(), String.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp template_language(%{uuid: uuid} = template, uuid), do: {:ok, template.language.locale}
 
   defp template_language(template, template_uuid) do
-    {language_id, _translation} =
-      Enum.find(template.translations, fn {_language_id, translation} ->
-        translation["uuid"] == template_uuid
-      end)
+    template.translations
+    |> Enum.find(fn {_language_id, translation} -> translation["uuid"] == template_uuid end)
+    |> case do
+      {language_id, _translation} ->
+        language = Repo.get!(Language, language_id)
+        {:ok, language.locale}
 
-    Repo.get!(Language, language_id).locale
+      nil ->
+        {:error, "Template translation #{template_uuid} not found"}
+    end
   end
 
   @spec template_media(map(), String.t()) :: {String.t(), map()} | nil
