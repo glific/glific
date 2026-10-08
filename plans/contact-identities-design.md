@@ -6,7 +6,8 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 
 - **`contacts`** = the person. One row per person per org. Holds name, language, fields, status,
   and (for now) WhatsApp state. **`phone` becomes nullable.**
-- **`contact_identities`** = how that person logs in on a channel. One row per (contact, channel).
+- **`contact_identities`** = how that person logs in on a channel. One row per login, so a contact can
+  have several on one channel (e.g. a web phone login and a web username).
 - Everything else (messages, flow contexts, flow results, tags, groups, tickets) stays keyed on
   `contact_id`. Nothing else changes.
 
@@ -60,10 +61,11 @@ Gupshup/Maytapi webhook {phone}
 ```
 No identity row is written.
 
-### 4.2 Web, phone + OTP (unchanged)
+### 4.2 Web, phone + OTP
 ```
 request-otp(phone) → code over WhatsApp → verify-otp(phone, code)
 → find/create by contacts.phone   (same contact as WhatsApp; that's the web↔WhatsApp link)
+→ record identity (web, phone) on that contact if missing (on conflict do nothing)
 → Glific signs its own token {sub: contact_id}
 ```
 
@@ -84,11 +86,11 @@ token {sub:"asha_07", phone:"+91…"}  or  {sub:"asha_07", contact_id: 42}
 → (org, web, "asha_07") already exists → that contact; phone/contact_id IGNORED
 → not found:
      target = contact by phone, or contact by contact_id (must be in this org)
-     target found AND target has no web identity → insert identity on target (link)
-     otherwise                                   → create new contact (4.3)
+     target found → insert identity on target (link), even if it already has other web identities
+     otherwise    → create new contact (4.3)
 ```
-Guards: a `contact_id` from another org is treated as not found · one web identity per contact ·
-once linked, never moved by a token.
+Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
+is never moved by a token · an identity always takes its `organization_id` from its contact.
 
 ### 4.5 Telegram / RCS / SwiftChat (later)
 Same as 4.3 with `channel = :telegram` etc. That only needs a new enum value, not a new table.
@@ -96,7 +98,7 @@ Same as 4.3 with `channel = :telegram` etc. That only needs a new enum value, no
 ### 4.6 After resolution (all paths)
 ```
 contact_id → socket topic web_channel:<contact_id>
-           → messages(channel=web, contact_identity_id=…)
+           → messages(channel=web)   (no contact_identity_id: messages record the channel, not the login)
            → flows / flow_results / tags / inbox exactly as today
 ```
 The web socket handlers pass the resolved contact straight through. They do **not** look it up
@@ -139,7 +141,9 @@ channel (consent, reachability, session, per-login display name) → `contact_id
 ## 7. Nil-phone safety
 A phone-less contact still runs through code that reads `contact.phone`. Make it safe:
 - `simulator_contact?(nil) → false`, `populate_masked_phone(nil) → nil`, `mask_phone_number(nil)`
-- `Contact.changeset`: phone optional; require phone **or** an identity
+- `Contact.changeset`: phone optional. "Phone or an identity" can't be checked there (the identity is
+  inserted after the contact), so the phone-less creation path (§4.3) inserts both in one transaction,
+  and phone-based creation (`create_contact`, `upsert`) still requires a phone
 - Phone lookups with nil → `{:error, _}`
 - WhatsApp send / opt-in / opt-out nodes → refuse when phone is NULL
 - `reports.ex` simulator filter → include NULL phones

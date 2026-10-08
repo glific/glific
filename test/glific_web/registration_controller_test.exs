@@ -129,6 +129,26 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
   end
 
+  describe "create/2 without a matching contact" do
+    test "a verified phone with no contact gets an error response, not a crash", %{conn: conn} do
+      phone = "919800000123"
+      otp = OTP.generate_code(:auth, phone)
+
+      params = %{
+        "user" => %{
+          "phone" => phone,
+          "name" => "No contact",
+          "password" => @password,
+          "otp" => otp
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :create, params))
+
+      assert %{"error" => %{"errors" => ["Contact not found"]}} = json_response(conn, 500)
+    end
+  end
+
   describe "send_otp/2" do
     setup do
       Tesla.Mock.mock(fn

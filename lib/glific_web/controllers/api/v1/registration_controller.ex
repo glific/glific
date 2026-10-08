@@ -61,12 +61,19 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
+  @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, [String.t()] | map()}
   defp create_user(conn, user_params) do
     organization_id = conn.assigns[:organization_id]
 
-    {:ok, contact} = Contacts.fetch_by_identity(organization_id, :whatsapp, user_params["phone"])
+    case Contacts.fetch_by_identity(organization_id, :whatsapp, user_params["phone"]) do
+      {:ok, contact} -> register_user(conn, user_params, contact, organization_id)
+      {:error, _reason} -> {:error, ["Contact not found"]}
+    end
+  end
 
+  @spec register_user(Conn.t(), map(), Contact.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map()}
+  defp register_user(conn, user_params, contact, organization_id) do
     updated_user_params =
       user_params
       |> Map.merge(%{
