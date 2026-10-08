@@ -127,6 +127,21 @@ defmodule Glific.CommunicationsTest do
       assert error_msg == "Message size greater than 4096 characters"
     end
 
+    test "a send the provider refuses marks the message as errored and notifies staff",
+         attrs do
+      message = message_fixture(attrs) |> Repo.preload(:receiver)
+      message = %{message | receiver: %{message.receiver | phone: nil}}
+
+      assert {:error, "Contact has no WhatsApp number."} ==
+               Communications.Message.send_message(message)
+
+      assert %{status: :error} = Messages.get_message!(message.id)
+
+      assert Glific.Notifications.Notification
+             |> Repo.all()
+             |> Enum.any?(&(&1.message == "Contact has no WhatsApp number."))
+    end
+
     test "send message should return error when characters limit is reached when sending media message",
          attrs do
       message_media =

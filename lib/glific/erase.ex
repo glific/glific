@@ -361,7 +361,7 @@ defmodule Glific.Erase do
     Repo.put_process_state(org_id)
 
     with "y" <- String.trim_trailing(get_value, "\n") |> String.downcase(),
-         {:ok, contact} <- Contacts.fetch_by_phone(phone) do
+         {:ok, contact} <- Contacts.fetch_by_identity(org_id, :whatsapp, phone) do
       Logger.warning(
         "Deleting beneficiary data for contact #{phone} and organization_id #{org_id}"
       )

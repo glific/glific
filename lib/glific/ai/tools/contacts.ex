@@ -286,9 +286,15 @@ defmodule Glific.AI.Tools.Contacts do
   defp find(%{contact_id: id}), do: fetch([id: id], "id #{id}")
 
   defp find(%{phone: phone}) do
-    case Contacts.fetch_by_phone(phone) do
-      {:ok, contact} -> {:ok, contact}
-      {:error, _} -> {:error, "No contact with phone #{phone} exists in this organisation."}
+    case Contacts.fetch_by_identity(Repo.get_organization_id(), :whatsapp, phone) do
+      {:ok, contact} ->
+        {:ok, contact}
+
+      {:error, :no_identifier} ->
+        {:error, "Give a phone number to identify the contact."}
+
+      {:error, :not_found} ->
+        {:error, "No contact with phone #{phone} exists in this organisation."}
     end
   end
 

@@ -3,6 +3,7 @@ defmodule Glific.Clients.Lahi do
   Custom webhook implementation specific to Lahi usecase
   """
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Repo
   }
@@ -19,10 +20,9 @@ defmodule Glific.Clients.Lahi do
   def gcs_file_name(media) do
     contact = Contact |> where([c], c.id == ^media["contact_id"]) |> Repo.one()
 
-    phone_number = contact.phone || ""
     datetime = Timex.now("Asia/Calcutta")
     strftime_str = Timex.format!(datetime, "%FT%T%:z", :strftime)
-    phone_number <> "/" <> strftime_str <> Path.extname(media["remote_name"])
+    Contacts.file_key(contact) <> "/" <> strftime_str <> Path.extname(media["remote_name"])
   end
 
   @doc """

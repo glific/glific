@@ -492,7 +492,7 @@ defmodule Glific.ChatbotDiagnose do
 
   defp resolve_contact_by_phone(phone) when phone in [nil, ""], do: :error
 
-  # Diagnostics read only from the replica, which `Contacts.fetch_by_phone/2` doesn't.
+  # Diagnostics read only from the replica, which `Contacts.fetch_by_identity/3` doesn't.
   defp resolve_contact_by_phone(phone) do
     # credo:disable-for-next-line GlificCredo.Checks.ContactPhoneLookup
     case RepoReplica.one(from(c in Contact, where: c.phone == ^phone, select: c.id, limit: 1)) do

@@ -378,23 +378,27 @@ defmodule Glific.Communications.GroupMessage do
   """
   @spec receive_reaction_msg(map(), non_neg_integer()) :: any()
   def receive_reaction_msg(params, org_id) do
-    case Map.get(params, "reactorId") do
-      reactor_id when is_binary(reactor_id) and reactor_id != "" ->
-        do_receive_reaction_msg(params, org_id)
-
-      _ ->
-        {:error, "Reaction has no reactor id"}
+    case reactor_phone(Map.get(params, "reactorId")) do
+      {:ok, phone} -> do_receive_reaction_msg(params, phone, org_id)
+      :error -> {:error, "Reaction has no reactor id"}
     end
   end
 
-  @spec do_receive_reaction_msg(map(), non_neg_integer()) :: any()
-  defp do_receive_reaction_msg(params, org_id) do
-    contact = Map.get(params, "reactorId")
+  @spec reactor_phone(any()) :: {:ok, String.t()} | :error
+  defp reactor_phone(reactor_id) when is_binary(reactor_id) do
+    case String.split(reactor_id, "@") do
+      [phone | _] when phone != "" -> {:ok, phone}
+      _ -> :error
+    end
+  end
+
+  defp reactor_phone(_reactor_id), do: :error
+
+  @spec do_receive_reaction_msg(map(), String.t(), non_neg_integer()) :: any()
+  defp do_receive_reaction_msg(params, phone, org_id) do
     reaction = Map.get(params, "reaction")
     msg_id = Map.get(params, "msgId")
     bsp_msg_id = Map.get(params, "reactionId")
-    # splitting because we are getting the contact number like 919xxxx22555@c.us this
-    [phone | _] = String.split(contact, "@")
 
     context_message =
       WAMessage

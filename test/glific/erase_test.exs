@@ -137,7 +137,7 @@ defmodule Glific.EraseTest do
     assert {:error, :not_found} =
              Erase.delete_benefeciary_data(attrs.organization_id, contact_1.phone)
 
-    assert {:error, :no_phone} = Erase.delete_benefeciary_data(attrs.organization_id, nil)
+    assert {:error, :no_identifier} = Erase.delete_benefeciary_data(attrs.organization_id, nil)
   end
 
   test "delete old messages, stops when rows deleted become 0 first", attrs do

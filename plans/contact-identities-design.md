@@ -1,6 +1,6 @@
 # Contact identities — end-to-end design
 
-Issue #5703 · Epic #5702 · Implementation plan: `plans/web-channel-contact-identities.md`
+Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), #5838 (username login), #5839 (inbox + console)
 
 ## 1. Model
 
@@ -37,8 +37,6 @@ CREATE INDEX contact_identities_contact_id_index ON contact_identities (contact_
 -- contacts
 ALTER TABLE contacts ALTER COLUMN phone DROP NOT NULL;           -- catalog-only
 -- keep the unique index (phone, organization_id): NULLs don't collide
-
-We;ll use the same as other creds
 ```
 
 Not added: `contacts.channels`, per-channel username columns. No backfill. `contact_type` is left alone.

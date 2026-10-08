@@ -65,7 +65,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   defp create_user(conn, user_params) do
     organization_id = conn.assigns[:organization_id]
 
-    {:ok, contact} = Contacts.fetch_by_phone(user_params["phone"], organization_id)
+    {:ok, contact} = Contacts.fetch_by_identity(organization_id, :whatsapp, user_params["phone"])
 
     updated_user_params =
       user_params
@@ -185,7 +185,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     case existing_user do
       {:ok, _user} ->
-        with {:ok, contact} <- Contacts.fetch_by_phone(phone, organization_id),
+        with {:ok, contact} <- Contacts.fetch_by_identity(organization_id, :whatsapp, phone),
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
              true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do

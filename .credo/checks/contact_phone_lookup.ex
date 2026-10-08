@@ -4,9 +4,9 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
 
   `contacts.phone` can be NULL (a contact who only logs in with a username), and a phone lookup
   with a nil phone is either a crash (`Repo.get_by/2` raises on nil) or, if someone "fixes" that
-  with `is_nil(c.phone)`, a lookup that matches every phone-less contact. `Contacts.fetch_by_phone/2`
-  is the single function that refuses a nil phone before querying, so every phone lookup must go
-  through it.
+  with `is_nil(c.phone)`, a lookup that matches every phone-less contact.
+  `Contacts.fetch_by_identity/3` is the single function that refuses a nil identifier before
+  querying, so every phone lookup must go through it.
 
   The check flags:
 
@@ -40,9 +40,9 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
       raises when `phone` is nil, and the tempting fix (`where: is_nil(c.phone)`) silently
       returns an arbitrary phone-less contact.
 
-      Use `Glific.Contacts.fetch_by_phone/2` instead. It returns `{:error, :no_phone}` for a nil
-      or empty phone without querying, `{:error, :not_found}` when no contact matches, and
-      `{:ok, contact}` otherwise.
+      Use `Glific.Contacts.fetch_by_identity(organization_id, :whatsapp, phone)` instead. It
+      returns `{:error, :no_identifier}` for a nil or empty phone without querying,
+      `{:error, :not_found}` when no contact matches, and `{:ok, contact}` otherwise.
       """,
       params: [
         excluded_modules: "Modules permitted to look a contact up by phone directly."
@@ -192,7 +192,7 @@ defmodule GlificCredo.Checks.ContactPhoneLookup do
     format_issue(
       issue_meta,
       message:
-        "Use `Glific.Contacts.fetch_by_phone/2` instead of looking a contact up by phone with `#{function}` so a nil phone never reaches the query.",
+        "Use `Glific.Contacts.fetch_by_identity/3` instead of looking a contact up by phone with `#{function}` so a nil phone never reaches the query.",
       trigger: "#{function}",
       line_no: meta[:line],
       column: meta[:column]

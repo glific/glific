@@ -435,7 +435,7 @@ defmodule Glific.Contacts do
     map = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
 
     with ["has already been taken"] <- Map.get(map, :phone),
-         {:ok, contact} <- fetch_by_phone(sender.phone) do
+         {:ok, contact} <- fetch_by_identity(sender.organization_id, :whatsapp, sender.phone) do
       {:ok, contact}
     else
       _ -> {:error, changeset}
@@ -458,9 +458,9 @@ defmodule Glific.Contacts do
   avoid updating the contact to skip the DB call, and only do so if the name has changed
   """
   @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_create_contact(sender) do
-    case fetch_by_phone(Map.get(sender, :phone)) do
-      {:error, :no_phone} ->
+  def maybe_create_contact(%{organization_id: organization_id} = sender) do
+    case fetch_by_identity(organization_id, :whatsapp, Map.get(sender, :phone)) do
+      {:error, :no_identifier} ->
         missing_phone_error(sender)
 
       {:error, :not_found} ->
@@ -490,8 +490,10 @@ defmodule Glific.Contacts do
   @spec maybe_update_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
   def maybe_update_contact(sender) do
-    case fetch_by_phone(Map.get(sender, :phone)) do
-      {:error, :no_phone} ->
+    organization_id = Map.get(sender, :organization_id, Repo.get_organization_id())
+
+    case fetch_by_identity(organization_id, :whatsapp, Map.get(sender, :phone)) do
+      {:error, :no_identifier} ->
         {:error, "Phone number is missing"}
 
       {:error, :not_found} ->
@@ -533,9 +535,10 @@ defmodule Glific.Contacts do
 
     attrs = Map.merge(contact_attrs, attrs)
 
-    fetch_by_phone(phone)
+    organization_id
+    |> fetch_by_identity(:whatsapp, phone)
     |> case do
-      {:error, :no_phone} ->
+      {:error, :no_identifier} ->
         missing_phone_error(attrs)
 
       {:error, :not_found} ->
@@ -602,8 +605,8 @@ defmodule Glific.Contacts do
     if simulator_contact?(phone) do
       :ok
     else
-      case fetch_by_phone(phone) do
-        {:error, :no_phone} ->
+      case fetch_by_identity(organization_id, :whatsapp, phone) do
+        {:error, :no_identifier} ->
           Logger.error("Cannot opt out a contact without a phone number")
           :error
 
@@ -888,15 +891,13 @@ defmodule Glific.Contacts do
   """
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
-  def optin_contact(%{organization_id: organization_id} = attrs) do
-    case whatsapp_phone(attrs) do
-      {:ok, _phone} ->
-        bsp_module = Provider.bsp_module(organization_id, :contact)
-        bsp_module.optin_contact(attrs)
+  def optin_contact(%{organization_id: _organization_id, phone: phone})
+      when phone in [nil, ""],
+      do: {:error, dgettext("errors", "Contact has no WhatsApp number.")}
 
-      {:error, :no_phone} ->
-        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
-    end
+  def optin_contact(%{organization_id: organization_id} = attrs) do
+    bsp_module = Provider.bsp_module(organization_id, :contact)
+    bsp_module.optin_contact(attrs)
   end
 
   @doc """
@@ -1050,32 +1051,37 @@ defmodule Glific.Contacts do
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  Looks a contact up by phone; a nil or empty phone returns `{:error, :no_phone}` without querying.
+  Looks a contact up by its login on a channel; a nil or empty identifier is refused without querying.
   """
-  @spec fetch_by_phone(String.t() | nil, non_neg_integer() | nil) ::
-          {:ok, Contact.t()} | {:error, :no_phone | :not_found}
-  def fetch_by_phone(phone, organization_id \\ nil)
+  @spec fetch_by_identity(non_neg_integer(), :whatsapp, String.t() | nil) ::
+          {:ok, Contact.t()} | {:error, :no_identifier | :not_found}
+  def fetch_by_identity(organization_id, _channel, identifier)
+      when is_integer(organization_id) and identifier in [nil, ""],
+      do: {:error, :no_identifier}
 
-  def fetch_by_phone(phone, _organization_id) when phone in [nil, ""], do: {:error, :no_phone}
-
-  def fetch_by_phone(phone, organization_id) do
-    clauses =
-      if organization_id,
-        do: %{phone: phone, organization_id: organization_id},
-        else: %{phone: phone}
-
-    case Repo.get_by(Contact, clauses) do
+  def fetch_by_identity(organization_id, :whatsapp, phone)
+      when is_integer(organization_id) and is_binary(phone) do
+    case Repo.get_by(Contact, %{phone: phone, organization_id: organization_id}) do
       nil -> {:error, :not_found}
       contact -> {:ok, contact}
     end
   end
 
   @doc """
+  A stable key for naming files after a contact: its phone, or `contact-<id>` when it has none.
+  """
+  @spec file_key(Contact.t()) :: String.t()
+  def file_key(%Contact{phone: phone}) when is_binary(phone) and phone != "", do: phone
+  def file_key(%Contact{id: id}), do: "contact-#{id}"
+
+  @doc """
   The only way to get the number a contact is reached on over WhatsApp.
   """
-  @spec whatsapp_phone(Contact.t() | map()) :: {:ok, String.t()} | {:error, :no_phone}
-  def whatsapp_phone(%{phone: phone}) when is_binary(phone) and phone != "", do: {:ok, phone}
-  def whatsapp_phone(_contact), do: {:error, :no_phone}
+  @spec whatsapp_phone(Contact.t()) :: {:ok, String.t()} | {:error, :no_phone}
+  def whatsapp_phone(%Contact{phone: phone}) when is_binary(phone) and phone != "",
+    do: {:ok, phone}
+
+  def whatsapp_phone(%Contact{phone: phone}) when phone in [nil, ""], do: {:error, :no_phone}
 
   @doc """
   create new contact history record.

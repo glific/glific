@@ -1952,27 +1952,46 @@ defmodule Glific.ContactsTest do
       refute Contacts.simulator_contact?(nil)
     end
 
-    test "fetch_by_phone/2 refuses a nil or empty phone without querying" do
-      assert {:error, :no_phone} == Contacts.fetch_by_phone(nil)
-      assert {:error, :no_phone} == Contacts.fetch_by_phone("")
-      assert {:error, :no_phone} == Contacts.fetch_by_phone(nil, 1)
+    test "fetch_by_identity/3 refuses a nil or empty identifier without querying",
+         %{organization_id: organization_id} do
+      assert {:error, :no_identifier} ==
+               Contacts.fetch_by_identity(organization_id, :whatsapp, nil)
+
+      assert {:error, :no_identifier} ==
+               Contacts.fetch_by_identity(organization_id, :whatsapp, "")
     end
 
-    test "fetch_by_phone/2 finds an existing contact and reports an unknown phone",
+    test "fetch_by_identity/3 finds a WhatsApp contact by phone within its organization",
          %{organization_id: organization_id} do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %Contact{id: id}} = Contacts.fetch_by_phone(contact.phone)
+      assert {:ok, %Contact{id: id}} =
+               Contacts.fetch_by_identity(organization_id, :whatsapp, contact.phone)
+
       assert id == contact.id
-      assert {:ok, %Contact{id: ^id}} = Contacts.fetch_by_phone(contact.phone, organization_id)
-      assert {:error, :not_found} == Contacts.fetch_by_phone("919999900000")
+
+      assert {:error, :not_found} ==
+               Contacts.fetch_by_identity(organization_id, :whatsapp, "919999900000")
     end
 
-    test "whatsapp_phone/1 returns the phone only when there is one" do
+    test "fetch_by_identity/3 requires an organization", %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert_raise FunctionClauseError, fn ->
+        Contacts.fetch_by_identity(nil, :whatsapp, contact.phone)
+      end
+    end
+
+    test "whatsapp_phone/1 returns the phone only when there is one, and only for a contact" do
       assert {:ok, "919876543211"} == Contacts.whatsapp_phone(%Contact{phone: "919876543211"})
       assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: nil})
       assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: ""})
-      assert {:error, :no_phone} == Contacts.whatsapp_phone(%{})
+
+      assert_raise FunctionClauseError, fn -> Contacts.whatsapp_phone(nil) end
+
+      assert_raise FunctionClauseError, fn ->
+        Contacts.whatsapp_phone(%{phone: "919876543211"})
+      end
     end
 
     test "maybe_create_contact/1 never resolves a nil phone to an existing contact",
@@ -2043,6 +2062,12 @@ defmodule Glific.ContactsTest do
       assert_raise ArgumentError, ~r/phone number is required/, fn ->
         Contacts.get_contact_by_phone!(nil)
       end
+    end
+
+    test "file_key/1 is the phone, or the contact id when there is no phone" do
+      assert "919876543211" == Contacts.file_key(%Contact{id: 7, phone: "919876543211"})
+      assert "contact-7" == Contacts.file_key(%Contact{id: 7, phone: nil})
+      assert "contact-7" == Contacts.file_key(%Contact{id: 7, phone: ""})
     end
 
     test "populate_masked_phone/1 leaves masked_phone nil when there is no phone" do
