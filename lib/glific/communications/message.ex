@@ -112,16 +112,15 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when message send successfully.
   """
-  @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Message.t()}
+  @spec handle_success_response(Tesla.Env.t() | Req.Response.t(), Message.t()) ::
+          {:ok, Message.t()}
   def handle_success_response(response, message) do
-    body = response.body |> Jason.decode!()
-
     {:ok, message} =
       message
       |> Poison.encode!()
       |> Poison.decode!(as: %Message{})
       |> Messages.update_message(%{
-        bsp_message_id: body["messageId"],
+        bsp_message_id: sent_message_id(response),
         bsp_status: :enqueued,
         status: :sent,
         flow: :outbound,
@@ -131,6 +130,14 @@ defmodule Glific.Communications.Message do
     publish_message_status(message)
     {:ok, message}
   end
+
+  @spec sent_message_id(Tesla.Env.t() | Req.Response.t()) :: String.t() | nil
+  # Gupshup V3 message API, whose body Req has already decoded.
+  defp sent_message_id(%Req.Response{body: body}),
+    do: get_in(body, ["messages", Access.at(0), "id"])
+
+  # Gupshup V2 and Gupshup Enterprise, where Tesla returns the body as a raw JSON string.
+  defp sent_message_id(%{body: body}), do: Jason.decode!(body)["messageId"]
 
   @spec build_error(any()) :: map()
   defp build_error(body) do
