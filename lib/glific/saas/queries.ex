@@ -9,7 +9,7 @@ defmodule Glific.Saas.Queries do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    ERP,
+    # ERP,
     Flows.FlowContext,
     Flows.FlowResult,
     Messages.Message,
@@ -133,22 +133,27 @@ defmodule Glific.Saas.Queries do
     org_name = String.trim(params["name"])
     is_trial = params["is_trial"] == true
 
-    # Skip ERP check for trial accounts
-    erp_result =
-      if is_trial do
-        {:ok, nil}
-      else
-        ERP.fetch_organization_detail(org_name)
-      end
+    # ERP lookup disabled for now: org details are copied manually from ERP during onboarding,
+    # so validating them against the ERP API adds nothing. Kept commented to re-enable later.
+    #
+    # # Skip ERP check for trial accounts
+    # erp_result =
+    #   if is_trial do
+    #     {:ok, nil}
+    #   else
+    #     ERP.fetch_organization_detail(org_name)
+    #   end
+    #
+    # case erp_result do
+    #   {:ok, erp_data} ->
+    #     customer_name = if is_map(erp_data), do: erp_data[:data][:customer_name], else: nil
+    #     do_create_organization(result, params, org_name, customer_name, is_trial)
+    #
+    #   {:error, error_message} ->
+    #     error(Glific.SafeLog.safe_inspect(error_message), result, :global)
+    # end
 
-    case erp_result do
-      {:ok, erp_data} ->
-        customer_name = if is_map(erp_data), do: erp_data[:data][:customer_name], else: nil
-        do_create_organization(result, params, org_name, customer_name, is_trial)
-
-      {:error, error_message} ->
-        error(Glific.SafeLog.safe_inspect(error_message), result, :global)
-    end
+    do_create_organization(result, params, org_name, nil, is_trial)
   end
 
   @spec do_create_organization(map(), map(), String.t(), String.t() | nil, boolean()) :: map()

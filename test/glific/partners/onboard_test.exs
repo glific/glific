@@ -594,7 +594,7 @@ defmodule Glific.OnboardTest do
     assert organization.shortcode == "org"
   end
 
-  test "onboard setup v2, valid params, but erp api fails" do
+  test "onboard setup v2 does not depend on the erp api" do
     attrs = %{
       "name" => "orgname",
       "email" => "foobar@gmail.com",
@@ -610,9 +610,30 @@ defmodule Glific.OnboardTest do
              _server_messages: "[{\"message\":\"reason\"}]"
            }
          }}
+
+      %{method: :post, url: _} ->
+        {:ok,
+         %Tesla.Env{
+           status: 201,
+           body: %{
+             error: nil,
+             data: %{
+               user_id: 1,
+               api_key: "ApiKey abc",
+               organization_id: 1,
+               organization_name: "orgname",
+               project_name: "orgname",
+               project_id: 91,
+               user_email: "abc@kaapi.org"
+             },
+             metadata: nil,
+             success: true
+           }
+         }}
     end)
 
-    assert %{is_valid: false} = Onboard.setup_v2(attrs)
+    assert %{is_valid: true, organization: organization} = Onboard.setup_v2(attrs)
+    assert organization.shortcode == "org"
   end
 
   test "onboard setup v2, valid params for trial account" do
