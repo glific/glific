@@ -10,6 +10,7 @@ defmodule Glific.BigQueryTest do
     BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
     BigQuery.Schema,
+    Communications.WebMessage,
     Contacts.Contact,
     Flows.FlowResult,
     Partners,
@@ -898,6 +899,55 @@ defmodule Glific.BigQueryTest do
       result = BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"})
       assert result == :ok
     end
+  end
+
+  test "queue_table_data/3 exports a contact without a phone and its messages with a null phone",
+       %{
+         organization_id: organization_id
+       } do
+    contact = contact_without_phone_fixture(%{organization_id: organization_id})
+    {:ok, message} = WebMessage.receive_message(contact, %{body: "hello"}, :text)
+
+    BigQuery.insert_bigquery_jobs(organization_id)
+    test_pid = self()
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :post, url: url} = env ->
+        table = url |> String.split("/tables/") |> List.last() |> String.split("/") |> hd()
+        send(test_pid, {:insert_body, table, Jason.decode!(env.body)})
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+    end)
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("contacts", organization_id, %{
+               action: :insert,
+               min_id: contact.id - 1,
+               max_id: contact.id
+             })
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("messages", organization_id, %{
+               action: :insert,
+               min_id: message.id - 1,
+               max_id: message.id
+             })
+
+    assert_receive {:insert_body, "contacts", %{"rows" => contact_rows}}
+    assert %{"json" => contact_row} = Enum.find(contact_rows, &(&1["json"]["id"] == contact.id))
+    assert contact_row["phone"] == nil
+
+    assert_receive {:insert_body, "messages", %{"rows" => message_rows}}
+    assert %{"json" => message_row} = Enum.find(message_rows, &(&1["json"]["id"] == message.id))
+    assert message_row["contact_phone"] == nil
+    assert message_row["sender_phone"] == nil
   end
 
   test "queue_table_data/3 JSON-encodes list and map profile field values", %{

@@ -7,6 +7,7 @@ defmodule Glific.Contacts.Contact do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactIdentity,
     Enums.ContactProviderStatus,
     Enums.ContactStatus,
     Groups.Group,
@@ -19,11 +20,11 @@ defmodule Glific.Contacts.Contact do
   }
 
   @required_fields [
-    :phone,
     :language_id,
     :organization_id
   ]
   @optional_fields [
+    :phone,
     :name,
     :contact_type,
     :bsp_status,
@@ -59,6 +60,7 @@ defmodule Glific.Contacts.Contact do
           is_org_replied: boolean,
           is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          identities: [ContactIdentity.t()] | Ecto.Association.NotLoaded.t(),
           active_profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           active_profile_id: non_neg_integer | nil,
           language_id: non_neg_integer | nil,
@@ -116,6 +118,7 @@ defmodule Glific.Contacts.Contact do
     belongs_to(:organization, Organization)
 
     has_one(:user, User)
+    has_many(:identities, ContactIdentity)
     many_to_many(:tags, Tag, join_through: "contacts_tags", on_replace: :delete)
 
     many_to_many(:groups, Group, join_through: "contacts_groups", on_replace: :delete)
@@ -132,6 +135,7 @@ defmodule Glific.Contacts.Contact do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_phone_kept()
     |> validate_fields_map()
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
@@ -157,6 +161,15 @@ defmodule Glific.Contacts.Contact do
 
     %{contact | masked_phone: masked_phone}
   end
+
+  @spec validate_phone_kept(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_phone_kept(%{data: %{phone: phone}} = changeset) when phone not in [nil, ""] do
+    if get_field(changeset, :phone) in [nil, ""],
+      do: add_error(changeset, :phone, "can't be removed once set"),
+      else: changeset
+  end
+
+  defp validate_phone_kept(changeset), do: changeset
 
   @spec validate_fields_map(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_fields_map(%{changes: %{fields: fields}} = changeset) do
