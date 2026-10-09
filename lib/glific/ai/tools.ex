@@ -17,7 +17,7 @@ defmodule Glific.AI.Tools do
       step and cost ceilings bound a whole run.
   """
 
-  alias Glific.{AI.Tool, Repo, SafeLog, Users.User}
+  alias Glific.{AI.Tool, Repo, RepoReplica, SafeLog, Users.User}
 
   @modules [
     Glific.AI.Tools.Flows,
@@ -125,14 +125,33 @@ defmodule Glific.AI.Tools do
 
   @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   defp execute(module, name, args, user) do
-    Repo.put_organization_id(user.organization_id)
-    Repo.put_current_user(user)
+    # Bound outside the try: a variable set inside one is not safe to read from
+    # `after`. The caller's dynamic repository is process state, so a gateway
+    # that points it at the replica has to point it back, however the read ends.
+    caller_repo = Repo.get_dynamic_repo()
 
-    read(module, name, args)
-  rescue
-    exception ->
-      Glific.log_exception(exception)
-      {:error, "The lookup failed: #{Exception.message(exception)}"}
+    try do
+      read_from_replica(user)
+
+      read(module, name, args)
+    rescue
+      exception ->
+        Glific.log_exception(exception)
+        {:error, "The lookup failed: #{Exception.message(exception)}"}
+    after
+      Repo.put_dynamic_repo(caller_repo)
+    end
+  end
+
+  @spec read_from_replica(User.t()) :: :ok
+  defp read_from_replica(user) do
+    Enum.each([Repo, RepoReplica], fn repo ->
+      repo.put_organization_id(user.organization_id)
+      repo.put_current_user(user)
+    end)
+
+    Repo.put_dynamic_repo(RepoReplica.get_dynamic_repo())
+    :ok
   end
 
   @spec read(module(), String.t(), map()) :: {:ok, term()} | {:error, String.t()}

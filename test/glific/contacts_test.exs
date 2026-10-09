@@ -1946,4 +1946,124 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
   end
+
+  describe "contacts without a phone" do
+    test "simulator_contact?/1 is false for a nil phone" do
+      refute Contacts.simulator_contact?(nil)
+    end
+
+    test "fetch_by_identity/2 refuses a nil or empty identifier without querying" do
+      assert {:error, :no_identifier} == Contacts.fetch_by_identity(:whatsapp, nil)
+      assert {:error, :no_identifier} == Contacts.fetch_by_identity(:whatsapp, "")
+    end
+
+    test "fetch_by_identity/2 finds a WhatsApp contact by phone", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{id: id}} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
+      assert id == contact.id
+      assert {:error, :not_found} == Contacts.fetch_by_identity(:whatsapp, "919999900000")
+    end
+
+    test "fetch_by_identity/2 only finds contacts in the current organization", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      other_organization = Fixtures.organization_fixture()
+
+      Repo.put_organization_id(other_organization.id)
+      assert {:error, :not_found} == Contacts.fetch_by_identity(:whatsapp, contact.phone)
+
+      Repo.put_organization_id(organization_id)
+      assert {:ok, %Contact{}} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
+    end
+
+    test "whatsapp_phone/1 returns the phone only when there is one" do
+      assert {:ok, "919876543211"} == Contacts.whatsapp_phone(%Contact{phone: "919876543211"})
+      assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: nil})
+      assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: ""})
+    end
+
+    test "maybe_create_contact/1 never resolves a nil phone to an existing contact",
+         %{organization_id: organization_id} do
+      Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      for phone <- [nil, ""] do
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id})
+
+        assert %{phone: ["can't be blank"]} = errors_on(changeset)
+      end
+
+      assert {:error, %Ecto.Changeset{}} =
+               Contacts.maybe_create_contact(%{organization_id: organization_id})
+    end
+
+    test "maybe_update_contact/1 reports a missing phone" do
+      assert {:error, "Phone number is missing"} ==
+               Contacts.maybe_update_contact(%{phone: nil, name: "x"})
+    end
+
+    test "contact_opted_in/4 and contact_opted_out/4 refuse a nil phone",
+         %{organization_id: organization_id} do
+      now = DateTime.utc_now()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Contacts.contact_opted_in(%{phone: nil}, organization_id, now)
+
+      assert :error == Contacts.contact_opted_out(nil, organization_id, now)
+    end
+
+    test "optin_contact/1 refuses a contact without a phone", %{organization_id: organization_id} do
+      assert {:error, "Contact has no WhatsApp number."} ==
+               Contacts.optin_contact(%{phone: nil, organization_id: organization_id})
+    end
+
+    test "can_send_message_to? refuses WhatsApp sends but allows web sends",
+         %{organization_id: organization_id} do
+      contact = %Contact{
+        phone: nil,
+        status: :valid,
+        bsp_status: :session_and_hsm,
+        optin_time: DateTime.utc_now(),
+        last_message_at: DateTime.utc_now(),
+        organization_id: organization_id
+      }
+
+      no_number = {:error, "Contact has no WhatsApp number."}
+
+      assert no_number == Contacts.can_send_message_to?(contact)
+      assert no_number == Contacts.can_send_message_to?(contact, true)
+      assert no_number == Contacts.can_send_message_to?(contact, true, %{is_optin_flow: true})
+      assert no_number == Contacts.can_send_message_to?(contact, false, %{is_optin_flow: true})
+
+      assert no_number ==
+               Contacts.can_send_message_to?(contact, true, %{is_web_channel_otp: true})
+
+      assert {:ok, nil} == Contacts.can_send_message_to?(contact, false, %{channel: :web})
+    end
+
+    test "contact_blocked?/1 does not consult client block rules without a phone" do
+      refute Contacts.contact_blocked?(%Contact{phone: nil, status: :valid, organization_id: 1})
+      assert Contacts.contact_blocked?(%Contact{phone: nil, status: :blocked, organization_id: 1})
+    end
+
+    test "get_contact_by_phone!/1 raises a clear error for a nil phone" do
+      assert_raise ArgumentError, ~r/phone number is required/, fn ->
+        Contacts.get_contact_by_phone!(nil)
+      end
+    end
+
+    test "file_key/1 is the phone, or the contact id when there is no phone" do
+      assert "919876543211" == Contacts.file_key(%Contact{id: 7, phone: "919876543211"})
+      assert "contact-7" == Contacts.file_key(%Contact{id: 7, phone: nil})
+      assert "contact-7" == Contacts.file_key(%Contact{id: 7, phone: ""})
+    end
+
+    test "populate_masked_phone/1 leaves masked_phone nil when there is no phone" do
+      assert %Contact{masked_phone: nil} = Contact.populate_masked_phone(%Contact{phone: nil})
+    end
+  end
 end

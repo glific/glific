@@ -68,7 +68,10 @@ defmodule Glific.Reports do
     org = Partners.get_organization!(org_id)
 
     query
-    |> where([q], not like(q.phone, ^"#{Contacts.simulator_phone_prefix()}%"))
+    |> where(
+      [q],
+      is_nil(q.phone) or not like(q.phone, ^"#{Contacts.simulator_phone_prefix()}%")
+    )
     |> where([q], q.id != ^org.contact_id)
   end
 
