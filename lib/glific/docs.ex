@@ -44,11 +44,11 @@ defmodule Glific.Docs do
 
   # A table pairing user phrasings with section numbers. It matches almost any
   # question word for word, then points at a section instead of answering.
-  @excluded_sections ["18"]
+  @excluded_section "18"
 
-  # Sections written for Glific's engineers. An answer built from them sends
-  # the reader to an internal API they cannot reach.
-  @engineering ~r/lib\/glific\/|\.ex:\d|\bOban\b|\bEcto\b|defmodule|POST \/partner|\bpsql\b|\bJSONB\b/
+  # The operations manual is half written for Glific's engineers. An answer
+  # built from those sections sends the reader to an API they cannot reach.
+  @engineering ~r/lib\/glific|\.ex:\d|\bOban\b|\bEcto\b|defmodule|POST \/partner|\bpsql\b|\bJSONB\b|_logs` Schema/
 
   # Standard fusion constant: a section both passes rank beats one that only
   # a single pass found.
@@ -57,10 +57,6 @@ defmodule Glific.Docs do
 
   # A heading states what its section answers.
   @heading_weight 4
-
-  # Chapter 19 holds the corrections to commonly wrong answers.
-  @boosted_sections ["19"]
-  @boost_ranks 3
 
   # Without a floor each pass returns its full depth for any string at all.
   @minimum_similarity 0.45
@@ -145,7 +141,7 @@ defmodule Glific.Docs do
       chunks
       |> Enum.with_index(1)
       |> Enum.reduce(acc, fn {chunk, rank}, inner ->
-        contribution = 1.0 / (@rrf_k + max(rank - boost(chunk), 1))
+        contribution = 1.0 / (@rrf_k + rank)
         Map.update(inner, chunk.hash, {chunk, contribution}, &{chunk, elem(&1, 1) + contribution})
       end)
     end)
@@ -200,14 +196,6 @@ defmodule Glific.Docs do
   defp identifier?(token) do
     String.contains?(token, ".") or String.starts_with?(token, "@") or
       Regex.match?(~r/[a-z][A-Z]/, token)
-  end
-
-  defp boost(%{section_path: nil}), do: 0
-
-  defp boost(%{section_path: path}) do
-    if Enum.any?(@boosted_sections, &(path == &1 or String.starts_with?(path, &1 <> "."))),
-      do: @boost_ranks,
-      else: 0
   end
 
   # ── The index ──────────────────────────────────────────────────────────────
@@ -334,6 +322,11 @@ defmodule Glific.Docs do
   @spec documents() :: [String.t()]
   def documents, do: @documents
 
+  @doc "Whether a section is written for engineers rather than for chatbot staff."
+  @spec engineering?(chunk()) :: boolean()
+  def engineering?(%{body: body, heading_path: heading_path}),
+    do: String.match?(body, @engineering) or String.match?(heading_path, @engineering)
+
   @doc "Every section of every document, less the ones kept out."
   @spec all_chunks() :: [chunk()]
   def all_chunks do
@@ -346,11 +339,6 @@ defmodule Glific.Docs do
     end)
     |> Enum.reject(&(excluded?(&1) or engineering?(&1)))
   end
-
-  @doc "Whether a section is written for engineers rather than for chatbot staff."
-  @spec engineering?(chunk()) :: boolean()
-  def engineering?(%{body: body, heading_path: heading_path}),
-    do: String.match?(body, @engineering) or String.match?(heading_path, @engineering)
 
   @doc "Splits markdown into sections on its headings."
   @spec chunk(String.t(), String.t()) :: [chunk()]
@@ -366,7 +354,7 @@ defmodule Glific.Docs do
   defp excluded?(%{section_path: nil}), do: false
 
   defp excluded?(%{section_path: path, doc_file: "glific_chatbot_knowledge_base"}),
-    do: Enum.any?(@excluded_sections, &(path == &1 or String.starts_with?(path, &1 <> ".")))
+    do: path == @excluded_section or String.starts_with?(path, @excluded_section <> ".")
 
   defp excluded?(_chunk), do: false
 

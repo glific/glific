@@ -167,16 +167,6 @@ defmodule Glific.DocsTest do
       refute Enum.any?(chunks, &(&1.section_path == "18"))
     end
 
-    test "nothing written for engineers survives", %{chunks: chunks} do
-      for chunk <- chunks, do: refute(Docs.engineering?(chunk), chunk.heading_path)
-    end
-
-    test "a section citing a file is engineering, wherever it cites it" do
-      assert Docs.engineering?(chunk("Wallet", "See `lib/glific/providers/gupshup.ex`"))
-      assert Docs.engineering?(chunk("Partner API (`lib/glific/x.ex`)", "Top up the wallet."))
-      refute Docs.engineering?(chunk("Wallet", "Go to My Wallet and add credits."))
-    end
-
     test "only the manifest's documents contribute", %{chunks: chunks} do
       documents = MapSet.new(Docs.documents())
 

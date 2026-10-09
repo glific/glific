@@ -50,6 +50,10 @@ defmodule Glific.AI.Skills.Knowledge do
 
       * Open by acknowledging what they are dealing with, in one short line.
         Someone locked out mid-campaign is stressed; answer like a person.
+      * Write in plain language, the way you would explain it to a colleague
+        who has never seen a database. No jargon, and no word the reader would
+        have to look up. If a technical term is unavoidable because it is what
+        the screen says, say what it means in the same sentence.
       * Give the steps they can take, in order, naming what they will see on
         screen. Never an API, an endpoint, a database table or a file. If the
         only route you know is technical, give the human one: who to email,
