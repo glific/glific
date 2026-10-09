@@ -67,17 +67,6 @@ template-asset*
 
 # Claude agent scratch memory (not source — lives in the local memory store)
 .claude/agent-memory/
-/.local/
-
-# Local-only evaluation harness and golden seed data (not shipped)
-/lib/glific/scripts/dify_eval.ex
-/lib/glific/scripts/golden_qa.ex
-/plans/documentation-search-eval.md
-/priv/repo/seeds_golden.exs
-/lib/mix/tasks/glific.docs.eval.ex
-/lib/glific/docs/golden.ex
-/priv/docs_kb/golden_sections.csv
-
 
 # ExUnit tmp_dir scratch
 /tmp/
