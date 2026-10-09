@@ -137,8 +137,10 @@ defmodule Glific.AI.Tools do
 
   @spec read(module(), String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   defp read(module, name, args) do
-    module
-    |> in_transaction(fn -> module.run(name, args) end)
+    Repo.transaction(fn ->
+      Repo.query!("SET LOCAL transaction_read_only = on")
+      module.run(name, args)
+    end)
     |> case do
       {:ok, {:ok, result}} ->
         {:ok, result}
@@ -149,25 +151,5 @@ defmodule Glific.AI.Tools do
       {:error, reason} ->
         {:error, "The lookup could not be completed: #{SafeLog.safe_inspect(reason)}"}
     end
-  end
-
-  # A tool that issues no SQL is given no connection. Opening one would hold a
-  # pooled connection for an in-memory lookup, and in tests the read-only
-  # setting outlives the savepoint on a shared sandbox connection.
-  @spec in_transaction(module(), (-> term())) :: {:ok, term()} | {:error, term()}
-  defp in_transaction(module, read) do
-    if reads_database?(module) do
-      Repo.transaction(fn ->
-        Repo.query!("SET LOCAL transaction_read_only = on")
-        read.()
-      end)
-    else
-      {:ok, read.()}
-    end
-  end
-
-  @spec reads_database?(module()) :: boolean()
-  defp reads_database?(module) do
-    not function_exported?(module, :reads_database?, 0) or module.reads_database?()
   end
 end

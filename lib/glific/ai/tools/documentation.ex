@@ -7,8 +7,7 @@ defmodule Glific.AI.Tools.Documentation do
   status" but "what does that status mean".
 
   It returns sections rather than an answer, leaving the reply to the skill.
-  Retrieval is `Glific.Docs`, which is in memory and takes no database
-  connection.
+  Retrieval is `Glific.Docs`, which searches in memory.
   """
 
   alias Glific.Docs
@@ -46,11 +45,6 @@ defmodule Glific.AI.Tools.Documentation do
       }
     ]
   end
-
-  @doc "The index is in memory, so this needs no database connection."
-  @impl Glific.AI.Tool
-  @spec reads_database?() :: boolean()
-  def reads_database?, do: false
 
   @doc "Searches the documentation and returns the matching sections."
   @impl Glific.AI.Tool

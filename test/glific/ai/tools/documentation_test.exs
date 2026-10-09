@@ -20,10 +20,14 @@ defmodule Glific.AI.Tools.DocumentationTest do
     %{user: Fixtures.user_fixture(%{organization_id: 1})}
   end
 
-  describe "the tool" do
-    test "a search returns sections with the page they came from", %{user: user} do
-      assert {:ok, [section | _rest]} =
-               Tools.run("search_documentation", %{"query" => "publish a flow"}, user)
+  # The gateway opens a read-only transaction per call, which these do not
+  # need: the search is in memory. One test below goes through it.
+  defp search(query, limit \\ 5),
+    do: Documentation.run("search_documentation", %{query: query, limit: limit})
+
+  describe "what a search returns" do
+    test "sections with the page they came from" do
+      assert {:ok, [section | _rest]} = search("publish a flow")
 
       assert section.title != ""
       assert section.body != ""
@@ -31,36 +35,43 @@ defmodule Glific.AI.Tools.DocumentationTest do
       assert is_nil(section.source) or section.source =~ ~r{^https?://}
     end
 
-    test "the number of sections is clamped", %{user: user} do
-      assert {:ok, sections} =
-               Tools.run("search_documentation", %{"query" => "flow", "limit" => 500}, user)
-
-      assert length(sections) <= 10
-    end
-
-    test "a query matching nothing is an error the model can act on", %{user: user} do
-      # Both legs have to come back empty for this: the lexical one because no
-      # term matches, the semantic one because nothing clears the floor.
-      assert {:error, message} =
-               Tools.run("search_documentation", %{"query" => "zzzqqq unrelatedtoglific"}, user)
-
-      assert message =~ "Nothing in the documentation"
-    end
-
-    test "an off-topic question does not come back with sections anyway", %{user: user} do
-      for question <- ["what is the weather in Mumbai today", "write me a poem about cats"] do
-        assert {:error, _message} =
-                 Tools.run("search_documentation", %{"query" => question}, user),
-               question
-      end
-    end
-
-    test "it returns sections rather than a composed answer", %{user: user} do
+    test "sections rather than a composed answer" do
       # The skill writes the reply, so the tool returns the raw sections.
-      {:ok, [section | _rest]} = Tools.run("search_documentation", %{"query" => "opt-in"}, user)
+      {:ok, [section | _rest]} = search("opt-in")
 
       assert Map.has_key?(section, :body)
       refute Map.has_key?(section, :answer)
+    end
+
+    test "the number of sections is clamped" do
+      assert {:ok, sections} = search("flow", 500)
+      assert length(sections) <= 10
+    end
+
+    test "no single section can crowd out the others" do
+      for section <- elem(search("flow", 10), 1) do
+        assert byte_size(section.body) <= 2_100, section.title
+      end
+    end
+
+    test "a query matching nothing is an error the model can act on" do
+      assert {:error, message} = search("zzzqqq unrelatedtoglific")
+      assert message =~ "Nothing in the documentation"
+    end
+
+    test "an off-topic question does not come back with sections anyway" do
+      for question <- ["what is the weather in Mumbai today", "write me a poem about cats"] do
+        assert {:error, _message} = search(question), question
+      end
+    end
+
+    test "no engineering detail reaches an answer" do
+      # An NGO told to call an internal API has been given a dead end. The
+      # heading counts too — some sections cite a file only in the title.
+      for section <- elem(search("gupshup wallet balance"), 1) do
+        refute section.body =~ ~r/lib\/glific\/|\.ex:\d|defmodule/, section.title
+        refute section.section =~ ~r/lib\/glific\/|\.ex:\d|defmodule/, section.title
+      end
     end
   end
 
@@ -75,52 +86,17 @@ defmodule Glific.AI.Tools.DocumentationTest do
     ]
 
     test "each supported subject returns something" do
-      # Retrieval, not the gateway: going through the tool would open a
-      # read-only transaction per topic for a lookup that issues no SQL.
-      for topic <- @topics do
-        assert Docs.find(topic, limit: 5) != [], topic
-      end
-    end
-  end
-
-  describe "the database" do
-    test "the search holds no connection", %{user: user} do
-      # The gateway opens a read-only transaction per tool call. For an
-      # in-memory lookup that spends a pooled connection on no SQL at all.
-      refute Documentation.reads_database?()
-      assert {:ok, _sections} = Tools.run("search_documentation", %{"query" => "flow"}, user)
-    end
-
-    test "a tool that does read the database still gets its transaction" do
-      # Nothing else declares the callback, so every other tool keeps the
-      # read-only transaction it relies on.
-      for module <- Tools.modules(), module != Documentation do
-        refute function_exported?(module, :reads_database?, 0) and
-                 module.reads_database?() == false,
-               inspect(module)
-      end
+      for topic <- @topics, do: assert({:ok, [_ | _]} = search(topic), topic)
     end
   end
 
   describe "wiring" do
-    test "the knowledge skill can reach it" do
+    test "the agent can reach it", %{user: user} do
       assert Documentation in Skills.modules(Knowledge)
-    end
-
-    test "it is registered with the agent" do
       assert "search_documentation" in Enum.map(Tools.all(), & &1.name)
-    end
 
-    test "no engineering detail reaches an answer", %{user: user} do
-      # An NGO told to call an internal API has been given a dead end.
-      {:ok, sections} =
-        Tools.run("search_documentation", %{"query" => "gupshup wallet balance"}, user)
-
-      for section <- sections do
-        # The heading counts too — some sections cite a file only in the title.
-        refute section.body =~ ~r/lib\/glific\/|\.ex:\d|defmodule/, section.title
-        refute section.section =~ ~r/lib\/glific\/|\.ex:\d|defmodule/, section.title
-      end
+      assert {:ok, [_section | _rest]} =
+               Tools.run("search_documentation", %{"query" => "publish a flow"}, user)
     end
   end
 end
