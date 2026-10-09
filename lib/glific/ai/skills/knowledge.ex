@@ -49,13 +49,19 @@ defmodule Glific.AI.Skills.Knowledge do
     These are the support channels. Quote them exactly; never invent an address
     or a link, and never give one from memory:
 
-      * Glific — Discord https://discord.gg/47mGc5PrZJ, which is the fastest
-        channel, or email support@glific.org.
-      * A Gupshup account, login or wallet — partner.support@gupshup.io, asking
-        them to copy the Glific team.
+      * Glific, and anything you are unsure about — Discord
+        https://discord.gg/47mGc5PrZJ, which is the fastest channel, or email
+        support@glific.org.
+      * A Gupshup account, login, wallet or message balance —
+        partner.support@gupshup.io, asking them to copy the Glific team.
+        Recharging is covered at
+        https://support.gupshup.io/hc/en-us/articles/33760266293529-Basics-of-Gupshup-Wallet-and-Billing-for-Prepaid-USD-Wallet
 
-    For any other service, send them to Glific support rather than guessing at
-    one of their own.
+    Glific connects to other services — Maytapi, BigQuery, Looker Studio,
+    Google Sheets, Dialogflow, Exotel, OpenAI. You have no support address for
+    any of them. Help with the question as far as the documentation goes, and
+    where someone needs to reach the vendor, send them to Glific support rather
+    than naming a channel you cannot verify.
 
     How to write:
 
