@@ -10,6 +10,7 @@ defmodule Glific.BigQueryTest do
     BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
     BigQuery.Schema,
+    Communications.WebMessage,
     Contacts.Contact,
     Flows.FlowResult,
     Partners,
@@ -505,6 +506,71 @@ defmodule Glific.BigQueryTest do
              )
   end
 
+  test "make_insert_query/4 updates only the failed table's schema when a row misses a field the dataset still requires",
+       %{organization_id: org_id} do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      tables_url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables"
+
+      insert_url = tables_url <> "/contacts/insertAll"
+      contacts_url = tables_url <> "/contacts"
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^insert_url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: [
+                  %GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponseInsertErrors{
+                    index: 0,
+                    errors: [
+                      %GoogleApi.BigQuery.V2.Model.ErrorProto{
+                        reason: "invalid",
+                        message: "Missing required field: phone."
+                      }
+                    ]
+                  }
+                ]
+              })
+          }
+
+        %Tesla.Env{method: :patch, url: ^contacts_url} ->
+          send(test_pid, :contacts_schema_updated)
+          %Tesla.Env{status: 200, body: "{}"}
+
+        %Tesla.Env{url: url} ->
+          send(test_pid, {:unexpected_call, url})
+          %Tesla.Env{status: 200, body: "{}"}
+      end)
+
+      assert :ok ==
+               BigQuery.make_insert_query(
+                 [%{json: %{id: 1, name: "no phone"}}],
+                 "contacts",
+                 org_id,
+                 max_id: 10,
+                 last_updated_at: nil
+               )
+
+      assert_received :contacts_schema_updated
+      refute_received :contacts_schema_updated
+      refute_received {:unexpected_call, _url}
+    end
+  end
+
   test "make_insert_query/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
        %{organization_id: org_id} do
     with_mocks([
@@ -898,6 +964,55 @@ defmodule Glific.BigQueryTest do
       result = BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"})
       assert result == :ok
     end
+  end
+
+  test "queue_table_data/3 exports a contact without a phone and its messages with a null phone",
+       %{
+         organization_id: organization_id
+       } do
+    contact = contact_without_phone_fixture(%{organization_id: organization_id})
+    {:ok, message} = WebMessage.receive_message(contact, %{body: "hello"}, :text)
+
+    BigQuery.insert_bigquery_jobs(organization_id)
+    test_pid = self()
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :post, url: url} = env ->
+        table = url |> String.split("/tables/") |> List.last() |> String.split("/") |> hd()
+        send(test_pid, {:insert_body, table, Jason.decode!(env.body)})
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+    end)
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("contacts", organization_id, %{
+               action: :insert,
+               min_id: contact.id - 1,
+               max_id: contact.id
+             })
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("messages", organization_id, %{
+               action: :insert,
+               min_id: message.id - 1,
+               max_id: message.id
+             })
+
+    assert_receive {:insert_body, "contacts", %{"rows" => contact_rows}}
+    assert %{"json" => contact_row} = Enum.find(contact_rows, &(&1["json"]["id"] == contact.id))
+    assert contact_row["phone"] == nil
+
+    assert_receive {:insert_body, "messages", %{"rows" => message_rows}}
+    assert %{"json" => message_row} = Enum.find(message_rows, &(&1["json"]["id"] == message.id))
+    assert message_row["contact_phone"] == nil
+    assert message_row["sender_phone"] == nil
   end
 
   test "queue_table_data/3 JSON-encodes list and map profile field values", %{

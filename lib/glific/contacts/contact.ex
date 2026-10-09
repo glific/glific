@@ -7,6 +7,7 @@ defmodule Glific.Contacts.Contact do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactIdentity,
     Enums.ContactProviderStatus,
     Enums.ContactStatus,
     Groups.Group,
@@ -19,11 +20,11 @@ defmodule Glific.Contacts.Contact do
   }
 
   @required_fields [
-    :phone,
     :language_id,
     :organization_id
   ]
   @optional_fields [
+    :phone,
     :name,
     :contact_type,
     :bsp_status,
@@ -59,6 +60,7 @@ defmodule Glific.Contacts.Contact do
           is_org_replied: boolean,
           is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          identities: [ContactIdentity.t()] | Ecto.Association.NotLoaded.t(),
           active_profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           active_profile_id: non_neg_integer | nil,
           language_id: non_neg_integer | nil,
@@ -116,6 +118,7 @@ defmodule Glific.Contacts.Contact do
     belongs_to(:organization, Organization)
 
     has_one(:user, User)
+    has_many(:identities, ContactIdentity)
     many_to_many(:tags, Tag, join_through: "contacts_tags", on_replace: :delete)
 
     many_to_many(:groups, Group, join_through: "contacts_groups", on_replace: :delete)
@@ -125,18 +128,37 @@ defmodule Glific.Contacts.Contact do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
+  Standard changeset pattern we use for all data types. A new contact must have a phone; use
+  `changeset_without_phone/2` for one created with its login identity instead.
   """
   @spec changeset(Contact.t(), map()) :: Ecto.Changeset.t()
   def changeset(contact, attrs) do
     contact
+    |> changeset_without_phone(attrs)
+    |> validate_phone_on_insert()
+  end
+
+  @doc """
+  The changeset for a contact that may have no phone: one created together with its login identity.
+  """
+  @spec changeset_without_phone(Contact.t(), map()) :: Ecto.Changeset.t()
+  def changeset_without_phone(contact, attrs) do
+    contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_organization_kept()
+    |> validate_phone_kept()
     |> validate_fields_map()
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
   end
+
+  @spec validate_phone_on_insert(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_phone_on_insert(%{data: %{__meta__: %{state: :built}}} = changeset),
+    do: validate_required(changeset, [:phone])
+
+  defp validate_phone_on_insert(changeset), do: changeset
 
   @doc false
   @spec to_minimal_map(Contact.t()) :: map()
@@ -157,6 +179,24 @@ defmodule Glific.Contacts.Contact do
 
     %{contact | masked_phone: masked_phone}
   end
+
+  @spec validate_organization_kept(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_organization_kept(%{data: %{__meta__: %{state: :loaded}}} = changeset) do
+    if get_change(changeset, :organization_id),
+      do: add_error(changeset, :organization_id, "can't be changed"),
+      else: changeset
+  end
+
+  defp validate_organization_kept(changeset), do: changeset
+
+  @spec validate_phone_kept(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_phone_kept(%{data: %{phone: phone}} = changeset) when phone not in [nil, ""] do
+    if get_field(changeset, :phone) in [nil, ""],
+      do: add_error(changeset, :phone, "can't be removed once set"),
+      else: changeset
+  end
+
+  defp validate_phone_kept(changeset), do: changeset
 
   @spec validate_fields_map(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_fields_map(%{changes: %{fields: fields}} = changeset) do

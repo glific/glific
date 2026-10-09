@@ -138,6 +138,39 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
+  describe "a contact without a phone" do
+    test "is returned with a null phone and masked phone", %{manager: user} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+
+      {:ok, query_data} = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
+
+      assert %{"id" => _, "phone" => nil, "maskedPhone" => nil} =
+               get_in(query_data, [:data, "contact", "contact"])
+    end
+
+    test "staff still don't see a phone", %{staff: user} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+
+      {:ok, query_data} = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
+
+      assert get_in(query_data, [:data, "contact", "contact", "phone"]) == ""
+    end
+
+    test "can be renamed", %{manager: user} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+
+      {:ok, query_data} =
+        auth_query_gql_by(:update, user,
+          variables: %{"id" => contact.id, "input" => %{"name" => "Ravi"}}
+        )
+
+      assert %{"name" => "Ravi", "phone" => nil} =
+               get_in(query_data, [:data, "updateContact", "contact"])
+
+      assert nil == get_in(query_data, [:data, "updateContact", "errors"])
+    end
+  end
+
   test "contact by id returns one contact or nil", %{staff: user} do
     name = "NGO Main Account"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})

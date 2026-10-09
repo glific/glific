@@ -959,6 +959,29 @@ defmodule Glific.BigQuery do
     )
   end
 
+  @spec refresh_table_schema(non_neg_integer(), String.t()) :: any()
+  defp refresh_table_schema(organization_id, table) do
+    with schema_fn when not is_nil(schema_fn) <- Map.get(bigquery_tables(organization_id), table),
+         {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
+           fetch_bigquery_credentials(organization_id) do
+      Tables.bigquery_tables_patch(conn, project_id, dataset_id, table,
+        body: %{schema: %{fields: apply(Schema, schema_fn, [])}}
+      )
+    end
+  end
+
+  @spec missing_required_field?(any()) :: boolean()
+  defp missing_required_field?(insert_errors) when is_list(insert_errors) do
+    Enum.any?(insert_errors, fn row_error ->
+      row_error
+      |> Map.get(:errors, [])
+      |> List.wrap()
+      |> Enum.any?(&String.contains?(Map.get(&1, :message) || "", "Missing required field"))
+    end)
+  end
+
+  defp missing_required_field?(_insert_errors), do: false
+
   @spec handle_insert_query_response(tuple(), non_neg_integer, Keyword.t()) :: :ok
   defp handle_insert_query_response({:ok, res}, organization_id, opts) do
     table = Keyword.get(opts, :table)
@@ -967,6 +990,9 @@ defmodule Glific.BigQuery do
 
     cond do
       res.insertErrors != nil ->
+        if missing_required_field?(res.insertErrors),
+          do: refresh_table_schema(organization_id, table)
+
         Glific.log_error(
           "BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}"
         )

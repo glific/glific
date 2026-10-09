@@ -609,8 +609,9 @@ defmodule Glific.Seeds.SeedsMigration do
     |> Repo.query!([], skip_organization_id: true, timeout: 900_000)
   end
 
+  @doc "Ids of the organizations with an active BigQuery credential."
   @spec bigquery_enabled_org_ids() :: list()
-  defp bigquery_enabled_org_ids do
+  def bigquery_enabled_org_ids do
     Partners.Credential
     |> join(:left, [c], p in Partners.Provider, as: :p, on: c.provider_id == p.id)
     |> where([_c, p], p.shortcode == ^"bigquery")

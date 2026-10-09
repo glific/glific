@@ -266,7 +266,8 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a contact.
+  Creates a contact from a phone-based entry point, so the phone is required. A contact without a
+  phone is only created together with its login identity, from `new_contact_changeset/1`.
 
   ## Examples
 
@@ -278,21 +279,27 @@ defmodule Glific.Contacts do
 
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact(%{organization_id: organization_id} = attrs) do
-    attrs =
-      attrs
-      |> Map.put(
-        :language_id,
-        attrs[:language_id] || Partners.organization_language_id(organization_id)
-      )
-      |> Map.put(
-        :last_communication_at,
-        attrs[:last_communication_at] || DateTime.utc_now()
-      )
-
+  def create_contact(attrs) do
     %Contact{}
-    |> Contact.changeset(attrs)
+    |> Contact.changeset(with_new_contact_defaults(attrs))
     |> Repo.insert()
+  end
+
+  @doc """
+  The changeset for a new contact that may have no phone, to insert together with its login identity.
+  """
+  @spec new_contact_changeset(map()) :: Ecto.Changeset.t()
+  def new_contact_changeset(attrs),
+    do: Contact.changeset_without_phone(%Contact{}, with_new_contact_defaults(attrs))
+
+  @spec with_new_contact_defaults(map()) :: map()
+  defp with_new_contact_defaults(%{organization_id: organization_id} = attrs) do
+    attrs
+    |> Map.put(
+      :language_id,
+      attrs[:language_id] || Partners.organization_language_id(organization_id)
+    )
+    |> Map.put(:last_communication_at, attrs[:last_communication_at] || DateTime.utc_now())
   end
 
   @doc """
@@ -407,7 +414,8 @@ defmodule Glific.Contacts do
 
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
-  it returns the existing contact, else it creates a new one
+  it returns the existing contact, else it creates a new one. The phone is the conflict target,
+  so it is required: a nil phone would never conflict and would insert a phone-less contact.
   """
   @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(%{organization_id: organization_id} = attrs) do
