@@ -188,26 +188,20 @@ defmodule Glific.AI.ToolsTest do
     end
 
     test "the caller's dynamic repository is put back afterwards", %{user: user} do
-      original = Repo.get_dynamic_repo()
       Repo.put_dynamic_repo(:the_callers_own_choice)
 
       assert {:ok, _ran_as} = Tools.run("whoami_tool", %{}, user, modules())
 
       assert Repo.get_dynamic_repo() == :the_callers_own_choice,
              "the gateway left the caller pointed at the replica"
-
-      Repo.put_dynamic_repo(original)
     end
 
     test "it is put back even when the tool raises", %{user: user} do
-      original = Repo.get_dynamic_repo()
       Repo.put_dynamic_repo(:the_callers_own_choice)
 
       assert {:error, _message} = Tools.run("raising_tool", %{}, user, modules())
 
       assert Repo.get_dynamic_repo() == :the_callers_own_choice
-
-      Repo.put_dynamic_repo(original)
     end
 
     test "a tool returns data read through the replica", %{user: user} do
