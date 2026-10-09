@@ -1,7 +1,8 @@
 defmodule Glific.Contacts.ContactIdentity do
   @moduledoc """
   How a contact logs in on a channel. A contact is the person; it can have one identity per login
-  (a phone on web, a username issued by its NGO, later a Telegram chat id).
+  (a username issued by its NGO, later a WhatsApp phone or a Telegram chat id). Login credentials
+  only: per-channel state lives elsewhere.
 
   The `identifier` is opaque and matched exactly, so it is neither trimmed nor case-folded. It is
   unique within an organization and channel.

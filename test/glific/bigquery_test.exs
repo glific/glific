@@ -506,7 +506,7 @@ defmodule Glific.BigQueryTest do
              )
   end
 
-  test "make_insert_query/4 re-syncs the schema when a row misses a field the dataset still requires",
+  test "make_insert_query/4 updates only the failed table's schema when a row misses a field the dataset still requires",
        %{organization_id: org_id} do
     with_mocks([
       {
@@ -519,12 +519,11 @@ defmodule Glific.BigQueryTest do
         ]
       }
     ]) do
-      insert_url =
-        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/contacts/insertAll"
+      tables_url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables"
 
-      datasets_url =
-        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets"
-
+      insert_url = tables_url <> "/contacts/insertAll"
+      contacts_url = tables_url <> "/contacts"
       test_pid = self()
 
       Tesla.Mock.mock(fn
@@ -548,13 +547,13 @@ defmodule Glific.BigQueryTest do
               })
           }
 
-        %Tesla.Env{method: :post, url: ^datasets_url} ->
-          send(test_pid, :schema_sync_started)
+        %Tesla.Env{method: :put, url: ^contacts_url} ->
+          send(test_pid, :contacts_schema_updated)
+          %Tesla.Env{status: 200, body: "{}"}
 
-          %Tesla.Env{
-            status: 403,
-            body: Jason.encode!(%{"error" => %{"code" => 403, "status" => "PERMISSION_DENIED"}})
-          }
+        %Tesla.Env{url: url} ->
+          send(test_pid, {:unexpected_call, url})
+          %Tesla.Env{status: 200, body: "{}"}
       end)
 
       assert :ok ==
@@ -566,7 +565,9 @@ defmodule Glific.BigQueryTest do
                  last_updated_at: nil
                )
 
-      assert_received :schema_sync_started
+      assert_received :contacts_schema_updated
+      refute_received :contacts_schema_updated
+      refute_received {:unexpected_call, _url}
     end
   end
 
