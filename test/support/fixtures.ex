@@ -128,8 +128,9 @@ defmodule Glific.Fixtures do
       language_id: 1
     }
 
-    %Contact{}
-    |> Contact.changeset(Enum.into(attrs, valid_attrs))
+    attrs
+    |> Enum.into(valid_attrs)
+    |> Contacts.new_contact_changeset()
     |> Repo.insert!()
   end
 

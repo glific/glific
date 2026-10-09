@@ -7,6 +7,9 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
   use Ecto.Migration
 
   def change do
+    # The foreign key to contacts briefly locks that table; fail fast rather than queue behind a long query.
+    execute("SET LOCAL lock_timeout = '5s'", "SET LOCAL lock_timeout = '5s'")
+
     create table(:contact_identities,
              comment: "Channel logins of a contact; the contact itself stays the person"
            ) do

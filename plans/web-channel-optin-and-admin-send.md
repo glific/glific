@@ -29,7 +29,7 @@ opt-in checkbox from US3.
 
 | # | Ticket | Repo | Depends on |
 |---|---|---|---|
-| T1 | Migration: `contact_histories.channel` and `contact_channel_optins` | glific | — |
+| T1 | Migration: `contact_histories.channel` and `contact_channels` | glific | — |
 | T2 | `ContactChannelOptin` schema and the `Contacts` API that writes it | glific | T1 |
 | T3 | Thread the flow context's channel into `capture_history/3` | glific | T1 |
 | T4 | Web login records a web opt-in and never a WhatsApp one | glific | T2 |
@@ -54,7 +54,7 @@ opt-in checkbox from US3.
 
 - `contact_histories.channel`: `message_channel_enum`, `default: "whatsapp"`, `null: false`. No
   backfill — every existing row predates the web channel, so the default is the backfill.
-- `contact_channel_optins`: `contact_id`, `organization_id`, `channel`, `optin_time`,
+- `contact_channels`: `contact_id`, `organization_id`, `channel`, `optin_time`,
   `optin_method`, `optout_time`, `optout_method`, timestamps. Unique index on
   `(contact_id, channel)`; index on `(organization_id, channel)`.
 
@@ -142,7 +142,7 @@ quietly reinstating the WhatsApp opt-in.
 - BigQuery: `bigquery_schema.ex` `contact_history_schema`, the `get_query` select at
   `bigquery_worker.ex:1902`, and the row mapping at `:1114`.
 
-`contact_channel_optins` is **not** synced to BigQuery. Say so in the PR so it reads as a
+`contact_channels` is **not** synced to BigQuery. Say so in the PR so it reads as a
 decision.
 
 ## T7 — Delivering a staff reply
@@ -254,7 +254,7 @@ existing design tokens; do not introduce literals.
 
 - [ ] A brand-new number completing web login has `contacts.optin_time`, `optin_status`,
       `optin_method` and `optin_message_id` unchanged from their defaults.
-- [ ] That contact has one `contact_channel_optins` row for `:web` with an `optin_time`.
+- [ ] That contact has one `contact_channels` row for `:web` with an `optin_time`.
 - [ ] The OTP HSM was delivered to that number against a real BSP on staging.
 - [ ] A contact already opted in to WhatsApp who then signs in on the web keeps their WhatsApp
       opt-in byte for byte — same `optin_time`, same `optin_method`, not refreshed.
