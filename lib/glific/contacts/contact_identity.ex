@@ -7,19 +7,17 @@ defmodule Glific.Contacts.ContactIdentity do
   The `identifier` is opaque and matched exactly, so it is neither trimmed nor case-folded. It is
   unique within an organization and channel.
 
-  The identity's organization must be its contact's. The changeset checks this, but the database
-  doesn't, and bulk inserts skip changesets: every identity must be written through this changeset.
+  The identity's organization must be its contact's; nothing checks this, so identities are only
+  written by code that takes the organization from the contact.
   """
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactIdentity,
     Enums.MessageChannel,
-    Partners.Organization,
-    Repo
+    Partners.Organization
   }
 
   @required_fields [:contact_id, :organization_id, :channel, :identifier]
@@ -34,8 +32,8 @@ defmodule Glific.Contacts.ContactIdentity do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           channel: MessageChannel.t() | nil,
           identifier: String.t() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: :utc_datetime_usec | nil,
+          updated_at: :utc_datetime_usec | nil
         }
 
   schema "contact_identities" do
@@ -45,7 +43,7 @@ defmodule Glific.Contacts.ContactIdentity do
     belongs_to :contact, Contact
     belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """
@@ -57,27 +55,8 @@ defmodule Glific.Contacts.ContactIdentity do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_length(:identifier, min: 1, max: 255)
-    |> validate_contact_organization()
     |> unique_constraint([:organization_id, :channel, :identifier])
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:organization_id)
   end
-
-  @spec validate_contact_organization(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_contact_organization(%{valid?: true} = changeset) do
-    contact_id = get_field(changeset, :contact_id)
-    organization_id = get_field(changeset, :organization_id)
-
-    contact_organization_id =
-      Contact
-      |> where([c], c.id == ^contact_id)
-      |> select([c], c.organization_id)
-      |> Repo.one(skip_organization_id: true)
-
-    if contact_organization_id in [nil, organization_id],
-      do: changeset,
-      else: add_error(changeset, :contact_id, "belongs to another organization")
-  end
-
-  defp validate_contact_organization(changeset), do: changeset
 end

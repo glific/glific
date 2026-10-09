@@ -11,7 +11,7 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
     execute("SET LOCAL lock_timeout = '5s'", "SET LOCAL lock_timeout = '5s'")
 
     create table(:contact_identities,
-             comment: "Channel logins of a contact; the contact itself stays the person"
+             comment: "Channel identifiers of a contact; the contact itself stays the person"
            ) do
       add :contact_id, references(:contacts, on_delete: :delete_all),
         null: false,
@@ -30,7 +30,7 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
         null: false,
         comment: "Login identifier on the channel, matched exactly (case-sensitive)"
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime_usec)
     end
 
     create unique_index(:contact_identities, [:organization_id, :channel, :identifier])
