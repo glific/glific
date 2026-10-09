@@ -116,7 +116,7 @@ defmodule Glific.MixProject do
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:dataloader, "~> 2.0"},
-      {:hackney, "~> 1.17"},
+      {:hackney, "~> 4.8", override: true},
       {:tesla, "~> 1.5"},
       {:oban, "~> 2.19"},
       {:oban_web, "~> 2.11", only: @oban_envs},
