@@ -191,6 +191,19 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
+  test "create_whatsapp_form_response/1 returns an error when the response has no context id",
+       %{organization_id: organization_id} do
+    attrs =
+      @valid_attrs_for_create
+      |> Map.put(:organization_id, organization_id)
+      |> Map.put(:context_id, nil)
+
+    assert {:error, "WhatsApp form response has no context id"} =
+             WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+
+    assert Repo.aggregate(WhatsappFormResponse, :count) == 0
+  end
+
   test "write_to_google_sheet/2 stringifies map values like calendar_range and list values like options ",
        %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
