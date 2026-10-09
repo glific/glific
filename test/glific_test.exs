@@ -93,4 +93,14 @@ defmodule GlificTest do
                "Email us at System.Support"
     end
   end
+
+  describe "mask_phone_number/1" do
+    test "masks the last five digits" do
+      assert "9198*****" == Glific.mask_phone_number("919876543")
+    end
+
+    test "returns an empty string for a contact without a phone" do
+      assert "" == Glific.mask_phone_number(nil)
+    end
+  end
 end

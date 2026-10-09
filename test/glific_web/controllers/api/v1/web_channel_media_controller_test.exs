@@ -141,6 +141,61 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       end)
     end
 
+    defp sign_upload(conn, contact) do
+      conn
+      |> put_req_header("authorization", "Bearer #{Token.sign_contact_token(contact)}")
+      |> post(Routes.api_v1_web_channel_media_path(conn, :upload_url), %{
+        "type" => "image",
+        "content_type" => "image/png",
+        "size" => 1024
+      })
+    end
+
+    # The shared buckets outlive a test, so they are cleared rather than assumed empty.
+    defp with_upload_limit(key, count, fun) do
+      previous = Application.get_env(:glific, key)
+      Application.put_env(:glific, key, scale_ms: 60_000, count: count)
+      ExRated.delete_bucket("web_channel_upload:total")
+      ExRated.delete_bucket("web_channel_upload_ip:127.0.0.1")
+
+      try do
+        fun.()
+      after
+        Application.put_env(:glific, key, previous)
+      end
+    end
+
+    test "throttles one contact to its own upload budget", %{conn: conn, contact: contact} do
+      with_web_channel_enabled(fn ->
+        configure_gcs(contact.organization_id)
+
+        with_upload_limit(:rate_limit_web_channel_upload_contact, 2, fn ->
+          assert json_response(sign_upload(conn, contact), 200)
+          assert json_response(sign_upload(conn, contact), 200)
+
+          assert %{"error" => %{"code" => "rate_limited"}} =
+                   json_response(sign_upload(conn, contact), 429)
+        end)
+      end)
+    end
+
+    # No per-contact or per-address budget bounds storage abuse when many contacts are driven at
+    # once, which is what the total is for.
+    test "throttles everybody together once the overall budget is spent", %{
+      conn: conn,
+      contact: contact
+    } do
+      with_web_channel_enabled(fn ->
+        configure_gcs(contact.organization_id)
+        other_contact = Fixtures.contact_fixture()
+
+        with_upload_limit(:rate_limit_web_channel_upload_total, 1, fn ->
+          assert json_response(sign_upload(conn, contact), 200)
+          assert json_response(sign_upload(conn, other_contact), 429)
+        end)
+      end)
+    end
+
     # Server-derived throughout, so a caller cannot escape the prefix or choose the extension.
     test "derives the object's extension from the content type, ignoring anything the caller implies",
          %{conn: conn, contact: contact} do

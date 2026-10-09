@@ -38,11 +38,12 @@ defmodule Glific.Clients.Sol do
 
     current_time = :os.system_time(:millisecond)
 
-    folder = "#{city}/#{contact.phone}/#{student_name}"
+    file_key = Contacts.file_key(contact)
+    folder = "#{city}/#{file_key}/#{student_name}"
 
     extension = get_extension(media["type"])
 
-    file_name = "#{contact.phone}_#{city}_#{student_name}_#{caption}_#{current_time}.#{extension}"
+    file_name = "#{file_key}_#{city}_#{student_name}_#{caption}_#{current_time}.#{extension}"
 
     "#{folder}/#{file_name}"
   end

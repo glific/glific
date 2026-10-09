@@ -258,6 +258,17 @@ defmodule Glific.AI.ToolDetailsTest do
       assert is_list(all.certificates)
     end
 
+    test "get_contact finds a contact by phone, and asks for a phone when it is blank", %{
+      user: user,
+      contact: contact
+    } do
+      assert {:ok, %{id: id}} = Tools.run("get_contact", %{"phone" => contact.phone}, user)
+      assert id == contact.id
+
+      assert {:error, "Give a phone number to identify the contact."} ==
+               Tools.run("get_contact", %{"phone" => ""}, user)
+    end
+
     test "a collection filter returns only that collection's contacts", %{
       user: user,
       contact: contact
