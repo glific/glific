@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
 
   use ExUnit.Case, async: false
 
-  alias Glific.Docs.{Index, Indexer}
+  alias Glific.Docs
   alias Mix.Tasks.Glific.Docs.Index, as: Task
 
   @directory Path.join([File.cwd!(), "priv", "docs_kb"])
@@ -16,11 +16,11 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
   setup do
     Mix.shell(Mix.Shell.Process)
 
-    artifacts = [Index.artifact_path(), Path.join(@directory, "embeddings.etf")]
+    artifacts = [Docs.artifact_path(), Path.join(@directory, "embeddings.etf")]
     original = artifacts |> Enum.find(&File.exists?/1) |> File.read!()
 
     documents =
-      Map.new(Indexer.documents(), fn document ->
+      Map.new(Docs.documents(), fn document ->
         path = Path.join(@directory, "#{document}.md")
         {path, File.read!(path)}
       end)
@@ -29,9 +29,8 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
       Enum.each(artifacts, &File.write!(&1, original))
       Enum.each(documents, fn {path, body} -> File.write!(path, body) end)
       Application.delete_env(:glific, :docs_embedding_request_options)
-      Application.delete_env(:glific, :docs_sync_request_options)
       Mix.shell(Mix.Shell.IO)
-      Index.warm()
+      Docs.warm()
     end)
 
     %{documents: documents}
@@ -77,7 +76,7 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
       assert printed =~ "Indexed"
       assert printed =~ "8 dimensions"
       assert printed =~ "Wrote"
-      assert printed =~ Index.artifact_path()
+      assert printed =~ Docs.artifact_path()
     end
 
     test "a second run reports everything reused" do
@@ -105,51 +104,6 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
     end
   end
 
-  describe "--sync" do
-    test "it pulls the documents before indexing and says what changed" do
-      stub_embeddings(8)
-
-      Application.put_env(:glific, :docs_sync_request_options,
-        plug: fn conn -> Plug.Conn.send_resp(conn, 200, "# Replaced\n\n" <> body()) end
-      )
-
-      assert :ok = Task.run(["--sync", "--force", "--dimensions", "8"])
-
-      printed = output()
-      assert printed =~ "Synced from glific/dify, updated:"
-      assert printed =~ "Indexed"
-    end
-
-    test "unchanged documents are reported as unchanged", %{documents: documents} do
-      stub_embeddings(8)
-
-      Application.put_env(:glific, :docs_sync_request_options,
-        plug: fn conn ->
-          document = Path.basename(conn.request_path, ".md")
-
-          Plug.Conn.send_resp(
-            conn,
-            200,
-            Map.fetch!(documents, Path.join(@directory, "#{document}.md"))
-          )
-        end
-      )
-
-      assert :ok = Task.run(["--sync", "--force", "--dimensions", "8"])
-      assert output() =~ "none changed"
-    end
-
-    test "a failed sync stops the run rather than indexing a half-updated corpus" do
-      Application.put_env(:glific, :docs_sync_request_options,
-        plug: fn conn -> Plug.Conn.send_resp(conn, 500, "boom") end
-      )
-
-      assert_raise Mix.Error, ~r/Sync failed/, fn ->
-        Task.run(["--sync"])
-      end
-    end
-  end
-
   describe "failures" do
     test "a provider error is raised rather than reported as success" do
       Application.put_env(:glific, :docs_embedding_request_options,
@@ -165,6 +119,4 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
       assert_raise OptionParser.ParseError, fn -> Task.run(["--nonsense"]) end
     end
   end
-
-  defp body, do: String.duplicate("A replacement document long enough to chunk. ", 8)
 end

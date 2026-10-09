@@ -88,7 +88,7 @@ defmodule Glific.Application do
 
     # Read once into :persistent_term so every process searching the
     # documentation reads it without copying it.
-    Docs.Index.warm()
+    Docs.warm()
 
     Supervisor.start_link(children, opts)
   end

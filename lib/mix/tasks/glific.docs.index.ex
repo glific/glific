@@ -4,13 +4,11 @@ defmodule Mix.Tasks.Glific.Docs.Index do
   @moduledoc """
   Rebuilds the documentation embedding artifact.
 
-  Only chunks whose text changed are re-embedded. Commit the artifact it
-  writes — boot reads it rather than rebuilding.
-
-  `--sync` pulls the latest documentation from `glific/dify` first.
+  Only sections whose text changed are re-embedded, so editing a paragraph
+  costs one request rather than hundreds. Commit the artifact it writes — boot
+  reads it rather than rebuilding, so starting Glific needs no provider.
 
       mix glific.docs.index
-      mix glific.docs.index --sync
       mix glific.docs.index --force
       mix glific.docs.index --model openai:text-embedding-3-large --dimensions 512
 
@@ -19,10 +17,12 @@ defmodule Mix.Tasks.Glific.Docs.Index do
 
   use Mix.Task
 
-  alias Glific.Docs.{Index, Indexer, Sync}
-  alias Glific.SafeLog
+  alias Glific.Docs
 
-  @switches [force: :boolean, model: :string, dimensions: :integer, sync: :boolean]
+  @switches [force: :boolean, model: :string, dimensions: :integer]
+
+  # One request per batch, well inside the provider's input cap.
+  @batch_size 96
 
   @impl Mix.Task
   @spec run([String.t()]) :: :ok
@@ -31,41 +31,84 @@ defmodule Mix.Tasks.Glific.Docs.Index do
     {:ok, _apps} = Application.ensure_all_started(:req_llm)
 
     {opts, _rest} = OptionParser.parse!(argv, strict: @switches)
+    model = Keyword.get(opts, :model, Docs.model())
+    dimensions = Keyword.get(opts, :dimensions, Docs.dimensions())
 
-    if opts[:sync], do: sync()
+    chunks = Docs.all_chunks()
+    Mix.shell().info("Chunking #{length(chunks)} sections…")
 
-    Mix.shell().info("Chunking #{length(Indexer.all_chunks())} sections…")
+    known = if opts[:force], do: %{}, else: reusable(model, dimensions)
+    {fresh, stale} = Enum.split_with(chunks, &Map.has_key?(known, &1.hash))
 
-    case Indexer.build(opts) do
-      {:ok, summary} -> report(summary)
-      {:error, reason} -> Mix.raise("Indexing failed: #{SafeLog.safe_inspect(reason)}")
-    end
-  end
+    case embed_all(stale, model, dimensions) do
+      {:ok, embedded} ->
+        entries = Enum.map(fresh, &%{chunk: &1, vector: Map.fetch!(known, &1.hash)}) ++ embedded
 
-  defp sync do
-    {:ok, _apps} = Application.ensure_all_started(:req)
+        Docs.write!(entries,
+          model: model,
+          dimensions: dimensions,
+          chunks: length(entries),
+          built_at: DateTime.utc_now()
+        )
 
-    case Sync.run() do
-      {:ok, %{changed: [], unchanged: unchanged}} ->
-        Mix.shell().info("Synced #{length(unchanged)} documents from glific/dify, none changed.")
-
-      {:ok, %{changed: changed}} ->
-        Mix.shell().info("Synced from glific/dify, updated: #{Enum.join(changed, ", ")}")
+        report(entries, embedded, fresh, known, model, dimensions)
 
       {:error, reason} ->
-        Mix.raise("Sync failed: #{reason}")
+        Mix.raise("Indexing failed: #{Glific.SafeLog.safe_inspect(reason)}")
+    end
+
+    :ok
+  end
+
+  # Mixing two embedding spaces in one index silently ranks at random.
+  defp reusable(model, dimensions) do
+    metadata = Docs.metadata()
+
+    if metadata[:model] == model and metadata[:dimensions] == dimensions,
+      do: Map.new(Docs.entries(), &{&1.chunk.hash, &1.vector}),
+      else: %{}
+  end
+
+  defp embed_all([], _model, _dimensions), do: {:ok, []}
+
+  defp embed_all(chunks, model, dimensions) do
+    chunks
+    |> Enum.chunk_every(@batch_size)
+    |> Enum.reduce_while({:ok, []}, fn batch, {:ok, acc} ->
+      case embed_batch(batch, model, dimensions) do
+        {:ok, entries} -> {:cont, {:ok, acc ++ entries}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp embed_batch(batch, model, dimensions) do
+    texts = Enum.map(batch, &"#{&1.heading_path}\n\n#{&1.body}")
+
+    case ReqLLM.embed(model, texts, Docs.embed_opts(dimensions)) do
+      {:ok, vectors} when length(vectors) == length(batch) ->
+        {:ok,
+         batch
+         |> Enum.zip(vectors)
+         |> Enum.map(fn {chunk, floats} -> %{chunk: chunk, vector: Docs.pack(floats)} end)}
+
+      {:ok, vectors} ->
+        {:error, "expected #{length(batch)} embeddings, got #{length(vectors)}"}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  defp report(summary) do
+  defp report(entries, embedded, fresh, known, model, dimensions) do
     Mix.shell().info("""
 
-    Indexed #{summary.total} chunks with #{summary.model} at #{summary.dimensions} dimensions.
-      embedded  #{summary.embedded}
-      reused    #{summary.reused}
-      removed   #{summary.removed}
+    Indexed #{length(entries)} sections with #{model} at #{dimensions} dimensions.
+      embedded  #{length(embedded)}
+      reused    #{length(fresh)}
+      removed   #{max(map_size(known) - length(fresh), 0)}
 
-    Wrote #{Index.artifact_path()}
+    Wrote #{Docs.artifact_path()}
     """)
   end
 end

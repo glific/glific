@@ -7,11 +7,11 @@ defmodule Glific.AI.Tools.Documentation do
   status" but "what does that status mean".
 
   It returns sections rather than an answer, leaving the reply to the skill.
-  Retrieval is `Glific.Docs.Search`, which is in memory and takes no database
+  Retrieval is `Glific.Docs`, which is in memory and takes no database
   connection.
   """
 
-  alias Glific.Docs.{Chunk, Search}
+  alias Glific.Docs
 
   @behaviour Glific.AI.Tool
 
@@ -56,19 +56,35 @@ defmodule Glific.AI.Tools.Documentation do
   @impl Glific.AI.Tool
   @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("search_documentation", %{query: query} = args) do
-    case Search.find(query, limit: min(args[:limit], 10)) do
+    case Docs.find(query, limit: min(args[:limit], 10)) do
       [] -> {:error, no_match(query)}
-      results -> {:ok, Enum.map(results, &section(&1.chunk))}
+      chunks -> {:ok, Enum.map(chunks, &section/1)}
     end
   end
 
-  defp section(%Chunk{} = chunk) do
+  # Capped so one long section cannot crowd the others out of the context.
+  @max_body 2_000
+
+  defp section(chunk) do
     %{
-      title: Chunk.title(chunk),
+      title: Docs.title(chunk),
       section: chunk.heading_path,
-      body: chunk.body,
+      body: truncate(chunk.body),
       source: chunk.source_url
     }
+  end
+
+  defp truncate(body) when byte_size(body) <= @max_body, do: body
+
+  defp truncate(body) do
+    body |> binary_part(0, @max_body) |> whole_characters() |> Kernel.<>("\n… (continues)")
+  end
+
+  # The cut lands mid-character whenever a multibyte one spans the boundary.
+  defp whole_characters(binary) do
+    if String.valid?(binary),
+      do: binary,
+      else: binary |> binary_part(0, byte_size(binary) - 1) |> whole_characters()
   end
 
   defp no_match(query),

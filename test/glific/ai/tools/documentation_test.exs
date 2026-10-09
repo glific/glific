@@ -13,11 +13,10 @@ defmodule Glific.AI.Tools.DocumentationTest do
   alias Glific.AI.Skills.Knowledge
   alias Glific.AI.Tools.Documentation
   alias Glific.Docs
-  alias Glific.Docs.Search
   alias Glific.Fixtures
 
   setup do
-    Docs.Index.warm()
+    Docs.warm()
     %{user: Fixtures.user_fixture(%{organization_id: 1})}
   end
 
@@ -79,7 +78,7 @@ defmodule Glific.AI.Tools.DocumentationTest do
       # Retrieval, not the gateway: going through the tool would open a
       # read-only transaction per topic for a lookup that issues no SQL.
       for topic <- @topics do
-        assert Search.find(topic, limit: 5) != [], topic
+        assert Docs.find(topic, limit: 5) != [], topic
       end
     end
   end
