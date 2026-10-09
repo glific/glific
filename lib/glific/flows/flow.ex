@@ -13,6 +13,7 @@ defmodule Glific.Flows.Flow do
     AccessControl.Role,
     Contacts.Contact,
     Enums.FlowType,
+    Enums.MessageChannel,
     Flows,
     Flows.Action,
     Flows.FlowContext,
@@ -28,6 +29,7 @@ defmodule Glific.Flows.Flow do
   @required_fields [:name, :uuid, :organization_id]
   @optional_fields [
     :flow_type,
+    :channel,
     :keywords,
     :version_number,
     :uuid_map,
@@ -59,6 +61,7 @@ defmodule Glific.Flows.Flow do
           respond_no_response: boolean() | nil,
           is_template: boolean() | nil,
           flow_type: String.t() | nil,
+          channel: String.t() | atom() | nil,
           status: String.t(),
           skip_validation: boolean() | nil,
           definition: map() | nil,
@@ -83,6 +86,7 @@ defmodule Glific.Flows.Flow do
     # this is the flow editor version number
     field(:version_number, :string)
     field(:flow_type, FlowType)
+    field(:channel, MessageChannel, default: :whatsapp)
     field(:uuid, Ecto.UUID)
 
     field(:uuid_map, :map, virtual: true)
@@ -135,8 +139,23 @@ defmodule Glific.Flows.Flow do
       |> unique_constraint([:uuid, :organization_id])
       |> foreign_key_constraint(:tag_id)
       |> update_change(:keywords, &update_keywords(&1))
+      |> validate_channel_unchanged()
 
     validate_keywords(changeset, get_change(changeset, :keywords))
+  end
+
+  @spec validate_channel_unchanged(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_channel_unchanged(%Ecto.Changeset{data: %Flow{id: nil}} = changeset),
+    do: changeset
+
+  defp validate_channel_unchanged(changeset) do
+    case fetch_change(changeset, :channel) do
+      {:ok, _channel} ->
+        add_error(changeset, :channel, "cannot be changed after the flow is created")
+
+      :error ->
+        changeset
+    end
   end
 
   @spec update_keywords(any()) :: list()
@@ -332,6 +351,7 @@ defmodule Glific.Flows.Flow do
           respond_other: f.respond_other,
           respond_no_response: f.respond_no_response,
           skip_validation: f.skip_validation,
+          channel: f.channel,
           organization_id: f.organization_id,
           definition: fr.definition,
           version: fr.version
@@ -446,7 +466,7 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.size(dangling) == 0,
       do: errors,
-      else: [{dangling, "Your flow has dangling nodes", "Warning"} | errors]
+      else: [{Enum.join(dangling, ","), "Your flow has dangling nodes", "Warning"} | errors]
   end
 
   @spec missing_flow_context_nodes(list(), map(), MapSet.t()) :: list()
@@ -711,7 +731,10 @@ defmodule Glific.Flows.Flow do
     |> Enum.each(fn contact_id ->
       contact = Repo.get_by(Contact, %{id: contact_id})
 
-      Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results})
+      # Only the flow's own contact inherits its channel; a different contact has no web session.
+      channel = if contact.id == context.contact_id, do: context.channel, else: :whatsapp
+
+      Flows.start_contact_flow(flow.id, contact, %{"parent" => context.results}, channel)
     end)
 
     group_ids =

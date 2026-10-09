@@ -129,6 +129,26 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
   end
 
+  describe "create/2 without a matching contact" do
+    test "a verified phone with no contact gets an error response, not a crash", %{conn: conn} do
+      phone = "919800000123"
+      otp = OTP.generate_code(:auth, phone)
+
+      params = %{
+        "user" => %{
+          "phone" => phone,
+          "name" => "No contact",
+          "password" => @password,
+          "otp" => otp
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :create, params))
+
+      assert %{"error" => %{"errors" => ["Contact not found"]}} = json_response(conn, 500)
+    end
+  end
+
   describe "send_otp/2" do
     setup do
       Tesla.Mock.mock(fn
@@ -164,12 +184,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send_otp is rate limited to one request per IP within the window", %{conn: conn} do
       rate_limit_key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
-      original_config = Application.get_env(:glific, :otp_rate_limit)
-      Application.put_env(:glific, :otp_rate_limit, scale_ms: 30_000, count: 1)
+      original_config = Application.get_env(:glific, :rate_limit_api_otp)
+      Application.put_env(:glific, :rate_limit_api_otp, scale_ms: 30_000, count: 1)
       ExRated.delete_bucket(rate_limit_key)
 
       on_exit(fn ->
-        Application.put_env(:glific, :otp_rate_limit, original_config)
+        Application.put_env(:glific, :rate_limit_api_otp, original_config)
         ExRated.delete_bucket(rate_limit_key)
       end)
 
@@ -687,6 +707,20 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   describe "rate limit tests" do
     @password "Secret12345!"
     @max_unauth_requests 50
+
+    # config/test.exs raises the unauthenticated limit out of the suite's way, so a test that wants
+    # the limiter to actually fire has to ask for a real limit.
+    setup do
+      previous = Application.get_env(:glific, :rate_limit_api_unauthenticated)
+
+      Application.put_env(:glific, :rate_limit_api_unauthenticated,
+        scale_ms: 60_000,
+        count: @max_unauth_requests
+      )
+
+      on_exit(fn -> Application.put_env(:glific, :rate_limit_api_unauthenticated, previous) end)
+      :ok
+    end
 
     test "with invalid request", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
