@@ -14,7 +14,7 @@ defmodule Glific.AI.Langfuse do
   have no OTLP representation and go to `/api/public/scores`.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     AI.Event,
@@ -25,7 +25,7 @@ defmodule Glific.AI.Langfuse do
 
   @traces_path "/api/public/otel/v1/traces"
   @scores_path "/api/public/scores"
-  @realtime {"x-langfuse-ingestion-version", "4"}
+  @ingestion_version {"x-langfuse-ingestion-version", "4"}
   # A space joins digit groups only behind a `+` or a bracket. Without that
   # guard two unrelated ids sitting side by side — "6298936 6289903" — read as
   # one fourteen-digit number and both are lost.
@@ -62,7 +62,10 @@ defmodule Glific.AI.Langfuse do
   """
   @spec trace(non_neg_integer()) :: :ok | {:error, String.t()}
   def trace(message_id) do
-    with {:ok, payload} <- payload(message_id), do: post(@traces_path, payload)
+    case payload(message_id) do
+      {:ok, payload} -> post(@traces_path, payload)
+      {:error, _reason} = error -> error
+    end
   rescue
     exception ->
       Glific.log_exception(exception)
@@ -353,7 +356,7 @@ defmodule Glific.AI.Langfuse do
     |> Enum.join()
     |> Req.post(
       json: payload,
-      headers: [@realtime],
+      headers: [@ingestion_version],
       auth: {:basic, "#{config[:public_key]}:#{config[:secret_key]}"},
       receive_timeout: config[:receive_timeout] || 10_000,
       retry: :transient
