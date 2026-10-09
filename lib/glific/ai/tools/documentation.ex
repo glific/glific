@@ -47,6 +47,11 @@ defmodule Glific.AI.Tools.Documentation do
     ]
   end
 
+  @doc "The index is in memory, so this needs no database connection."
+  @impl Glific.AI.Tool
+  @spec reads_database?() :: boolean()
+  def reads_database?, do: false
+
   @doc "Searches the documentation and returns the matching sections."
   @impl Glific.AI.Tool
   @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}

@@ -11,7 +11,9 @@ defmodule Glific.AI.Tools.DocumentationTest do
 
   alias Glific.AI.{Skills, Tools}
   alias Glific.AI.Skills.Knowledge
+  alias Glific.AI.Tools.Documentation
   alias Glific.Docs
+  alias Glific.Docs.Search
   alias Glific.Fixtures
 
   setup do
@@ -73,17 +75,37 @@ defmodule Glific.AI.Tools.DocumentationTest do
       "collections and contact fields"
     ]
 
-    test "each supported subject returns something", %{user: user} do
+    test "each supported subject returns something" do
+      # Retrieval, not the gateway: going through the tool would open a
+      # read-only transaction per topic for a lookup that issues no SQL.
       for topic <- @topics do
-        assert {:ok, [_ | _]} = Tools.run("search_documentation", %{"query" => topic}, user),
-               topic
+        assert Search.find(topic, limit: 5) != [], topic
+      end
+    end
+  end
+
+  describe "the database" do
+    test "the search holds no connection", %{user: user} do
+      # The gateway opens a read-only transaction per tool call. For an
+      # in-memory lookup that spends a pooled connection on no SQL at all.
+      refute Documentation.reads_database?()
+      assert {:ok, _sections} = Tools.run("search_documentation", %{"query" => "flow"}, user)
+    end
+
+    test "a tool that does read the database still gets its transaction" do
+      # Nothing else declares the callback, so every other tool keeps the
+      # read-only transaction it relies on.
+      for module <- Tools.modules(), module != Documentation do
+        refute function_exported?(module, :reads_database?, 0) and
+                 module.reads_database?() == false,
+               inspect(module)
       end
     end
   end
 
   describe "wiring" do
     test "the knowledge skill can reach it" do
-      assert Glific.AI.Tools.Documentation in Skills.modules(Knowledge)
+      assert Documentation in Skills.modules(Knowledge)
     end
 
     test "it is registered with the agent" do

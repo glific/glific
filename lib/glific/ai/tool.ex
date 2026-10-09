@@ -35,4 +35,15 @@ defmodule Glific.AI.Tool do
   failure of the request.
   """
   @callback run(name :: String.t(), args :: map()) :: {:ok, term()} | {:error, String.t()}
+
+  @doc """
+  Whether this module's reads go to the database. Defaults to true.
+
+  A module that answers from memory returns false, and the gateway then skips
+  the read-only transaction rather than holding a pooled connection for work
+  that issues no SQL.
+  """
+  @callback reads_database?() :: boolean()
+
+  @optional_callbacks reads_database?: 0
 end
