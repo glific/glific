@@ -21,15 +21,14 @@ defmodule Glific.Docs do
 
   alias Glific.SafeLog
 
-  @documents ~w(glific_chatbot_knowledge_base glific_platform_guide glific_operations_manual)
-
   @index_key {__MODULE__, :entries}
   @metadata_key {__MODULE__, :metadata}
   @artifact "docs_kb/embeddings.etf"
+  @documents ~w(glific_chatbot_knowledge_base glific_platform_guide glific_operations_manual)
   @version 1
 
-  @typedoc "A heading, its prose, and the page it came from."
-  @type chunk() :: %{
+  @typedoc "One section of documentation: a heading, its prose, and its page."
+  @type section() :: %{
           doc_file: String.t(),
           section_path: String.t() | nil,
           heading_path: String.t(),
@@ -38,21 +37,10 @@ defmodule Glific.Docs do
           hash: String.t()
         }
 
-  @typedoc "A chunk and its vector. `vector` is nil when no artifact was built."
-  @type entry() :: %{chunk: chunk(), vector: binary() | nil}
+  @typedoc "An indexed section. `vector` is nil when no artifact was built."
+  @type entry() :: %{section: section(), vector: binary() | nil}
 
-  # Below this, a section is a label rather than an answer.
-  @minimum_body 160
   @separator " › "
-
-  # 18 pairs user phrasings with section numbers, so it matches almost any
-  # question word for word and then points at a section instead of answering.
-  # 17 is the API summary, written for developers.
-  @excluded_sections ["17", "18"]
-
-  # The operations manual is half written for Glific's engineers. An answer
-  # built from those sections sends the reader to an API they cannot reach.
-  @engineering ~r/lib\/glific|\bsrc\/|glific-frontend|\.ex:\d|\.tsx?`|\bOban\b|\bEcto\b|defmodule|POST \/partner|\bpsql\b|\bJSONB\b|_logs` Schema/
 
   # Standard fusion constant: a section both passes rank beats one that only
   # a single pass found.
@@ -76,137 +64,69 @@ defmodule Glific.Docs do
     having getting trying tried like want able there's i'm we're
   ))
 
-  # ── Searching ──────────────────────────────────────────────────────────────
+  # ── The entries ────────────────────────────────────────────────────────────
 
-  @doc "The sections most likely to answer `question`, best first."
-  @spec find(String.t(), keyword()) :: [chunk()]
-  def find(question, opts \\ []) do
-    entries = entries()
+  @doc "The documents that make up the corpus."
+  @spec documents() :: [String.t()]
+  def documents, do: @documents
 
-    %{
-      lexical: lexical(question, entries),
-      semantic: semantic(question, entries, opts[:query_vector])
-    }
-    |> fuse()
-    |> Enum.take(Keyword.get(opts, :limit, 5))
+  @doc "Every entry of every document."
+  @spec sections() :: [section()]
+  def sections do
+    Enum.flat_map(@documents, fn document ->
+      :glific
+      |> Application.app_dir("priv/docs_kb/#{document}.md")
+      |> File.read!()
+      |> parse(document)
+    end)
   end
 
-  @doc "The lexical pass on its own."
-  @spec lexical(String.t(), [entry()]) :: [chunk()]
-  def lexical(question, entries) do
-    terms = terms(question)
+  @doc """
+  Splits a document into its entries.
 
-    if terms == [] do
-      []
-    else
-      floor = min(@minimum_overlap, @heading_weight * length(terms))
-      identifiers = identifiers(question)
+  Each begins with `--- entry`, then `key: value` lines, then `---`, then the
+  prose. The boundaries are written down rather than worked out from the
+  headings, so a document says where its answers start and stop.
+  """
+  @spec parse(String.t(), String.t()) :: [section()]
+  def parse(text, document) do
+    text
+    |> String.split(~r/^--- entry\s*$/m, trim: true)
+    |> Enum.map(&entry(&1, document))
+    |> Enum.reject(&is_nil/1)
+  end
 
-      entries
-      |> Enum.map(&{overlap(&1.chunk, terms, identifiers), &1.chunk})
-      |> Enum.filter(&(elem(&1, 0) >= floor))
-      |> Enum.sort_by(fn {score, chunk} -> {-score, byte_size(chunk.body)} end)
-      |> Enum.take(@leg_depth)
-      |> Enum.map(&elem(&1, 1))
+  defp entry(block, document) do
+    case String.split(block, ~r/^---\s*$/m, parts: 2) do
+      [front, body] -> build(front, String.trim(body), document)
+      _no_front_matter -> nil
     end
   end
 
-  @doc "The semantic pass on its own."
-  @spec semantic(String.t(), [entry()], binary() | nil) :: [chunk()]
-  def semantic(question, entries, query_vector \\ nil)
-  def semantic(_question, [], _query_vector), do: []
-
-  def semantic(question, entries, nil) do
-    if Enum.any?(entries, & &1.vector) do
-      case embed(question) do
-        {:ok, vector} ->
-          semantic(question, entries, vector)
-
-        {:error, reason} ->
-          Logger.warning(
-            "docs question not embedded (#{SafeLog.safe_inspect(reason)}); lexical only"
-          )
-
-          []
-      end
-    else
-      []
-    end
-  end
-
-  def semantic(_question, entries, vector) do
-    entries
-    |> Enum.reject(&is_nil(&1.vector))
-    |> Enum.map(&{similarity(&1.vector, vector), &1.chunk})
-    |> Enum.filter(&(elem(&1, 0) >= @minimum_similarity))
-    |> Enum.sort_by(&(-elem(&1, 0)))
-    |> Enum.take(@leg_depth)
-    |> Enum.map(&elem(&1, 1))
-  end
-
-  @doc "Merges the passes by rank, each contributing `1 / (k + rank)`."
-  @spec fuse(%{atom() => [chunk()]}) :: [chunk()]
-  def fuse(passes) do
-    passes
-    |> Enum.reduce(%{}, fn {_pass, chunks}, acc ->
-      chunks
-      |> Enum.with_index(1)
-      |> Enum.reduce(acc, fn {chunk, rank}, inner ->
-        contribution = 1.0 / (@rrf_k + rank)
-        Map.update(inner, chunk.hash, {chunk, contribution}, &{chunk, elem(&1, 1) + contribution})
+  defp build(front, body, document) do
+    fields =
+      front
+      |> String.split("\n", trim: true)
+      |> Enum.filter(&String.contains?(&1, ":"))
+      |> Map.new(fn line ->
+        [key, value] = String.split(line, ":", parts: 2)
+        {String.trim(key), String.trim(value)}
       end)
-    end)
-    |> Map.values()
-    |> Enum.sort_by(&(-elem(&1, 1)))
-    |> Enum.map(&elem(&1, 0))
-  end
 
-  @doc "The terms worth matching on. Notation stays whole, dots and all."
-  @spec terms(String.t()) :: [String.t()]
-  def terms(question) do
-    ~r/[@a-z0-9][a-z0-9._\-]*/u
-    |> Regex.scan(String.downcase(question))
-    |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
-    |> Enum.reject(&(String.length(&1) < 2 or MapSet.member?(@stopwords, &1)))
-    |> Enum.uniq()
-  end
+    heading = Map.get(fields, "heading", "")
 
-  @doc "The last heading in a chunk's trail."
-  @spec title(chunk()) :: String.t()
-  def title(chunk), do: chunk.heading_path |> String.split(@separator) |> List.last()
-
-  defp overlap(chunk, terms, identifiers) do
-    heading = String.downcase(chunk.heading_path)
-    body = String.downcase(chunk.body)
-
-    Enum.reduce(terms, 0, fn term, score ->
-      cond do
-        String.contains?(heading, term) -> score + @heading_weight
-        String.contains?(body, term) -> score + body_weight(term, identifiers)
-        true -> score
-      end
-    end)
-  end
-
-  # An identifier is exact: `@results.parent.state.input` means that string and
-  # nothing else. The documents write identifiers in prose rather than in
-  # headings, so a body match on one counts for as much as a heading match.
-  defp body_weight(term, identifiers) do
-    if MapSet.member?(identifiers, term), do: @heading_weight, else: 1
-  end
-
-  # Read before downcasing, which is where the camel hump would be lost.
-  defp identifiers(question) do
-    ~r/[@a-zA-Z0-9][a-zA-Z0-9._\-]*/u
-    |> Regex.scan(question)
-    |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
-    |> Enum.filter(&identifier?/1)
-    |> MapSet.new(&String.downcase/1)
-  end
-
-  defp identifier?(token) do
-    String.contains?(token, ".") or String.starts_with?(token, "@") or
-      Regex.match?(~r/[a-z][A-Z]/, token)
+    if heading == "" or body == "" do
+      nil
+    else
+      %{
+        doc_file: document,
+        section_path: Map.get(fields, "section"),
+        heading_path: heading,
+        body: body,
+        source_url: Map.get(fields, "source"),
+        hash: :sha256 |> :crypto.hash(heading <> body) |> Base.encode16(case: :lower)
+      }
+    end
   end
 
   # ── The index ──────────────────────────────────────────────────────────────
@@ -214,15 +134,15 @@ defmodule Glific.Docs do
   @doc "Reads the artifact into `:persistent_term`, once, on boot."
   @spec warm() :: :ok
   def warm do
-    {entries, metadata} = read_artifact()
-    :persistent_term.put(@index_key, entries)
-    :persistent_term.put(@metadata_key, metadata)
+    artifact = read_artifact()
+    :persistent_term.put(@index_key, artifact.entries)
+    :persistent_term.put(@metadata_key, artifact.metadata)
     :ok
   end
 
-  @doc "Every indexed chunk with its vector."
+  @doc "Every indexed section with its vector."
   @spec entries() :: [entry()]
-  def entries, do: :persistent_term.get(@index_key, nil) || elem(read_artifact(), 0)
+  def entries, do: :persistent_term.get(@index_key, nil) || read_artifact().entries
 
   @doc "How many sections are indexed."
   @spec count() :: non_neg_integer()
@@ -230,7 +150,7 @@ defmodule Glific.Docs do
 
   @doc "What the last build recorded about itself."
   @spec metadata() :: map()
-  def metadata, do: :persistent_term.get(@metadata_key, nil) || elem(read_artifact(), 1)
+  def metadata, do: :persistent_term.get(@metadata_key, nil) || read_artifact().metadata
 
   @doc "Where the build artifact lives."
   @spec artifact_path() :: String.t()
@@ -250,24 +170,28 @@ defmodule Glific.Docs do
     :ok
   end
 
-  @spec read_artifact() :: {[entry()], map()}
+  @spec read_artifact() :: %{entries: [entry()], metadata: map()}
   defp read_artifact do
     with {:ok, binary} <- File.read(artifact_path()),
          %{version: @version, entries: entries} = payload <- :erlang.binary_to_term(binary) do
-      {entries, Map.get(payload, :metadata, %{})}
+      %{entries: entries, metadata: Map.get(payload, :metadata, %{})}
     else
       other ->
         Logger.warning(
           "docs index unusable (#{SafeLog.safe_inspect(other)}); searching without vectors"
         )
 
-        {Enum.map(all_chunks(), &%{chunk: &1, vector: nil}), %{}}
+        {Enum.map(sections(), &%{section: &1, vector: nil}), %{}}
     end
   rescue
     exception ->
       Logger.warning("docs index unreadable (#{Exception.message(exception)})")
-      {Enum.map(all_chunks(), &%{chunk: &1, vector: nil}), %{}}
+      without_vectors()
   end
+
+  # The lexical pass still works without an artifact; the semantic one cannot.
+  defp without_vectors,
+    do: %{entries: Enum.map(sections(), &%{section: &1, vector: nil}), metadata: %{}}
 
   # ── Embedding ──────────────────────────────────────────────────────────────
 
@@ -337,178 +261,142 @@ defmodule Glific.Docs do
   defp config(key, default),
     do: :glific |> Application.get_env(__MODULE__, []) |> Keyword.get(key, default)
 
-  # ── Chunking ───────────────────────────────────────────────────────────────
+  # ── Searching ──────────────────────────────────────────────────────────────
 
-  @doc "The documents that make up the corpus."
-  @spec documents() :: [String.t()]
-  def documents, do: @documents
-
-  @doc "Whether a section is written for engineers rather than for chatbot staff."
-  @spec engineering?(chunk()) :: boolean()
-  def engineering?(%{body: body, heading_path: heading_path}),
-    do: String.match?(body, @engineering) or String.match?(heading_path, @engineering)
-
-  @doc "Every section of every document, less the ones kept out."
-  @spec all_chunks() :: [chunk()]
-  def all_chunks do
-    @documents
-    |> Enum.flat_map(fn document ->
-      :glific
-      |> Application.app_dir("priv/docs_kb/#{document}.md")
-      |> File.read!()
-      |> chunk(document)
-    end)
-    |> Enum.reject(&(excluded?(&1) or engineering?(&1)))
-  end
-
-  @doc "Splits markdown into sections on its headings."
-  @spec chunk(String.t(), String.t()) :: [chunk()]
-  def chunk(markdown, doc_file) when is_binary(markdown) and is_binary(doc_file) do
-    markdown
-    |> nodes()
-    |> with_heading_paths()
-    |> merge_small()
-    |> Enum.map(&build_chunk(&1, doc_file))
-    |> inherit_source_urls()
-  end
-
-  defp excluded?(%{section_path: nil}), do: false
-
-  defp excluded?(%{section_path: path, doc_file: "glific_chatbot_knowledge_base"}),
-    do: Enum.any?(@excluded_sections, &(path == &1 or String.starts_with?(path, &1 <> ".")))
-
-  defp excluded?(_chunk), do: false
-
-  defp nodes(markdown) do
-    markdown
-    |> String.split("\n")
-    |> Enum.reduce({[], nil}, &collect/2)
-    |> elem(0)
-    |> Enum.reverse()
-    |> Enum.map(fn {level, title, lines} -> {level, title, Enum.reverse(lines)} end)
-  end
-
-  # A heading seen inside a code fence is part of the example.
-  defp collect(line, {acc, fence}) do
-    marker = fence_marker(line)
-
-    cond do
-      is_nil(fence) and marker != nil ->
-        {prepend(acc, line), marker}
-
-      fence != nil ->
-        {prepend(acc, line), if(closes?(fence, marker, line), do: nil, else: fence)}
-
-      Regex.run(~r/^(\#+)\s+(\S.*)$/, line) != nil ->
-        [_, hashes, title] = Regex.run(~r/^(\#+)\s+(\S.*)$/, line)
-        {[{String.length(hashes), String.trim(title), []} | acc], fence}
-
-      true ->
-        {prepend(acc, line), fence}
-    end
-  end
-
-  defp fence_marker(line) do
-    case Regex.run(~r/^\s{0,3}(`{3,}|~{3,})/, line) do
-      [_, run] -> {String.first(run), String.length(run)}
-      nil -> nil
-    end
-  end
-
-  # A fence closes on its own character, at least as long, alone on the line.
-  defp closes?(_open, nil, _line), do: false
-
-  defp closes?({char, length}, {char, closing}, line) when closing >= length,
-    do: String.trim(line) == String.duplicate(char, closing)
-
-  defp closes?(_open, _marker, _line), do: false
-
-  defp prepend([], _line), do: []
-  defp prepend([{level, title, lines} | rest], line), do: [{level, title, [line | lines]} | rest]
-
-  defp with_heading_paths(nodes) do
-    nodes
-    |> Enum.map_reduce([], fn {level, title, lines}, stack ->
-      stack = Enum.take_while(stack, fn {ancestor, _} -> ancestor < level end) ++ [{level, title}]
-      {%{level: level, title: title, lines: lines, trail: Enum.map(stack, &elem(&1, 1))}, stack}
-    end)
-    |> elem(0)
-  end
-
-  # Into an ancestor only; folding into a sibling joins two unrelated answers.
-  defp merge_small(nodes) do
-    nodes
-    |> Enum.reduce([], fn node, kept ->
-      text = node.lines |> Enum.join("\n") |> String.trim()
-
-      cond do
-        text == "" -> kept
-        byte_size(text) >= @minimum_body -> [node | kept]
-        ancestor?(kept, node) -> [fold(hd(kept), node) | tl(kept)]
-        true -> [node | kept]
-      end
-    end)
-    |> Enum.reverse()
-  end
-
-  defp fold(parent, node), do: %{parent | lines: parent.lines ++ ["", node.title] ++ node.lines}
-
-  defp ancestor?([%{trail: above} | _], %{trail: trail}),
-    do: length(above) < length(trail) and Enum.take(trail, length(above)) == above
-
-  defp ancestor?([], _node), do: false
-
-  defp build_chunk(node, doc_file) do
-    body = node.lines |> Enum.join("\n") |> String.trim()
-    heading_path = Enum.join(node.trail, @separator)
+  @doc "The sections most likely to answer `question`, best first."
+  @spec find(String.t(), keyword()) :: [section()]
+  def find(question, opts \\ []) do
+    entries = entries()
 
     %{
-      doc_file: doc_file,
-      section_path: section_path(node.title),
-      heading_path: heading_path,
-      body: body,
-      source_url: source_url(body),
-      hash: :sha256 |> :crypto.hash(heading_path <> body) |> Base.encode16(case: :lower)
+      lexical: lexical(question, entries),
+      semantic: semantic(question, entries, opts[:query_vector])
     }
+    |> fuse()
+    |> Enum.take(Keyword.get(opts, :limit, 5))
   end
 
-  # The documents cross-reference each other by section number.
-  defp section_path(title) do
-    case Regex.run(~r/^(\d+(?:\.\d+)*)[.\s]/, title) do
-      [_, number] -> number
-      nil -> nil
+  @doc "The lexical pass on its own."
+  @spec lexical(String.t(), [entry()]) :: [section()]
+  def lexical(question, entries) do
+    terms = terms(question)
+
+    if terms == [] do
+      []
+    else
+      floor = min(@minimum_overlap, @heading_weight * length(terms))
+      identifiers = identifiers(question)
+
+      entries
+      |> Enum.map(&{overlap(&1.section, terms, identifiers), &1.section})
+      |> Enum.filter(&(elem(&1, 0) >= floor))
+      |> Enum.sort_by(fn {score, section} -> {-score, byte_size(section.body)} end)
+      |> Enum.take(@leg_depth)
+      |> Enum.map(&elem(&1, 1))
     end
   end
 
-  defp source_url(body) do
-    case Regex.run(~r/Source:\s*(https?:\/\/\S+)/u, body) do
-      [_, url] -> url
-      nil -> nil
+  @doc "The semantic pass on its own."
+  @spec semantic(String.t(), [entry()], binary() | nil) :: [section()]
+  def semantic(question, entries, query_vector \\ nil)
+  def semantic(_question, [], _query_vector), do: []
+
+  def semantic(question, entries, nil) do
+    if Enum.any?(entries, & &1.vector) do
+      case embed(question) do
+        {:ok, vector} ->
+          semantic(question, entries, vector)
+
+        {:error, reason} ->
+          Logger.warning(
+            "docs question not embedded (#{SafeLog.safe_inspect(reason)}); lexical only"
+          )
+
+          []
+      end
+    else
+      []
     end
   end
 
-  # A page states its source once, under its own heading. Sections beneath that
-  # heading share the page; a later sibling is a different page and must not
-  # borrow the link, or an answer cites a page that does not hold it.
-  defp inherit_source_urls(chunks) do
-    chunks
-    |> Enum.map_reduce(nil, fn chunk, stated ->
-      case {chunk.source_url, stated} do
-        {nil, {trail, url}} ->
-          if under?(chunk.heading_path, trail),
-            do: {%{chunk | source_url: url}, stated},
-            else: {chunk, stated}
+  def semantic(_question, entries, vector) do
+    entries
+    |> Enum.reject(&is_nil(&1.vector))
+    |> Enum.map(&{similarity(&1.vector, vector), &1.section})
+    |> Enum.filter(&(elem(&1, 0) >= @minimum_similarity))
+    |> Enum.sort_by(&(-elem(&1, 0)))
+    |> Enum.take(@leg_depth)
+    |> Enum.map(&elem(&1, 1))
+  end
 
-        {nil, nil} ->
-          {chunk, nil}
+  @doc "Merges the passes by rank, each contributing `1 / (k + rank)`."
+  @spec fuse(%{atom() => [section()]}) :: [section()]
+  def fuse(passes) do
+    passes
+    |> Enum.reduce(%{}, fn {_pass, chunks}, acc ->
+      chunks
+      |> Enum.with_index(1)
+      |> Enum.reduce(acc, fn {section, rank}, inner ->
+        contribution = 1.0 / (@rrf_k + rank)
 
-        {url, _stated} ->
-          {chunk, {chunk.heading_path, url}}
+        Map.update(
+          inner,
+          section.hash,
+          {section, contribution},
+          &{section, elem(&1, 1) + contribution}
+        )
+      end)
+    end)
+    |> Map.values()
+    |> Enum.sort_by(&(-elem(&1, 1)))
+    |> Enum.map(&elem(&1, 0))
+  end
+
+  @doc "The terms worth matching on. Notation stays whole, dots and all."
+  @spec terms(String.t()) :: [String.t()]
+  def terms(question) do
+    ~r/[@a-z0-9][a-z0-9._\-]*/u
+    |> Regex.scan(String.downcase(question))
+    |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
+    |> Enum.reject(&(String.length(&1) < 2 or MapSet.member?(@stopwords, &1)))
+    |> Enum.uniq()
+  end
+
+  @doc "The last heading in a section's trail."
+  @spec title(section()) :: String.t()
+  def title(section), do: section.heading_path |> String.split(@separator) |> List.last()
+
+  defp overlap(section, terms, identifiers) do
+    heading = String.downcase(section.heading_path)
+    body = String.downcase(section.body)
+
+    Enum.reduce(terms, 0, fn term, score ->
+      cond do
+        String.contains?(heading, term) -> score + @heading_weight
+        String.contains?(body, term) -> score + body_weight(term, identifiers)
+        true -> score
       end
     end)
-    |> elem(0)
   end
 
-  defp under?(heading_path, trail),
-    do: heading_path == trail or String.starts_with?(heading_path, trail <> @separator)
+  # An identifier is exact: `@results.parent.state.input` means that string and
+  # nothing else. The documents write identifiers in prose rather than in
+  # headings, so a body match on one counts for as much as a heading match.
+  defp body_weight(term, identifiers) do
+    if MapSet.member?(identifiers, term), do: @heading_weight, else: 1
+  end
+
+  # Read before downcasing, which is where the camel hump would be lost.
+  defp identifiers(question) do
+    ~r/[@a-zA-Z0-9][a-zA-Z0-9._\-]*/u
+    |> Regex.scan(question)
+    |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
+    |> Enum.filter(&identifier?/1)
+    |> MapSet.new(&String.downcase/1)
+  end
+
+  defp identifier?(token) do
+    String.contains?(token, ".") or String.starts_with?(token, "@") or
+      Regex.match?(~r/[a-z][A-Z]/, token)
+  end
 end

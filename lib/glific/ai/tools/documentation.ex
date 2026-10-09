@@ -51,19 +51,19 @@ defmodule Glific.AI.Tools.Documentation do
   def run("search_documentation", %{query: query} = args) do
     case Docs.find(query, limit: min(args[:limit], 10)) do
       [] -> {:error, no_match(query)}
-      chunks -> {:ok, Enum.map(chunks, &section/1)}
+      sections -> {:ok, Enum.map(sections, &as_result/1)}
     end
   end
 
   # Capped so one long section cannot crowd out the others.
   @max_body 2_000
 
-  defp section(chunk) do
+  defp as_result(section) do
     %{
-      title: Docs.title(chunk),
-      section: chunk.heading_path,
-      body: truncate(chunk.body),
-      source: chunk.source_url
+      title: Docs.title(section),
+      section: section.heading_path,
+      body: truncate(section.body),
+      source: section.source_url
     }
   end
 

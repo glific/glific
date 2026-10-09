@@ -1,14 +1,6 @@
-# Glific Platform Guide
-
-A comprehensive reference for the Glific WhatsApp chatbot platform, written for an AI support chatbot that helps NGO staff. The chatbot cannot see screenshots — every UI element is described in plain text using the exact labels that appear in the product.
-
-> Glific is built on React 19 + TypeScript + Apollo (GraphQL) + MUI v7. The frontend lives in `glific-frontend/src/`. Routes are defined in `src/routes/AuthenticatedRoute/AuthenticatedRoute.tsx`. The left-sidebar menu is configured in `src/config/menu.ts`.
-
+--- entry
+heading: Glific Platform Guide › Navigation & Layout › Overall layout
 ---
-
-## Navigation & Layout
-
-### Overall layout
 
 When a user logs in, the screen is divided into:
 
@@ -16,7 +8,10 @@ When a user logs in, the screen is divided into:
 2. **Main content area** — the active screen renders here. Most list-style screens have a top toolbar (search, filter, "+ Add" button) and a paginated table.
 3. **Toast/notification area** — bottom of the screen. Success messages appear green, warnings yellow, errors red. Errors with stack-trace details open as a centered dialog.
 
-### Roles
+--- entry
+heading: Glific Platform Guide › Navigation & Layout › Roles
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
 
@@ -26,39 +21,17 @@ When a user logs in, the screen is divided into:
 - **Glific_admin** — Admin plus Organizations multi-tenant management, Consulting Hours.
 - **Dynamic roles** — organizations can define custom roles via `/role`; behavior set per-role.
 
-### Sidebar menu (left, top to bottom)
-
-The exact items shown in the side drawer come from `src/config/menu.ts`:
-
-| Menu item                    | URL                    | Roles        | Notes                                                                                                                                                                                                                                                                                                    |
-| ---------------------------- | ---------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Chats**                    | `/chat`                | All          | The default landing screen                                                                                                                                                                                                                                                                               |
-| **WhatsApp Groups** (parent) | `/group/chat`          | All          | Visible only when the `whatsappGroupEnabled` org service is on. Children: **Group Chats** (`/group/chat`), **Group Collections** (`/group/collection`), **Group Polls** (`/group/polls`), **WhatsApp Phones** (`/group/phones`, Manager+)                                                                 |
-| **Flows** (parent)           | `/flow`                | Manager+     | Children: **Flows** (`/flow`), **Google sheets** (`/sheet-integration`), **Webhook logs** (`/webhook-logs`), **Support tickets** (`/ticket`, only when `ticketingEnabled`), **Certificates** (`/certificates`, only when `certificateEnabled`)                                                            |
-| **Support tickets**          | `/ticket`              | Staff (only) | Top-level for the Staff role; Manager+ reach it via the Flows submenu. Only when `ticketingEnabled`.                                                                                                                                                                                                     |
-| **Quick tools** (parent)     | `/interactive-message` | Manager+     | Children: **Interactive Msg** (`/interactive-message`), **HSM Templates** (`/template`), **WhatsApp Forms** (`/whatsapp-forms`, only when `whatsappFormsEnabled`), **Triggers** (`/trigger`), **Searches** (`/search`), **Speed Sends** (`/speed-send`)                                                   |
-| **Notifications**            | `/notifications`       | Manager+     | Shows badge with unread count                                                                                                                                                                                                                                                                            |
-| **AI toolkit** (parent)      | `/assistants`          | Manager+     | Children: **AI Assistant** (`/assistants`), **AI Evals** (`/ai-evaluations`)                                                                                                                                                                                                                             |
-| **Data Analytics**           | `/analytics`           | All          | Marked "new" in the menu                                                                                                                                                                                                                                                                                 |
-| **Manage** (parent)          | `/collection`          | Staff+       | Children: **Collections** (`/collection`), **Staff** (`/staff-management`, Manager+), **Contacts** (`/contact-management`, Admin+), **Blocked contacts** (`/blocked-contacts`), **Contact variables** (`/contact-fields`, Manager+), **Tags** (`/tag`, Manager+), **Roles** (`/role`, only when the org doesn't use Dynamic roles), **Organizations** (`/organizations`, Glific_admin), **Consulting** (`/consulting-hours`, Glific_admin) |
-| **Resources**                | external (Glific docs) | All          |                                                                                                                                                                                                                                                                                                          |
-| **Discord**                  | external               | All          |                                                                                                                                                                                                                                                                                                          |
-
-User-account menu (bottom of sidebar / avatar):
-
-- **My Account** (`/myaccount`) — change password, language preference.
-- **Settings** (`/settings`) — Admin only; routes to Organization, Flows config, Billing, and provider tiles.
-- **Logout** (`/logout/user`).
-
+--- entry
+heading: Glific Platform Guide › Screens › Chat
+source: https://glific.github.io/docs/docs/Product%20Features/Chats/
 ---
-
-## Screens
-
-### Chat
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Chats/
 
-#### Screen: Chats (main inbox)
+--- entry
+heading: Glific Platform Guide › Screens › Chat › Screen: Chats (main inbox)
+source: https://glific.github.io/docs/docs/Product%20Features/Chats/
+---
 
 - **URL:** `/chat` (also `/chat/:contactId`, `/chat/collection`, `/chat/collection/:collectionId`, `/chat/saved-searches`, `/chat/saved-searches/:contactId`)
 - **Purpose:** Send and receive WhatsApp messages with individual contacts, manage conversations, run flows, send templates and interactive messages.
@@ -122,7 +95,10 @@ The chat input has, left-to-right: **down-arrow** (quick send picker) · **paper
 
 ---
 
-#### Screen: Group Chats (WhatsApp Groups)
+--- entry
+heading: Glific Platform Guide › Screens › Chat › Screen: Group Chats (WhatsApp Groups)
+source: https://glific.github.io/docs/docs/Product%20Features/Chats/
+---
 
 - **URL:** `/group/chat`, `/group/chat/:groupId`, `/group/chat/collection`, `/group/chat/collection/:collectionId`.
 - **Purpose:** Same UX as `/chat` but for WhatsApp groups (multi-participant). Visible when `whatsappGroupEnabled` org service is enabled.
@@ -130,11 +106,17 @@ The chat input has, left-to-right: **down-arrow** (quick send picker) · **paper
 
 ---
 
-### Flows
+--- entry
+heading: Glific Platform Guide › Screens › Flows
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
 
-#### Screen: Flow list
+--- entry
+heading: Glific Platform Guide › Screens › Flows › Screen: Flow list
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
+---
 
 - **URL:** `/flow`
 - **Purpose:** Browse, search, manage all flows.
@@ -152,7 +134,10 @@ The chat input has, left-to-right: **down-arrow** (quick send picker) · **paper
 
 **Per-row actions:** Configure (opens flow editor) · Share (responder link — if the flow has no keywords you get the warning _"No keywords found to share the responder link"_) · Copy (duplicates with prefix "Copy of …" and clears keywords) · Export (downloads JSON) · Edit (metadata form) · Pin/Unpin · Delete (confirmation: _"You won't be able to use this flow."_).
 
-#### Screen: Flow create/edit (metadata)
+--- entry
+heading: Glific Platform Guide › Screens › Flows › Screen: Flow create/edit (metadata)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
+---
 
 - **URL:** `/flow/add`, `/flow/:id/edit`, `/flow/:id/view` (read-only)
 
@@ -171,7 +156,10 @@ The chat input has, left-to-right: **down-arrow** (quick send picker) · **paper
 
 **Buttons:** **Save** · **Configure** (after save → flow editor) · **Delete** (confirmation: _"You won't be able to use this flow."_).
 
-#### Screen: Flow Editor (visual canvas)
+--- entry
+heading: Glific Platform Guide › Screens › Flows › Screen: Flow Editor (visual canvas)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
+---
 
 - **URL:** `/flow/configure/:uuid`
 - **Purpose:** Build the flow logic graphically.
@@ -184,7 +172,10 @@ The chat input has, left-to-right: **down-arrow** (quick send picker) · **paper
 
 **Simulator (Preview):** opens a chat-like panel where you type messages as a fake contact and see flow responses node-by-node. **Reset** clears the simulator state.
 
-#### Flow Editor — Node types
+--- entry
+heading: Glific Platform Guide › Screens › Flows › Flow Editor — Node types
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
+---
 
 Every node is added by dragging from the node palette or clicking on the canvas. Each node has a header (the action type), a body (configured content), and one or more exit ports (lines to the next node). Click a node to open its inline editor; click an exit to draw a connector to the next node.
 
@@ -262,7 +253,10 @@ Webhook, sub-flow, ticket and flow-result nodes also serialize as combined actio
 
 ---
 
-### Speed Sends
+--- entry
+heading: Glific Platform Guide › Screens › Speed Sends
+source: https://glific.github.io/docs/docs/Product%20Features/Speed%20Sends/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Speed%20Sends/
 
@@ -273,7 +267,10 @@ Webhook, sub-flow, ticket and flow-result nodes also serialize as combined actio
 
 ---
 
-### HSM Templates
+--- entry
+heading: Glific Platform Guide › Screens › HSM Templates
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
@@ -310,7 +307,10 @@ Webhook, sub-flow, ticket and flow-result nodes also serialize as combined actio
 
 ---
 
-### Triggers
+--- entry
+heading: Glific Platform Guide › Screens › Triggers
+source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
@@ -334,7 +334,10 @@ Webhook, sub-flow, ticket and flow-result nodes also serialize as combined actio
 
 ---
 
-### Collections
+--- entry
+heading: Glific Platform Guide › Screens › Collections
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections/
 
@@ -355,11 +358,17 @@ Webhook, sub-flow, ticket and flow-result nodes also serialize as combined actio
 
 ---
 
-### Contacts & Contact Management
+--- entry
+heading: Glific Platform Guide › Screens › Contacts & Contact Management
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
 
-#### Screen: Contact Management (bulk import)
+--- entry
+heading: Glific Platform Guide › Screens › Contacts & Contact Management › Screen: Contact Management (bulk import)
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
+---
 
 - **URL:** `/contact-management`
 - **Purpose:** Bulk-import contacts from CSV; manage admin-level contact operations.
@@ -374,7 +383,10 @@ Webhook, sub-flow, ticket and flow-result nodes also serialize as combined actio
 
 On submit: toast _"Contact import is in progress."_ + dialog _"Please check notifications to see the status of import."_ with a **Go to notifications** button. Async — open `/notifications` to monitor.
 
-#### Screen: Contact Profile
+--- entry
+heading: Glific Platform Guide › Screens › Contacts & Contact Management › Screen: Contact Profile
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
+---
 
 - **URL:** `/contact-profile/:id/*`
 - **Purpose:** View and manage a single contact's data.
@@ -391,13 +403,19 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 **History tab events:** `contact_flow_started`, `contact_flow_ended`, `contact_fields_updated` (e.g., "{field} is updated to {new} from {old}"), with timestamps.
 
-#### Screen: Blocked contacts
+--- entry
+heading: Glific Platform Guide › Screens › Contacts & Contact Management › Screen: Blocked contacts
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
+---
 
 - **URL:** `/blocked-contacts`
 - **Columns:** Name · Phone Number.
 - **Action:** **Unblock** with confirmation _"Do you want to unblock this contact"_. Toast: _"Contact unblocked successfully"_.
 
-#### Screen: Contact Variables (custom fields)
+--- entry
+heading: Glific Platform Guide › Screens › Contacts & Contact Management › Screen: Contact Variables (custom fields)
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
+---
 
 - **URL:** `/contact-fields`
 - **Purpose:** Define custom fields beyond Name/Phone/Language.
@@ -407,7 +425,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Tags
+--- entry
+heading: Glific Platform Guide › Screens › Tags
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Tags/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Tags/
 
@@ -417,7 +438,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Searches (Saved Searches)
+--- entry
+heading: Glific Platform Guide › Screens › Searches (Saved Searches)
+source: https://glific.github.io/docs/docs/Product%20Features/Searches/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Searches/
 
@@ -427,7 +451,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Interactive Messages
+--- entry
+heading: Glific Platform Guide › Screens › Interactive Messages
+source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
 
@@ -452,7 +479,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### WhatsApp Forms
+--- entry
+heading: Glific Platform Guide › Screens › WhatsApp Forms
+source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 
@@ -465,17 +495,26 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Triggers, Tickets, Webhook Logs, Notifications
+--- entry
+heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications
+source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 
-#### Webhook Logs
+--- entry
+heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Webhook Logs
+source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
+---
 
 - **URL:** `/webhook-logs`
 - **Purpose:** Audit external HTTP calls made by Call Webhook nodes.
 - **Columns:** Time (sortable desc default) · URL · Status (color-coded) · Status Code · Error · Method · Request Header · Request JSON · Response JSON. Each cell has a copy-to-clipboard control and JSON popover view. Search by `contact_phone` or `url`. No edit/delete.
 
-#### Notifications
+--- entry
+heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Notifications
+source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
+---
 
 - **URL:** `/notifications`
 - **Purpose:** Monitor system events (failed messages, sync status, contact upload, etc.).
@@ -492,7 +531,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
   - Contact Upload → downloads CSV status report
   - Custom Certificates → `/certificate/{template_id}/edit`
 
-#### Support Tickets
+--- entry
+heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Support Tickets
+source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
+---
 
 - **URL:** `/ticket`
 - **Purpose:** Track agent escalations created by **Open Ticket** flow nodes.
@@ -500,7 +542,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### AI Assistants
+--- entry
+heading: Glific Platform Guide › Screens › AI Assistants
+source: https://glific.github.io/docs/docs/Integrations/Creating%20and%20modifying%20assistants%20in%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Creating%20and%20modifying%20assistants%20in%20Glific/
 
@@ -522,7 +567,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Sheet Integration (Google Sheets)
+--- entry
+heading: Glific Platform Guide › Screens › Sheet Integration (Google Sheets)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
 
@@ -537,7 +585,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Certificates
+--- entry
+heading: Glific Platform Guide › Screens › Certificates
+source: https://glific.github.io/docs/docs/Product%20Features/Custom%20Certificates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Custom%20Certificates/
 
@@ -548,7 +599,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Polls (WhatsApp Group Polls)
+--- entry
+heading: Glific Platform Guide › Screens › Polls (WhatsApp Group Polls)
+source: https://glific.github.io/docs/docs/WhatsApp%20Groups%20Automation/Sending%20Polls%20To%20WhatsApp%20Groups/
+---
 
 📖 Source: https://glific.github.io/docs/docs/WhatsApp%20Groups%20Automation/Sending%20Polls%20To%20WhatsApp%20Groups/
 
@@ -557,7 +611,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Staff Management
+--- entry
+heading: Glific Platform Guide › Screens › Staff Management
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
 
@@ -574,7 +631,10 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Roles
+--- entry
+heading: Glific Platform Guide › Screens › Roles
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
 
@@ -584,14 +644,18 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### Organizations (multi-tenant — Glific_admin)
+--- entry
+heading: Glific Platform Guide › Screens › Organizations (multi-tenant — Glific_admin)
+---
 
 - **URL:** `/organizations`, `/organizations/:id/extensions`, `/organizations/:id/customer`
 - **Purpose:** Manage all NGOs on the Glific platform; install extensions; access customer info.
 
 ---
 
-### Consulting Hours (Glific_admin)
+--- entry
+heading: Glific Platform Guide › Screens › Consulting Hours (Glific_admin)
+---
 
 - **URL:** `/consulting-hours/`
 - **Purpose:** Track support consulting time delivered by the Glific team.
@@ -599,16 +663,20 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-### My Account
+--- entry
+heading: Glific Platform Guide › Screens › My Account
+---
 
 - **URL:** `/myaccount`
 - **Purpose:** Change your password and account preferences.
 
 ---
 
-## Step-by-Step Guides
-
-### 1. Setting up a new chatbot from scratch
+--- entry
+section: 1
+heading: Glific Platform Guide › Step-by-Step Guides › 1. Setting up a new chatbot from scratch
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Getting%20Started%20with%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Getting%20Started%20with%20Glific/
 
@@ -621,7 +689,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 7. Approve at least one HSM template (see guide #5).
 8. Go live by sending the new contact your WhatsApp business number.
 
-### 2. Creating your first flow with a keyword trigger
+--- entry
+section: 2
+heading: Glific Platform Guide › Step-by-Step Guides › 2. Creating your first flow with a keyword trigger
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Getting%20Started%20with%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Getting%20Started%20with%20Glific/
 
@@ -635,7 +707,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 8. **Preview** → simulate the conversation.
 9. **Publish** → confirm. Toast: _"The flow has been published"_. Now sending "hi" to your bot triggers it.
 
-### 3. Sending a broadcast message to a collection
+--- entry
+section: 3
+heading: Glific Platform Guide › Step-by-Step Guides › 3. Sending a broadcast message to a collection
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections/
 
@@ -644,7 +720,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 3. Pick a **Speed Send** or **HSM Template** from the down-arrow picker (HSM is required if any contact's 24-hour window is closed).
 4. Click **Send**.
 
-### 4. Recording flow responses to a Google Sheet
+--- entry
+section: 4
+heading: Glific Platform Guide › Step-by-Step Guides › 4. Recording flow responses to a Google Sheet
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
 
@@ -653,7 +733,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 3. In your flow editor, add **Link Google sheet** node → pick the sheet → map flow results / contact fields to columns → **Ok**.
 4. Publish the flow. Each flow run appends a row.
 
-### 5. Creating and submitting an HSM template
+--- entry
+section: 5
+heading: Glific Platform Guide › Step-by-Step Guides › 5. Creating and submitting an HSM template
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
@@ -663,7 +747,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 4. **Submit for Approval**. Status starts at PENDING.
 5. Click **Sync** later to refresh status. Once APPROVED you can use it from chat or flow.
 
-### 6. Setting up a scheduled trigger
+--- entry
+section: 6
+heading: Glific Platform Guide › Step-by-Step Guides › 6. Setting up a scheduled trigger
+source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
@@ -673,7 +761,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 4. **Select Trigger Type** (WABA Collections) → **Select collection**.
 5. **Save**. The trigger fires on schedule and runs the flow for every member of the collection.
 
-### 7. Configuring BigQuery sync
+--- entry
+section: 7
+heading: Glific Platform Guide › Step-by-Step Guides › 7. Configuring BigQuery sync
+source: https://glific.github.io/docs/docs/Product%20Features/Reporting%20%26%20Dashboard/BigQuery%20Setup%20and%20link%20with%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Reporting%20%26%20Dashboard/BigQuery%20Setup%20and%20link%20with%20Glific/
 
@@ -681,7 +773,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 2. Open `/settings/bigquery` → toggle **Active?** → paste JSON credentials and project ID → **Save**.
 3. Sync runs automatically; check `/notifications` for status.
 
-### 8. Setting up an AI Assistant with file search
+--- entry
+section: 8
+heading: Glific Platform Guide › Step-by-Step Guides › 8. Setting up an AI Assistant with file search
+source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
 
@@ -691,7 +787,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 4. **Save** → wait for _"Knowledge base creation in progress, will notify once it's done"_.
 5. In a flow, add **Call Webhook** → Method **FUNCTION** → `filesearch-gpt` → in the body pass the assistant id and the question → set a **result name** → **Ok** → publish. Branch on `@results.<result_name>` afterwards. (There is no "Call AI" node in Glific.)
 
-### 9. Managing contact opt-in / opt-out
+--- entry
+section: 9
+heading: Glific Platform Guide › Step-by-Step Guides › 9. Managing contact opt-in / opt-out
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Configure%20Optin%20%26%20Optout%20preferences%20in%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Configure%20Optin%20%26%20Optout%20preferences%20in%20Glific/
 
@@ -700,7 +800,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 - **Block** in chat: dropdown → **Block Contact** → confirm.
 - **Unblock**: `/blocked-contacts` → **Unblock**.
 
-### 10. Creating Interactive Messages (buttons / lists)
+--- entry
+section: 10
+heading: Glific Platform Guide › Step-by-Step Guides › 10. Creating Interactive Messages (buttons / lists)
+source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
 
@@ -710,7 +814,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 4. (Optional) attach IMAGE/VIDEO/DOCUMENT, set Tag, add translations via the language bar.
 5. **Save**. Use it in chat (down-arrow → Interactive msg) or in flows (**Interactive Message** node).
 
-### 11. Setting up a webhook integration in a flow
+--- entry
+section: 11
+heading: Glific Platform Guide › Step-by-Step Guides › 11. Setting up a webhook integration in a flow
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
 
@@ -719,14 +827,21 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 3. After the webhook, optionally add **Save Flow Result** to capture parts of the response.
 4. **Publish**. Inspect calls in `/webhook-logs`.
 
-### 12. Importing contacts from CSV
+--- entry
+section: 12
+heading: Glific Platform Guide › Step-by-Step Guides › 12. Importing contacts from CSV
+---
 
 1. Manage → **Contacts** → **Continue**.
 2. Download **Sample CSV**, fill it (Phone is mandatory; add custom-field columns matching your `/contact-fields` shortcodes).
 3. Upload, **Select collection**, check **Please confirm if contacts are opted in.**, **Upload**.
 4. Track via `/notifications` (Contact Upload category) → **Check** to download a status CSV listing successes/errors.
 
-### 13. Multi-language flows
+--- entry
+section: 13
+heading: Glific Platform Guide › Step-by-Step Guides › 13. Multi-language flows
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20Auto%20translate/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20Auto%20translate/
 
@@ -735,7 +850,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 3. Speed sends, HSM templates, and Interactive messages all have a **Language bar** for per-language content.
 4. Switch a contact's language with **Update Contact** → field **Language** → flow renders in that language.
 
-### 14. Testing a flow before going live
+--- entry
+section: 14
+heading: Glific Platform Guide › Step-by-Step Guides › 14. Testing a flow before going live
+source: https://glific.github.io/docs/docs/Starter%20Kit/12%20Pre-launch%20Chatbot%20Checks/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Starter%20Kit/12%20Pre-launch%20Chatbot%20Checks/
 
@@ -744,7 +863,11 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 3. Step through each branch. Use **Reset** if needed.
 4. When confident, **Publish**.
 
-### 15. Setting up GCS for media storage
+--- entry
+section: 15
+heading: Glific Platform Guide › Step-by-Step Guides › 15. Setting up GCS for media storage
+source: https://glific.github.io/docs/docs/Pre%20Onboarding/Google%20Cloud%20Storage%20Setup%20-%20GCS/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Pre%20Onboarding/Google%20Cloud%20Storage%20Setup%20-%20GCS/
 
@@ -754,13 +877,15 @@ On submit: toast _"Contact import is in progress."_ + dialog _"Please check noti
 
 ---
 
-## Settings Reference
-
-### Settings landing page (`/settings`)
+--- entry
+heading: Glific Platform Guide › Settings Reference › Settings landing page (`/settings`)
+---
 
 A grid of tiles. Top tiles always present: **Organization** ("Manage organization name, supported languages.") · **Flows** ("Manage organization flows.") · **Billing** ("Setup for glific billing account"). The remaining tiles are loaded dynamically from the backend Provider list.
 
-### `/settings/organization` — Organization
+--- entry
+heading: Glific Platform Guide › Settings Reference › `/settings/organization` — Organization
+---
 
 - **Organization name** \*.
 - **Supported languages** \* (multi-select).
@@ -772,7 +897,10 @@ A grid of tiles. Top tiles always present: **Organization** ("Manage organizatio
   - **Low balance threshold for warning emails** — number ≥0; alerts once a week.
   - **Critical balance threshold for warning emails** — number ≥0; alerts every two days.
 
-### `/settings/organization-flows` — Flows config
+--- entry
+heading: Glific Platform Guide › Settings Reference › `/settings/organization-flows` — Flows config
+source: https://glific.github.io/docs/docs/Product%20Features/Others/New%20Contact%2C%20Default%20flow%20Out%20of%20office%20hours%20notifications/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/New%20Contact%2C%20Default%20flow%20Out%20of%20office%20hours%20notifications/
 
@@ -781,7 +909,9 @@ A grid of tiles. Top tiles always present: **Organization** ("Manage organizatio
 - **Optin flow** checkbox + **Select flow**.
 - **Regular expression flow** checkbox + **Select flow** + **Regular expression** + **Regular expression modifiers**.
 
-### `/settings/billing` — Billing
+--- entry
+heading: Glific Platform Guide › Settings Reference › `/settings/billing` — Billing
+---
 
 Pricing displayed:
 
@@ -793,7 +923,9 @@ Pricing displayed:
 
 Form: **Coupon Code** + **Apply** · **Your Organization Name** _ · **Email ID** _ (valid email) · **Card Details** (Stripe). When subscription active, panel shows **Visit Stripe portal** button.
 
-### `/settings/{provider}` — Providers (dynamic)
+--- entry
+heading: Glific Platform Guide › Settings Reference › `/settings/{provider}` — Providers (dynamic)
+---
 
 Loaded from the backend provider list. Each provider has `keys` (config) and `secrets` (credentials). The backend deliberately **hides** several seeded providers from this screen — `goth`, `kaapi`, `gupshup_enterprise`, `navana_tech`, `google_asr`, `dialogflow` and `open_ai` are excluded, and trial orgs additionally don't see `google_cloud_storage`. So there is no `/settings/openai` or `/settings/dialogflow` tile; OpenAI is provided centrally by Glific.
 
@@ -811,11 +943,15 @@ Each provider page has an **Active?** toggle (required fields enforced when acti
 
 ---
 
-## Error Messages
+--- entry
+heading: Glific Platform Guide › Error Messages
+---
 
 Format: **"Exact text"** — Cause → Fix.
 
-### Chat & messaging
+--- entry
+heading: Glific Platform Guide › Error Messages › Chat & messaging
+---
 
 - **"Flow started successfully."** — Toast after starting a flow on a contact.
 - **"Your flow will start in a couple of minutes."** — Toast after starting a flow on a collection.
@@ -829,7 +965,9 @@ Format: **"Exact text"** — Cause → Fix.
 - **"Message has been successfully added to speed sends."** — Saved a chat message as a speed send.
 - **"Option disabled because the 24hr window expired"** — Tooltip on Send when contact is HSM-only.
 
-### Flows
+--- entry
+heading: Glific Platform Guide › Error Messages › Flows
+---
 
 - **"The flow has been published"** — Publish success.
 - **"Flow counts have been reset"** / **"An error occured while resetting the flow count"** — Reset Flow Count outcome.
@@ -841,7 +979,9 @@ Format: **"Exact text"** — Cause → Fix.
 - **"Sorry! Failed to get simulator"** — Refresh and retry.
 - **"View Only Mode - …"** — Another user is editing. Use **Take Over** or wait.
 
-### Templates / Interactive / Forms
+--- entry
+heading: Glific Platform Guide › Error Messages › Templates / Interactive / Forms
+---
 
 - **"$capitalListItemName created/edited/deleted successfully!"** — Generic CRUD confirmation across forms.
 - **"An error occured while uploading the file"** — Media upload failed.
@@ -853,7 +993,9 @@ Format: **"Exact text"** — Cause → Fix.
 - **"Error saving form revision"** — Auto-save failure. Fix: check connection and save manually.
 - **"Sorry, failed to sync whatsapp forms updates."** — Forms sync failed.
 
-### Collections / Contacts
+--- entry
+heading: Glific Platform Guide › Error Messages › Collections / Contacts
+---
 
 - **"Contact has been removed successfully from the collection."** / **"Group has been removed successfully from the collection."** — Successful removal.
 - **"Removed Contact from Group"** — Removed contact from a WA group.
@@ -863,7 +1005,9 @@ Format: **"Exact text"** — Cause → Fix.
 - **"Sorry! An error occured while deleting the contact field"** / **"… while updating the contact field"** — Contact-field admin failures.
 - **"Contact field deleted successfully!"** — Success.
 
-### Assistants / AI
+--- entry
+heading: Glific Platform Guide › Error Messages › Assistants / AI
+---
 
 - **"Assistant created successfully"** / **"Assistant cloned successfully"** / **"Assistant clone failed"** — CRUD confirmations.
 - **"Changes saved successfully"** — Generic save confirmation.
@@ -874,7 +1018,9 @@ Format: **"Exact text"** — Cause → Fix.
 - **"Knowledge base creation in progress, will notify once it's done"** — Async KB build started.
 - **"Golden QA uploaded successfully"** / **"Failed to upload Golden QA"** / **"No file selected for Golden QA upload"** — AI Evaluation upload outcomes.
 
-### Settings & sync
+--- entry
+heading: Glific Platform Guide › Error Messages › Settings & sync
+---
 
 - **"Organization updated successfully"** / **"Organization deleted successfully"** — Org admin actions.
 - **"Your billing account is setup successfully"** — Stripe setup completed.
@@ -883,13 +1029,17 @@ Format: **"Exact text"** — Cause → Fix.
 - **"Whatsapp groups synced successfully."** / **"Sorry, failed to sync whatsapp groups."** — WA Groups sync.
 - **"Sorry! An error occurred while fetching data from the Google sheet."** — Sheet read failed. Fix: confirm the sheet is shared with the service account.
 
-### Bulk / CSV
+--- entry
+heading: Glific Platform Guide › Error Messages › Bulk / CSV
+---
 
 - **"Templates applied successfully. Please check the csv file for the results"** — Bulk apply succeeded.
 - **"Templates were processed with errors. Please check the csv file for details."** — Some rows failed; download CSV.
 - **"Please upload a valid CSV file"** / **"An error occured! Please check the format of the file"** — File parse failed.
 
-### Generic
+--- entry
+heading: Glific Platform Guide › Error Messages › Generic
+---
 
 - **"Sorry! An error occurred"** / **"Sorry! An error occurred!"** — Generic catch-all. Retry; check console / contact support.
 - **"Email Sent Successfully!"** — Sent from the HSM list's _"Report Template … to Gupshup"_ dialog, which emails Gupshup support about a rejected/failed template. Nothing to do with flows: Glific has no Send Email node.
@@ -898,7 +1048,9 @@ Format: **"Exact text"** — Cause → Fix.
 - **"Sorry! Id not found"** / **"Sorry! UUID not found"** — Stale link or deleted record.
 - **"Failed to download QR code"** / **"Failed to update pin status"** / **"Error reverting to version"** / **"Successfully reverted to selected version"** — Misc admin actions.
 
-### Form-validation messages (Yup)
+--- entry
+heading: Glific Platform Guide › Error Messages › Form-validation messages (Yup)
+---
 
 These appear inline below input fields:
 
@@ -913,7 +1065,9 @@ These appear inline below input fields:
 
 ---
 
-## Keyboard Shortcuts & Tips
+--- entry
+heading: Glific Platform Guide › Keyboard Shortcuts & Tips
+---
 
 - **Ctrl/Cmd + Enter** in chat input → send message.
 - **Esc** in dialogs → close (cancel).
@@ -928,7 +1082,9 @@ These appear inline below input fields:
 
 ---
 
-## Cheat sheet — URLs
+--- entry
+heading: Glific Platform Guide › Cheat sheet — URLs
+---
 
 | Path                                                                                                  | Screen                                                                                                         |
 | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |

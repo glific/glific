@@ -15,181 +15,79 @@ defmodule Glific.DocsTest do
 
   setup_all do
     Docs.warm()
-    %{chunks: Docs.all_chunks(), entries: Docs.entries()}
+    %{sections: Docs.sections(), entries: Docs.entries()}
   end
 
-  defp find(chunks, section_path), do: Enum.find(chunks, &(&1.section_path == section_path))
+  describe "the entries" do
+    test "every entry has a heading, a body and a hash", %{sections: sections} do
+      assert length(sections) > 100
 
-  describe "chunking" do
-    test "every chunk carries a trail, a body and a hash", %{chunks: chunks} do
-      for chunk <- chunks do
-        assert chunk.heading_path != ""
-        assert String.trim(chunk.body) != ""
-        assert chunk.hash =~ ~r/^[0-9a-f]{64}$/
+      for section <- sections do
+        assert section.heading_path != ""
+        assert String.trim(section.body) != ""
+        assert section.hash =~ ~r/^[0-9a-f]{64}$/
       end
     end
 
-    test "chunking is deterministic", %{chunks: chunks} do
-      assert Docs.all_chunks() == chunks
+    test "loading is deterministic", %{sections: sections} do
+      assert Docs.sections() == sections
     end
 
-    test "3.4 keeps both its examples and does not bleed into 3.5", %{chunks: chunks} do
-      chunk = find(chunks, "3.4")
+    test "an entry is its front matter and then its prose" do
+      document = """
+      --- entry
+      section: 3.4
+      heading: 3. Variables › 3.4 Reading a parent variable
+      source: https://example.com/page
+      ---
 
-      assert chunk.body =~ "@results.parent.<variable_name>.input"
-      assert chunk.body =~ "@results.parent.state.input"
-      refute chunk.body =~ "@results.child"
-      assert find(chunks, "3.5").body =~ "@results.child"
-    end
-
-    test "7.6 is short but survives on its own, still saying no", %{chunks: chunks} do
-      chunk = find(chunks, "7.6")
-
-      assert Docs.title(chunk) =~ "approved template"
-      assert chunk.body =~ "No."
-    end
-
-    test "a section under the one stating a source inherits it" do
-      markdown = """
-      ## 1.1 First
-
-      📖 Source: https://example.com/page
-
-      #{String.duplicate("Body text that is long enough to stand alone. ", 6)}
-
-      ### 1.1.1 Underneath
-
-      #{String.duplicate("A subsection of the page above, sharing its URL. ", 6)}
+      Use `@results.parent.<name>.input`.
       """
 
-      assert [parent, child] = Docs.chunk(markdown, "doc")
-      assert parent.source_url == "https://example.com/page"
-      assert child.source_url == "https://example.com/page"
+      assert [section] = Docs.parse(document, "a_document")
+      assert section.doc_file == "a_document"
+      assert section.section_path == "3.4"
+      assert section.heading_path == "3. Variables › 3.4 Reading a parent variable"
+      assert section.source_url == "https://example.com/page"
+      assert section.body == "Use `@results.parent.<name>.input`."
     end
 
-    test "a sibling is a different page and does not borrow the link" do
-      # Otherwise an answer cites a page that does not contain it.
-      markdown = """
-      ## 1.1 First
+    test "a document holds many entries" do
+      document = """
+      --- entry
+      heading: First
+      ---
 
-      📖 Source: https://example.com/page
+      One.
 
-      #{String.duplicate("Body text that is long enough to stand alone. ", 6)}
+      --- entry
+      heading: Second
+      ---
 
-      ## 1.2 Second
-
-      #{String.duplicate("A later section, which is its own page entirely. ", 6)}
+      Two.
       """
 
-      assert [first, second] = Docs.chunk(markdown, "doc")
-      assert first.source_url == "https://example.com/page"
-      assert second.source_url == nil
+      assert [first, second] = Docs.parse(document, "doc")
+      assert first.body == "One."
+      assert second.body == "Two."
     end
 
-    test "a label-sized child folds into its parent, keeping its heading" do
-      markdown = """
-      ## 2.1 Limits
+    test "a heading may contain the colons and separators the documents use" do
+      document = "--- entry\nheading: 7.6 Can I edit it: really?\n---\n\nNo.\n"
 
-      #{String.duplicate("The parent section carries the real explanation here. ", 6)}
-
-      ### 2.1.1 Image
-
-      5 MB.
-      """
-
-      assert [chunk] = Docs.chunk(markdown, "doc")
-      assert chunk.body =~ "5 MB."
-      assert chunk.body =~ "2.1.1 Image"
+      assert [section] = Docs.parse(document, "doc")
+      assert section.heading_path == "7.6 Can I edit it: really?"
     end
 
-    test "two small siblings stay apart rather than gluing together" do
-      markdown = "## 4.1 One\n\nShort.\n\n## 4.2 Two\n\nAlso short.\n"
-
-      assert length(Docs.chunk(markdown, "doc")) == 2
+    test "an entry with no heading or no prose is skipped" do
+      assert Docs.parse("no entries here", "doc") == []
+      assert Docs.parse("--- entry\nheading: Empty\n---\n\n", "doc") == []
     end
 
-    test "a heading with no body is dropped but stays in the trail" do
-      markdown = """
-      # 3. Flow Variables
-
-      ## 3.1 Saving input
-
-      #{String.duplicate("A real answer with enough text to stand on its own. ", 6)}
-      """
-
-      assert [chunk] = Docs.chunk(markdown, "doc")
-      assert chunk.heading_path == "3. Flow Variables › 3.1 Saving input"
-    end
-  end
-
-  describe "code fences" do
-    test "a # inside a fence is not a heading" do
-      markdown = """
-      ## 1.1 Running the indexer
-
-      #{String.duplicate("Prose before the example that is long enough to stand. ", 5)}
-
-      ```bash
-      # this is a shell comment, not a heading
-      ```
-
-      #{String.duplicate("Prose after the example, also long enough to stand. ", 5)}
-      """
-
-      assert [chunk] = Docs.chunk(markdown, "doc")
-      assert chunk.body =~ "# this is a shell comment"
-      assert chunk.body =~ "Prose after the example"
-    end
-
-    test "a longer fence is not closed by a shorter one" do
-      markdown = """
-      ## 1.1 Nested example
-
-      #{String.duplicate("Prose long enough for this section to stand alone. ", 5)}
-
-      ````markdown
-      ```elixir
-      ```
-      ## Not a heading
-      ````
-      """
-
-      assert [chunk] = Docs.chunk(markdown, "doc")
-      assert chunk.body =~ "## Not a heading"
-    end
-
-    test "a tilde fence hides a heading too" do
-      markdown = """
-      ## 1.1 Tilde example
-
-      #{String.duplicate("Prose long enough for this section to stand alone. ", 5)}
-
-      ~~~
-      ## Not a heading either
-      ~~~
-      """
-
-      assert [chunk] = Docs.chunk(markdown, "doc")
-      assert chunk.body =~ "## Not a heading either"
-    end
-
-    test "no fence in the shipped corpus is left unclosed by the split", %{chunks: chunks} do
-      for chunk <- chunks do
-        fences = chunk.body |> String.split("```") |> length() |> Kernel.-(1)
-        assert rem(fences, 2) == 0, chunk.heading_path
-      end
-    end
-  end
-
-  describe "sections kept out of the index" do
-    test "the mapping table is excluded", %{chunks: chunks} do
-      refute Enum.any?(chunks, &(&1.section_path == "18"))
-    end
-
-    test "only the manifest's documents contribute", %{chunks: chunks} do
+    test "every entry belongs to a named document", %{sections: sections} do
       documents = MapSet.new(Docs.documents())
 
-      for chunk <- chunks, do: assert(MapSet.member?(documents, chunk.doc_file))
+      for section <- sections, do: assert(MapSet.member?(documents, section.doc_file))
     end
   end
 
@@ -234,10 +132,10 @@ defmodule Glific.DocsTest do
   end
 
   describe "the semantic pass" do
-    test "a chunk's own vector finds that chunk", %{entries: entries} do
+    test "a section's own vector finds that section", %{entries: entries} do
       [entry | _rest] = Enum.reject(entries, &is_nil(&1.vector))
 
-      assert hd(Docs.semantic("anything", entries, entry.vector)).hash == entry.chunk.hash
+      assert hd(Docs.semantic("anything", entries, entry.vector)).hash == entry.section.hash
     end
 
     test "a vector matching nothing well enough returns nothing", %{entries: entries} do
@@ -247,7 +145,7 @@ defmodule Glific.DocsTest do
     end
 
     test "entries with no vector are skipped rather than scored" do
-      entries = [%{chunk: chunk("Title", "body"), vector: nil}]
+      entries = [%{section: section("Title", "body"), vector: nil}]
 
       assert Docs.semantic("anything", entries, <<0::size(32)>>) == []
     end
@@ -280,16 +178,16 @@ defmodule Glific.DocsTest do
   end
 
   describe "fusion" do
-    test "a chunk both passes rank beats one only a single pass found" do
-      both = chunk("Both", "found by both")
-      one = chunk("One", "found by one")
+    test "a section both passes rank beats one only a single pass found" do
+      both = section("Both", "found by both")
+      one = section("One", "found by one")
 
       assert [first | _rest] = Docs.fuse(%{lexical: [one, both], semantic: [both]})
       assert first.hash == both.hash
     end
 
-    test "every chunk either pass found survives the merge" do
-      assert length(Docs.fuse(%{lexical: [chunk("A", "one")], semantic: [chunk("B", "two")]})) ==
+    test "every section either pass found survives the merge" do
+      assert length(Docs.fuse(%{lexical: [section("A", "one")], semantic: [section("B", "two")]})) ==
                2
     end
   end
@@ -331,13 +229,13 @@ defmodule Glific.DocsTest do
 
       on_exit(fn -> Application.delete_env(:glific, :docs_embedding_request_options) end)
 
-      chunks = Docs.find("why is my flow not triggering", limit: 5)
+      sections = Docs.find("why is my flow not triggering", limit: 5)
 
-      assert Enum.any?(chunks, &(&1.doc_file == @knowledge_base))
+      assert Enum.any?(sections, &(&1.doc_file == @knowledge_base))
     end
   end
 
-  defp chunk(heading, body) do
+  defp section(heading, body) do
     %{
       doc_file: "doc",
       section_path: nil,

@@ -1,4 +1,6 @@
-# Glific Chatbot Knowledge Base — Comprehensive Companion Guide
+--- entry
+heading: Glific Chatbot Knowledge Base — Comprehensive Companion Guide
+---
 
 > **Purpose of this document.** This file is a structured, retrieval-optimized companion to the main Glific documentation (`merged_documentation 2.md`). The main file relies heavily on screenshots; when those images are stripped (as in the chatbot's knowledge base), key syntax and step-by-step details get lost in narrative paragraphs. This document re-states every important fact in plain text, in self-contained chunks, with the exact syntax in code blocks. Each section is written so that a retrieval system can return a single chunk and the LLM can answer the question without needing surrounding context.
 >
@@ -6,9 +8,11 @@
 
 ---
 
-# 1. Glific Vocabulary & Concepts (read this first)
-
-## 1.1 Variables in Glific — the four kinds
+--- entry
+section: 1.1
+heading: 1. Glific Vocabulary & Concepts (read this first) › 1.1 Variables in Glific — the four kinds
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
 
@@ -28,7 +32,11 @@ Glific has **four** distinct kinds of variables. The `@` prefix is required when
 - Need a value from a flow that called this one (parent flow)? → `@results.parent.<name>.input`.
 - Need a value from a flow this flow called (child / sub-flow)? → `@results.child.<name>.input`.
 
-## 1.2 Parent flow vs child flow vs sub-flow — terminology
+--- entry
+section: 1.2
+heading: 1. Glific Vocabulary & Concepts (read this first) › 1.2 Parent flow vs child flow vs sub-flow — terminology
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
 
@@ -39,7 +47,11 @@ These all describe the same parent/child relationship. When one flow uses the **
 
 If a user asks "How do I read a variable from the calling flow?" or "How do I get a parent flow's result inside a sub-flow?" — the answer is the same: `@results.parent.<variable_name>.input`. See section 3.4.
 
-## 1.3 Result vs Result Name vs Variable — same thing, different words
+--- entry
+section: 1.3
+heading: 1. Glific Vocabulary & Concepts (read this first) › 1.3 Result vs Result Name vs Variable — same thing, different words
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
 
@@ -53,7 +65,10 @@ When a `Wait for Response` node or `Save Flow Result` node is given a name, that
 
 All of these resolve to `@results.<that_name>`. To access the raw response, append `.input`. To access the categorized response, append `.category`.
 
-## 1.4 `.input` vs `.category` vs other suffixes
+--- entry
+section: 1.4
+heading: 1. Glific Vocabulary & Concepts (read this first) › 1.4 `.input` vs `.category` vs other suffixes
+---
 
 Result variables have several suffixes:
 
@@ -68,11 +83,17 @@ For webhook results: `@results.<webhook_name>.<json_key>` — see section 4.3.
 
 ---
 
-# 2. Quick Syntax Reference (cheatsheet)
+--- entry
+section: 2
+heading: 2. Quick Syntax Reference (cheatsheet)
+---
 
 Every code-block below is a **complete, copy-pasteable** expression that goes inside a flow node.
 
-## 2.1 Reading values
+--- entry
+section: 2.1
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.1 Reading values
+---
 
 ```
 @contact.name                          # contact's display name
@@ -102,7 +123,11 @@ Every code-block below is a **complete, copy-pasteable** expression that goes in
 @results.flow_keyword.category         # full sentence the contact sent
 ```
 
-## 2.2 Cross-flow variables (parent ↔ child)
+--- entry
+section: 2.2
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.2 Cross-flow variables (parent ↔ child)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
 
@@ -123,7 +148,11 @@ The mirror direction — parent reading from child:
 @results.child.city.input
 ```
 
-## 2.3 Webhook response
+--- entry
+section: 2.3
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.3 Webhook response
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
 
@@ -137,7 +166,11 @@ If a webhook node was named `mywebhook` and its JSON response was `{"success_mes
 
 Webhook responses **must** be a JSON object, not an array.
 
-## 2.4 Google Sheet result
+--- entry
+section: 2.4
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.4 Google Sheet result
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
 
@@ -148,7 +181,11 @@ When a Google Sheet integration node named `sheet` reads a row, columns become k
 @results.sheet.image                   # for example, an "image" column with a public URL
 ```
 
-## 2.5 Custom expressions (Elixir-style, `<%= ... %>`)
+--- entry
+section: 2.5
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.5 Custom expressions (Elixir-style, `<%= ... %>`)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 
@@ -167,13 +204,19 @@ When a Google Sheet integration node named `sheet` reads a row, columns become k
 <%= case "@results.assigned_arm_id" do "@results.control_arm_id" -> "Control"; "@results.treatment_arm_id" -> "Treatment"; end %>   # match value against multiple variables
 ```
 
-## 2.6 Calendar variable
+--- entry
+section: 2.6
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.6 Calendar variable
+---
 
 ```
 @calendar.current_date                 # today, formatted D/0M/YYYY (e.g., 2/01/2025, 11/10/2024)
 ```
 
-## 2.7 Common regex patterns
+--- entry
+section: 2.7
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.7 Common regex patterns
+---
 
 ```
 ^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$        # DD/MM/YYYY any year
@@ -183,9 +226,11 @@ When a Google Sheet integration node named `sheet` reads a row, columns become k
 
 ---
 
-# 3. Variables — the most common questions
-
-## 3.1 How do I save a user's response so I can use it later in the same flow?
+--- entry
+section: 3.1
+heading: 3. Variables — the most common questions › 3.1 How do I save a user's response so I can use it later in the same flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
 
@@ -198,7 +243,11 @@ Naming rules: lowercase, no spaces, no special characters, underscores `_` allow
 @results.contact_email.category
 ```
 
-## 3.2 How do I save a value so I can use it across multiple flows?
+--- entry
+section: 3.2
+heading: 3. Variables — the most common questions › 3.2 How do I save a value so I can use it across multiple flows?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
 
@@ -212,7 +261,11 @@ Use an **Update Contact** node to write the value to a contact field. From then 
 
 The contact field is created automatically the first time you use it in an Update Contact node.
 
-## 3.3 What's the difference between `@results` and `@contact`?
+--- entry
+section: 3.3
+heading: 3. Variables — the most common questions › 3.3 What's the difference between `@results` and `@contact`?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
 
@@ -221,7 +274,11 @@ The contact field is created automatically the first time you use it in an Updat
 
 Use `@results` for one-off, mid-flow logic. Use `@contact.fields` when the data has long-term meaning (registration details, preferences, identifiers).
 
-## 3.4 How do I read a result variable from the parent flow inside a sub-flow / child flow?
+--- entry
+section: 3.4
+heading: 3. Variables — the most common questions › 3.4 How do I read a result variable from the parent flow inside a sub-flow / child flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
 
@@ -243,7 +300,11 @@ This works in any node of the child flow — Send Message, Update Contact, Split
 
 If the parent variable was a webhook result or Save Flow Result rather than a Wait for Response, the same `@results.parent.<name>.input` pattern still applies; `.input` returns the stored raw value.
 
-## 3.5 How do I read a result variable from the child / sub-flow inside the parent flow?
+--- entry
+section: 3.5
+heading: 3. Variables — the most common questions › 3.5 How do I read a result variable from the child / sub-flow inside the parent flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
 
@@ -259,7 +320,11 @@ After the **Enter another flow** node returns control to the parent, the parent 
 @results.child.city.input
 ```
 
-## 3.6 How do I find the keyword that started this flow?
+--- entry
+section: 3.6
+heading: 3. Variables — the most common questions › 3.6 How do I find the keyword that started this flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/How%20to%20identify%20which%20keyword%20triggered%20the%20flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/How%20to%20identify%20which%20keyword%20triggered%20the%20flow/
 
@@ -272,7 +337,11 @@ Use the built-in `flow_keyword` result, no setup required:
 
 **Caveat.** If a staff member starts the flow for a contact from the Glific dashboard (rather than the contact triggering it via WhatsApp), `@results.flow_keyword.category` will be either null or literally the string `@results.flow_keyword.category`.
 
-## 3.7 How do I increment a counter inside a flow?
+--- entry
+section: 3.7
+heading: 3. Variables — the most common questions › 3.7 How do I increment a counter inside a flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Create%20a%20Counter%20Variable%20in%20a%20Flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Create%20a%20Counter%20Variable%20in%20a%20Flow/
 
@@ -293,7 +362,11 @@ To safely add two counters that may not be initialized:
 <%= (@contact.fields.counter || 0) + (@contact.fields.add_counter || 0) %>
 ```
 
-## 3.8 How do I see all custom contact variables I've created?
+--- entry
+section: 3.8
+heading: 3. Variables — the most common questions › 3.8 How do I see all custom contact variables I've created?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/List%20of%20Custom%20Contact%20Variables%20created%20in%20Flows/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/List%20of%20Custom%20Contact%20Variables%20created%20in%20Flows/
 
@@ -305,7 +378,11 @@ Login → left menu → **Flows** → **Contact variables** link at the bottom o
 
 You can search by any of these names, edit the input/short name (click the pencil icon, then the green tick to save), or delete a variable (three-dot menu).
 
-## 3.9 List of all predefined `@contact.*` variables
+--- entry
+section: 3.9
+heading: 3. Variables — the most common questions › 3.9 List of all predefined `@contact.*` variables
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Predefined%20Contact%20Variables%20in%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Predefined%20Contact%20Variables%20in%20Glific/
 
@@ -353,7 +430,10 @@ There is no `@contact.consent_status`. To branch on consent, use `@contact.optin
 - `@contact.optout_method` — how they opted out
 - `@contact.contact_type` — whether this is a WABA contact or a WA-group contact
 
-## 3.10 Are variable names case-sensitive? What characters are allowed?
+--- entry
+section: 3.10
+heading: 3. Variables — the most common questions › 3.10 Are variable names case-sensitive? What characters are allowed?
+---
 
 - Lowercase only (or it may not match consistently).
 - No spaces — use underscore `_` instead.
@@ -367,9 +447,11 @@ Examples:
 
 ---
 
-# 4. Flow Action nodes — what each one does, key syntax, and gotchas
-
-## 4.1 Send the contact a message (Send Message node)
+--- entry
+section: 4.1
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.1 Send the contact a message (Send Message node)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20a%20message/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20a%20message/
 
@@ -407,7 +489,11 @@ There is **no quick-replies field on this node** — for buttons, use an Interac
 @results.sheet.image
 ```
 
-## 4.2 Wait for the contact to respond (Wait for Response node)
+--- entry
+section: 4.2
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.2 Wait for the contact to respond (Wait for Response node)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
 
@@ -466,7 +552,11 @@ _Other:_
 
 **No-response handling.** Tick "Continue if there is no response for" and pick a duration. You can chain reminders (e.g., one every hour, up to 3 nudges).
 
-## 4.3 Call a webhook
+--- entry
+section: 4.3
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.3 Call a webhook
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
 
@@ -513,7 +603,11 @@ You access it as:
 
 **Reference recipes & code examples:** https://github.com/glific/recipes
 
-## 4.4 Wait for result
+--- entry
+section: 4.4
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.4 Wait for result
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20result/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20result/
 
@@ -537,7 +631,11 @@ You access it as:
 
 If the webhook completes **before** the wait time, the flow resumes immediately — the wait is a maximum, not a minimum.
 
-## 4.5 Save a result for this flow (Save Flow Result node)
+--- entry
+section: 4.5
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.5 Save a result for this flow (Save Flow Result node)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Save%20a%20result%20for%20this%20flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Save%20a%20result%20for%20this%20flow/
 
@@ -563,7 +661,11 @@ If the webhook completes **before** the wait time, the flow resumes immediately 
   Value: @(title(input))
   ```
 
-## 4.6 Update the contact (Update Contact node)
+--- entry
+section: 4.6
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.6 Update the contact (Update Contact node)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
 
@@ -585,7 +687,11 @@ The property dropdown in Glific offers **Language** and **Channel** plus every c
 1. Update Contact → field `counter` ← value `0` (initialize)
 2. Update Contact → field `counter` ← value `<%= @contact.fields.counter + 1 %>` (increment)
 
-## 4.7 Enter another flow (call a sub-flow)
+--- entry
+section: 4.7
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.7 Enter another flow (call a sub-flow)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Enter%20another%20flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Enter%20another%20flow/
 
@@ -593,7 +699,11 @@ The property dropdown in Glific offers **Language** and **Channel** plus every c
 
 This node is the mechanism that creates the **parent / child** relationship described in section 3.4–3.5.
 
-## 4.8 Start somebody else in a flow
+--- entry
+section: 4.8
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.8 Start somebody else in a flow
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Start%20somebody%20else%20in%20a%20flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Start%20somebody%20else%20in%20a%20flow/
 
@@ -608,7 +718,11 @@ This node is the mechanism that creates the **parent / child** relationship desc
 
 **Note.** This node is enabled for all orgs — the flow editor always ships the `start_session` feature filter.
 
-## 4.9 Send the contact an interactive message
+--- entry
+section: 4.9
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.9 Send the contact an interactive message
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20an%20interactive%20message/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20an%20interactive%20message/
 
@@ -616,25 +730,41 @@ This node is the mechanism that creates the **parent / child** relationship desc
 
 See section 6 for full Interactive Message rules.
 
-## 4.10 Open a ticket with a human agent
+--- entry
+section: 4.10
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.10 Open a ticket with a human agent
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Open%20a%20ticket%20with%20a%20human%20agent/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Open%20a%20ticket%20with%20a%20human%20agent/
 
 **What it does.** Hands off the conversation to a human staff member. Creates a ticket. The agent picks it up from the Chats screen.
 
-## 4.11 Send a staff member a message
+--- entry
+section: 4.11
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.11 Send a staff member a message
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20a%20staff%20member%20a%20message/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20a%20staff%20member%20a%20message/
 
 **What it does.** Sends a notification message to a Glific user (staff), not the contact. Useful for internal alerts: "User X just completed onboarding".
 
-## 4.12 Add or Remove the contact to a collection
+--- entry
+section: 4.12
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.12 Add or Remove the contact to a collection
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Add%20or%20Remove%20the%20contact%20to%20a%20collection/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Add%20or%20Remove%20the%20contact%20to%20a%20collection/
 
 **What it does.** Modifies the contact's collection membership during the flow. Combine with **Split by collection Membership** later to gate access.
 
-## 4.13 Manage profile (multi-profile feature)
+--- entry
+section: 4.13
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.13 Manage profile (multi-profile feature)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Manage%20profile/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Manage%20profile/
 
@@ -648,19 +778,31 @@ See section 6 for full Interactive Message rules.
 
 The deactivate feature is opt-in — request enablement via [Glific Discord](https://discord.gg/47mGc5PrZJ).
 
-## 4.14 Wait for time
+--- entry
+section: 4.14
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.14 Wait for time
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20time/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20time/
 
 **What it does.** Inserts a delay between nodes. Leave the delay blank (or set it to 0) and the flow just pauses ~4 seconds inline instead of parking; set a real delay and the contact is woken by the background worker. A delay of 24 hours or more means the next message has to be an HSM — publishing warns you if it isn't.
 
-## 4.15 Label the incoming message
+--- entry
+section: 4.15
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.15 Label the incoming message
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Label%20the%20incoming%20message/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Label%20the%20incoming%20message/
 
 **What it does.** Tags the inbound message with a category label, useful for analytics (e.g., label messages where the contact picked English as "English"; later count how many users picked English).
 
-## 4.16 Link Google Sheets
+--- entry
+section: 4.16
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.16 Link Google Sheets
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
 
@@ -672,7 +814,11 @@ The deactivate feature is opt-in — request enablement via [Glific Discord](htt
 
 where `sheet` is the result name given to the integration node.
 
-## 4.17 Split By (the variants Glific ships)
+--- entry
+section: 4.17
+heading: 4. Flow Action nodes — what each one does, key syntax, and gotchas › 4.17 Split By (the variants Glific ships)
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 
@@ -689,7 +835,10 @@ The Split By node branches the flow on a condition. The variants available in Gl
 
 ---
 
-# 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference
+--- entry
+section: 5
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference
+---
 
 Custom expressions use Elixir syntax. They're evaluated server-side and substitute the result inline. Used in:
 
@@ -707,7 +856,11 @@ Custom expressions use Elixir syntax. They're evaluated server-side and substitu
 >
 > Anything else — `System`, `File`, `:os`, `apply/3`, `import`, `alias`, module attributes, multi-clause `fn`, function-capture shorthand like `&String.upcase/1` (write `&String.upcase(&1)` instead) — is **rejected**. A rejected or malformed expression renders as `"Invalid Code"` rather than running. Expressions are also validated when you publish the flow, so you usually find out before it reaches a contact.
 
-## 5.1 General syntax
+--- entry
+section: 5.1
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.1 General syntax
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 
@@ -717,7 +870,11 @@ Custom expressions use Elixir syntax. They're evaluated server-side and substitu
 
 Anything between `<%=` and `%>` is computed. The result replaces the entire expression.
 
-## 5.2 Conditionals
+--- entry
+section: 5.2
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.2 Conditionals
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 
@@ -738,7 +895,11 @@ Nested:
 <%= if "collection 1" in @contact.in_groups, do: 1, else: if "collection 2" in @contact.in_groups, do: 2, else: 3 %>
 ```
 
-## 5.3 Pattern matching with `case`
+--- entry
+section: 5.3
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.3 Pattern matching with `case`
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 
@@ -748,7 +909,10 @@ Nested:
 
 This compares `@results.assigned_arm_id` against the values of two other variables and returns "Control" or "Treatment" accordingly.
 
-## 5.4 Date & time
+--- entry
+section: 5.4
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.4 Date & time
+---
 
 ```
 <%= Timex.today("Asia/Kolkata") |> Date.to_string() %>             # today's date IST
@@ -776,7 +940,10 @@ Days since a stored date (date in `D/0M/YYYY` format):
 
 `@calendar.current_date` returns today as `D/0M/YYYY` (e.g., `2/01/2025`, `11/10/2024`). Useful for storing an onboarding date and later computing days-since.
 
-## 5.5 String operations
+--- entry
+section: 5.5
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.5 String operations
+---
 
 ```
 <%= String.downcase("@results.resultname") %>     # lowercase
@@ -792,7 +959,11 @@ You can also append to an existing field — the **node value** can include the 
 - Field value: `@contact.fields.cumulative_acp, @contact.fields.present_grade_acp`
 - Each time the node runs, it appends the latest value, building a comma-separated history.
 
-## 5.6 Branching by collection / opt-in / registration
+--- entry
+section: 5.6
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.6 Branching by collection / opt-in / registration
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Collection%20Membership/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Collection%20Membership/
 
@@ -804,7 +975,10 @@ You can also append to an existing field — the **node value** can include the 
 
 The result (`1`, `2`, `3`) becomes the category which the Split By node uses to pick a branch.
 
-## 5.7 Regex validation
+--- entry
+section: 5.7
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.7 Regex validation
+---
 
 Use **Wait for Response → matches regex** (`has_pattern`) or **Split by Expression** for input validation.
 
@@ -828,15 +1002,20 @@ DD/MM/YYYY (years 2025-2030):
 
 To support different separators or formats (`MM/DD/YYYY`, `DD-MM-YYYY`), adjust the sequence and separators.
 
-## 5.8 Where to ask for help with custom expressions
+--- entry
+section: 5.8
+heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.8 Where to ask for help with custom expressions
+---
 
 If a particular expression isn't covered here, post in the [Glific Discord](https://discord.com/channels/717975833226248303/1037981805653008404). The team has tooling to help generate exact syntax for new use cases.
 
 ---
 
-# 6. Interactive Messages (Reply Buttons, List, Location)
-
-## 6.1 Three types
+--- entry
+section: 6.1
+heading: 6. Interactive Messages (Reply Buttons, List, Location) › 6.1 Three types
+source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
 
@@ -844,7 +1023,11 @@ If a particular expression isn't covered here, post in the [Glific Discord](http
 2. **List Message** — up to **10** list items, organized into one or more sections.
 3. **Location Request** — a "Send Location" button to ask the contact for their location.
 
-## 6.2 Creation steps
+--- entry
+section: 6.2
+heading: 6. Interactive Messages (Reply Buttons, List, Location) › 6.2 Creation steps
+source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
 
@@ -858,13 +1041,21 @@ If a particular expression isn't covered here, post in the [Glific Discord](http
    - Type-specific section (button labels, list items + descriptions, etc.)
    - **Tag** — for searchability later
 
-## 6.3 Use in a flow
+--- entry
+section: 6.3
+heading: 6. Interactive Messages (Reply Buttons, List, Location) › 6.3 Use in a flow
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20an%20interactive%20message/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20an%20interactive%20message/
 
 Add a **Send the contact an interactive message** node, pick the interactive message from the dropdown.
 
-## 6.4 Hard rules & gotchas
+--- entry
+section: 6.4
+heading: 6. Interactive Messages (Reply Buttons, List, Location) › 6.4 Hard rules & gotchas
+source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
 
@@ -873,13 +1064,21 @@ Add a **Send the contact an interactive message** node, pick the interactive mes
 - **No emojis in the title** field.
 - Emojis **are** allowed inside button text and responses, but if used you must capture the response with `Wait for Response → has only the phrase` and paste the **exact** string (including emoji) for matching.
 
-## 6.5 Auto-translate to multiple languages
+--- entry
+section: 6.5
+heading: 6. Interactive Messages (Reply Buttons, List, Location) › 6.5 Auto-translate to multiple languages
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20Auto%20translate/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20Auto%20translate/
 
 After creating, click **Edit** → **Translate** → **Auto translate**. The header, list name, options — everything in the message — gets translated into every language configured for your bot. The right-language version automatically fires for contacts whose `@contact.language` matches.
 
-## 6.6 Dynamic interactive messages from a Google Sheet
+--- entry
+section: 6.6
+heading: 6. Interactive Messages (Reply Buttons, List, Location) › 6.6 Dynamic interactive messages from a Google Sheet
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/#send-interactive-messages-using-google-sheets
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/#send-interactive-messages-using-google-sheets
 
@@ -896,9 +1095,11 @@ This pattern bypasses WhatsApp's 10-item list limit by paginating.
 
 ---
 
-# 7. HSM Templates (pre-approved templates)
-
-## 7.1 What & why
+--- entry
+section: 7.1
+heading: 7. HSM Templates (pre-approved templates) › 7.1 What & why
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
@@ -906,7 +1107,11 @@ HSM = **Highly Structured Message**. WhatsApp-approved templates needed to messa
 
 **Session window definition.** 24-hour rolling period after the contact's last inbound message. Inside it, you can send any message free-form, no extra cost. Outside it, you must use an HSM. Check remaining session time on a contact's profile under the search section in the left pane.
 
-## 7.2 When to use HSM
+--- entry
+section: 7.2
+heading: 7. HSM Templates (pre-approved templates) › 7.2 When to use HSM
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
@@ -915,7 +1120,11 @@ HSM = **Highly Structured Message**. WhatsApp-approved templates needed to messa
 
 **Critical rule:** the next node after an HSM must always be **Wait for Response**. This forces the system to wait for the user's reply before continuing.
 
-## 7.3 Create & submit for approval
+--- entry
+section: 7.3
+heading: 7. HSM Templates (pre-approved templates) › 7.3 Create & submit for approval
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
@@ -938,7 +1147,11 @@ HSM = **Highly Structured Message**. WhatsApp-approved templates needed to messa
 
 Approval typically takes 2 minutes to 48 hours.
 
-## 7.4 Static vs Dynamic URL buttons
+--- entry
+section: 7.4
+heading: 7. HSM Templates (pre-approved templates) › 7.4 Static vs Dynamic URL buttons
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
@@ -952,21 +1165,33 @@ https://xyz.org/report/{{1}}
 
 At send time, `{{1}}` is replaced with the contact-specific value (e.g., `12345`).
 
-## 7.5 What happens if a template is rejected?
+--- entry
+section: 7.5
+heading: 7. HSM Templates (pre-approved templates) › 7.5 What happens if a template is rejected?
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
 - Rejected templates **cannot** be edited and re-submitted — the backend refuses any change to a non-approved HSM with _"HSM is not approved yet, it can't be modified"_.
 - Create a new template with corrections.
 
-## 7.6 Can I edit an approved template?
+--- entry
+section: 7.6
+heading: 7. HSM Templates (pre-approved templates) › 7.6 Can I edit an approved template?
+source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
 - **No.** WhatsApp approval is immutable. On an approved HSM the backend accepts changes to only two things: the **Active?** toggle and the **Tag**.
 - To change the body, buttons, category or anything else, create a new template and submit again.
 
-## 7.7 Common HSM Template Errors
+--- entry
+section: 7.7
+heading: 7. HSM Templates (pre-approved templates) › 7.7 Common HSM Template Errors
+source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Template%20Message%20Error/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Template%20Message%20Error/
 
@@ -979,9 +1204,11 @@ When an HSM message fails to send, you'll usually see one of these errors. The f
 
 ---
 
-# 8. Common "How do I…?" recipes (paraphrased the way users ask)
-
-## 8.1 How do I make a flow ask a question and remember the answer for later flows?
+--- entry
+section: 8.1
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.1 How do I make a flow ask a question and remember the answer for later flows?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
 
@@ -990,7 +1217,11 @@ When an HSM message fails to send, you'll usually see one of these errors. The f
 
 Now any future flow can reference `@contact.fields.email`.
 
-## 8.2 How do I personalize a message with the contact's name?
+--- entry
+section: 8.2
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.2 How do I personalize a message with the contact's name?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Predefined%20Contact%20Variables%20in%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Predefined%20Contact%20Variables%20in%20Glific/
 
@@ -1000,7 +1231,11 @@ In the Send Message body:
 Hi @contact.name, welcome back!
 ```
 
-## 8.3 How do I send different messages based on age?
+--- entry
+section: 8.3
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.3 How do I send different messages based on age?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Contact%20Field/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Contact%20Field/
 
@@ -1009,31 +1244,51 @@ Hi @contact.name, welcome back!
 3. **Split by Contact Field** on `age`. Define branches: `1-12`, `13-19`, `20-60`.
 4. After the split, attach a different Send Message node to each branch.
 
-## 8.4 How do I send different messages based on the answer to the immediately previous question?
+--- entry
+section: 8.4
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.4 How do I send different messages based on the answer to the immediately previous question?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Result%20in%20the%20Flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Result%20in%20the%20Flow/
 
 Use **Split by Flow Result** instead of Split by Contact Field. Pick the result variable (e.g., `@results.color`) from the dropdown. Define branches per expected value (`Blue`, `Green`).
 
-## 8.5 How do I send a reminder if the user doesn't answer?
+--- entry
+section: 8.5
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.5 How do I send a reminder if the user doesn't answer?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
 
 In the **Wait for Response** node, tick "Continue when there is no response", set the time, and route the timeout exit to a Send Message reminder. Loop back to a second Wait for Response if you want multiple nudges (up to 3 nudges per hour is a typical pattern).
 
-## 8.6 How do I AB test two versions of an onboarding flow?
+--- entry
+section: 8.6
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.6 How do I AB test two versions of an onboarding flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Random%20Chance%20for%20AB%20Tests/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Random%20Chance%20for%20AB%20Tests/
 
 Use **Split Randomly**. Configure two branches at 50/50 (or any percentage). Each branch leads to a different sequence of nodes. Compare results in BigQuery later.
 
-## 8.7 How do I track how many times a contact has hit a node?
+--- entry
+section: 8.7
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.7 How do I track how many times a contact has hit a node?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Create%20a%20Counter%20Variable%20in%20a%20Flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Create%20a%20Counter%20Variable%20in%20a%20Flow/
 
 See section 3.7 — counter pattern.
 
-## 8.8 How do I get the user's location and find their address?
+--- entry
+section: 8.8
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.8 How do I get the user's location and find their address?
+source: https://glific.github.io/docs/docs/Integrations/Google%20Maps%20API%20for%20reverse%20geo%20location/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Google%20Maps%20API%20for%20reverse%20geo%20location/
 
@@ -1041,7 +1296,11 @@ See section 3.7 — counter pattern.
 2. The values `@results.location` (lat/long) are saved.
 3. To convert to a human-readable address, call the Google Maps reverse geo webhook integration. See `Integrations / Google Maps API for reverse geo location` in the main docs.
 
-## 8.9 How do I send media files dynamically (different file per contact)?
+--- entry
+section: 8.9
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.9 How do I send media files dynamically (different file per contact)?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
 
@@ -1050,25 +1309,41 @@ See section 3.7 — counter pattern.
 3. Link the sheet to Glific.
 4. In a Send Message → Attachments → choose **Expression** → reference `@results.sheet.image` (where `sheet` is the result name on the Google Sheet node).
 
-## 8.10 How do I run a flow on a recurring schedule (e.g., every Monday at 9 AM)?
+--- entry
+section: 8.10
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.10 How do I run a flow on a recurring schedule (e.g., every Monday at 9 AM)?
+source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
 Use **Triggers**. Left menu → **Quick tools → Triggers** → **+ Create**. Pick the flow (must be published), the date range and time, the recurrence (**Does not repeat / Hourly / Daily / Weekly / Monthly**) and the target collection. Triggers run against **collections**, not individual contacts.
 
-## 8.11 How do I capture multiple answers to a single question?
+--- entry
+section: 8.11
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.11 How do I capture multiple answers to a single question?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Create%20a%20flow%20to%20capture%20multiple%20answers%20for%20a%20single%20question/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Create%20a%20flow%20to%20capture%20multiple%20answers%20for%20a%20single%20question/
 
 Interactive messages do **not** support this. Use a plain Send Message asking the user to reply in one message with comma-separated answers, then a Wait for Response. Add a hint and an example in the question text (e.g., "Reply with your top 3 in order, separated by commas: e.g., math, science, art").
 
-## 8.12 How do I clear / reset a contact's flow state for testing?
+--- entry
+section: 8.12
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.12 How do I clear / reset a contact's flow state for testing?
+source: https://glific.github.io/docs/docs/FAQ/Clear%20Flows%3A%20Resetting%20Contact%20Variables%20for%20Testing/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Clear%20Flows%3A%20Resetting%20Contact%20Variables%20for%20Testing/
 
 In **Chats**, open the contact, click the dropdown arrow in the conversation header and choose **Terminate flows** — this lists the contact's active flow runs so you can end them. The same menu has **Clear conversation**, which permanently deletes the chat history for that contact (it does not reset contact variables). To reset a contact variable itself, run an **Update Contact** node that writes an empty value to it (see [19.34](#1934-how-do-i-initialize-a-contact-field-as-a-blank--empty-string)).
 
-## 8.13 How do I find which keyword started a flow?
+--- entry
+section: 8.13
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.13 How do I find which keyword started a flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/How%20to%20identify%20which%20keyword%20triggered%20the%20flow/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/How%20to%20identify%20which%20keyword%20triggered%20the%20flow/
 
@@ -1079,41 +1354,68 @@ In **Chats**, open the contact, click the dropdown arrow in the conversation hea
 
 No setup required — `flow_keyword` is auto-populated.
 
-## 8.14 How do I find what contact variables I've created?
+--- entry
+section: 8.14
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.14 How do I find what contact variables I've created?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/List%20of%20Custom%20Contact%20Variables%20created%20in%20Flows/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/List%20of%20Custom%20Contact%20Variables%20created%20in%20Flows/
 
 Left menu → **Manage** → **Contact variables** (`/contact-fields`). Lists every custom contact field with its Name and Shortcode; reference them in flows as `@contact.fields.<shortcode>`.
 
-## 8.15 How do I label a contact with a tag for analytics?
+--- entry
+section: 8.15
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.15 How do I label a contact with a tag for analytics?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Label%20the%20incoming%20message/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Label%20the%20incoming%20message/
 
 Use the **Add or Remove the contact to a collection** node (collections double as analytics groups). For finer message-level tagging use the **Label the incoming message** node — labels show up in BigQuery for charting.
 
-## 8.16 How do I copy a flow?
+--- entry
+section: 8.16
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.16 How do I copy a flow?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
 
 Flows page → click **Copy** on the flow row. The duplicate is named "Copy of …" and its keywords are cleared (keywords must stay unique).
 
-## 8.17 How do I move a flow from one Glific account to another?
+--- entry
+section: 8.17
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.17 How do I move a flow from one Glific account to another?
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Import%20%26%20Export%20Flows/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Import%20%26%20Export%20Flows/
 
 Export from source: Flows page → **Export** on the flow row (downloads JSON). Import to destination: Flows page → **Import flow** → upload the JSON; a status dialog reports per-flow success or failure. Note that anything the flow references by name — collections, contact variables, interactive messages, HSM templates, sheets, assistants — has to exist in the destination org too.
 
-## 8.18 How do I revert a flow to a previous version?
+--- entry
+section: 8.18
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.18 How do I revert a flow to a previous version?
+---
 
 Inside the flow editor: **Revision History** button. Glific keeps a list of versions; pick one and revert. Useful when a published change broke production.
 
-## 8.19 How do I count how many users opted-in?
+--- entry
+section: 8.19
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.19 How do I count how many users opted-in?
+source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
 
 Use BigQuery + Looker Studio. Note the BigQuery `contacts` table has **no `optin_status` column** — it carries `optin_time`, `optout_time` and `contact_optin_method`. Count opted-in contacts with `WHERE optin_time IS NOT NULL` (and `optout_time IS NULL` if you want currently-opted-in only).
 
-## 8.20 How do I let staff jump in and chat with the user?
+--- entry
+section: 8.20
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.20 How do I let staff jump in and chat with the user?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Open%20a%20ticket%20with%20a%20human%20agent/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Open%20a%20ticket%20with%20a%20human%20agent/
 
@@ -1121,7 +1423,10 @@ Use the **Open a ticket with a human agent** node. The conversation is suspended
 
 ---
 
-# 9. Limits & Constraints (single-line answers)
+--- entry
+section: 9
+heading: 9. Limits & Constraints (single-line answers)
+---
 
 | Thing                                         | Limit                                       |
 | --------------------------------------------- | ------------------------------------------- |
@@ -1148,7 +1453,10 @@ Use the **Open a ticket with a human agent** node. The conversation is suspended
 
 ---
 
-# 10. Troubleshooting checklist (when a flow isn't working)
+--- entry
+section: 10
+heading: 10. Troubleshooting checklist (when a flow isn't working)
+---
 
 When a flow isn't behaving, check these in order:
 
@@ -1165,9 +1473,11 @@ When a flow isn't behaving, check these in order:
 
 ---
 
-# 11. Reporting & Analytics (where data goes)
-
-## 11.1 BigQuery — primary data store
+--- entry
+section: 11.1
+heading: 11. Reporting & Analytics (where data goes) › 11.1 BigQuery — primary data store
+source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
 
@@ -1187,7 +1497,11 @@ There are ~34 tables in an org's dataset. The full column-by-column reference is
 
 Typical query: "How many users completed the registration flow?" → `SELECT COUNT(DISTINCT contact_phone) FROM flow_results WHERE flow_uuid = '<id>'`.
 
-## 11.2 DataStudio (Looker Studio) dashboards
+--- entry
+section: 11.2
+heading: 11. Reporting & Analytics (where data goes) › 11.2 DataStudio (Looker Studio) dashboards
+source: https://glific.github.io/docs/docs/Product%20Features/Reporting%20%26%20Dashboard/Understanding%20V5%20Data%20Studio%20Reports/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Reporting%20%26%20Dashboard/Understanding%20V5%20Data%20Studio%20Reports/
 
@@ -1199,19 +1513,31 @@ Standard dashboards Glific provides:
 
 To build custom reports: see `Making Custom Reports on DataStudio` in the main docs. Connect Looker Studio to BigQuery, build charts.
 
-## 11.3 Get data for a particular flow from BigQuery
+--- entry
+section: 11.3
+heading: 11. Reporting & Analytics (where data goes) › 11.3 Get data for a particular flow from BigQuery
+source: https://glific.github.io/docs/docs/Product%20Features/Reporting%20%26%20Dashboard/Get%20a%20data%20of%20a%20particular%20flow%20from%20BigQuery/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Reporting%20%26%20Dashboard/Get%20a%20data%20of%20a%20particular%20flow%20from%20BigQuery/
 
 See `Get a data of a particular flow from BigQuery` in the main docs. Filter `flow_results` and `flow_counts` by the flow's UUID (visible in the URL when editing the flow).
 
-## 11.4 Sync Google Sheets ↔ BigQuery
+--- entry
+section: 11.4
+heading: 11. Reporting & Analytics (where data goes) › 11.4 Sync Google Sheets ↔ BigQuery
+source: https://glific.github.io/docs/docs/FAQ/Sync%20BigQuery%20and%20Google%20Sheets/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Sync%20BigQuery%20and%20Google%20Sheets/
 
 Two-way sync supported. See `Sync BigQuery and Google Sheets`. Use case: read contact data into a sheet for the program team to review, write back enriched data.
 
-## 11.5 Why is my Google Sheet sync failing?
+--- entry
+section: 11.5
+heading: 11. Reporting & Analytics (where data goes) › 11.5 Why is my Google Sheet sync failing?
+source: https://glific.github.io/docs/docs/Use%20Cases/Solving%20For%20Sheet%20Sync%20Failures%20Issues/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Use%20Cases/Solving%20For%20Sheet%20Sync%20Failures%20Issues/
 
@@ -1225,7 +1551,10 @@ Common reasons:
 
 ---
 
-# 12. Integrations — when to use which
+--- entry
+section: 12
+heading: 12. Integrations — when to use which
+---
 
 | Integration                              | What it does                                                                                                                       |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -1242,7 +1571,10 @@ Common reasons:
 
 ---
 
-# 13. Pre-launch checklist (before turning a chatbot live)
+--- entry
+section: 13
+heading: 13. Pre-launch checklist (before turning a chatbot live)
+---
 
 The "12 Pre-launch Chatbot Checks" condensed:
 
@@ -1261,7 +1593,11 @@ The "12 Pre-launch Chatbot Checks" condensed:
 
 See `Starter Kit / 12 Pre-launch Chatbot Checks` for the full list.
 
-## 13.1 Other pre-launch tasks
+--- entry
+section: 13.1
+heading: 13. Pre-launch checklist (before turning a chatbot live) › 13.1 Other pre-launch tasks
+source: https://glific.github.io/docs/docs/Starter%20Kit/12%20Pre-launch%20Chatbot%20Checks/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Starter%20Kit/12%20Pre-launch%20Chatbot%20Checks/
 
@@ -1271,7 +1607,10 @@ See `Starter Kit / 12 Pre-launch Chatbot Checks` for the full list.
 
 ---
 
-# 14. Onboarding / setup (single-glance answers)
+--- entry
+section: 14
+heading: 14. Onboarding / setup (single-glance answers)
+---
 
 | Task                                               | Where                                                                            |
 | -------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -1286,11 +1625,16 @@ See `Starter Kit / 12 Pre-launch Chatbot Checks` for the full list.
 | Manage Gupshup wallet & suspension                 | `FAQ / Managing Gupshup Wallet Balance and Suspension`                           |
 | Get Glific support (Discord, weekly Tuesday calls) | `FAQ / Get Glific Support`                                                       |
 
-## 14.1 Operating cost rule of thumb
+
+14.1 Operating cost rule of thumb
 
 NGO running ~500 users with weekly reminders typically spends **₹10,000-15,000 per month** on WhatsApp messaging fees.
 
-## 14.2 Getting support
+--- entry
+section: 14.2
+heading: 14. Onboarding / setup (single-glance answers) › 14.2 Getting support
+source: https://glific.github.io/docs/docs/FAQ/Get%20Glific%20Support/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Get%20Glific%20Support/
 
@@ -1300,63 +1644,101 @@ NGO running ~500 users with weekly reminders typically spends **₹10,000-15,000
 
 ---
 
-# 15. Speed Sends, Searches, Notifications, Tags (less-common features)
-
-## 15.1 Speed Sends
+--- entry
+section: 15.1
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.1 Speed Sends
+source: https://glific.github.io/docs/docs/Product%20Features/Speed%20Sends/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Speed%20Sends/
 
 Pre-written message snippets that staff pick from the chat window's down-arrow → **Speed sends** tab, so they don't retype common replies. Each has a Title, a Message body (with `@variable` support) and an optional attachment; they are multilingual. They are **not** a broadcast tool — to message a whole collection, use the **Collections** tab in Chats, or a trigger + flow.
 
-## 15.2 Searches
+--- entry
+section: 15.2
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.2 Searches
+source: https://glific.github.io/docs/docs/Product%20Features/Searches/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Searches/
 
 Save filtered views of contacts/messages (e.g., "all contacts who answered Q3 incorrectly"). Reusable filters, plus the ability to act on the result (start a flow for them, label them, etc.).
 
-## 15.3 Notifications
+--- entry
+section: 15.3
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.3 Notifications
+source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 
 In-Glific alerts for failed flows, sync failures, template problems, contact-upload results, etc., at **Notifications** in the sidebar (Manager+). It is a read-only log — there is nothing to configure. Rows carry a category, a severity (Critical / Warning / Info) and a **Check** action that jumps to the entity. Separately, org admins can opt into low-balance warning emails at `/settings/organization`.
 
-## 15.4 Tags
+--- entry
+section: 15.4
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.4 Tags
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Tags/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Tags/
 
 Lightweight labels you can attach to messages, contacts, HSM templates, interactive messages — for categorization and search.
 
-## 15.5 Custom Certificates
+--- entry
+section: 15.5
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.5 Custom Certificates
+source: https://glific.github.io/docs/docs/Product%20Features/Custom%20Certificates/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Custom%20Certificates/
 
 Generate personalized certificates from a **Google Slides** template, using data captured in flows. The output is an image hosted on Google Cloud Storage, delivered via the `create_certificate` webhook ([20.11](#2011-create_certificate--generate-a-personalized-certificate)) — not a PDF. Only visible when the Certificates feature is enabled for your org.
 
-## 15.6 Triggers
+--- entry
+section: 15.6
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.6 Triggers
+source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
 Schedule a flow to run for a contact / collection at a future date or on a recurrence. See `Product Features / Triggers`.
 
-## 15.7 WhatsApp Forms
+--- entry
+section: 15.7
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.7 WhatsApp Forms
+source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 
 A form-builder UX for collecting structured data from contacts (newer feature). See `Product Features / WhatsApp Forms`.
 
-## 15.8 Interactive Messages Re-response
+--- entry
+section: 15.8
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.8 Interactive Messages Re-response
+source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages%20Re-response/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages%20Re-response/
 
 Lets you re-send / re-prompt the same interactive message if the user's first reply didn't match. See `Product Features / Interactive Messages Re-response`.
 
-## 15.9 Staff Management & Role Management
+--- entry
+section: 15.9
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.9 Staff Management & Role Management
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
 
 Roles: **Staff** (chats and assigned collections), **Manager** (adds flows, templates, triggers, searches, notifications), **Admin** (adds settings and bulk contact management), **Glific_admin** (platform-level: organizations, consulting hours), plus **Dynamic** roles for orgs that define their own. Set per user under **Manage → Staff**.
 
-## 15.10 Collections
+--- entry
+section: 15.10
+heading: 15. Speed Sends, Searches, Notifications, Tags (less-common features) › 15.10 Collections
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections/
 
@@ -1364,7 +1746,10 @@ Named groups of contacts. A collection has a Title, a Description and optional a
 
 ---
 
-# 16. Where to find specific things in the platform UI
+--- entry
+section: 16
+heading: 16. Where to find specific things in the platform UI
+---
 
 | To find…                                             | Click…                                                                  |
 | ---------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -1394,153 +1779,17 @@ Named groups of contacts. A collection has a Title, a Description and optional a
 
 ---
 
-# 17. API summary (for developers)
-
-## 17.1 Base URL
-
-```
-https://api.<your-shortcode>.glific.com/
-```
-
-`<your-shortcode>` is your Glific subdomain. Find it in the URL of your Glific dashboard.
-
-## 17.2 Authentication
-
-`POST /api/v1/session` with the user's phone and password returns an access token. Send it as `Authorization: <token>` on subsequent calls. `POST /api/v1/session/renew` refreshes it.
-
-## 17.3 Everything else is GraphQL
-
-Apart from the auth endpoints above, Glific's API is a **single GraphQL endpoint**:
-
-```
-POST https://api.<your-shortcode>.glific.com/api
-Authorization: <access token>
-Content-Type: application/json
-```
-
-The full schema (queries, mutations, argument names) is documented at https://api.glific.com/. Common operations:
-
-- `session` (REST, `POST /api/v1/session`) — get an access token
-- `flows` query — list flows with ids, names, uuids and keywords
-- `contacts` / `contact` queries, `updateContact` mutation
-- `startContactFlow` / `startGroupFlow` mutations — start a flow
-- `resumeContactFlow` mutation — resume a flow parked on a **Wait for result** node
-
-## 17.4 OTP flow via Glific APIs
-
-📖 Source: https://glific.github.io/docs/docs/FAQ/Using%20Glific%20APIs%20for%20OTP%20Authentication/
-
-See `FAQ / Using Glific APIs for OTP Authentication`. Pattern: external app calls Glific to start an OTP-sending flow on a contact, then verifies the contact's response. `POST /api/v1/registration/send-otp` is the REST entry point for the registration OTP.
-
-## 17.5 Resuming a parked flow
-
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20result/
-
-**From your own system** — use the `resumeContactFlow` GraphQL mutation (requires a Manager-or-above token):
-
-```graphql
-mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: Json) {
-  resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) {
-    success
-    errors { key message }
-  }
-}
-```
-
-`result` is a JSON scalar — pass it as a **stringified JSON object**. Its keys land in the flow under the Wait for result node's result variable.
-
-**Glific's own async webhooks** (`speech_to_text`, `text_to_speech`, `filesearch-gpt`, `voice-filesearch-gpt`) do not use that mutation. They call back to `POST /webhook/flow_resume`, which is HMAC-signed: the callback must carry `organization_id`, `flow_id`, `contact_id`, `timestamp` and `signature`, and an unsigned or incomplete callback is silently dropped (it still answers 200). You do not call this endpoint yourself — Glific builds the signed callback URL when the node fires.
-
+--- entry
+section: 19
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers)
 ---
-
-# 18. Final mappings — questions to canonical answers
-
-A flat list of "user phrasing → answer key" so retrieval is robust.
-
-| If the user asks something like…                                              | The canonical answer is in section…                            |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| "How do I get a parent flow's variable in a sub-flow?"                        | 3.4 — `@results.parent.<name>.input`                           |
-| "How do I read a child flow result back in the parent?"                       | 3.5 — `@results.child.<name>.input`                            |
-| "What's the syntax to access a result from a calling flow?"                   | 3.4                                                            |
-| "How do I save user input?"                                                   | 3.1 (within flow), 3.2 (across flows)                          |
-| "Difference between contact field and result variable?"                       | 3.3                                                            |
-| "How do I make a counter?"                                                    | 3.7                                                            |
-| "How to find which keyword triggered the flow?"                               | 3.6 / 8.13                                                     |
-| "Where do I see all my custom variables?"                                     | 3.8 / 8.14                                                     |
-| "How do I send media that changes per user?"                                  | 8.9                                                            |
-| "Why isn't my flow working?"                                                  | 10                                                             |
-| "What's the size limit for video / image?"                                    | 9                                                              |
-| "How do I AB test?"                                                           | 8.6, 4.17 (Split Randomly)                                     |
-| "How do I send a reminder if no response?"                                    | 8.5, 4.2 ("Continue when there is no response")                |
-| "How do I branch on age?"                                                     | 8.3                                                            |
-| "How do I read a webhook response?"                                           | 4.3 / 2.3                                                      |
-| "Webhook is timing out, what do I do?"                                        | 4.4 (Wait for Result)                                          |
-| "What's the syntax for today's date?"                                         | 2.5 / 5.4                                                      |
-| "How do I validate a date input?"                                             | 2.7 / 5.7                                                      |
-| "Can I edit an HSM after approval?"                                           | 7.6 — No, create new                                           |
-| "Why was my HSM rejected?"                                                    | 7.5 — can't edit, create new                                   |
-| "How many buttons can I have in an interactive message?"                      | 6.1 / 9 — 3 quick replies, 10 list items                       |
-| "Why does my interactive message say 'Character policy violated'?"            | 6.4 — markdown `*` `_` not allowed                             |
-| "How do I run a flow on a schedule?"                                          | 8.10 / 15.6 (Triggers)                                         |
-| "How do I clear a contact's variables for testing?"                           | 8.12 — Terminate flows, then blank the variable                |
-| "Where's the data for analytics?"                                             | 11 — BigQuery + DataStudio                                     |
-| "How do I get support?"                                                       | 14.2 — Discord, Tuesday calls                                  |
-| "What's the cost?"                                                            | 14.1 — ~₹10-15k/month for 500 users weekly                     |
-| "How do I copy / move a flow?"                                                | 8.16 (copy), 8.17 (across accounts)                            |
-| "How do I update another user's contact data from a flow?"                    | 19.1 — not possible from flow, use updateContact API + webhook |
-| "How often does BigQuery / Looker Studio refresh?"                            | 19.2                                                           |
-| "Are there session IDs in Glific?"                                            | 19.3                                                           |
-| "Can I export user questions to CSV?"                                         | 19.4                                                           |
-| "Can I add the bot to a WhatsApp group?"                                      | 19.5 — no, use Maytapi                                         |
-| "How do I set the default flow?"                                              | 19.6                                                           |
-| "How do I route flow on the first line of an LLM response?"                   | 19.7                                                           |
-| "How do I change the GCS account linked to Glific?"                           | 19.8                                                           |
-| "Can I integrate PayU / a payment gateway?"                                   | 19.9 — no                                                      |
-| "Is there a limit on contacts in a collection?"                               | 19.10                                                          |
-| "Where are result variables stored in Looker Studio?"                         | 19.11 — `flow_results` table                                   |
-| "How do I send an audio file via webhook?"                                    | 19.12                                                          |
-| "Sharing Google Sheets with PII data?"                                        | 19.13 — share with service account only                        |
-| "How do I bulk import thousands of users?"                                    | 19.14                                                          |
-| "Can the AI assistant read images inside PDFs?"                               | 19.15 — no                                                     |
-| "Can I use a result variable in 'has a number between'?"                      | 19.16 — yes                                                    |
-| "Can I trigger a flow from an image instead of a keyword?"                    | 19.17 — no                                                     |
-| "How do I set up hourly triggers?"                                            | 19.18                                                          |
-| "How do I enable OpenAI for filesearch-gpt?"                                  | 19.19 — Glific provides it, no key needed                      |
-| "How do I set up RAG to web search fallback?"                                 | 19.20 — prompt-based                                           |
-| "Chatbot is not responding at all"                                            | 19.21                                                          |
-| "LLM is returning partial data / not all records"                             | 19.22                                                          |
-| "How do I add Bengali / Marathi / new languages?"                             | 19.23                                                          |
-| "Can I create a flow directly from an HSM template?"                          | 19.24 — no                                                     |
-| "Google Sheet writes only once and stops"                                     | 19.25                                                          |
-| "How do I capture both pin location and typed address?"                       | 19.26                                                          |
-| "Unauthorized access error creating a WhatsApp form"                          | 19.27                                                          |
-| "Can I use longer than 10-character single-choice options in WhatsApp Forms?" | 19.28 — no, Meta restriction                                   |
-| "Form date field publish error"                                               | 19.29                                                          |
-| "Bhashini speech_engine setup"                                                | 19.30 — Bhashini webhooks removed; Gemini now                  |
-| "LLM webhook returns 200 but no message"                                      | 19.31                                                          |
-| "Gupshup App ID field not clickable / locked credentials"                     | 19.32                                                          |
-| "Staff can't create account, 'cannot send OTP'"                               | 19.33                                                          |
-| "How do I initialize a contact field as empty string?"                        | 19.34                                                          |
-| "BigQuery replica table out of sync"                                          | 19.35                                                          |
-| "Staff account got auto-deleted"                                              | 19.36                                                          |
-| "Can I get OpenAI usage metrics for our org?"                                 | 19.37 — no                                                     |
-| "GCS shows inactive / subscription cancelled"                                 | 19.38                                                          |
-| "Editing a flow says someone else is editing — Take Over"                     | 19.39                                                          |
-| "Flow shows in preview but not on the Flows screen"                           | 19.40                                                          |
-| "Where is the Call AI / LLM node?"                                            | 4.3 / 20 — there is none; use Call a webhook with method FUNCTION |
-| "How do I send an email from a flow?"                                         | Not supported — the Send Email node is disabled in Glific       |
-| "How do I connect Zapier?"                                                    | Not supported — the Call Zapier (resthook) node is disabled     |
-| "How do I send airtime?"                                                      | Not supported — the Send Airtime node is disabled               |
-| "How do I set a contact's name / status from a flow?"                         | 4.6 — not possible; Update Contact offers Language, Channel and your own contact variables |
-| "Why won't my flow publish — deprecated webhook?"                             | 20.5 — migrate the Bhashini webhook nodes                       |
-
----
-
-# 19. Operational FAQs and corrections (high-frequency wrong answers)
 
 > This section addresses questions where the chatbot has historically given incorrect, technical, or "I don't have this in my docs" answers. Each entry is the **canonical correct answer**, written in plain language. Keep responses short and non-technical — refer users to support when the answer truly requires backend access.
 
-## 19.1 Can I update another user's contact data from inside a flow?
+--- entry
+section: 19.1
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.1 Can I update another user's contact data from inside a flow?
+---
 
 **No.** A flow can only update the contact who is currently in the flow — you cannot directly update _another_ user's contact fields from inside a flow node.
 
@@ -1550,21 +1799,31 @@ A flat list of "user phrasing → answer key" so retrieval is robust.
 2. Call your backend via a `Call a webhook` node, passing the target contact's identifier and the new value.
 3. Your backend calls Glific's updateContact API to write the field on the target contact.
 
-## 19.2 How often does BigQuery sync, and how often does Looker Studio refresh?
+--- entry
+section: 19.2
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.2 How often does BigQuery sync, and how often does Looker Studio refresh?
+---
 
 - **BigQuery** — the sync job runs **every 2 minutes** and does both new inserts and updates, so a row written in Glific normally appears in BigQuery within **2–4 minutes**. Each pass moves at most **500 rows per table**, so a big backlog drains over several ticks. A separate job at **23:58 UTC** does duplicate cleanup only. Sync is skipped for orgs with no message traffic in the last 12 hours, and stops entirely if BigQuery returns `PERMISSION_DENIED` (the credential is auto-disabled). If your dataset isn't refreshing at all, check Notifications for sync errors.
 - **Looker Studio** — uses BigQuery as its source. By default the cache is **12 hours**; you can shorten this in the Looker Studio data source settings, or click "Refresh data" manually for an immediate refresh.
 
 If your replica table looks stale, see 19.35.
 
-## 19.3 Are there session IDs in Glific to identify a conversation?
+--- entry
+section: 19.3
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.3 Are there session IDs in Glific to identify a conversation?
+---
 
 - For **LLM conversations** (OpenAI Assistants, etc.) every conversation has a `thread_id` — this acts as a session identifier and is stored against the contact.
 - For **regular WhatsApp messaging** there is no explicit `session_id` stored. The closest equivalent is the WhatsApp 24-hour session window (see 7.1) and the contact's flow run, but neither exposes a session ID you can query.
 
 If you need conversation grouping for analytics, query messages from BigQuery and group by contact + time-window.
 
-## 19.4 Can I export all the questions users are asking the chatbot as a CSV?
+--- entry
+section: 19.4
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.4 Can I export all the questions users are asking the chatbot as a CSV?
+source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
 
@@ -1576,7 +1835,11 @@ If you need conversation grouping for analytics, query messages from BigQuery an
 
 If you don't have BigQuery set up, see `Pre Onboarding / BigQuery Setup`.
 
-## 19.5 Can the Glific chatbot be added to WhatsApp groups?
+--- entry
+section: 19.5
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.5 Can the Glific chatbot be added to WhatsApp groups?
+source: https://glific.github.io/docs/docs/WhatsApp%20Groups%20Automation/WhatsApp%20Groups%20Automation%20Features/
+---
 
 📖 Source: https://glific.github.io/docs/docs/WhatsApp%20Groups%20Automation/WhatsApp%20Groups%20Automation%20Features/
 
@@ -1584,7 +1847,11 @@ If you don't have BigQuery set up, see `Pre Onboarding / BigQuery Setup`.
 
 **Workaround:** use **Maytapi** integration. Glific supports WhatsApp Groups Automation via Maytapi for sending messages, polls, etc. into groups. See `WhatsApp Groups Automation Features` and `Setting up WhatsApp Groups Automation for existing NGOs` in the main docs.
 
-## 19.6 How do I set up the Default Flow so any unmatched message triggers it?
+--- entry
+section: 19.6
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.6 How do I set up the Default Flow so any unmatched message triggers it?
+source: https://glific.github.io/docs/docs/Product%20Features/Others/New%20Contact%2C%20Default%20flow%20Out%20of%20office%20hours%20notifications/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/New%20Contact%2C%20Default%20flow%20Out%20of%20office%20hours%20notifications/
 
@@ -1610,7 +1877,11 @@ See `Product Features / Others / New Contact, Default flow Out of office hours n
 
 To know **which keyword/sentence** triggered the flow, use `@results.flow_keyword.input` (the matched keyword) or `@results.flow_keyword.category` (the full sentence the user typed). See section 3.6.
 
-## 19.7 How do I read the first line / first word of an LLM response and route the flow?
+--- entry
+section: 19.7
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.7 How do I read the first line / first word of an LLM response and route the flow?
+source: https://glific.github.io/docs/docs/Integrations/Structured%20responses%20in%20GPT%20webhook%20functions/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Structured%20responses%20in%20GPT%20webhook%20functions/
 
@@ -1624,7 +1895,11 @@ For structured outputs (where the LLM returns JSON), use the **Structured GPT re
 
 Avoid trying to slice the response with raw string operations — it's brittle. Make the LLM do the structuring.
 
-## 19.8 How do I change the GCS account linked to Glific?
+--- entry
+section: 19.8
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.8 How do I change the GCS account linked to Glific?
+source: https://glific.github.io/docs/docs/Pre%20Onboarding/Google%20Cloud%20Storage%20Setup%20-%20GCS/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Pre%20Onboarding/Google%20Cloud%20Storage%20Setup%20-%20GCS/
 
@@ -1637,7 +1912,10 @@ Avoid trying to slice the response with raw string operations — it's brittle. 
 
 After saving, run a test (send a media file in a flow) to confirm the new bucket is being used.
 
-## 19.9 Can I integrate a payment gateway like PayU / Razorpay / Stripe with Glific?
+--- entry
+section: 19.9
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.9 Can I integrate a payment gateway like PayU / Razorpay / Stripe with Glific?
+---
 
 **No.** Glific does not have a built-in payment gateway integration. Payment links can be sent as plain URLs in a Send Message node, but no native processing/capture flow is supported.
 
@@ -1647,13 +1925,20 @@ If you need payment confirmation, you can:
 - Use a webhook to your backend to check payment status (your backend handles the gateway).
 - Resume the flow with the payment outcome via the `resumeContactFlow` mutation ([17.5](#175-resuming-a-parked-flow)).
 
-## 19.10 Is there a limit on the number of contacts in a collection?
+--- entry
+section: 19.10
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.10 Is there a limit on the number of contacts in a collection?
+---
 
 **No hard limit.** However, very large collections cause delivery delays when broadcasting (each message has to be queued and sent individually within Gupshup's rate limits).
 
 **Recommendation:** split very large audiences into multiple smaller collections (e.g., 5,000–10,000 each) so broadcasts complete in a reasonable time.
 
-## 19.11 Where are result variables and contact variables stored in Looker Studio / BigQuery?
+--- entry
+section: 19.11
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.11 Where are result variables and contact variables stored in Looker Studio / BigQuery?
+source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
 
@@ -1662,7 +1947,11 @@ If you need payment confirmation, you can:
 
 For Looker Studio dashboards: connect Looker Studio to BigQuery, then use `flow_results` for per-flow analytics and `contacts` for per-contact attributes. Joining them on `contact_phone` / `contact_id` is the most common pattern.
 
-## 19.12 How do I upload an audio file from the user and send it to my backend via a webhook?
+--- entry
+section: 19.12
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.12 How do I upload an audio file from the user and send it to my backend via a webhook?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20a%20message/#chatbot-sending-the-media-to-the-end-user
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20a%20message/#chatbot-sending-the-media-to-the-end-user
 
@@ -1679,7 +1968,11 @@ For Looker Studio dashboards: connect Looker Studio to BigQuery, then use `flow_
 
 You don't need to base64-encode anything inside Glific — the webhook just sends the URL string, and your backend fetches the audio.
 
-## 19.13 Google Sheets needs 'Anyone with the link' but we have PII — is there another way?
+--- entry
+section: 19.13
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.13 Google Sheets needs 'Anyone with the link' but we have PII — is there another way?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Link%20Google%20Sheets/
 
@@ -1692,7 +1985,10 @@ You don't need to base64-encode anything inside Glific — the webhook just send
 
 This is the recommended setup for any sheet containing PII.
 
-## 19.14 How do I onboard tens of thousands of users at once?
+--- entry
+section: 19.14
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.14 How do I onboard tens of thousands of users at once?
+---
 
 Use the **Bulk Import Contacts** feature:
 
@@ -1703,7 +1999,11 @@ Use the **Bulk Import Contacts** feature:
 
 For very large imports (tens of thousands), break the CSV into batches of around **5,000 contacts** to keep the import responsive and avoid timeouts. For 27,000 users, that's ~6 batches.
 
-## 19.15 Can the AI assistant read images inside a PDF?
+--- entry
+section: 19.15
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.15 Can the AI assistant read images inside a PDF?
+source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
 
@@ -1711,13 +2011,21 @@ For very large imports (tens of thousands), break the CSV into batches of around
 
 If you need image understanding, use the **GPT integration for image recognition** integration separately, passing image URLs explicitly. See `Integrations / GPT integration for image recognition`.
 
-## 19.16 Can I use a result variable inside a 'has a number between' condition in Wait for Response?
+--- entry
+section: 19.16
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.16 Can I use a result variable inside a 'has a number between' condition in Wait for Response?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
 
 **Yes.** You can put `@results.<name>` or `@contact.fields.<name>` as either bound of the range. Example: if a previous step saved `@results.min_age` and `@results.max_age`, the range field can use those variables instead of fixed numbers.
 
-## 19.17 Can I trigger a flow from an image instead of a keyword?
+--- entry
+section: 19.17
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.17 Can I trigger a flow from an image instead of a keyword?
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Keywords/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Keywords/
 
@@ -1734,7 +2042,11 @@ There is no "image as trigger" mechanism. (Resuming a parked flow is not a trigg
 
 **Workaround:** trigger on a keyword or the default flow, then use **Wait for Response** with the `has image` operator to accept the image at that point.
 
-## 19.18 How do I set up hourly triggers?
+--- entry
+section: 19.18
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.18 How do I set up hourly triggers?
+source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
@@ -1748,7 +2060,11 @@ Triggers support hourly recurrence:
 
 Daily, weekly, and monthly recurrences are also available from the same dropdown.
 
-## 19.19 How do I enable OpenAI for filesearch-gpt / voice-filesearch-gpt webhooks?
+--- entry
+section: 19.19
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.19 How do I enable OpenAI for filesearch-gpt / voice-filesearch-gpt webhooks?
+source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
 
@@ -1756,7 +2072,10 @@ Daily, weekly, and monthly recurrences are also available from the same dropdown
 
 If a specific webhook isn't working, check Webhook Logs (Flows → Webhook logs) for the error, and reach out to Glific Support on Discord.
 
-## 19.20 How do I make the AI search the web when the answer isn't in the knowledge base?
+--- entry
+section: 19.20
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.20 How do I make the AI search the web when the answer isn't in the knowledge base?
+---
 
 This is **prompt-based**, not a configuration toggle. In the system/instruction prompt of your OpenAI Assistant or LLM webhook, add an instruction like:
 
@@ -1764,7 +2083,11 @@ This is **prompt-based**, not a configuration toggle. In the system/instruction 
 
 There is no Glific-side "web search fallback" toggle. Behavior is controlled entirely by what you instruct the LLM to do.
 
-## 19.21 The chatbot is not responding at all — what should I check?
+--- entry
+section: 19.21
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.21 The chatbot is not responding at all — what should I check?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20not%20working%20-%20Troubleshoot%20checklist/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20not%20working%20-%20Troubleshoot%20checklist/
 
@@ -1776,7 +2099,11 @@ There is no Glific-side "web search fallback" toggle. Behavior is controlled ent
 
 Don't try to debug from the flow side first; the flow rarely is the cause of a complete no-response situation.
 
-## 19.22 The LLM is only returning partial data / not all records from the uploaded file.
+--- entry
+section: 19.22
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.22 The LLM is only returning partial data / not all records from the uploaded file.
+source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
 
@@ -1790,7 +2117,10 @@ Example phrasing: "Search across all uploaded documents. Return every record tha
 
 If the file is very large, also consider splitting it into smaller, focused documents — the assistant retrieves better against well-scoped corpora.
 
-## 19.23 How do I add a new language (Bengali, Marathi, etc.) to our chatbot?
+--- entry
+section: 19.23
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.23 How do I add a new language (Bengali, Marathi, etc.) to our chatbot?
+---
 
 **Org-level setting:**
 
@@ -1804,7 +2134,10 @@ After this, you can:
 - Use auto-translate on Interactive Messages (see 6.5).
 - Switch a contact's language mid-flow with an **Update Contact** node — pick **Language** from the property dropdown. (You read it back as `@contact.language`; you don't write to that expression.)
 
-## 19.24 Can I create a flow directly from an existing HSM template (so the template becomes the first node)?
+--- entry
+section: 19.24
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.24 Can I create a flow directly from an existing HSM template (so the template becomes the first node)?
+---
 
 **No, there is no one-click "create flow from template" option.**
 
@@ -1816,7 +2149,11 @@ The manual path:
 4. Add a Wait for Response immediately after (mandatory after an HSM — see 7.2).
 5. Continue building the flow.
 
-## 19.25 I linked a Google Sheet but the bot only wrote to it once, then stopped.
+--- entry
+section: 19.25
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.25 I linked a Google Sheet but the bot only wrote to it once, then stopped.
+source: https://glific.github.io/docs/docs/Use%20Cases/Solving%20For%20Sheet%20Sync%20Failures%20Issues/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Use%20Cases/Solving%20For%20Sheet%20Sync%20Failures%20Issues/
 
@@ -1827,7 +2164,11 @@ Check, in this order:
 3. **Sheet quota** — Google enforces row, cell, and write-rate limits. For high-volume writes, this is the most common cause.
 4. **Recommendation for scale** — for high-volume writes, fetch from BigQuery into Sheets on a schedule rather than writing directly from the chatbot. The direct-write path is fine for low volume but not reliable at scale.
 
-## 19.26 Some users send pin location, others type their address — how do I capture both?
+--- entry
+section: 19.26
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.26 Some users send pin location, others type their address — how do I capture both?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
 
@@ -1840,7 +2181,10 @@ Use **two response categories** in a single Wait for Response node:
 
 The pin location is stored as longitude/latitude; the typed address stays as plain text. Process them differently downstream (e.g., reverse-geocode the lat/long, store the typed text as-is).
 
-## 19.27 'Unauthorized access' error when creating / publishing a WhatsApp form.
+--- entry
+section: 19.27
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.27 'Unauthorized access' error when creating / publishing a WhatsApp form.
+---
 
 This is almost always a **Gupshup-side** issue, not a flow issue.
 
@@ -1849,7 +2193,11 @@ This is almost always a **Gupshup-side** issue, not a flow issue.
 3. Confirm the API key in Glific Settings matches the live Gupshup app.
 4. If all the above are correct and the error continues, reach out to Gupshup Support.
 
-## 19.28 How do I use longer than 10-character text in a single-choice option in WhatsApp Forms?
+--- entry
+section: 19.28
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.28 How do I use longer than 10-character text in a single-choice option in WhatsApp Forms?
+source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 
@@ -1857,14 +2205,21 @@ This is almost always a **Gupshup-side** issue, not a flow issue.
 
 If you need longer option text, redesign the form to use a different field type (free-text, dropdown, etc., depending on what's available), or shorten the option label and put the explanation in the question text.
 
-## 19.29 'An error occurred' when publishing a WhatsApp Form with a custom date range.
+--- entry
+section: 19.29
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.29 'An error occurred' when publishing a WhatsApp Form with a custom date range.
+---
 
 Two things to check:
 
 1. **Form JSON validity** — open the form's JSON view and confirm it's well-formed. Date field validation rules are a common source of malformed JSON.
 2. **Reach out to Glific Support** — form publish errors often need backend inspection. Don't try to debug Meta's response codes on your own.
 
-## 19.30 How do I configure the speech engine for voice?
+--- entry
+section: 19.30
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.30 How do I configure the speech engine for voice?
+source: https://glific.github.io/docs/docs/Integrations/Speech-to-text%20and%20Text-to-speech%20in%20Glific/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Speech-to-text%20and%20Text-to-speech%20in%20Glific/
 
@@ -1872,7 +2227,11 @@ Glific uses **Gemini** for speech-to-text and text-to-speech. The old Bhashini w
 
 The only engine knob left is the optional `speech_engine` key in the `voice-filesearch-gpt` body: omit it for Gemini (the default), or set it to `open_ai` for OpenAI TTS.
 
-## 19.31 The LLM webhook returns 200 but no answer is sent to the user.
+--- entry
+section: 19.31
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.31 The LLM webhook returns 200 but no answer is sent to the user.
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
 
@@ -1882,7 +2241,11 @@ Don't try to diagnose this from the flow JSON or message tables. Check, in order
 2. **Webhook configuration in the flow** — the Result Name on the webhook node and the JSON key being referenced must match exactly. A typo (e.g., `messsage` vs `message`) silently produces an empty body.
 3. If the response JSON has the answer but the flow still doesn't send it, the Send Message node downstream may be referencing the wrong variable name.
 
-## 19.32 Gupshup verification — App ID field is not clickable, or credentials are locked.
+--- entry
+section: 19.32
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.32 Gupshup verification — App ID field is not clickable, or credentials are locked.
+source: https://glific.github.io/docs/docs/Pre%20Onboarding/Gupshup%20Setup/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Pre%20Onboarding/Gupshup%20Setup/
 
@@ -1890,7 +2253,11 @@ Don't try to diagnose this from the flow JSON or message tables. Check, in order
 
 To change them, **reach out to the Gupshup team** (or Glific Support) — they will update the credentials on their side. There is no self-service way to overwrite locked credentials from Glific.
 
-## 19.33 A staff member can't create a Glific account — 'cannot send OTP' error.
+--- entry
+section: 19.33
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.33 A staff member can't create a Glific account — 'cannot send OTP' error.
+source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
 
@@ -1900,7 +2267,11 @@ To change them, **reach out to the Gupshup team** (or Glific Support) — they w
 4. Glific recommends signing up via **Google** with a shared/common email like `info@yourorg.org` so multiple team members can access the same staff account.
 5. If none of the above resolves it, reach out to Glific Support.
 
-## 19.34 How do I initialize a contact field as a blank / empty string?
+--- entry
+section: 19.34
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.34 How do I initialize a contact field as a blank / empty string?
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
 
@@ -1913,7 +2284,10 @@ Use the **Update Contact** node:
 
 When the flow runs, the field is set to empty. The field is created the first time you write to it — there's no separate "create blank field" step.
 
-## 19.35 Our BigQuery replica table is out of sync with the primary table.
+--- entry
+section: 19.35
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.35 Our BigQuery replica table is out of sync with the primary table.
+---
 
 Don't try to debug this from BigQuery directly. From the Glific side:
 
@@ -1921,7 +2295,10 @@ Don't try to debug this from BigQuery directly. From the Glific side:
 2. Confirm BigQuery is **Active** in Settings → BigQuery (the integration toggle).
 3. If the integration is Active and there are no errors but the table is still stale, **reach out to Glific Support** with your org shortcode and the table name. Sync issues usually need backend investigation.
 
-## 19.36 A staff account was 'auto-deleted' — how does this happen?
+--- entry
+section: 19.36
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.36 A staff account was 'auto-deleted' — how does this happen?
+---
 
 Staff accounts are not auto-deleted by the system on a schedule. The most common cause:
 
@@ -1929,13 +2306,20 @@ Staff accounts are not auto-deleted by the system on a schedule. The most common
 
 To prevent this, **never delete the contact record** of someone who has staff access. To remove staff access, change their **Role** to None instead of deleting the contact.
 
-## 19.37 Can I get OpenAI usage / token / cost metrics for our org from Glific?
+--- entry
+section: 19.37
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.37 Can I get OpenAI usage / token / cost metrics for our org from Glific?
+---
 
 **No, not currently.** Glific does not expose per-org OpenAI usage in its UI. If your org uses Glific's central OpenAI integration (no own key), you don't get a usage breakdown.
 
 If you have your own OpenAI key configured, view usage at https://platform.openai.com/usage in your OpenAI account.
 
-## 19.38 GCS / our Glific subscription says 'cancelled' or 'inactive' but we didn't cancel.
+--- entry
+section: 19.38
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.38 GCS / our Glific subscription says 'cancelled' or 'inactive' but we didn't cancel.
+source: https://glific.github.io/docs/docs/FAQ/Managing%20an%20Organization%27s%20Glific%20Account%3A%20Suspension%20and%20Deletion/
+---
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Managing%20an%20Organization%27s%20Glific%20Account%3A%20Suspension%20and%20Deletion/
 
@@ -1947,7 +2331,10 @@ Check, in this order:
 
 Glific subscriptions don't cancel automatically — there's almost always an underlying service issue or a misread message.
 
-## 19.39 The flow editor says someone else is editing — how do I take over?
+--- entry
+section: 19.39
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.39 The flow editor says someone else is editing — how do I take over?
+---
 
 Glific shows a banner with **View Only Mode** and a **Take Over** button when another user has the flow open.
 
@@ -1956,7 +2343,11 @@ Glific shows a banner with **View Only Mode** and a **Take Over** button when an
 
 This is the only step needed. (The "archive the published revision" path is only relevant in very rare backend scenarios and isn't part of normal flow editing.)
 
-## 19.40 The flow is visible in Preview but doesn't show on the Flows screen.
+--- entry
+section: 19.40
+heading: 19. Operational FAQs and corrections (high-frequency wrong answers) › 19.40 The flow is visible in Preview but doesn't show on the Flows screen.
+source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
+---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
 
@@ -1971,7 +2362,10 @@ If after all of these the flow is still not visible, reach out to support.
 
 ---
 
-# 20. Built-in Webhooks Reference
+--- entry
+section: 20
+heading: 20. Built-in Webhooks Reference
+---
 
 Glific ships a set of built-in webhook functions you call from a **Call a webhook** node. They cover the common things flows need to do: LLM calls, speech-to-text, text-to-speech, file-search assistants, geolocation, certificate generation, and WhatsApp group polls.
 
@@ -1988,7 +2382,10 @@ Every webhook returns a JSON object with a `success` (true/false) field. If `suc
 
 `parse_via_chat_gpt` · `parse_via_gpt_vision` · `speech_to_text` · `text_to_speech` · `filesearch-gpt` · `voice-filesearch-gpt` · `geolocation` · `send_wa_group_poll` · `create_certificate` · `get_buttons` · `check_response`
 
-## 20.1 `parse_via_chat_gpt` — call a GPT model with a prompt
+--- entry
+section: 20.1
+heading: 20. Built-in Webhooks Reference › 20.1 `parse_via_chat_gpt` — call a GPT model with a prompt
+---
 
 **What it does.** Sends a user question and a system prompt to a specified GPT model and returns the model's reply.
 
@@ -2020,7 +2417,10 @@ Every webhook returns a JSON object with a `success` (true/false) field. If `suc
 
 **Use it for:** one-shot LLM calls — classification, summarization, Q&A on text the flow already has. For knowledge-base / document Q&A use `filesearch-gpt` instead.
 
-## 20.2 `parse_via_gpt_vision` — analyze an image with GPT Vision
+--- entry
+section: 20.2
+heading: 20. Built-in Webhooks Reference › 20.2 `parse_via_gpt_vision` — analyze an image with GPT Vision
+---
 
 **What it does.** Sends an image URL and a prompt to a GPT Vision model and returns the model's structured analysis.
 
@@ -2054,7 +2454,10 @@ Every webhook returns a JSON object with a `success` (true/false) field. If `suc
 
 **Use it for:** classifying user-uploaded photos, extracting fields from documents, OCR-style tasks. The exact shape of `response` depends on what you ask for in `prompt` — ask for JSON keys explicitly if you want stable parsing.
 
-## 20.3 `speech_to_text` — transcribe a voice note
+--- entry
+section: 20.3
+heading: 20. Built-in Webhooks Reference › 20.3 `speech_to_text` — transcribe a voice note
+---
 
 **What it does.** Takes a WhatsApp voice-note URL and returns the transcribed text. This is an **async** webhook: it acknowledges immediately, parks the flow, and resumes it via callback when the transcription is ready — so put a **Wait for result** node after it ([4.4](#44-wait-for-result)).
 
@@ -2077,7 +2480,10 @@ Optional tuning keys: `provider`, `model`, `language`, `output_language`.
 
 **Rate limit:** speech_to_text and text_to_speech share a per-org rate limit; when it trips the job snoozes and retries rather than failing.
 
-## 20.4 `text_to_speech` — generate a voice note from text
+--- entry
+section: 20.4
+heading: 20. Built-in Webhooks Reference › 20.4 `text_to_speech` — generate a voice note from text
+---
 
 **What it does.** Synthesizes audio from text and returns a hosted media URL you can send back to the user. Also **async** — same park-and-resume pattern as `speech_to_text`, so follow it with a **Wait for result** node.
 
@@ -2096,7 +2502,10 @@ Optional tuning keys: `provider`, `model`, `language`, `voice`.
 
 **Read in flow:** the media URL arrives in the resume payload, under the result name you gave the node — send it with a Send Message node's attachment.
 
-## 20.5 Deprecated: `speech_to_text_with_bhasini`, `text_to_speech_with_bhasini`, `nmt_tts_with_bhasini`
+--- entry
+section: 20.5
+heading: 20. Built-in Webhooks Reference › 20.5 Deprecated: `speech_to_text_with_bhasini`, `text_to_speech_with_bhasini`, `nmt_tts_with_bhasini`
+---
 
 These three Bhashini webhooks have been **removed**. They are gone from the flow-editor dropdown, and publishing a flow that still calls one fails validation with, e.g., _"The 'speech_to_text_with_bhasini' webhook is deprecated. Please migrate this node to the 'speech_to_text' node before publishing."_
 
@@ -2110,7 +2519,10 @@ Migration:
 
 If an existing flow refuses to publish, this is the most likely reason — open each Call a webhook node and swap the function name.
 
-## 20.6 The "call and wait" pattern — long-running LLM calls
+--- entry
+section: 20.6
+heading: 20. Built-in Webhooks Reference › 20.6 The "call and wait" pattern — long-running LLM calls
+---
 
 **`call_and_wait` is not a webhook function.** It is the name of a sample flow ("Call and Wait Flow") that Glific seeds, demonstrating how to run an LLM call that may take longer than the webhook timeout.
 
@@ -2134,7 +2546,10 @@ Body shape for step 1:
 }
 ```
 
-## 20.7 `filesearch-gpt` — chat with an OpenAI Assistant that has files attached
+--- entry
+section: 20.7
+heading: 20. Built-in Webhooks Reference › 20.7 `filesearch-gpt` — chat with an OpenAI Assistant that has files attached
+---
 
 **What it does.** Sends a question to a specified OpenAI Assistant (configured with file-search enabled and your documents uploaded) and returns the answer. Maintains a `thread_id` so follow-up questions in the same conversation stay in context.
 
@@ -2173,7 +2588,10 @@ This is an **async** webhook — it acknowledges immediately, parks the flow, an
 
 **Use it for:** knowledge-base Q&A. See [19.19](#1919-how-do-i-enable-openai-for-filesearch-gpt--voice-filesearch-gpt-webhooks) for OpenAI key configuration (you do not need your own key) and [19.22](#1922-the-llm-is-only-returning-partial-data--not-all-records-from-the-uploaded-file) for prompt-tuning tips.
 
-## 20.8 `voice-filesearch-gpt` — voice in / voice out file-search
+--- entry
+section: 20.8
+heading: 20. Built-in Webhooks Reference › 20.8 `voice-filesearch-gpt` — voice in / voice out file-search
+---
 
 **What it does.** End-to-end voice pipeline on top of `filesearch-gpt`: takes a voice note, transcribes it with **Gemini**, translates if needed (Google Translate), asks the OpenAI Assistant, translates the answer back, and synthesizes audio in the target language. Bhashini is no longer in this path.
 
@@ -2208,7 +2626,10 @@ Pass `@contact` for `contact`, the voice-note URL (`@input.media_url`) for `spee
 
 **Use it for:** voice-first multilingual chatbots where users send voice notes and expect voice replies in their own language.
 
-## 20.9 `geolocation` — reverse-geocode a pin location
+--- entry
+section: 20.9
+heading: 20. Built-in Webhooks Reference › 20.9 `geolocation` — reverse-geocode a pin location
+---
 
 **What it does.** Takes latitude/longitude (typically from a WhatsApp pin-location message) and returns a structured address: city, state, country, postal code, district, full address.
 
@@ -2241,7 +2662,10 @@ Use `@input.location.latitude` and `@input.location.longitude` when the incoming
 
 **Use it for:** location-based routing, saving address to a contact field, region-specific responses. See [19.26](#1926-some-users-send-pin-location-others-type-their-address--how-do-i-capture-both) for the "user typed address vs sent pin" pattern.
 
-## 20.10 `send_wa_group_poll` — push a poll to a WhatsApp group
+--- entry
+section: 20.10
+heading: 20. Built-in Webhooks Reference › 20.10 `send_wa_group_poll` — push a poll to a WhatsApp group
+---
 
 **What it does.** Sends a pre-configured poll (built in Glific) to a target WhatsApp group.
 
@@ -2270,7 +2694,10 @@ Use `@input.location.latitude` and `@input.location.longitude` when the incoming
 
 **Note:** WhatsApp groups in Glific have their own constraints — see the WhatsApp Groups setting and [19.5](#195-can-the-glific-chatbot-be-added-to-whatsapp-groups).
 
-## 20.11 `create_certificate` — generate a personalized certificate
+--- entry
+section: 20.11
+heading: 20. Built-in Webhooks Reference › 20.11 `create_certificate` — generate a personalized certificate
+---
 
 **What it does.** Renders a certificate template (configured in Glific's Custom Certificates section) by substituting in contact-specific text, and returns the URL of the generated image.
 
@@ -2309,7 +2736,10 @@ All four keys are **required**:
 
 _End of companion knowledge base. For UI screenshots and visual examples, refer back to the main `merged_documentation 2.md` or the live docs at https://glific.github.io/docs/._
 
-## 20.12 `get_buttons` — split text into quick-reply buttons
+--- entry
+section: 20.12
+heading: 20. Built-in Webhooks Reference › 20.12 `get_buttons` — split text into quick-reply buttons
+---
 
 **What it does.** Purely local, no external call. Takes a `|`-delimited string and splits it into numbered buttons — handy when the button labels come from an LLM answer or a Google Sheet cell rather than being fixed in the flow.
 
@@ -2333,7 +2763,10 @@ _End of companion knowledge base. For UI screenshots and visual examples, refer 
 
 Read them as `@results.<result_name>.buttons.button_1`, etc. If `buttons_data` is missing or isn't text, the node errors with _"get_buttons requires buttons_data as a `|`-delimited string"_.
 
-## 20.13 `check_response` — compare an answer to the expected one
+--- entry
+section: 20.13
+heading: 20. Built-in Webhooks Reference › 20.13 `check_response` — compare an answer to the expected one
+---
 
 **What it does.** Purely local, no external call. Compares two strings (Unicode-equivalent comparison) — useful for quizzes where the correct answer is stored in a contact variable or a sheet rather than hard-coded in a Wait for Response case.
 

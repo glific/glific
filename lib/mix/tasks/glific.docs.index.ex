@@ -35,7 +35,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
     model = Keyword.get(opts, :model, Docs.model())
     dimensions = Keyword.get(opts, :dimensions, Docs.dimensions())
 
-    chunks = Docs.all_chunks()
+    chunks = Docs.sections()
     Mix.shell().info("Chunking #{length(chunks)} sections…")
 
     known = if opts[:force], do: %{}, else: reusable(model, dimensions)
@@ -43,7 +43,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
 
     case embed_all(stale, model, dimensions) do
       {:ok, embedded} ->
-        entries = Enum.map(fresh, &%{chunk: &1, vector: Map.fetch!(known, &1.hash)}) ++ embedded
+        entries = Enum.map(fresh, &%{section: &1, vector: Map.fetch!(known, &1.hash)}) ++ embedded
 
         Docs.write!(entries,
           model: model,
@@ -66,7 +66,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
     metadata = Docs.metadata()
 
     if metadata[:model] == model and metadata[:dimensions] == dimensions,
-      do: Map.new(Docs.entries(), &{&1.chunk.hash, &1.vector}),
+      do: Map.new(Docs.entries(), &{&1.section.hash, &1.vector}),
       else: %{}
   end
 
@@ -96,7 +96,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
           {:ok,
            batch
            |> Enum.zip(vectors)
-           |> Enum.map(fn {chunk, floats} -> %{chunk: chunk, vector: Docs.pack(floats)} end)}
+           |> Enum.map(fn {section, floats} -> %{section: section, vector: Docs.pack(floats)} end)}
         else
           {:error, "asked for #{dimensions} dimensions, got #{SafeLog.safe_inspect(widths)}"}
         end
