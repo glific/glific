@@ -146,6 +146,7 @@ defmodule Glific.Contacts.Contact do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_organization_kept()
     |> validate_phone_kept()
     |> validate_fields_map()
     |> unique_constraint([:phone, :organization_id])
@@ -178,6 +179,15 @@ defmodule Glific.Contacts.Contact do
 
     %{contact | masked_phone: masked_phone}
   end
+
+  @spec validate_organization_kept(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_organization_kept(%{data: %{__meta__: %{state: :loaded}}} = changeset) do
+    if get_change(changeset, :organization_id),
+      do: add_error(changeset, :organization_id, "can't be changed"),
+      else: changeset
+  end
+
+  defp validate_organization_kept(changeset), do: changeset
 
   @spec validate_phone_kept(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_phone_kept(%{data: %{phone: phone}} = changeset) when phone not in [nil, ""] do
