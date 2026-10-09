@@ -959,6 +959,16 @@ defmodule Glific.BigQuery do
     )
   end
 
+  @spec refresh_table_schema(non_neg_integer(), String.t()) :: any()
+  defp refresh_table_schema(organization_id, table) do
+    with schema_fn when not is_nil(schema_fn) <- Map.get(bigquery_tables(organization_id), table),
+         {:ok, credentials} <- fetch_bigquery_credentials(organization_id) do
+      Schema
+      |> apply(schema_fn, [])
+      |> alter_table(Map.put(credentials, :table_id, table))
+    end
+  end
+
   @spec missing_required_field?(any()) :: boolean()
   defp missing_required_field?(insert_errors) when is_list(insert_errors) do
     Enum.any?(insert_errors, fn row_error ->
@@ -980,7 +990,7 @@ defmodule Glific.BigQuery do
     cond do
       res.insertErrors != nil ->
         if missing_required_field?(res.insertErrors),
-          do: sync_schema_with_bigquery(organization_id)
+          do: refresh_table_schema(organization_id, table)
 
         Glific.log_error(
           "BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}"
