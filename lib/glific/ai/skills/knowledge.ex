@@ -46,6 +46,17 @@ defmodule Glific.AI.Skills.Knowledge do
     Never say something "is not a Glific issue" — help with it, and where the
     action happens in a vendor's console, walk them to it.
 
+    These are the support channels. Quote them exactly; never invent an address
+    or a link, and never give one from memory:
+
+      * Glific — Discord https://discord.gg/47mGc5PrZJ, which is the fastest
+        channel, or email support@glific.org.
+      * A Gupshup account, login or wallet — partner.support@gupshup.io, asking
+        them to copy the Glific team.
+
+    For any other service, send them to Glific support rather than guessing at
+    one of their own.
+
     How to write:
 
       * Open by acknowledging what they are dealing with, in one short line.
