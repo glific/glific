@@ -267,7 +267,7 @@ defmodule Glific.Contacts do
 
   @doc """
   Creates a contact from a phone-based entry point, so the phone is required. A contact without a
-  phone is only created together with its login identity.
+  phone is only created together with its login identity, from `new_contact_changeset/1`.
 
   ## Examples
 
@@ -279,22 +279,27 @@ defmodule Glific.Contacts do
 
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact(%{organization_id: organization_id} = attrs) do
-    attrs =
-      attrs
-      |> Map.put(
-        :language_id,
-        attrs[:language_id] || Partners.organization_language_id(organization_id)
-      )
-      |> Map.put(
-        :last_communication_at,
-        attrs[:last_communication_at] || DateTime.utc_now()
-      )
-
+  def create_contact(attrs) do
     %Contact{}
-    |> Contact.changeset(attrs)
-    |> Ecto.Changeset.validate_required([:phone])
+    |> Contact.changeset(with_new_contact_defaults(attrs))
     |> Repo.insert()
+  end
+
+  @doc """
+  The changeset for a new contact that may have no phone, to insert together with its login identity.
+  """
+  @spec new_contact_changeset(map()) :: Ecto.Changeset.t()
+  def new_contact_changeset(attrs),
+    do: Contact.changeset_without_phone(%Contact{}, with_new_contact_defaults(attrs))
+
+  @spec with_new_contact_defaults(map()) :: map()
+  defp with_new_contact_defaults(%{organization_id: organization_id} = attrs) do
+    attrs
+    |> Map.put(
+      :language_id,
+      attrs[:language_id] || Partners.organization_language_id(organization_id)
+    )
+    |> Map.put(:last_communication_at, attrs[:last_communication_at] || DateTime.utc_now())
   end
 
   @doc """
@@ -423,9 +428,7 @@ defmodule Glific.Contacts do
 
     contact =
       Repo.insert!(
-        %Contact{}
-        |> change_contact(Map.merge(other_attrs, attrs))
-        |> Ecto.Changeset.validate_required([:phone]),
+        change_contact(%Contact{}, Map.merge(other_attrs, attrs)),
         returning: true,
         on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
         conflict_target: [:phone, :organization_id]

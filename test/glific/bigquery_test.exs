@@ -506,6 +506,70 @@ defmodule Glific.BigQueryTest do
              )
   end
 
+  test "make_insert_query/4 re-syncs the schema when a row misses a field the dataset still requires",
+       %{organization_id: org_id} do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      insert_url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/contacts/insertAll"
+
+      datasets_url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets"
+
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^insert_url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: [
+                  %GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponseInsertErrors{
+                    index: 0,
+                    errors: [
+                      %GoogleApi.BigQuery.V2.Model.ErrorProto{
+                        reason: "invalid",
+                        message: "Missing required field: phone."
+                      }
+                    ]
+                  }
+                ]
+              })
+          }
+
+        %Tesla.Env{method: :post, url: ^datasets_url} ->
+          send(test_pid, :schema_sync_started)
+
+          %Tesla.Env{
+            status: 403,
+            body: Jason.encode!(%{"error" => %{"code" => 403, "status" => "PERMISSION_DENIED"}})
+          }
+      end)
+
+      assert :ok ==
+               BigQuery.make_insert_query(
+                 [%{json: %{id: 1, name: "no phone"}}],
+                 "contacts",
+                 org_id,
+                 max_id: 10,
+                 last_updated_at: nil
+               )
+
+      assert_received :schema_sync_started
+    end
+  end
+
   test "make_insert_query/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
        %{organization_id: org_id} do
     with_mocks([

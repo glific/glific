@@ -2104,6 +2104,18 @@ defmodule Glific.ContactsTest do
                Contacts.update_contact(contact, %{phone: "919876543298"})
     end
 
+    test "a new contact needs a phone unless built for its login identity", %{
+      organization_id: organization_id
+    } do
+      attrs = %{name: "No phone", language_id: 1, organization_id: organization_id}
+
+      assert %{phone: ["can't be blank"]} =
+               %Contact{} |> Contact.changeset(attrs) |> errors_on()
+
+      assert {:ok, %Contact{phone: nil}} =
+               attrs |> Contacts.new_contact_changeset() |> Repo.insert()
+    end
+
     test "create_contact/1 still requires a phone", %{organization_id: organization_id} do
       assert {:error, changeset} =
                Contacts.create_contact(%{name: "No phone", organization_id: organization_id})

@@ -6,15 +6,17 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 
 - **`contacts`** = the person. One row per person per org. Holds name, language, fields, status,
   and (for now) WhatsApp state. **`phone` becomes nullable.**
-- **`contact_identities`** = how that person logs in on a channel. One row per login, so a contact can
-  have several on one channel (e.g. a web phone login and a web username).
+- **`contact_identities`** = login credentials only: how that person is identified on a channel by an
+  identifier Glific doesn't own (an NGO-issued username today, later a WhatsApp phone after #5765 or
+  a Telegram chat id). One row per login, so a contact can have several on one channel. It never
+  holds per-channel state; that lives in `contact_channels` (§6).
 - Everything else (messages, flow contexts, flow results, tags, groups, tickets) stays keyed on
   `contact_id`. Nothing else changes.
 
 ```
 contacts                        contact_identities
 id | name | phone               contact_id | channel | identifier
-42 | Asha | +919876543210       42         | web     | asha_07       (Tap linked via phone)
+42 | Asha | 919876543210        42         | web     | asha_07       (Tap linked via phone)
 57 | Ravi | NULL                57         | web     | ravi_12       (username only)
 ```
 
@@ -65,9 +67,12 @@ No identity row is written.
 ```
 request-otp(phone) → code over WhatsApp → verify-otp(phone, code)
 → find/create by contacts.phone   (same contact as WhatsApp; that's the web↔WhatsApp link)
-→ record identity (web, phone) on that contact if missing (on conflict do nothing)
 → Glific signs its own token {sub: contact_id}
 ```
+No identity row is written: `contacts.phone` is already this path's lookup. Recording OTP phones as
+`(web, phone)` identities would share one namespace with NGO usernames, so an NGO `sub` that happens
+to be someone's phone number (many NGOs use phone or roll numbers) would log into that person's
+conversation.
 
 ### 4.3 Web, NGO token with username only
 ```
@@ -81,7 +86,7 @@ token {kid, sub:"ravi_12", channel:"web", iat, exp}
 
 ### 4.4 Web, NGO token with username + phone / contact_id (Tap)
 ```
-token {sub:"asha_07", phone:"+91…"}  or  {sub:"asha_07", contact_id: 42}
+token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
 → verify token (§5)
 → (org, web, "asha_07") already exists → that contact; phone/contact_id IGNORED
 → not found:
@@ -120,14 +125,18 @@ A reply goes out on the channel the conversation/flow came in on (already built 
 - `sub`, `channel = "web"`, `iat`, `exp` required. `exp - iat ≤ 1h`. ≤ 60s clock leeway. `sub` ≤ 255.
 - Any failure returns the same 401.
 - Glific's own post-OTP token (no `kid`) keeps working.
+- NGO contract: `sub` must be unique across **all** of the org's signing keys. Identities are unique per
+  organization, not per key, so two systems issuing the same `sub` would log in as one contact.
+- Phones (in the `phone` claim and in identifiers) are digits with country code and no `+`, the format
+  `Contacts.parse_phone_number/1` stores; identifiers are matched exactly.
 
 ## 6. Per-channel state
 | State | Lives on |
 |---|---|
 | name, language, fields, status, `last_communication_at` | `contacts` |
 | WhatsApp opt-in, `bsp_status`, `last_message_at` | `contacts` **for now** |
-| New channel state (web consent, Telegram opt-in…) | **columns on `contact_identities`** when needed |
-| Moving WhatsApp state onto identity rows | Later, with #5765; needs a backfill |
+| New channel state (web consent, Telegram opt-in…) | **`contact_channels`**: one row per `(contact_id, channel)` |
+| Moving WhatsApp state (`bsp_status`, `last_message_at`, opt-in) off `contacts` | Into `contact_channels`, with #5765; needs a backfill |
 
 **Contact variables (`contacts.fields`, `@contact.fields.*`, name, language) stay on `contacts`.**
 They describe the person, so a linked contact shares one set across channels, and a flow on any
@@ -135,7 +144,9 @@ channel reads the same values. Unlinked contacts have separate variables because
 contacts. Several people on one phone is a `profiles` concern, not an identity one.
 
 Rule: the same value for this person on every channel → `contacts`. Only meaningful for one
-channel (consent, reachability, session, per-login display name) → `contact_identities`.
+channel (consent, reachability, session) → `contact_channels`. `contact_identities` holds login
+credentials only: a contact can have several identities on one channel, so no unique
+`(contact_id, channel)` can exist there, and state needs exactly one row per channel.
 
 `@contact.phone` is blank for web-only contacts. Document this for NGOs (webhooks, client modules).
 
@@ -231,18 +242,20 @@ Enums: `status` = blocked / failed / invalid / processing / valid ·
 | **Retire / derive** | optin_status, optin_message_id, first_message_number, is_contact_replied (later is_org_replied) |
 | **Leave untouched, retire later** | contact_type |
 
-### 12.3 What `contact_identities` grows into (next PR, not #5703)
+### 12.3 Where per-channel state goes: `contact_channels` (next PR, not #5703)
 
 ```
-contact_identities
-  id, contact_id, organization_id, channel, identifier, inserted_at, updated_at   ← #5703
-  bsp_status, delivery_status (valid/invalid)                                     ← reachability
-  optin_time, optin_method, optout_time, optout_method                            ← consent
-  last_message_at                                                                 ← session window
+contact_channels                                  unique (contact_id, channel)
+  id, contact_id, organization_id, channel, inserted_at, updated_at
+  optin_time, optin_method, optout_time, optout_method      ← consent (web first, in the opt-in work)
+  bsp_status, delivery_status (valid/invalid)               ← reachability (#5765)
+  last_message_at                                           ← session window (#5765)
   metadata jsonb   (e.g. provider: gupshup / maytapi = today's WABA / WA)
 ```
-Needs: a backfilled `(whatsapp, phone)` row per contact, and a unique `(contact_id, channel)` so the
-trigger and `can_send_message_to?` can find "this contact's WhatsApp row" in one indexed lookup.
+The web opt-in work creates it (for web consent); #5765 moves WhatsApp's `bsp_status`,
+`last_message_at` and opt-in onto the `(contact, whatsapp)` row with a backfill. The unique
+`(contact_id, channel)` lets the trigger and `can_send_message_to?` find "this contact's WhatsApp
+state" in one indexed lookup. `contact_identities` stays credentials only.
 
 ### 12.4 Hot path today: what runs on every message
 
@@ -256,8 +269,8 @@ trigger and `can_send_message_to?` can find "this contact's WhatsApp row" in one
 Plus `set_session_status` from Elixir on every WA inbound (`bsp_status`).
 
 Implications:
-- Moving `last_message_at` / `bsp_status` to identities means the trigger / `set_session_status`
-  update the identity row instead, so the `(contact_id, channel)` index is needed.
+- Moving `last_message_at` / `bsp_status` to `contact_channels` means the trigger / `set_session_status`
+  update that row instead, through its unique `(contact_id, channel)` index.
 - The goal from the meeting ("message insert should be simple, derived fields in background") is
   the separate perf ticket covering `is_*`, `last_message_number` and `updated_at`. Not #5703.
 
