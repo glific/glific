@@ -5,6 +5,9 @@ defmodule Glific.Contacts.ContactIdentity do
 
   The `identifier` is opaque and matched exactly, so it is neither trimmed nor case-folded. It is
   unique within an organization and channel.
+
+  The identity's organization must be its contact's. The changeset checks this, but the database
+  doesn't, and bulk inserts skip changesets: every identity must be written through this changeset.
   """
   use Ecto.Schema
   import Ecto.Changeset

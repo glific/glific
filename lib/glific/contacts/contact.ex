@@ -128,10 +128,21 @@ defmodule Glific.Contacts.Contact do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
+  Standard changeset pattern we use for all data types. A new contact must have a phone; use
+  `changeset_without_phone/2` for one created with its login identity instead.
   """
   @spec changeset(Contact.t(), map()) :: Ecto.Changeset.t()
   def changeset(contact, attrs) do
+    contact
+    |> changeset_without_phone(attrs)
+    |> validate_phone_on_insert()
+  end
+
+  @doc """
+  The changeset for a contact that may have no phone: one created together with its login identity.
+  """
+  @spec changeset_without_phone(Contact.t(), map()) :: Ecto.Changeset.t()
+  def changeset_without_phone(contact, attrs) do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
@@ -141,6 +152,12 @@ defmodule Glific.Contacts.Contact do
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
   end
+
+  @spec validate_phone_on_insert(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_phone_on_insert(%{data: %{__meta__: %{state: :built}}} = changeset),
+    do: validate_required(changeset, [:phone])
+
+  defp validate_phone_on_insert(changeset), do: changeset
 
   @doc false
   @spec to_minimal_map(Contact.t()) :: map()
