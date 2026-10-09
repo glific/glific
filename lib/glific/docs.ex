@@ -1,22 +1,20 @@
 defmodule Glific.Docs do
   @moduledoc """
-  Glific's own documentation, searched in memory.
+  Glific's own documentation, split into sections and searched in memory.
 
-  The markdown in `priv/docs_kb` is split on its headings into sections, which
-  is the shape the authors already wrote: a question as the heading, the answer
-  under it. `Glific.AI.Tools.Documentation` hands the matching sections to the
-  assistant, which writes the reply.
+  The markdown in `priv/docs_kb` is split on its headings, which is how the
+  authors wrote it: a question as the heading, the answer under it.
+  `Glific.AI.Tools.Documentation` hands the matching sections to the assistant.
 
-  A question is matched two ways and the results merged by rank. The semantic
-  pass finds wording that shares no words with the section — "the bot stopped
-  replying" against "Flow is not triggering". The lexical pass finds the exact
-  tokens an embedding blurs, like `@results.parent.state.input`. Cosine
-  similarity and term overlap are not on the same scale, so they merge by rank
-  rather than by any weighting between them.
+  A question runs through two passes whose results merge by rank. The semantic
+  pass matches meaning, so "the bot stopped replying" reaches "Flow is not
+  triggering". The lexical pass matches exact text like
+  `@results.parent.state.input`. Their scores are on different scales, so only
+  the ranks are comparable.
 
-  `mix glific.docs.index` embeds the sections into a build artifact, which boot
-  reads into `:persistent_term`. Without that artifact the sections are chunked
-  at boot with no vectors, which leaves the lexical pass working.
+  `mix glific.docs.index` writes the vectors to a build artifact that boot
+  reads. Without it the sections are chunked at boot and only the lexical pass
+  runs.
   """
 
   require Logger
@@ -27,7 +25,7 @@ defmodule Glific.Docs do
   @metadata_key {__MODULE__, :metadata}
   @artifact "docs_kb/embeddings.etf"
 
-  @typedoc "A heading, its prose, and where it came from."
+  @typedoc "A heading, its prose, and the page it came from."
   @type chunk() :: %{
           doc_file: String.t(),
           section_path: String.t() | nil,
@@ -45,15 +43,15 @@ defmodule Glific.Docs do
   @separator " › "
 
   # A table pairing user phrasings with section numbers. It matches almost any
-  # question word for word, then answers "see 3.4" instead of answering.
+  # question word for word, then points at a section instead of answering.
   @excluded_sections ["18"]
 
-  # Sections written for Glific's own engineers. An answer built from them
-  # tells an NGO to call an internal API it has no credentials for.
+  # Sections written for Glific's engineers. An answer built from them sends
+  # the reader to an internal API they cannot reach.
   @engineering ~r/lib\/glific\/|\.ex:\d|\bOban\b|\bEcto\b|defmodule|POST \/partner|\bpsql\b|\bJSONB\b/
 
-  # Standard reciprocal-rank-fusion constant: a chunk ranked well by both
-  # passes beats one ranked first by a single pass.
+  # Standard fusion constant: a section both passes rank beats one that only
+  # a single pass found.
   @rrf_k 60
   @leg_depth 30
 
@@ -64,10 +62,7 @@ defmodule Glific.Docs do
   @boosted_sections ["19"]
   @boost_ranks 3
 
-  # Floors, without which either pass answers any string at all. An off-topic
-  # question tops out near 0.44 cosine and 4 points of overlap, where a real
-  # one starts around 0.52 and 5: one stray word — "today" against a calendar
-  # section — is a point of overlap and nothing more.
+  # Without a floor each pass returns its full depth for any string at all.
   @minimum_similarity 0.45
   @minimum_overlap 5
 
@@ -96,12 +91,7 @@ defmodule Glific.Docs do
     |> Enum.take(Keyword.get(opts, :limit, 5))
   end
 
-  @doc """
-  The lexical pass on its own.
-
-  A one-word query is held to a heading match rather than the full floor,
-  since that is the most it can score.
-  """
+  @doc "The lexical pass on its own."
   @spec lexical(String.t(), [entry()]) :: [chunk()]
   def lexical(question, entries) do
     terms = terms(question)
@@ -147,7 +137,7 @@ defmodule Glific.Docs do
     |> Enum.map(&elem(&1, 1))
   end
 
-  @doc "Reciprocal rank fusion: each pass contributes `1 / (k + rank)`."
+  @doc "Merges the passes by rank, each contributing `1 / (k + rank)`."
   @spec fuse(%{atom() => [chunk()]}) :: [chunk()]
   def fuse(passes) do
     passes
@@ -164,11 +154,7 @@ defmodule Glific.Docs do
     |> Enum.map(&elem(&1, 0))
   end
 
-  @doc """
-  The terms worth matching on.
-
-  Notation survives whole: `@results.parent.state.input` is one term, not five.
-  """
+  @doc "The terms worth matching on. Notation stays whole, dots and all."
   @spec terms(String.t()) :: [String.t()]
   def terms(question) do
     ~r/[@a-z0-9][a-z0-9._\-]*/u
@@ -195,15 +181,14 @@ defmodule Glific.Docs do
     end)
   end
 
-  # An identifier is exact: someone typing `@results.parent.state.input` or
-  # `resumeContactFlow` means that string, and the documents write identifiers
-  # in bodies rather than headings. Rarity does not separate the two — "today"
-  # appears in as few sections as `resumeContactFlow` does.
+  # An identifier is exact: `@results.parent.state.input` means that string and
+  # nothing else. The documents write identifiers in prose rather than in
+  # headings, so a body match on one counts for as much as a heading match.
   defp body_weight(term, identifiers) do
     if MapSet.member?(identifiers, term), do: @heading_weight, else: 1
   end
 
-  # Read before the question is downcased, which is where the camel hump goes.
+  # Read before downcasing, which is where the camel hump would be lost.
   defp identifiers(question) do
     ~r/[@a-zA-Z0-9][a-zA-Z0-9._\-]*/u
     |> Regex.scan(question)
@@ -227,7 +212,7 @@ defmodule Glific.Docs do
 
   # ── The index ──────────────────────────────────────────────────────────────
 
-  @doc "Reads the artifact into `:persistent_term`. Called once on boot."
+  @doc "Reads the artifact into `:persistent_term`, once, on boot."
   @spec warm() :: :ok
   def warm do
     {entries, metadata} = read_artifact()
@@ -244,7 +229,7 @@ defmodule Glific.Docs do
   @spec count() :: non_neg_integer()
   def count, do: length(entries())
 
-  @doc "What the last build recorded: model, dimensions, when."
+  @doc "What the last build recorded about itself."
   @spec metadata() :: map()
   def metadata, do: :persistent_term.get(@metadata_key, nil) || elem(read_artifact(), 1)
 
@@ -252,12 +237,7 @@ defmodule Glific.Docs do
   @spec artifact_path() :: String.t()
   def artifact_path, do: Application.app_dir(:glific, "priv/#{@artifact}")
 
-  @doc """
-  Writes entries to the artifact, replacing whatever was there.
-
-  The in-memory copy is replaced too, so a rebuild in a running VM reads back
-  what it just wrote.
-  """
+  @doc "Writes entries to the artifact and to the in-memory copy."
   @spec write!([entry()], keyword()) :: :ok
   def write!(entries, metadata) do
     metadata = Map.new(metadata)
@@ -288,13 +268,7 @@ defmodule Glific.Docs do
 
   # ── Embedding ──────────────────────────────────────────────────────────────
 
-  @doc """
-  Embeds one piece of text the way the artifact was built.
-
-  Reads the model and width back from the artifact: a build run with other
-  settings stores vectors those chose, and a query embedded by a different
-  model ranks at random rather than failing.
-  """
+  @doc "Embeds one piece of text, using the model and width the artifact holds."
   @spec embed(String.t()) :: {:ok, binary()} | {:error, term()}
   def embed(text) do
     metadata = metadata()
@@ -316,12 +290,7 @@ defmodule Glific.Docs do
     for value <- floats, into: <<>>, do: <<value / divisor::float-32-little>>
   end
 
-  @doc """
-  Cosine similarity of two packed vectors.
-
-  Zero for vectors of different widths: they come from different models, and
-  scoring the overlap would rank them at random.
-  """
+  @doc "Cosine similarity of two packed vectors, or zero if their widths differ."
   @spec similarity(binary(), binary()) :: float()
   def similarity(left, right) when byte_size(left) == byte_size(right), do: dot(left, right, 0.0)
   def similarity(_left, _right), do: 0.0
@@ -339,7 +308,7 @@ defmodule Glific.Docs do
   @spec dimensions() :: pos_integer()
   def dimensions, do: config(:embedding_dimensions, 256)
 
-  @doc "Request options for an embedding call, including the key Glific holds."
+  @doc "Request options for an embedding call."
   @spec embed_opts(pos_integer()) :: keyword()
   def embed_opts(dimensions) do
     [provider_options: [dimensions: dimensions]]
@@ -347,8 +316,8 @@ defmodule Glific.Docs do
     |> Keyword.merge(Application.get_env(:glific, :docs_embedding_request_options, []))
   end
 
-  # Glific holds the OpenAI key as OPEN_AI_KEY; req_llm looks for
-  # OPENAI_API_KEY. Passed per call so no deployment needs it twice.
+  # Glific holds this key as OPEN_AI_KEY, where req_llm looks for
+  # OPENAI_API_KEY. Passed per call so no deployment sets it twice.
   defp api_key do
     case Application.get_env(:glific, :open_ai) do
       key when is_binary(key) and key != "This is not a secret" -> key
@@ -365,7 +334,7 @@ defmodule Glific.Docs do
   @spec documents() :: [String.t()]
   def documents, do: @documents
 
-  @doc "Every chunk of every document, with the excluded sections removed."
+  @doc "Every section of every document, less the ones kept out."
   @spec all_chunks() :: [chunk()]
   def all_chunks do
     @documents
@@ -378,18 +347,12 @@ defmodule Glific.Docs do
     |> Enum.reject(&(excluded?(&1) or engineering?(&1)))
   end
 
-  @doc "Whether a chunk is written for engineers rather than for chatbot staff."
+  @doc "Whether a section is written for engineers rather than for chatbot staff."
   @spec engineering?(chunk()) :: boolean()
   def engineering?(%{body: body, heading_path: heading_path}),
     do: String.match?(body, @engineering) or String.match?(heading_path, @engineering)
 
-  @doc """
-  Splits markdown into chunks on its headings.
-
-  A `#` inside a code fence is part of the example. A page states its
-  `📖 Source:` once, so a section without one takes the nearest URL above it.
-  A heading with a line or two under it is a label, and merges into its parent.
-  """
+  @doc "Splits markdown into sections on its headings."
   @spec chunk(String.t(), String.t()) :: [chunk()]
   def chunk(markdown, doc_file) when is_binary(markdown) and is_binary(doc_file) do
     markdown
@@ -416,7 +379,7 @@ defmodule Glific.Docs do
     |> Enum.map(fn {level, title, lines} -> {level, title, Enum.reverse(lines)} end)
   end
 
-  # `{nodes, open_fence}` — a heading seen inside a fence is example text.
+  # A heading seen inside a code fence is part of the example.
   defp collect(line, {acc, fence}) do
     marker = fence_marker(line)
 
@@ -443,7 +406,7 @@ defmodule Glific.Docs do
     end
   end
 
-  # A fence closes only on its own character, at least as long, alone on its line.
+  # A fence closes on its own character, at least as long, alone on the line.
   defp closes?(_open, nil, _line), do: false
 
   defp closes?({char, length}, {char, closing}, line) when closing >= length,
@@ -463,8 +426,7 @@ defmodule Glific.Docs do
     |> elem(0)
   end
 
-  # Merges only into an ancestor; folding into the previous sibling would join
-  # two unrelated answers.
+  # Into an ancestor only; folding into a sibling joins two unrelated answers.
   defp merge_small(nodes) do
     nodes
     |> Enum.reduce([], fn node, kept ->
@@ -499,7 +461,7 @@ defmodule Glific.Docs do
     }
   end
 
-  # The documents cross-reference each other by section number alone.
+  # The documents cross-reference each other by section number.
   defp section_path(title) do
     case Regex.run(~r/^(\d+(?:\.\d+)*)[.\s]/, title) do
       [_, number] -> number
@@ -514,7 +476,7 @@ defmodule Glific.Docs do
     end
   end
 
-  # A page states its source once, so later sections take the nearest one above.
+  # A page states its source once; later sections take the nearest one above.
   defp inherit_source_urls(chunks) do
     chunks
     |> Enum.map_reduce(nil, fn chunk, nearest ->

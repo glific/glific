@@ -2,12 +2,11 @@ defmodule Glific.AI.Tools.Documentation do
   @moduledoc """
   Glific's own documentation, searched and returned for the model to answer from.
 
-  The other tools read an organisation's data; this one reads how Glific works,
-  which most support questions also turn on — not "what is this contact's
+  The other tools read an organisation's data; this one reads how Glific works.
+  Most support questions turn on both — not only "what is this contact's
   status" but "what does that status mean".
 
   It returns sections rather than an answer, leaving the reply to the skill.
-  Retrieval is `Glific.Docs`, which searches in memory.
   """
 
   alias Glific.Docs
@@ -56,7 +55,7 @@ defmodule Glific.AI.Tools.Documentation do
     end
   end
 
-  # Capped so one long section cannot crowd the others out of the context.
+  # Capped so one long section cannot crowd out the others.
   @max_body 2_000
 
   defp section(chunk) do
@@ -74,7 +73,7 @@ defmodule Glific.AI.Tools.Documentation do
     body |> binary_part(0, @max_body) |> whole_characters() |> Kernel.<>("\n… (continues)")
   end
 
-  # The cut lands mid-character whenever a multibyte one spans the boundary.
+  # A cut on a byte can land mid-character.
   defp whole_characters(binary) do
     if String.valid?(binary),
       do: binary,

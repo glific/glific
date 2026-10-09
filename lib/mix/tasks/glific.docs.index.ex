@@ -5,8 +5,8 @@ defmodule Mix.Tasks.Glific.Docs.Index do
   Rebuilds the documentation embedding artifact.
 
   Only sections whose text changed are re-embedded, so editing a paragraph
-  costs one request rather than hundreds. Commit the artifact it writes — boot
-  reads it rather than rebuilding, so starting Glific needs no provider.
+  costs one request. Commit the artifact it writes: boot reads it, so starting
+  Glific needs no embedding provider.
 
       mix glific.docs.index
       mix glific.docs.index --force
@@ -21,7 +21,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
 
   @switches [force: :boolean, model: :string, dimensions: :integer]
 
-  # One request per batch, well inside the provider's input cap.
+  # One request per batch, inside the provider's input cap.
   @batch_size 96
 
   @impl Mix.Task
@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
     :ok
   end
 
-  # Mixing two embedding spaces in one index silently ranks at random.
+  # Vectors from two different models cannot be compared.
   defp reusable(model, dimensions) do
     metadata = Docs.metadata()
 

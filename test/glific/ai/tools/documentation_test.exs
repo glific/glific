@@ -2,9 +2,9 @@ defmodule Glific.AI.Tools.DocumentationTest do
   @moduledoc """
   The documentation tool, and its wiring into the agent.
 
-  Tolerant about wording — the corpus is prose that is meant to be edited, and
-  asserting on a sentence would turn a documentation edit into a failing build.
-  What is pinned is the shape of a result and the subjects the corpus covers.
+  Tolerant about wording: the corpus is prose meant to be edited, so asserting
+  on a sentence would turn a documentation edit into a failing build. What is
+  pinned is the shape of a result and the subjects the corpus covers.
   """
 
   use Glific.DataCase
@@ -20,8 +20,8 @@ defmodule Glific.AI.Tools.DocumentationTest do
     %{user: Fixtures.user_fixture(%{organization_id: 1})}
   end
 
-  # The gateway opens a read-only transaction per call, which these do not
-  # need: the search is in memory. One test below goes through it.
+  # Called directly: the gateway opens a database transaction these do not
+  # need. The wiring test below goes through it.
   defp search(query, limit \\ 5),
     do: Documentation.run("search_documentation", %{query: query, limit: limit})
 
@@ -36,7 +36,7 @@ defmodule Glific.AI.Tools.DocumentationTest do
     end
 
     test "sections rather than a composed answer" do
-      # The skill writes the reply, so the tool returns the raw sections.
+      # The skill writes the reply, so the tool returns the sections.
       {:ok, [section | _rest]} = search("opt-in")
 
       assert Map.has_key?(section, :body)
@@ -66,8 +66,7 @@ defmodule Glific.AI.Tools.DocumentationTest do
     end
 
     test "no engineering detail reaches an answer" do
-      # An NGO told to call an internal API has been given a dead end. The
-      # heading counts too — some sections cite a file only in the title.
+      # The heading counts too: some sections cite a file only in the title.
       for section <- elem(search("gupshup wallet balance"), 1) do
         refute section.body =~ ~r/lib\/glific\/|\.ex:\d|defmodule/, section.title
         refute section.section =~ ~r/lib\/glific\/|\.ex:\d|defmodule/, section.title
