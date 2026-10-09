@@ -78,9 +78,10 @@ defmodule Glific.Docs.Search do
       []
     else
       floor = min(@minimum_overlap, @heading_weight * length(terms))
+      identifiers = identifiers(question)
 
       entries
-      |> Enum.map(&{overlap(&1.chunk, terms), &1.chunk})
+      |> Enum.map(&{overlap(&1.chunk, terms, identifiers), &1.chunk})
       |> Enum.filter(&(elem(&1, 0) >= floor))
       |> Enum.sort_by(fn {score, chunk} -> {-score, byte_size(chunk.body)} end)
       |> Enum.take(@leg_depth)
@@ -94,9 +95,13 @@ defmodule Glific.Docs.Search do
   def semantic_leg(_question, [], _query_vector), do: []
 
   def semantic_leg(question, entries, nil) do
-    case Indexer.embed(question) do
-      {:ok, vector} -> semantic_leg(question, entries, vector)
-      {:error, _reason} -> []
+    if Enum.any?(entries, & &1.vector) do
+      case Indexer.embed(question) do
+        {:ok, vector} -> semantic_leg(question, entries, vector)
+        {:error, _reason} -> []
+      end
+    else
+      []
     end
   end
 
@@ -154,17 +159,42 @@ defmodule Glific.Docs.Search do
     |> Enum.uniq()
   end
 
-  defp overlap(chunk, terms) do
+  defp overlap(chunk, terms, identifiers) do
     heading = String.downcase(chunk.heading_path)
     body = String.downcase(chunk.body)
 
     Enum.reduce(terms, 0, fn term, score ->
       cond do
         String.contains?(heading, term) -> score + @heading_weight
-        String.contains?(body, term) -> score + 1
+        String.contains?(body, term) -> score + body_weight(term, identifiers)
         true -> score
       end
     end)
+  end
+
+  # An identifier is exact: someone typing `@results.parent.state.input` or
+  # `resumeContactFlow` means that string. The documents write identifiers in
+  # bodies rather than headings, so finding one there says as much as finding
+  # an ordinary word in a heading. Rarity alone does not separate the two —
+  # "today" appears in as few sections as `resumeContactFlow` does.
+  defp body_weight(term, identifiers) do
+    if MapSet.member?(identifiers, term), do: @heading_weight, else: 1
+  end
+
+  @spec identifiers(String.t()) :: MapSet.t()
+  defp identifiers(question) do
+    ~r/[@a-zA-Z0-9][a-zA-Z0-9._\-]*/u
+    |> Regex.scan(question)
+    |> Enum.map(&List.first/1)
+    |> Enum.filter(&identifier?/1)
+    |> MapSet.new(&(&1 |> String.downcase() |> String.trim(".")))
+  end
+
+  # Dotted or @-prefixed notation, or camelCase. Detected before the question
+  # is downcased, which is where the camel hump would be lost.
+  defp identifier?(token) do
+    String.contains?(token, ".") or String.starts_with?(token, "@") or
+      Regex.match?(~r/[a-z][A-Z]/, token)
   end
 
   defp boost(%Chunk{section_path: nil}), do: 0

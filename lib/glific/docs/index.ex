@@ -19,6 +19,7 @@ defmodule Glific.Docs.Index do
   alias Glific.Docs.{Chunk, Indexer}
 
   @index_key {__MODULE__, :entries}
+  @metadata_key {__MODULE__, :metadata}
   @artifact "docs_kb/embeddings.etf"
 
   @typedoc "A chunk and its vector. `vector` is nil when no artifact was built."
@@ -27,13 +28,15 @@ defmodule Glific.Docs.Index do
   @doc "Reads the artifact into `:persistent_term`. Called once on boot."
   @spec warm() :: :ok
   def warm do
-    :persistent_term.put(@index_key, read_artifact())
+    {entries, metadata} = read_artifact()
+    :persistent_term.put(@index_key, entries)
+    :persistent_term.put(@metadata_key, metadata)
     :ok
   end
 
   @doc "Every indexed chunk with its vector."
   @spec entries() :: [entry()]
-  def entries, do: :persistent_term.get(@index_key, nil) || read_artifact()
+  def entries, do: :persistent_term.get(@index_key, nil) || elem(read_artifact(), 0)
 
   @doc "Every indexed chunk, without its vector."
   @spec chunks() :: [Chunk.t()]
@@ -47,22 +50,31 @@ defmodule Glific.Docs.Index do
   @spec artifact_path() :: String.t()
   def artifact_path, do: Application.app_dir(:glific, "priv/#{@artifact}")
 
-  @doc "Writes entries to the artifact, replacing whatever was there."
+  @doc """
+  Writes entries to the artifact, replacing whatever was there.
+
+  The in-memory copy is replaced too, so a rebuild in a running VM reads back
+  what it just wrote rather than what it started with.
+  """
   @spec write!([entry()], keyword()) :: :ok
   def write!(entries, metadata) do
-    payload = %{version: 1, metadata: Map.new(metadata), entries: entries}
+    metadata = Map.new(metadata)
+    payload = %{version: 1, metadata: metadata, entries: entries}
     File.write!(source_path(), :erlang.term_to_binary(payload, compressed: 6))
+
+    :persistent_term.put(@index_key, entries)
+    :persistent_term.put(@metadata_key, metadata)
     :ok
   end
 
-  @doc "What the last build recorded about itself: model, dimensions, when."
+  @doc """
+  What the last build recorded about itself: model, dimensions, when.
+
+  Held alongside the entries, because every query reads it and the artifact is
+  a compressed term holding every vector.
+  """
   @spec metadata() :: map()
-  def metadata do
-    case File.read(artifact_path()) do
-      {:ok, binary} -> binary |> :erlang.binary_to_term() |> Map.get(:metadata, %{})
-      {:error, _reason} -> %{}
-    end
-  end
+  def metadata, do: :persistent_term.get(@metadata_key, nil) || elem(read_artifact(), 1)
 
   @doc "Normalises a vector of floats into the stored binary form."
   @spec pack([float()]) :: binary()
@@ -95,14 +107,16 @@ defmodule Glific.Docs.Index do
 
   # Not `:safe`: it rejects the compressed struct payload, and this artifact
   # ships inside the release.
+  @spec read_artifact() :: {[entry()], map()}
   defp read_artifact do
     case File.read(artifact_path()) do
       {:ok, binary} ->
-        binary |> :erlang.binary_to_term() |> Map.fetch!(:entries)
+        payload = :erlang.binary_to_term(binary)
+        {Map.fetch!(payload, :entries), Map.get(payload, :metadata, %{})}
 
       {:error, reason} ->
         Logger.info("docs index not built (#{reason}); semantic search is disabled")
-        unembedded()
+        {unembedded(), %{}}
     end
   end
 

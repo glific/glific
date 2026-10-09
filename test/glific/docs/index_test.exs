@@ -55,6 +55,7 @@ defmodule Glific.Docs.IndexTest do
 
       Enum.each(paths, &File.rm/1)
       :persistent_term.erase({Index, :entries})
+      :persistent_term.erase({Index, :metadata})
       :ok
     end
 

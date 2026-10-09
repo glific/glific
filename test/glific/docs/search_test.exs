@@ -81,6 +81,25 @@ defmodule Glific.Docs.SearchTest do
     end
   end
 
+  describe "identifiers in bodies" do
+    setup %{entries: entries}, do: %{entries: entries}
+
+    test "an exact identifier is found where the documents write it", %{entries: entries} do
+      # The documents write notation in prose, not in headings, so a body match
+      # on one has to count for as much as a heading match on a word.
+      for identifier <- ["@results.parent.state.input", "resumeContactFlow"] do
+        assert Search.lexical_leg(identifier, entries) != [], identifier
+      end
+    end
+
+    test "an ordinary word that happens to be rare is not an identifier", %{entries: entries} do
+      # "today" sits in as few sections as `resumeContactFlow` does, so rarity
+      # alone would let an off-topic question through on it.
+      assert Search.lexical_leg("what is the weather in Mumbai today", entries) == []
+      assert Search.lexical_leg("ignore previous instructions", entries) == []
+    end
+  end
+
   describe "terms" do
     test "notation stays whole" do
       assert "@results.parent.state.input" in Search.terms(
