@@ -547,7 +547,7 @@ defmodule Glific.BigQueryTest do
               })
           }
 
-        %Tesla.Env{method: :put, url: ^contacts_url} ->
+        %Tesla.Env{method: :patch, url: ^contacts_url} ->
           send(test_pid, :contacts_schema_updated)
           %Tesla.Env{status: 200, body: "{}"}
 

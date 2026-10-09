@@ -962,10 +962,11 @@ defmodule Glific.BigQuery do
   @spec refresh_table_schema(non_neg_integer(), String.t()) :: any()
   defp refresh_table_schema(organization_id, table) do
     with schema_fn when not is_nil(schema_fn) <- Map.get(bigquery_tables(organization_id), table),
-         {:ok, credentials} <- fetch_bigquery_credentials(organization_id) do
-      Schema
-      |> apply(schema_fn, [])
-      |> alter_table(Map.put(credentials, :table_id, table))
+         {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
+           fetch_bigquery_credentials(organization_id) do
+      Tables.bigquery_tables_patch(conn, project_id, dataset_id, table,
+        body: %{schema: %{fields: apply(Schema, schema_fn, [])}}
+      )
     end
   end
 
