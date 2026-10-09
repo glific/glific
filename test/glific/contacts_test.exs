@@ -2104,6 +2104,23 @@ defmodule Glific.ContactsTest do
                Contacts.update_contact(contact, %{phone: "919876543298"})
     end
 
+    test "a contact can't be moved to another organization", %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      other_organization = Fixtures.organization_fixture()
+      Repo.put_organization_id(organization_id)
+
+      assert {:error, changeset} =
+               Contacts.update_contact(contact, %{organization_id: other_organization.id})
+
+      assert %{organization_id: ["can't be changed"]} = errors_on(changeset)
+
+      assert {:ok, %Contact{name: "Same org"}} =
+               Contacts.update_contact(contact, %{
+                 name: "Same org",
+                 organization_id: organization_id
+               })
+    end
+
     test "a new contact needs a phone unless built for its login identity", %{
       organization_id: organization_id
     } do
