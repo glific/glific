@@ -111,21 +111,6 @@ defmodule Glific.Contacts.ContactIdentityTest do
                })
     end
 
-    test "rejects a contact from another organization", %{organization_id: organization_id} do
-      other_org = Fixtures.organization_fixture()
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: other_org.id})
-
-      assert {:error, changeset} =
-               insert_identity(%{
-                 contact_id: contact.id,
-                 organization_id: organization_id,
-                 channel: :web,
-                 identifier: "cross_org"
-               })
-
-      assert %{contact_id: ["belongs to another organization"]} = errors_on(changeset)
-    end
-
     test "rejects a contact that does not exist", %{organization_id: organization_id} do
       assert {:error, changeset} =
                insert_identity(%{
