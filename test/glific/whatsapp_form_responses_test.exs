@@ -191,6 +191,102 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
+  describe "flow_token lookup" do
+    setup %{organization_id: organization_id} do
+      {:ok, sent_message} =
+        Repo.fetch_by(Messages.Message, %{
+          bsp_message_id: "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+          organization_id: organization_id
+        })
+
+      %{sent_message: sent_message}
+    end
+
+    defp attrs_with_flow_token(organization_id, flow_token) do
+      raw_response =
+        @valid_attrs_for_create.raw_response
+        |> Jason.decode!()
+        |> Map.put("flow_token", flow_token)
+        |> Jason.encode!()
+
+      @valid_attrs_for_create
+      |> Map.merge(%{
+        organization_id: organization_id,
+        context_id: nil,
+        raw_response: raw_response
+      })
+    end
+
+    test "create_whatsapp_form_response/1 finds the form from the flow_token when context is missing",
+         %{organization_id: organization_id, sent_message: sent_message} do
+      flow_token = WhatsappFormsResponses.encode_flow_token(sent_message.id)
+
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+      assert {:ok, whatsapp_form_response} =
+               organization_id
+               |> attrs_with_flow_token(flow_token)
+               |> WhatsappFormsResponses.create_whatsapp_form_response()
+
+      assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
+    end
+
+    test "create_whatsapp_form_response/1 uses the flow_token over the context when both are present",
+         %{organization_id: organization_id, sent_message: sent_message} do
+      flow_token = WhatsappFormsResponses.encode_flow_token(sent_message.id)
+
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+      attrs =
+        organization_id
+        |> attrs_with_flow_token(flow_token)
+        |> Map.put(:context_id, "wamid.does-not-match-any-message")
+
+      assert {:ok, whatsapp_form_response} =
+               WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+
+      assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
+    end
+
+    test "create_whatsapp_form_response/1 falls back to the context when there is no flow_token",
+         %{organization_id: organization_id} do
+      raw_response =
+        @valid_attrs_for_create.raw_response
+        |> Jason.decode!()
+        |> Map.delete("flow_token")
+        |> Jason.encode!()
+
+      attrs =
+        @valid_attrs_for_create
+        |> Map.merge(%{organization_id: organization_id, raw_response: raw_response})
+
+      assert {:ok, _whatsapp_form_response} =
+               WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+    end
+
+    test "create_whatsapp_form_response/1 returns an error when the flow_token's message does not exist",
+         %{organization_id: organization_id} do
+      flow_token = WhatsappFormsResponses.encode_flow_token(0)
+
+      assert {:error, "WhatsApp Form not found for the given template_id"} =
+               organization_id
+               |> attrs_with_flow_token(flow_token)
+               |> WhatsappFormsResponses.create_whatsapp_form_response()
+    end
+
+    test "create_whatsapp_form_response/1 does not trust a flow_token that is not encrypted",
+         %{organization_id: organization_id, sent_message: sent_message} do
+      plain_message_id = to_string(sent_message.id)
+
+      assert {:error, "WhatsApp form response has no context id"} =
+               organization_id
+               |> attrs_with_flow_token(plain_message_id)
+               |> WhatsappFormsResponses.create_whatsapp_form_response()
+    end
+  end
+
   test "write_to_google_sheet/2 stringifies map values like calendar_range and list values like options ",
        %{organization_id: organization_id} do
     Tesla.Mock.mock(fn

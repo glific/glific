@@ -15,6 +15,7 @@ defmodule Glific.WhatsappFormsResponses do
     SafeLog,
     Sheets,
     Sheets.GoogleSheets,
+    Vault,
     WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormResponse,
     WhatsappForms.WhatsappFormWorker
@@ -26,9 +27,14 @@ defmodule Glific.WhatsappFormsResponses do
   @spec create_whatsapp_form_response(map()) ::
           {:ok, WhatsappFormResponse.t()} | {:error, Ecto.Changeset.t() | String.t() | any()}
   def create_whatsapp_form_response(attrs) do
-    with {:ok, whatsapp_form} <- get_whatsapp_form(attrs.context_id, attrs.organization_id),
+    with {:ok, decoded_response} <- Jason.decode(attrs.raw_response),
+         {:ok, whatsapp_form} <-
+           get_whatsapp_form(
+             decoded_response["flow_token"],
+             attrs.context_id,
+             attrs.organization_id
+           ),
          {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
-         {:ok, decoded_response} <- Jason.decode(attrs.raw_response),
          {:ok, result} <-
            do_create_whatsapp_form_response(%{
              raw_response: decoded_response,
@@ -53,17 +59,54 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
-  @spec get_whatsapp_form(String.t(), non_neg_integer()) ::
+  @doc """
+  Encrypts an outbound message id into the flow_token sent with a WhatsApp form.
+  """
+  @spec encode_flow_token(non_neg_integer()) :: String.t()
+  def encode_flow_token(message_id) do
+    {:ok, ciphertext} = message_id |> to_string() |> Vault.encrypt()
+    Base.url_encode64(ciphertext, padding: false)
+  end
+
+  @spec decode_flow_token(String.t() | nil) :: {:ok, non_neg_integer()} | :error
+  defp decode_flow_token(flow_token) when is_binary(flow_token) do
+    with {:ok, ciphertext} <- Base.url_decode64(flow_token, padding: false),
+         {:ok, plaintext} <- Vault.decrypt(ciphertext) do
+      {:ok, String.to_integer(plaintext)}
+    else
+      _ -> :error
+    end
+  end
+
+  defp decode_flow_token(_flow_token), do: :error
+
+  @spec get_whatsapp_form(String.t() | nil, String.t() | nil, non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
-  defp get_whatsapp_form(context_id, org_id) do
-    with {:ok, previous_message} <-
-           Repo.fetch_by(Message, %{bsp_message_id: context_id, organization_id: org_id}),
-         %{template: template} <- Repo.preload(previous_message, [:template]),
+  defp get_whatsapp_form(flow_token, context_id, org_id) do
+    with {:ok, sent_message} <- fetch_sent_message(flow_token, context_id, org_id),
+         %{template: template} <- Repo.preload(sent_message, [:template]),
          [%{"flow_id" => flow_id}] <- template.buttons,
          wa_form when not is_nil(wa_form) <- Repo.get_by(WhatsappForm, %{meta_flow_id: flow_id}) do
       {:ok, wa_form}
     else
+      {:error, reason} when is_binary(reason) -> {:error, reason}
       _ -> {:error, "WhatsApp Form not found for the given template_id"}
+    end
+  end
+
+  # Forms sent before the flow_token, or through V2, carry "unused" and are matched by context.
+  @spec fetch_sent_message(String.t() | nil, String.t() | nil, non_neg_integer()) ::
+          {:ok, Message.t()} | {:error, any()}
+  defp fetch_sent_message(flow_token, context_id, org_id) do
+    case decode_flow_token(flow_token) do
+      {:ok, message_id} ->
+        Repo.fetch_by(Message, %{id: message_id, organization_id: org_id})
+
+      :error when is_nil(context_id) ->
+        {:error, "WhatsApp form response has no context id"}
+
+      :error ->
+        Repo.fetch_by(Message, %{bsp_message_id: context_id, organization_id: org_id})
     end
   end
 

@@ -16,18 +16,19 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
   @timeout_reasons [:timeout, :closed_timeout, :closed]
 
   @doc false
-  @spec handle_response({:ok, Tesla.Env.t()}, Message.t() | {:error, any()}) ::
+  @spec handle_response({:ok, Tesla.Env.t() | Req.Response.t()}, Message.t() | {:error, any()}) ::
           :ok | {:error, String.t()}
   def handle_response({:ok, response}, message) do
     case response do
-      %Tesla.Env{status: status} when status in 200..299 ->
+      %{status: status} when status in 200..299 ->
         track_send(:success, message)
         Communications.Message.handle_success_response(response, message)
         :ok
 
       # Not authorized, Job succeeded, we should return an ok, so we don't retry
-      %Tesla.Env{status: status} when status in 400..499 ->
-        track_send(:error, message, error_code: extract_error_code(response.body))
+      %{status: status} when status in 400..499 ->
+        error_code = error_code(response)
+        track_send(:error, message, error_code: error_code)
         Communications.Message.handle_error_response(response, message)
         :ok
 
@@ -48,7 +49,6 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
   def handle_response(error, message) do
     track_send(send_outcome(error), message)
 
-    # Adding log when API Client fails
     Logger.error(
       "Error calling API Client for org_id: #{message["organization_id"]} error: #{Glific.SafeLog.safe_inspect(error)}"
     )
@@ -103,6 +103,16 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
     do: Map.get(message, string_key) || Map.get(message, atom_key)
 
   defp field(_message, _string_key, _atom_key), do: nil
+
+  @spec error_code(Tesla.Env.t() | Req.Response.t() | map()) :: any()
+  # Gupshup V2, where Tesla returns the body as a raw JSON string.
+  defp error_code(%Tesla.Env{body: body}), do: extract_error_code(body)
+
+  # Gupshup V3 uses Meta's Cloud API error shape, and Req has already decoded the body.
+  defp error_code(%Req.Response{body: body}) when is_map(body),
+    do: get_in(body, ["error", "code"])
+
+  defp error_code(_response), do: nil
 
   @spec extract_error_code(any()) :: any()
   defp extract_error_code(body) when is_binary(body) do

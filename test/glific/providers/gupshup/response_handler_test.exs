@@ -64,6 +64,52 @@ defmodule Glific.Providers.Gupshup.ResponseHandlerTest do
     end
   end
 
+  describe "handle_response/2 — Req responses (V3 API)" do
+    test "2xx stores the message id from messages[0].id" do
+      message = send_message(%{is_hsm: true})
+
+      body = %{"messages" => [%{"id" => "gupshup-v3-id"}], "messaging_product" => "whatsapp"}
+
+      assert :ok =
+               ResponseHandler.handle_response(
+                 {:ok, %Req.Response{status: 200, body: body}},
+                 message
+               )
+
+      reloaded = reload(message)
+      assert reloaded.bsp_status == :enqueued
+      assert reloaded.bsp_message_id == "gupshup-v3-id"
+    end
+
+    test "4xx marks the message errored and is not retried (returns :ok)" do
+      message = send_message(%{is_hsm: true})
+
+      body = %{"error" => %{"code" => 132_000, "message" => "Param count mismatch"}}
+
+      assert :ok =
+               ResponseHandler.handle_response(
+                 {:ok, %Req.Response{status: 400, body: body}},
+                 message
+               )
+
+      reloaded = reload(message)
+      assert reloaded.bsp_status == :error
+      assert reloaded.errors == body
+    end
+
+    test "4xx with a plain text body still marks the message errored" do
+      message = send_message(%{is_hsm: true})
+
+      assert :ok =
+               ResponseHandler.handle_response(
+                 {:ok, %Req.Response{status: 401, body: "Unauthorized"}},
+                 message
+               )
+
+      assert reload(message).bsp_status == :error
+    end
+  end
+
   describe "handle_response/2 — transport errors" do
     test "a timeout returns an error tuple so Oban retries" do
       message = send_message()

@@ -62,5 +62,22 @@ defmodule Glific.SafeLogTest do
       assert result =~ "200"
       assert result =~ "__client__: nil"
     end
+
+    test "strips __client__ from a Tesla.Env wrapped in a result tuple" do
+      env = %Tesla.Env{
+        status: 401,
+        __client__: %Tesla.Client{
+          pre: [{Tesla.Middleware.Headers, :call, [[{"authorization", "Bearer secret-token"}]]}]
+        }
+      }
+
+      for tag <- [:ok, :error] do
+        result = SafeLog.safe_inspect({tag, env})
+
+        assert result =~ inspect(tag)
+        assert result =~ "401"
+        refute result =~ "secret-token"
+      end
+    end
   end
 end
