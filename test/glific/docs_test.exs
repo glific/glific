@@ -49,7 +49,26 @@ defmodule Glific.DocsTest do
       assert chunk.body =~ "No."
     end
 
-    test "a section with no source of its own inherits the nearest above it" do
+    test "a section under the one stating a source inherits it" do
+      markdown = """
+      ## 1.1 First
+
+      📖 Source: https://example.com/page
+
+      #{String.duplicate("Body text that is long enough to stand alone. ", 6)}
+
+      ### 1.1.1 Underneath
+
+      #{String.duplicate("A subsection of the page above, sharing its URL. ", 6)}
+      """
+
+      assert [parent, child] = Docs.chunk(markdown, "doc")
+      assert parent.source_url == "https://example.com/page"
+      assert child.source_url == "https://example.com/page"
+    end
+
+    test "a sibling is a different page and does not borrow the link" do
+      # Otherwise an answer cites a page that does not contain it.
       markdown = """
       ## 1.1 First
 
@@ -59,12 +78,12 @@ defmodule Glific.DocsTest do
 
       ## 1.2 Second
 
-      #{String.duplicate("A later section on the same page states no source. ", 6)}
+      #{String.duplicate("A later section, which is its own page entirely. ", 6)}
       """
 
       assert [first, second] = Docs.chunk(markdown, "doc")
       assert first.source_url == "https://example.com/page"
-      assert second.source_url == "https://example.com/page"
+      assert second.source_url == nil
     end
 
     test "a label-sized child folds into its parent, keeping its heading" do
@@ -285,22 +304,33 @@ defmodule Glific.DocsTest do
       "collections and contact fields"
     ]
 
-    test "each supported subject returns something" do
-      for topic <- @topics, do: assert(Docs.find(topic, limit: 5) != [], topic)
+    test "each supported subject returns something", %{entries: entries} do
+      # The lexical pass only: embedding every topic would spend a round trip
+      # per subject to prove something about the corpus, not about the network.
+      for topic <- @topics, do: assert(Docs.lexical(topic, entries) != [], topic)
     end
 
-    test "an off-topic question returns nothing" do
+    test "an off-topic question returns nothing", %{entries: entries} do
       for question <- [
             "zzzqqq unrelatedtoglific",
             "what is the weather in Mumbai today",
             "write me a poem about cats",
             "thanks!"
           ] do
-        assert Docs.find(question, limit: 5) == [], question
+        assert Docs.lexical(question, entries) == [], question
       end
     end
 
-    test "a diagnosis question reaches the knowledge base" do
+    test "both passes together answer a diagnosis question" do
+      # The one test that runs the whole path. The provider is stubbed here
+      # rather than in config, which would collide with the Req.Test ownership
+      # other suites rely on.
+      Application.put_env(:glific, :docs_embedding_request_options,
+        req_http_options: [plug: Glific.Docs.StubEmbeddings]
+      )
+
+      on_exit(fn -> Application.delete_env(:glific, :docs_embedding_request_options) end)
+
       chunks = Docs.find("why is my flow not triggering", limit: 5)
 
       assert Enum.any?(chunks, &(&1.doc_file == @knowledge_base))

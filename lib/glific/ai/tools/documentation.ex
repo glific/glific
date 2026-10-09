@@ -83,7 +83,8 @@ defmodule Glific.AI.Tools.Documentation do
   defp no_match(query),
     do: """
     Nothing in the documentation matches "#{query}". Try the words the person \
-    used rather than Glific's internal names, or answer from what you know \
-    without citing a source.\
+    used rather than Glific's internal names. If that finds nothing either, \
+    this is not documented: say so and ask for the detail that would let you \
+    look it up. Do not answer from memory.\
     """
 end

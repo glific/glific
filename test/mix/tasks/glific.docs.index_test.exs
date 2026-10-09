@@ -8,32 +8,29 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
 
   use ExUnit.Case, async: false
 
+  @moduletag :tmp_dir
+
   alias Glific.Docs
   alias Mix.Tasks.Glific.Docs.Index, as: Task
 
-  @directory Path.join([File.cwd!(), "priv", "docs_kb"])
-
-  setup do
+  setup %{tmp_dir: tmp_dir} do
+    # Never the committed artifact: a test that aborts mid-run would leave a
+    # corrupt binary in the tree, and every search would score zero.
     Mix.shell(Mix.Shell.Process)
-
-    artifacts = [Docs.artifact_path(), Path.join(@directory, "embeddings.etf")]
-    original = artifacts |> Enum.find(&File.exists?/1) |> File.read!()
-
-    documents =
-      Map.new(Docs.documents(), fn document ->
-        path = Path.join(@directory, "#{document}.md")
-        {path, File.read!(path)}
-      end)
+    Application.put_env(:glific, Glific.Docs, artifact_path: Path.join(tmp_dir, "embeddings.etf"))
 
     on_exit(fn ->
-      Enum.each(artifacts, &File.write!(&1, original))
-      Enum.each(documents, fn {path, body} -> File.write!(path, body) end)
+      Application.put_env(:glific, Glific.Docs,
+        embedding_model: "openai:text-embedding-3-small",
+        embedding_dimensions: 256
+      )
+
       Application.delete_env(:glific, :docs_embedding_request_options)
       Mix.shell(Mix.Shell.IO)
       Docs.warm()
     end)
 
-    %{documents: documents}
+    :ok
   end
 
   defp stub_embeddings(dimensions) do

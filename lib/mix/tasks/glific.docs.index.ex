@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
   use Mix.Task
 
   alias Glific.Docs
+  alias Glific.SafeLog
 
   @switches [force: :boolean, model: :string, dimensions: :integer]
 
@@ -54,7 +55,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
         report(entries, embedded, fresh, known, model, dimensions)
 
       {:error, reason} ->
-        Mix.raise("Indexing failed: #{Glific.SafeLog.safe_inspect(reason)}")
+        Mix.raise("Indexing failed: #{SafeLog.safe_inspect(reason)}")
     end
 
     :ok
@@ -85,12 +86,20 @@ defmodule Mix.Tasks.Glific.Docs.Index do
   defp embed_batch(batch, model, dimensions) do
     texts = Enum.map(batch, &"#{&1.heading_path}\n\n#{&1.body}")
 
-    case ReqLLM.embed(model, texts, Docs.embed_opts(dimensions)) do
+    case ReqLLM.embed(model, texts, Docs.embed_opts(dimensions, model)) do
       {:ok, vectors} when length(vectors) == length(batch) ->
-        {:ok,
-         batch
-         |> Enum.zip(vectors)
-         |> Enum.map(fn {chunk, floats} -> %{chunk: chunk, vector: Docs.pack(floats)} end)}
+        widths = vectors |> Enum.map(&length/1) |> Enum.uniq()
+
+        # A provider may ignore the width we asked for. Recording one width and
+        # storing another scores every section at zero, in silence.
+        if widths == [dimensions] do
+          {:ok,
+           batch
+           |> Enum.zip(vectors)
+           |> Enum.map(fn {chunk, floats} -> %{chunk: chunk, vector: Docs.pack(floats)} end)}
+        else
+          {:error, "asked for #{dimensions} dimensions, got #{SafeLog.safe_inspect(widths)}"}
+        end
 
       {:ok, vectors} ->
         {:error, "expected #{length(batch)} embeddings, got #{length(vectors)}"}

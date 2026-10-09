@@ -19,11 +19,14 @@ defmodule Glific.Docs do
 
   require Logger
 
+  alias Glific.SafeLog
+
   @documents ~w(glific_chatbot_knowledge_base glific_platform_guide glific_operations_manual)
 
   @index_key {__MODULE__, :entries}
   @metadata_key {__MODULE__, :metadata}
   @artifact "docs_kb/embeddings.etf"
+  @version 1
 
   @typedoc "A heading, its prose, and the page it came from."
   @type chunk() :: %{
@@ -42,13 +45,14 @@ defmodule Glific.Docs do
   @minimum_body 160
   @separator " › "
 
-  # A table pairing user phrasings with section numbers. It matches almost any
-  # question word for word, then points at a section instead of answering.
-  @excluded_section "18"
+  # 18 pairs user phrasings with section numbers, so it matches almost any
+  # question word for word and then points at a section instead of answering.
+  # 17 is the API summary, written for developers.
+  @excluded_sections ["17", "18"]
 
   # The operations manual is half written for Glific's engineers. An answer
   # built from those sections sends the reader to an API they cannot reach.
-  @engineering ~r/lib\/glific|\.ex:\d|\bOban\b|\bEcto\b|defmodule|POST \/partner|\bpsql\b|\bJSONB\b|_logs` Schema/
+  @engineering ~r/lib\/glific|\bsrc\/|glific-frontend|\.ex:\d|\.tsx?`|\bOban\b|\bEcto\b|defmodule|POST \/partner|\bpsql\b|\bJSONB\b|_logs` Schema/
 
   # Standard fusion constant: a section both passes rank beats one that only
   # a single pass found.
@@ -115,8 +119,15 @@ defmodule Glific.Docs do
   def semantic(question, entries, nil) do
     if Enum.any?(entries, & &1.vector) do
       case embed(question) do
-        {:ok, vector} -> semantic(question, entries, vector)
-        {:error, _reason} -> []
+        {:ok, vector} ->
+          semantic(question, entries, vector)
+
+        {:error, reason} ->
+          Logger.warning(
+            "docs question not embedded (#{SafeLog.safe_inspect(reason)}); lexical only"
+          )
+
+          []
       end
     else
       []
@@ -188,9 +199,9 @@ defmodule Glific.Docs do
   defp identifiers(question) do
     ~r/[@a-zA-Z0-9][a-zA-Z0-9._\-]*/u
     |> Regex.scan(question)
-    |> Enum.map(&List.first/1)
+    |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
     |> Enum.filter(&identifier?/1)
-    |> MapSet.new(&(&1 |> String.downcase() |> String.trim(".")))
+    |> MapSet.new(&String.downcase/1)
   end
 
   defp identifier?(token) do
@@ -223,18 +234,16 @@ defmodule Glific.Docs do
 
   @doc "Where the build artifact lives."
   @spec artifact_path() :: String.t()
-  def artifact_path, do: Application.app_dir(:glific, "priv/#{@artifact}")
+  def artifact_path,
+    do: config(:artifact_path, Application.app_dir(:glific, "priv/#{@artifact}"))
 
   @doc "Writes entries to the artifact and to the in-memory copy."
   @spec write!([entry()], keyword()) :: :ok
   def write!(entries, metadata) do
     metadata = Map.new(metadata)
-    payload = %{version: 1, metadata: metadata, entries: entries}
+    payload = %{version: @version, metadata: metadata, entries: entries}
 
-    File.write!(
-      Path.join([File.cwd!(), "priv", @artifact]),
-      :erlang.term_to_binary(payload, compressed: 6)
-    )
+    File.write!(artifact_path(), :erlang.term_to_binary(payload, compressed: 6))
 
     :persistent_term.put(@index_key, entries)
     :persistent_term.put(@metadata_key, metadata)
@@ -243,15 +252,21 @@ defmodule Glific.Docs do
 
   @spec read_artifact() :: {[entry()], map()}
   defp read_artifact do
-    case File.read(artifact_path()) do
-      {:ok, binary} ->
-        payload = :erlang.binary_to_term(binary)
-        {Map.fetch!(payload, :entries), Map.get(payload, :metadata, %{})}
+    with {:ok, binary} <- File.read(artifact_path()),
+         %{version: @version, entries: entries} = payload <- :erlang.binary_to_term(binary) do
+      {entries, Map.get(payload, :metadata, %{})}
+    else
+      other ->
+        Logger.warning(
+          "docs index unusable (#{SafeLog.safe_inspect(other)}); searching without vectors"
+        )
 
-      {:error, reason} ->
-        Logger.info("docs index not built (#{reason}); semantic search is disabled")
         {Enum.map(all_chunks(), &%{chunk: &1, vector: nil}), %{}}
     end
+  rescue
+    exception ->
+      Logger.warning("docs index unreadable (#{Exception.message(exception)})")
+      {Enum.map(all_chunks(), &%{chunk: &1, vector: nil}), %{}}
   end
 
   # ── Embedding ──────────────────────────────────────────────────────────────
@@ -263,10 +278,12 @@ defmodule Glific.Docs do
     model = Map.get(metadata, :model, model())
     dimensions = Map.get(metadata, :dimensions, dimensions())
 
-    case ReqLLM.embed(model, text, embed_opts(dimensions)) do
+    case ReqLLM.embed(model, text, embed_opts(dimensions, model)) do
       {:ok, floats} when is_list(floats) -> {:ok, pack(floats)}
-      {:error, reason} -> {:error, reason}
+      other -> {:error, other}
     end
+  rescue
+    exception -> {:error, Exception.message(exception)}
   end
 
   @doc "Normalises a vector of floats into the stored binary form."
@@ -298,18 +315,22 @@ defmodule Glific.Docs do
 
   @doc "Request options for an embedding call."
   @spec embed_opts(pos_integer()) :: keyword()
-  def embed_opts(dimensions) do
+  def embed_opts(dimensions, model \\ nil) do
     [provider_options: [dimensions: dimensions]]
-    |> then(&if(key = api_key(), do: Keyword.put(&1, :api_key, key), else: &1))
+    |> then(&if(key = api_key(model), do: Keyword.put(&1, :api_key, key), else: &1))
     |> Keyword.merge(Application.get_env(:glific, :docs_embedding_request_options, []))
   end
 
   # Glific holds this key as OPEN_AI_KEY, where req_llm looks for
-  # OPENAI_API_KEY. Passed per call so no deployment sets it twice.
-  defp api_key do
-    case Application.get_env(:glific, :open_ai) do
-      key when is_binary(key) and key != "This is not a secret" -> key
-      _absent -> nil
+  # OPENAI_API_KEY. Passed per call so no deployment sets it twice, and only
+  # to OpenAI: another provider must not be handed someone else's key.
+  defp api_key(model) do
+    with true <- String.starts_with?(model || model(), "openai:"),
+         key when is_binary(key) and key != "This is not a secret" <-
+           Application.get_env(:glific, :open_ai) do
+      key
+    else
+      _other -> nil
     end
   end
 
@@ -354,7 +375,7 @@ defmodule Glific.Docs do
   defp excluded?(%{section_path: nil}), do: false
 
   defp excluded?(%{section_path: path, doc_file: "glific_chatbot_knowledge_base"}),
-    do: path == @excluded_section or String.starts_with?(path, @excluded_section <> ".")
+    do: Enum.any?(@excluded_sections, &(path == &1 or String.starts_with?(path, &1 <> ".")))
 
   defp excluded?(_chunk), do: false
 
@@ -432,7 +453,9 @@ defmodule Glific.Docs do
 
   defp fold(parent, node), do: %{parent | lines: parent.lines ++ ["", node.title] ++ node.lines}
 
-  defp ancestor?([%{level: level} | _], %{level: node_level}), do: level < node_level
+  defp ancestor?([%{trail: above} | _], %{trail: trail}),
+    do: length(above) < length(trail) and Enum.take(trail, length(above)) == above
+
   defp ancestor?([], _node), do: false
 
   defp build_chunk(node, doc_file) do
@@ -464,13 +487,28 @@ defmodule Glific.Docs do
     end
   end
 
-  # A page states its source once; later sections take the nearest one above.
+  # A page states its source once, under its own heading. Sections beneath that
+  # heading share the page; a later sibling is a different page and must not
+  # borrow the link, or an answer cites a page that does not hold it.
   defp inherit_source_urls(chunks) do
     chunks
-    |> Enum.map_reduce(nil, fn chunk, nearest ->
-      url = chunk.source_url || nearest
-      {%{chunk | source_url: url}, url}
+    |> Enum.map_reduce(nil, fn chunk, stated ->
+      case {chunk.source_url, stated} do
+        {nil, {trail, url}} ->
+          if under?(chunk.heading_path, trail),
+            do: {%{chunk | source_url: url}, stated},
+            else: {chunk, stated}
+
+        {nil, nil} ->
+          {chunk, nil}
+
+        {url, _stated} ->
+          {chunk, {chunk.heading_path, url}}
+      end
     end)
     |> elem(0)
   end
+
+  defp under?(heading_path, trail),
+    do: heading_path == trail or String.starts_with?(heading_path, trail <> @separator)
 end
