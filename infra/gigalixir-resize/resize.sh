@@ -4,6 +4,7 @@ set -euo pipefail
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-900}"
 POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-15}"
 REQUEST_TIMEOUT_SECONDS="${REQUEST_TIMEOUT_SECONDS:-30}"
+RESIZE_ATTEMPTS="${RESIZE_ATTEMPTS:-3}"
 DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
 DISCORD_MENTION_ROLE_ID="${DISCORD_MENTION_ROLE_ID:-}"
 SMOKE_TEST_URL="${SMOKE_TEST_URL:-}"
@@ -184,6 +185,38 @@ api() {
 
 app_status() { api "${API}/status" | jq '.data'; }
 
+# Setting the same size again is idempotent, so transient Gigalixir errors (5xx or no response) are retried.
+request_resize() {
+  local attempt response code body status
+  for ((attempt = 1; attempt <= RESIZE_ATTEMPTS; attempt++)); do
+    response=$(http -w '\n%{http_code}' -u "${GIGALIXIR_USERNAME}:${API_KEY}" \
+      -H 'Content-Type: application/json' -X PUT \
+      -d "$(jq -nc --argjson size "$TARGET_SIZE" '{size: $size}')" "${API}/scale") || response=$'\n000'
+    code=${response##*$'\n'}
+    body=$(tr -d '\n' <<<"${response%$'\n'*}")
+    body=${body:-no response}
+
+    [[ "$code" == 2?? ]] && return 0
+
+    log "Resize request to Gigalixir failed with HTTP ${code}: ${body:0:300}"
+    [[ "$code" == 5?? || "$code" == 000 ]] || return 1
+
+    # A 5xx can still have applied the resize, in which case retrying is unnecessary.
+    if status=$(app_status) && jq -e --argjson t "$TARGET_SIZE" '.size == $t' <<<"$status" >/dev/null; then
+      log "Gigalixir already shows size ${TARGET_SIZE}, continuing"
+      return 0
+    fi
+
+    if ((attempt < RESIZE_ATTEMPTS)); then
+      log "Retrying resize request (${attempt}/${RESIZE_ATTEMPTS})"
+      sleep "$POLL_INTERVAL_SECONDS"
+    fi
+  done
+
+  log "Resize request to Gigalixir failed after ${RESIZE_ATTEMPTS} attempts, last HTTP ${code}: ${body:0:300}"
+  return 1
+}
+
 smoke_test() {
   local attempt response code body
   for ((attempt = 1; attempt <= SMOKE_TEST_ATTEMPTS; attempt++)); do
@@ -232,7 +265,7 @@ log "Set APPSIGNAL_CPU_COUNT=${APPSIGNAL_CPU_COUNT} on ${GIGALIXIR_APP}"
 
 log "Resizing ${GIGALIXIR_APP} from ${FROM_SIZE} to ${TARGET_SIZE}"
 DISCORD_MESSAGE_ID=$(discord_post progress)
-api -X PUT "${API}/scale" -d "$(jq -nc --argjson size "$TARGET_SIZE" '{size: $size}')" >/dev/null
+request_resize
 
 deadline=$((SECONDS + TIMEOUT_SECONDS))
 while ((SECONDS < deadline)); do
