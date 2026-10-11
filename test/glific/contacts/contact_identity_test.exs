@@ -24,6 +24,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: contact.id,
                  organization_id: organization_id,
                  channel: :web,
+                 kind: "ngo_username",
                  identifier: "ravi_12"
                })
 
@@ -39,6 +40,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                contact_id: ["can't be blank"],
                organization_id: ["can't be blank"],
                channel: ["can't be blank"],
+               kind: ["can't be blank"],
                identifier: ["can't be blank"]
              } = errors_on(changeset)
     end
@@ -51,6 +53,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: contact.id,
                  organization_id: organization_id,
                  channel: :web,
+                 kind: "ngo_username",
                  identifier: String.duplicate("a", 256)
                })
 
@@ -80,10 +83,46 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: other.id,
                  organization_id: organization_id,
                  channel: :web,
+                 kind: "ngo_username",
                  identifier: "asha_07"
                })
 
       assert %{organization_id: ["has already been taken"]} = errors_on(changeset)
+    end
+
+    test "a username equal to a phone number doesn't collide with that phone login", %{
+      organization_id: organization_id
+    } do
+      phone_login =
+        Fixtures.contact_identity_fixture(%{
+          organization_id: organization_id,
+          kind: "phone",
+          identifier: "919812345678"
+        })
+
+      username =
+        Fixtures.contact_identity_fixture(%{
+          organization_id: organization_id,
+          kind: "ngo_username",
+          identifier: "919812345678"
+        })
+
+      refute phone_login.contact_id == username.contact_id
+    end
+
+    test "rejects an unknown kind", %{organization_id: organization_id} do
+      contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
+
+      assert {:error, changeset} =
+               insert_identity(%{
+                 contact_id: contact.id,
+                 organization_id: organization_id,
+                 channel: :web,
+                 kind: "email",
+                 identifier: "asha@example.org"
+               })
+
+      assert %{kind: ["is invalid"]} = errors_on(changeset)
     end
 
     test "allows the same identifier on another channel", %{organization_id: organization_id} do
@@ -95,6 +134,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: identity.contact_id,
                  organization_id: organization_id,
                  channel: :whatsapp,
+                 kind: "ngo_username",
                  identifier: "x"
                })
     end
@@ -117,6 +157,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: 0,
                  organization_id: organization_id,
                  channel: :web,
+                 kind: "ngo_username",
                  identifier: "ghost"
                })
 

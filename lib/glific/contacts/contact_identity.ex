@@ -1,11 +1,12 @@
 defmodule Glific.Contacts.ContactIdentity do
   @moduledoc """
   How a contact logs in on a channel. A contact is the person; it can have one identity per login
-  (a username issued by its NGO, later a WhatsApp phone or a Telegram chat id). Login credentials
-  only: per-channel state lives elsewhere.
+  (a phone, a username issued by its NGO, later a Telegram chat id). Login credentials only:
+  per-channel state lives elsewhere.
 
-  The `identifier` is opaque and matched exactly, so it is neither trimmed nor case-folded. It is
-  unique within an organization and channel.
+  The `identifier` is opaque and matched exactly, so it is neither trimmed nor case-folded. `kind`
+  says what it is, and it is unique within an organization, channel and kind, so an NGO username
+  that happens to be a phone number never matches someone's phone login.
 
   The identity's organization must be its contact's; nothing checks this, so identities are only
   written by code that takes the organization from the contact.
@@ -20,8 +21,9 @@ defmodule Glific.Contacts.ContactIdentity do
     Partners.Organization
   }
 
-  @required_fields [:contact_id, :organization_id, :channel, :identifier]
+  @required_fields [:contact_id, :organization_id, :channel, :kind, :identifier]
   @optional_fields []
+  @kinds ["phone", "ngo_username"]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -31,6 +33,7 @@ defmodule Glific.Contacts.ContactIdentity do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           channel: MessageChannel.t() | nil,
+          kind: String.t() | nil,
           identifier: String.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
@@ -38,6 +41,7 @@ defmodule Glific.Contacts.ContactIdentity do
 
   schema "contact_identities" do
     field :channel, MessageChannel
+    field :kind, :string
     field :identifier, :string
 
     belongs_to :contact, Contact
@@ -54,8 +58,11 @@ defmodule Glific.Contacts.ContactIdentity do
     contact_identity
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_inclusion(:kind, @kinds)
     |> validate_length(:identifier, min: 1, max: 255)
-    |> unique_constraint([:organization_id, :channel, :identifier])
+    |> unique_constraint([:organization_id, :channel, :kind, :identifier],
+      name: :contact_identities_org_channel_kind_identifier_index
+    )
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:organization_id)
   end

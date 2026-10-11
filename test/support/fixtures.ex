@@ -148,6 +148,7 @@ defmodule Glific.Fixtures do
       contact_id: contact_id,
       organization_id: organization_id,
       channel: :web,
+      kind: "ngo_username",
       identifier: "user_#{System.unique_integer([:positive])}"
     }
 
