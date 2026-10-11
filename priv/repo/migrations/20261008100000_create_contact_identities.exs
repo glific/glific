@@ -32,6 +32,5 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
 
     create unique_index(:contact_identities, [:organization_id, :channel, :identifier])
     create index(:contact_identities, [:contact_id])
-    create index(:contact_identities, [:organization_id])
   end
 end
