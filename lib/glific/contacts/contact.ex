@@ -137,7 +137,7 @@ defmodule Glific.Contacts.Contact do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_phone_on_insert(channel)
-    |> validate_phone_kept()
+    |> validate_phone_removal()
     |> validate_fields_map()
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
@@ -170,8 +170,8 @@ defmodule Glific.Contacts.Contact do
     %{contact | masked_phone: masked_phone}
   end
 
-  @spec validate_phone_kept(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_phone_kept(%{data: %{phone: phone}} = changeset) when phone not in [nil, ""] do
+  @spec validate_phone_removal(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_phone_removal(%{data: %{phone: phone}} = changeset) when phone not in [nil, ""] do
     case fetch_change(changeset, :phone) do
       {:ok, new_phone} when new_phone in [nil, ""] ->
         add_error(changeset, :phone, "can't be removed once set")
@@ -181,7 +181,7 @@ defmodule Glific.Contacts.Contact do
     end
   end
 
-  defp validate_phone_kept(changeset), do: changeset
+  defp validate_phone_removal(changeset), do: changeset
 
   @spec validate_fields_map(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_fields_map(%{changes: %{fields: fields}} = changeset) do
