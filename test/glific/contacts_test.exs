@@ -2067,16 +2067,16 @@ defmodule Glific.ContactsTest do
     end
   end
 
-  describe "persisted contacts without a phone" do
+  describe "web contacts" do
     test "several can exist in one organization", %{organization_id: organization_id} do
-      first = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
-      second = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      first = Fixtures.web_contact_fixture(%{organization_id: organization_id})
+      second = Fixtures.web_contact_fixture(%{organization_id: organization_id})
 
       assert [nil, nil] == Enum.map([first, second], &Repo.reload!(&1).phone)
     end
 
     test "can be updated, including blocked", %{organization_id: organization_id} do
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
 
       assert {:ok, %Contact{name: "Ravi", phone: nil}} =
                Contacts.update_contact(contact, %{name: "Ravi"})
@@ -2086,7 +2086,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "can be given a phone later", %{organization_id: organization_id} do
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
 
       assert {:ok, %Contact{phone: "919876543299"}} =
                Contacts.update_contact(contact, %{phone: "919876543299"})
@@ -2104,7 +2104,7 @@ defmodule Glific.ContactsTest do
                Contacts.update_contact(contact, %{phone: "919876543298"})
     end
 
-    test "a new contact needs a phone unless built for its login identity", %{
+    test "a new WhatsApp contact needs a phone, a new web contact doesn't", %{
       organization_id: organization_id
     } do
       attrs = %{name: "No phone", language_id: 1, organization_id: organization_id}
@@ -2113,7 +2113,7 @@ defmodule Glific.ContactsTest do
                %Contact{} |> Contact.changeset(attrs) |> errors_on()
 
       assert {:ok, %Contact{phone: nil}} =
-               attrs |> Contacts.new_contact_changeset() |> Repo.insert()
+               attrs |> Contacts.new_contact_changeset(:web) |> Repo.insert()
     end
 
     test "create_contact/1 still requires a phone", %{organization_id: organization_id} do
@@ -2123,7 +2123,7 @@ defmodule Glific.ContactsTest do
       assert %{phone: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "upsert/1 refuses a missing phone instead of inserting a phone-less contact",
+    test "upsert/1 refuses a missing phone instead of inserting a contact without one",
          %{organization_id: organization_id} do
       assert_raise Ecto.InvalidChangesetError, fn ->
         Contacts.upsert(%{name: "No phone", organization_id: organization_id})
@@ -2145,10 +2145,10 @@ defmodule Glific.ContactsTest do
       assert id == contact.id
     end
 
-    test "maybe_create_contact/1 never returns a stored phone-less contact for a nil phone",
+    test "maybe_create_contact/1 never returns a web contact for a nil phone",
          %{organization_id: organization_id} do
-      Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
-      Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      Fixtures.web_contact_fixture(%{organization_id: organization_id})
+      Fixtures.web_contact_fixture(%{organization_id: organization_id})
 
       assert {:error, %Ecto.Changeset{}} =
                Contacts.maybe_create_contact(%{phone: nil, organization_id: organization_id})

@@ -138,9 +138,9 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
-  describe "a contact without a phone" do
+  describe "a web contact" do
     test "is returned with a null phone and masked phone", %{manager: user} do
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+      contact = Fixtures.web_contact_fixture(%{organization_id: user.organization_id})
 
       {:ok, query_data} = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
 
@@ -149,7 +149,7 @@ defmodule GlificWeb.Schema.ContactTest do
     end
 
     test "staff still don't see a phone", %{staff: user} do
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+      contact = Fixtures.web_contact_fixture(%{organization_id: user.organization_id})
 
       {:ok, query_data} = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
 
@@ -157,7 +157,7 @@ defmodule GlificWeb.Schema.ContactTest do
     end
 
     test "can be renamed", %{manager: user} do
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+      contact = Fixtures.web_contact_fixture(%{organization_id: user.organization_id})
 
       {:ok, query_data} =
         auth_query_gql_by(:update, user,

@@ -32,7 +32,7 @@ defmodule Glific.ReportsTest do
     assert Reports.get_bookmark_data(org_id) == %{}
   end
 
-  test "get_kpi/3 counts contacts without a phone", %{organization_id: org_id} do
+  test "get_kpi/3 counts web contacts", %{organization_id: org_id} do
     date_range = %{
       start_day: ~U[2000-01-01 00:00:00Z],
       end_day: DateTime.add(DateTime.utc_now(), 60)
@@ -41,7 +41,7 @@ defmodule Glific.ReportsTest do
     valid_before = Reports.get_kpi(:valid_contact_count, org_id, date_range)
     non_opted_before = Reports.get_kpi(:non_opted_contacts_count, org_id, date_range)
 
-    Fixtures.contact_without_phone_fixture(%{organization_id: org_id})
+    Fixtures.web_contact_fixture(%{organization_id: org_id})
 
     assert valid_before + 1 == Reports.get_kpi(:valid_contact_count, org_id, date_range)
     assert non_opted_before + 1 == Reports.get_kpi(:non_opted_contacts_count, org_id, date_range)

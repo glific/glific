@@ -17,7 +17,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
 
   describe "changeset/2" do
     test "inserts a login for a contact", %{organization_id: organization_id} do
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
 
       assert {:ok, %ContactIdentity{} = identity} =
                insert_identity(%{
@@ -44,7 +44,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
     end
 
     test "rejects an identifier longer than 255 characters", %{organization_id: organization_id} do
-      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
 
       assert {:error, changeset} =
                insert_identity(%{
@@ -73,7 +73,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
         identifier: "asha_07"
       })
 
-      other = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      other = Fixtures.web_contact_fixture(%{organization_id: organization_id})
 
       assert {:error, changeset} =
                insert_identity(%{

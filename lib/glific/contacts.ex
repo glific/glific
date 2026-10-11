@@ -266,8 +266,8 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a contact from a phone-based entry point, so the phone is required. A contact without a
-  phone is only created together with its login identity, from `new_contact_changeset/1`.
+  Creates a WhatsApp contact, so the phone is required. A web contact is created together with its
+  login identity, from `new_contact_changeset/2`.
 
   ## Examples
 
@@ -280,17 +280,17 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs) do
-    %Contact{}
-    |> Contact.changeset(with_new_contact_defaults(attrs))
+    attrs
+    |> new_contact_changeset(:whatsapp)
     |> Repo.insert()
   end
 
   @doc """
-  The changeset for a new contact that may have no phone, to insert together with its login identity.
+  The changeset for a new contact on a channel, with the organization's defaults filled in.
   """
-  @spec new_contact_changeset(map()) :: Ecto.Changeset.t()
-  def new_contact_changeset(attrs),
-    do: Contact.changeset_without_phone(%Contact{}, with_new_contact_defaults(attrs))
+  @spec new_contact_changeset(map(), :whatsapp | :web) :: Ecto.Changeset.t()
+  def new_contact_changeset(attrs, channel),
+    do: Contact.changeset(%Contact{}, with_new_contact_defaults(attrs), channel)
 
   @spec with_new_contact_defaults(map()) :: map()
   defp with_new_contact_defaults(%{organization_id: organization_id} = attrs) do
@@ -415,7 +415,7 @@ defmodule Glific.Contacts do
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
   it returns the existing contact, else it creates a new one. The phone is the conflict target,
-  so it is required: a nil phone would never conflict and would insert a phone-less contact.
+  so it is required: a nil phone would never conflict and would insert a contact without one.
   """
   @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(%{organization_id: organization_id} = attrs) do

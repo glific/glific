@@ -1,4 +1,4 @@
-defmodule Glific.Contacts.ContactWithoutPhoneTest do
+defmodule Glific.Contacts.WebContactTest do
   use Glific.DataCase
 
   alias Glific.{
@@ -18,7 +18,7 @@ defmodule Glific.Contacts.ContactWithoutPhoneTest do
   }
 
   setup %{organization_id: organization_id} do
-    %{contact: Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})}
+    %{contact: Fixtures.web_contact_fixture(%{organization_id: organization_id})}
   end
 
   defp active_flow(organization_id) do
@@ -37,7 +37,7 @@ defmodule Glific.Contacts.ContactWithoutPhoneTest do
       assert sender_id == contact.id
     end
 
-    test "a WhatsApp inbound with no phone never resolves to the contact",
+    test "a WhatsApp inbound without a sender phone never resolves to a web contact",
          %{contact: contact, organization_id: organization_id} do
       assert {:error, %Ecto.Changeset{}} =
                Contacts.maybe_create_contact(%{phone: nil, organization_id: organization_id})
@@ -120,7 +120,7 @@ defmodule Glific.Contacts.ContactWithoutPhoneTest do
   end
 
   describe "broadcast" do
-    test "a WhatsApp collection flow completes, and sends nothing to the contact without a phone",
+    test "a WhatsApp collection flow completes, and sends nothing to the web contact",
          %{contact: contact, organization_id: organization_id} do
       flow = active_flow(organization_id)
       with_phone = Fixtures.contact_fixture(%{organization_id: organization_id})
