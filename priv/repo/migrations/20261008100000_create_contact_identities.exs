@@ -1,15 +1,12 @@
 defmodule Glific.Repo.Migrations.CreateContactIdentities do
   @moduledoc """
   How a contact logs in on a channel: one row per login, each pointing at the contact (the person).
-  The `identifier` is opaque to Glific (a phone, a username, later a Telegram chat id), unique within
-  an organization and channel.
+  The `identifier` is opaque to Glific (a username issued by the NGO, later a WhatsApp phone or a
+  Telegram chat id), unique within an organization and channel.
   """
   use Ecto.Migration
 
   def change do
-    # The foreign key to contacts briefly locks that table; fail fast rather than queue behind a long query.
-    execute("SET LOCAL lock_timeout = '5s'", "SET LOCAL lock_timeout = '5s'")
-
     create table(:contact_identities,
              comment: "Channel identifiers of a contact; the contact itself stays the person"
            ) do

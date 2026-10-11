@@ -7,8 +7,6 @@ defmodule Glific.Repo.Migrations.MakeContactsPhoneNullable do
   use Ecto.Migration
 
   def up do
-    # The ALTER needs a brief ACCESS EXCLUSIVE lock; fail fast rather than queue behind a long query.
-    execute("SET LOCAL lock_timeout = '5s'")
     execute("ALTER TABLE contacts ALTER COLUMN phone DROP NOT NULL")
   end
 
