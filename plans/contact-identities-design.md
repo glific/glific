@@ -6,18 +6,20 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 
 - **`contacts`** = the person. One row per person per org. Holds name, language, fields, status,
   and (for now) WhatsApp state. **`phone` becomes nullable.**
-- **`contact_identities`** = login credentials only: how that person is identified on a channel by an
-  identifier Glific doesn't own (an NGO-issued username today, later a WhatsApp phone after #5765 or
-  a Telegram chat id). One row per login, so a contact can have several on one channel. It never
-  holds per-channel state; that lives in `contact_channels` (§6).
+- **`contact_identities`** = login credentials only: how that person is identified on a channel. `kind`
+  says what the identifier is (`phone`, `ngo_username`, later `telegram_chat_id`), so a username that
+  happens to be a phone number never matches someone's phone login. One row per login, so a contact
+  can have several. It never holds per-channel state; that lives in `contact_channels` (§6).
 - Everything else (messages, flow contexts, flow results, tags, groups, tickets) stays keyed on
   `contact_id`. Nothing else changes.
 
 ```
 contacts                        contact_identities
-id | name | phone               contact_id | channel | identifier
-42 | Asha | 919876543210        42         | web     | asha_07       (Tap linked via phone)
-57 | Ravi | NULL                57         | web     | ravi_12       (username only)
+id | name | phone               contact_id | channel  | kind         | identifier
+42 | Asha | 919876543210        42         | whatsapp | phone        | 919876543210  (WhatsApp)
+                                42         | web      | phone        | 919876543210  (web, OTP login)
+                                42         | web      | ngo_username | asha_07       (Tap, linked via phone)
+57 | Ravi | NULL                57         | web      | ngo_username | ravi_12       (username only)
 ```
 
 ## 2. Schema
@@ -29,12 +31,13 @@ CREATE TABLE contact_identities (
   contact_id      bigint NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
   organization_id bigint NOT NULL REFERENCES organizations(id),
   channel         message_channel_enum NOT NULL,
+  kind            varchar NOT NULL,                 -- phone | ngo_username
   identifier      varchar(255) NOT NULL,
   inserted_at     timestamp NOT NULL,
   updated_at      timestamp NOT NULL
 );
-CREATE UNIQUE INDEX contact_identities_org_channel_identifier_index
-  ON contact_identities (organization_id, channel, identifier);   -- no duplicates within a channel
+CREATE UNIQUE INDEX contact_identities_org_channel_kind_identifier_index
+  ON contact_identities (organization_id, channel, kind, identifier);   -- no duplicates within a channel and kind
 CREATE INDEX contact_identities_contact_id_index ON contact_identities (contact_id);
 
 -- contacts
@@ -47,11 +50,11 @@ Not added: `contacts.channels`, per-channel username columns. No backfill. `cont
 ## 3. Rules
 
 1. **The entry point decides the lookup.** It never falls back from one to the other.
-2. **Within a channel:** never a duplicate (unique index).
+2. **Within a channel and kind:** never a duplicate (unique index).
 3. **Across channels:** duplicates are OK when nothing links them.
 4. **Linking is one insert (or one row update), never a merge.** No history is rewritten.
 5. **Never look up a contact by a nil phone.**
-6. **A token is only trusted if it's signed with a non-revoked key of the org it's used in.**
+6. **A token is only trusted if it's signed with the login secret (or previous secret) of the org it's used in.**
 
 ## 4. Flows
 
@@ -61,24 +64,24 @@ Gupshup/Maytapi webhook {phone}
 → maybe_create_contact: find/create by contacts.phone
 → contact
 ```
-No identity row is written.
+The contact's `(whatsapp, phone, <phone>)` identity is written when it's created (or on its first
+lookup, until the backfill has covered every existing contact).
 
 ### 4.2 Web, phone + OTP
 ```
 request-otp(phone) → code over WhatsApp → verify-otp(phone, code)
-→ find/create by contacts.phone   (same contact as WhatsApp; that's the web↔WhatsApp link)
+→ find/create the contact by phone   (same contact as WhatsApp; that's the web↔WhatsApp link)
+→ record identity (web, phone, <phone>) on that contact if missing
 → Glific signs its own token {sub: contact_id}
 ```
-No identity row is written: `contacts.phone` is already this path's lookup. Recording OTP phones as
-`(web, phone)` identities would share one namespace with NGO usernames, so an NGO `sub` that happens
-to be someone's phone number (many NGOs use phone or roll numbers) would log into that person's
-conversation.
+It's `kind: phone`, so an NGO username equal to this number (many NGOs use phone or roll numbers)
+is a different identity and never logs into this conversation.
 
 ### 4.3 Web, NGO token with username only
 ```
-token {kid, sub:"ravi_12", channel:"web", iat, exp}
+token {sub:"ravi_12", channel:"web", iat, exp}
 → verify token (§5)
-→ lookup contact_identities (org, web, "ravi_12")
+→ lookup contact_identities (org, web, ngo_username, "ravi_12")
    found     → that contact
    not found → transaction: insert contact (phone NULL) → insert identity → that contact
                unique conflict (two tabs) → re-read, return existing
@@ -88,12 +91,12 @@ token {kid, sub:"ravi_12", channel:"web", iat, exp}
 ```
 token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
 → verify token (§5)
-→ (org, web, "asha_07") already exists → that contact; phone/contact_id IGNORED
+→ (org, web, ngo_username, "asha_07") already exists → that contact; phone/contact_id IGNORED
 → not found:
      target = contact by phone, or contact by contact_id (must be in this org)
      target found → insert identity on target (link), even if it already has other web identities
      otherwise    → create new contact (4.3)
-     unique conflict on (org, web, "asha_07") (two tabs) → re-read, return the existing identity's contact
+     unique conflict on (org, web, ngo_username, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
 Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
 is never moved by a token · an identity always takes its `organization_id` from its contact.
@@ -119,14 +122,16 @@ again by phone.
 A reply goes out on the channel the conversation/flow came in on (already built in #5660).
 
 ## 5. Token verification (NGO-signed)
-- Header `kid`: look up `web_channel_signing_keys` (cached). Must exist, not be revoked, and belong to the
-  org resolved from the subdomain.
+- Signed with the organization's `login_secret`, or `previous_login_secret` while rotating, both kept in
+  the org's `web_channel` credential (set on the Settings page). The organization comes from the
+  subdomain; there is no `kid`.
 - Algorithm pinned to HS256. Valid signature.
 - `sub`, `channel = "web"`, `iat`, `exp` required. `exp - iat ≤ 1h`. ≤ 60s clock leeway. `sub` ≤ 255.
 - Any failure returns the same 401.
-- Glific's own post-OTP token (no `kid`) keeps working.
-- NGO contract: `sub` must be unique across **all** of the org's signing keys. Identities are unique per
-  organization, not per key, so two systems issuing the same `sub` would log in as one contact.
+- On success Glific issues its own session token, the same one `verify-otp` returns; the NGO token is
+  used once, like an OTP.
+- NGO contract: `sub` must be unique across every system the NGO signs tokens from. Identities are
+  unique per organization, so two systems issuing the same `sub` would log in as one contact.
 - Phones (in the `phone` claim and in identifiers) are digits with country code and no `+`, the format
   `Contacts.parse_phone_number/1` stores; identifiers are matched exactly.
 
@@ -164,7 +169,7 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 ## 8. Console / admin
 - **Inbox:** `contact_type in [...] OR EXISTS (identity for c.id)`
 - **Contact:** `identities` field, hidden from `:staff` like `phone`
-- **Signing keys:** list / create (secret shown once, max 5) / revoke, `:admin` only
+- **Login secret:** set and rotated on the Web Channel settings page (the `web_channel` credential); no separate key management
 - **Move identity** (optional follow-up instead of merge): re-point one identity row to another contact; history stays where it is
 
 ## 9. Not doing
@@ -180,7 +185,7 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 |---|---|
 | 1 | Nil-phone safety (§7) |
 | 2 | Migrations + schemas (§2) |
-| 3 | Signing keys, verifier, resolve/link (§4.3–4.4, §5), web send path fix |
+| 3 | Login secret, verifier, login + provisioning APIs, resolve/link (§4.2–4.4, §5), WhatsApp identities + backfill |
 | 4 | Inbox + GraphQL (§8) |
 
 ## 11. Open
