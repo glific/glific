@@ -117,8 +117,8 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec contact_without_phone_fixture(map()) :: Contact.t()
-  def contact_without_phone_fixture(attrs \\ %{}) do
+  @spec web_contact_fixture(map()) :: Contact.t()
+  def web_contact_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: Person.name(),
       status: :valid,
@@ -130,7 +130,7 @@ defmodule Glific.Fixtures do
 
     attrs
     |> Enum.into(valid_attrs)
-    |> Contacts.new_contact_changeset()
+    |> Contacts.new_contact_changeset(:web)
     |> Repo.insert!()
   end
 
@@ -141,7 +141,7 @@ defmodule Glific.Fixtures do
 
     contact_id =
       Map.get_lazy(attrs, :contact_id, fn ->
-        contact_without_phone_fixture(%{organization_id: organization_id}).id
+        web_contact_fixture(%{organization_id: organization_id}).id
       end)
 
     valid_attrs = %{
