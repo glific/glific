@@ -141,9 +141,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
          {:ok, trimmed} <- validate_body(body),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                body: trimmed
              },
              :text
@@ -169,9 +168,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
          :ok <- verify_uploaded_media(contact.organization_id, type, url, content_type),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                url: url,
                source_url: url,
                caption: caption,
@@ -200,9 +198,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
          true <- valid_coordinate?(lng, -180, 180),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                longitude: lng,
                latitude: lat,
                body: "https://www.google.com/maps?q=#{lat},#{lng}"

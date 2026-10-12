@@ -25,14 +25,18 @@ defmodule Glific.OTP do
 
   @scopes [:auth, :trial, :web_channel]
 
+  # A nil phone would mint the key "<scope>:", shared by every nil caller.
   @doc "Generates and stores an OTP for the given phone under the given scope."
   @spec generate_code(scope(), String.t()) :: String.t()
-  def generate_code(scope, phone) when scope in @scopes,
+  def generate_code(scope, phone) when scope in @scopes and is_binary(phone) and phone != "",
     do: PasswordlessAuth.generate_code(key(scope, phone))
 
   @doc "Verifies an OTP against the given scope, consuming the code once it matches."
   @spec verify_code(scope(), String.t(), String.t()) ::
           :ok | {:error, :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code}
+  def verify_code(scope, phone, _attempt_code) when scope in @scopes and phone in [nil, ""],
+    do: {:error, :does_not_exist}
+
   def verify_code(scope, phone, attempt_code) when scope in @scopes do
     key = key(scope, phone)
 
