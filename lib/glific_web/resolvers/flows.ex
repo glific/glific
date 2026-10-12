@@ -188,19 +188,28 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  @spec make_error(any) :: map()
+  @spec make_error(any) :: [map()]
   defp make_error(error) when is_list(error),
-    do: %{key: hd(error), message: hd(tl(error))}
+    do: [publish_error(hd(error), hd(tl(error)))]
 
   defp make_error(error),
-    do: %{key: "Database Error", message: Glific.SafeLog.safe_inspect(error)}
+    do: [publish_error("Database Error", Glific.SafeLog.safe_inspect(error))]
+
+  @spec publish_error(any(), String.t()) :: map()
+  defp publish_error(key, message),
+    do: %{key: key, message: message, category: "Critical", blocking: false, node_uuid: nil}
 
   @doc """
   Start a flow for a contact
   """
   @spec start_contact_flow(
           Absinthe.Resolution.t(),
-          %{flow_id: integer | String.t(), contact_id: integer},
+          %{
+            :flow_id => integer | String.t(),
+            :contact_id => integer,
+            optional(:channel) => atom() | nil,
+            optional(:default_results) => map() | nil
+          },
           %{
             context: map()
           }
@@ -212,7 +221,8 @@ defmodule GlificWeb.Resolvers.Flows do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
-         {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact, params[:default_results]) do
+         {:ok, _flow} <-
+           Flows.start_contact_flow(flow_id, contact, params[:default_results], params[:channel]) do
       {:ok, %{success: true}}
     end
   end

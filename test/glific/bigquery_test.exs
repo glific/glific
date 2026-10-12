@@ -900,6 +900,78 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "queue_table_data/3 JSON-encodes list and map profile field values", %{
+    organization_id: organization_id
+  } do
+    inserted_at = "2026-03-19T10:00:00Z"
+
+    profile =
+      profile_fixture(%{
+        "fields" => %{
+          "string_field" => %{
+            "label" => "Name",
+            "inserted_at" => inserted_at,
+            "type" => "string",
+            "value" => "John"
+          },
+          "map_field" => %{
+            "label" => "Settings",
+            "inserted_at" => inserted_at,
+            "type" => "string",
+            "value" => %{"email_notifications" => "allowed", "push_notifications" => false}
+          },
+          "list_field" => %{
+            "label" => "",
+            "inserted_at" => inserted_at,
+            "type" => "string",
+            "value" => ["a", "b", ""]
+          }
+        }
+      })
+
+    BigQuery.insert_bigquery_jobs(organization_id)
+    test_pid = self()
+
+    url =
+      "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/profiles/insertAll"
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :post, url: ^url} = env ->
+        send(test_pid, {:profiles_insert_body, Jason.decode!(env.body)})
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+    end)
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("profiles", organization_id, %{
+               action: :insert,
+               min_id: profile.id,
+               max_id: profile.id
+             })
+
+    assert_receive {:profiles_insert_body, %{"rows" => [%{"json" => row}]}}
+
+    values_by_label = Map.new(row["fields"], &{&1["label"], &1["value"]})
+
+    assert values_by_label == %{
+             "Name" => "John",
+             "Settings" => ~s({"email_notifications":"allowed","push_notifications":false}),
+             "" => ~s(["a","b",""])
+           }
+
+    assert %BigQueryJob{table_id: table_id} =
+             Repo.get_by(BigQueryJob, organization_id: organization_id, table: "profiles")
+
+    assert table_id == profile.id
+  end
+
   test "queue_table_data/3 should process and skip simulator contacts, ensuring table_id should be updated for flow_results table" do
     with_mocks([
       {

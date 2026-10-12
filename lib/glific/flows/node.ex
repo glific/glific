@@ -15,6 +15,7 @@ defmodule Glific.Flows.Node do
 
   alias Glific.Flows.{
     Action,
+    Channels,
     Exit,
     Flow,
     FlowContext,
@@ -202,9 +203,12 @@ defmodule Glific.Flows.Node do
         &Exit.validate(&1, &2, flow)
       )
 
-    if node.router,
-      do: Router.validate(node.router, errors, flow),
-      else: errors
+    errors =
+      if node.router,
+        do: Router.validate(node.router, errors, flow),
+        else: errors
+
+    Channels.validate(flow.channel, node, errors)
   end
 
   @doc """

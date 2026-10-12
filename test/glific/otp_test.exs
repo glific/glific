@@ -73,4 +73,16 @@ defmodule Glific.OTPTest do
       assert {:error, :does_not_exist} == OTP.verify_code(:web_channel, phone, code)
     end
   end
+
+  describe "a missing phone" do
+    test "generate_code/2 refuses a nil or empty phone instead of minting a shared key" do
+      assert_raise FunctionClauseError, fn -> OTP.generate_code(:web_channel, nil) end
+      assert_raise FunctionClauseError, fn -> OTP.generate_code(:web_channel, "") end
+    end
+
+    test "verify_code/3 never matches a nil or empty phone" do
+      assert {:error, :does_not_exist} == OTP.verify_code(:web_channel, nil, "123456")
+      assert {:error, :does_not_exist} == OTP.verify_code(:web_channel, "", "123456")
+    end
+  end
 end

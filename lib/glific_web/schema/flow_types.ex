@@ -28,6 +28,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :key, non_null(:string)
     field :message, non_null(:string)
     field :category, non_null(:string)
+    field :blocking, non_null(:boolean)
+    field :node_uuid, :string
   end
 
   object :export_flow do
@@ -61,6 +63,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :skip_validation, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
+    field :channel, :message_channel_enum
     field :inserted_at, :datetime
     field :updated_at, :datetime
     field :last_published_at, :datetime
@@ -81,6 +84,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
   input_object :flow_input do
     field :name, :string
+    field :channel, :message_channel_enum
     field :keywords, list_of(:string)
     field :tag_id, :id
     field :ignore_keywords, :boolean
@@ -113,6 +117,9 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Match the status of flow revision"
     field(:status, :string)
+
+    @desc "Match the channel the flow runs on"
+    field(:channel, :message_channel_enum)
 
     @desc "Match the is_active flag of flow"
     field(:is_active, :boolean)
@@ -217,6 +224,7 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:flow_id, non_null(:id))
       arg(:contact_id, non_null(:id))
       arg(:default_results, :json)
+      arg(:channel, :message_channel_enum)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_contact_flow/3)
     end
