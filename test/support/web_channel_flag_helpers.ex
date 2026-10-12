@@ -67,27 +67,18 @@ defmodule Glific.WebChannelFlagHelpers do
   end
 
   @doc """
-  Runs `fun` with the web channel and `:web_channel_login_enabled` on for `organization_id`, and
-  `secrets` (e.g. `%{"login_secret" => "..."}`) in its credential, restoring both after.
+  Runs `fun` with the web channel on for `organization_id` and `secrets`
+  (e.g. `%{"login_secret" => "..."}`) in its credential, restoring the flag after.
   """
-  @spec with_web_channel_login_enabled(non_neg_integer(), map(), (-> any())) :: any()
-  def with_web_channel_login_enabled(organization_id \\ 1, secrets, fun) do
+  @spec with_web_channel_secrets(non_neg_integer(), map(), (-> any())) :: any()
+  def with_web_channel_secrets(organization_id \\ 1, secrets, fun) do
     activate_web_channel(organization_id, %{}, secrets)
     FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: organization_id})
-
-    FunWithFlags.enable(:web_channel_login_enabled,
-      for_actor: %{organization_id: organization_id}
-    )
-
     organization_id |> Partners.organization() |> Partners.fill_cache()
 
     try do
       fun.()
     after
-      FunWithFlags.disable(:web_channel_login_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       reset_web_channel_flag(organization_id)
     end
   end

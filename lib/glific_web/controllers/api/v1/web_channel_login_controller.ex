@@ -21,6 +21,9 @@ defmodule GlificWeb.API.V1.WebChannelLoginController do
   """
   @spec login(Conn.t(), map()) :: Conn.t()
   def login(conn, %{"token" => token}) when is_binary(token) and token != "" do
+    IO.inspect(token)
+    IO.inspect(conn)
+
     with_valid_token(conn, token, fn contact ->
       json(conn, %{
         data: %{

@@ -25,8 +25,8 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     :ok
   end
 
-  defp with_login_enabled(fun),
-    do: WebChannelFlagHelpers.with_web_channel_login_enabled(1, %{"login_secret" => @secret}, fun)
+  defp with_login_secret(fun),
+    do: WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_secret" => @secret}, fun)
 
   defp token(overrides \\ %{}),
     do: overrides |> WebChannelLoginHelpers.claims() |> WebChannelLoginHelpers.sign(@secret)
@@ -46,7 +46,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
 
   describe "login" do
     test "creates the contact on a first login and returns the verify-otp shape", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         assert %{"data" => data} = conn |> login(token(%{"name" => "Ravi"})) |> json_response(200)
 
         assert %{"token" => session_token, "contact_id" => contact_id, "name" => "Ravi"} = data
@@ -59,7 +59,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "a second login is the same contact", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         first = conn |> login(token()) |> json_response(200)
         second = conn |> login(token()) |> json_response(200)
 
@@ -68,7 +68,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "links to the WhatsApp contact named by the phone claim", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         contact = Fixtures.contact_fixture(%{phone: "919876500123"})
 
         assert %{"data" => %{"contact_id" => contact_id, "phone" => "919876500123"}} =
@@ -81,7 +81,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "a username equal to a phone number does not sign in that phone's contact", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         contact = Fixtures.contact_fixture(%{phone: "919876500124"})
         Identities.ensure_web_phone_identity(contact)
 
@@ -94,7 +94,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "a blocked contact can still log in", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         contact = Fixtures.contact_fixture(%{status: :blocked})
 
         assert %{"data" => %{"contact_id" => contact_id}} =
@@ -105,7 +105,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "an invalid token is one generic 401, whatever is wrong with it", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         bad_tokens = [
           "garbage",
           WebChannelLoginHelpers.sign(
@@ -129,22 +129,22 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "creates nothing for an invalid token", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         before = web_contacts_count()
         conn |> login("garbage") |> json_response(401)
         assert before == web_contacts_count()
       end)
     end
 
-    test "is refused with the login flag off, even with a valid token", %{conn: conn} do
+    test "rejects every token while the organization has no login secret", %{conn: conn} do
       WebChannelFlagHelpers.with_web_channel_enabled(1, fn ->
-        assert %{"error" => %{"status" => 404}} = conn |> login(token()) |> json_response(404)
+        assert %{"error" => %{"status" => 401}} = conn |> login(token()) |> json_response(401)
         assert 0 == identity_count("ravi_12")
       end)
     end
 
-    test "is refused with the web channel off, even with the login flag on", %{conn: conn} do
-      with_login_enabled(fn ->
+    test "is refused with the web channel off, even with a login secret", %{conn: conn} do
+      with_login_secret(fn ->
         FunWithFlags.disable(:web_channel_enabled, for_actor: %{organization_id: 1})
         1 |> Glific.Partners.organization() |> Glific.Partners.fill_cache()
 
@@ -156,7 +156,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
 
   describe "provision_contact" do
     test "creates the contact and returns only its id, with no session", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         assert %{"data" => data} = conn |> provision(token()) |> json_response(200)
 
         assert %{"contact_id" => contact_id} = data
@@ -167,7 +167,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "is idempotent", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         first = conn |> provision(token()) |> json_response(200)
         second = conn |> provision(token()) |> json_response(200)
 
@@ -177,7 +177,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "login afterwards signs in the provisioned contact", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         provisioned = conn |> provision(token()) |> json_response(200)
         logged_in = conn |> login(token()) |> json_response(200)
 
@@ -186,16 +186,14 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
     end
 
     test "rejects an invalid token", %{conn: conn} do
-      with_login_enabled(fn ->
+      with_login_secret(fn ->
         assert %{"error" => %{"status" => 401}} =
                  conn |> provision("garbage") |> json_response(401)
       end)
     end
 
-    test "is refused with the login flag off", %{conn: conn} do
-      WebChannelFlagHelpers.with_web_channel_enabled(1, fn ->
-        assert %{"error" => %{"status" => 404}} = conn |> provision(token()) |> json_response(404)
-      end)
+    test "is refused with the web channel off", %{conn: conn} do
+      assert %{"error" => %{"status" => 404}} = conn |> provision(token()) |> json_response(404)
     end
   end
 

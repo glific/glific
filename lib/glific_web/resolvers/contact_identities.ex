@@ -24,13 +24,13 @@ defmodule GlificWeb.Resolvers.ContactIdentities do
 
   @spec check_enabled(non_neg_integer()) :: :ok | {:error, any()}
   defp check_enabled(organization_id) do
-    if Flag.web_channel_login_enabled?(organization_id),
+    if Flag.web_channel_enabled?(organization_id),
       do: :ok,
       else:
         {:error,
          [
            "Contact",
-           dgettext("errors", "Web channel login is not enabled for this organization.")
+           dgettext("errors", "Web channel is not enabled for this organization.")
          ]}
   end
 

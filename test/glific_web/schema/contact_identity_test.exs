@@ -19,13 +19,13 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
     :ok
   end
 
-  defp with_login_enabled(fun),
-    do: WebChannelFlagHelpers.with_web_channel_login_enabled(1, %{}, fun)
+  defp with_web_channel(fun),
+    do: WebChannelFlagHelpers.with_web_channel_enabled(1, fun)
 
   defp input(attrs), do: %{"input" => Map.merge(%{"identifier" => "ravi_12"}, attrs)}
 
   test "a manager creates a contact for a web identifier", %{manager: user} do
-    with_login_enabled(fn ->
+    with_web_channel(fn ->
       assert {:ok, query_data} =
                auth_query_gql_by(:create, user, variables: input(%{"name" => "Ravi"}))
 
@@ -40,7 +40,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
   end
 
   test "repeating the call returns the same contact", %{manager: user} do
-    with_login_enabled(fn ->
+    with_web_channel(fn ->
       {:ok, first} = auth_query_gql_by(:create, user, variables: input(%{}))
       {:ok, second} = auth_query_gql_by(:create, user, variables: input(%{}))
 
@@ -53,7 +53,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
   end
 
   test "a phone of an existing contact links to it", %{manager: user} do
-    with_login_enabled(fn ->
+    with_web_channel(fn ->
       contact = Fixtures.contact_fixture(%{phone: "919876500456"})
 
       {:ok, query_data} =
@@ -65,7 +65,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
   end
 
   test "an identifier longer than 255 characters is refused", %{manager: user} do
-    with_login_enabled(fn ->
+    with_web_channel(fn ->
       {:ok, query_data} =
         auth_query_gql_by(:create, user,
           variables: input(%{"identifier" => String.duplicate("a", 256)})
@@ -78,7 +78,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
     end)
   end
 
-  test "is refused while the login flag is off", %{manager: user} do
+  test "is refused while the web channel is off", %{manager: user} do
     assert {:ok, query_data} = auth_query_gql_by(:create, user, variables: input(%{}))
 
     assert [%{"message" => message}] =
@@ -89,7 +89,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
   end
 
   test "a staff user is refused", %{staff: user} do
-    with_login_enabled(fn ->
+    with_web_channel(fn ->
       assert {:ok, query_data} = auth_query_gql_by(:create, user, variables: input(%{}))
 
       assert [%{message: "Unauthorized"}] = query_data.errors

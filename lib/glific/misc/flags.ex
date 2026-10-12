@@ -513,7 +513,6 @@ defmodule Glific.Flags do
       :is_template_library_enabled,
       :glific_ai_enabled,
       :web_channel_enabled,
-      :web_channel_login_enabled,
       :bulk_contact_update_enabled,
       :bulk_flow_results_enabled,
       :is_ai_guardrail_enabled

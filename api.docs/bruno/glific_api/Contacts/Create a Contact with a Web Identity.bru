@@ -45,8 +45,8 @@ docs {
 
   ## Description
   Creates the contact for a web channel username before its first login. Repeating the call for the same
-  `identifier` returns the same contact. Requires the manager role, and the organization's web channel
-  login feature to be enabled.
+  `identifier` returns the same contact. Requires the manager role, and the web channel to be enabled for
+  the organization.
 
   ## Input Fields
 
@@ -69,6 +69,6 @@ docs {
   ```
 
   ## Errors
-  Check the `errors` field: the identifier is too long, or web channel login is not enabled for the organization.
+  Check the `errors` field: the identifier is too long, or the web channel is not enabled for the organization.
   A staff user receives `Unauthorized`.
 }
