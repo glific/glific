@@ -198,6 +198,72 @@ defmodule Glific.AI.LangfuseTest do
     end
   end
 
+  describe "a turn that called tools in parallel" do
+    setup %{message: message, conversation: conversation} do
+      base = DateTime.utc_now()
+
+      insert = fn step, type, data, tool_call_id, content, at ->
+        Repo.insert!(%Event{
+          message_id: message.id,
+          conversation_id: conversation.id,
+          organization_id: 1,
+          step: step,
+          type: type,
+          content: content,
+          data: data,
+          tool_call_id: tool_call_id,
+          inserted_at: at,
+          updated_at: at
+        })
+      end
+
+      insert.(6, :tool_call, %{"arguments" => %{}}, "toolu_fast", "list_flows", base)
+      insert.(7, :tool_call, %{"arguments" => %{}}, "toolu_slow", "list_messages", base)
+
+      # Both rows carry the same `inserted_at`: `Enum.zip/2` in run_tools/5 is
+      # eager, so nothing is written until the slow tool returns. Only
+      # `finished_at` distinguishes them, and it disagrees with the row time.
+      written = DateTime.add(base, 4, :second)
+
+      insert.(
+        8,
+        :tool_result,
+        %{"output" => "[]", "finished_at" => DateTime.to_iso8601(DateTime.add(base, 1, :second))},
+        "toolu_fast",
+        nil,
+        written
+      )
+
+      insert.(
+        9,
+        :tool_result,
+        %{"output" => "[]", "finished_at" => DateTime.to_iso8601(written)},
+        "toolu_slow",
+        nil,
+        written
+      )
+
+      :ok
+    end
+
+    test "each span ends when its own tool finished", %{message: message} do
+      spans = spans(message.id)
+
+      duration = fn name ->
+        span = named(spans, name)
+        String.to_integer(span.endTimeUnixNano) - String.to_integer(span.startTimeUnixNano)
+      end
+
+      assert duration.("list_flows") < duration.("list_messages"),
+             "the quick tool was given the slow tool's duration"
+    end
+
+    test "a result with no recorded finish still gets an end", %{message: message} do
+      # Anything written before this field existed, and the timeout path.
+      assert spans(message.id) |> named("get_contact") |> Map.fetch!(:endTimeUnixNano) != nil
+    end
+  end
+
   describe "masking" do
     test "redacts phone numbers and emails" do
       assert Langfuse.mask("call 919000000001 or asha@example.org") ==
@@ -270,6 +336,121 @@ defmodule Glific.AI.LangfuseTest do
         |> Repo.update()
 
       assert Langfuse.score(commented) == :ok
+    end
+  end
+
+  describe "what goes over the wire" do
+    setup %{message: message} do
+      test_pid = self()
+
+      Application.put_env(:glific, Langfuse,
+        host: "https://langfuse.test",
+        public_key: "pk-lf-test",
+        secret_key: "sk-lf-test",
+        plug: {Req.Test, Langfuse}
+      )
+
+      on_exit(fn -> Application.delete_env(:glific, Langfuse) end)
+
+      %{message: message, test_pid: test_pid}
+    end
+
+    defp stub_langfuse(test_pid, status \\ 200) do
+      Req.Test.stub(Langfuse, fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        send(
+          test_pid,
+          {:posted, conn.request_path, Jason.decode!(body),
+           Plug.Conn.get_req_header(conn, "authorization"),
+           Plug.Conn.get_req_header(conn, "x-langfuse-ingestion-version")}
+        )
+
+        conn |> Plug.Conn.put_status(status) |> Req.Test.json(%{})
+      end)
+    end
+
+    test "a trace posts OTLP spans with basic auth and the version header", %{
+      message: message,
+      test_pid: test_pid
+    } do
+      stub_langfuse(test_pid)
+
+      assert :ok = Langfuse.trace(message.id)
+
+      assert_receive {:posted, "/api/public/otel/v1/traces", body, [auth], [version]}
+      assert version == "4"
+      assert auth == "Basic " <> Base.encode64("pk-lf-test:sk-lf-test")
+      assert [%{"scopeSpans" => [%{"spans" => spans}]}] = body["resourceSpans"]
+      assert length(spans) > 1
+    end
+
+    test "a rated event posts the score Langfuse expects", %{
+      message: message,
+      test_pid: test_pid
+    } do
+      stub_langfuse(test_pid)
+
+      event = Repo.get_by!(Event, message_id: message.id, type: :assistant)
+
+      {:ok, rated} =
+        event
+        |> Event.changeset(%{
+          data:
+            Map.put(event.data, "feedback", %{
+              "rating" => "like",
+              "content" => "ring me on 90000 00001"
+            })
+        })
+        |> Repo.update()
+
+      assert :ok = Langfuse.score(rated)
+
+      assert_receive {:posted, "/api/public/scores", body, _auth, _version}
+      assert body["dataType"] == "CATEGORICAL"
+      assert body["value"] == "like"
+      assert body["comment"] == "ring me on [phone]"
+      assert is_binary(body["traceId"])
+      assert is_binary(body["id"])
+    end
+
+    test "the score id is derived, so a changed rating updates in place", %{
+      message: message,
+      test_pid: test_pid
+    } do
+      stub_langfuse(test_pid)
+      event = Repo.get_by!(Event, message_id: message.id, type: :assistant)
+
+      for rating <- ["like", "dislike"] do
+        {:ok, rated} =
+          event
+          |> Event.changeset(%{data: Map.put(event.data, "feedback", %{"rating" => rating})})
+          |> Repo.update()
+
+        assert :ok = Langfuse.score(rated)
+      end
+
+      assert_receive {:posted, _path, first, _a, _v}
+      assert_receive {:posted, _path, second, _a2, _v2}
+      assert first["id"] == second["id"]
+    end
+
+    test "a refusal is reported, not raised", %{message: message, test_pid: test_pid} do
+      stub_langfuse(test_pid, 401)
+
+      assert {:error, reason} = Langfuse.trace(message.id)
+      assert reason =~ "401"
+    end
+
+    test "an unreachable Langfuse is reported, not raised", %{message: message} do
+      Req.Test.stub(Langfuse, fn conn -> Req.Test.transport_error(conn, :econnrefused) end)
+
+      assert {:error, reason} = Langfuse.trace(message.id)
+      assert reason =~ "could not be reached"
+    end
+
+    test "a message that does not exist is an error, not a crash" do
+      assert {:error, _reason} = Langfuse.trace(0)
     end
   end
 

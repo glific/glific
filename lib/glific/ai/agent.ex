@@ -280,16 +280,24 @@ defmodule Glific.AI.Agent do
   # the process carries that away with it when it finishes.
   @spec run_tool(User.t(), ChatMessage.tool_call(), [module()]) :: String.t()
   defp run_tool(user, %{name: name, args: args}, modules) do
-    case Tools.run(name, args, user, modules) do
-      {:ok, result} -> encode(result)
-      {:error, reason} -> Jason.encode!(%{error: reason})
-    end
+    body =
+      case Tools.run(name, args, user, modules) do
+        {:ok, result} -> encode(result)
+        {:error, reason} -> Jason.encode!(%{error: reason})
+      end
+
+    # Taken here rather than from the event row: `Enum.zip/2` below is eager, so
+    # no result is written until the slowest tool in the turn has finished, and
+    # a trace built from the row would give every tool that one duration.
+    {body, DateTime.utc_now()}
   end
 
-  @spec recorded(Message.t(), ChatMessage.tool_call(), pos_integer(), String.t()) ::
+  @spec recorded(Message.t(), ChatMessage.tool_call(), pos_integer(), {String.t(), DateTime.t()}) ::
           ChatMessage.t()
-  defp recorded(message, %{id: id, name: name}, step, body) do
-    append(message, :tool_result, nil, %{"output" => body}, id, step)
+  defp recorded(message, %{id: id, name: name}, step, {body, finished_at}) do
+    data = %{"output" => body, "finished_at" => DateTime.to_iso8601(finished_at)}
+
+    append(message, :tool_result, nil, data, id, step)
     ChatMessage.tool_result(id, name, body)
   end
 

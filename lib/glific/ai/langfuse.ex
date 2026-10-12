@@ -265,7 +265,7 @@ defmodule Glific.AI.Langfuse do
       name: event.content || "call-tool",
       kind: 1,
       startTimeUnixNano: nano(event.inserted_at),
-      endTimeUnixNano: nano((result && result.inserted_at) || event.inserted_at),
+      endTimeUnixNano: nano(finished(result) || event.inserted_at),
       attributes:
         attributes([
           {"langfuse.observation.type", "tool"},
@@ -276,6 +276,21 @@ defmodule Glific.AI.Langfuse do
         ])
     }
   end
+
+  # When the tool recorded the moment it finished, that is the end of its span.
+  # The row's own `inserted_at` is when the turn's slowest tool finished, which
+  # would give every tool in a parallel turn the same duration.
+  @spec finished(Event.t() | nil) :: DateTime.t() | nil
+  defp finished(nil), do: nil
+
+  defp finished(%Event{data: %{"finished_at" => at}, inserted_at: inserted_at}) do
+    case DateTime.from_iso8601(to_string(at)) do
+      {:ok, finished_at, _offset} -> finished_at
+      {:error, _reason} -> inserted_at
+    end
+  end
+
+  defp finished(%Event{inserted_at: inserted_at}), do: inserted_at
 
   @spec generation(Event.t(), String.t(), String.t(), [Event.t()], Message.t(), String.t(), map()) ::
           map()
@@ -363,11 +378,13 @@ defmodule Glific.AI.Langfuse do
     [config[:host], path]
     |> Enum.join()
     |> Req.post(
-      json: payload,
-      headers: [@ingestion_version],
-      auth: {:basic, "#{config[:public_key]}:#{config[:secret_key]}"},
-      receive_timeout: config[:receive_timeout] || 10_000,
-      retry: :transient
+      [
+        json: payload,
+        headers: [@ingestion_version],
+        auth: {:basic, "#{config[:public_key]}:#{config[:secret_key]}"},
+        receive_timeout: config[:receive_timeout] || 10_000,
+        retry: :transient
+      ] ++ adapter(config)
     )
     |> case do
       {:ok, %{status: status}} when status in 200..299 ->
@@ -378,6 +395,17 @@ defmodule Glific.AI.Langfuse do
 
       {:error, reason} ->
         failed("Langfuse could not be reached: #{SafeLog.safe_inspect(reason)}")
+    end
+  end
+
+  # Only ever set in tests, where `Req.Test` stands in for Langfuse. Without a
+  # seam here the wire format — the paths, the auth header, what a non-2xx does
+  # — is the one part of this module nothing can assert.
+  @spec adapter(keyword()) :: keyword()
+  defp adapter(config) do
+    case config[:plug] do
+      nil -> []
+      plug -> [plug: plug, retry: false]
     end
   end
 
@@ -456,10 +484,14 @@ defmodule Glific.AI.Langfuse do
     :ok
   end
 
-  @doc false
-  # All three or none. A missing secret key would post with an empty Basic Auth
-  # password, and an empty host would build a path with no host to send it to,
-  # both of which fail in the background where nobody is watching.
+  @doc """
+  Whether a host and both keys are set, so there is somewhere to send a trace.
+
+  All three or none. A missing secret key would post with an empty Basic Auth
+  password and an empty host would build a path with no host to send it to,
+  both of which fail in a background task where nobody is watching. The two
+  `*_async` entry points check this before starting any work.
+  """
   @spec configured?() :: boolean()
   def configured? do
     settings = config()
