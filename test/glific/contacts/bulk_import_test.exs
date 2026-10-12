@@ -13,6 +13,7 @@ defmodule Glific.Contacts.BulkImportTest do
     Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.ContactIdentity,
     Contacts.ContactsField,
     Contacts.Import,
     Flows.ContactField,
@@ -80,6 +81,44 @@ defmodule Glific.Contacts.BulkImportTest do
     |> join(:inner, [cg], g in Group, on: g.id == cg.group_id)
     |> where([cg, g], cg.contact_id == ^contact.id and g.label == ^label)
     |> Repo.aggregate(:count, :id) > 0
+  end
+
+  describe "WhatsApp identities" do
+    test "imported contacts get a (whatsapp, phone) identity, new and existing alike" do
+      assert %{success: 1} = run("name,phone,language\nFirst,+919876500301,english\n")
+      first = fetch("919876500301")
+
+      assert %{success: 1} =
+               run(
+                 "name,phone,language\nFirst again,+919876500301,english\nSecond,+919876500302,english\n"
+               )
+
+      second = fetch("919876500302")
+
+      assert %{contact_id: contact_id} =
+               Repo.get_by!(ContactIdentity, %{
+                 channel: :whatsapp,
+                 kind: "phone",
+                 identifier: "919876500301"
+               })
+
+      assert contact_id == first.id
+
+      assert %{contact_id: second_id, organization_id: organization_id} =
+               Repo.get_by!(ContactIdentity, %{
+                 channel: :whatsapp,
+                 kind: "phone",
+                 identifier: "919876500302"
+               })
+
+      assert second_id == second.id
+      assert organization_id == second.organization_id
+
+      assert 1 ==
+               ContactIdentity
+               |> where([i], i.identifier == "919876500301")
+               |> Repo.aggregate(:count)
+    end
   end
 
   describe "import_contact" do

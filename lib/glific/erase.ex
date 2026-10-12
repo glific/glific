@@ -342,15 +342,22 @@ defmodule Glific.Erase do
   end
 
   @doc """
-  Deletes all the data related to a contact
+  Deletes all the data related to the contact with a WhatsApp phone
   """
-  @spec delete_benefeciary_data(non_neg_integer(), String.t()) :: any()
-  def delete_benefeciary_data(org_id, phone) do
+  @spec delete_benefeciary_data(non_neg_integer(), String.t() | nil) :: any()
+  def delete_benefeciary_data(org_id, phone),
+    do: delete_benefeciary_data(org_id, :whatsapp, phone)
+
+  @doc """
+  Deletes all the data related to the contact with an identity on a channel, such as a web username
+  """
+  @spec delete_benefeciary_data(non_neg_integer(), :whatsapp | :web, String.t() | nil) :: any()
+  def delete_benefeciary_data(org_id, channel, identifier) do
     get_value =
       if Application.get_env(:glific, :environment) in [:prod, :dev] do
         Task.async(fn ->
           IO.gets(
-            "Are you sure want to delete data for #{phone} of org_id #{org_id}\nPress Y or y to continue, auto aborts if idle for 10s\n"
+            "Are you sure want to delete data for #{identifier} of org_id #{org_id}\nPress Y or y to continue, auto aborts if idle for 10s\n"
           )
         end)
         |> Task.await(10_000)
@@ -361,9 +368,9 @@ defmodule Glific.Erase do
     Repo.put_process_state(org_id)
 
     with "y" <- String.trim_trailing(get_value, "\n") |> String.downcase(),
-         {:ok, contact} <- Contacts.fetch_by_identity(:whatsapp, phone) do
+         {:ok, contact} <- Contacts.fetch_by_identity(channel, identifier) do
       Logger.warning(
-        "Deleting beneficiary data for contact #{phone} and organization_id #{org_id}"
+        "Deleting beneficiary data for contact #{identifier} and organization_id #{org_id}"
       )
 
       delete_messages_query = """
@@ -380,7 +387,9 @@ defmodule Glific.Erase do
         Repo.query!(query, [], timeout: 400_000, skip_organization_id: true)
       end)
 
-      Logger.info("Deleted beneficiary data for contact #{phone} and organization_id #{org_id}")
+      Logger.info(
+        "Deleted beneficiary data for contact #{identifier} and organization_id #{org_id}"
+      )
 
       :ok
     end

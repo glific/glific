@@ -13,6 +13,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   alias Glific.{
     Communications.WebMessage,
+    Contacts,
+    Contacts.Contact,
     GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
@@ -133,11 +135,10 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     do: {:reply, {:error, %{reason: "invalid_offset"}}, socket}
 
   def handle_in("new_message", %{"body" => body}, socket) do
-    contact = socket.assigns.current_contact
-
     # No bsp_message_id: a client-supplied one could collide with a real BSP id under the
     # unique index and suppress another contact's message.
-    with :ok <- check_message_rate_limit(contact.id),
+    with :ok <- check_message_rate_limit(socket.assigns.current_contact.id),
+         {:ok, contact} <- fetch_unblocked_contact(socket),
          {:ok, trimmed} <- validate_body(body),
          {:ok, _message} <-
            WebMessage.receive_message(
@@ -159,11 +160,11 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   # The file went straight to GCS via a pre-signed URL; no bytes travel over the socket.
   def handle_in("new_media_message", %{"type" => type, "url" => url} = params, socket)
       when type in ~w(image audio video document) do
-    contact = socket.assigns.current_contact
     caption = params["caption"]
     content_type = params["content_type"]
 
-    with :ok <- check_message_rate_limit(contact.id),
+    with :ok <- check_message_rate_limit(socket.assigns.current_contact.id),
+         {:ok, contact} <- fetch_unblocked_contact(socket),
          true <- Upload.issued_url?(contact.organization_id, url),
          :ok <- verify_uploaded_media(contact.organization_id, type, url, content_type),
          {:ok, _message} <-
@@ -191,9 +192,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     do: {:reply, {:error, %{reason: "unsupported media type"}}, socket}
 
   def handle_in("new_location_message", %{"latitude" => lat, "longitude" => lng}, socket) do
-    contact = socket.assigns.current_contact
-
-    with :ok <- check_message_rate_limit(contact.id),
+    with :ok <- check_message_rate_limit(socket.assigns.current_contact.id),
+         {:ok, contact} <- fetch_unblocked_contact(socket),
          true <- valid_coordinate?(lat, -90, 90),
          true <- valid_coordinate?(lng, -180, 180),
          {:ok, _message} <-
@@ -275,6 +275,21 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       is_nil(limit_kb) -> {:error, :invalid_media_url}
       size_bytes / 1024 > limit_kb -> {:error, :media_too_large}
       true -> :ok
+    end
+  end
+
+  # Reloaded, not the struct `connect/3` assigned: a contact blocked since the socket opened must
+  # stop at once, not when its token expires.
+  @spec fetch_unblocked_contact(Phoenix.Socket.t()) :: {:ok, Contact.t()} | {:error, String.t()}
+  defp fetch_unblocked_contact(socket) do
+    current = socket.assigns.current_contact
+
+    with %Contact{} = contact <-
+           Repo.get_by(Contact, %{id: current.id, organization_id: current.organization_id}),
+         false <- Contacts.contact_blocked?(contact) do
+      {:ok, contact}
+    else
+      _blocked_or_gone -> {:error, "contact_blocked"}
     end
   end
 

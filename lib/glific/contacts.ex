@@ -16,6 +16,7 @@ defmodule Glific.Contacts do
     Clients,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.Identities,
     Contacts.Location,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
@@ -280,9 +281,10 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs) do
-    attrs
-    |> new_contact_changeset(:whatsapp)
-    |> Repo.insert()
+    with {:ok, contact} <- attrs |> new_contact_changeset(:whatsapp) |> Repo.insert() do
+      Identities.ensure_whatsapp_identity(contact)
+      {:ok, contact}
+    end
   end
 
   @doc """
@@ -325,12 +327,40 @@ defmodule Glific.Contacts do
       else
         contact
         |> Contact.changeset(attrs)
-        |> Repo.update()
+        |> persist_update()
       end
     else
       raise "Permission denied"
     end
   end
+
+  @doc """
+  Sets a contact's phone and moves its WhatsApp identity with it, without the permission check
+  `update_contact/2` makes, for system callers that have no current user.
+  """
+  @spec update_phone(Contact.t(), String.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def update_phone(%Contact{} = contact, phone) do
+    contact
+    |> Contact.changeset(%{phone: phone})
+    |> persist_update()
+  end
+
+  @spec persist_update(Ecto.Changeset.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp persist_update(%{changes: %{phone: _phone}} = changeset) do
+    Repo.transaction(fn ->
+      case Repo.update(changeset) do
+        {:ok, contact} ->
+          Identities.sync_whatsapp_identity(contact)
+          contact
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  defp persist_update(changeset), do: Repo.update(changeset)
 
   # We do not want to block the simulator
   @spec simulator_block?(Contact.t(), map()) :: boolean
@@ -434,6 +464,7 @@ defmodule Glific.Contacts do
         conflict_target: [:phone, :organization_id]
       )
 
+    Identities.ensure_whatsapp_identity(contact)
     {:ok, contact}
   end
 
@@ -1059,15 +1090,29 @@ defmodule Glific.Contacts do
   @doc """
   Looks a contact up by its login on a channel; a nil or empty identifier is refused without querying.
   """
-  @spec fetch_by_identity(:whatsapp, String.t() | nil) ::
+  @spec fetch_by_identity(:whatsapp | :web, String.t() | nil) ::
           {:ok, Contact.t()} | {:error, :no_identifier | :not_found}
   def fetch_by_identity(_channel, identifier) when identifier in [nil, ""],
     do: {:error, :no_identifier}
 
+  def fetch_by_identity(:web, identifier) when is_binary(identifier),
+    do: Identities.fetch_contact(:web, "ngo_username", identifier)
+
   def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
+    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, "phone", phone) do
+      backfill_whatsapp_identity(phone)
+    end
+  end
+
+  @spec backfill_whatsapp_identity(String.t()) :: {:ok, Contact.t()} | {:error, :not_found}
+  defp backfill_whatsapp_identity(phone) do
     case Repo.get_by(Contact, %{phone: phone}) do
-      nil -> {:error, :not_found}
-      contact -> {:ok, contact}
+      nil ->
+        {:error, :not_found}
+
+      contact ->
+        Identities.ensure_whatsapp_identity(contact)
+        {:ok, contact}
     end
   end
 

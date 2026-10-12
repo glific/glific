@@ -18,6 +18,7 @@ defmodule Glific.Contacts.BulkImport do
     Contacts.Contact,
     Contacts.ContactHistory,
     Contacts.ContactsField,
+    Contacts.Identities,
     Contacts.Import,
     Groups,
     Groups.ContactGroup,
@@ -283,6 +284,8 @@ defmodule Glific.Contacts.BulkImport do
         conflict_target: [:phone, :organization_id],
         returning: [:id, :phone, :fields]
       )
+
+    Identities.insert_whatsapp_identities(saved, params.organization_id)
 
     Map.new(saved, &{&1.phone, %{id: &1.id, fields: &1.fields}})
   end

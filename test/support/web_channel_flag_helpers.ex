@@ -28,18 +28,18 @@ defmodule Glific.WebChannelFlagHelpers do
   switch — without it the channel is off however the flag is set. Upserts, so a test may call it
   again to set the branding keys.
   """
-  @spec activate_web_channel(non_neg_integer(), map()) :: :ok
-  def activate_web_channel(organization_id \\ 1, keys \\ %{}) do
+  @spec activate_web_channel(non_neg_integer(), map(), map()) :: :ok
+  def activate_web_channel(organization_id \\ 1, keys \\ %{}, secrets \\ %{}) do
     case Partners.get_credential(%{organization_id: organization_id, shortcode: @shortcode}) do
       {:ok, credential} ->
-        Partners.update_credential(credential, %{keys: keys, is_active: true})
+        Partners.update_credential(credential, %{keys: keys, secrets: secrets, is_active: true})
 
       _not_yet ->
         Partners.create_credential(%{
           organization_id: organization_id,
           shortcode: @shortcode,
           keys: keys,
-          secrets: %{},
+          secrets: secrets,
           is_active: true
         })
     end
@@ -62,6 +62,32 @@ defmodule Glific.WebChannelFlagHelpers do
     try do
       fun.()
     after
+      reset_web_channel_flag(organization_id)
+    end
+  end
+
+  @doc """
+  Runs `fun` with the web channel and `:web_channel_login_enabled` on for `organization_id`, and
+  `secrets` (e.g. `%{"login_secret" => "..."}`) in its credential, restoring both after.
+  """
+  @spec with_web_channel_login_enabled(non_neg_integer(), map(), (-> any())) :: any()
+  def with_web_channel_login_enabled(organization_id \\ 1, secrets, fun) do
+    activate_web_channel(organization_id, %{}, secrets)
+    FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: organization_id})
+
+    FunWithFlags.enable(:web_channel_login_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+
+    organization_id |> Partners.organization() |> Partners.fill_cache()
+
+    try do
+      fun.()
+    after
+      FunWithFlags.disable(:web_channel_login_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
       reset_web_channel_flag(organization_id)
     end
   end

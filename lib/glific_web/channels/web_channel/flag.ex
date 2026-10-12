@@ -48,6 +48,23 @@ defmodule GlificWeb.WebChannel.Flag do
     end
   end
 
+  @doc """
+  Whether NGO-signed logins and provisioning are on: the web channel itself, and the per-organization
+  `:web_channel_login_enabled` flag Glific ops turns on once the organization's BigQuery schema sync
+  has succeeded for its new contacts.
+  """
+  @spec web_channel_login_enabled?(non_neg_integer()) :: boolean()
+  def web_channel_login_enabled?(organization_id) do
+    case Partners.organization(organization_id) do
+      {:error, _reason} ->
+        false
+
+      organization ->
+        web_channel_enabled?(organization) and
+          Flags.get_flag_enabled(:web_channel_login_enabled, organization)
+    end
+  end
+
   # `services` holds only ACTIVE credentials — `Partners.set_credentials/1` filters on
   # `is_active` — so the key being present is the organization's own switch being on.
   @spec configured?(Organization.t()) :: boolean()

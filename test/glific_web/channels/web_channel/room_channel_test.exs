@@ -3,6 +3,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   use GlificWeb.ChannelCase
 
   alias Glific.{
+    Contacts,
     Contacts.Location,
     Fixtures,
     GcsFixtures,
@@ -221,6 +222,22 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         too_long = String.duplicate("a", 4_097)
         ref = push(socket, "new_message", %{"body" => too_long})
         assert_reply ref, :error, %{reason: "body_too_long"}
+      end)
+    end
+
+    test "refuses a contact blocked after the socket opened", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+
+        {:ok, _blocked} = Contacts.update_contact(contact, %{status: :blocked})
+
+        ref = push(socket, "new_message", %{"body" => "let me in"})
+        assert_reply ref, :error, %{reason: "contact_blocked"}
+        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
+
+        ref = push(socket, "new_location_message", %{"latitude" => 1.0, "longitude" => 2.0})
+        assert_reply ref, :error, %{reason: "contact_blocked"}
       end)
     end
 

@@ -1,0 +1,74 @@
+meta {
+  name: Create a Contact with a Web Identity
+  type: graphql
+  seq: 18
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createContactWithIdentity($input: ContactIdentityInput!) {
+    createContactWithIdentity(input: $input) {
+      contact {
+        id
+        name
+        phone
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "identifier": "ravi_12",
+      "name": "Ravi"
+    }
+  }
+}
+
+docs {
+  # Create a Contact with a Web Identity
+
+  ## Description
+  Creates the contact for a web channel username before its first login. Repeating the call for the same
+  `identifier` returns the same contact. Requires the manager role, and the organization's web channel
+  login feature to be enabled.
+
+  ## Input Fields
+
+  | Field        | Type   | Description                                                                         |
+  | ------------ | ------ | ----------------------------------------------------------------------------------- |
+  | `identifier` | String | The username the contact logs in with, 1 to 255 characters, matched exactly.         |
+  | `name`       | String | The contact's name. Defaults to the identifier.                                      |
+  | `phone`      | String | A WhatsApp number. If it belongs to an existing contact, the identifier is linked to it. |
+
+  ## Response
+  ```json
+  {
+    "data": {
+      "createContactWithIdentity": {
+        "contact": { "id": "15", "name": "Ravi", "phone": null },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+  Check the `errors` field: the identifier is too long, or web channel login is not enabled for the organization.
+  A staff user receives `Unauthorized`.
+}
