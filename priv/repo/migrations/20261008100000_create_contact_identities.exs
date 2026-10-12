@@ -24,7 +24,7 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
 
       add :kind, :string,
         null: false,
-        comment: "What the identifier is: phone or ngo_username"
+        comment: "What the identifier is: phone or username"
 
       add :identifier, :string,
         size: 255,
