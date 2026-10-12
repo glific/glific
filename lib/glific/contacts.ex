@@ -1096,10 +1096,10 @@ defmodule Glific.Contacts do
     do: {:error, :no_identifier}
 
   def fetch_by_identity(:web, identifier) when is_binary(identifier),
-    do: Identities.fetch_contact(:web, "username", identifier)
+    do: Identities.fetch_contact(:web, identifier)
 
   def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
-    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, "phone", phone) do
+    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone) do
       backfill_whatsapp_identity(phone)
     end
   end

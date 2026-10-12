@@ -98,7 +98,6 @@ defmodule Glific.Contacts.BulkImportTest do
       assert %{contact_id: contact_id} =
                Repo.get_by!(ContactIdentity, %{
                  channel: :whatsapp,
-                 kind: "phone",
                  identifier: "919876500301"
                })
 
@@ -107,7 +106,6 @@ defmodule Glific.Contacts.BulkImportTest do
       assert %{contact_id: second_id, organization_id: organization_id} =
                Repo.get_by!(ContactIdentity, %{
                  channel: :whatsapp,
-                 kind: "phone",
                  identifier: "919876500302"
                })
 

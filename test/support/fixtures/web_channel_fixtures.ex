@@ -33,6 +33,19 @@ defmodule Glific.WebChannelFixtures do
   end
 
   @doc """
+  Connects a `WebChannelSocket` with `token` the way a browser does, the organization coming from
+  `opts[:host]` (the default organization's host when omitted).
+  """
+  @spec ngo_socket_fixture(String.t(), keyword()) :: {:ok, Phoenix.Socket.t()} | :error
+  def ngo_socket_fixture(token, opts \\ []) do
+    host = Keyword.get(opts, :host, "localhost")
+
+    connect(WebChannelSocket, %{"token" => token},
+      connect_info: %{uri: %URI{scheme: "wss", host: host}}
+    )
+  end
+
+  @doc """
   Joins `web_channel:<contact.id>` on `socket`.
   """
   @spec join_web_channel(Phoenix.Socket.t(), Contact.t()) ::

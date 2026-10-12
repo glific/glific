@@ -3,14 +3,20 @@ defmodule GlificWeb.WebChannelSocket do
   Phoenix socket for the browser-based web channel. This is a separate socket from
   `GlificWeb.UserSocket` (which authenticates staff for the Absinthe GraphQL subscription
   API) — connections here authenticate as a single `Contact`, never a staff `User`.
+
+  A connection presents either Glific's own token (phone and one-time code login) or a JWT signed
+  by an NGO's backend (`GlificWeb.WebChannel.LoginToken`), which is what authenticates the
+  socket directly when the NGO's own system manages its users.
   """
 
   use Phoenix.Socket
 
   alias Glific.Contacts
+  alias Glific.Contacts.Identities
   alias Glific.RateLimit
   alias Glific.Repo
-  alias GlificWeb.WebChannel.{Flag, Token}
+  alias GlificWeb.SubdomainPlug
+  alias GlificWeb.WebChannel.{Flag, LoginToken, Token}
 
   channel("web_channel:*", GlificWeb.WebChannel.RoomChannel)
 
@@ -20,19 +26,14 @@ defmodule GlificWeb.WebChannelSocket do
   @spec connect(map(), Phoenix.Socket.t(), map()) :: {:ok, Phoenix.Socket.t()} | :error
   def connect(%{"token" => token}, socket, connect_info) do
     with :ok <- check_connect_rate_limit(connect_info),
-         {:ok, payload} <- Token.verify_contact_token(token),
-         true <- Flag.web_channel_enabled?(payload.org_id),
-         # A fresh process with no context; permission-checked calls raise without it. No staff
-         # user is behind a web connection, so run as the organization's root user.
-         :ok <- put_org_context(payload.org_id),
-         %Contacts.Contact{} = contact <- Contacts.get_contact!(payload.contact_id) do
+         {:ok, session} <- authenticate(token, connect_info) do
       socket =
         socket
-        |> assign(:current_contact, contact)
-        |> assign(:organization_id, payload.org_id)
-        |> assign(:token_exp, payload.exp)
-        |> assign(:session_id, payload.session_id)
-        |> assign(:session_started_at, payload.session_started_at)
+        |> assign(:current_contact, session.contact)
+        |> assign(:organization_id, session.organization_id)
+        |> assign(:token_exp, session.token_exp)
+        |> assign(:session_id, session.session_id)
+        |> assign(:session_started_at, session.session_started_at)
 
       {:ok, socket}
     else
@@ -54,6 +55,68 @@ defmodule GlificWeb.WebChannelSocket do
   @spec handle_connect_error(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def handle_connect_error(conn, :server_busy), do: Plug.Conn.send_resp(conn, 503, "")
   def handle_connect_error(conn, _reason), do: Plug.Conn.send_resp(conn, 403, "")
+
+  @spec authenticate(String.t(), map()) :: {:ok, map()} | :error
+  defp authenticate(token, connect_info) do
+    case Token.verify_contact_token(token) do
+      {:ok, payload} -> glific_session(payload)
+      {:error, _reason} -> ngo_session(token, connect_info)
+    end
+  end
+
+  @spec glific_session(Token.payload()) :: {:ok, map()} | :error
+  defp glific_session(payload) do
+    with :ok <- enter_organization(payload.org_id),
+         %Contacts.Contact{} = contact <- Contacts.get_contact!(payload.contact_id) do
+      {:ok,
+       %{
+         contact: contact,
+         organization_id: payload.org_id,
+         token_exp: payload.exp,
+         session_id: payload.session_id,
+         session_started_at: payload.session_started_at
+       }}
+    else
+      _refused -> :error
+    end
+  end
+
+  # The organization comes from the request host, as for the REST endpoints, never from the token.
+  # An NGO token has no session of its own, so every connection of one username shares one
+  # `session_id`: a reconnect or a second tab is never taken for a new login displacing the first.
+  @spec ngo_session(String.t(), map()) :: {:ok, map()} | :error
+  defp ngo_session(token, connect_info) do
+    with {:ok, organization_id} <- organization_from_host(connect_info),
+         :ok <- enter_organization(organization_id),
+         {:ok, claims} <- LoginToken.verify(organization_id, token),
+         {:ok, contact} <- Identities.resolve_or_create(:web, claims.sub, claims) do
+      {:ok,
+       %{
+         contact: contact,
+         organization_id: organization_id,
+         token_exp: claims.exp,
+         session_id: "web:" <> claims.sub,
+         session_started_at: System.system_time(:second)
+       }}
+    else
+      _refused -> :error
+    end
+  end
+
+  @spec organization_from_host(map()) :: {:ok, non_neg_integer()} | :error
+  defp organization_from_host(%{uri: %URI{host: host}}),
+    do: SubdomainPlug.organization_id_for_host(host)
+
+  defp organization_from_host(_connect_info), do: :error
+
+  # A fresh process with no context; permission-checked calls raise without it. No staff user is
+  # behind a web connection, so run as the organization's root user.
+  @spec enter_organization(non_neg_integer()) :: :ok | :error
+  defp enter_organization(organization_id) do
+    if Flag.web_channel_enabled?(organization_id),
+      do: put_org_context(organization_id),
+      else: :error
+  end
 
   # Verifying a token is cheap but not free, and a connect that fails still costs a process and a
   # TLS handshake, so both budgets are charged before the token is even looked at.

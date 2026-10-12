@@ -57,7 +57,7 @@ defmodule Glific.Contacts.IdentityBackfillWorkerTest do
     assert {:ok, _job} = IdentityBackfillWorker.start()
     Oban.drain_queue(queue: :purge, with_scheduled: true)
 
-    assert %{kind: "phone", contact_id: contact_id} =
+    assert %{contact_id: contact_id} =
              Enum.find(whatsapp_identities(), &(&1.identifier == contact.phone))
 
     assert contact_id == contact.id

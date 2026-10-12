@@ -26,8 +26,9 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
   end
 
   test "accepts a valid token", %{organization_id: organization_id} do
-    assert {:ok, %{sub: "ravi_12"} = claims} = verify(organization_id, %{})
-    assert Map.keys(claims) == [:sub]
+    assert {:ok, %{sub: "ravi_12", exp: exp} = claims} = verify(organization_id, %{})
+    assert exp == @now + 600
+    assert Enum.sort(Map.keys(claims)) == [:exp, :sub]
   end
 
   test "accepts a token signed with the previous secret", %{organization_id: organization_id} do
@@ -106,9 +107,9 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
   end
 
   describe "timing" do
-    test "the lifetime may be an hour and no more", %{organization_id: organization_id} do
-      assert {:ok, _} = verify(organization_id, %{"exp" => @now + 3_600})
-      assert {:error, :invalid} = verify(organization_id, %{"exp" => @now + 3_601})
+    test "the lifetime may be 24 hours and no more", %{organization_id: organization_id} do
+      assert {:ok, _} = verify(organization_id, %{"exp" => @now + 86_400})
+      assert {:error, :invalid} = verify(organization_id, %{"exp" => @now + 86_401})
     end
 
     test "an expired token is rejected beyond the leeway", %{organization_id: organization_id} do
@@ -138,7 +139,14 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
                  "contact_id" => 42
                })
 
-      assert %{sub: "ravi_12", name: "Ravi", phone: "919876543210", contact_id: 42} == claims
+      assert %{
+               sub: "ravi_12",
+               exp: @now + 600,
+               name: "Ravi",
+               phone: "919876543210",
+               contact_id: 42
+             } ==
+               claims
     end
 
     test "an invalid phone is treated as absent", %{organization_id: organization_id} do

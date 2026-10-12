@@ -1,39 +1,21 @@
-defmodule GlificWeb.API.V1.WebChannelLoginController do
+defmodule GlificWeb.API.V1.WebChannelContactController do
   @moduledoc """
-  Login and contact provisioning for the web channel, authenticated by a JWT the NGO's own backend
-  signs with its login secret (see `GlificWeb.WebChannel.LoginToken`).
+  Contact provisioning for the web channel, authenticated by a JWT the NGO's own backend signs with
+  its login secret (see `GlificWeb.WebChannel.LoginToken`).
 
-  Both endpoints are gated by the web channel, resolve the
-  contact through `Glific.Contacts.Identities.resolve_or_create/3` (so repeating a call returns
-  the same contact), and answer an invalid token with one generic 401.
+  The endpoint is gated by the web channel, resolves the contact through
+  `Glific.Contacts.Identities.resolve_or_create/3` (so repeating a call returns the same contact),
+  and answers an invalid token with one generic 401. It signs nobody in: the NGO's token itself
+  authenticates the WebSocket connection.
   """
 
   use GlificWeb, :controller
 
   alias Glific.{Contacts.Contact, Contacts.Identities, SafeLog}
-  alias GlificWeb.WebChannel.{DisplayName, Flag, LoginToken, Token}
+  alias GlificWeb.WebChannel.{Flag, LoginToken}
   alias Plug.Conn
 
   @invalid_token_message "Invalid token"
-
-  @doc """
-  Signs a contact in from an NGO-signed token, returning the same session payload as `verify-otp`.
-  """
-  @spec login(Conn.t(), map()) :: Conn.t()
-  def login(conn, %{"token" => token}) when is_binary(token) and token != "" do
-    with_valid_token(conn, token, fn contact ->
-      json(conn, %{
-        data: %{
-          token: Token.sign_contact_token(contact),
-          contact_id: contact.id,
-          name: DisplayName.resolve(contact),
-          phone: contact.phone
-        }
-      })
-    end)
-  end
-
-  def login(conn, _params), do: invalid_token_error(conn)
 
   @doc """
   Creates, or returns, the contact for an NGO-signed token without signing anyone in.
@@ -68,7 +50,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginController do
 
   @spec resolve_error(Conn.t(), any()) :: Conn.t()
   defp resolve_error(conn, error) do
-    Glific.log_error("Could not resolve a web channel login: " <> SafeLog.safe_inspect(error))
+    Glific.log_error("Could not resolve a web channel contact: " <> SafeLog.safe_inspect(error))
 
     conn
     |> put_status(500)

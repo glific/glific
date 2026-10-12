@@ -1,15 +1,16 @@
 defmodule GlificWeb.WebChannel.LoginToken do
   @moduledoc """
-  Verifies the JWT an NGO's backend signs to log one of its users in, or to provision a contact
-  for one.
+  Verifies the JWT an NGO's backend signs to authenticate one of its users on the web channel
+  socket, or to provision a contact for one. A token may live at most 24 hours; an NGO may issue
+  shorter ones.
 
   The token is signed (HS256, pinned: the token's own `alg` is never trusted) with the
   organization's `login_secret`, or its `previous_login_secret` while the secret is being rotated.
   Both live in the organization's `web_channel` credential, so the organization is the request's,
   not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
 
-  This is not `GlificWeb.WebChannel.Token`, which is the session token Glific itself issues after a
-  login succeeds.
+  This is not `GlificWeb.WebChannel.Token`, which is the token Glific itself issues after a phone
+  and one-time code login.
   """
 
   alias Glific.{Contacts, Partners}
@@ -17,13 +18,14 @@ defmodule GlificWeb.WebChannel.LoginToken do
 
   @algorithm "HS256"
   @channel "web"
-  @max_lifetime_seconds 3_600
+  @max_lifetime_seconds 86_400
   @leeway_seconds 60
   @max_length 255
   @provider_code "web_channel"
 
   @type claims :: %{
           required(:sub) => String.t(),
+          required(:exp) => integer(),
           optional(:name) => String.t(),
           optional(:phone) => String.t(),
           optional(:contact_id) => integer()
@@ -96,7 +98,13 @@ defmodule GlificWeb.WebChannel.LoginToken do
          {:ok, name} <- optional_name(fields["name"]),
          {:ok, contact_id} <- optional_contact_id(fields["contact_id"]) do
       claims =
-        %{sub: sub, name: name, contact_id: contact_id, phone: normalise_phone(fields["phone"])}
+        %{
+          sub: sub,
+          exp: fields["exp"],
+          name: name,
+          contact_id: contact_id,
+          phone: normalise_phone(fields["phone"])
+        }
         |> Map.reject(fn {_key, value} -> is_nil(value) end)
 
       {:ok, claims}

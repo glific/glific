@@ -15,6 +15,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     Communications.WebMessage,
     Contacts,
     Contacts.Contact,
+    Contacts.Identities,
     GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
@@ -22,7 +23,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     WebChannel.Rooms
   }
 
-  alias GlificWeb.WebChannel.{MessageSerializer, Presence, Token}
+  alias GlificWeb.WebChannel.{LoginToken, MessageSerializer, Presence, Token}
 
   @page_size 100
   @max_body_length 4_096
@@ -217,23 +218,50 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     do: {:reply, {:error, %{reason: "invalid_location"}}, socket}
 
   def handle_in("renew_token", %{"token" => token}, socket) do
-    with {:ok, payload} <- Token.verify_contact_token(token),
-         true <- payload.contact_id == socket.assigns.current_contact.id,
-         true <- payload.org_id == socket.assigns.organization_id do
-      socket =
-        socket
-        |> assign(:token_exp, payload.exp)
-        |> assign(:token_expiring_warned?, false)
+    case renewed_expiry(token, socket) do
+      {:ok, exp} ->
+        socket =
+          socket
+          |> assign(:token_exp, exp)
+          |> assign(:token_expiring_warned?, false)
 
-      {:reply, :ok, socket}
-    else
+        {:reply, :ok, socket}
+
       # One reason for every cause, so a renewal cannot be used to probe which.
-      _ -> {:reply, {:error, %{reason: "invalid_token"}}, socket}
+      :error ->
+        {:reply, {:error, %{reason: "invalid_token"}}, socket}
     end
   end
 
   def handle_in("renew_token", _params, socket),
     do: {:reply, {:error, %{reason: "invalid_token"}}, socket}
+
+  @spec renewed_expiry(String.t(), Phoenix.Socket.t()) :: {:ok, integer()} | :error
+  defp renewed_expiry(token, socket) do
+    case Token.verify_contact_token(token) do
+      {:ok, payload} ->
+        if payload.contact_id == socket.assigns.current_contact.id and
+             payload.org_id == socket.assigns.organization_id,
+           do: {:ok, payload.exp},
+           else: :error
+
+      {:error, _reason} ->
+        renewed_ngo_expiry(token, socket)
+    end
+  end
+
+  @spec renewed_ngo_expiry(String.t(), Phoenix.Socket.t()) :: {:ok, integer()} | :error
+  defp renewed_ngo_expiry(token, socket) do
+    current = socket.assigns.current_contact
+
+    with {:ok, claims} <- LoginToken.verify(socket.assigns.organization_id, token),
+         {:ok, %Contact{id: id}} when id == current.id <-
+           Identities.fetch_contact(:web, claims.sub) do
+      {:ok, claims.exp}
+    else
+      _refused -> :error
+    end
+  end
 
   @spec schedule_sweep() :: reference()
   defp schedule_sweep, do: Process.send_after(self(), :sweep_token, @sweep_interval_ms)

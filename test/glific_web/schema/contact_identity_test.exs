@@ -33,7 +33,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
                get_in(query_data, [:data, "createContactWithIdentity", "contact"])
 
       assert %{contact_id: id} =
-               Repo.get_by!(ContactIdentity, %{kind: "username", identifier: "ravi_12"})
+               Repo.get_by!(ContactIdentity, %{channel: :web, identifier: "ravi_12"})
 
       assert to_string(id) == contact_id
     end)

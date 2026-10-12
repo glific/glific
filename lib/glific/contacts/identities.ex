@@ -3,11 +3,11 @@ defmodule Glific.Contacts.Identities do
   Reads and writes `Glific.Contacts.ContactIdentity` rows: the logins a contact can be reached or
   recognised by.
 
-  A `:whatsapp` identity of kind `"phone"` mirrors `contacts.phone` and is kept in step with it by
-  the contact write paths. A `:web` identity is either kind `"phone"`, recorded when a contact signs
-  in with a one-time code, or kind `"username"`, an opaque username issued by an NGO's own
-  system; `resolve_or_create/3` is how a first login or a provisioning call turns one into a
-  contact.
+  A `:whatsapp` identity mirrors `contacts.phone` and is kept in step with it by the contact write
+  paths. A `:web` identity is an opaque username issued by an NGO's own system, and is never a
+  phone: a contact signing in with a one-time code is found by `contacts.phone`, and recording it
+  here would let an NGO username equal to that phone number reach the same conversation.
+  `resolve_or_create/3` is how a first login or a provisioning call turns a username into a contact.
   """
 
   import Ecto.Query
@@ -22,12 +22,11 @@ defmodule Glific.Contacts.Identities do
     Repo
   }
 
-  @insert_chunk_size 5_000
-  @phone "phone"
-  @username "username"
+  @insert_chunk_size 1_000
 
   @type claims :: %{
           optional(:sub) => String.t(),
+          optional(:exp) => integer(),
           optional(:name) => String.t(),
           optional(:phone) => String.t(),
           optional(:contact_id) => integer()
@@ -36,13 +35,13 @@ defmodule Glific.Contacts.Identities do
   @doc """
   The contact holding an identity in the current organization.
   """
-  @spec fetch_contact(MessageChannel.t(), String.t(), String.t()) ::
+  @spec fetch_contact(MessageChannel.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, :not_found}
-  def fetch_contact(channel, kind, identifier) do
+  def fetch_contact(channel, identifier) do
     query =
       from(i in ContactIdentity,
         join: c in assoc(i, :contact),
-        where: i.channel == ^channel and i.kind == ^kind and i.identifier == ^identifier,
+        where: i.channel == ^channel and i.identifier == ^identifier,
         select: c
       )
 
@@ -60,7 +59,7 @@ defmodule Glific.Contacts.Identities do
   @spec resolve_or_create(:web, String.t(), claims()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def resolve_or_create(:web, identifier, claims) do
-    with {:error, :not_found} <- fetch_contact(:web, @username, identifier) do
+    with {:error, :not_found} <- fetch_contact(:web, identifier) do
       organization_id = Repo.get_organization_id()
 
       case link_target(organization_id, claims) do
@@ -74,14 +73,15 @@ defmodule Glific.Contacts.Identities do
   Records the `(whatsapp, phone)` identity of a contact, doing nothing if it already exists.
   """
   @spec ensure_whatsapp_identity(Contact.t()) :: :ok
-  def ensure_whatsapp_identity(contact), do: ensure_phone_identity(contact, :whatsapp)
+  def ensure_whatsapp_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
 
-  @doc """
-  Records the `(web, phone)` identity of a contact that signed in with a one-time code, doing
-  nothing if it already exists.
-  """
-  @spec ensure_web_phone_identity(Contact.t()) :: :ok
-  def ensure_web_phone_identity(contact), do: ensure_phone_identity(contact, :web)
+  def ensure_whatsapp_identity(%Contact{} = contact) do
+    contact
+    |> identity_changeset(:whatsapp, contact.phone)
+    |> Repo.insert(on_conflict: :nothing, conflict_target: conflict_target())
+
+    :ok
+  end
 
   @doc """
   Points a contact's WhatsApp identity at its current phone, creating it if the contact has none.
@@ -90,16 +90,9 @@ defmodule Glific.Contacts.Identities do
   def sync_whatsapp_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
 
   def sync_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
-    from(i in ContactIdentity,
-      where:
-        i.channel == :whatsapp and i.kind == @phone and i.identifier == ^phone and
-          i.contact_id != ^contact_id
-    )
-    |> Repo.delete_all()
-
     {updated, _rows} =
       from(i in ContactIdentity,
-        where: i.channel == :whatsapp and i.kind == @phone and i.contact_id == ^contact_id
+        where: i.channel == :whatsapp and i.contact_id == ^contact_id
       )
       |> Repo.update_all(set: [identifier: phone, updated_at: DateTime.utc_now()])
 
@@ -107,9 +100,10 @@ defmodule Glific.Contacts.Identities do
   end
 
   @doc """
-  Records the `(whatsapp, phone)` identity of many contacts at once, skipping those that exist.
-  Takes rows with `id` and `phone`, and the organization they all belong to, or carrying their own
-  `organization_id` when given none.
+  Records the `(whatsapp, phone)` identity of many contacts at once, skipping those that exist,
+  inserting any number of rows in batches. Pass `organization_id` when every row is from one
+  organization (CSV import, whose rows don't carry it); leave it `nil` for rows spanning
+  organizations (the backfill), and each row's own `organization_id` is used.
   """
   @spec insert_whatsapp_identities([map()], non_neg_integer() | nil) :: :ok
   def insert_whatsapp_identities(rows, organization_id \\ nil) do
@@ -122,7 +116,6 @@ defmodule Glific.Contacts.Identities do
         contact_id: row.id,
         organization_id: organization_id || row.organization_id,
         channel: :whatsapp,
-        kind: @phone,
         identifier: row.phone,
         inserted_at: now,
         updated_at: now
@@ -160,7 +153,7 @@ defmodule Glific.Contacts.Identities do
   defp link(target, identifier) do
     with {:ok, _identity} <-
            target
-           |> identity_changeset(:web, @username, identifier)
+           |> identity_changeset(:web, identifier)
            |> Repo.insert(on_conflict: :nothing, conflict_target: conflict_target()) do
       fetch_existing(identifier, target)
     end
@@ -168,7 +161,7 @@ defmodule Glific.Contacts.Identities do
 
   @spec fetch_existing(String.t(), Contact.t()) :: {:ok, Contact.t()}
   defp fetch_existing(identifier, fallback) do
-    case fetch_contact(:web, @username, identifier) do
+    case fetch_contact(:web, identifier) do
       {:ok, contact} -> {:ok, contact}
       {:error, :not_found} -> {:ok, fallback}
     end
@@ -189,7 +182,7 @@ defmodule Glific.Contacts.Identities do
     Multi.new()
     |> Multi.insert(:contact, Contacts.new_contact_changeset(attrs, :web))
     |> Multi.insert(:identity, fn %{contact: contact} ->
-      identity_changeset(contact, :web, @username, identifier)
+      identity_changeset(contact, :web, identifier)
     end)
     |> Multi.run(:whatsapp_identity, fn _repo, %{contact: contact} ->
       {:ok, ensure_whatsapp_identity(contact)}
@@ -233,34 +226,21 @@ defmodule Glific.Contacts.Identities do
   @spec reread(non_neg_integer(), String.t(), claims()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp reread(organization_id, identifier, claims) do
-    with {:error, :not_found} <- fetch_contact(:web, @username, identifier) do
+    with {:error, :not_found} <- fetch_contact(:web, identifier) do
       create_with_identity(organization_id, identifier, claims)
     end
   end
 
-  @spec ensure_phone_identity(Contact.t(), MessageChannel.t()) :: :ok
-  defp ensure_phone_identity(%Contact{phone: phone}, _channel) when phone in [nil, ""], do: :ok
-
-  defp ensure_phone_identity(%Contact{} = contact, channel) do
-    contact
-    |> identity_changeset(channel, @phone, contact.phone)
-    |> Repo.insert(on_conflict: :nothing, conflict_target: conflict_target())
-
-    :ok
-  end
-
-  @spec identity_changeset(Contact.t(), MessageChannel.t(), String.t(), String.t()) ::
-          Ecto.Changeset.t()
-  defp identity_changeset(contact, channel, kind, identifier) do
+  @spec identity_changeset(Contact.t(), MessageChannel.t(), String.t()) :: Ecto.Changeset.t()
+  defp identity_changeset(contact, channel, identifier) do
     ContactIdentity.changeset(%ContactIdentity{}, %{
       contact_id: contact.id,
       organization_id: contact.organization_id,
       channel: channel,
-      kind: kind,
       identifier: identifier
     })
   end
 
   @spec conflict_target() :: [atom()]
-  defp conflict_target, do: [:organization_id, :channel, :kind, :identifier]
+  defp conflict_target, do: [:organization_id, :channel, :identifier]
 end

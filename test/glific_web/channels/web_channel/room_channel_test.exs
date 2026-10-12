@@ -4,6 +4,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
   alias Glific.{
     Contacts,
+    Contacts.Identities,
     Contacts.Location,
     Fixtures,
     GcsFixtures,
@@ -567,6 +568,91 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         state = :sys.get_state(socket.channel_pid)
         assert state.assigns.current_contact.id == contact.id
         assert state.assigns.organization_id == contact.organization_id
+      end)
+    end
+  end
+
+  describe "renew_token with an NGO token" do
+    @secret "ngo-login-secret-ngo-login-secret"
+
+    defp ngo_token(overrides),
+      do:
+        overrides
+        |> Glific.WebChannelLoginHelpers.claims()
+        |> Glific.WebChannelLoginHelpers.sign(@secret)
+
+    defp with_ngo_socket(overrides, fun) do
+      Glific.WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_secret" => @secret}, fn ->
+        {:ok, ws_socket} = overrides |> ngo_token() |> WebChannelFixtures.ngo_socket_fixture()
+        contact = ws_socket.assigns.current_contact
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        fun.(socket, contact)
+      end)
+    end
+
+    test "the same contact's fresh token updates the expiry and clears the warning" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        now = System.system_time(:second)
+        before_exp = :sys.get_state(socket.channel_pid).assigns.token_exp
+        fresh = ngo_token(%{"iat" => now, "exp" => now + 7_200})
+
+        ref = push(socket, "renew_token", %{"token" => fresh})
+        assert_reply ref, :ok
+
+        assigns = :sys.get_state(socket.channel_pid).assigns
+        assert assigns.token_exp == now + 7_200
+        assert assigns.token_exp > before_exp
+        assert assigns.token_expiring_warned? == false
+      end)
+    end
+
+    test "a valid token for a different username is refused and the contact unchanged" do
+      with_ngo_socket(%{}, fn socket, contact ->
+        {:ok, other} = Identities.resolve_or_create(:web, "someone_else", %{})
+        ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => "someone_else"})})
+        assert_reply ref, :error, %{reason: "invalid_token"}
+
+        assert :sys.get_state(socket.channel_pid).assigns.current_contact.id == contact.id
+        refute other.id == contact.id
+      end)
+    end
+
+    test "a valid token for an unknown username creates nothing and is refused" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => "never_seen"})})
+        assert_reply ref, :error, %{reason: "invalid_token"}
+
+        assert {:error, :not_found} =
+                 Identities.fetch_contact(:web, "never_seen")
+      end)
+    end
+
+    test "a garbage or wrongly signed token is refused" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        wrong =
+          Glific.WebChannelLoginHelpers.sign(
+            Glific.WebChannelLoginHelpers.claims(),
+            "wrong-secret-wrong-secret-wrong"
+          )
+
+        for token <- ["garbage", wrong] do
+          ref = push(socket, "renew_token", %{"token" => token})
+          assert_reply ref, :error, %{reason: "invalid_token"}
+        end
+      end)
+    end
+
+    test "the sweep closes the socket once the NGO token has expired" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        :sys.replace_state(socket.channel_pid, fn state ->
+          %{state | assigns: %{state.assigns | token_exp: System.system_time(:second) - 120}}
+        end)
+
+        ref = Process.monitor(socket.channel_pid)
+        send(socket.channel_pid, :sweep_token)
+
+        assert_push "session_expired", %{}
+        assert_receive {:DOWN, ^ref, :process, _pid, _reason}
       end)
     end
   end

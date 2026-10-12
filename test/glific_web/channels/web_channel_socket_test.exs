@@ -2,7 +2,15 @@ defmodule GlificWeb.WebChannelSocketTest do
   @moduledoc false
   use GlificWeb.ChannelCase
 
-  alias Glific.{Fixtures, Partners, WebChannelFixtures}
+  alias Glific.{
+    Contacts.Identities,
+    Fixtures,
+    Partners,
+    WebChannelFixtures,
+    WebChannelFlagHelpers,
+    WebChannelLoginHelpers
+  }
+
   alias GlificWeb.WebChannel.Token
   alias GlificWeb.WebChannelSocket
 
@@ -93,6 +101,134 @@ defmodule GlificWeb.WebChannelSocketTest do
       after
         Glific.WebChannelFlagHelpers.reset_web_channel_flag(organization_id)
       end
+    end
+  end
+
+  describe "connect/3 with an NGO token" do
+    @secret "ngo-login-secret-ngo-login-secret"
+
+    defp ngo_token(overrides \\ %{}, secret \\ @secret),
+      do: overrides |> WebChannelLoginHelpers.claims() |> WebChannelLoginHelpers.sign(secret)
+
+    defp with_login_secret(fun),
+      do: WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_secret" => @secret}, fun)
+
+    test "a new username creates the contact and its identity, and can talk" do
+      with_login_secret(fn ->
+        assert {:ok, ws_socket} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        contact = ws_socket.assigns.current_contact
+
+        assert contact.phone == nil
+        assert {:ok, ^contact} = Identities.fetch_contact(:web, "ravi_12")
+        assert ws_socket.assigns.organization_id == 1
+        assert is_integer(ws_socket.assigns.token_exp)
+
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        ref = push(socket, "new_message", %{"body" => "hello"})
+        assert_reply ref, :ok
+      end)
+    end
+
+    test "a returning username is the same contact" do
+      with_login_secret(fn ->
+        {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        {:ok, second} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+
+        assert first.assigns.current_contact.id == second.assigns.current_contact.id
+        assert first.assigns.session_id == second.assigns.session_id
+      end)
+    end
+
+    test "links to the contact named by the contact_id or phone claim", %{contact: contact} do
+      with_login_secret(fn ->
+        {:ok, by_id} =
+          WebChannelFixtures.ngo_socket_fixture(
+            ngo_token(%{"sub" => "by_id", "contact_id" => contact.id})
+          )
+
+        assert by_id.assigns.current_contact.id == contact.id
+
+        other = Fixtures.contact_fixture(%{phone: "919876500555"})
+
+        {:ok, by_phone} =
+          WebChannelFixtures.ngo_socket_fixture(
+            ngo_token(%{"sub" => "by_phone", "phone" => "919876500555"})
+          )
+
+        assert by_phone.assigns.current_contact.id == other.id
+      end)
+    end
+
+    test "refuses a wrong secret, an expired token and a wrong channel claim" do
+      with_login_secret(fn ->
+        now = System.system_time(:second)
+
+        for token <- [
+              ngo_token(%{}, "wrong-secret-wrong-secret-wrong"),
+              ngo_token(%{"iat" => now - 7_200, "exp" => now - 3_600}),
+              ngo_token(%{"channel" => "whatsapp"}),
+              "garbage"
+            ] do
+          assert :error = WebChannelFixtures.ngo_socket_fixture(token)
+        end
+      end)
+    end
+
+    test "accepts a lifetime of exactly 24 hours and refuses a longer one" do
+      with_login_secret(fn ->
+        now = System.system_time(:second)
+
+        assert {:ok, _socket} =
+                 WebChannelFixtures.ngo_socket_fixture(
+                   ngo_token(%{"iat" => now, "exp" => now + 86_400})
+                 )
+
+        assert :error =
+                 WebChannelFixtures.ngo_socket_fixture(
+                   ngo_token(%{"iat" => now, "exp" => now + 86_401})
+                 )
+      end)
+    end
+
+    test "refuses a token valid for another organization's secret on that organization's host" do
+      other = Fixtures.organization_fixture(%{shortcode: "otherngo"})
+
+      WebChannelFlagHelpers.activate_web_channel(other.id, %{}, %{
+        "login_secret" => "other-secret-other-secret-other"
+      })
+
+      FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: other.id})
+      other.id |> Partners.organization() |> Partners.fill_cache()
+
+      try do
+        with_login_secret(fn ->
+          host = "otherngo." <> Glific.base_domain()
+
+          assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token(), host: host)
+          assert {:ok, _socket} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        end)
+      after
+        WebChannelFlagHelpers.reset_web_channel_flag(other.id)
+      end
+    end
+
+    test "refuses a connection with no host" do
+      with_login_secret(fn ->
+        assert :error =
+                 Phoenix.ChannelTest.connect(WebChannelSocket, %{"token" => ngo_token()})
+      end)
+    end
+
+    test "refuses when the web channel is off" do
+      WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"login_secret" => @secret})
+      assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+    end
+
+    test "Glific's own token still connects", %{contact: contact} do
+      with_login_secret(fn ->
+        assert {:ok, socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        assert socket.assigns.current_contact.id == contact.id
+      end)
     end
   end
 

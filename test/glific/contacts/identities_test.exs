@@ -20,7 +20,7 @@ defmodule Glific.Contacts.IdentitiesTest do
   end
 
   defp whatsapp_identity(phone) do
-    Repo.get_by(ContactIdentity, %{channel: :whatsapp, kind: "phone", identifier: phone})
+    Repo.get_by(ContactIdentity, %{channel: :whatsapp, identifier: phone})
   end
 
   describe "resolve_or_create/3" do
@@ -30,7 +30,7 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert contact.phone == nil
       assert contact.name == "ravi_12"
 
-      assert [%{channel: :web, kind: "username", identifier: "ravi_12"}] =
+      assert [%{channel: :web, identifier: "ravi_12"}] =
                identities_of(contact.id)
     end
 
@@ -209,14 +209,6 @@ defmodule Glific.Contacts.IdentitiesTest do
                |> Repo.aggregate(:count)
     end
 
-    test "a created contact's WhatsApp identity has kind phone", %{
-      organization_id: organization_id
-    } do
-      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
-
-      assert %{kind: "phone", channel: :whatsapp} = whatsapp_identity(contact.phone)
-    end
-
     test "changing the phone moves the identity", %{organization_id: organization_id} do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       old_phone = contact.phone
@@ -258,52 +250,6 @@ defmodule Glific.Contacts.IdentitiesTest do
     end
   end
 
-  describe "ensure_web_phone_identity/1" do
-    test "records a (web, phone) identity once", %{organization_id: organization_id} do
-      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
-
-      assert :ok = Identities.ensure_web_phone_identity(contact)
-      assert :ok = Identities.ensure_web_phone_identity(contact)
-
-      assert [%{channel: :web, kind: "phone", identifier: identifier}] =
-               identities_of(contact.id) |> Enum.filter(&(&1.channel == :web))
-
-      assert identifier == contact.phone
-    end
-
-    test "does nothing for a contact without a phone", %{organization_id: organization_id} do
-      contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
-
-      assert :ok = Identities.ensure_web_phone_identity(contact)
-      assert [] == identities_of(contact.id)
-    end
-
-    test "does not make the phone a username login", %{organization_id: organization_id} do
-      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
-      Identities.ensure_web_phone_identity(contact)
-
-      assert {:ok, other} = Identities.resolve_or_create(:web, contact.phone, %{})
-      refute other.id == contact.id
-      assert other.phone == nil
-    end
-
-    test "a username that is a phone number keeps its own contact", %{
-      organization_id: organization_id
-    } do
-      {:ok, username_contact} = Identities.resolve_or_create(:web, "919876500777", %{})
-
-      phone_contact =
-        Fixtures.contact_fixture(%{organization_id: organization_id, phone: "919876500777"})
-
-      Identities.ensure_web_phone_identity(phone_contact)
-
-      assert {:ok, found} = Contacts.fetch_by_identity(:web, "919876500777")
-      assert found.id == username_contact.id
-      assert {:ok, whatsapp} = Contacts.fetch_by_identity(:whatsapp, "919876500777")
-      assert whatsapp.id == phone_contact.id
-    end
-  end
-
   describe "fetch_by_identity/2" do
     test "whatsapp reads the identity, whatever the contact's phone column says", %{
       organization_id: organization_id
@@ -341,15 +287,6 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert {:ok, found} = Contacts.fetch_by_identity(:web, "ravi_12")
       assert found.id == contact.id
       assert {:error, :not_found} = Contacts.fetch_by_identity(:web, "Ravi_12")
-    end
-
-    test "web ignores a phone-kind identity of the same identifier", %{
-      organization_id: organization_id
-    } do
-      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
-      Identities.ensure_web_phone_identity(contact)
-
-      assert {:error, :not_found} = Contacts.fetch_by_identity(:web, contact.phone)
     end
 
     test "a nil or empty identifier is refused" do

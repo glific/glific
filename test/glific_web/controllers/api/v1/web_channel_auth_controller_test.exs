@@ -876,33 +876,15 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "records a (web, phone) identity on the contact", %{conn: conn} do
+    test "records no web identity for the contact", %{conn: conn} do
       phone = unique_phone()
 
       with_web_channel_enabled(fn ->
-        contact_id = verify_otp_login(conn, phone)
+        verify_otp_login(conn, phone)
 
-        assert %{contact_id: ^contact_id} =
-                 Repo.get_by!(ContactIdentity, %{
-                   channel: :web,
-                   kind: "phone",
-                   identifier: phone
-                 })
-      end)
-    end
-
-    test "a repeated login keeps a single (web, phone) identity", %{conn: conn} do
-      phone = unique_phone()
-
-      with_web_channel_enabled(fn ->
-        first = verify_otp_login(conn, phone)
-        second = verify_otp_login(conn, phone)
-
-        assert first == second
-
-        assert 1 ==
+        assert 0 ==
                  ContactIdentity
-                 |> where([i], i.channel == :web and i.kind == "phone" and i.identifier == ^phone)
+                 |> where([i], i.channel == :web and i.identifier == ^phone)
                  |> Repo.aggregate(:count)
       end)
     end
