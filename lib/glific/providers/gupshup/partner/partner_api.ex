@@ -55,6 +55,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     "TEMPLATE"
   ]
 
+  @wallet_name "Wallet_274896"
+
   @doc """
   Fetches Partner token and App Access token to get tier information
   for an organization with input app id
@@ -136,7 +138,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  @wallet_name "4000202160_wallet"
   @doc """
     Transfer balance from ISV partner to app
   """

@@ -27,6 +27,7 @@ defmodule Glific.Flows.Action do
   }
 
   alias Glific.Flows.{
+    Channels,
     ContactAction,
     ContactField,
     ContactSetting,
@@ -547,11 +548,14 @@ defmodule Glific.Flows.Action do
     )
   end
 
-  def validate(%{type: "enter_flow"} = action, errors, _flow) do
+  def validate(%{type: "enter_flow"} = action, errors, flow) do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
-      {:ok, _} -> errors
-      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"} | errors]
+      {:ok, sub_flow} ->
+        Channels.validate_sub_flow(flow.channel, sub_flow, errors, action.node_uuid)
+
+      _ ->
+        [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}", "Critical"} | errors]
     end
   end
 

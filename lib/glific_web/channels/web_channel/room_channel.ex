@@ -141,9 +141,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
          {:ok, trimmed} <- validate_body(body),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                body: trimmed
              },
              :text
@@ -169,9 +168,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
          :ok <- verify_uploaded_media(contact.organization_id, type, url, content_type),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                url: url,
                source_url: url,
                caption: caption,
@@ -200,9 +198,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
          true <- valid_coordinate?(lng, -180, 180),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                longitude: lng,
                latitude: lat,
                body: "https://www.google.com/maps?q=#{lat},#{lng}"
@@ -283,13 +280,12 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   @spec check_message_rate_limit(non_neg_integer()) :: :ok | {:error, String.t()}
   defp check_message_rate_limit(contact_id) do
-    config = Application.get_env(:glific, :web_channel_message_rate_limit, [])
-    scale_ms = Keyword.get(config, :scale_ms, 10_000)
-    count = Keyword.get(config, :count, 20)
-
-    case ExRated.check_rate("web_channel_message:#{contact_id}", scale_ms, count) do
-      {:ok, _count} -> :ok
-      {:error, _limit} -> {:error, "rate_limited"}
+    case Glific.RateLimit.check(
+           :rate_limit_web_channel_message,
+           "web_channel_message:#{contact_id}"
+         ) do
+      :ok -> :ok
+      {:error, :rate_limited} -> {:error, "rate_limited"}
     end
   end
 

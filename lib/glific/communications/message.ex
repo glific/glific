@@ -39,7 +39,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, String.t()}
+  @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, any()}
   def send_message(message, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
@@ -47,25 +47,27 @@ defmodule Glific.Communications.Message do
       "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{message.id}'"
     )
 
-    with {:ok, _} <-
-           apply(
-             message_handler(message),
-             @type_to_token[message.type],
-             [message, attrs]
-           ) do
-      :telemetry.execute(
-        [:glific, :message, :sent],
-        # currently we are not measuring latency
-        %{duration: 1},
-        %{
-          type: message.type,
-          sender_id: message.sender_id,
-          receiver_id: message.receiver_id,
-          organization_id: message.organization_id
-        }
-      )
+    case apply(message_handler(message), @type_to_token[message.type], [message, attrs]) do
+      {:ok, _} ->
+        :telemetry.execute(
+          [:glific, :message, :sent],
+          # currently we are not measuring latency
+          %{duration: 1},
+          %{
+            type: message.type,
+            sender_id: message.sender_id,
+            receiver_id: message.receiver_id,
+            organization_id: message.organization_id
+          }
+        )
 
-      publish_message(message)
+        publish_message(message)
+
+      {:error, :no_phone} ->
+        log_error(message, "Contact has no WhatsApp number.")
+
+      error ->
+        error
     end
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message

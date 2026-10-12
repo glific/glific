@@ -53,8 +53,8 @@ defmodule Glific.Contacts.Contact do
           phone: String.t() | nil,
           masked_phone: String.t() | nil,
           contact_type: String.t() | nil,
-          status: ContactStatus | nil,
-          bsp_status: ContactProviderStatus | nil,
+          status: ContactStatus.t() | nil,
+          bsp_status: ContactProviderStatus.t() | nil,
           is_org_read: boolean,
           is_org_replied: boolean,
           is_contact_replied: boolean,
@@ -148,6 +148,9 @@ defmodule Glific.Contacts.Contact do
   Populate virtual field of masked phone number
   """
   @spec populate_masked_phone(Contact.t()) :: Contact.t()
+  def populate_masked_phone(%Contact{phone: phone} = contact) when phone in [nil, ""],
+    do: %{contact | masked_phone: nil}
+
   def populate_masked_phone(%Contact{phone: phone} = contact) do
     masked_phone =
       "#{elem(String.split_at(phone, 4), 0)}******#{elem(String.split_at(phone, -2), 1)}"
