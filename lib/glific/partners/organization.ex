@@ -213,6 +213,8 @@ defmodule Glific.Partners.Organization do
 
     field(:bulk_flow_results_enabled, :boolean, default: false, virtual: true)
 
+    field(:is_ai_guardrail_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 

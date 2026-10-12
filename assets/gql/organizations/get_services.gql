@@ -20,6 +20,7 @@ query organizationServices {
     glific_ai_enabled
     web_channel_enabled
     bulk_flow_results_enabled
+    ai_guardrail_enabled
     errors {
       key
       message

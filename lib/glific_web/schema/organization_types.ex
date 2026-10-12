@@ -40,6 +40,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:web_channel_enabled, :boolean)
     field(:bulk_contact_update_enabled, :boolean)
     field(:bulk_flow_results_enabled, :boolean)
+    field(:ai_guardrail_enabled, :boolean)
   end
 
   object :organization_export_result do
@@ -158,6 +159,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:web_channel_enabled, :boolean)
     field(:bulk_contact_update_enabled, :boolean)
     field(:bulk_flow_results_enabled, :boolean)
+    field(:is_ai_guardrail_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 
