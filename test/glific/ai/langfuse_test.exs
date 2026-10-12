@@ -215,7 +215,14 @@ defmodule Glific.AI.LangfuseTest do
             "+91-90000-00001",
             "(919) 000-0001",
             "9000000001",
-            "90000-00001"
+            "90000-00001",
+            # The usual way an Indian number is typed, and the shape a guard
+            # against two adjacent ids most easily blocks by accident.
+            "90000 00001",
+            "98765 43210",
+            # Greedy matching used to run past the fifteen-digit ceiling here
+            # and fail the count, leaving the whole string intact.
+            "+91 90000 00001 12"
           ] do
         assert Langfuse.mask("reach her on " <> written) == "reach her on [phone]",
                "#{written} left the platform intact"

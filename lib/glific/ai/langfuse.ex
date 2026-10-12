@@ -26,10 +26,18 @@ defmodule Glific.AI.Langfuse do
   @traces_path "/api/public/otel/v1/traces"
   @scores_path "/api/public/scores"
   @ingestion_version {"x-langfuse-ingestion-version", "4"}
-  # A space joins digit groups only behind a `+` or a bracket. Without that
-  # guard two unrelated ids sitting side by side — "6298936 6289903" — read as
-  # one fourteen-digit number and both are lost.
-  @phone ~r/[+(]\d[\d\s().\-]{8,20}\d|\d[\d().\-]{8,20}\d/
+  # Three shapes, because a space is both how an Indian number is written and
+  # what separates two unrelated ids:
+  #
+  #   * `90000 00001` — five and five, the usual local grouping
+  #   * `+91 90000 00001` — a country code, where spaces are safe to cross
+  #   * `9000000001`, `90000-00001` — no space to be ambiguous about
+  #
+  # Only the first lets a bare space join digits, and only in that grouping, so
+  # "6298936 6289903" stays two ids. The country-code alternative counts its
+  # groups rather than running to the next digit, or a number followed by any
+  # other figure overshoots the fifteen-digit ceiling and masks nothing at all.
+  @phone ~r/\b\d{5}[\s-]\d{5}\b|[+(]\d[\d().\-]{0,4}(?:[\s.\-]?\d{1,5}){1,4}\b|\d[\d().\-]{8,20}\d/
   @email ~r/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/
 
   @doc """
