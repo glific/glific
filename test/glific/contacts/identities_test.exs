@@ -30,7 +30,7 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert contact.phone == nil
       assert contact.name == "ravi_12"
 
-      assert [%{channel: :web, kind: "ngo_username", identifier: "ravi_12"}] =
+      assert [%{channel: :web, kind: "username", identifier: "ravi_12"}] =
                identities_of(contact.id)
     end
 

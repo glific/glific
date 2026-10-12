@@ -89,7 +89,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
                  conn |> login(token(%{"sub" => "919876500124"})) |> json_response(200)
 
         refute contact_id == contact.id
-        assert %{kind: "ngo_username"} = Repo.get_by!(ContactIdentity, %{contact_id: contact_id})
+        assert %{kind: "username"} = Repo.get_by!(ContactIdentity, %{contact_id: contact_id})
       end)
     end
 
@@ -199,7 +199,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginControllerTest do
 
   defp identity_count(identifier) do
     ContactIdentity
-    |> where([i], i.kind == "ngo_username" and i.identifier == ^identifier)
+    |> where([i], i.kind == "username" and i.identifier == ^identifier)
     |> Repo.aggregate(:count)
   end
 end

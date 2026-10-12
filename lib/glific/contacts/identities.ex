@@ -5,7 +5,7 @@ defmodule Glific.Contacts.Identities do
 
   A `:whatsapp` identity of kind `"phone"` mirrors `contacts.phone` and is kept in step with it by
   the contact write paths. A `:web` identity is either kind `"phone"`, recorded when a contact signs
-  in with a one-time code, or kind `"ngo_username"`, an opaque username issued by an NGO's own
+  in with a one-time code, or kind `"username"`, an opaque username issued by an NGO's own
   system; `resolve_or_create/3` is how a first login or a provisioning call turns one into a
   contact.
   """
@@ -24,7 +24,7 @@ defmodule Glific.Contacts.Identities do
 
   @insert_chunk_size 5_000
   @phone "phone"
-  @ngo_username "ngo_username"
+  @username "username"
 
   @type claims :: %{
           optional(:sub) => String.t(),
@@ -60,7 +60,7 @@ defmodule Glific.Contacts.Identities do
   @spec resolve_or_create(:web, String.t(), claims()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def resolve_or_create(:web, identifier, claims) do
-    with {:error, :not_found} <- fetch_contact(:web, @ngo_username, identifier) do
+    with {:error, :not_found} <- fetch_contact(:web, @username, identifier) do
       organization_id = Repo.get_organization_id()
 
       case link_target(organization_id, claims) do
@@ -160,7 +160,7 @@ defmodule Glific.Contacts.Identities do
   defp link(target, identifier) do
     with {:ok, _identity} <-
            target
-           |> identity_changeset(:web, @ngo_username, identifier)
+           |> identity_changeset(:web, @username, identifier)
            |> Repo.insert(on_conflict: :nothing, conflict_target: conflict_target()) do
       fetch_existing(identifier, target)
     end
@@ -168,7 +168,7 @@ defmodule Glific.Contacts.Identities do
 
   @spec fetch_existing(String.t(), Contact.t()) :: {:ok, Contact.t()}
   defp fetch_existing(identifier, fallback) do
-    case fetch_contact(:web, @ngo_username, identifier) do
+    case fetch_contact(:web, @username, identifier) do
       {:ok, contact} -> {:ok, contact}
       {:error, :not_found} -> {:ok, fallback}
     end
@@ -189,7 +189,7 @@ defmodule Glific.Contacts.Identities do
     Multi.new()
     |> Multi.insert(:contact, Contacts.new_contact_changeset(attrs, :web))
     |> Multi.insert(:identity, fn %{contact: contact} ->
-      identity_changeset(contact, :web, @ngo_username, identifier)
+      identity_changeset(contact, :web, @username, identifier)
     end)
     |> Multi.run(:whatsapp_identity, fn _repo, %{contact: contact} ->
       {:ok, ensure_whatsapp_identity(contact)}
@@ -233,7 +233,7 @@ defmodule Glific.Contacts.Identities do
   @spec reread(non_neg_integer(), String.t(), claims()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp reread(organization_id, identifier, claims) do
-    with {:error, :not_found} <- fetch_contact(:web, @ngo_username, identifier) do
+    with {:error, :not_found} <- fetch_contact(:web, @username, identifier) do
       create_with_identity(organization_id, identifier, claims)
     end
   end
