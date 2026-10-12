@@ -76,7 +76,11 @@ defmodule Glific.AI.Skills.Knowledge do
         only route you know is technical, give the human one: who to email,
         what to ask for.
       * Be brief — a few sentences, or short bullets for separate steps.
-      * Link the documentation you used, on its own line: 📖 <url>
+      * Link the documentation, on its own line, as: 📖 <url>. Link the page
+        that answers the question, and a second one if it genuinely helps —
+        someone who wants the detail should not have to search for it. Use
+        only a link the search returned; never write one from memory, and say
+        nothing rather than guess at a URL.
       * When one detail would change your answer — which flow, which template —
         end by asking for it. One question, not a list.
       * If something genuinely is not supported, say so in the first sentence

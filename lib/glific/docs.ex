@@ -238,7 +238,7 @@ defmodule Glific.Docs do
   def dimensions, do: config(:embedding_dimensions, 256)
 
   @doc "Request options for an embedding call."
-  @spec embed_opts(pos_integer()) :: keyword()
+  @spec embed_opts(pos_integer(), String.t() | nil) :: keyword()
   def embed_opts(dimensions, model \\ nil) do
     [provider_options: [dimensions: dimensions]]
     |> then(&if(key = api_key(model), do: Keyword.put(&1, :api_key, key), else: &1))
