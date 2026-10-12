@@ -6,20 +6,18 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 
 - **`contacts`** = the person. One row per person per org. Holds name, language, fields, status,
   and (for now) WhatsApp state. **`phone` becomes nullable.**
-- **`contact_identities`** = login credentials only: how that person is identified on a channel. `kind`
-  says what the identifier is (`phone`, `username`, later `telegram_chat_id`), so a username that
-  happens to be a phone number never matches someone's phone login. One row per login, so a contact
-  can have several. It never holds per-channel state; that lives in `contact_channels` (§6).
+- **`contact_identities`** = login credentials only: how that person is identified on a channel (a
+  WhatsApp phone, an NGO username, later a Telegram chat id). One row per login, so a contact can
+  have several. It never holds per-channel state; that lives in `contact_channels` (§6).
 - Everything else (messages, flow contexts, flow results, tags, groups, tickets) stays keyed on
   `contact_id`. Nothing else changes.
 
 ```
 contacts                        contact_identities
-id | name | phone               contact_id | channel  | kind     | identifier
-42 | Asha | 919876543210        42         | whatsapp | phone    | 919876543210  (WhatsApp)
-                                42         | web      | phone    | 919876543210  (web, OTP login)
-                                42         | web      | username | asha_07       (Tap, linked via phone)
-57 | Ravi | NULL                57         | web      | username | ravi_12       (username only)
+id | name | phone               contact_id | channel  | identifier
+42 | Asha | 919876543210        42         | whatsapp | 919876543210  (WhatsApp)
+                                42         | web      | asha_07       (Tap, linked via phone)
+57 | Ravi | NULL                57         | web      | ravi_12       (username only)
 ```
 
 ## 2. Schema
@@ -31,13 +29,12 @@ CREATE TABLE contact_identities (
   contact_id      bigint NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
   organization_id bigint NOT NULL REFERENCES organizations(id),
   channel         message_channel_enum NOT NULL,
-  kind            varchar NOT NULL,                 -- phone | username
   identifier      varchar(255) NOT NULL,
   inserted_at     timestamp NOT NULL,
   updated_at      timestamp NOT NULL
 );
-CREATE UNIQUE INDEX contact_identities_org_channel_kind_identifier_index
-  ON contact_identities (organization_id, channel, kind, identifier);   -- no duplicates within a channel and kind
+CREATE UNIQUE INDEX contact_identities_organization_id_channel_identifier_index
+  ON contact_identities (organization_id, channel, identifier);   -- no duplicates within a channel
 CREATE INDEX contact_identities_contact_id_index ON contact_identities (contact_id);
 
 -- contacts
@@ -50,7 +47,7 @@ Not added: `contacts.channels`, per-channel username columns. No backfill. `cont
 ## 3. Rules
 
 1. **The entry point decides the lookup.** It never falls back from one to the other.
-2. **Within a channel and kind:** never a duplicate (unique index).
+2. **Within a channel:** never a duplicate (unique index).
 3. **Across channels:** duplicates are OK when nothing links them.
 4. **Linking is one insert (or one row update), never a merge.** No history is rewritten.
 5. **Never look up a contact by a nil phone.**
@@ -71,17 +68,17 @@ lookup, until the backfill has covered every existing contact).
 ```
 request-otp(phone) → code over WhatsApp → verify-otp(phone, code)
 → find/create the contact by phone   (same contact as WhatsApp; that's the web↔WhatsApp link)
-→ record identity (web, phone, <phone>) on that contact if missing
 → Glific signs its own token {sub: contact_id}
 ```
-It's `kind: phone`, so an NGO username equal to this number (many NGOs use phone or roll numbers)
-is a different identity and never logs into this conversation.
+No web identity is written: `contacts.phone` (and its WhatsApp identity) is already this path's
+lookup. A `(web, <phone>)` row would share the web namespace with NGO usernames, so a username equal
+to someone's phone number (many NGOs use phone or roll numbers) would log into their conversation.
 
 ### 4.3 Web, NGO token with username only
 ```
-token {sub:"ravi_12", channel:"web", iat, exp}
+WebSocket connect with token {sub:"ravi_12", channel:"web", iat, exp}
 → verify token (§5)
-→ lookup contact_identities (org, web, username, "ravi_12")
+→ lookup contact_identities (org, web, "ravi_12")
    found     → that contact
    not found → transaction: insert contact (phone NULL) → insert identity → that contact
                unique conflict (two tabs) → re-read, return existing
@@ -91,12 +88,12 @@ token {sub:"ravi_12", channel:"web", iat, exp}
 ```
 token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
 → verify token (§5)
-→ (org, web, username, "asha_07") already exists → that contact; phone/contact_id IGNORED
+→ (org, web, "asha_07") already exists → that contact; phone/contact_id IGNORED
 → not found:
      target = contact by phone, or contact by contact_id (must be in this org)
      target found → insert identity on target (link), even if it already has other web identities
      otherwise    → create new contact (4.3)
-     unique conflict on (org, web, username, "asha_07") (two tabs) → re-read, return the existing identity's contact
+     unique conflict on (org, web, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
 Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
 is never moved by a token · an identity always takes its `organization_id` from its contact.
@@ -126,10 +123,16 @@ A reply goes out on the channel the conversation/flow came in on (already built 
   the org's `web_channel` credential (set on the Settings page). The organization comes from the
   subdomain; there is no `kid`.
 - Algorithm pinned to HS256. Valid signature.
-- `sub`, `channel = "web"`, `iat`, `exp` required. `exp - iat ≤ 1h`. ≤ 60s clock leeway. `sub` ≤ 255.
-- Any failure returns the same 401.
-- On success Glific issues its own session token, the same one `verify-otp` returns; the NGO token is
-  used once, like an OTP.
+- `sub`, `channel = "web"`, `iat`, `exp` required. `exp - iat ≤ 24h` (the NGO may issue shorter
+  tokens, e.g. 6h). ≤ 60s clock leeway. `sub` ≤ 255.
+- Any failure refuses the connection the same way.
+- No session layer: the NGO token itself authenticates the WebSocket connect; Glific issues no token
+  of its own. Before it expires the client sends a fresh NGO token as a `renew_token` message on the
+  socket, which must resolve to the same contact; the expiry is updated in memory. A background sweep
+  closes any socket whose token has expired. Reissuing tokens is the NGO's job.
+- Glific's own web channel (phone + OTP) keeps its platform-issued token and `renew-token`.
+- `POST /web_channel/contacts` (same token) creates or returns the contact without connecting, so an
+  NGO backend can provision ahead of the first connection.
 - NGO contract: `sub` must be unique across every system the NGO signs tokens from. Identities are
   unique per organization, so two systems issuing the same `sub` would log in as one contact.
 - Phones (in the `phone` claim and in identifiers) are digits with country code and no `+`, the format
@@ -185,11 +188,11 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 |---|---|
 | 1 | Nil-phone safety (§7) |
 | 2 | Migrations + schemas (§2) |
-| 3 | Login secret, verifier, login + provisioning APIs, resolve/link (§4.2–4.4, §5), WhatsApp identities + backfill |
+| 3 | Login secret, verifier, WebSocket connect + renewal with the NGO token, provisioning API, resolve/link (§4.3–4.4, §5), WhatsApp identities + backfill |
 | 4 | Inbox + GraphQL (§8) |
 
 ## 11. Open
-1. Can the NGO rename or reassign a username? (update row / forbid)
+1. Can the NGO rename or reassign a username? Deferred until after these PRs: either the NGO's backend calls the existing GraphQL API, or a username change is sent over the WebSocket.
 2. Display name for a username-only contact: take a `name` claim, or leave blank?
 3. Per-user logout (`tokens_valid_after`): now or later?
 4. Acceptance criterion "unknown username is rejected" must be reworded. Unknown + validly signed means create.

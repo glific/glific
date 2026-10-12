@@ -1,8 +1,8 @@
 defmodule Glific.Repo.Migrations.CreateContactIdentities do
   @moduledoc """
   How a contact logs in on a channel: one row per login, each pointing at the contact (the person).
-  The `identifier` is opaque to Glific; `kind` says what it is (a phone, a username issued by the
-  NGO), so a username can never collide with a phone on the same channel.
+  The `identifier` is opaque to Glific (a username issued by the NGO, later a WhatsApp phone or a
+  Telegram chat id), unique within an organization and channel.
   """
   use Ecto.Migration
 
@@ -22,10 +22,6 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
         null: false,
         comment: "Channel this login is used on"
 
-      add :kind, :string,
-        null: false,
-        comment: "What the identifier is: phone or username"
-
       add :identifier, :string,
         size: 255,
         null: false,
@@ -34,10 +30,7 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
       timestamps(type: :utc_datetime_usec)
     end
 
-    create unique_index(:contact_identities, [:organization_id, :channel, :kind, :identifier],
-             name: :contact_identities_org_channel_kind_identifier_index
-           )
-
+    create unique_index(:contact_identities, [:organization_id, :channel, :identifier])
     create index(:contact_identities, [:contact_id])
   end
 end
