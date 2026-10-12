@@ -23,8 +23,8 @@ defmodule Glific.Docs do
 
   @index_key {__MODULE__, :entries}
   @metadata_key {__MODULE__, :metadata}
+  @corpus "docs_kb"
   @artifact "docs_kb/embeddings.etf"
-  @documents ~w(glific_chatbot_knowledge_base glific_platform_guide glific_operations_manual)
   @version 1
 
   @typedoc "One section of documentation: a heading, its prose, and its page."
@@ -42,15 +42,19 @@ defmodule Glific.Docs do
 
   @separator " › "
 
-  # Standard fusion constant: a section both passes rank beats one that only
-  # a single pass found.
+  # Reciprocal rank fusion. 60 is the constant the method is usually used with;
+  # it makes a section both passes rank beat one that only a single pass found.
   @rrf_k 60
-  @leg_depth 30
+
+  # How many candidates each pass offers the merge.
+  @candidates 30
 
   # A heading states what its section answers.
   @heading_weight 4
 
-  # Without a floor each pass returns its full depth for any string at all.
+  # Without a floor each pass returns candidates for any string at all. Both
+  # numbers sit between what an off-topic question scores and what a real one
+  # does, measured against the questions in `priv/docs_kb/golden_sections.csv`.
   @minimum_similarity 0.45
   @minimum_overlap 5
 
@@ -61,23 +65,24 @@ defmodule Glific.Docs do
     not no yes so then than there here what which who whom when where why how
     me am any all some more most other into about also very just only own same
     don now get got please hi hello thanks thank team need help issue problem
-    having getting trying tried like want able there's i'm we're
+    having getting trying tried like want able
   ))
 
-  # ── The entries ────────────────────────────────────────────────────────────
-
-  @doc "The documents that make up the corpus."
+  @doc "Every document in `priv/docs_kb`, by name."
   @spec documents() :: [String.t()]
-  def documents, do: @documents
+  def documents do
+    paths() |> Enum.map(&Path.basename(&1, ".md")) |> Enum.sort()
+  end
+
+  defp paths do
+    :glific |> Application.app_dir("priv/#{@corpus}") |> Path.join("*.md") |> Path.wildcard()
+  end
 
   @doc "Every entry of every document."
   @spec sections() :: [section()]
   def sections do
-    Enum.flat_map(@documents, fn document ->
-      :glific
-      |> Application.app_dir("priv/docs_kb/#{document}.md")
-      |> File.read!()
-      |> parse(document)
+    Enum.flat_map(paths(), fn path ->
+      path |> File.read!() |> parse(Path.basename(path, ".md"))
     end)
   end
 
@@ -129,8 +134,6 @@ defmodule Glific.Docs do
     end
   end
 
-  # ── The index ──────────────────────────────────────────────────────────────
-
   @doc "Reads the artifact into `:persistent_term`, once, on boot."
   @spec warm() :: :ok
   def warm do
@@ -170,10 +173,13 @@ defmodule Glific.Docs do
     :ok
   end
 
+  # Read with `:safe`, which refuses to create atoms. Everything the artifact
+  # holds is named somewhere in this module, so the atoms already exist.
   @spec read_artifact() :: %{entries: [entry()], metadata: map()}
   defp read_artifact do
     with {:ok, binary} <- File.read(artifact_path()),
-         %{version: @version, entries: entries} = payload <- :erlang.binary_to_term(binary) do
+         %{version: @version, entries: entries} = payload <-
+           :erlang.binary_to_term(binary, [:safe]) do
       %{entries: entries, metadata: Map.get(payload, :metadata, %{})}
     else
       other ->
@@ -192,8 +198,6 @@ defmodule Glific.Docs do
   # The lexical pass still works without an artifact; the semantic one cannot.
   defp without_vectors,
     do: %{entries: Enum.map(sections(), &%{section: &1, vector: nil}), metadata: %{}}
-
-  # ── Embedding ──────────────────────────────────────────────────────────────
 
   @doc "Embeds one piece of text, using the model and width the artifact holds."
   @spec embed(String.t()) :: {:ok, binary()} | {:error, term()}
@@ -250,8 +254,7 @@ defmodule Glific.Docs do
   # to OpenAI: another provider must not be handed someone else's key.
   defp api_key(model) do
     with true <- String.starts_with?(model || model(), "openai:"),
-         key when is_binary(key) and key != "This is not a secret" <-
-           Application.get_env(:glific, :open_ai) do
+         key when is_binary(key) and key != "This is not a secret" <- Glific.get_open_ai_key() do
       key
     else
       _other -> nil
@@ -260,8 +263,6 @@ defmodule Glific.Docs do
 
   defp config(key, default),
     do: :glific |> Application.get_env(__MODULE__, []) |> Keyword.get(key, default)
-
-  # ── Searching ──────────────────────────────────────────────────────────────
 
   @doc "The sections most likely to answer `question`, best first."
   @spec find(String.t(), keyword()) :: [section()]
@@ -276,6 +277,11 @@ defmodule Glific.Docs do
     |> Enum.take(Keyword.get(opts, :limit, 5))
   end
 
+  # A one-word question can only ever score a single heading match, so holding
+  # it to the full floor would reject every one of them.
+  defp floor_for([_one_term]), do: @heading_weight
+  defp floor_for(_several), do: @minimum_overlap
+
   @doc "The lexical pass on its own."
   @spec lexical(String.t(), [entry()]) :: [section()]
   def lexical(question, entries) do
@@ -284,14 +290,14 @@ defmodule Glific.Docs do
     if terms == [] do
       []
     else
-      floor = min(@minimum_overlap, @heading_weight * length(terms))
       identifiers = identifiers(question)
+      floor = floor_for(terms)
 
       entries
       |> Enum.map(&{overlap(&1.section, terms, identifiers), &1.section})
       |> Enum.filter(&(elem(&1, 0) >= floor))
       |> Enum.sort_by(fn {score, section} -> {-score, byte_size(section.body)} end)
-      |> Enum.take(@leg_depth)
+      |> Enum.take(@candidates)
       |> Enum.map(&elem(&1, 1))
     end
   end
@@ -325,7 +331,7 @@ defmodule Glific.Docs do
     |> Enum.map(&{similarity(&1.vector, vector), &1.section})
     |> Enum.filter(&(elem(&1, 0) >= @minimum_similarity))
     |> Enum.sort_by(&(-elem(&1, 0)))
-    |> Enum.take(@leg_depth)
+    |> Enum.take(@candidates)
     |> Enum.map(&elem(&1, 1))
   end
 
@@ -355,7 +361,7 @@ defmodule Glific.Docs do
   @doc "The terms worth matching on. Notation stays whole, dots and all."
   @spec terms(String.t()) :: [String.t()]
   def terms(question) do
-    ~r/[@a-z0-9][a-z0-9._\-]*/u
+    ~r/[@\p{L}\p{N}][\p{L}\p{M}\p{N}._\-]*/u
     |> Regex.scan(String.downcase(question))
     |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
     |> Enum.reject(&(String.length(&1) < 2 or MapSet.member?(@stopwords, &1)))
@@ -388,7 +394,7 @@ defmodule Glific.Docs do
 
   # Read before downcasing, which is where the camel hump would be lost.
   defp identifiers(question) do
-    ~r/[@a-zA-Z0-9][a-zA-Z0-9._\-]*/u
+    ~r/[@\p{L}\p{N}][\p{L}\p{M}\p{N}._\-]*/u
     |> Regex.scan(question)
     |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
     |> Enum.filter(&identifier?/1)

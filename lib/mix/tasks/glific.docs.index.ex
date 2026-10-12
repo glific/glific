@@ -48,8 +48,7 @@ defmodule Mix.Tasks.Glific.Docs.Index do
         Docs.write!(entries,
           model: model,
           dimensions: dimensions,
-          chunks: length(entries),
-          built_at: DateTime.utc_now()
+          sections: length(entries)
         )
 
         report(entries, embedded, fresh, known, model, dimensions)
