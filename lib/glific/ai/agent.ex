@@ -278,7 +278,7 @@ defmodule Glific.AI.Agent do
   # Runs in its own task and only ever reads. The tool_result event is written by
   # the caller, which is what lets the task point its reads at the read replica:
   # the process carries that away with it when it finishes.
-  @spec run_tool(User.t(), ChatMessage.tool_call(), [module()]) :: String.t()
+  @spec run_tool(User.t(), ChatMessage.tool_call(), [module()]) :: {String.t(), DateTime.t()}
   defp run_tool(user, %{name: name, args: args}, modules) do
     body =
       case Tools.run(name, args, user, modules) do
