@@ -3,7 +3,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginController do
   Login and contact provisioning for the web channel, authenticated by a JWT the NGO's own backend
   signs with its login secret (see `GlificWeb.WebChannel.LoginToken`).
 
-  Both endpoints are gated by the web channel and the per-organization login flag, resolve the
+  Both endpoints are gated by the web channel, resolve the
   contact through `Glific.Contacts.Identities.resolve_or_create/3` (so repeating a call returns
   the same contact), and answer an invalid token with one generic 401.
   """
@@ -21,9 +21,6 @@ defmodule GlificWeb.API.V1.WebChannelLoginController do
   """
   @spec login(Conn.t(), map()) :: Conn.t()
   def login(conn, %{"token" => token}) when is_binary(token) and token != "" do
-    IO.inspect(token)
-    IO.inspect(conn)
-
     with_valid_token(conn, token, fn contact ->
       json(conn, %{
         data: %{
@@ -52,7 +49,7 @@ defmodule GlificWeb.API.V1.WebChannelLoginController do
   defp with_valid_token(conn, token, on_success) do
     organization_id = conn.assigns[:organization_id]
 
-    if Flag.web_channel_login_enabled?(organization_id) do
+    if Flag.web_channel_enabled?(organization_id) do
       with {:ok, claims} <- LoginToken.verify(organization_id, token),
            {:ok, contact} <- Identities.resolve_or_create(:web, claims.sub, claims) do
         on_success.(contact)
