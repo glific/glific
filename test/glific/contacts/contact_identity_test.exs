@@ -24,7 +24,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: contact.id,
                  organization_id: organization_id,
                  channel: :web,
-                 kind: "ngo_username",
+                 kind: "username",
                  identifier: "ravi_12"
                })
 
@@ -53,7 +53,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: contact.id,
                  organization_id: organization_id,
                  channel: :web,
-                 kind: "ngo_username",
+                 kind: "username",
                  identifier: String.duplicate("a", 256)
                })
 
@@ -83,7 +83,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: other.id,
                  organization_id: organization_id,
                  channel: :web,
-                 kind: "ngo_username",
+                 kind: "username",
                  identifier: "asha_07"
                })
 
@@ -103,7 +103,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
       username =
         Fixtures.contact_identity_fixture(%{
           organization_id: organization_id,
-          kind: "ngo_username",
+          kind: "username",
           identifier: "919812345678"
         })
 
@@ -134,7 +134,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: identity.contact_id,
                  organization_id: organization_id,
                  channel: :whatsapp,
-                 kind: "ngo_username",
+                 kind: "username",
                  identifier: "x"
                })
     end
@@ -157,7 +157,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  contact_id: 0,
                  organization_id: organization_id,
                  channel: :web,
-                 kind: "ngo_username",
+                 kind: "username",
                  identifier: "ghost"
                })
 

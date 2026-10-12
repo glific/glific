@@ -7,7 +7,7 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 - **`contacts`** = the person. One row per person per org. Holds name, language, fields, status,
   and (for now) WhatsApp state. **`phone` becomes nullable.**
 - **`contact_identities`** = login credentials only: how that person is identified on a channel. `kind`
-  says what the identifier is (`phone`, `ngo_username`, later `telegram_chat_id`), so a username that
+  says what the identifier is (`phone`, `username`, later `telegram_chat_id`), so a username that
   happens to be a phone number never matches someone's phone login. One row per login, so a contact
   can have several. It never holds per-channel state; that lives in `contact_channels` (§6).
 - Everything else (messages, flow contexts, flow results, tags, groups, tickets) stays keyed on
@@ -15,11 +15,11 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 
 ```
 contacts                        contact_identities
-id | name | phone               contact_id | channel  | kind         | identifier
-42 | Asha | 919876543210        42         | whatsapp | phone        | 919876543210  (WhatsApp)
-                                42         | web      | phone        | 919876543210  (web, OTP login)
-                                42         | web      | ngo_username | asha_07       (Tap, linked via phone)
-57 | Ravi | NULL                57         | web      | ngo_username | ravi_12       (username only)
+id | name | phone               contact_id | channel  | kind     | identifier
+42 | Asha | 919876543210        42         | whatsapp | phone    | 919876543210  (WhatsApp)
+                                42         | web      | phone    | 919876543210  (web, OTP login)
+                                42         | web      | username | asha_07       (Tap, linked via phone)
+57 | Ravi | NULL                57         | web      | username | ravi_12       (username only)
 ```
 
 ## 2. Schema
@@ -31,7 +31,7 @@ CREATE TABLE contact_identities (
   contact_id      bigint NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
   organization_id bigint NOT NULL REFERENCES organizations(id),
   channel         message_channel_enum NOT NULL,
-  kind            varchar NOT NULL,                 -- phone | ngo_username
+  kind            varchar NOT NULL,                 -- phone | username
   identifier      varchar(255) NOT NULL,
   inserted_at     timestamp NOT NULL,
   updated_at      timestamp NOT NULL
@@ -81,7 +81,7 @@ is a different identity and never logs into this conversation.
 ```
 token {sub:"ravi_12", channel:"web", iat, exp}
 → verify token (§5)
-→ lookup contact_identities (org, web, ngo_username, "ravi_12")
+→ lookup contact_identities (org, web, username, "ravi_12")
    found     → that contact
    not found → transaction: insert contact (phone NULL) → insert identity → that contact
                unique conflict (two tabs) → re-read, return existing
@@ -91,12 +91,12 @@ token {sub:"ravi_12", channel:"web", iat, exp}
 ```
 token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
 → verify token (§5)
-→ (org, web, ngo_username, "asha_07") already exists → that contact; phone/contact_id IGNORED
+→ (org, web, username, "asha_07") already exists → that contact; phone/contact_id IGNORED
 → not found:
      target = contact by phone, or contact by contact_id (must be in this org)
      target found → insert identity on target (link), even if it already has other web identities
      otherwise    → create new contact (4.3)
-     unique conflict on (org, web, ngo_username, "asha_07") (two tabs) → re-read, return the existing identity's contact
+     unique conflict on (org, web, username, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
 Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
 is never moved by a token · an identity always takes its `organization_id` from its contact.

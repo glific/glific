@@ -23,7 +23,7 @@ defmodule Glific.Contacts.ContactIdentity do
 
   @required_fields [:contact_id, :organization_id, :channel, :kind, :identifier]
   @optional_fields []
-  @kinds ["phone", "ngo_username"]
+  @kinds ["phone", "username"]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
