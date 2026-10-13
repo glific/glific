@@ -34,6 +34,16 @@ defmodule Glific.Contacts.IdentitiesTest do
                identities_of(contact.id)
     end
 
+    test "an identifier the identity changeset rejects returns the error and creates no contact" do
+      contacts_before = Repo.aggregate(Contact, :count)
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Identities.resolve_or_create(:web, String.duplicate("a", 256), %{name: "Ravi"})
+
+      assert %{identifier: [_too_long]} = errors_on(changeset)
+      assert Repo.aggregate(Contact, :count) == contacts_before
+    end
+
     test "uses the name claim as the contact's name" do
       assert {:ok, contact} = Identities.resolve_or_create(:web, "ravi_12", %{name: "Ravi"})
       assert contact.name == "Ravi"

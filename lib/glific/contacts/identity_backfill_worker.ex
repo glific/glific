@@ -32,24 +32,34 @@ defmodule Glific.Contacts.IdentityBackfillWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, term()}
   def perform(%Oban.Job{args: %{"after_id" => after_id}}) do
-    rows =
-      from(c in Contact,
-        where: c.id > ^after_id,
-        order_by: c.id,
-        limit: @chunk_size,
-        select: %{id: c.id, phone: c.phone, organization_id: c.organization_id}
-      )
-      |> Repo.all(skip_organization_id: true)
-
-    Identities.insert_whatsapp_identities(rows)
-
-    with %{id: last_id} <- List.last(rows),
+    with {:ok, rows} <- backfill_chunk(after_id),
+         %{id: last_id} <- List.last(rows),
          {:ok, _job} <- enqueue(last_id) do
       :ok
     else
       nil -> :ok
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  # The rows stay locked until their identities are in, so a phone change racing this chunk waits
+  # and then moves the identity instead of leaving one on the old phone.
+  @spec backfill_chunk(non_neg_integer()) :: {:ok, [map()]} | {:error, term()}
+  defp backfill_chunk(after_id) do
+    Repo.transaction(fn ->
+      rows =
+        from(c in Contact,
+          where: c.id > ^after_id,
+          order_by: c.id,
+          limit: @chunk_size,
+          lock: "FOR UPDATE",
+          select: %{id: c.id, phone: c.phone, organization_id: c.organization_id}
+        )
+        |> Repo.all(skip_organization_id: true)
+
+      Identities.insert_whatsapp_identities(rows)
+      rows
+    end)
   end
 
   @spec enqueue(non_neg_integer()) ::

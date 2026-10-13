@@ -195,10 +195,19 @@ defmodule Glific.Contacts.Identities do
       {:error, :contact, changeset, _changes} ->
         recover_phone_conflict(changeset, attrs, identifier)
 
-      {:error, :identity, _changeset, _changes} ->
-        reread(organization_id, identifier, claims)
+      {:error, :identity, changeset, _changes} ->
+        if identifier_taken?(changeset),
+          do: reread(organization_id, identifier, claims),
+          else: {:error, changeset}
     end
   end
+
+  @spec identifier_taken?(Ecto.Changeset.t()) :: boolean()
+  defp identifier_taken?(changeset),
+    do:
+      Enum.any?(changeset.errors, fn {_field, {_message, opts}} ->
+        opts[:constraint] == :unique
+      end)
 
   @spec unclaimed_phone(String.t() | nil) :: String.t() | nil
   defp unclaimed_phone(nil), do: nil
