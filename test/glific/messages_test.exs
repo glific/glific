@@ -358,6 +358,16 @@ defmodule Glific.MessagesTest do
       assert message.body == ""
     end
 
+    test "create_message/1 truncates a flow label longer than the column allows", attrs do
+      assert {:ok, message} =
+               @valid_attrs
+               |> Map.put(:flow_label, String.duplicate("e\u0301", 200))
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_message()
+
+      assert message.flow_label == String.duplicate("e\u0301", 127) <> "e"
+    end
+
     test "create_message/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end

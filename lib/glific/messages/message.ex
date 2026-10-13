@@ -88,6 +88,8 @@ defmodule Glific.Messages.Message do
     :contact_id,
     :organization_id
   ]
+  @flow_label_max_length 255
+
   @optional_fields [
     :uuid,
     :channel,
@@ -192,7 +194,18 @@ defmodule Glific.Messages.Message do
     |> cast(attrs, @required_fields ++ @optional_fields, empty_values: [[], nil])
     |> validate_required(@required_fields)
     |> validate_media(message)
+    |> truncate_flow_label()
     |> unique_constraint([:bsp_message_id, :organization_id])
+  end
+
+  @spec truncate_flow_label(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp truncate_flow_label(changeset) do
+    update_change(changeset, :flow_label, fn label ->
+      label
+      |> String.codepoints()
+      |> Enum.take(@flow_label_max_length)
+      |> Enum.join()
+    end)
   end
 
   @doc """
