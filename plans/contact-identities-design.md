@@ -106,7 +106,7 @@ Same as 4.3 with `channel = :telegram` etc. That only needs a new enum value, no
 
 ### 4.6 After resolution (all paths)
 ```
-contact_id → internal PubSub topic web_channel:<contact_id>, relayed to the client's `web_channel:me` join
+contact_id → internal PubSub topic web_channel:<contact_id>, relayed to the client's `web_channel:conversation` join
            → messages(channel=web)   (no contact_identity_id: messages record the channel, not the login)
            → flows / flow_results / tags / inbox exactly as today
 ```

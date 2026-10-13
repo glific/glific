@@ -3,7 +3,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   The Phoenix channel a browser contact joins to hold its own web channel conversation:
   fetching recent history, sending messages, and being swept for token expiry.
 
-  The only topic a client may join is `"web_channel:me"`, which always means the socket's own
+  The only topic a client may join is `"web_channel:conversation"`, which always means the socket's own
   contact (set during `GlificWeb.WebChannelSocket` authentication); any other `web_channel:*`
   topic is refused. `"web_channel:<contact_id>"` is only the internal PubSub topic Glific
   broadcasts to, which this channel subscribes to and relays. `renew_token` below must never be
@@ -39,7 +39,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   @impl true
   @spec join(String.t(), map(), Phoenix.Socket.t()) ::
           {:ok, map(), Phoenix.Socket.t()} | {:error, map()}
-  def join("web_channel:me", _params, socket) do
+  def join("web_channel:conversation", _params, socket) do
     # `connect/3` verified the token once, and the sweep only starts here — so re-check expiry.
     if token_expired?(socket) do
       {:error, %{reason: "unauthorized"}}
@@ -50,7 +50,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       Repo.put_process_state(socket.assigns.organization_id)
       schedule_sweep()
 
-      # Nothing broadcasts to "web_channel:me" (it would reach every client); the per-contact
+      # Nothing broadcasts to "web_channel:conversation" (it would reach every client); the per-contact
       # topic Glific broadcasts to is relayed in handle_info/2 instead.
       Phoenix.PubSub.subscribe(Glific.PubSub, "web_channel:#{contact_id}")
 

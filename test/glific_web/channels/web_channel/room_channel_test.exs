@@ -803,10 +803,11 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   end
 
   # Put back whatever happens: leaving it down breaks every later test in this file.
-  describe "the web_channel:me topic" do
+  describe "the web_channel:conversation topic" do
     @secret "ngo-login-secret-ngo-login-secret"
 
-    defp join_me(ws_socket), do: subscribe_and_join(ws_socket, RoomChannel, "web_channel:me")
+    defp join_conversation(ws_socket),
+      do: subscribe_and_join(ws_socket, RoomChannel, "web_channel:conversation")
 
     defp outbound_message(contact) do
       Fixtures.message_fixture(%{
@@ -834,7 +835,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         contact_id = contact.id
 
         assert {:ok, %{contact_id: ^contact_id, messages: messages}, _socket} =
-                 join_me(ws_socket)
+                 join_conversation(ws_socket)
 
         assert Enum.any?(messages, &(&1.body == "earlier message"))
         assert Presence.online?(contact.organization_id, contact.id)
@@ -854,7 +855,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
           {:ok, ws_socket} = WebChannelFixtures.ngo_socket_fixture(token)
           contact_id = ws_socket.assigns.current_contact.id
 
-          assert {:ok, %{contact_id: ^contact_id, messages: []}, _socket} = join_me(ws_socket)
+          assert {:ok, %{contact_id: ^contact_id, messages: []}, _socket} =
+                   join_conversation(ws_socket)
         end
       )
     end
@@ -862,7 +864,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "pushes an outbound message for the contact exactly once", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, _socket} = join_me(ws_socket)
+        {:ok, _reply, _socket} = join_conversation(ws_socket)
 
         {:ok, _sent} = contact |> outbound_message() |> Glific.Providers.Web.Message.send_text()
 
@@ -879,8 +881,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       with_web_channel_enabled(fn ->
         {:ok, a_ws} = WebChannelFixtures.web_channel_socket_fixture(contact)
         {:ok, b_ws} = WebChannelFixtures.web_channel_socket_fixture(other_contact)
-        {:ok, _reply, a_socket} = join_me(a_ws)
-        {:ok, _reply, b_socket} = join_me(b_ws)
+        {:ok, _reply, a_socket} = join_conversation(a_ws)
+        {:ok, _reply, b_socket} = join_conversation(b_ws)
 
         # Each channel process listens to its own contact's topic and to nobody else's.
         assert "web_channel:#{contact.id}" in subscribed_topics(a_socket)
@@ -898,13 +900,13 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "new_message is stored for the socket's own contact", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = join_me(ws_socket)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
 
-        ref = push(socket, "new_message", %{"body" => "hello via me"})
+        ref = push(socket, "new_message", %{"body" => "hello via the conversation topic"})
         assert_reply ref, :ok
 
         assert message = Repo.get_by(Message, contact_id: contact.id, channel: :web)
-        assert message.body == "hello via me"
+        assert message.body == "hello via the conversation topic"
         assert message.flow == :inbound
         assert message.sender_id == contact.id
       end)
@@ -913,7 +915,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "renew_token works", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = join_me(ws_socket)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
 
         now = System.system_time(:second)
 
@@ -931,7 +933,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "the sweep closes the channel once the token has expired", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = join_me(ws_socket)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
 
         :sys.replace_state(socket.channel_pid, fn state ->
           %{state | assigns: %{state.assigns | token_exp: System.system_time(:second) - 120}}
@@ -952,14 +954,14 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         expired_socket =
           Phoenix.Socket.assign(ws_socket, :token_exp, System.system_time(:second) - 3_600)
 
-        assert {:error, %{reason: "unauthorized"}} = join_me(expired_socket)
+        assert {:error, %{reason: "unauthorized"}} = join_conversation(expired_socket)
       end)
     end
 
-    test "switching the channel off closes a me room", %{contact: contact} do
+    test "switching the channel off closes a conversation room", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = join_me(ws_socket)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
         monitor = Process.monitor(socket.channel_pid)
 
         Rooms.close_all(contact.organization_id)
