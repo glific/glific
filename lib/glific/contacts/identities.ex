@@ -33,12 +33,12 @@ defmodule Glific.Contacts.Identities do
         }
 
   @doc """
-  The contact holding an identity in the current organization; identifiers are case-insensitive.
+  The contact holding an identity in the current organization; web identifiers are case-insensitive.
   """
   @spec fetch_contact(MessageChannel.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, :not_found}
   def fetch_contact(channel, identifier) do
-    identifier = String.downcase(identifier)
+    identifier = lookup_key(channel, identifier)
 
     query =
       from(i in ContactIdentity,
@@ -243,6 +243,10 @@ defmodule Glific.Contacts.Identities do
       create_with_identity(organization_id, identifier, claims)
     end
   end
+
+  @spec lookup_key(MessageChannel.t(), String.t()) :: String.t()
+  defp lookup_key(:web, identifier), do: String.downcase(identifier)
+  defp lookup_key(_channel, identifier), do: identifier
 
   @spec identity_changeset(Contact.t(), MessageChannel.t(), String.t()) :: Ecto.Changeset.t()
   defp identity_changeset(contact, channel, identifier) do

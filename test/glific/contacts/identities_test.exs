@@ -252,7 +252,7 @@ defmodule Glific.Contacts.IdentitiesTest do
     test "a web contact given a phone gets a WhatsApp identity", %{
       organization_id: organization_id
     } do
-      contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
 
       assert {:ok, _} = Contacts.update_contact(contact, %{phone: "919876500003"})
 

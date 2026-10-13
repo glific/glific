@@ -91,13 +91,15 @@ defmodule Glific.Contacts.IdentityBackfillWorkerTest do
   end
 
   test "skips contacts without a phone", %{organization_id: organization_id} do
-    web_contact = Fixtures.web_contact_fixture(%{organization_id: organization_id})
+    contact_without_phone =
+      Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
     without_identities()
 
     IdentityBackfillWorker.start()
     Oban.drain_queue(queue: :purge, with_scheduled: true)
 
-    refute Enum.any?(whatsapp_identities(), &(&1.contact_id == web_contact.id))
+    refute Enum.any?(whatsapp_identities(), &(&1.contact_id == contact_without_phone.id))
   end
 
   test "works through chunks, enqueuing the next from the last id", %{
