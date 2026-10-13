@@ -16,7 +16,6 @@ defmodule GlificWeb.Schema.GuardrailTypes do
 
   object :guardrail_validators_result do
     field :validators, list_of(:guardrail_validator)
-    field :errors, list_of(:result_error)
   end
 
   object :guardrail_queries do

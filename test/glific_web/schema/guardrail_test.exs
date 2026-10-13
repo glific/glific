@@ -140,24 +140,20 @@ defmodule GlificWeb.Schema.GuardrailTest do
 
   test "guardrailValidators returns the error of a failed Kaapi response", %{manager: user} do
     Tesla.Mock.mock(fn %{method: :get} ->
-      %Tesla.Env{status: 200, body: %{success: false, error: "Failed to retrieve schema"}}
+      %Tesla.Env{status: 500, body: %{success: false, error: "Failed to retrieve schema"}}
     end)
 
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
 
-    assert [%{"message" => "Failed to retrieve schema"}] =
-             get_in(query_data, [:data, "guardrailValidators", "errors"])
+    assert [%{message: "Failed to retrieve schema"}] = query_data.errors
   end
 
-  test "guardrailValidators surfaces a Kaapi HTTP error detail", %{manager: user} do
-    Tesla.Mock.mock(fn %{method: :get} ->
-      %Tesla.Env{status: 500, body: %{detail: "Guardrails service unavailable"}}
-    end)
+  test "guardrailValidators returns a retry message when Kaapi times out", %{manager: user} do
+    Tesla.Mock.mock(fn %{method: :get} -> {:error, :timeout} end)
 
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
 
-    assert [%{"message" => "Guardrails service unavailable"}] =
-             get_in(query_data, [:data, "guardrailValidators", "errors"])
+    assert [%{message: "Timeout occurred, please try again."}] = query_data.errors
   end
 
   test "returns an error when the feature flag is disabled for the organization" do
@@ -176,7 +172,6 @@ defmodule GlificWeb.Schema.GuardrailTest do
 
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
 
-    assert [%{"message" => "Kaapi is not active"}] =
-             get_in(query_data, [:data, "guardrailValidators", "errors"])
+    assert [%{message: "Kaapi is not active"}] = query_data.errors
   end
 end

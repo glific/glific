@@ -4,8 +4,5 @@ query guardrailValidators {
       type
       config
     }
-    errors {
-      message
-    }
   }
 }
