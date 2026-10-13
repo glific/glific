@@ -1088,7 +1088,7 @@ defmodule Glific.Contacts do
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  Looks a contact up by its login on a channel; a nil or empty identifier is refused without querying.
+  Looks a contact up by its login on a channel (web logins are case-insensitive); a nil or empty identifier is refused without querying.
   """
   @spec fetch_by_identity(:whatsapp | :web, String.t() | nil) ::
           {:ok, Contact.t()} | {:error, :no_identifier | :not_found}

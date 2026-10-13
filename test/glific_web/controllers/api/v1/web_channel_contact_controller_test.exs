@@ -22,7 +22,7 @@ defmodule GlificWeb.API.V1.WebChannelContactControllerTest do
   end
 
   defp with_login_secret(fun),
-    do: WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_secret" => @secret}, fun)
+    do: WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_key_1_secret" => @secret}, fun)
 
   defp token(overrides \\ %{}),
     do: overrides |> WebChannelLoginHelpers.claims() |> WebChannelLoginHelpers.sign(@secret)

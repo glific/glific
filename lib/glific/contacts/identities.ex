@@ -33,11 +33,13 @@ defmodule Glific.Contacts.Identities do
         }
 
   @doc """
-  The contact holding an identity in the current organization.
+  The contact holding an identity in the current organization; identifiers are case-insensitive.
   """
   @spec fetch_contact(MessageChannel.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, :not_found}
   def fetch_contact(channel, identifier) do
+    identifier = String.downcase(identifier)
+
     query =
       from(i in ContactIdentity,
         join: c in assoc(i, :contact),
@@ -59,6 +61,8 @@ defmodule Glific.Contacts.Identities do
   @spec resolve_or_create(:web, String.t(), claims()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def resolve_or_create(:web, identifier, claims) do
+    identifier = String.downcase(identifier)
+
     with {:error, :not_found} <- fetch_contact(:web, identifier) do
       organization_id = Repo.get_organization_id()
 

@@ -106,7 +106,7 @@ Same as 4.3 with `channel = :telegram` etc. That only needs a new enum value, no
 
 ### 4.6 After resolution (all paths)
 ```
-contact_id → socket topic web_channel:<contact_id>
+contact_id → internal PubSub topic web_channel:<contact_id>, relayed to the client's `web_channel:me` join
            → messages(channel=web)   (no contact_identity_id: messages record the channel, not the login)
            → flows / flow_results / tags / inbox exactly as today
 ```
@@ -122,8 +122,10 @@ again by phone.
 A reply goes out on the channel the conversation/flow came in on (already built in #5660).
 
 ## 5. Token verification (NGO-signed)
-- Signed with the organization's `login_secret`, or `previous_login_secret` while rotating, both kept in
-  the org's `web_channel` credential (set on the Settings page). The organization comes from the
+- Signed with either of the organization's two login secrets (`login_key_1_secret`, `login_key_2_secret`,
+  each beside a user-chosen name; neither is "current" or "previous"), kept in
+  the org's `web_channel` credential (set on the Settings page). To rotate, fill the empty slot, switch
+  the backend, then clear the old one. The organization comes from the
   subdomain; there is no `kid`.
 - Algorithm pinned to HS256. Valid signature.
 - `sub`, `channel = "web"`, `iat`, `exp` required. `exp - iat ≤ 24h` (the NGO may issue shorter

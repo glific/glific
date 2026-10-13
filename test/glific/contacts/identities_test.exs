@@ -49,6 +49,16 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert contact.name == "Ravi"
     end
 
+    test "identifiers differing only in case are the same contact" do
+      {:ok, first} = Identities.resolve_or_create(:web, "Ravi_Web", %{})
+      assert {:ok, second} = Identities.resolve_or_create(:web, "ravi_web", %{})
+
+      assert first.id == second.id
+      assert length(identities_of(first.id)) == 1
+      assert {:ok, found} = Identities.fetch_contact(:web, "RAVI_WEB")
+      assert found.id == first.id
+    end
+
     test "a known identifier returns the same contact" do
       {:ok, first} = Identities.resolve_or_create(:web, "ravi_12", %{})
       assert {:ok, second} = Identities.resolve_or_create(:web, "ravi_12", %{})
@@ -296,7 +306,8 @@ defmodule Glific.Contacts.IdentitiesTest do
 
       assert {:ok, found} = Contacts.fetch_by_identity(:web, "ravi_12")
       assert found.id == contact.id
-      assert {:error, :not_found} = Contacts.fetch_by_identity(:web, "Ravi_12")
+      assert {:ok, ^found} = Contacts.fetch_by_identity(:web, "Ravi_12")
+      assert {:error, :not_found} = Contacts.fetch_by_identity(:web, "someone_else")
     end
 
     test "a nil or empty identifier is refused" do

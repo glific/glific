@@ -111,7 +111,8 @@ defmodule GlificWeb.WebChannelSocketTest do
       do: overrides |> WebChannelLoginHelpers.claims() |> WebChannelLoginHelpers.sign(secret)
 
     defp with_login_secret(fun),
-      do: WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_secret" => @secret}, fun)
+      do:
+        WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_key_1_secret" => @secret}, fun)
 
     test "a new username creates the contact and its identity, and can talk" do
       with_login_secret(fn ->
@@ -123,9 +124,18 @@ defmodule GlificWeb.WebChannelSocketTest do
         assert ws_socket.assigns.organization_id == 1
         assert is_integer(ws_socket.assigns.token_exp)
 
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
         ref = push(socket, "new_message", %{"body" => "hello"})
         assert_reply ref, :ok
+      end)
+    end
+
+    test "usernames differing only in case are the same contact" do
+      with_login_secret(fn ->
+        {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"sub" => "Ravi_Web"}))
+        {:ok, second} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"sub" => "ravi_web"}))
+
+        assert first.assigns.current_contact.id == second.assigns.current_contact.id
       end)
     end
 
@@ -194,7 +204,7 @@ defmodule GlificWeb.WebChannelSocketTest do
       other = Fixtures.organization_fixture(%{shortcode: "otherngo"})
 
       WebChannelFlagHelpers.activate_web_channel(other.id, %{}, %{
-        "login_secret" => "other-secret-other-secret-other"
+        "login_key_1_secret" => "other-secret-other-secret-other"
       })
 
       FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: other.id})
@@ -220,7 +230,7 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "refuses when the web channel is off" do
-      WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"login_secret" => @secret})
+      WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"login_key_1_secret" => @secret})
       assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())
     end
 

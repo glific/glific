@@ -68,7 +68,7 @@ defmodule Glific.WebChannelFlagHelpers do
 
   @doc """
   Runs `fun` with the web channel on for `organization_id` and `secrets`
-  (e.g. `%{"login_secret" => "..."}`) in its credential, restoring the flag after.
+  (e.g. `%{"login_key_1_secret" => "..."}`) in its credential, restoring the flag after.
   """
   @spec with_web_channel_secrets(non_neg_integer(), map(), (-> any())) :: any()
   def with_web_channel_secrets(organization_id \\ 1, secrets, fun) do

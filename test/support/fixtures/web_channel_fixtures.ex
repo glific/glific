@@ -46,12 +46,12 @@ defmodule Glific.WebChannelFixtures do
   end
 
   @doc """
-  Joins `web_channel:<contact.id>` on `socket`.
+  Joins `web_channel:me` on `socket`.
   """
-  @spec join_web_channel(Phoenix.Socket.t(), Contact.t()) ::
+  @spec join_web_channel(Phoenix.Socket.t()) ::
           {:ok, map(), Phoenix.Socket.t()} | {:error, map()}
-  def join_web_channel(socket, %Contact{} = contact),
-    do: subscribe_and_join(socket, RoomChannel, "web_channel:#{contact.id}")
+  def join_web_channel(socket),
+    do: subscribe_and_join(socket, RoomChannel, "web_channel:me")
 
   @doc """
   Default valid web channel JWT claims for `contact`, letting a test override just the field it

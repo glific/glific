@@ -5,14 +5,14 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
   alias Glific.{WebChannelFlagHelpers, WebChannelLoginHelpers}
   alias GlificWeb.WebChannel.LoginToken
 
-  @secret "current-secret-current-secret-0123"
-  @previous_secret "previous-secret-previous-secret-01"
+  @secret "first-secret-first-secret-0123456"
+  @second_secret "second-secret-second-secret-012345"
   @now 1_800_000_000
 
   setup %{organization_id: organization_id} do
     WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "login_secret" => @secret,
-      "previous_login_secret" => @previous_secret
+      "login_key_1_secret" => @secret,
+      "login_key_2_secret" => @second_secret
     })
 
     :ok
@@ -31,8 +31,32 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
     assert Enum.sort(Map.keys(claims)) == [:exp, :sub]
   end
 
-  test "accepts a token signed with the previous secret", %{organization_id: organization_id} do
-    assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, @previous_secret)
+  test "accepts a token signed with the second slot's secret", %{
+    organization_id: organization_id
+  } do
+    assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, @second_secret)
+  end
+
+  test "accepts either secret when only the second slot is filled", %{
+    organization_id: organization_id
+  } do
+    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
+      "login_key_2_secret" => @second_secret
+    })
+
+    assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, @second_secret)
+    assert {:error, :invalid} = verify(organization_id, %{}, @secret)
+  end
+
+  test "slot names do not affect verification", %{organization_id: organization_id} do
+    WebChannelFlagHelpers.activate_web_channel(
+      organization_id,
+      %{"login_key_1_name" => "2026", "login_key_2_name" => "2025"},
+      %{"login_key_1_secret" => @secret, "login_key_2_secret" => @second_secret}
+    )
+
+    assert {:ok, _claims} = verify(organization_id, %{}, @secret)
+    assert {:ok, _claims} = verify(organization_id, %{}, @second_secret)
   end
 
   test "rejects a token signed with any other secret", %{organization_id: organization_id} do
@@ -40,7 +64,7 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
              verify(organization_id, %{}, "some-other-secret-some-other-secret")
   end
 
-  test "rejects every token when no login secret is configured", %{
+  test "rejects every token when both slots are empty", %{
     organization_id: organization_id
   } do
     WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{})
@@ -48,10 +72,13 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
     assert {:error, :invalid} = verify(organization_id, %{})
   end
 
-  test "rejects a previous secret once it is cleared", %{organization_id: organization_id} do
-    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{"login_secret" => @secret})
+  test "clearing a slot stops its tokens", %{organization_id: organization_id} do
+    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
+      "login_key_1_secret" => @secret
+    })
 
-    assert {:error, :invalid} = verify(organization_id, %{}, @previous_secret)
+    assert {:error, :invalid} = verify(organization_id, %{}, @second_secret)
+    assert {:ok, _claims} = verify(organization_id, %{}, @secret)
   end
 
   test "never trusts the token's algorithm", %{organization_id: organization_id} do

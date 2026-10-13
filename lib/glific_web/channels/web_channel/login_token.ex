@@ -4,10 +4,11 @@ defmodule GlificWeb.WebChannel.LoginToken do
   socket, or to provision a contact for one. A token may live at most 24 hours; an NGO may issue
   shorter ones.
 
-  The token is signed (HS256, pinned: the token's own `alg` is never trusted) with the
-  organization's `login_secret`, or its `previous_login_secret` while the secret is being rotated.
-  Both live in the organization's `web_channel` credential, so the organization is the request's,
-  not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
+  The token is signed (HS256, pinned: the token's own `alg` is never trusted) with either of the
+  organization's two login secrets (`login_key_1_secret`, `login_key_2_secret`); neither is
+  "current" or "previous", so rotating is a matter of filling the empty slot and later clearing the
+  old one. Both live in the organization's `web_channel` credential, so the organization is the
+  request's, not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
 
   This is not `GlificWeb.WebChannel.Token`, which is the token Glific itself issues after a phone
   and one-time code login.
@@ -22,6 +23,7 @@ defmodule GlificWeb.WebChannel.LoginToken do
   @leeway_seconds 60
   @max_length 255
   @provider_code "web_channel"
+  @secret_fields [:login_key_1_secret, :login_key_2_secret]
 
   @type claims :: %{
           required(:sub) => String.t(),
@@ -32,7 +34,7 @@ defmodule GlificWeb.WebChannel.LoginToken do
         }
 
   @doc """
-  The claims of a token signed with one of the organization's login secrets, if it is valid now.
+  The claims of a token signed with either of the organization's login secrets, if it is valid now.
   """
   @spec verify(non_neg_integer(), String.t() | nil, integer()) ::
           {:ok, claims()} | {:error, :invalid}
@@ -60,10 +62,8 @@ defmodule GlificWeb.WebChannel.LoginToken do
       organization ->
         secrets = get_in(organization.services, [@provider_code, :secrets]) || %{}
 
-        [
-          secrets["login_secret"] || secrets[:login_secret],
-          secrets["previous_login_secret"] || secrets[:previous_login_secret]
-        ]
+        @secret_fields
+        |> Enum.map(&(secrets[Atom.to_string(&1)] || secrets[&1]))
         |> Enum.filter(&(is_binary(&1) and &1 != ""))
     end
   end
