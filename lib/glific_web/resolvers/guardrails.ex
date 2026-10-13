@@ -6,18 +6,33 @@ defmodule GlificWeb.Resolvers.Guardrails do
 
   alias Glific.ThirdParty.Kaapi
 
+  @supported_validator_types [
+    "gender_assumption_bias",
+    "uli_slur_match",
+    "pii_remover",
+    "profanity_free",
+    "topic_relevance_llm"
+  ]
+
   @unknown_error "An unknown error occurred, please contact Glific support."
 
   @doc """
-  List the guardrail validator types supported by Kaapi along with their config JSON schemas.
+  List the guardrail validator types Glific supports along with their Kaapi config JSON schemas.
   """
   @spec list_guardrail_validators(map(), map(), map()) :: {:ok, map()}
   def list_guardrail_validators(_, _, %{context: %{current_user: user}}) do
     case Kaapi.list_guardrail_validators(user.organization_id) do
-      {:ok, %{validators: validators}} -> {:ok, %{validators: validators}}
-      {:ok, %{error: error}} when is_binary(error) -> errors(error)
-      {:ok, _} -> errors(@unknown_error)
-      {:error, reason} -> errors(error_message(reason))
+      {:ok, %{validators: validators}} ->
+        {:ok, %{validators: Enum.filter(validators, &(&1.type in @supported_validator_types))}}
+
+      {:ok, %{error: error}} when is_binary(error) ->
+        errors(error)
+
+      {:ok, _} ->
+        errors(@unknown_error)
+
+      {:error, reason} ->
+        errors(error_message(reason))
     end
   end
 
