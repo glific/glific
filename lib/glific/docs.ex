@@ -127,7 +127,12 @@ defmodule Glific.Docs do
 
     heading = Map.get(fields, "heading", "")
 
-    if heading == "" or body == "" do
+    # An entry that is only its source line answers nothing, and the lexical
+    # pass breaks ties on the shortest body, so it would outrank the section
+    # that does answer.
+    prose = body |> String.replace(~r/📖 Source:\s*\S+/u, "") |> String.trim()
+
+    if heading == "" or prose == "" do
       nil
     else
       %{

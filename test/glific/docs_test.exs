@@ -93,22 +93,26 @@ defmodule Glific.DocsTest do
 
   describe "with no artifact built" do
     setup do
-      # `_build/.../priv` is a symlink to `priv`, so both names are one file.
-      paths = [
-        Docs.artifact_path(),
-        Path.join([File.cwd!(), "priv", "docs_kb", "embeddings.etf"])
-      ]
+      # A path with nothing at it, rather than deleting the committed artifact:
+      # a run killed before `on_exit` would take the real one with it.
+      Application.put_env(:glific, Glific.Docs,
+        artifact_path: Path.join(System.tmp_dir!(), "glific-docs-absent.etf"),
+        embedding_model: "openai:text-embedding-3-small",
+        embedding_dimensions: 256
+      )
 
-      original = paths |> Enum.find(&File.exists?/1) |> File.read!()
+      :persistent_term.erase({Docs, :entries})
+      :persistent_term.erase({Docs, :metadata})
 
       on_exit(fn ->
-        Enum.each(paths, &File.write!(&1, original))
+        Application.put_env(:glific, Glific.Docs,
+          embedding_model: "openai:text-embedding-3-small",
+          embedding_dimensions: 256
+        )
+
         Docs.warm()
       end)
 
-      Enum.each(paths, &File.rm/1)
-      :persistent_term.erase({Docs, :entries})
-      :persistent_term.erase({Docs, :metadata})
       :ok
     end
 
