@@ -36,6 +36,9 @@ CREATE TABLE contact_identities (
 CREATE UNIQUE INDEX contact_identities_organization_id_channel_identifier_index
   ON contact_identities (organization_id, channel, identifier);   -- no duplicates within a channel
 CREATE INDEX contact_identities_contact_id_index ON contact_identities (contact_id);
+-- identifier: web usernames are letters, digits, _ @ . only, stored lowercase (case-insensitive);
+--             WhatsApp identifiers are the contact's phone as stored.
+-- Enforced by ContactIdentity.changeset/2 (`^[a-z0-9_@.]+$` after downcasing), not by the database.
 
 -- contacts
 ALTER TABLE contacts ALTER COLUMN phone DROP NOT NULL;           -- catalog-only
@@ -136,7 +139,9 @@ A reply goes out on the channel the conversation/flow came in on (already built 
 - NGO contract: `sub` must be unique across every system the NGO signs tokens from. Identities are
   unique per organization, so two systems issuing the same `sub` would log in as one contact.
 - Phones (in the `phone` claim and in identifiers) are digits with country code and no `+`, the format
-  `Contacts.parse_phone_number/1` stores; identifiers are matched exactly.
+  `Contacts.parse_phone_number/1` stores. Identifiers may only contain letters, digits, `_`, `@` and
+  `.`, and are case-insensitive: they are stored lowercase, so a token `sub` of `Ravi_Web` and one of
+  `ravi_web` are the same identity.
 
 ## 6. Per-channel state
 | State | Lives on |

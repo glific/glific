@@ -129,7 +129,7 @@ defmodule Glific.Contacts.Contact do
 
   @doc """
   Standard changeset pattern we use for all data types. A new WhatsApp contact must have a phone;
-  a new web contact needn't.
+  a new contact on the web channel needn't.
   """
   @spec changeset(Contact.t(), map(), :whatsapp | :web) :: Ecto.Changeset.t()
   def changeset(contact, attrs, channel \\ :whatsapp) do

@@ -154,7 +154,7 @@ defmodule Glific.SearchesTest do
 
   describe "search/2 filtered by channel" do
     setup %{organization_id: organization_id} do
-      web_contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      web_channel_contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       whatsapp_contact = Fixtures.contact_fixture(%{organization_id: organization_id})
 
       # `create_message/1` derives `contact_id` from the flow direction, so an inbound message's
@@ -162,7 +162,7 @@ defmodule Glific.SearchesTest do
       # fixture-generated counterpart contact instead.
       Fixtures.message_fixture(%{
         organization_id: organization_id,
-        sender_id: web_contact.id,
+        sender_id: web_channel_contact.id,
         channel: :web,
         body: "sent from a browser"
       })
@@ -173,7 +173,7 @@ defmodule Glific.SearchesTest do
         body: "sent over whatsapp"
       })
 
-      %{web_contact: web_contact, whatsapp_contact: whatsapp_contact}
+      %{web_channel_contact: web_channel_contact, whatsapp_contact: whatsapp_contact}
     end
 
     defp search_contact_ids(organization_id, filter) do
@@ -188,28 +188,28 @@ defmodule Glific.SearchesTest do
 
     test "returns only contacts with a message on that channel", %{
       organization_id: organization_id,
-      web_contact: web_contact,
+      web_channel_contact: web_channel_contact,
       whatsapp_contact: whatsapp_contact
     } do
       web_results = search_contact_ids(organization_id, %{channel: :web})
 
-      assert web_contact.id in web_results
+      assert web_channel_contact.id in web_results
       refute whatsapp_contact.id in web_results
 
       whatsapp_results = search_contact_ids(organization_id, %{channel: :whatsapp})
 
       assert whatsapp_contact.id in whatsapp_results
-      refute web_contact.id in whatsapp_results
+      refute web_channel_contact.id in whatsapp_results
     end
 
     test "returns both when no channel is given", %{
       organization_id: organization_id,
-      web_contact: web_contact,
+      web_channel_contact: web_channel_contact,
       whatsapp_contact: whatsapp_contact
     } do
       results = search_contact_ids(organization_id, %{term: ""})
 
-      assert web_contact.id in results
+      assert web_channel_contact.id in results
       assert whatsapp_contact.id in results
     end
   end

@@ -4,8 +4,10 @@ defmodule Glific.Contacts.ContactIdentity do
   (a WhatsApp phone, a username issued by its NGO, later a Telegram chat id). Login credentials
   only: per-channel state lives elsewhere.
 
-  The `identifier` is opaque and matched exactly, so it is neither trimmed nor case-folded. It is
-  unique within an organization and channel.
+  A web identifier (an NGO username) may contain letters, digits, `_`, `@` and `.`, and is
+  case-insensitive: it is stored lowercase, so `Ravi_Web` and `ravi_web` are the same identity. A
+  WhatsApp identifier is the contact's phone, kept as stored. Identifiers are unique within an
+  organization and channel.
 
   The identity's organization must be its contact's; nothing checks this, so identities are only
   written by code that takes the organization from the contact.
@@ -22,6 +24,7 @@ defmodule Glific.Contacts.ContactIdentity do
 
   @required_fields [:contact_id, :organization_id, :channel, :identifier]
   @optional_fields []
+  @identifier_format ~r/^[a-z0-9_@.]+$/
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -55,8 +58,22 @@ defmodule Glific.Contacts.ContactIdentity do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_length(:identifier, min: 1, max: 255)
+    |> validate_username()
     |> unique_constraint([:organization_id, :channel, :identifier])
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:organization_id)
+  end
+
+  @spec validate_username(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_username(changeset) do
+    if get_field(changeset, :channel) == :web do
+      changeset
+      |> update_change(:identifier, &String.downcase/1)
+      |> validate_format(:identifier, @identifier_format,
+        message: "can only contain letters, numbers, underscores, @ and dots"
+      )
+    else
+      changeset
+    end
   end
 end
