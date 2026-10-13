@@ -1,8 +1,9 @@
 defmodule Glific.Repo.Migrations.CreateContactIdentities do
   @moduledoc """
   How a contact logs in on a channel: one row per login, each pointing at the contact (the person).
-  The `identifier` is opaque to Glific (a username issued by the NGO, later a WhatsApp phone or a
-  Telegram chat id), unique within an organization and channel.
+  The `identifier` (a WhatsApp phone, a username issued by the NGO, later a Telegram chat id) is
+  unique within an organization and channel; web usernames are stored lowercase and limited to
+  letters, digits, `_`, `@` and `.`.
   """
   use Ecto.Migration
 
@@ -25,7 +26,8 @@ defmodule Glific.Repo.Migrations.CreateContactIdentities do
       add :identifier, :string,
         size: 255,
         null: false,
-        comment: "Login identifier on the channel, matched exactly (case-sensitive)"
+        comment:
+          "Login identifier on the channel; web usernames are stored lowercase and limited to letters, digits, _, @ and ."
 
       timestamps(type: :utc_datetime_usec)
     end

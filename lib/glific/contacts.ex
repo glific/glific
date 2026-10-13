@@ -266,7 +266,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a WhatsApp contact, so the phone is required. A web contact is created together with its
+  Creates a WhatsApp contact, so the phone is required. A contact on the web channel is created together with its
   login identity, from `new_contact_changeset/2`.
 
   ## Examples
@@ -722,7 +722,7 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
   # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
   # contact that has only ever existed in a browser sits at `:none`, which both clauses above
-  # refuse. A web contact is reachable over their open socket regardless, so the only thing left
+  # refuse. A contact on the web channel is reachable over their open socket regardless, so the only thing left
   # to check when staff reply is that the contact is not blocked.
   def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
       when channel in [:web, "web"] do

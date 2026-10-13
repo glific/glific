@@ -950,11 +950,11 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  test "queue_table_data/3 exports a web contact and its messages with a null phone",
+  test "queue_table_data/3 exports a contact without a phone and its messages with a null phone",
        %{
          organization_id: organization_id
        } do
-    contact = web_contact_fixture(%{organization_id: organization_id})
+    contact = contact_without_phone_fixture(%{organization_id: organization_id})
     {:ok, message} = WebMessage.receive_message(contact, %{body: "hello"}, :text)
 
     BigQuery.insert_bigquery_jobs(organization_id)
