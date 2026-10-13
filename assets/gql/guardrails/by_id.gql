@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query guardrailConfig($id: ID!) {
+  guardrailConfig(id: $id) {
+    ...GuardrailConfigFields
+
+    ...ErrorFields
+  }
+}

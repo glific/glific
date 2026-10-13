@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateGuardrailConfig($id: ID!, $input: GuardrailConfigUpdateInput!) {
+  updateGuardrailConfig(id: $id, input: $input) {
+    ...GuardrailConfigFields
+
+    ...ErrorFields
+  }
+}

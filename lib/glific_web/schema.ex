@@ -62,6 +62,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.AssistantChatTypes)
   import_types(__MODULE__.PromptGeneratorTypes)
   import_types(__MODULE__.AIEvaluationTypes)
+  import_types(__MODULE__.GuardrailTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
   import_types(__MODULE__.WhatsappFormTypes)
@@ -145,6 +146,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_revision_queries)
 
     import_fields(:ai_evaluation_queries)
+
+    import_fields(:guardrail_queries)
 
     import_fields(:ask_glific_queries)
 
@@ -231,6 +234,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_revision_mutations)
 
     import_fields(:ai_evaluation_mutations)
+
+    import_fields(:guardrail_mutations)
 
     import_fields(:ask_glific_mutations)
 

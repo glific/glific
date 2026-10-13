@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteGuardrailConfig($id: ID!) {
+  deleteGuardrailConfig(id: $id) {
+    ...GuardrailConfigFields
+
+    ...ErrorFields
+  }
+}

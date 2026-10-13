@@ -1,0 +1,19 @@
+fragment GuardrailConfigFields on GuardrailConfigResult {
+  guardrailConfig {
+    id
+    name
+    type
+    stage
+    onFailAction
+    isEnabled
+    config
+    insertedAt
+    updatedAt
+  }
+}
+
+fragment ErrorFields on GuardrailConfigResult {
+  errors {
+    message
+  }
+}

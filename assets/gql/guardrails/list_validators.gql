@@ -1,0 +1,11 @@
+query guardrailValidators {
+  guardrailValidators {
+    validators {
+      type
+      config
+    }
+    errors {
+      message
+    }
+  }
+}

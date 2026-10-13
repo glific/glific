@@ -886,6 +886,97 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  List the guardrail validator types supported by Kaapi along with their config JSON schemas.
+  """
+  @spec list_guardrail_validators(non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def list_guardrail_validators(organization_id) do
+    guardrail_request(
+      organization_id,
+      "Kaapi guardrail validators fetch failed",
+      &ApiClient.list_guardrail_validators/1
+    )
+  end
+
+  @doc """
+  Create a guardrail validator config in Kaapi.
+  """
+  @spec create_guardrail_config(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def create_guardrail_config(params, organization_id) do
+    guardrail_request(
+      organization_id,
+      "Kaapi guardrail config creation failed",
+      &ApiClient.create_guardrail_config(params, &1)
+    )
+  end
+
+  @doc """
+  List guardrail validator configs in Kaapi, optionally filtered by ids, stage and type.
+  """
+  @spec list_guardrail_configs(Keyword.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def list_guardrail_configs(query, organization_id) do
+    guardrail_request(
+      organization_id,
+      "Kaapi guardrail configs fetch failed",
+      &ApiClient.list_guardrail_configs(query, &1)
+    )
+  end
+
+  @doc """
+  Get a guardrail validator config from Kaapi.
+  """
+  @spec get_guardrail_config(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def get_guardrail_config(config_id, organization_id) do
+    guardrail_request(
+      organization_id,
+      "Kaapi guardrail config fetch failed: config_id=#{config_id}",
+      &ApiClient.get_guardrail_config(config_id, &1)
+    )
+  end
+
+  @doc """
+  Update a guardrail validator config in Kaapi.
+  """
+  @spec update_guardrail_config(String.t(), map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def update_guardrail_config(config_id, params, organization_id) do
+    guardrail_request(
+      organization_id,
+      "Kaapi guardrail config update failed: config_id=#{config_id}",
+      &ApiClient.update_guardrail_config(config_id, params, &1)
+    )
+  end
+
+  @doc """
+  Delete a guardrail validator config in Kaapi.
+  """
+  @spec delete_guardrail_config(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def delete_guardrail_config(config_id, organization_id) do
+    guardrail_request(
+      organization_id,
+      "Kaapi guardrail config delete failed: config_id=#{config_id}",
+      &ApiClient.delete_guardrail_config(config_id, &1)
+    )
+  end
+
+  @spec guardrail_request(non_neg_integer(), String.t(), (String.t() -> {:ok | :error, any()})) ::
+          {:ok, map()} | {:error, any()}
+  defp guardrail_request(organization_id, error_message, request) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- request.(secrets["api_key"]) do
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message: error_message,
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
   """
   @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
