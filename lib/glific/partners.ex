@@ -619,6 +619,7 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:web_channel_enabled)
       |> Flags.set_flag_enabled(:bulk_contact_update_enabled)
       |> Flags.set_flag_enabled(:bulk_flow_results_enabled)
+      |> Flags.set_flag_enabled(:is_ai_guardrail_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1537,7 +1538,8 @@ defmodule Glific.Partners do
       "bulk_contact_update_enabled" =>
         Flags.get_flag_enabled(:bulk_contact_update_enabled, organization),
       "bulk_flow_results_enabled" =>
-        Flags.get_flag_enabled(:bulk_flow_results_enabled, organization)
+        Flags.get_flag_enabled(:bulk_flow_results_enabled, organization),
+      "ai_guardrail_enabled" => Flags.get_flag_enabled(:is_ai_guardrail_enabled, organization)
     }
   end
 
