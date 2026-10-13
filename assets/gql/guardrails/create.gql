@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation createGuardrailConfig($input: GuardrailConfigInput!) {
-  createGuardrailConfig(input: $input) {
-    ...GuardrailConfigFields
-
-    ...ErrorFields
-  }
-}

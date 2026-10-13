@@ -360,68 +360,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
-  @doc """
-  Create a guardrail validator config in Kaapi.
-  """
-  @spec create_guardrail_config(map(), String.t()) :: {:ok, map()} | {:error, any()}
-  def create_guardrail_config(params, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.post("/api/v1/guardrails/validators/configs", params)
-    |> parse_kaapi_response()
-  end
-
-  @doc """
-  List guardrail validator configs in Kaapi, optionally filtered by ids, stage and type.
-  """
-  @spec list_guardrail_configs(Keyword.t(), String.t()) :: {:ok, map()} | {:error, any()}
-  def list_guardrail_configs(query, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.get("/api/v1/guardrails/validators/configs", query: query)
-    |> parse_kaapi_response()
-  end
-
-  @doc """
-  Get a guardrail validator config from Kaapi.
-  """
-  @spec get_guardrail_config(String.t(), String.t()) :: {:ok, map()} | {:error, any()}
-  def get_guardrail_config(config_id, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.get("/api/v1/guardrails/validators/configs/:config_id",
-      opts: [path_params: [config_id: config_id]]
-    )
-    |> parse_kaapi_response()
-  end
-
-  @doc """
-  Update a guardrail validator config in Kaapi.
-  """
-  @spec update_guardrail_config(String.t(), map(), String.t()) ::
-          {:ok, map()} | {:error, any()}
-  def update_guardrail_config(config_id, params, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.patch("/api/v1/guardrails/validators/configs/:config_id", params,
-      opts: [path_params: [config_id: config_id]]
-    )
-    |> parse_kaapi_response()
-  end
-
-  @doc """
-  Delete a guardrail validator config in Kaapi.
-  """
-  @spec delete_guardrail_config(String.t(), String.t()) :: {:ok, map()} | {:error, any()}
-  def delete_guardrail_config(config_id, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.delete("/api/v1/guardrails/validators/configs/:config_id",
-      opts: [path_params: [config_id: config_id]]
-    )
-    |> parse_kaapi_response()
-  end
-
   @spec evaluation_dataset_multipart(map()) :: Tesla.Multipart.t()
   defp evaluation_dataset_multipart(params) do
     Tesla.Multipart.new()

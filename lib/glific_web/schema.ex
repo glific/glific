@@ -235,8 +235,6 @@ defmodule GlificWeb.Schema do
 
     import_fields(:ai_evaluation_mutations)
 
-    import_fields(:guardrail_mutations)
-
     import_fields(:ask_glific_mutations)
 
     import_fields(:prompt_generator_mutations)
