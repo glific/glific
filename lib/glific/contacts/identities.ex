@@ -7,7 +7,7 @@ defmodule Glific.Contacts.Identities do
   paths. A `:web` identity is an opaque username issued by an NGO's own system, and is never a
   phone: a contact signing in with a one-time code is found by `contacts.phone`, and recording it
   here would let an NGO username equal to that phone number reach the same conversation.
-  `resolve_or_create/3` is how a first login or a provisioning call turns a username into a contact.
+  `resolve_or_create/3` is how a first connect turns a username into a contact.
   """
 
   import Ecto.Query

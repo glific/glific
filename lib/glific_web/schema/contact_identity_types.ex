@@ -1,6 +1,6 @@
 defmodule GlificWeb.Schema.ContactIdentityTypes do
   @moduledoc """
-  GraphQL mutation for provisioning a contact together with its web login identifier.
+  GraphQL mutation for staff to create a contact together with its web login identifier.
   """
 
   use Absinthe.Schema.Notation

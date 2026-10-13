@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.ContactIdentities do
   @moduledoc """
-  Resolver for provisioning web login identities, between the GraphQL schema and
+  Resolver for creating contacts with a web login identity, between the GraphQL schema and
   `Glific.Contacts.Identities`.
   """
 

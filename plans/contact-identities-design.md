@@ -136,8 +136,9 @@ A reply goes out on the channel the conversation/flow came in on (already built 
   socket, which must resolve to the same contact; the expiry is updated in memory. A background sweep
   closes any socket whose token has expired. Reissuing tokens is the NGO's job.
 - Glific's own web channel (phone + OTP) keeps its platform-issued token and `renew-token`.
-- `POST /web_channel/contacts` (same token) creates or returns the contact without connecting, so an
-  NGO backend can provision ahead of the first connection.
+- A contact is created on the first connect with a new username (`Identities.resolve_or_create/3`), or
+  ahead of time by staff through the GraphQL mutation `createContactWithIdentity`. There is no REST
+  provisioning endpoint.
 - NGO contract: `sub` must be unique across every system the NGO signs tokens from. Identities are
   unique per organization, so two systems issuing the same `sub` would log in as one contact.
 - Phones (in the `phone` claim and in identifiers) are digits with country code and no `+`, the format
@@ -195,7 +196,7 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 |---|---|
 | 1 | Nil-phone safety (§7) |
 | 2 | Migrations + schemas (§2) |
-| 3 | Login secret, verifier, WebSocket connect + renewal with the NGO token, provisioning API, resolve/link (§4.3–4.4, §5), WhatsApp identities + backfill |
+| 3 | Login secret, verifier, WebSocket connect + renewal with the NGO token, resolve/link (§4.3–4.4, §5), WhatsApp identities + backfill |
 | 4 | Inbox + GraphQL (§8) |
 
 ## 11. Open

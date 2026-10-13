@@ -1,8 +1,7 @@
 defmodule GlificWeb.WebChannel.LoginToken do
   @moduledoc """
   Verifies the JWT an NGO's backend signs to authenticate one of its users on the web channel
-  socket, or to provision a contact for one. A token may live at most 24 hours; an NGO may issue
-  shorter ones.
+  socket. A token may live at most 24 hours; an NGO may issue shorter ones.
 
   The token is signed (HS256, pinned: the token's own `alg` is never trusted) with either of the
   organization's two login secrets (`login_key_1_secret`, `login_key_2_secret`); neither is
