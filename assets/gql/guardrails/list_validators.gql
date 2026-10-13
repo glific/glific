@@ -3,6 +3,7 @@ query guardrailValidators {
     validators {
       type
       config
+      link
     }
   }
 }

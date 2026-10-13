@@ -6,22 +6,28 @@ defmodule GlificWeb.Resolvers.Guardrails do
 
   alias Glific.ThirdParty.Kaapi
 
-  @supported_validator_types [
-    "gender_assumption_bias",
-    "uli_slur_match",
-    "pii_remover",
-    "profanity_free",
-    "topic_relevance_llm"
-  ]
+  @docs_url "https://projecttech4devai.github.io/kaapi-docs/guardrails"
+
+  @validator_doc_links %{
+    "gender_assumption_bias" => "#{@docs_url}/gender-neutrality",
+    "pii_remover" => "#{@docs_url}/privacy-protection",
+    "profanity_free" => "#{@docs_url}/content-safety",
+    "topic_relevance_llm" => "#{@docs_url}/scope-control"
+  }
 
   @doc """
-  List the guardrail validator types Glific supports along with their Kaapi config JSON schemas.
+  List the guardrail validator types Glific supports with their Kaapi config JSON schemas and doc links.
   """
   @spec list_guardrail_validators(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def list_guardrail_validators(_, _, %{context: %{current_user: user}}) do
     case Kaapi.list_guardrail_validators(user.organization_id) do
       {:ok, %{validators: validators}} ->
-        {:ok, %{validators: Enum.filter(validators, &(&1.type in @supported_validator_types))}}
+        validators =
+          for %{type: type} = validator <- validators,
+              Map.has_key?(@validator_doc_links, type),
+              do: Map.put(validator, :link, @validator_doc_links[type])
+
+        {:ok, %{validators: validators}}
 
       {:error, :timeout} ->
         {:error, "Timeout occurred, please try again."}

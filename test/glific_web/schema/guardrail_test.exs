@@ -26,15 +26,16 @@ defmodule GlificWeb.Schema.GuardrailTest do
     :ok
   end
 
-  test "guardrailValidators returns only supported validator types with their schema", %{
-    manager: user
-  } do
+  test "guardrailValidators returns only supported validator types with their schema and doc link",
+       %{
+         manager: user
+       } do
     Tesla.Mock.mock(fn %{method: :get, url: url, headers: headers} ->
       assert String.ends_with?(url, "/api/v1/guardrails")
       assert {"X-API-KEY", "sk_test_key"} in headers
 
       validators =
-        for type <- ["uli_slur_match", "llm_critic", "profanity_free"],
+        for type <- ["uli_slur_match", "pii_remover", "llm_critic", "profanity_free"],
             do: %{"type" => type, "config" => @schema}
 
       %Tesla.Env{
@@ -47,11 +48,21 @@ defmodule GlificWeb.Schema.GuardrailTest do
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
 
     assert [
-             %{"type" => "uli_slur_match", "config" => slur_config},
-             %{"type" => "profanity_free", "config" => profanity_config}
+             %{
+               "type" => "pii_remover",
+               "config" => pii_config,
+               "link" =>
+                 "https://projecttech4devai.github.io/kaapi-docs/guardrails/privacy-protection"
+             },
+             %{
+               "type" => "profanity_free",
+               "config" => profanity_config,
+               "link" =>
+                 "https://projecttech4devai.github.io/kaapi-docs/guardrails/content-safety"
+             }
            ] = get_in(query_data, [:data, "guardrailValidators", "validators"])
 
-    assert Jason.decode!(slur_config) == @schema
+    assert Jason.decode!(pii_config) == @schema
     assert Jason.decode!(profanity_config) == @schema
   end
 

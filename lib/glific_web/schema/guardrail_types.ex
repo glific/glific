@@ -12,6 +12,9 @@ defmodule GlificWeb.Schema.GuardrailTypes do
 
     @desc "JSON schema of the validator-specific config"
     field :config, :json
+
+    @desc "Documentation link for the validator"
+    field :link, :string
   end
 
   object :guardrail_validators_result do
