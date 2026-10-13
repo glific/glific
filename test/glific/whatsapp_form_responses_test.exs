@@ -241,42 +241,52 @@ defmodule Glific.WhatsappFormResponsesTest do
     assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
   end
 
-  test "create_whatsapp_form_response/1 returns an error when the template has no flow button",
-       %{organization_id: organization_id} do
-    {:ok, template} =
-      Templates.create_session_template(%{
-        label: "Quick Reply Template",
-        type: :text,
-        body: "Hello World",
-        language_id: 1,
-        organization_id: organization_id,
-        buttons: [%{"text" => "Later", "type" => "QUICK_REPLY"}]
-      })
+  for {description, buttons} <- [
+        {"only non-flow buttons", [%{"text" => "Later", "type" => "QUICK_REPLY"}]},
+        {"no buttons (nil)", nil}
+      ] do
+    @buttons buttons
+    test "create_whatsapp_form_response/1 returns an error when the template has #{description}",
+         %{organization_id: organization_id} do
+      {:ok, template} =
+        Templates.create_session_template(%{
+          label: "Template Without Flow Button",
+          type: :text,
+          body: "Hello World",
+          language_id: 1,
+          organization_id: organization_id
+        })
 
-    {:ok, _sent_message} =
-      Messages.create_message(%{
-        body: "Hello| [Later] ",
-        flow: :outbound,
-        type: :text,
-        sender_id: 1,
-        receiver_id: 2,
-        contact_id: 1,
-        organization_id: organization_id,
-        bsp_message_id: "quick-reply-template-message",
-        template_id: template.id
-      })
+      {:ok, template} =
+        template
+        |> Ecto.Changeset.change(buttons: @buttons)
+        |> Repo.update()
 
-    attrs =
-      @valid_attrs_for_create
-      |> Map.merge(%{
-        organization_id: organization_id,
-        context_id: "quick-reply-template-message"
-      })
+      {:ok, _sent_message} =
+        Messages.create_message(%{
+          body: "Hello World",
+          flow: :outbound,
+          type: :text,
+          sender_id: 1,
+          receiver_id: 2,
+          contact_id: 1,
+          organization_id: organization_id,
+          bsp_message_id: "template-without-flow-button-message",
+          template_id: template.id
+        })
 
-    assert {:error, "WhatsApp Form not found for the given template_id"} =
-             WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+      attrs =
+        @valid_attrs_for_create
+        |> Map.merge(%{
+          organization_id: organization_id,
+          context_id: "template-without-flow-button-message"
+        })
 
-    assert Repo.aggregate(WhatsappFormResponse, :count) == 0
+      assert {:error, "WhatsApp Form not found for the given template_id"} =
+               WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+
+      assert Repo.aggregate(WhatsappFormResponse, :count) == 0
+    end
   end
 
   describe "flow_token lookup" do

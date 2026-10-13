@@ -85,7 +85,8 @@ defmodule Glific.WhatsappFormsResponses do
   defp get_whatsapp_form(flow_token, context_id, org_id) do
     with {:ok, sent_message} <- fetch_sent_message(flow_token, context_id, org_id),
          %{template: template} <- Repo.preload(sent_message, [:template]),
-         %{"flow_id" => flow_id} <- Enum.find(template.buttons, &Map.has_key?(&1, "flow_id")),
+         buttons = template.buttons || [],
+         %{"flow_id" => flow_id} <- Enum.find(buttons, &Map.has_key?(&1, "flow_id")),
          wa_form when not is_nil(wa_form) <- Repo.get_by(WhatsappForm, %{meta_flow_id: flow_id}) do
       {:ok, wa_form}
     else
