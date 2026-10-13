@@ -53,8 +53,10 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
-  @spec get_whatsapp_form(String.t(), non_neg_integer()) ::
+  @spec get_whatsapp_form(String.t() | nil, non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
+  defp get_whatsapp_form(nil, _org_id), do: {:error, "WhatsApp form response has no context id"}
+
   defp get_whatsapp_form(context_id, org_id) do
     with {:ok, previous_message} <-
            Repo.fetch_by(Message, %{bsp_message_id: context_id, organization_id: org_id}),
