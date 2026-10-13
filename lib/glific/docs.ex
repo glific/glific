@@ -1,10 +1,11 @@
 defmodule Glific.Docs do
   @moduledoc """
-  Glific's own documentation, split into sections and searched in memory.
+  Glific's own documentation, searched in memory.
 
-  The markdown in `priv/docs_kb` is split on its headings, which is how the
-  authors wrote it: a question as the heading, the answer under it.
-  `Glific.AI.Tools.Documentation` hands the matching sections to the assistant.
+  Each document in `priv/docs_kb` is a run of entries. An entry opens with
+  `--- entry`, states its heading and page, and then answers one question —
+  the boundaries are written down rather than worked out from the markdown.
+  `Glific.AI.Tools.Documentation` hands the matching entries to the assistant.
 
   A question runs through two passes whose results merge by rank. The semantic
   pass matches meaning, so "the bot stopped replying" reaches "Flow is not

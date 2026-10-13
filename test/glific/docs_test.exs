@@ -259,15 +259,8 @@ defmodule Glific.DocsTest do
     end
 
     test "both passes together answer a diagnosis question" do
-      # The one test that runs the whole path. The provider is stubbed here
-      # rather than in config, which would collide with the Req.Test ownership
-      # other suites rely on.
-      Application.put_env(:glific, :docs_embedding_request_options,
-        req_http_options: [plug: Glific.Docs.StubEmbeddings]
-      )
-
-      on_exit(fn -> Application.delete_env(:glific, :docs_embedding_request_options) end)
-
+      # The one test that runs the whole path, embedding included. The provider
+      # is stubbed for the whole suite in config/test.exs.
       sections = Docs.find("why is my flow not triggering", limit: 5)
 
       assert Enum.any?(sections, &(&1.doc_file == @knowledge_base))
