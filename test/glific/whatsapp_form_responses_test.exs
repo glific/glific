@@ -266,6 +266,28 @@ defmodule Glific.WhatsappFormResponsesTest do
                WhatsappFormsResponses.create_whatsapp_form_response(attrs)
     end
 
+    test "create_whatsapp_form_response/1 returns an error when there is neither a flow_token nor a context",
+         %{organization_id: organization_id} do
+      raw_response =
+        @valid_attrs_for_create.raw_response
+        |> Jason.decode!()
+        |> Map.delete("flow_token")
+        |> Jason.encode!()
+
+      attrs =
+        @valid_attrs_for_create
+        |> Map.merge(%{
+          organization_id: organization_id,
+          context_id: nil,
+          raw_response: raw_response
+        })
+
+      assert {:error, "WhatsApp form response has no context id"} =
+               WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+
+      assert Repo.aggregate(WhatsappFormResponse, :count) == 0
+    end
+
     test "create_whatsapp_form_response/1 returns an error when the flow_token's message does not exist",
          %{organization_id: organization_id} do
       flow_token = WhatsappFormsResponses.encode_flow_token(0)
