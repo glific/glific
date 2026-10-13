@@ -514,7 +514,8 @@ defmodule Glific.Flags do
       :glific_ai_enabled,
       :web_channel_enabled,
       :bulk_contact_update_enabled,
-      :bulk_flow_results_enabled
+      :bulk_flow_results_enabled,
+      :is_ai_guardrail_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

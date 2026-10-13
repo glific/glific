@@ -4,6 +4,7 @@ set -euo pipefail
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-900}"
 POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-15}"
 REQUEST_TIMEOUT_SECONDS="${REQUEST_TIMEOUT_SECONDS:-30}"
+RESIZE_ATTEMPTS="${RESIZE_ATTEMPTS:-3}"
 DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
 DISCORD_MENTION_ROLE_ID="${DISCORD_MENTION_ROLE_ID:-}"
 SMOKE_TEST_URL="${SMOKE_TEST_URL:-}"
@@ -48,17 +49,19 @@ discord_payload() {
     return
   fi
 
+  # Only failures tag the role, so the team is pinged when something needs attention and not on routine runs.
+  local role=""
   case "$kind" in
     progress) color=16705372 ;;
     ok) color=3066993 ;;
-    smoke_fail | fail) color=15158332 ;;
+    smoke_fail | fail) color=15158332; role=$DISCORD_MENTION_ROLE_ID ;;
   esac
 
   jq -nc \
     --arg title "$(discord_title "$kind")" \
     --argjson color "$color" \
     --arg reason "${reason:0:1000}" \
-    --arg role "$DISCORD_MENTION_ROLE_ID" \
+    --arg role "$role" \
     --arg size "${FROM_SIZE:-?} → ${TARGET_SIZE:-?}" \
     --arg duration "$DURATION" \
     --arg smoke "$SMOKE_RESULT" \
@@ -184,6 +187,68 @@ api() {
 
 app_status() { api "${API}/status" | jq '.data'; }
 
+# Setting the same size again is idempotent, so transient Gigalixir errors (5xx or no response) are retried.
+request_resize() {
+  local attempt response code body status
+  for ((attempt = 1; attempt <= RESIZE_ATTEMPTS; attempt++)); do
+    response=$(http -w '\n%{http_code}' -u "${GIGALIXIR_USERNAME}:${API_KEY}" \
+      -H 'Content-Type: application/json' -X PUT \
+      -d "$(jq -nc --argjson size "$TARGET_SIZE" '{size: $size}')" "${API}/scale") || response=$'\n000'
+    code=${response##*$'\n'}
+    body=$(tr -d '\n' <<<"${response%$'\n'*}")
+    body=${body:-no response}
+
+    [[ "$code" == 2?? ]] && return 0
+
+    log "Resize request to Gigalixir failed with HTTP ${code}: ${body:0:300}"
+    [[ "$code" == 5?? || "$code" == 000 ]] || return 1
+
+    # A 5xx can still have applied the resize, in which case retrying is unnecessary.
+    if status=$(app_status) && jq -e --argjson t "$TARGET_SIZE" '.size == $t' <<<"$status" >/dev/null; then
+      log "Gigalixir already shows size ${TARGET_SIZE}, continuing"
+      return 0
+    fi
+
+    if ((attempt < RESIZE_ATTEMPTS)); then
+      log "Retrying resize request (${attempt}/${RESIZE_ATTEMPTS})"
+      sleep "$POLL_INTERVAL_SECONDS"
+    fi
+  done
+
+  log "Resize request to Gigalixir failed after ${RESIZE_ATTEMPTS} attempts, last HTTP ${code}: ${body:0:300}"
+  return 1
+}
+
+# Prints the app status once every pod is Healthy and the pod set is unchanged across two polls in a
+# row, so a config-triggered restart that Gigalixir starts a few seconds late is not missed.
+wait_until_settled() {
+  local deadline=$((SECONDS + TIMEOUT_SECONDS)) status pods previous=""
+  while ((SECONDS < deadline)); do
+    sleep "$POLL_INTERVAL_SECONDS"
+
+    if ! status=$(app_status); then
+      log "Status check failed, retrying" >&2
+      previous=""
+      continue
+    fi
+
+    if jq -e '(.pods | length) == .replicas_desired and all(.pods[]; .status == "Healthy")' <<<"$status" >/dev/null; then
+      pods=$(jq -c '[.pods[].name] | sort' <<<"$status")
+      if [[ "$pods" == "$previous" ]]; then
+        printf '%s' "$status"
+        return 0
+      fi
+      previous=$pods
+    else
+      previous=""
+      log "Waiting for ${GIGALIXIR_APP} to settle before resizing: $(jq -c '[.pods[] | {name, status}]' <<<"$status")" >&2
+    fi
+  done
+
+  log "Timed out after ${TIMEOUT_SECONDS}s waiting for ${GIGALIXIR_APP} to settle after setting APPSIGNAL_CPU_COUNT" >&2
+  return 1
+}
+
 smoke_test() {
   local attempt response code body
   for ((attempt = 1; attempt <= SMOKE_TEST_ATTEMPTS; attempt++)); do
@@ -214,15 +279,12 @@ if jq -e --argjson t "$TARGET_SIZE" '.size == $t' <<<"$current" >/dev/null; then
   exit 0
 fi
 
-# Resizing replaces the pod, so the resize is only done once none of these old pods remain.
-old_pods=$(jq -c '[.pods[].name]' <<<"$current")
-
 FROM_SIZE=$(jq -r '.size | tostring | sub("\\.0$"; "")' <<<"$current")
 DIRECTION=$(jq -r --argjson t "$TARGET_SIZE" 'if .size < $t then "up" else "down" end' <<<"$current")
 STARTED_AT=$SECONDS
 [[ -n "$SMOKE_TEST_URL" ]] && SMOKE_RESULT="Pending" || SMOKE_RESULT="Not configured"
+DISCORD_MESSAGE_ID=$(discord_post progress)
 
-# avoid_restart: the resize below restarts the app, which picks up the new value in that same restart.
 if ! api -X POST "${API}/configs" \
   -d "$(jq -nc --arg v "$APPSIGNAL_CPU_COUNT" '{configs: {APPSIGNAL_CPU_COUNT: $v}, avoid_restart: true}')" >/dev/null; then
   log "Failed to set APPSIGNAL_CPU_COUNT=${APPSIGNAL_CPU_COUNT} on ${GIGALIXIR_APP}, not resizing"
@@ -230,9 +292,16 @@ if ! api -X POST "${API}/configs" \
 fi
 log "Set APPSIGNAL_CPU_COUNT=${APPSIGNAL_CPU_COUNT} on ${GIGALIXIR_APP}"
 
+# Gigalixir may restart the app for the config change despite avoid_restart, and a resize sent
+# mid-rollout can collide with it, so wait for any such rollout to finish first.
+log "Waiting for ${GIGALIXIR_APP} to settle before resizing"
+current=$(wait_until_settled)
+
+# Captured after the config change so a config-triggered pod is not mistaken for the resized one.
+old_pods=$(jq -c '[.pods[].name]' <<<"$current")
+
 log "Resizing ${GIGALIXIR_APP} from ${FROM_SIZE} to ${TARGET_SIZE}"
-DISCORD_MESSAGE_ID=$(discord_post progress)
-api -X PUT "${API}/scale" -d "$(jq -nc --argjson size "$TARGET_SIZE" '{size: $size}')" >/dev/null
+request_resize
 
 deadline=$((SECONDS + TIMEOUT_SECONDS))
 while ((SECONDS < deadline)); do

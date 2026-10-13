@@ -1110,7 +1110,7 @@ defmodule Glific.AssistantsTest do
     {:ok, knowledge_base} =
       %KnowledgeBase{}
       |> KnowledgeBase.changeset(%{
-        name: "Test Knowledge Base #{:rand.uniform(10000)}",
+        name: "Test Knowledge Base #{System.unique_integer([:positive])}",
         organization_id: org_id
       })
       |> Repo.insert()
@@ -1122,7 +1122,7 @@ defmodule Glific.AssistantsTest do
         organization_id: org_id,
         files: %{"file1.pdf" => %{"size" => 1024}},
         status: status,
-        llm_service_id: "vs_test_#{:rand.uniform(10000)}",
+        llm_service_id: "vs_test_#{System.unique_integer([:positive])}",
         kaapi_job_id: kaapi_job_id
       })
       |> Repo.insert()
@@ -1143,9 +1143,9 @@ defmodule Glific.AssistantsTest do
     {:ok, assistant} =
       %Assistant{}
       |> Assistant.changeset(%{
-        name: "Test Assistant #{:rand.uniform(10000)}",
+        name: "Test Assistant #{System.unique_integer([:positive])}",
         organization_id: org_id,
-        kaapi_uuid: "asst_#{:rand.uniform(10000)}"
+        kaapi_uuid: "asst_#{System.unique_integer([:positive])}"
       })
       |> Repo.insert()
 
@@ -1157,7 +1157,7 @@ defmodule Glific.AssistantsTest do
         provider: "openai",
         model: "gpt-4o",
         prompt: "You are a helpful assistant",
-        kaapi_uuid: "acv_#{:rand.uniform(10000)}",
+        kaapi_uuid: "acv_#{System.unique_integer([:positive])}",
         settings: %{"temperature" => 1.0},
         status: status
       })
