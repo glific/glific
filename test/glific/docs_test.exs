@@ -94,22 +94,22 @@ defmodule Glific.DocsTest do
   describe "with no artifact built" do
     setup do
       # A path with nothing at it, rather than deleting the committed artifact:
-      # a run killed before `on_exit` would take the real one with it.
-      Application.put_env(:glific, Glific.Docs,
-        artifact_path: Path.join(System.tmp_dir!(), "glific-docs-absent.etf"),
-        embedding_model: "openai:text-embedding-3-small",
-        embedding_dimensions: 256
-      )
+      # a run killed before `on_exit` would take the real one with it. The name
+      # is unique so a leftover file cannot turn this into a real index.
+      configured = Application.get_env(:glific, Glific.Docs, [])
 
+      absent =
+        Path.join(
+          System.tmp_dir!(),
+          "glific-docs-absent-#{System.unique_integer([:positive])}.etf"
+        )
+
+      Application.put_env(:glific, Glific.Docs, Keyword.put(configured, :artifact_path, absent))
       :persistent_term.erase({Docs, :entries})
       :persistent_term.erase({Docs, :metadata})
 
       on_exit(fn ->
-        Application.put_env(:glific, Glific.Docs,
-          embedding_model: "openai:text-embedding-3-small",
-          embedding_dimensions: 256
-        )
-
+        Application.put_env(:glific, Glific.Docs, configured)
         Docs.warm()
       end)
 

@@ -19,17 +19,18 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
 
     # Never the committed artifact: a test that aborts mid-run would leave a
     # corrupt binary in the tree, and every search would score zero.
+    configured = Application.get_env(:glific, Glific.Docs, [])
     Mix.shell(Mix.Shell.Process)
-    Application.put_env(:glific, Glific.Docs, artifact_path: Path.join(tmp_dir, "embeddings.etf"))
+
+    Application.put_env(
+      :glific,
+      Glific.Docs,
+      Keyword.put(configured, :artifact_path, Path.join(tmp_dir, "embeddings.etf"))
+    )
 
     on_exit(fn ->
       File.rm_rf!(tmp_dir)
-
-      Application.put_env(:glific, Glific.Docs,
-        embedding_model: "openai:text-embedding-3-small",
-        embedding_dimensions: 256
-      )
-
+      Application.put_env(:glific, Glific.Docs, configured)
       Application.delete_env(:glific, :docs_embedding_request_options)
       Mix.shell(Mix.Shell.IO)
       Docs.warm()
