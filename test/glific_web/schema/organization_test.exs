@@ -648,6 +648,23 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["glific_ai_enabled"] == false
     assert services["web_channel_enabled"] == false
     assert services["bulk_flow_results_enabled"] == false
+    assert services["ai_guardrail_enabled"] == false
+  end
+
+  test "organization services reflect is_ai_guardrail_enabled flag state", %{user: user} do
+    FunWithFlags.enable(:is_ai_guardrail_enabled,
+      for_actor: %{organization_id: user.organization_id}
+    )
+
+    assert {:ok, query_data} = auth_query_gql_by(:get_services, user)
+    assert get_in(query_data, [:data, "organizationServices", "ai_guardrail_enabled"]) == true
+
+    FunWithFlags.disable(:is_ai_guardrail_enabled,
+      for_actor: %{organization_id: user.organization_id}
+    )
+
+    assert {:ok, query_data} = auth_query_gql_by(:get_services, user)
+    assert get_in(query_data, [:data, "organizationServices", "ai_guardrail_enabled"]) == false
   end
 
   test "update an organization with organization settings", %{user: user} do
