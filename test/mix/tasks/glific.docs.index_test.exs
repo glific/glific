@@ -8,18 +8,23 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
 
   use ExUnit.Case, async: false
 
-  @moduletag :tmp_dir
-
   alias Glific.Docs
   alias Mix.Tasks.Glific.Docs.Index, as: Task
 
-  setup %{tmp_dir: tmp_dir} do
+  setup do
+    # The OS temp directory, not ExUnit's `:tmp_dir`, which writes into the
+    # project root and then has to be kept out of git.
+    tmp_dir = Path.join(System.tmp_dir!(), "glific-docs-#{System.unique_integer([:positive])}")
+    File.mkdir_p!(tmp_dir)
+
     # Never the committed artifact: a test that aborts mid-run would leave a
     # corrupt binary in the tree, and every search would score zero.
     Mix.shell(Mix.Shell.Process)
     Application.put_env(:glific, Glific.Docs, artifact_path: Path.join(tmp_dir, "embeddings.etf"))
 
     on_exit(fn ->
+      File.rm_rf!(tmp_dir)
+
       Application.put_env(:glific, Glific.Docs,
         embedding_model: "openai:text-embedding-3-small",
         embedding_dimensions: 256
