@@ -62,13 +62,13 @@ defmodule Mix.Tasks.Glific.Docs.IndexTest do
   end
 
   describe "a plain run" do
-    test "it reports what it chunked, embedded and wrote" do
+    test "it reports what it read, embedded and wrote" do
       stub_embeddings(8)
 
       assert :ok = Task.run(["--force", "--dimensions", "8"])
 
       printed = output()
-      assert printed =~ "Chunking"
+      assert printed =~ "Reading"
       assert printed =~ "sections"
       assert printed =~ "Indexed"
       assert printed =~ "8 dimensions"

@@ -13,7 +13,7 @@ defmodule Glific.Docs do
   the ranks are comparable.
 
   `mix glific.docs.index` writes the vectors to a build artifact that boot
-  reads. Without it the sections are chunked at boot and only the lexical pass
+  reads. Without it the documents are read at boot and only the lexical pass
   runs.
   """
 
@@ -53,8 +53,8 @@ defmodule Glific.Docs do
   @heading_weight 4
 
   # Without a floor each pass returns candidates for any string at all. Both
-  # numbers sit between what an off-topic question scores and what a real one
-  # does, measured against the questions in `priv/docs_kb/golden_sections.csv`.
+  # numbers were measured: they sit between what an off-topic question scores
+  # and what a real one does.
   @minimum_similarity 0.45
   @minimum_overlap 5
 
@@ -103,9 +103,15 @@ defmodule Glific.Docs do
 
   defp entry(block, document) do
     case String.split(block, ~r/^---\s*$/m, parts: 2) do
-      [front, body] -> build(front, String.trim(body), document)
+      [front, body] -> build(front, trim_body(body), document)
       _no_front_matter -> nil
     end
+  end
+
+  # An entry ends where the next begins, so the rule that separated them in
+  # the file is not part of the answer.
+  defp trim_body(body) do
+    body |> String.trim() |> String.replace(~r/\n\s*-{3,}\s*$/, "") |> String.trim()
   end
 
   defp build(front, body, document) do
@@ -187,7 +193,7 @@ defmodule Glific.Docs do
           "docs index unusable (#{SafeLog.safe_inspect(other)}); searching without vectors"
         )
 
-        {Enum.map(sections(), &%{section: &1, vector: nil}), %{}}
+        without_vectors()
     end
   rescue
     exception ->
@@ -339,8 +345,8 @@ defmodule Glific.Docs do
   @spec fuse(%{atom() => [section()]}) :: [section()]
   def fuse(passes) do
     passes
-    |> Enum.reduce(%{}, fn {_pass, chunks}, acc ->
-      chunks
+    |> Enum.reduce(%{}, fn {_pass, found}, acc ->
+      found
       |> Enum.with_index(1)
       |> Enum.reduce(acc, fn {section, rank}, inner ->
         contribution = 1.0 / (@rrf_k + rank)

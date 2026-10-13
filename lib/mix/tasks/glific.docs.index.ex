@@ -35,11 +35,11 @@ defmodule Mix.Tasks.Glific.Docs.Index do
     model = Keyword.get(opts, :model, Docs.model())
     dimensions = Keyword.get(opts, :dimensions, Docs.dimensions())
 
-    chunks = Docs.sections()
-    Mix.shell().info("Chunking #{length(chunks)} sections…")
+    sections = Docs.sections()
+    Mix.shell().info("Reading #{length(sections)} sections…")
 
     known = if opts[:force], do: %{}, else: reusable(model, dimensions)
-    {fresh, stale} = Enum.split_with(chunks, &Map.has_key?(known, &1.hash))
+    {fresh, stale} = Enum.split_with(sections, &Map.has_key?(known, &1.hash))
 
     case embed_all(stale, model, dimensions) do
       {:ok, embedded} ->
@@ -71,8 +71,8 @@ defmodule Mix.Tasks.Glific.Docs.Index do
 
   defp embed_all([], _model, _dimensions), do: {:ok, []}
 
-  defp embed_all(chunks, model, dimensions) do
-    chunks
+  defp embed_all(sections, model, dimensions) do
+    sections
     |> Enum.chunk_every(@batch_size)
     |> Enum.reduce_while({:ok, []}, fn batch, {:ok, acc} ->
       case embed_batch(batch, model, dimensions) do

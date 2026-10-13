@@ -91,6 +91,45 @@ defmodule Glific.DocsTest do
     end
   end
 
+  describe "with no artifact built" do
+    setup do
+      # `_build/.../priv` is a symlink to `priv`, so both names are one file.
+      paths = [
+        Docs.artifact_path(),
+        Path.join([File.cwd!(), "priv", "docs_kb", "embeddings.etf"])
+      ]
+
+      original = paths |> Enum.find(&File.exists?/1) |> File.read!()
+
+      on_exit(fn ->
+        Enum.each(paths, &File.write!(&1, original))
+        Docs.warm()
+      end)
+
+      Enum.each(paths, &File.rm/1)
+      :persistent_term.erase({Docs, :entries})
+      :persistent_term.erase({Docs, :metadata})
+      :ok
+    end
+
+    test "boot still works, and the lexical pass with it" do
+      assert :ok = Docs.warm()
+      assert Docs.count() > 100
+      assert Enum.all?(Docs.entries(), &is_nil(&1.vector))
+      assert Docs.lexical("how do I publish a flow", Docs.entries()) != []
+    end
+
+    test "metadata is empty rather than raising" do
+      assert Docs.metadata() == %{}
+    end
+
+    test "the semantic pass stays silent rather than scoring nothing" do
+      Docs.warm()
+
+      assert Docs.semantic("anything", Docs.entries(), Docs.pack([1.0, 0.0])) == []
+    end
+  end
+
   describe "the index" do
     test "it holds the whole corpus", %{entries: entries} do
       assert Docs.count() == length(entries)
