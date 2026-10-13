@@ -692,6 +692,39 @@ defmodule Glific.EraseTest do
       assert length(existing_version_ids(versions)) == 2
     end
 
+    test "never deletes more than max_rows_to_delete when it is not a multiple of batch_size",
+         attrs do
+      versions = Enum.map(1..6, fn _ -> version_fixture(attrs, 120) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 2,
+          max_rows_to_delete: 3,
+          keep_per_entity: 0,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 3} = perform_job(Erase, job.args)
+      assert length(existing_version_ids(versions)) == 3
+    end
+
+    test "never deletes more than max_rows_to_delete when it is below batch_size", attrs do
+      versions = Enum.map(1..6, fn _ -> version_fixture(attrs, 120) end)
+
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: 90,
+          batch_size: 50,
+          max_rows_to_delete: 1,
+          keep_per_entity: 0,
+          sleep_after_delete?: false
+        )
+
+      assert {:ok, 1} = perform_job(Erase, job.args)
+      assert length(existing_version_ids(versions)) == 5
+    end
+
     test "keeps the latest versions of every entity even when they are expired", attrs do
       busy_entity = Enum.map(1..5, fn _ -> version_fixture(attrs, 120, entity_id: 1) end)
       quiet_entity = Enum.map(1..2, fn _ -> version_fixture(attrs, 120, entity_id: 2) end)
@@ -713,14 +746,14 @@ defmodule Glific.EraseTest do
       assert length(existing_version_ids(quiet_entity)) == 2
     end
 
-    test "applies max_rows_to_delete per organization so small orgs are fully purged", attrs do
+    test "applies max_rows_to_delete per organization so one org cannot use up the run", attrs do
       other_organization = Fixtures.organization_fixture()
 
       large_org = Enum.map(1..6, fn _ -> version_fixture(attrs, 120) end)
 
       small_org =
         Enum.map(1..2, fn _ ->
-          version_fixture(%{organization_id: other_organization.id}, 120)
+          version_fixture(%{organization_id: other_organization.id}, 120, entity_id: 2)
         end)
 
       {:ok, job} =
@@ -736,6 +769,56 @@ defmodule Glific.EraseTest do
 
       assert length(existing_version_ids(large_org)) == 2
       assert [] == existing_version_ids(small_org)
+    end
+
+    test "parses numeric string options before enqueueing" do
+      {:ok, job} =
+        Erase.perform_version_purge(
+          retention_days: "90",
+          batch_size: "10",
+          max_rows_to_delete: "100",
+          keep_per_entity: "3"
+        )
+
+      assert %{
+               "retention_days" => 90,
+               "batch_size" => 10,
+               "max_rows_to_delete" => 100,
+               "keep_per_entity" => 3
+             } = job.args
+    end
+
+    test "refuses non-numeric options instead of raising" do
+      assert {:error, message} = Erase.perform_version_purge(retention_days: "ninety")
+      assert message =~ "Refusing to purge versions"
+
+      assert {:error, message} =
+               Erase.perform_version_purge(retention_days: 90, keep_per_entity: "three")
+
+      assert message =~ "invalid versions kept per entity"
+      refute_enqueued(worker: Erase, prefix: "global")
+    end
+
+    test "refuses to run with a batch size that is not positive", attrs do
+      versions = Enum.map(1..3, fn _ -> version_fixture(attrs, 120) end)
+
+      assert {:error, message} =
+               Erase.perform_version_purge(retention_days: 90, batch_size: 0)
+
+      assert message =~ "batch size must be a positive integer"
+      refute_enqueued(worker: Erase, prefix: "global")
+
+      assert {:error, _message} =
+               perform_job(Erase, %{
+                 "purge" => "versions",
+                 "retention_days" => 90,
+                 "batch_size" => 0,
+                 "max_rows_to_delete" => 100,
+                 "keep_per_entity" => 0,
+                 "sleep_after_delete?" => false
+               })
+
+      assert length(existing_version_ids(versions)) == 3
     end
 
     test "refuses to run with a negative keep_per_entity" do
@@ -775,6 +858,7 @@ defmodule Glific.EraseTest do
                  "retention_days" => 0,
                  "batch_size" => 10,
                  "max_rows_to_delete" => 100,
+                 "keep_per_entity" => 10,
                  "sleep_after_delete?" => false
                })
 
