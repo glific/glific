@@ -5,8 +5,9 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   Topic shape: `"web_channel:<contact_id>"` — a contact may only join its own topic (enforced
   in `join/3` against `socket.assigns.current_contact`, set during `GlificWeb.WebChannelSocket`
-  authentication). That is the only place topic ownership is checked; `renew_token` below must
-  never be allowed to change which contact a joined socket speaks for.
+  authentication) — or `"web_channel:me"`, which every client may join without knowing its id and
+  which always means the socket's own contact. That is the only place topic ownership is checked;
+  `renew_token` below must never be allowed to change which contact a joined socket speaks for.
   """
 
   use GlificWeb, :channel
@@ -38,43 +39,61 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   @impl true
   @spec join(String.t(), map(), Phoenix.Socket.t()) ::
           {:ok, map(), Phoenix.Socket.t()} | {:error, map()}
+  def join("web_channel:me", _params, socket) do
+    if token_expired?(socket) do
+      {:error, %{reason: "unauthorized"}}
+    else
+      # Nothing broadcasts to "web_channel:me" (it would reach every client); the per-contact
+      # topic is relayed in handle_info/2 instead.
+      Phoenix.PubSub.subscribe(
+        Glific.PubSub,
+        "web_channel:#{socket.assigns.current_contact.id}"
+      )
+
+      {:ok, reply, socket} = start_room(socket)
+      {:ok, Map.put(reply, :contact_id, socket.assigns.current_contact.id), socket}
+    end
+  end
+
   def join("web_channel:" <> contact_id, _params, socket) do
     # `connect/3` verified the token once, and the sweep only starts here — so re-check expiry.
     # Both refusals answer identically, so neither can be told from the other.
     if contact_id == to_string(socket.assigns.current_contact.id) and not token_expired?(socket) do
-      # Its own process, so org context has to be re-established, as in an Oban worker.
-      Repo.put_process_state(socket.assigns.organization_id)
-      schedule_sweep()
-
-      # Rooms.close_all/1 broadcasts here when an admin switches the channel off. A per-organization
-      # topic rather than Presence, which degrades to an empty list when its tracker is not running.
-      Phoenix.PubSub.subscribe(Glific.PubSub, Rooms.topic(socket.assigns.organization_id))
-
-      # The channel process, not the socket: presence lives under a per-organization topic, and
-      # untracks when this process dies.
-      Presence.track_contact(
-        self(),
-        socket.assigns.organization_id,
-        socket.assigns.current_contact.id
-      )
-
-      messages =
-        contact_id
-        |> String.to_integer()
-        |> Messages.list_conversation_messages(:web, %{limit: @page_size, offset: 0})
-        |> Enum.reverse()
-        |> Enum.map(&MessageSerializer.serialize/1)
-
-      socket = assign(socket, :token_expiring_warned?, false)
-
-      {:ok, %{messages: messages}, socket}
+      start_room(socket)
     else
       {:error, %{reason: "unauthorized"}}
     end
   end
 
+  @spec start_room(Phoenix.Socket.t()) :: {:ok, map(), Phoenix.Socket.t()}
+  defp start_room(socket) do
+    # Its own process, so org context has to be re-established, as in an Oban worker.
+    Repo.put_process_state(socket.assigns.organization_id)
+    schedule_sweep()
+
+    # Rooms.close_all/1 broadcasts here when an admin switches the channel off. A per-organization
+    # topic rather than Presence, which degrades to an empty list when its tracker is not running.
+    Phoenix.PubSub.subscribe(Glific.PubSub, Rooms.topic(socket.assigns.organization_id))
+
+    # The channel process, not the socket: presence lives under a per-organization topic, and
+    # untracks when this process dies.
+    Presence.track_contact(
+      self(),
+      socket.assigns.organization_id,
+      socket.assigns.current_contact.id
+    )
+
+    messages =
+      socket.assigns.current_contact.id
+      |> Messages.list_conversation_messages(:web, %{limit: @page_size, offset: 0})
+      |> Enum.reverse()
+      |> Enum.map(&MessageSerializer.serialize/1)
+
+    {:ok, %{messages: messages}, assign(socket, :token_expiring_warned?, false)}
+  end
+
   @impl true
-  @spec handle_info(:sweep_token | :web_channel_disabled | atom(), Phoenix.Socket.t()) ::
+  @spec handle_info(:sweep_token | :web_channel_disabled | atom() | struct(), Phoenix.Socket.t()) ::
           {:noreply, Phoenix.Socket.t()} | {:stop, :normal, Phoenix.Socket.t()}
   def handle_info(:sweep_token, socket) do
     now = System.system_time(:second)
@@ -106,6 +125,11 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   # ConsumerWorkerMock (test env) notifies its caller; swallow rather than crash the channel.
   def handle_info(:received_message_to_process, socket), do: {:noreply, socket}
+
+  def handle_info(%Phoenix.Socket.Broadcast{event: event, payload: payload}, socket) do
+    push(socket, event, payload)
+    {:noreply, socket}
+  end
 
   @impl true
   @spec handle_in(String.t(), map(), Phoenix.Socket.t()) ::
