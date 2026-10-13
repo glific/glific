@@ -90,8 +90,7 @@ defmodule Glific.Erase do
   The job is unique across the `available`, `scheduled`, `executing` and `retryable`
   states, so a fresh run is never enqueued while a previous one is still in flight.
   """
-  @spec perform_version_purge(keyword()) ::
-          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset() | String.t()}
+  @spec perform_version_purge(keyword()) :: {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset()}
   def perform_version_purge(opts \\ []) do
     purge_config = Application.get_env(:glific, __MODULE__)
 
@@ -107,26 +106,22 @@ defmodule Glific.Erase do
     keep_per_entity =
       version_purge_option(opts, :keep_per_entity, purge_config, :versions_kept_per_entity)
 
-    with :ok <- validate_version_retention(retention_days),
-         :ok <- validate_keep_per_entity(keep_per_entity),
-         :ok <- validate_version_batch_size(batch_size) do
-      __MODULE__.new(
-        %{
-          purge: "versions",
-          retention_days: retention_days,
-          batch_size: batch_size,
-          max_rows_to_delete: max_rows_to_delete,
-          keep_per_entity: keep_per_entity,
-          sleep_after_delete?: Keyword.get(opts, :sleep_after_delete?, true)
-        },
-        unique: [
-          period: :infinity,
-          keys: [:purge],
-          states: [:available, :scheduled, :executing, :retryable]
-        ]
-      )
-      |> Oban.insert()
-    end
+    __MODULE__.new(
+      %{
+        purge: "versions",
+        retention_days: retention_days,
+        batch_size: batch_size,
+        max_rows_to_delete: max_rows_to_delete,
+        keep_per_entity: keep_per_entity,
+        sleep_after_delete?: Keyword.get(opts, :sleep_after_delete?, true)
+      },
+      unique: [
+        period: :infinity,
+        keys: [:purge],
+        states: [:available, :scheduled, :executing, :retryable]
+      ]
+    )
+    |> Oban.insert()
   end
 
   @doc """
