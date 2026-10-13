@@ -147,15 +147,30 @@ defmodule Glific.AI.Langfuse do
   # matching things that are not numbers at all, so the digit count decides, and
   # an ISO date is spelled out as the one lookalike worth keeping.
   @spec mask_phones(String.t()) :: String.t()
-  defp mask_phones(text) do
-    Regex.replace(@phone, text, fn match ->
-      digits = String.replace(match, ~r/\D/, "")
+  defp mask_phones(text), do: Regex.replace(@phone, text, &redact/1)
 
-      if String.length(digits) in 10..15 and
-           not Regex.match?(~r/^\d{4}-\d{2}/, String.trim(match)),
-         do: "[phone]",
-         else: match
-    end)
+  @spec redact(String.t()) :: String.t()
+  defp redact(match) do
+    digits = match |> String.replace(~r/\D/, "") |> String.length()
+
+    cond do
+      Regex.match?(~r/^\d{4}-\d{2}/, String.trim(match)) -> match
+      digits in 10..15 -> "[phone]"
+      digits > 15 -> shorten(match)
+      true -> match
+    end
+  end
+
+  # A number with another figure written after it matches as one long run, and
+  # a run past fifteen digits is not a number anyone has. Dropping groups from
+  # the end finds the number inside it, rather than giving up on the match and
+  # leaving the whole thing — the number included — in place.
+  @spec shorten(String.t()) :: String.t()
+  defp shorten(match) do
+    case Regex.run(~r/^(.*)([\s.\-]\d+)$/, match) do
+      [_match, head, tail] -> redact(head) <> tail
+      nil -> match
+    end
   end
 
   @spec fetch(non_neg_integer()) :: {:ok, Message.t()} | {:error, String.t()}

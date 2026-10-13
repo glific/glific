@@ -295,6 +295,14 @@ defmodule Glific.AI.LangfuseTest do
       end
     end
 
+    test "a number with another figure after it is still masked" do
+      # The run matches as one seventeen-digit string, which is nobody's number.
+      # Giving up on it left the number itself in place; the trailing figure is
+      # not part of the number and has to survive.
+      assert Langfuse.mask("call +91 90000 00001 12345 now") == "call [phone] 12345 now"
+      assert Langfuse.mask("+91 90000 00001 12") == "[phone]"
+    end
+
     test "leaves the identifiers a trace is read by alone" do
       # Masking on separators as well as digits is what makes a number in any
       # shape reachable; it must not take an id, a date or a UUID with it.
