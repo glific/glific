@@ -746,6 +746,26 @@ defmodule Glific.EraseTest do
       assert length(existing_version_ids(quiet_entity)) == 2
     end
 
+    test "purges versions of soft-deleted organizations too" do
+      deleted_organization = Fixtures.organization_fixture()
+
+      Repo.query!(
+        "UPDATE organizations SET deleted_at = now() WHERE id = $1",
+        [deleted_organization.id],
+        skip_organization_id: true
+      )
+
+      expired =
+        Enum.map(1..5, fn _ ->
+          version_fixture(%{organization_id: deleted_organization.id}, 120, entity_id: 2)
+        end)
+
+      assert {:ok, 2} = perform_job(Erase, version_purge_args(%{"keep_per_entity" => 3}))
+
+      assert existing_version_ids(expired) |> Enum.sort() ==
+               expired |> Enum.take(-3) |> Enum.map(& &1.id)
+    end
+
     test "applies max_rows_to_delete per organization so one org cannot use up the run", attrs do
       other_organization = Fixtures.organization_fixture()
 

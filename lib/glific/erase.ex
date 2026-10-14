@@ -184,7 +184,8 @@ defmodule Glific.Erase do
         Organization
         |> select([organization], organization.id)
         |> order_by([organization], asc: organization.id)
-        |> Repo.all(skip_organization_id: true)
+        # Soft-deleted orgs keep their history until hard deletion, so retention applies to them too.
+        |> Repo.all(skip_organization_id: true, include_deleted: true)
         |> Enum.reduce(0, fn organization_id, total ->
           total + delete_old_versions(organization_id, purge)
         end)
