@@ -267,8 +267,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a WhatsApp contact, so the phone is required. A contact on the web channel is created together with its
-  login identity, from `new_contact_changeset/2`.
+  Creates a WhatsApp contact and its WhatsApp identity in one transaction; the phone is required.
 
   ## Examples
 
@@ -281,10 +280,7 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs) do
-    with {:ok, contact} <- attrs |> new_contact_changeset(:whatsapp) |> Repo.insert() do
-      Identities.ensure_whatsapp_identity(contact)
-      {:ok, contact}
-    end
+    Identities.create_contact(attrs, :whatsapp, attrs[:phone])
   end
 
   @doc """
@@ -351,7 +347,7 @@ defmodule Glific.Contacts do
     Repo.transaction(fn ->
       case Repo.update(changeset) do
         {:ok, contact} ->
-          Identities.sync_whatsapp_identity(contact)
+          Identities.put_whatsapp_identity(contact)
           contact
 
         {:error, changeset} ->
@@ -456,16 +452,24 @@ defmodule Glific.Contacts do
       language_id: attrs[:language_id] || Partners.organization_language_id(organization_id)
     }
 
-    contact =
-      Repo.insert!(
-        change_contact(%Contact{}, Map.merge(other_attrs, attrs)),
-        returning: true,
-        on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
-        conflict_target: [:phone, :organization_id]
-      )
+    insert_opts = [
+      returning: true,
+      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
+      conflict_target: [:phone, :organization_id]
+    ]
 
-    Identities.ensure_whatsapp_identity(contact)
-    {:ok, contact}
+    case Identities.create_contact(
+           Map.merge(other_attrs, attrs),
+           :whatsapp,
+           attrs[:phone],
+           insert_opts
+         ) do
+      {:ok, contact} ->
+        {:ok, contact}
+
+      {:error, changeset} ->
+        raise Ecto.InvalidChangesetError, action: :insert, changeset: changeset
+    end
   end
 
   @spec handle_phone_error(map(), Ecto.Changeset.t()) ::
@@ -1100,18 +1104,19 @@ defmodule Glific.Contacts do
 
   def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
     with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone) do
-      backfill_whatsapp_identity(phone)
+      fetch_by_phone_and_repair_identity(phone)
     end
   end
 
-  @spec backfill_whatsapp_identity(String.t()) :: {:ok, Contact.t()} | {:error, :not_found}
-  defp backfill_whatsapp_identity(phone) do
+  @spec fetch_by_phone_and_repair_identity(String.t()) ::
+          {:ok, Contact.t()} | {:error, :not_found}
+  defp fetch_by_phone_and_repair_identity(phone) do
     case Repo.get_by(Contact, %{phone: phone}) do
       nil ->
         {:error, :not_found}
 
       contact ->
-        Identities.ensure_whatsapp_identity(contact)
+        Identities.put_whatsapp_identity(contact)
         {:ok, contact}
     end
   end

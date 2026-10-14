@@ -4,7 +4,7 @@ defmodule GlificWeb.WebChannel.LoginToken do
   socket. A token may live at most 24 hours; an NGO may issue shorter ones.
 
   The token is signed (HS256, pinned: the token's own `alg` is never trusted) with either of the
-  organization's two login secrets (`login_key_1_secret`, `login_key_2_secret`); neither is
+  organization's two JWT signature secrets (`jwt_signature_secret_1`, `jwt_signature_secret_2`); neither is
   "current" or "previous", so rotating is a matter of filling the empty slot and later clearing the
   old one. Both live in the organization's `web_channel` credential, so the organization is the
   request's, not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
@@ -22,7 +22,7 @@ defmodule GlificWeb.WebChannel.LoginToken do
   @leeway_seconds 60
   @max_length 255
   @provider_code "web_channel"
-  @secret_fields [:login_key_1_secret, :login_key_2_secret]
+  @secret_fields [:jwt_signature_secret_1, :jwt_signature_secret_2]
 
   @type claims :: %{
           required(:sub) => String.t(),
@@ -33,14 +33,14 @@ defmodule GlificWeb.WebChannel.LoginToken do
         }
 
   @doc """
-  The claims of a token signed with either of the organization's login secrets, if it is valid now.
+  The claims of a token signed with either of the organization's JWT signature secrets, if it is valid now.
   """
   @spec verify(non_neg_integer(), String.t() | nil, integer()) ::
           {:ok, claims()} | {:error, :invalid}
   def verify(organization_id, token, now \\ System.system_time(:second))
 
   def verify(organization_id, token, now) when is_binary(token) and token != "" do
-    with [_ | _] = secrets <- login_secrets(organization_id),
+    with [_ | _] = secrets <- signature_secrets(organization_id),
          {:ok, fields} <- verify_signature(secrets, token),
          :ok <- validate_timing(fields, now),
          {:ok, claims} <- extract_claims(fields) do
@@ -52,8 +52,8 @@ defmodule GlificWeb.WebChannel.LoginToken do
 
   def verify(_organization_id, _token, _now), do: {:error, :invalid}
 
-  @spec login_secrets(non_neg_integer()) :: [String.t()]
-  defp login_secrets(organization_id) do
+  @spec signature_secrets(non_neg_integer()) :: [String.t()]
+  defp signature_secrets(organization_id) do
     case Partners.organization(organization_id) do
       {:error, _reason} ->
         []

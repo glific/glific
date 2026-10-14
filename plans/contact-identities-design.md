@@ -54,7 +54,7 @@ Not added: `contacts.channels`, per-channel username columns. No backfill. `cont
 3. **Across channels:** duplicates are OK when nothing links them.
 4. **Linking is one insert (or one row update), never a merge.** No history is rewritten.
 5. **Never look up a contact by a nil phone.**
-6. **A token is only trusted if it's signed with the login secret (or previous secret) of the org it's used in.**
+6. **A token is only trusted if it's signed with the JWT signature secret (or previous secret) of the org it's used in.**
 
 ## 4. Flows
 
@@ -65,7 +65,10 @@ Gupshup/Maytapi webhook {phone}
 → contact
 ```
 The contact's `(whatsapp, phone, <phone>)` identity is written when it's created (or on its first
-lookup, until the backfill has covered every existing contact).
+lookup, so existing contacts keep working until the WhatsApp identities are backfilled in the next PR).
+Every channel creates a contact through `Identities.create_contact/4`, which inserts the contact and
+its identity in one transaction: a contact never exists without its identity. `put_whatsapp_identity/1`
+keeps the WhatsApp identity in step with the phone.
 
 ### 4.2 Web, phone + OTP
 ```
@@ -94,7 +97,7 @@ token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
 → (org, web, "asha_07") already exists → that contact; phone/contact_id IGNORED
 → not found:
      target = contact by phone, or contact by contact_id (must be in this org)
-     target found → insert identity on target (link), even if it already has other web identities
+     target found → insert identity on target (add_web_identity), even if it already has other web identities
      otherwise    → create new contact (4.3)
      unique conflict on (org, web, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
@@ -122,7 +125,7 @@ again by phone.
 A reply goes out on the channel the conversation/flow came in on (already built in #5660).
 
 ## 5. Token verification (NGO-signed)
-- Signed with either of the organization's two login secrets (`login_key_1_secret`, `login_key_2_secret`,
+- Signed with either of the organization's two JWT signature secrets (`jwt_signature_secret_1`, `jwt_signature_secret_2`,
   each beside a user-chosen name; neither is "current" or "previous"), kept in
   the org's `web_channel` credential (set on the Settings page). To rotate, fill the empty slot, switch
   the backend, then clear the old one. The organization comes from the
@@ -180,13 +183,13 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 ## 8. Console / admin
 - **Inbox:** `contact_type in [...] OR EXISTS (identity for c.id)`
 - **Contact:** `identities` field, hidden from `:staff` like `phone`
-- **Login secret:** set and rotated on the Web Channel settings page (the `web_channel` credential); no separate key management
+- **JWT signature secret:** set and rotated on the Web Channel settings page (the `web_channel` credential); no separate key management
 - **Move identity** (optional follow-up instead of merge): re-point one identity row to another contact; history stays where it is
 
 ## 9. Not doing
 - Merge contacts (the issue forbids it)
 - `contacts.channels` or per-channel username columns
-- Backfilling WhatsApp identity rows
+- Backfilling WhatsApp identity rows in this PR (done in the next PR with web opt-in)
 - BigQuery export of identities (phone-less rows must not break REQUIRED phone columns; handle in #5759)
 - CSV import by username
 - Dropping `contact_type`
@@ -196,7 +199,7 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 |---|---|
 | 1 | Nil-phone safety (§7) |
 | 2 | Migrations + schemas (§2) |
-| 3 | Login secret, verifier, WebSocket connect + renewal with the NGO token, resolve/link (§4.3–4.4, §5), WhatsApp identities + backfill |
+| 3 | JWT signature secret, verifier, WebSocket connect + renewal with the NGO token, resolve/link (§4.3–4.4, §5), WhatsApp identities written on create and phone change, with a lookup fallback to `contacts.phone` |
 | 4 | Inbox + GraphQL (§8) |
 
 ## 11. Open
@@ -212,7 +215,7 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 For each column: what it does, whether it's written on every message (hot path), whether it
 belongs to the **person** or to a **channel**, and what to do with it.
 "Move" means to `contact_identities`. **Nothing moves in #5703.** Moves happen in the next PR
-(opt-in migration), which also does the WhatsApp backfill.
+(opt-in migration), which also backfills the WhatsApp identities.
 
 Enums: `status` = blocked / failed / invalid / processing / valid ·
 `bsp_status` = none / session / session_and_hsm / hsm.

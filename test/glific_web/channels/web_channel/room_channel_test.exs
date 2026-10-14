@@ -586,7 +586,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     defp with_ngo_socket(overrides, fun) do
       Glific.WebChannelFlagHelpers.with_web_channel_secrets(
         1,
-        %{"login_key_1_secret" => @secret},
+        %{"jwt_signature_secret_1" => @secret},
         fn ->
           {:ok, ws_socket} = overrides |> ngo_token() |> WebChannelFixtures.ngo_socket_fixture()
           contact = ws_socket.assigns.current_contact
@@ -845,7 +845,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "returns the contact id to an NGO token socket" do
       Glific.WebChannelFlagHelpers.with_web_channel_secrets(
         1,
-        %{"login_key_1_secret" => @secret},
+        %{"jwt_signature_secret_1" => @secret},
         fn ->
           token =
             %{}
