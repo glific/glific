@@ -14,18 +14,27 @@ defmodule Glific.Http.FinchAdapterTest do
     FinchAdapter.call(%Tesla.Env{method: :get, url: url}, [name: Glific.Finch] ++ opts)
   end
 
+  defp start_server(fun) do
+    pid = spawn(fun)
+    on_exit(fn -> Process.exit(pid, :kill) end)
+    pid
+  end
+
   defp serve(listen, response) do
-    spawn_link(fn ->
+    start_server(fn ->
       {:ok, socket} = :gen_tcp.accept(listen)
       {:ok, _request} = :gen_tcp.recv(socket, 0)
-      :gen_tcp.send(socket, response)
-      Process.sleep(:infinity)
+      :ok = :gen_tcp.send(socket, response)
+      :gen_tcp.close(socket)
     end)
   end
 
   defp accept_and_hang(listen) do
-    spawn_link(fn ->
+    test_pid = self()
+
+    start_server(fn ->
       {:ok, _socket} = :gen_tcp.accept(listen)
+      send(test_pid, :connection_accepted)
       Process.sleep(:infinity)
     end)
   end
@@ -69,8 +78,12 @@ defmodule Glific.Http.FinchAdapterTest do
     accept_and_hang(listen)
 
     env = %Tesla.Env{method: :get, url: url}
-    Task.start(fn -> FinchAdapter.call(env, name: name, receive_timeout: 5_000) end)
-    Process.sleep(100)
+
+    start_supervised!(
+      {Task, fn -> FinchAdapter.call(env, name: name, receive_timeout: 5_000) end}
+    )
+
+    assert_receive :connection_accepted, 1_000
 
     assert {:error, :checkout_timeout} =
              FinchAdapter.call(env, name: name, receive_timeout: 5_000, pool_timeout: 100)

@@ -50,6 +50,9 @@ defmodule Glific.Dialogflow do
 
       {:error, :timeout} ->
         {:error, "Timeout"}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
