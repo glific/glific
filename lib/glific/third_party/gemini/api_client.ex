@@ -13,7 +13,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @spec speech_to_text(String.t(), non_neg_integer()) :: map()
   def speech_to_text(encoded_audio, organization_id) do
     body = stt_request_body(encoded_audio)
-    opts = [adapter: [recv_timeout: 300_000]]
+    opts = [adapter: [receive_timeout: 300_000]]
 
     client()
     |> Tesla.post("/#{gemini_config(:stt_model)}:generateContent", body, opts: opts)
@@ -47,7 +47,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   def text_to_speech(text, organization_id) do
     body = tts_request_body(text)
     path = "/#{gemini_config(:tts_model)}:generateContent"
-    opts = [adapter: [recv_timeout: 300_000]]
+    opts = [adapter: [receive_timeout: 300_000]]
 
     client()
     |> Tesla.post(path, body, opts: opts)

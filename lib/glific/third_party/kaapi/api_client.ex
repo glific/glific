@@ -47,7 +47,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         do: Map.put(body, :credentials, credentials),
         else: body
 
-    opts = [adapter: [recv_timeout: 30_000]]
+    opts = [adapter: [receive_timeout: 30_000]]
 
     api_key
     |> client()
@@ -61,7 +61,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @spec update_organization_credentials(map(), binary()) ::
           {:ok, map()} | {:error, map() | String.t()}
   def update_organization_credentials(params, org_api_key) do
-    opts = [adapter: [recv_timeout: 30_000]]
+    opts = [adapter: [receive_timeout: 30_000]]
 
     org_api_key
     |> client()
@@ -74,7 +74,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec call_llm(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_llm(payload, org_api_key) do
-    opts = [adapter: [recv_timeout: 60_000]]
+    opts = [adapter: [receive_timeout: 60_000]]
 
     org_api_key
     |> client()
@@ -182,7 +182,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
   def ingest_ai_assistants(org_api_key, assistant_id) do
-    opts = [adapter: [recv_timeout: 30_000], path_params: [assistant_id: assistant_id]]
+    opts = [adapter: [receive_timeout: 30_000], path_params: [assistant_id: assistant_id]]
 
     org_api_key
     |> client()
@@ -230,7 +230,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     org_api_key
     |> client()
     |> Tesla.post("/api/v1/evaluations/datasets", evaluation_dataset_multipart(params),
-      opts: [adapter: [recv_timeout: 60_000]]
+      opts: [adapter: [receive_timeout: 60_000]]
     )
     |> parse_kaapi_response()
   end
@@ -243,7 +243,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     org_api_key
     |> client()
     |> Tesla.post("/api/v2/evaluations/datasets", evaluation_dataset_multipart(params),
-      opts: [adapter: [recv_timeout: 60_000]]
+      opts: [adapter: [receive_timeout: 60_000]]
     )
     |> parse_kaapi_response()
   end
@@ -282,7 +282,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> client()
     |> Tesla.get("/api/v1/evaluations/:evaluation_id",
       query: query,
-      opts: [path_params: [evaluation_id: evaluation_id], adapter: [recv_timeout: 30_000]]
+      opts: [path_params: [evaluation_id: evaluation_id], adapter: [receive_timeout: 30_000]]
     )
     |> parse_kaapi_response()
   end
@@ -295,7 +295,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     org_api_key
     |> client()
     |> Tesla.post("/api/v2/evaluations/:evaluation_id/improve-prompt", body,
-      opts: [path_params: [evaluation_id: evaluation_id], adapter: [recv_timeout: 30_000]]
+      opts: [path_params: [evaluation_id: evaluation_id], adapter: [receive_timeout: 30_000]]
     )
     |> parse_kaapi_response()
   end

@@ -53,7 +53,7 @@ defmodule Glific.ThirdParty.Discord do
   defp send_request(webhook_url, body) do
     case Tesla.post(webhook_url, body,
            headers: [{"content-type", "application/json"}],
-           opts: [adapter: [recv_timeout: @timeout_ms]]
+           opts: [adapter: [receive_timeout: @timeout_ms]]
          ) do
       {:ok, env} ->
         {:ok, env}

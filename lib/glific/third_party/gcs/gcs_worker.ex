@@ -437,7 +437,7 @@ defmodule Glific.GCS.GcsWorker do
   def download_file_to_temp(url, path, org_id) do
     Logger.info("GCSWORKER: Downloading file: org_id: #{org_id}, url: #{url}")
 
-    Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]])
+    Tesla.get(url, opts: [adapter: [receive_timeout: 10_000]])
     |> case do
       {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
         File.write!(path, body)

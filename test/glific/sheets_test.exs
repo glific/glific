@@ -1029,7 +1029,7 @@ defmodule Glific.SheetsTest do
   end
 
   describe "build_conn middleware injection" do
-    test "fetch_credentials returns a conn with recv_timeout and retry middleware", %{
+    test "fetch_credentials returns a conn with receive_timeout and retry middleware", %{
       organization_id: organization_id
     } do
       with_mock(Goth.Token, [],
@@ -1059,7 +1059,7 @@ defmodule Glific.SheetsTest do
             _ -> false
           end)
 
-        assert opts[:recv_timeout] == 10_000
+        assert opts[:adapter][:receive_timeout] == 10_000
 
         {Tesla.Middleware.Telemetry, telemetry_opts} =
           Enum.find(middleware, fn

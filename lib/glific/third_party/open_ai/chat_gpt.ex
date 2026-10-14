@@ -54,7 +54,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, data, opts: [adapter: [receive_timeout: 120_000]])
     |> handle_response()
   end
 
@@ -116,7 +116,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, data, opts: [adapter: [receive_timeout: 120_000]])
     |> handle_response()
   end
 
@@ -204,7 +204,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, data, opts: [adapter: [receive_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         uuid = Ecto.UUID.generate()

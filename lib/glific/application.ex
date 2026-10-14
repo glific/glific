@@ -21,6 +21,17 @@ defmodule Glific.Application do
       # Start the Telemetry supervisor
       GlificWeb.Telemetry,
 
+      # HTTP connection pools used by Tesla — per-host size configurable via HTTP_POOL_SIZE env var
+      {Finch,
+       name: Glific.Finch,
+       pools: %{
+         default:
+           http_pool_options(Application.get_env(:glific, :http_pool, [])[:size] || 50, 5_000)
+       }},
+
+      # Dedicated pools for Kaapi document uploads
+      {Finch, name: Glific.UploadFinch, pools: %{default: http_pool_options(50, 15_000)}},
+
       # Start the PubSub system
       {Phoenix.PubSub, name: Glific.PubSub},
 
@@ -58,16 +69,7 @@ defmodule Glific.Application do
       {Task.Supervisor, name: Glific.Broadcast.Supervisor},
 
       ## Add Generic task supervisor
-      {Task.Supervisor, name: Glific.TaskSupervisor},
-
-      # Default hackney pool — size configurable via HACKNEY_POOL_SIZE env var
-      :hackney_pool.child_spec(:glific_default_pool,
-        timeout: 60_000,
-        max_connections: Application.get_env(:glific, :hackney_pool, [])[:max_connections] || 50
-      ),
-
-      # Dedicated hackney pool for Kaapi document uploads
-      :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
+      {Task.Supervisor, name: Glific.TaskSupervisor}
     ]
 
     # Add this :telemetry.attach/4 for oban success/failure call:
@@ -102,6 +104,15 @@ defmodule Glific.Application do
 
   defp oban_config do
     Application.get_env(:glific, Oban)
+  end
+
+  # verify_none keeps the TLS behaviour of the previous hackney setup (#3037); Mint also passes
+  # these options to plain-HTTP sockets, so only options gen_tcp tolerates can go here
+  defp http_pool_options(size, connect_timeout) do
+    [
+      size: size,
+      conn_opts: [transport_opts: [verify: :verify_none, timeout: connect_timeout]]
+    ]
   end
 
   defp attach_oban_telemetry_event do
