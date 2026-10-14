@@ -876,6 +876,19 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
+    test "records the contact's WhatsApp identity", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        contact_id = verify_otp_login(conn, phone)
+
+        assert [%{contact_id: ^contact_id}] =
+                 ContactIdentity
+                 |> where([i], i.channel == :whatsapp and i.identifier == ^phone)
+                 |> Repo.all()
+      end)
+    end
+
     test "records no web identity for the contact", %{conn: conn} do
       phone = unique_phone()
 
