@@ -1,6 +1,6 @@
 defmodule GlificWeb.Schema.ContactIdentityTypes do
   @moduledoc """
-  GraphQL mutation for staff to create a contact together with its web login identifier.
+  GraphQL types for a contact's login identities and the mutation for staff to create a contact together with its web login identifier.
   """
 
   use Absinthe.Schema.Notation
@@ -8,9 +8,17 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
+  @desc "How a contact logs in on a channel"
+  object :contact_identity do
+    field(:id, :id)
+    field(:channel, :message_channel_enum)
+    field(:identifier, :string)
+    field(:inserted_at, :datetime)
+  end
+
   @desc "The web login identifier of a new contact, and optionally who they are"
   input_object :contact_identity_input do
-    @desc "The username the contact logs in with; matched exactly, 1 to 255 characters"
+    @desc "The username the contact logs in with; letters, digits, _, @ and ., stored lowercase so it is case-insensitive, 1 to 255 characters"
     field(:identifier, non_null(:string))
 
     @desc "The name to give the contact; defaults to the identifier"

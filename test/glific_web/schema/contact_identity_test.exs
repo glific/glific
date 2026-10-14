@@ -13,6 +13,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
   }
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_identities/create.gql")
+  load_gql(:list, GlificWeb.Schema, "assets/gql/contact_identities/list.gql")
 
   setup do
     WebChannelFlagHelpers.reset_web_channel_flag(1)
@@ -29,7 +30,11 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       assert {:ok, query_data} =
                auth_query_gql_by(:create, user, variables: input(%{"name" => "Ravi"}))
 
-      assert %{"id" => contact_id, "name" => "Ravi", "phone" => nil} =
+      assert %{
+               "id" => contact_id,
+               "name" => "Ravi",
+               "identities" => [%{"channel" => "WEB", "identifier" => "ravi_12"}]
+             } =
                get_in(query_data, [:data, "createContactWithIdentity", "contact"])
 
       assert %{contact_id: id} =
@@ -95,5 +100,68 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       assert [%{message: "Unauthorized"}] = query_data.errors
       assert nil == Repo.get_by(ContactIdentity, %{identifier: "ravi_12"})
     end)
+  end
+
+  describe "identities on a contact" do
+    setup do
+      contact = Fixtures.contact_without_phone_fixture()
+      Fixtures.contact_identity_fixture(%{contact_id: contact.id, identifier: "ravi_12"})
+      %{contact: contact}
+    end
+
+    defp identities_of(query_data, contact) do
+      query_data
+      |> get_in([:data, "contacts"])
+      |> Enum.find(&(&1["id"] == to_string(contact.id)))
+      |> Map.fetch!("identities")
+    end
+
+    defp list_identities(user),
+      do:
+        auth_query_gql_by(:list, user, variables: %{"filter" => %{}, "opts" => %{"limit" => 100}})
+
+    test "a manager sees them", %{manager: user, contact: contact} do
+      assert {:ok, query_data} = list_identities(user)
+
+      assert [%{"channel" => "WEB", "identifier" => "ravi_12", "id" => _, "insertedAt" => _}] =
+               identities_of(query_data, contact)
+    end
+
+    test "an admin sees them", %{user: user, contact: contact} do
+      assert {:ok, query_data} = list_identities(user)
+
+      assert [%{"identifier" => "ravi_12"}] = identities_of(query_data, contact)
+    end
+
+    test "a staff user gets none", %{staff: user, contact: contact} do
+      assert {:ok, query_data} = list_identities(user)
+
+      assert [] == identities_of(query_data, contact)
+    end
+
+    test "loading them for many contacts costs one identities query", %{manager: user} do
+      for _ <- 1..3 do
+        contact = Fixtures.contact_without_phone_fixture()
+        Fixtures.contact_identity_fixture(%{contact_id: contact.id})
+      end
+
+      handler = "identity-query-counter-#{System.unique_integer()}"
+      test_pid = self()
+
+      :telemetry.attach(
+        handler,
+        [:glific, :repo, :query],
+        fn _event, _measurements, %{query: query}, _config ->
+          if query =~ ~s(FROM "contact_identities"), do: send(test_pid, :identities_query)
+        end,
+        nil
+      )
+
+      assert {:ok, _query_data} = list_identities(user)
+      :telemetry.detach(handler)
+
+      assert_received :identities_query
+      refute_received :identities_query
+    end
   end
 end
