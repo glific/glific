@@ -635,6 +635,7 @@ defmodule Glific.Erase do
       issued_certificates
       knowledge_base_versions
       knowledge_bases
+      llm_calls
       locations
       mail_logs
       message_broadcast_contacts
