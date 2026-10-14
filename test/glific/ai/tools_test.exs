@@ -4,6 +4,7 @@ defmodule Glific.AI.ToolsTest do
   alias Glific.{
     AI.Tools,
     AI.Tools.Reference,
+    Docs,
     Fixtures,
     Flows.Flow,
     Flows.FlowRevision,
@@ -66,6 +67,7 @@ defmodule Glific.AI.ToolsTest do
   defp modules, do: Tools.modules() ++ [Misbehaving]
 
   setup do
+    Docs.warm()
     user = Fixtures.user_fixture(%{organization_id: 1})
     flow = Fixtures.flow_fixture(%{organization_id: 1, name: "Registration flow"})
     contact = Fixtures.contact_fixture(%{organization_id: 1})
@@ -370,7 +372,8 @@ defmodule Glific.AI.ToolsTest do
         "get_flow" => %{"flow_id" => flow.id, "status" => "draft"},
         "list_reference" => %{"kind" => "tags"},
         "get_group_chat" => %{"wa_group_id" => wa_group.id},
-        "get_assistant" => %{"assistant_id" => assistant.id}
+        "get_assistant" => %{"assistant_id" => assistant.id},
+        "search_documentation" => %{"query" => "publish a flow"}
       }
 
       failures =
