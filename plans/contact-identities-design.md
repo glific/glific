@@ -74,11 +74,13 @@ keeps the WhatsApp identity in step with the phone.
 ```
 request-otp(phone) → code over WhatsApp → verify-otp(phone, code)
 → find/create the contact by phone   (same contact as WhatsApp; that's the web↔WhatsApp link)
+→ record (web, <phone>) on that contact if missing   (it signed in on the web with its phone)
 → Glific signs its own token {sub: contact_id}
 ```
-No web identity is written: `contacts.phone` (and its WhatsApp identity) is already this path's
-lookup. A `(web, <phone>)` row would share the web namespace with NGO usernames, so a username equal
-to someone's phone number (many NGOs use phone or roll numbers) would log into their conversation.
+OTP contacts also get their `(whatsapp, <phone>)` identity when created (the phone is verified by the
+code sent over WhatsApp). Web identities share one namespace for phones and NGO usernames, so an NGO
+username equal to an OTP user's phone resolves to that user: NGOs must never use another person's
+phone number as a username (NGO contract, §5).
 
 ### 4.3 Web, NGO token with username only
 ```
@@ -145,7 +147,8 @@ A reply goes out on the channel the conversation/flow came in on (already built 
 - A contact is created on the first connect with a new username (`Identities.resolve_or_create/3`), or
   ahead of time by staff through the GraphQL mutation `createContactWithIdentity`. There is no REST
   provisioning endpoint.
-- NGO contract: `sub` must be unique across every system the NGO signs tokens from. Identities are
+- NGO contract: `sub` must be unique across every system the NGO signs tokens from. A `sub` must never be another person's phone number: web identities from phone + OTP logins
+  share the namespace, so such a `sub` would sign in as that person. Identities are
   unique per organization, so two systems issuing the same `sub` would log in as one contact.
 - Phones (in the `phone` claim and in identifiers) are digits with country code and no `+`, the format
   `Contacts.parse_phone_number/1` stores. Identifiers may only contain letters, digits, `_`, `@` and
