@@ -130,6 +130,9 @@ defmodule Glific.LlmCallsTest do
 
     Webhook.resume(organization_id, callback(%{}), Map.put(response, "call_type", "stt"))
     assert Repo.aggregate(LlmCall, :count) == 1
+
+    Webhook.resume(organization_id, callback(%{}), Map.put(response, "call_type", "voice_llm"))
+    assert Repo.aggregate(LlmCall, :count) == 1
   end
 
   describe "Webhook.resume/3 with real Kaapi callbacks" do

@@ -523,8 +523,9 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec maybe_create_llm_call(non_neg_integer(), map(), map()) :: :ok
-  defp maybe_create_llm_call(organization_id, result, %{"call_type" => call_type} = response)
-       when call_type in ["llm", "voice_llm"] do
+  # Voice calls are skipped for now: their transcript never reaches the webhook log, so without an
+  # input guardrail the recorded input would be empty.
+  defp maybe_create_llm_call(organization_id, result, %{"call_type" => "llm"} = response) do
     case LlmCalls.create_llm_call_from_callback(organization_id, result, response) do
       {:ok, _llm_call} ->
         :ok
