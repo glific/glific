@@ -654,4 +654,83 @@ defmodule Glific.Contacts.BulkImportTest do
       assert field(fetch("919876560002"), "city") == "Mumbai"
     end
   end
+
+  describe "csv encoding" do
+    test "rejects a csv saved in a windows codepage without importing anything" do
+      windows_codepage =
+        <<"name,phone,language,city\nCaf", 0xE9, ",+919876570001,english,Pune\n">>
+
+      assert {:error, %{message: message, details: details}} =
+               Import.import_contacts(
+                 org_id(),
+                 %{user: admin(), collection: "harness", type: :import_contact},
+                 data: windows_codepage
+               )
+
+      assert message =~ "Line 2 of the file is not valid UTF-8"
+      assert details =~ "No contacts were imported"
+      refute exists?("919876570001")
+      assert 0 == Repo.aggregate(UserJob, :count, :id)
+    end
+
+    test "rejects a non-utf8 csv downloaded from a url" do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: <<"name,phone,language\nCaf", 0xE9, ",+919876570003,english\n">>
+        }
+      end)
+
+      assert {:error, %{message: message}} =
+               Import.import_contacts(
+                 org_id(),
+                 %{user: admin(), collection: "harness", type: :import_contact},
+                 url: "http://www.bar.com/foo.csv"
+               )
+
+      assert message =~ "Line 2 of the file is not valid UTF-8"
+      refute exists?("919876570003")
+    end
+
+    test "reports a failed download instead of raising or parsing the error page" do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 404, body: "<html>Not Found</html>"}
+      end)
+
+      assert {:error, %{message: message}} =
+               Import.import_contacts(
+                 org_id(),
+                 %{user: admin(), collection: "harness", type: :import_contact},
+                 url: "http://www.bar.com/missing.csv"
+               )
+
+      assert message =~ "Could not download the contacts CSV"
+      assert 0 == Repo.aggregate(UserJob, :count, :id)
+    end
+
+    test "rejects a non-utf8 csv read from a file path" do
+      path = Path.join(System.tmp_dir!(), "import_#{System.unique_integer([:positive])}.csv")
+      File.write!(path, <<"name,phone,language\nCaf", 0xE9, ",+919876570004,english\n">>)
+      on_exit(fn -> File.rm(path) end)
+
+      assert {:error, %{message: message}} =
+               Import.import_contacts(
+                 org_id(),
+                 %{user: admin(), collection: "harness", type: :import_contact},
+                 file_path: path
+               )
+
+      assert message =~ "Line 2 of the file is not valid UTF-8"
+      refute exists?("919876570004")
+    end
+
+    test "strips the excel bom so the first header still parses" do
+      bom = <<0xEF, 0xBB, 0xBF>>
+
+      assert %{success: 1, failure: 0} =
+               run(bom <> "name,phone,language,city\nBom,+919876570002,english,Pune\n")
+
+      assert field(fetch("919876570002"), "city") == "Pune"
+    end
+  end
 end

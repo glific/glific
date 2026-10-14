@@ -36,6 +36,27 @@ defmodule GlificWeb.Schema.WaGroupTest do
   load_gql(:remove_contact, GlificWeb.Schema, "assets/gql/wa_groups/remove_contact.gql")
 
   describe "createWaGroup" do
+    test "rejects import_data that is not valid utf-8 before creating the group", %{user: user} do
+      wa_managed_phone =
+        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+      windows_codepage = <<"phone,name\n919900112233,Ren", 0xE9, "e\n">>
+
+      assert {:ok, query_data} =
+               auth_query_gql_by(:create, user,
+                 variables: %{
+                   "input" => %{
+                     "name" => "Bad CSV",
+                     "waManagedPhoneId" => to_string(wa_managed_phone.id),
+                     "importData" => windows_codepage
+                   }
+                 }
+               )
+
+      assert hd(query_data[:errors]).message =~ "Line 2 of the file is not valid UTF-8"
+      assert [] == Repo.all(WAGroup)
+    end
+
     test "provisions a wa_group via Maytapi and seeds an is_primary membership for the creator",
          %{user: user} do
       wa_phone =
