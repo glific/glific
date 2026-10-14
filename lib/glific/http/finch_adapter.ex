@@ -11,7 +11,7 @@ defmodule Glific.Http.FinchAdapter do
   @pool_exhausted_message "Finch was unable to provide a connection"
 
   @doc """
-  Runs the request through `Tesla.Adapter.Finch` and unwraps Finch/Mint error structs.
+  Runs the request through `Tesla.Adapter.Finch` and unwraps Finch error structs.
   """
   @impl Tesla.Adapter
   @spec call(Tesla.Env.t(), keyword()) :: Tesla.Env.result()
@@ -31,6 +31,5 @@ defmodule Glific.Http.FinchAdapter do
   defp unwrap_error({:error, %Finch.TransportError{reason: reason}}), do: {:error, reason}
   defp unwrap_error({:error, %Finch.HTTPError{reason: reason}}), do: {:error, reason}
   defp unwrap_error({:error, %Finch.Error{reason: reason}}), do: {:error, reason}
-  defp unwrap_error({:error, %Mint.HTTPError{reason: reason}}), do: {:error, reason}
   defp unwrap_error(result), do: result
 end
