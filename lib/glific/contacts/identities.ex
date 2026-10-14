@@ -96,6 +96,20 @@ defmodule Glific.Contacts.Identities do
   end
 
   @doc """
+  Records that a contact signed in to the web with its phone, doing nothing if it already has.
+  """
+  @spec add_web_phone_identity(Contact.t()) :: :ok
+  def add_web_phone_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
+
+  def add_web_phone_identity(%Contact{} = contact) do
+    contact
+    |> identity_changeset(:web, contact.phone)
+    |> Repo.insert(ignore_conflict_opts())
+
+    :ok
+  end
+
+  @doc """
   Makes a contact's WhatsApp identity match its current phone, creating it if it has none.
   """
   @spec put_whatsapp_identity(Contact.t()) :: :ok
