@@ -98,7 +98,10 @@ token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
 → not found:
      target = contact by phone, or contact by contact_id (must be in this org)
      target found → insert identity on target (add_web_identity), even if it already has other web identities
-     otherwise    → create new contact (4.3)
+     otherwise    → create new contact (4.3), keeping an unclaimed phone in contacts.phone but
+                    writing NO (whatsapp, phone) identity: the phone was not verified (no OTP), so the
+                    WhatsApp identity is only written when that number first messages on WhatsApp
+                    (the contacts.phone fallback in fetch_by_identity)
      unique conflict on (org, web, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
 Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
@@ -215,7 +218,9 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 For each column: what it does, whether it's written on every message (hot path), whether it
 belongs to the **person** or to a **channel**, and what to do with it.
 "Move" means to `contact_identities`. **Nothing moves in #5703.** Moves happen in the next PR
-(opt-in migration), which also backfills the WhatsApp identities.
+(opt-in migration), which also backfills the WhatsApp identities. That backfill must skip contacts
+whose phone came from an NGO token (they have a web identity and no WhatsApp activity), or it would
+undo §4.4's rule; and the `contacts.phone` fallback in `fetch_by_identity` stays permanent for them.
 
 Enums: `status` = blocked / failed / invalid / processing / valid ·
 `bsp_status` = none / session / session_and_hsm / hsm.

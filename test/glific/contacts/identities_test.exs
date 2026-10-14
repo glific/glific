@@ -147,12 +147,21 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert contact.id == by_id.id
     end
 
-    test "an unclaimed phone claim becomes the new contact's phone, with its WhatsApp identity" do
+    test "an unclaimed phone claim becomes the new contact's phone, without a WhatsApp identity" do
       phone = "919876543210"
 
       assert {:ok, contact} = Identities.resolve_or_create(:web, "ravi_12", %{phone: phone})
 
       assert contact.phone == phone
+      assert nil == whatsapp_identity(phone)
+    end
+
+    test "that phone gets its WhatsApp identity when it first messages on WhatsApp" do
+      phone = "919876543211"
+      {:ok, contact} = Identities.resolve_or_create(:web, "ravi_13", %{phone: phone})
+
+      assert {:ok, %{id: id}} = Contacts.fetch_by_identity(:whatsapp, phone)
+      assert id == contact.id
       assert whatsapp_identity(phone).contact_id == contact.id
     end
 
@@ -207,12 +216,16 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert [%{channel: :whatsapp, identifier: "919876500002"}] = identities_of(contact.id)
     end
 
-    test "a web contact with a phone gets both identities", %{organization_id: organization_id} do
+    test "a web contact with a phone keeps the phone and gets only its web identity", %{
+      organization_id: organization_id
+    } do
       attrs = %{organization_id: organization_id, phone: "919876500003", name: "Both"}
 
       assert {:ok, contact} = Identities.create_contact_with_identity(attrs, :web, "both_user")
 
-      assert [{:web, "both_user"}, {:whatsapp, "919876500003"}] =
+      assert contact.phone == "919876500003"
+
+      assert [{:web, "both_user"}] =
                contact.id |> identities_of() |> Enum.map(&{&1.channel, &1.identifier})
     end
 

@@ -91,8 +91,8 @@ defmodule Glific.Contacts.Identities do
 
   @doc """
   Inserts a contact and its identity on a channel in one transaction, so neither exists without
-  the other. A web contact with a phone also gets its WhatsApp identity. `insert_opts` go to the
-  contact insert (an upsert's `on_conflict`). Returns the changeset of whichever insert failed.
+  the other. A web contact keeps any phone it is given but gets no WhatsApp identity until that
+  number messages on WhatsApp. `insert_opts` go to the contact insert (an upsert's `on_conflict`). Returns the changeset of whichever insert failed.
   """
   @spec create_contact_with_identity(map(), MessageChannel.t(), String.t() | nil, keyword()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
@@ -104,21 +104,11 @@ defmodule Glific.Contacts.Identities do
       fn %{contact: contact} -> identity_changeset(contact, channel, identifier) end,
       identity_insert_opts(channel)
     )
-    |> put_whatsapp_identity_step(channel)
     |> Repo.transaction()
     |> case do
       {:ok, %{contact: contact}} -> {:ok, contact}
       {:error, _step, changeset, _changes} -> {:error, changeset}
     end
-  end
-
-  @spec put_whatsapp_identity_step(Multi.t(), MessageChannel.t()) :: Multi.t()
-  defp put_whatsapp_identity_step(multi, :whatsapp), do: multi
-
-  defp put_whatsapp_identity_step(multi, _channel) do
-    Multi.run(multi, :whatsapp_identity, fn _repo, %{contact: contact} ->
-      {:ok, put_whatsapp_identity(contact)}
-    end)
   end
 
   @doc """
