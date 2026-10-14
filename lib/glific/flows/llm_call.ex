@@ -50,8 +50,8 @@ defmodule Glific.Flows.LlmCall do
           input_to_llm: String.t() | nil,
           output_from_llm: String.t() | nil,
           output_to_user: String.t() | nil,
-          input_guardrail: map() | nil,
-          output_guardrail: map() | nil,
+          input_guardrail: [map()] | nil,
+          output_guardrail: [map()] | nil,
           input_tokens: non_neg_integer | nil,
           output_tokens: non_neg_integer | nil,
           total_tokens: non_neg_integer | nil,
@@ -77,8 +77,8 @@ defmodule Glific.Flows.LlmCall do
     field :input_to_llm, :string
     field :output_from_llm, :string
     field :output_to_user, :string
-    field :input_guardrail, :map
-    field :output_guardrail, :map
+    field :input_guardrail, {:array, :map}
+    field :output_guardrail, {:array, :map}
     field :input_tokens, :integer
     field :output_tokens, :integer
     field :total_tokens, :integer
@@ -136,8 +136,8 @@ defmodule Glific.Flows.LlmCall do
       input_to_llm: input_guardrail["input_to_llm"] || question,
       output_from_llm: output_guardrail["output_from_llm"] || output,
       output_to_user: output_guardrail["output_to_user"] || output,
-      input_guardrail: input_guardrail,
-      output_guardrail: output_guardrail,
+      input_guardrail: input_guardrail["validators"],
+      output_guardrail: output_guardrail["validators"],
       input_tokens: usage["input_tokens"],
       output_tokens: usage["output_tokens"],
       total_tokens: usage["total_tokens"],

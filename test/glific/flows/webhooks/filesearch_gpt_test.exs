@@ -313,8 +313,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
                "Hello! I can’t help use hateful slurs or place a call for you. If you want, I can help you write a polite text or phone script instead."
 
       assert llm_call.output_to_user == llm_call.output_from_llm
-      assert length(llm_call.input_guardrail["validators"]) == 2
-      assert length(llm_call.output_guardrail["validators"]) == 1
+      assert length(llm_call.input_guardrail) == 2
+      assert length(llm_call.output_guardrail) == 1
       assert llm_call.total_tokens == 485
     end
 
@@ -474,6 +474,35 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
                FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
 
       assert reason =~ "No active config version"
+    end
+  end
+
+  describe "filesearch-gpt dispatch — guardrail metadata" do
+    setup do
+      test_pid = self()
+
+      Tesla.Mock.mock(fn %{method: :post} = env ->
+        send(test_pid, {:llm_request_body, Jason.decode!(env.body)})
+        %Tesla.Env{status: 200, body: %{"success" => true}}
+      end)
+
+      :ok
+    end
+
+    test "asks Kaapi for guardrail metadata when the flag is enabled", %{assistant: assistant} do
+      FunWithFlags.enable(:is_ai_guardrail_enabled, for_actor: %{organization_id: 1})
+
+      FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+
+      assert_receive {:llm_request_body, %{"include_guardrail_metadata" => true}}
+    end
+
+    test "does not ask for guardrail metadata when the flag is disabled", %{assistant: assistant} do
+      FunWithFlags.disable(:is_ai_guardrail_enabled, for_actor: %{organization_id: 1})
+
+      FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+
+      assert_receive {:llm_request_body, %{"include_guardrail_metadata" => false}}
     end
   end
 

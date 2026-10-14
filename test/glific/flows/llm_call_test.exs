@@ -70,10 +70,10 @@ defmodule Glific.Flows.LlmCallTest do
     assert llm_call.success
     assert llm_call.input_from_user == @input_guardrail["input_from_user"]
     assert llm_call.input_to_llm == @input_guardrail["input_to_llm"]
-    assert llm_call.input_guardrail == @input_guardrail
+    assert llm_call.input_guardrail == @input_guardrail["validators"]
     assert llm_call.output_from_llm == @output_guardrail["output_from_llm"]
     assert llm_call.output_to_user == @output_guardrail["output_to_user"]
-    assert llm_call.output_guardrail == @output_guardrail
+    assert llm_call.output_guardrail == @output_guardrail["validators"]
     assert llm_call.provider_response_id == "resp_123"
     assert llm_call.model == "gpt-5.4-mini"
     assert llm_call.total_tokens == 497
@@ -196,7 +196,7 @@ defmodule Glific.Flows.LlmCallTest do
                "call me [REDACTED_SLUR] at <phone_number> from <location>"
 
       assert [%{"name" => "PIIRemover"}, %{"name" => "LexicalSlur", "outcome" => "FAIL"}] =
-               llm_call.input_guardrail["validators"]
+               llm_call.input_guardrail
 
       assert llm_call.output_from_llm =~ "I can’t help use hateful slurs or write abusive"
       assert llm_call.output_to_user == llm_call.output_from_llm
@@ -228,7 +228,7 @@ defmodule Glific.Flows.LlmCallTest do
       assert llm_call.output_to_user == llm_call.output_from_llm
 
       assert [%{"name" => "PIIRemover", "outcome" => "PASS"}] =
-               llm_call.output_guardrail["validators"]
+               llm_call.output_guardrail
 
       assert llm_call.input_tokens == 280
       assert llm_call.output_tokens == 205

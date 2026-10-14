@@ -24,10 +24,10 @@ defmodule Glific.Repo.Migrations.CreateLlmCalls do
         comment: "Output handed back to the flow, after the output guardrail ran"
 
       add :input_guardrail, :map,
-        comment: "Input guardrail block from the callback metadata, including validators"
+        comment: "Validators the input guardrail ran, from the callback metadata"
 
       add :output_guardrail, :map,
-        comment: "Output guardrail block from the callback metadata, including validators"
+        comment: "Validators the output guardrail ran, from the callback metadata"
 
       add :input_tokens, :integer, comment: "Prompt tokens consumed"
       add :output_tokens, :integer, comment: "Completion tokens consumed"
