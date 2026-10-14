@@ -11,8 +11,8 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
 
   setup %{organization_id: organization_id} do
     WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "login_key_1_secret" => @secret,
-      "login_key_2_secret" => @second_secret
+      "jwt_signature_secret_1" => @secret,
+      "jwt_signature_secret_2" => @second_secret
     })
 
     :ok
@@ -41,7 +41,7 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
     organization_id: organization_id
   } do
     WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "login_key_2_secret" => @second_secret
+      "jwt_signature_secret_2" => @second_secret
     })
 
     assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, @second_secret)
@@ -51,8 +51,8 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
   test "slot names do not affect verification", %{organization_id: organization_id} do
     WebChannelFlagHelpers.activate_web_channel(
       organization_id,
-      %{"login_key_1_name" => "2026", "login_key_2_name" => "2025"},
-      %{"login_key_1_secret" => @secret, "login_key_2_secret" => @second_secret}
+      %{"jwt_signature_secret_1_name" => "2026", "jwt_signature_secret_2_name" => "2025"},
+      %{"jwt_signature_secret_1" => @secret, "jwt_signature_secret_2" => @second_secret}
     )
 
     assert {:ok, _claims} = verify(organization_id, %{}, @secret)
@@ -74,7 +74,7 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
 
   test "clearing a slot stops its tokens", %{organization_id: organization_id} do
     WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "login_key_1_secret" => @secret
+      "jwt_signature_secret_1" => @secret
     })
 
     assert {:error, :invalid} = verify(organization_id, %{}, @second_secret)

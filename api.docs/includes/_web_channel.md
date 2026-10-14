@@ -4,12 +4,12 @@ The web channel lets your own app or website talk to Glific on behalf of your us
 signs a short-lived token for the logged-in user, and the user's browser opens a WebSocket to Glific
 with it. Glific never sees your users' passwords.
 
-## Login keys
+## JWT signature secrets
 
-An organization admin sets up to two named login keys (a name and a secret) on the **Web Channel**
-settings page. A token signed with either secret is accepted. To rotate a secret:
+An organization admin sets up to two JWT signature secrets, each with a name of your choice, on the
+**Web Channel** settings page. A token signed with either secret is accepted. To rotate a secret:
 
-1. Fill the empty slot with a new name and secret.
+1. Fill the empty slot with a new name and JWT signature secret.
 2. Switch your backend to sign with the new secret.
 3. Clear the old slot.
 
@@ -18,7 +18,7 @@ the token.
 
 ## Token
 
-A JWT signed with a login key secret.
+A JWT signed with a JWT signature secret.
 
 * The header must say `alg: HS256`; any other algorithm is refused. There is no `kid`.
 * `sub` (required): your username for the user, at most 255 characters, only letters, digits, `_`,
@@ -36,7 +36,7 @@ const jwt = require("jsonwebtoken");
 
 const token = jwt.sign(
   { sub: "ravi_12", channel: "web", name: "Ravi" },
-  process.env.GLIFIC_LOGIN_KEY_SECRET,
+  process.env.GLIFIC_JWT_SIGNATURE_SECRET,
   { algorithm: "HS256", expiresIn: "6h" } // adds iat and exp
 );
 ```
@@ -48,7 +48,7 @@ import time, jwt
 now = int(time.time())
 token = jwt.encode(
     {"sub": "ravi_12", "channel": "web", "name": "Ravi", "iat": now, "exp": now + 6 * 3600},
-    LOGIN_KEY_SECRET,
+    JWT_SIGNATURE_SECRET,
     algorithm="HS256",
 )
 ```

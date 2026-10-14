@@ -110,12 +110,16 @@ defmodule GlificWeb.WebChannelSocketTest do
     defp ngo_token(overrides \\ %{}, secret \\ @secret),
       do: overrides |> WebChannelLoginHelpers.claims() |> WebChannelLoginHelpers.sign(secret)
 
-    defp with_login_secret(fun),
+    defp with_signature_secret(fun),
       do:
-        WebChannelFlagHelpers.with_web_channel_secrets(1, %{"login_key_1_secret" => @secret}, fun)
+        WebChannelFlagHelpers.with_web_channel_secrets(
+          1,
+          %{"jwt_signature_secret_1" => @secret},
+          fun
+        )
 
     test "a new username creates the contact and its identity, and can talk" do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         assert {:ok, ws_socket} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
         contact = ws_socket.assigns.current_contact
 
@@ -131,7 +135,7 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "usernames differing only in case are the same contact" do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"sub" => "Ravi_Web"}))
         {:ok, second} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"sub" => "ravi_web"}))
 
@@ -140,7 +144,7 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "a returning username is the same contact" do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
         {:ok, second} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
 
@@ -150,7 +154,7 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "links to the contact named by the contact_id or phone claim", %{contact: contact} do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         {:ok, by_id} =
           WebChannelFixtures.ngo_socket_fixture(
             ngo_token(%{"sub" => "by_id", "contact_id" => contact.id})
@@ -170,7 +174,7 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "refuses a wrong secret, an expired token and a wrong channel claim" do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         now = System.system_time(:second)
 
         for token <- [
@@ -185,7 +189,7 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "accepts a lifetime of exactly 24 hours and refuses a longer one" do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         now = System.system_time(:second)
 
         assert {:ok, _socket} =
@@ -204,14 +208,14 @@ defmodule GlificWeb.WebChannelSocketTest do
       other = Fixtures.organization_fixture(%{shortcode: "otherngo"})
 
       WebChannelFlagHelpers.activate_web_channel(other.id, %{}, %{
-        "login_key_1_secret" => "other-secret-other-secret-other"
+        "jwt_signature_secret_1" => "other-secret-other-secret-other"
       })
 
       FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: other.id})
       other.id |> Partners.organization() |> Partners.fill_cache()
 
       try do
-        with_login_secret(fn ->
+        with_signature_secret(fn ->
           host = "otherngo." <> Glific.base_domain()
 
           assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token(), host: host)
@@ -223,19 +227,19 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "refuses a connection with no host" do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         assert :error =
                  Phoenix.ChannelTest.connect(WebChannelSocket, %{"token" => ngo_token()})
       end)
     end
 
     test "refuses when the web channel is off" do
-      WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"login_key_1_secret" => @secret})
+      WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"jwt_signature_secret_1" => @secret})
       assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())
     end
 
     test "Glific's own token still connects", %{contact: contact} do
-      with_login_secret(fn ->
+      with_signature_secret(fn ->
         assert {:ok, socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
         assert socket.assigns.current_contact.id == contact.id
       end)

@@ -1,6 +1,6 @@
-defmodule Glific.Repo.Seeds.AddWebChannelLoginSecrets do
+defmodule Glific.Repo.Seeds.AddWebChannelJwtSignatureSecrets do
   @moduledoc """
-  Adds the two login key slots an organization signs its own users' web channel login tokens
+  Adds the two JWT signature secret slots an organization signs its own users' web channel login tokens
   with to the `web_channel` provider, so its admin can set and rotate them on the Settings page.
   Each slot is a name (a key, kept plain) and a secret (kept encrypted); the branding keys the
   provider already has are left as they are.
@@ -20,7 +20,7 @@ defmodule Glific.Repo.Seeds.AddWebChannelLoginSecrets do
   @rotation_help "A token signed with either secret is accepted. To rotate, put the new secret in the empty slot, switch your backend over to it, then clear the old one."
 
   @doc """
-  Adds the login key slots to the web channel provider.
+  Adds the JWT signature secret slots to the web channel provider.
   """
   @spec up(Ecto.Repo.t(), Keyword.t()) :: any()
   def up(_repo, _opts) do
@@ -41,16 +41,16 @@ defmodule Glific.Repo.Seeds.AddWebChannelLoginSecrets do
   @spec keys() :: map()
   defp keys do
     %{
-      "login_key_1_name" => name_field("Login key 1 name", 10),
-      "login_key_2_name" => name_field("Login key 2 name", 11)
+      "jwt_signature_secret_1_name" => name_field("JWT signature secret 1 name", 10),
+      "jwt_signature_secret_2_name" => name_field("JWT signature secret 2 name", 11)
     }
   end
 
   @spec secrets() :: map()
   defp secrets do
     %{
-      "login_key_1_secret" => secret_field("Login key 1 secret", 1),
-      "login_key_2_secret" => secret_field("Login key 2 secret", 2)
+      "jwt_signature_secret_1" => secret_field("JWT signature secret 1", 1),
+      "jwt_signature_secret_2" => secret_field("JWT signature secret 2", 2)
     }
   end
 
