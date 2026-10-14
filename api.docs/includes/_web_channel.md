@@ -86,4 +86,7 @@ user's contact up with <a href="#get-a-contact-by-identity">contactByIdentity</a
 * A `sub` is permanent for a user and must be unique across every system you sign tokens from. Two
   systems issuing the same `sub` log in as the same contact. Reconciling ids between your systems
   is your job.
+* Never use another person's phone number as a `sub`. People who sign in to the web chat with their
+  phone and a one-time code are recorded under their phone number, so a `sub` equal to someone's
+  phone signs in as that person.
 * A user who only has a web identity has no phone: `@contact.phone` is empty in flows and webhooks.
