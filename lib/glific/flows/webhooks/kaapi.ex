@@ -96,11 +96,17 @@ defmodule Glific.Flows.Webhooks.Kaapi do
          payload =
            build_unified_llm_payload(
              fields,
-             organization_id,
              kaapi_uuid,
              version_number,
              callback_url,
              request_metadata
+           )
+           |> Map.put(
+             :include_guardrail_metadata,
+             Flags.get_flag_enabled(
+               :is_ai_guardrail_enabled,
+               Partners.organization(organization_id)
+             )
            ),
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
       Kaapi.normalize_kaapi_body(body)
@@ -281,17 +287,10 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
 
-  @spec build_unified_llm_payload(
-          map(),
-          non_neg_integer(),
-          String.t(),
-          non_neg_integer(),
-          String.t(),
+  @spec build_unified_llm_payload(map(), String.t(), non_neg_integer(), String.t(), map()) ::
           map()
-        ) :: map()
   defp build_unified_llm_payload(
          fields,
-         organization_id,
          kaapi_uuid,
          version_number,
          callback_url,
@@ -307,12 +306,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
         version: version_number
       },
       callback_url: callback_url,
-      request_metadata: request_metadata,
-      include_guardrail_metadata:
-        Flags.get_flag_enabled(
-          :is_ai_guardrail_enabled,
-          Partners.organization(organization_id)
-        )
+      request_metadata: request_metadata
     }
   end
 

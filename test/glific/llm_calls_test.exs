@@ -1,13 +1,14 @@
-defmodule Glific.Flows.LlmCallTest do
+defmodule Glific.LlmCallsTest do
   use Glific.DataCase
 
   import Glific.WebhookTestHelpers
 
   alias Glific.{
     Fixtures,
-    Flows.LlmCall,
     Flows.Webhook,
     Flows.WebhookLog,
+    LlmCalls,
+    LlmCalls.LlmCall,
     Repo
   }
 
@@ -55,7 +56,7 @@ defmodule Glific.Flows.LlmCallTest do
     )
   end
 
-  test "record_callback/3 stores the guardrail input and output",
+  test "create_llm_call_from_callback/3 stores the guardrail input and output",
        %{organization_id: organization_id} do
     result =
       callback(%{
@@ -65,7 +66,7 @@ defmodule Glific.Flows.LlmCallTest do
         }
       })
 
-    assert {:ok, llm_call} = LlmCall.record_callback(organization_id, result, %{})
+    assert {:ok, llm_call} = LlmCalls.create_llm_call_from_callback(organization_id, result, %{})
 
     assert llm_call.success
     assert llm_call.input_from_user == @input_guardrail["input_from_user"]
@@ -79,7 +80,7 @@ defmodule Glific.Flows.LlmCallTest do
     assert llm_call.tokens["total_tokens"] == 497
   end
 
-  test "record_callback/3 falls back to the question and LLM output without guardrails",
+  test "create_llm_call_from_callback/3 falls back to the question and LLM output without guardrails",
        %{organization_id: organization_id} do
     webhook_log =
       Fixtures.webhook_log_fixture(%{
@@ -88,7 +89,7 @@ defmodule Glific.Flows.LlmCallTest do
       })
 
     assert {:ok, llm_call} =
-             LlmCall.record_callback(organization_id, callback(%{}), %{
+             LlmCalls.create_llm_call_from_callback(organization_id, callback(%{}), %{
                "webhook_log_id" => webhook_log.id
              })
 
@@ -99,10 +100,12 @@ defmodule Glific.Flows.LlmCallTest do
     assert llm_call.output_to_user == "Hello!"
   end
 
-  test "record_callback/3 records a failed call", %{organization_id: organization_id} do
+  test "create_llm_call_from_callback/3 records a failed call", %{
+    organization_id: organization_id
+  } do
     result = %{"success" => false, "data" => nil, "error" => "Kaapi failed", "metadata" => %{}}
 
-    assert {:ok, llm_call} = LlmCall.record_callback(organization_id, result, %{})
+    assert {:ok, llm_call} = LlmCalls.create_llm_call_from_callback(organization_id, result, %{})
 
     refute llm_call.success
     assert llm_call.error == "Kaapi failed"

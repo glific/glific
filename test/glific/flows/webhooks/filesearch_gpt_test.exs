@@ -11,10 +11,10 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
     Flows.Action,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.LlmCall,
     Flows.Webhook,
     Flows.WebhookLog,
     Flows.Webhooks.FilesearchGpt,
+    LlmCalls.LlmCall,
     Partners,
     Repo,
     Seeds.SeedsDev

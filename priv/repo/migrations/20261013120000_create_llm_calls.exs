@@ -24,10 +24,12 @@ defmodule Glific.Repo.Migrations.CreateLlmCalls do
         comment: "Output handed back to the flow, after the output guardrail ran"
 
       add :input_guardrail, :map,
-        comment: "Validators the input guardrail ran, from the callback metadata"
+        comment:
+          "JSON array of the validators the input guardrail ran, from the callback metadata"
 
       add :output_guardrail, :map,
-        comment: "Validators the output guardrail ran, from the callback metadata"
+        comment:
+          "JSON array of the validators the output guardrail ran, from the callback metadata"
 
       add :tokens, :map,
         comment: "Token usage from the callback: input, output, total and reasoning tokens"
@@ -44,6 +46,7 @@ defmodule Glific.Repo.Migrations.CreateLlmCalls do
       timestamps(type: :utc_datetime)
     end
 
+    create index(:llm_calls, [:organization_id])
     create index(:llm_calls, [:organization_id, :inserted_at])
     create index(:llm_calls, [:flow_id])
     create index(:llm_calls, [:contact_id])
