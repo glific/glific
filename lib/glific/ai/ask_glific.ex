@@ -22,6 +22,7 @@ defmodule Glific.AI.AskGlific do
     AI.Conversation,
     AI.Event,
     AI.Instrumentation,
+    AI.Langfuse,
     AI.Message,
     Repo
   }
@@ -128,8 +129,9 @@ defmodule Glific.AI.AskGlific do
       |> Event.changeset(%{data: Map.put(event.data, "feedback", feedback)})
       |> Repo.update()
       |> case do
-        {:ok, _} ->
+        {:ok, updated} ->
           Instrumentation.feedback(rating)
+          Langfuse.score_async(updated)
           {:ok, %{success: true}}
 
         {:error, _} ->
