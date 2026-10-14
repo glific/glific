@@ -1,5 +1,6 @@
 defmodule Glific.Http.FinchAdapterTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
+  import Mock
 
   alias Glific.Http.FinchAdapter
 
@@ -87,5 +88,29 @@ defmodule Glific.Http.FinchAdapterTest do
 
     assert {:error, :checkout_timeout} =
              FinchAdapter.call(env, name: name, receive_timeout: 5_000, pool_timeout: 100)
+  end
+
+  test "unwraps Finch.HTTPError and Finch.Error into their reason" do
+    env = %Tesla.Env{method: :get, url: "http://localhost/"}
+
+    with_mock Tesla.Adapter.Finch,
+      call: fn _env, _opts -> {:error, %Finch.HTTPError{reason: :invalid_status_line}} end do
+      assert {:error, :invalid_status_line} = FinchAdapter.call(env, name: Glific.Finch)
+    end
+
+    with_mock Tesla.Adapter.Finch,
+      call: fn _env, _opts -> {:error, %Finch.Error{reason: :request_timeout}} end do
+      assert {:error, :request_timeout} = FinchAdapter.call(env, name: Glific.Finch)
+    end
+  end
+
+  test "re-raises a RuntimeError that is not about pool exhaustion" do
+    env = %Tesla.Env{method: :get, url: "http://localhost/"}
+
+    with_mock Tesla.Adapter.Finch, call: fn _env, _opts -> raise "unexpected failure" end do
+      assert_raise RuntimeError, "unexpected failure", fn ->
+        FinchAdapter.call(env, name: Glific.Finch)
+      end
+    end
   end
 end
