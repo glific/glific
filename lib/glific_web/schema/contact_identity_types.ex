@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
 
   @desc "The web login identifier of a new contact, and optionally who they are"
   input_object :contact_identity_input do
-    @desc "The username the contact logs in with; matched exactly, 1 to 255 characters"
+    @desc "The username the contact logs in with; letters, digits, _, @ and ., stored lowercase so it is case-insensitive, 1 to 255 characters"
     field(:identifier, non_null(:string))
 
     @desc "The name to give the contact; defaults to the identifier"

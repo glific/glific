@@ -901,7 +901,10 @@ mutation createContactWithIdentity($input: ContactIdentityInput!) {
     contact {
       id
       name
-      phone
+      identities {
+        channel
+        identifier
+      }
     }
     errors {
       key
@@ -923,7 +926,7 @@ mutation createContactWithIdentity($input: ContactIdentityInput!) {
 {
   "data": {
     "createContactWithIdentity": {
-      "contact": { "id": "15", "name": "Ravi", "phone": null },
+      "contact": { "id": "15", "name": "Ravi", "identities": [{ "channel": "WEB", "identifier": "ravi_12" }] },
       "errors": null
     }
   }
@@ -936,7 +939,7 @@ the web channel enabled for the organization.
 
 | Field      | Type   | Description                                                                 |
 | ---------- | ------ | --------------------------------------------------------------------------- |
-| identifier | String | The username the contact logs in with, 1 to 255 characters.                 |
+| identifier | String | The username the contact logs in with, letters, digits, `_`, `@` and `.`, stored lowercase (case-insensitive), 1 to 255 characters. |
 | name       | String | The contact's name. Defaults to the identifier.                             |
 | phone      | String | A WhatsApp number. If it belongs to an existing contact, the identifier is linked to it. |
 

@@ -31,7 +31,11 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       assert {:ok, query_data} =
                auth_query_gql_by(:create, user, variables: input(%{"name" => "Ravi"}))
 
-      assert %{"id" => contact_id, "name" => "Ravi", "phone" => nil} =
+      assert %{
+               "id" => contact_id,
+               "name" => "Ravi",
+               "identities" => [%{"channel" => "WEB", "identifier" => "ravi_12"}]
+             } =
                get_in(query_data, [:data, "createContactWithIdentity", "contact"])
 
       assert %{contact_id: id} =
