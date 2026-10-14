@@ -593,22 +593,25 @@ defmodule Glific.Erase do
     start_time = System.monotonic_time(:millisecond)
     batch_limit = min(purge.batch_size, purge.max_rows_to_delete - total_rows_deleted)
 
-    # The subquery yields the id of the entity's (keep_per_entity + 1)th newest version, or
-    # NULL when it has no more than keep_per_entity versions, which excludes all its rows.
+    # Ranking spans all of the org's versions, recent ones included, so the newest
+    # keep_per_entity versions are counted before the age filter. Filtering before the LIMIT
+    # keeps every batch full until the org is done, which the stop condition below relies on.
     query = """
-    WITH rows_to_delete AS (
-      SELECT v.id FROM versions v
-      WHERE v.organization_id = $1
-        AND v.recorded_at < $2
-        AND v.id <= (
-          SELECT k.id FROM versions k
-          WHERE k.entity_schema = v.entity_schema AND k.entity_id = v.entity_id
-          ORDER BY k.id DESC
-          OFFSET $3 LIMIT 1
-        )
+    WITH ranked AS (
+      SELECT id, recorded_at,
+             row_number() OVER (
+               PARTITION BY entity_schema, entity_id
+               ORDER BY id DESC
+             ) AS rn
+      FROM versions
+      WHERE organization_id = $1
+    )
+    DELETE FROM versions
+    WHERE id IN (
+      SELECT id FROM ranked
+      WHERE rn > $3 AND recorded_at < $2
       LIMIT $4
     )
-    DELETE FROM versions WHERE id IN (SELECT id FROM rows_to_delete)
     """
 
     try do
