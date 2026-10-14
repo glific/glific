@@ -94,9 +94,9 @@ defmodule Glific.Contacts.Identities do
   the other. A web contact with a phone also gets its WhatsApp identity. `insert_opts` go to the
   contact insert (an upsert's `on_conflict`). Returns the changeset of whichever insert failed.
   """
-  @spec create_contact(map(), MessageChannel.t(), String.t() | nil, keyword()) ::
+  @spec create_contact_with_identity(map(), MessageChannel.t(), String.t() | nil, keyword()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact(attrs, channel, identifier, insert_opts \\ []) do
+  def create_contact_with_identity(attrs, channel, identifier, insert_opts \\ []) do
     Multi.new()
     |> Multi.insert(:contact, Contacts.new_contact_changeset(attrs, channel), insert_opts)
     |> Multi.insert(
@@ -235,7 +235,7 @@ defmodule Glific.Contacts.Identities do
       contact_type: nil
     }
 
-    case create_contact(attrs, :web, identifier) do
+    case create_contact_with_identity(attrs, :web, identifier) do
       {:error, %Ecto.Changeset{data: %Contact{}} = changeset} ->
         add_web_identity_to_phone_owner(changeset, attrs, identifier)
 
