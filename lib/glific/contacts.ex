@@ -280,7 +280,7 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs) do
-    Identities.create_contact(attrs, :whatsapp, attrs[:phone])
+    Identities.create_contact_with_identity(attrs, :whatsapp, attrs[:phone])
   end
 
   @doc """
@@ -458,7 +458,7 @@ defmodule Glific.Contacts do
       conflict_target: [:phone, :organization_id]
     ]
 
-    case Identities.create_contact(
+    case Identities.create_contact_with_identity(
            Map.merge(other_attrs, attrs),
            :whatsapp,
            attrs[:phone],

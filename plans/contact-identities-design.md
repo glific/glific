@@ -66,7 +66,7 @@ Gupshup/Maytapi webhook {phone}
 ```
 The contact's `(whatsapp, phone, <phone>)` identity is written when it's created (or on its first
 lookup, so existing contacts keep working until the WhatsApp identities are backfilled in the next PR).
-Every channel creates a contact through `Identities.create_contact/4`, which inserts the contact and
+Every channel creates a contact through `Identities.create_contact_with_identity/4`, which inserts the contact and
 its identity in one transaction: a contact never exists without its identity. `put_whatsapp_identity/1`
 keeps the WhatsApp identity in step with the phone.
 

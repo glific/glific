@@ -195,20 +195,22 @@ defmodule Glific.Contacts.IdentitiesTest do
     end
   end
 
-  describe "create_contact/4" do
+  describe "create_contact_with_identity/4" do
     test "a WhatsApp contact and its identity are created together", %{
       organization_id: organization_id
     } do
       attrs = %{organization_id: organization_id, phone: "919876500002", name: "Together"}
 
-      assert {:ok, contact} = Identities.create_contact(attrs, :whatsapp, attrs.phone)
+      assert {:ok, contact} =
+               Identities.create_contact_with_identity(attrs, :whatsapp, attrs.phone)
+
       assert [%{channel: :whatsapp, identifier: "919876500002"}] = identities_of(contact.id)
     end
 
     test "a web contact with a phone gets both identities", %{organization_id: organization_id} do
       attrs = %{organization_id: organization_id, phone: "919876500003", name: "Both"}
 
-      assert {:ok, contact} = Identities.create_contact(attrs, :web, "both_user")
+      assert {:ok, contact} = Identities.create_contact_with_identity(attrs, :web, "both_user")
 
       assert [{:web, "both_user"}, {:whatsapp, "919876500003"}] =
                contact.id |> identities_of() |> Enum.map(&{&1.channel, &1.identifier})
@@ -219,7 +221,7 @@ defmodule Glific.Contacts.IdentitiesTest do
       attrs = %{organization_id: organization_id, name: "Orphan"}
 
       assert {:error, %Ecto.Changeset{data: %ContactIdentity{}}} =
-               Identities.create_contact(attrs, :web, "not valid!")
+               Identities.create_contact_with_identity(attrs, :web, "not valid!")
 
       assert contact_count == Repo.aggregate(Contact, :count)
     end
