@@ -6,6 +6,7 @@ defmodule Glific.Search.Full do
   import Ecto.Query
 
   alias Glific.{
+    Contacts.Identities,
     Flows.FlowLabel,
     Groups.ContactGroup,
     Repo
@@ -60,7 +61,13 @@ defmodule Glific.Search.Full do
   defp run_helper(query, term, args) when term != nil and term != "" do
     query
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
-    |> or_where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
+    |> or_where(
+      ^dynamic(
+        [c: c],
+        ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%") or
+          ^Identities.identifier_match(term)
+      )
+    )
     |> apply_filters(args.filter)
   end
 

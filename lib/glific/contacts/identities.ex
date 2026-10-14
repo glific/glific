@@ -54,6 +54,22 @@ defmodule Glific.Contacts.Identities do
   end
 
   @doc """
+  A condition matching contacts with a web identifier containing the term, for OR-ing into a
+  contact search on the first binding. It matches nothing for a `:staff` user, who may not see
+  identifiers, and when there is no current user.
+  """
+  @spec identifier_match(String.t()) :: Ecto.Query.dynamic_expr()
+  def identifier_match(term) do
+    case Repo.get_current_user() do
+      %{roles: roles} ->
+        if :staff in roles, do: dynamic(false), else: web_identifier_match(term)
+
+      nil ->
+        dynamic(false)
+    end
+  end
+
+  @doc """
   Finds, links or creates the contact for an NGO username. An identifier that already exists keeps
   its contact and ignores the claims; otherwise the `contact_id` claim, then the `phone` claim,
   name an existing contact to link to, and with neither a new contact is created.
@@ -133,6 +149,19 @@ defmodule Glific.Contacts.Identities do
         skip_organization_id: true
       )
     )
+  end
+
+  @spec web_identifier_match(String.t()) :: Ecto.Query.dynamic_expr()
+  defp web_identifier_match(term) do
+    pattern = "%#{String.downcase(term)}%"
+
+    matching =
+      from(i in ContactIdentity,
+        where: i.channel == :web and ilike(i.identifier, ^pattern),
+        select: i.contact_id
+      )
+
+    dynamic([c], c.id in subquery(matching))
   end
 
   @spec link_target(non_neg_integer(), claims()) :: Contact.t() | nil

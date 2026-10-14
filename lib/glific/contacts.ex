@@ -102,8 +102,15 @@ defmodule Glific.Contacts do
 
     Enum.reduce(filter, query, fn
       {:term, term}, query ->
-        from(q in query,
-          where: ilike(field(q, :name), ^"%#{term}%") or ilike(field(q, :phone), ^"%#{term}%")
+        pattern = "%#{term}%"
+
+        where(
+          query,
+          ^dynamic(
+            [q],
+            ilike(field(q, :name), ^pattern) or ilike(field(q, :phone), ^pattern) or
+              ^Identities.identifier_match(term)
+          )
         )
 
       {:status, status}, query ->

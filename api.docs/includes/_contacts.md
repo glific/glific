@@ -893,6 +893,107 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 | --------- | -------------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#contactHistoryFilter">contactHistoryFilter</a> | nil     | filter the list |
 
+## Create a Contact with a Web Identity
+
+```graphql
+mutation createContactWithIdentity($input: ContactIdentityInput!) {
+  createContactWithIdentity(input: $input) {
+    contact {
+      id
+      name
+      phone
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+```
+
+> With variables:
+
+```json
+{ "input": { "identifier": "ravi_12", "name": "Ravi" } }
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createContactWithIdentity": {
+      "contact": { "id": "15", "name": "Ravi", "phone": null },
+      "errors": null
+    }
+  }
+}
+```
+
+Creates the contact for a <a href="#web-channel-login">web channel</a> username before its first login.
+Repeating the call for the same `identifier` returns the same contact. Requires the manager role and
+the web channel enabled for the organization.
+
+| Field      | Type   | Description                                                                 |
+| ---------- | ------ | --------------------------------------------------------------------------- |
+| identifier | String | The username the contact logs in with, 1 to 255 characters.                 |
+| name       | String | The contact's name. Defaults to the identifier.                             |
+| phone      | String | A WhatsApp number. If it belongs to an existing contact, the identifier is linked to it. |
+
+## Get a Contact by Identity
+
+```graphql
+query contactByIdentity($channel: MessageChannelEnum!, $identifier: String!) {
+  contactByIdentity(channel: $channel, identifier: $identifier) {
+    contact {
+      id
+      name
+      identities {
+        channel
+        identifier
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+```
+
+> With variables:
+
+```json
+{ "channel": "WEB", "identifier": "ravi_12" }
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "contactByIdentity": {
+      "contact": {
+        "id": "15",
+        "name": "Ravi",
+        "identities": [{ "channel": "WEB", "identifier": "ravi_12" }]
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+Finds the contact that logs in with an identifier on a channel, for example a web channel username.
+Web identifiers are case-insensitive. It never creates a contact; an unknown identifier returns an
+error. Requires the manager role: identifiers are personal data, and the `identities` field of a
+contact is empty for a staff user.
+
+| Parameter  | Type                                   | Description                          |
+| ---------- | -------------------------------------- | ------------------------------------ |
+| channel    | MessageChannelEnum | `WEB` or `WHATSAPP`.   |
+| identifier | String                                 | The username, or the phone number.   |
+
 ## Contact Objects
 
 ### Contact
@@ -916,6 +1017,11 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 <td colspan="2" valign="top"><strong>name</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>identities</strong></td>
+<td valign="top">[ContactIdentity]</td>
+<td>How the contact logs in on each channel (<code>id</code>, <code>channel</code>, <code>identifier</code>, <code>insertedAt</code>). Empty for a staff user.</td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>optinTime</strong></td>

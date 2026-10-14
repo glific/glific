@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.ContactIdentities do
   @moduledoc """
-  Resolver for creating contacts with a web login identity, between the GraphQL schema and
+  Resolver for finding and creating contacts by login identity, between the GraphQL schema and
   `Glific.Contacts.Identities`.
   """
 
@@ -10,6 +10,19 @@ defmodule GlificWeb.Resolvers.ContactIdentities do
   alias GlificWeb.WebChannel.Flag
 
   @max_length 255
+
+  @doc false
+  @spec contact_by_identity(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_by_identity(_, %{channel: channel, identifier: identifier}, _context) do
+    case Contacts.fetch_by_identity(channel, identifier) do
+      {:ok, contact} ->
+        {:ok, %{contact: contact}}
+
+      {:error, _reason} ->
+        {:error, ["Contact", dgettext("errors", "Contact not found or permission denied.")]}
+    end
+  end
 
   @doc false
   @spec create_contact_with_identity(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

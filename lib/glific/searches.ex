@@ -11,6 +11,8 @@ defmodule Glific.Searches do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactIdentity,
+    Contacts.Identities,
     Conversations,
     Conversations.Conversation,
     Conversations.WAConversation,
@@ -176,11 +178,25 @@ defmodule Glific.Searches do
 
     query
     |> where([c], c.status != :blocked)
-    |> where([c], c.contact_type in ["WABA", "WABA+WA"])
+    |> where_in_inbox()
     |> select([c], %{id: c.id, last_communication_at: c.last_communication_at})
     |> distinct(true)
     |> add_contact_opts(opts)
     |> Repo.add_permission(&Searches.add_permission/2)
+  end
+
+  @spec where_in_inbox(Ecto.Query.t()) :: Ecto.Query.t()
+  defp where_in_inbox(query) do
+    where(
+      query,
+      [c: c],
+      c.contact_type in ["WABA", "WABA+WA"] or
+        exists(
+          from(ci in ContactIdentity,
+            where: ci.contact_id == parent_as(:c).id and ci.channel == :web
+          )
+        )
+    )
   end
 
   @spec add_contact_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
@@ -256,7 +272,7 @@ defmodule Glific.Searches do
     |> add_message_clause(args)
     |> order_by([c: c], desc: c.last_communication_at, desc: c.id)
     |> where([c: c], c.status != :blocked)
-    |> where([c: c], c.contact_type in ["WABA", "WABA+WA"])
+    |> where_in_inbox()
     |> group_by([c: c], c.id)
     |> repo().add_permission(&Searches.add_permission/2)
   end
@@ -550,7 +566,13 @@ defmodule Glific.Searches do
     # since this revolves around contacts
     args
     |> basic_query()
-    |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
+    |> where(
+      ^dynamic(
+        [c: c],
+        ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%") or
+          ^Identities.identifier_match(term)
+      )
+    )
     |> limit(^limit)
     |> offset(^offset)
     |> order_by([c: c], desc: c.last_message_at)

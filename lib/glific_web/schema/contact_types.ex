@@ -70,6 +70,15 @@ defmodule GlificWeb.Schema.ContactTypes do
       end)
     end
 
+    @desc "How the contact logs in on each channel; always empty for a staff user"
+    field :identities, list_of(:contact_identity) do
+      resolve(fn contact, args, %{context: %{current_user: user}} = resolution ->
+        if Enum.member?(user.roles, :staff),
+          do: {:ok, []},
+          else: dataloader(Repo).(contact, args, resolution)
+      end)
+    end
+
     field :active_profile, :profile do
       resolve(dataloader(Repo))
     end

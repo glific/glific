@@ -315,4 +315,38 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert {:error, :no_identifier} = Contacts.fetch_by_identity(:web, "")
     end
   end
+
+  describe "list_contacts/1 term filter" do
+    setup do
+      contact = Fixtures.contact_without_phone_fixture(%{name: "Asha"})
+      Fixtures.contact_identity_fixture(%{contact_id: contact.id, identifier: "asha_07"})
+      %{contact: contact}
+    end
+
+    test "matches a web identifier for a manager, in any case", %{contact: contact} do
+      ids = %{filter: %{term: "ASHA_0"}} |> Contacts.list_contacts() |> Enum.map(& &1.id)
+
+      assert contact.id in ids
+    end
+
+    test "does not match a web identifier for a staff user", %{contact: contact} do
+      Repo.put_current_user(Fixtures.user_fixture(%{roles: ["staff"]}))
+
+      ids = %{filter: %{term: "asha_07"}} |> Contacts.list_contacts() |> Enum.map(& &1.id)
+
+      refute contact.id in ids
+    end
+
+    test "does not match a whatsapp identifier that is not a name or phone", %{contact: contact} do
+      Fixtures.contact_identity_fixture(%{
+        contact_id: contact.id,
+        channel: :whatsapp,
+        identifier: "wa_only_key"
+      })
+
+      ids = %{filter: %{term: "wa_only_key"}} |> Contacts.list_contacts() |> Enum.map(& &1.id)
+
+      refute contact.id in ids
+    end
+  end
 end
