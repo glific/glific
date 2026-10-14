@@ -29,10 +29,7 @@ defmodule Glific.Flows.LlmCall do
     :output_to_user,
     :input_guardrail,
     :output_guardrail,
-    :input_tokens,
-    :output_tokens,
-    :total_tokens,
-    :reasoning_tokens,
+    :tokens,
     :flow_id,
     :contact_id
   ]
@@ -52,10 +49,7 @@ defmodule Glific.Flows.LlmCall do
           output_to_user: String.t() | nil,
           input_guardrail: [map()] | nil,
           output_guardrail: [map()] | nil,
-          input_tokens: non_neg_integer | nil,
-          output_tokens: non_neg_integer | nil,
-          total_tokens: non_neg_integer | nil,
-          reasoning_tokens: non_neg_integer | nil,
+          tokens: map() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
@@ -79,10 +73,7 @@ defmodule Glific.Flows.LlmCall do
     field :output_to_user, :string
     field :input_guardrail, {:array, :map}
     field :output_guardrail, {:array, :map}
-    field :input_tokens, :integer
-    field :output_tokens, :integer
-    field :total_tokens, :integer
-    field :reasoning_tokens, :integer
+    field :tokens, :map
 
     belongs_to :flow, Flow
     belongs_to :contact, Contact
@@ -116,7 +107,6 @@ defmodule Glific.Flows.LlmCall do
   def record_callback(organization_id, result, response) do
     metadata = result["metadata"] || %{}
     llm_response = get_in(result, ["data", "response"]) || %{}
-    usage = get_in(result, ["data", "usage"]) || %{}
     input_guardrail = metadata["input_guardrail"]
     output_guardrail = metadata["output_guardrail"]
     output = text_output(llm_response["output"])
@@ -138,10 +128,7 @@ defmodule Glific.Flows.LlmCall do
       output_to_user: output_guardrail["output_to_user"] || output,
       input_guardrail: input_guardrail["validators"],
       output_guardrail: output_guardrail["validators"],
-      input_tokens: usage["input_tokens"],
-      output_tokens: usage["output_tokens"],
-      total_tokens: usage["total_tokens"],
-      reasoning_tokens: usage["reasoning_tokens"]
+      tokens: get_in(result, ["data", "usage"])
     })
   end
 

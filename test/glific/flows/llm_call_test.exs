@@ -76,7 +76,7 @@ defmodule Glific.Flows.LlmCallTest do
     assert llm_call.output_guardrail == @output_guardrail["validators"]
     assert llm_call.provider_response_id == "resp_123"
     assert llm_call.model == "gpt-5.4-mini"
-    assert llm_call.total_tokens == 497
+    assert llm_call.tokens["total_tokens"] == 497
   end
 
   test "record_callback/3 falls back to the question and LLM output without guardrails",
@@ -175,10 +175,10 @@ defmodule Glific.Flows.LlmCallTest do
       assert llm_call.output_to_user == llm_call.output_from_llm
       assert llm_call.input_guardrail == nil
       assert llm_call.output_guardrail == nil
-      assert llm_call.input_tokens == 264
-      assert llm_call.output_tokens == 120
-      assert llm_call.total_tokens == 384
-      assert llm_call.reasoning_tokens == nil
+      assert llm_call.tokens["input_tokens"] == 264
+      assert llm_call.tokens["output_tokens"] == 120
+      assert llm_call.tokens["total_tokens"] == 384
+      assert llm_call.tokens["reasoning_tokens"] == nil
     end
 
     test "records a callback with an input guardrail",
@@ -201,7 +201,7 @@ defmodule Glific.Flows.LlmCallTest do
       assert llm_call.output_from_llm =~ "I can’t help use hateful slurs or write abusive"
       assert llm_call.output_to_user == llm_call.output_from_llm
       assert llm_call.output_guardrail == nil
-      assert llm_call.total_tokens == 497
+      assert llm_call.tokens["total_tokens"] == 497
     end
 
     test "records a callback with input and output guardrails",
@@ -230,9 +230,9 @@ defmodule Glific.Flows.LlmCallTest do
       assert [%{"name" => "PIIRemover", "outcome" => "PASS"}] =
                llm_call.output_guardrail
 
-      assert llm_call.input_tokens == 280
-      assert llm_call.output_tokens == 205
-      assert llm_call.total_tokens == 485
+      assert llm_call.tokens["input_tokens"] == 280
+      assert llm_call.tokens["output_tokens"] == 205
+      assert llm_call.tokens["total_tokens"] == 485
     end
   end
 

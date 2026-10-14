@@ -29,10 +29,8 @@ defmodule Glific.Repo.Migrations.CreateLlmCalls do
       add :output_guardrail, :map,
         comment: "Validators the output guardrail ran, from the callback metadata"
 
-      add :input_tokens, :integer, comment: "Prompt tokens consumed"
-      add :output_tokens, :integer, comment: "Completion tokens consumed"
-      add :total_tokens, :integer, comment: "Total tokens consumed"
-      add :reasoning_tokens, :integer, comment: "Reasoning tokens consumed, when reported"
+      add :tokens, :map,
+        comment: "Token usage from the callback: input, output, total and reasoning tokens"
 
       add :flow_id, references(:flows, on_delete: :nilify_all), comment: "Flow that made the call"
 

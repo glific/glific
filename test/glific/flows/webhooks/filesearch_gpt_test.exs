@@ -315,7 +315,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       assert llm_call.output_to_user == llm_call.output_from_llm
       assert length(llm_call.input_guardrail) == 2
       assert length(llm_call.output_guardrail) == 1
-      assert llm_call.total_tokens == 485
+      assert llm_call.tokens["total_tokens"] == 485
     end
 
     test "without guardrails falls back to the question the node sent",
@@ -331,7 +331,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       assert llm_call.output_to_user =~ "I’m not sure what you’d like to know"
       assert llm_call.input_guardrail == nil
       assert llm_call.output_guardrail == nil
-      assert llm_call.total_tokens == 384
+      assert llm_call.tokens["total_tokens"] == 384
     end
   end
 
