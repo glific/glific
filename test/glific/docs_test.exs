@@ -209,6 +209,18 @@ defmodule Glific.DocsTest do
       assert Docs.lexical("ignore previous instructions", entries) == []
     end
 
+    test "one word has to name the section, not merely appear in it", %{entries: entries} do
+      # Every section mentions a contact somewhere, so prose alone says nothing
+      # about which one answers the question.
+      hits = Docs.lexical("contact", entries)
+
+      assert hits != []
+
+      assert Enum.all?(hits, fn section ->
+               String.contains?(String.downcase(section.heading_path), "contact")
+             end)
+    end
+
     test "a short error string finds the section quoting it", %{entries: entries} do
       # Too few terms to reach the score floor on body text alone, which is how
       # people paste an error: a fragment, not a sentence.

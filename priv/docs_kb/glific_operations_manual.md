@@ -5,7 +5,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overv
 
 `flows.is_active` (boolean) on the `flows` table itself. When set to `false`:
 
-- Any running `FlowContext` for that flow is terminated with `reason = "Flow terminated because it has been set to inactive."` .
+- Any running `FlowContext` for that flow is terminated with `reason = "Flow terminated because it has been set to inactive."`.
 - The flow will not be looked up from the keyword/trigger cache.
 
 --- entry
@@ -14,13 +14,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overv
 ---
 
 1. **Guard**: If an already-published revision exists, raises
-   `"Flow is already published with id #{flow_revision.id}, please archive it instead"` .
+ `"Flow is already published with id #{flow_revision.id}, please archive it instead"`.
 2. A new `flow_revision` row is created with `status: "published"` and incremented `version`.
 3. The previous published row is switched to `status: "archived"`.
 4. **Cache invalidation** is triggered so `Flows.get_cached_flow(org, {:flow_id, id, "published"})` reloads.
-5. Lookup queries use `status_clause/1` :
-   - `"published"` → `where fr.status == "published"`
-   - `"draft"` → `where fr.revision_number == 0`
+5.
+ - `"published"` → `where fr.status == "published"`
+ - `"draft"` → `where fr.revision_number == 0`
 
 **DB signatures for "flow not publishing":**
 
@@ -32,12 +32,12 @@ heading: 1. Flow Execution Engine › 1.2 How a Flow Gets Triggered — Every Pa
 ---
 
 ```
-1. continue_the_context?(context)         -- active flow with ignore_keywords=true
-2. draft keyword ("draft:XXX")            -- simulator only
-3. template keyword ("template:XXX")      -- simulator only
-4. start_new_contact_flow?                -- contact tagged as brand-new + org_default_new_contact configured
-5. flow_keyword?                          -- EXACT match in published keyword map
-6. is_draft?                              -- draft flow keyword match
+1. continue_the_context?(context) -- active flow with ignore_keywords=true
+2. draft keyword ("draft:XXX") -- simulator only
+3. template keyword ("template:XXX") -- simulator only
+4. start_new_contact_flow? -- contact tagged as brand-new + org_default_new_contact configured
+5. flow_keyword? -- EXACT match in published keyword map
+6. is_draft? -- draft flow keyword match
 7. No match → Regex flow check → Periodic flows → no-op
 ```
 
@@ -48,19 +48,18 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Keywords/
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Keywords/
 
-- **Exact, case-insensitive, full-message match.** Keywords are stored downcased , message body is cleaned and downcased , then looked up with `Map.has_key?(state.flow_keywords["published"], body)` . **Word-in-sentence matching is NOT supported.**
-- Keyword cache shape :
-  ```
-  %{
-    "published" => %{"hi" => flow_id, "help" => flow_id},
-    "draft"     => %{...},
-    "template"  => %{flow_name => flow_id},
-    "org_default_new_contact" => flow_id,
-    "org_default_optin"       => flow_id,
-    "outofoffice"             => flow_id,
-    "defaultflow"             => flow_id
-  }
-  ```
+- **Exact, case-insensitive, full-message match.** Keywords are stored downcased, message body is cleaned and downcased, then looked up with `Map.has_key?(state.flow_keywords["published"], body)`. **Word-in-sentence matching is NOT supported.**
+ ```
+ %{
+ "published" => %{"hi" => flow_id, "help" => flow_id},
+ "draft" => %{...},
+ "template" => %{flow_name => flow_id},
+ "org_default_new_contact" => flow_id,
+ "org_default_optin" => flow_id,
+ "outofoffice" => flow_id,
+ "defaultflow" => flow_id
+ }
+ ```
 
 --- entry
 heading: 1. Flow Execution Engine › 1.2 How a Flow Gets Triggered — Every Path › Opt-out → opt-in flow interception
@@ -81,8 +80,6 @@ Evaluated in order: `monthly → weekly → {monday..sunday} → daily → outof
 --- entry
 heading: 1. Flow Execution Engine › 1.2 How a Flow Gets Triggered — Every Path › Manual & API-triggered flows
 ---
-
-GraphQL mutation `startContactFlow(flowId, contactId, defaultResults)` → `GlificWeb.Resolvers.Flows.start_contact_flow/3` :
 
 - Validates contact belongs to caller's org.
 - Calls `Flows.get_cached_flow(org_id, {:flow_id, flow_id, "published"})`.
@@ -117,7 +114,7 @@ section: 1.3
 heading: 1. Flow Execution Engine › 1.3 FlowContext — Every Field
 ---
 
-Table `flow_contexts`. Fields and when they are set :
+Table `flow_contexts`.
 
 | Field                  | Set where                                      | Meaning                                                      |
 | ---------------------- | ---------------------------------------------- | ------------------------------------------------------------ |
@@ -153,12 +150,12 @@ heading: 1. Flow Execution Engine › 1.3 FlowContext — Every Field › Init f
 heading: 1. Flow Execution Engine › 1.3 FlowContext — Every Field › Step-by-step node execution
 ---
 
-- `Node.execute` checks infinite-loop guards .
+- `Node.execute` checks infinite-loop guards.
 - Routes to actions/router:
-  - `wait_for_time` / `wait_for_result` → sets `wakeup_at` and returns `{:wait, ctx, []}`.
-  - Actions + Router → run all actions, then router with message.
-  - Actions only → sequential execution; `{:ok, ctx, messages}` or `{:wait, ...}`.
-  - Router only → switch by case; route to matching exit.
+ - `wait_for_time` / `wait_for_result` → sets `wakeup_at` and returns `{:wait, ctx, []}`.
+ - Actions + Router → run all actions, then router with message.
+ - Actions only → sequential execution; `{:ok, ctx, messages}` or `{:wait,...}`.
+ - Router only → switch by case; route to matching exit.
 - Exits execute via `Exit.execute`: if `destination_node_uuid` is nil → `FlowContext.reset_context` (flow ends). Otherwise load next node and recurse.
 
 --- entry
@@ -168,7 +165,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20time/
 
-- **wait_for_time**: `wakeup_at = DateTime.utc_now() + wait_seconds` . Flow pauses; `Periodic.wakeup_flows` (batch 500, `wake_up_flow_limit`) picks up contexts where `wakeup_at < now() AND completed_at IS NULL`.
+- **wait_for_time**: `wakeup_at = DateTime.utc_now + wait_seconds`. Flow pauses; `Periodic.wakeup_flows` (batch 500, `wake_up_flow_limit`) picks up contexts where `wakeup_at < now AND completed_at IS NULL`.
 - **wait_for_response**: Blocks in `Router.execute`. No wakeup_at; next inbound message resumes.
 
 --- entry
@@ -181,9 +178,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 - New FlowContext with `parent_id = current_id`.
 - "parent" and "child" keys stripped from results (lines 287-290).
 - On child termination (`reset_context:306-346`):
-  - Loads parent if still active (not completed/killed).
-  - Merges child results into `parent.results["child"]`.
-  - Calls `step_forward` with synthetic message `"completed"`.
+ - Loads parent if still active (not completed/killed).
+ - Merges child results into `parent.results["child"]`.
+ - Calls `step_forward` with synthetic message `"completed"`.
 - **If parent is dead when child finishes, the chain ends silently** — this is a common cause of "flow stops mid-sub-flow".
 
 --- entry
@@ -194,7 +191,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Backg
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Background%20Flows/
 
 - Set by `Periodic.init_common_flow` and some broadcast operations.
-- `mark_flows_complete(contact_id, is_background=true)` is a no-op  — so starting a new top-level flow does NOT kill background flows.
+- `mark_flows_complete(contact_id, is_background=true)` is a no-op — so starting a new top-level flow does NOT kill background flows.
 - When a background flow wakes up, it kills all _other_ background flows for the same contact.
 
 --- entry
@@ -250,10 +247,10 @@ Category `"Flow"`:
 
 Also raised by flow execution:
 
-- `"Infinite loop detected, body: #{body}. Resetting flows"` — .
-- `"Infinite loop detected, body: #{body}. Aborting flow."` — .
-- `"Could not send message to contact: Empty media URL"` — .
-- `"Error sending message, resetting context: #{error}"` — .
+- `"Infinite loop detected, body: #{body}. Resetting flows"`.
+- `"Infinite loop detected, body: #{body}. Aborting flow."`.
+- `"Could not send message to contact: Empty media URL"`.
+- `"Error sending message, resetting context: #{error}"`.
 
 **Trace path: notification → flow → node → contact**
 
@@ -267,22 +264,22 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Varia
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
 
-Parser: . Regex patterns (lines 14-79) handle up to 4 levels of dotted access.
+Regex patterns (lines 14-79) handle up to 4 levels of dotted access.
 
 Bindings map shape (MessageVarParser `bound/2`):
 
 ```elixir
 %{
-  "contact" => %{
-    "fields" => %{shortcode => %{"value" => v, "label" => l, "type" => t}},
-    "language" => %{"id" => id, "label" => label},
-    "in_groups" => [group_ids],
-    "name" => name
-  },
-  "results" => %{key => value},
-  "staff" => %{...},
-  "global" => %{...},
-  "calendar" => %{...}
+ "contact" => %{
+ "fields" => %{shortcode => %{"value" => v, "label" => l, "type" => t}},
+ "language" => %{"id" => id, "label" => label},
+ "in_groups" => [group_ids],
+ "name" => name
+ },
+ "results" => %{key => value},
+ "staff" => %{...},
+ "global" => %{...},
+ "calendar" => %{...}
 }
 ```
 
@@ -307,7 +304,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows
 | Works in simulator/preview but not real | Simulator bypasses `can_send_message_to?` session check; real sends blocked by `bsp_status` gate                                                                                                                                  |
 | Flow triggers but does nothing          | Node has no exits with destinations, or all router cases fail match. Check `flow_revisions.definition` for the node uuid                                                                                                          |
 
----
+--
 
 --- entry
 section: 2.1
@@ -317,12 +314,11 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Messa
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Message%20Events/
 
-Enums from :
 
 ```elixir
 @message_status_const [
-  :sent, :delivered, :enqueued, :error, :read, :received,
-  :contact_opt_out, :reached, :seen, :played, :deleted
+:sent,:delivered,:enqueued,:error,:read,:received,
+:contact_opt_out,:reached,:seen,:played,:deleted
 ]
 ```
 
@@ -344,34 +340,31 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Messa
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Message%20Events/
 
-Creation : `status: :enqueued`, `bsp_status: nil`.
+Creation: `status::enqueued`, `bsp_status: nil`.
 
-On provider API success :
 
 ```
 bsp_message_id = provider_id
-bsp_status     = :enqueued
-status         = :sent
-sent_at        = now()
+bsp_status =:enqueued
+status =:sent
+sent_at = now
 ```
 
-On BSP webhook callbacks :
 
-- `/gupshup/message-event/enqueued` → `bsp_status = :enqueued`
-- `/.../sent` → `bsp_status = :sent`
-- `/.../delivered` → `bsp_status = :delivered`
-- `/.../read` → `bsp_status = :read`
-- `/.../failed` → `bsp_status = :error`, `errors` populated
+- `/gupshup/message-event/enqueued` → `bsp_status =:enqueued`
+- `/.../sent` → `bsp_status =:sent`
+- `/.../delivered` → `bsp_status =:delivered`
+- `/.../read` → `bsp_status =:read`
+- `/.../failed` → `bsp_status =:error`, `errors` populated
 
-On provider API error :
 
 ```
-status     = :sent         (still marked as attempted)
-bsp_status = :error
-errors     = %{message: body}  -- or preserved if already a map
+status =:sent (still marked as attempted)
+bsp_status =:error
+errors = %{message: body} -- or preserved if already a map
 ```
 
-**Special error codes processed :**
+**Special error codes processed:**
 
 - `1002` "Number does not exist" → `Contacts.number_does_not_exist/2` marks contact invalid.
 - `471` Rate-limit → `Partners.suspend_organization/1` (full-day suspension).
@@ -385,13 +378,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
-Gate function: `Contacts.can_send_message_to?/2,3` .
+Gate function: `Contacts.can_send_message_to?/2,3`.
 
 **HSM (template) send requirements (`:636-660`):**
 
 ```elixir
-contact.status == :valid
-contact.bsp_status in [:session_and_hsm, :hsm]
+contact.status ==:valid
+contact.bsp_status in [:session_and_hsm,:hsm]
 contact.optin_time != nil
 organization.suspended == false
 ```
@@ -406,8 +399,8 @@ Errors:
 **Session send requirements (`:665-680`):**
 
 ```elixir
-contact.status == :valid
-contact.bsp_status in [:session_and_hsm, :session]
+contact.status ==:valid
+contact.bsp_status in [:session_and_hsm,:session]
 ```
 
 Error (session expired): `"Sorry! 24 hrs window closed. Your message cannot be sent at this time."`
@@ -417,7 +410,7 @@ Error (session expired): `"Sorry! 24 hrs window closed. Your message cannot be s
 - `:session` / `:session_and_hsm` → session sends allowed (i.e., there's been an inbound within 24h).
 - When 24h elapse since `last_message_at`, a scheduled job downgrades `bsp_status` to `:none` (if opted out) or `:hsm` (if opted in).
 
-Explicit check in optin flow path : `Glific.in_past_time(contact.last_message_at, :hours, 24)`.
+Explicit check in optin flow path: `Glific.in_past_time(contact.last_message_at,:hours, 24)`.
 
 **How Glific decides HSM vs session**: The caller (flow action, broadcast, API) sets the `is_hsm: true/false` flag when creating the message. `check_for_hsm_message/1` routes to HSM path. There is no auto-fallback from session to HSM — if you try to send session content outside window, it fails.
 
@@ -428,27 +421,27 @@ heading: 2. Message Delivery Pipeline › 2.4 Send Pipeline
 
 ```
 Messages.create_and_send_message(attrs)
-  → check_for_interactive  → check_for_hsm_message
-  → Messages.create_message (insert row, status=:enqueued)
-  → Communications.Message.send_message
-  → Communications.provider_handler(org) = Gupshup.Message | Maytapi.Message
-  → send_text/send_image/...
+ → check_for_interactive → check_for_hsm_message
+ → Messages.create_message (insert row, status=:enqueued)
+ → Communications.Message.send_message
+ → Communications.provider_handler(org) = Gupshup.Message | Maytapi.Message
+ → send_text/send_image/...
 ```
 
 
 - Queue: `:gupshup` (or `:gupshup_high_tps`, or `:wa`)
 - `max_attempts: 2`
 
-**Worker execution :**
+**Worker execution:**
 
 1. Rate-limit check: `ExRated.check_rate(org.shortcode, 1000, org.services["bsp"].keys["bsp_limit"])`.
-   - On exceed: sleep 50ms, return `{:snooze, 1}` (retry in 1s).
+ - On exceed: sleep 50ms, return `{:snooze, 1}` (retry in 1s).
 2. Simulator contact → mock success.
 3. Call provider API (`ApiClient.send_message` or `PartnerAPI.send_template`).
 4. Dispatch by status:
-   - 200-299 → `handle_success_response`
-   - 400-499 → `handle_error_response`, return `:ok` (no retry)
-   - 5xx → `handle_error_response`, often `{:snooze, N}`
+ - 200-299 → `handle_success_response`
+ - 400-499 → `handle_error_response`, return `:ok` (no retry)
+ - 5xx → `handle_error_response`, often `{:snooze, N}`
 
 Maytapi default rate limit: `@default_bsp_limit = 30 req/s` (`maytapi/wa_worker.ex`).
 
@@ -457,19 +450,16 @@ section: 2.5
 heading: 2. Message Delivery Pipeline › 2.5 BSP Callback Processing
 ---
 
-extracts `bsp_message_id`:
-
 ```elixir
 bsp_message_id = get_in(params, ["payload", "gsId"]) || get_in(params, ["payload", "id"])
 Communications.Message.update_bsp_status(bsp_message_id, status, params)
 ```
 
-Update in :
 
 ```elixir
 Repo.update_all(
-  from(m in Message, where: m.bsp_message_id == ^bsp_message_id),
-  set: [bsp_status: status, updated_at: DateTime.utc_now()]
+ from(m in Message, where: m.bsp_message_id == ^bsp_message_id),
+ set: [bsp_status: status, updated_at: DateTime.utc_now]
 )
 ```
 
@@ -483,9 +473,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20a%20message/
 
-- Gupshup text/caption max: **4096 chars** .
-- Maytapi text/caption max: **6000 chars** .
-- Supported types : `audio, contact, document, hsm, image, location, list, quick_reply, text, video, sticker, location_request_message, poll, whatsapp_form_response`.
+- Gupshup text/caption max: **4096 chars**.
+- Maytapi text/caption max: **6000 chars**.
+- Supported types: `audio, contact, document, hsm, image, location, list, quick_reply, text, video, sticker, location_request_message, poll, whatsapp_form_response`.
 - Media URLs stored on `messages_media`: `source_url`, `url`, `gcs_url`, `gcs_error`.
 
 --- entry
@@ -504,19 +494,17 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Templ
 | Media failed                                    | `messages_media.gcs_error` populated; URL expired/invalid                                         |
 | Sent but not delivered                          | `bsp_status=:sent`, never advances — recipient phone off, blocked Glific, or number invalid at WA |
 
----
+--
 
 --- entry
 section: 3.1
 heading: 3. Contact Management › 3.1 Contact States
 ---
 
-:
-
 **ContactStatus (`contacts.status`)** — line 14:
 
 ```
-[:blocked, :failed, :invalid, :processing, :valid]
+[:blocked,:failed,:invalid,:processing,:valid]
 ```
 
 - `:valid` — normal contact, can receive messages.
@@ -528,7 +516,7 @@ heading: 3. Contact Management › 3.1 Contact States
 **ContactProviderStatus (`contacts.bsp_status`)** — line 17:
 
 ```
-[:none, :session, :session_and_hsm, :hsm]
+[:none,:session,:session_and_hsm,:hsm]
 ```
 
 - `:none` — can send nothing (no opt-in AND no active session).
@@ -553,13 +541,13 @@ Triggers:
 Column updates on opt-in:
 
 ```
-optin_time        = utc_now
-optin_status      = true
-optin_method      = method
-optin_message_id  = message_id | nil
-optout_time       = nil
-status            = :valid
-bsp_status        = :hsm   (via set_session_status(contact, :hsm))
+optin_time = utc_now
+optin_status = true
+optin_method = method
+optin_message_id = message_id | nil
+optout_time = nil
+status =:valid
+bsp_status =:hsm (via set_session_status(contact,:hsm))
 ```
 
 Dedup: If contact already opted-in and method is "BSP", returns without re-writing (lines 551-559).
@@ -582,25 +570,25 @@ Triggers:
 Column updates on opt-out:
 
 ```
-optout_time   = utc_now
-optout_method = method            -- "Number does not exist" / "Glific Flows" / etc.
-optin_time    = nil
-optin_status  = false
-optin_method  = nil
+optout_time = utc_now
+optout_method = method -- "Number does not exist" / "Glific Flows" / etc.
+optin_time = nil
+optin_status = false
+optin_method = nil
 optin_message_id = nil
-status        = :invalid
-bsp_status    = :none
+status =:invalid
+bsp_status =:none
 ```
 
-History row inserted into `contact_histories` with event `:contact_opted_out` .
+History row inserted into `contact_histories` with event `:contact_opted_out`.
 
 --- entry
 section: 3.3
 heading: 3. Contact Management › 3.3 Session Window Fields
 ---
 
-- **`last_message_at`** : Updated when any inbound or outbound message is created (via `Messages` context). **This is what the 24h window is measured from.** Check: `now - last_message_at < 24h`.
-- **`last_communication_at`** : Set on contact creation; broader meaning. Not checked in message-gate logic.
+- **`last_message_at`**: Updated when any inbound or outbound message is created (via `Messages` context). **This is what the 24h window is measured from.** Check: `now - last_message_at < 24h`.
+- **`last_communication_at`**: Set on contact creation; broader meaning. Not checked in message-gate logic.
 
 --- entry
 section: 3.4
@@ -610,20 +598,20 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Varia
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/List%20of%20Custom%20Contact%20Variables%20created%20in%20Flows/
 
-Set from flow: . `add_contact_field/5` writes:
+`add_contact_field/5` writes:
 
 ```elixir
 field_key => %{
-  value: value,
-  label: label,
-  type: type,
-  inserted_at: DateTime.utc_now()
+ value: value,
+ label: label,
+ type: type,
+ inserted_at: DateTime.utc_now
 }
 ```
 
-If the shortcode isn't in the `contacts_fields` metadata table, `maybe_create_contact_field/1` auto-creates it .
+If the shortcode isn't in the `contacts_fields` metadata table, `maybe_create_contact_field/1` auto-creates it.
 
-Allowed field types : `[:text, :integer, :number, :boolean, :date]`.
+Allowed field types: `[:text,:integer,:number,:boolean,:date]`.
 
 Read in flows: `@contact.fields.{shortcode}` → resolved by MessageVarParser.
 
@@ -641,7 +629,7 @@ heading: 3. Contact Management › 3.5 Common Contact Issues
 | Opted out unexpectedly      | Check `contact_histories` for `:contact_opted_out` event and `optout_method`                              |
 | Field not resolving in flow | `contacts.fields->>'xxx'` missing → flow wrote label but never value, or flow path didn't reach the write |
 
----
+--
 
 --- entry
 section: 4.2
@@ -666,11 +654,11 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 **What triggers a sync:**
 
-- On create/update .
-- Daily cron via `Sheets.sync_organization_sheets/0` (`minute_worker.ex` daily task) — picks sheets where `auto_sync=true AND type IN ("ALL","READ") AND is_active=true` .
+- On create/update.
+- Daily cron via `Sheets.sync_organization_sheets/0` (`minute_worker.ex` daily task) — picks sheets where `auto_sync=true AND type IN ("ALL","READ") AND is_active=true`.
 - Flow action `link_google_sheet` of READ type.
 
-**Credentials**: Service-account JSON stored at `organization.services["google_sheets"].secrets["service_account"]`. Goth obtains token with scopes for Drive and Spreadsheets .
+**Credentials**: Service-account JSON stored at `organization.services["google_sheets"].secrets["service_account"]`. Goth obtains token with scopes for Drive and Spreadsheets.
 
 **Read flow:**
 
@@ -680,10 +668,10 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 4. First row = headers (trimmed).
 5. Validate headers: no empty, no duplicates → `"Repeated or missing headers"`.
 6. Zip rows to maps; keys are lowercased, spaces → underscores.
-7. Delete old `sheet_data` rows; bulk insert new ones with `on_conflict: :nothing`.
+7. Delete old `sheet_data` rows; bulk insert new ones with `on_conflict::nothing`.
 8. Update `sheets.last_synced_at`, `sheet_data_count`, `sync_status`.
 
-**Unique row key**: Looks for a column named `"key"` in the CSV . Rows without a `key` column can still be stored but not looked up by flows.
+**Unique row key**: Looks for a column named `"key"` in the CSV. Rows without a `key` column can still be stored but not looked up by flows.
 
 --- entry
 section: 4.4
@@ -719,7 +707,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 Type: `"link_google_sheet"`. Required fields: `sheet_id`, `result_name`. Optional: `action_type` (default `READ`), `row`, `row_data`.
 
-Handler: `Sheets.execute/2` :
 
 **WRITE action:**
 
@@ -729,7 +716,6 @@ Handler: `Sheets.execute/2` :
 4. Success → flow advances via `"Success"` synthetic message.
 5. Failure → notification created, advances via `"Failure"`.
 
-Error formatting :
 
 - 4xx → `"Invalid request, please check the spreadsheet id"`
 - 5xx → `"Failed to write to the spreadsheet, please retry"`
@@ -761,7 +747,7 @@ source: https://glific.github.io/docs/docs/Use%20Cases/Solving%20For%20Sheet%20S
 | "Google sheet media validation failed" notification | The sheet synced fine. A cell holds a media URL (image/video/audio/document) Glific could not use — link unreachable, file type not supported, or file too large | Open the notification details and read `media_validation_warnings`: it names each bad cell value and the reason. Only those media links are affected; the rest of the sync succeeded |
 | "Unable to parse range" notification | A flow tried to write to a sheet tab or range that no longer exists — tab renamed or deleted. Filed under category Flow, not Google sheets | Match the range in the flow's Add Row node to the tab name in the sheet |
 
----
+--
 
 --- entry
 section: 5.1
@@ -784,7 +770,7 @@ Key fields:
 - `shortcode` — internal identifier, `[a-z0-9_]` only.
 - `uuid` — BSP template id.
 - `bsp_id` — provider template id (nil until submitted).
-- `number_parameters` — derived from regex count .
+- `number_parameters` — derived from regex count.
 - `body`, `is_hsm`, `is_active`, `quality`, `reason`, `language_id`, `category`.
 
 --- entry
@@ -797,9 +783,9 @@ heading: 5. Templates (HSM) › 5.2 Sync with Meta/WhatsApp
 - `make_job/2` — bulk CSV apply.
 - `create_hsm_sync_job/1` — unique job (5-min dedup).
 - `perform/1` (lines 50-92):
-  - `Templates.create_session_template` for new entries.
-  - `Templates.sync_hsms_from_bsp` fetches from Gupshup PartnerAPI.
-  - Notifications on completion (info) or failure (critical).
+ - `Templates.create_session_template` for new entries.
+ - `Templates.sync_hsms_from_bsp` fetches from Gupshup PartnerAPI.
+ - Notifications on completion (info) or failure (critical).
 
 Gupshup integration (`providers/gupshup/template.ex`):
 
@@ -821,7 +807,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Templ
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Template%20Message%20Error/
 
-- Shortcode invalid chars (only `[a-z0-9_]`) — .
+- Shortcode invalid chars (only `[a-z0-9_]`).
 - Button text contains variables, newlines, emojis, or formatting — line 186.
 - Total length > 1024 chars (body + buttons + footer) — line 247.
 - Missing body for text templates — line 147-149.
@@ -835,7 +821,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
-Count regex: `Regex.split(~r/{{.}}/, template["data"]) |> length |> - 1` .
+Count regex: `Regex.split(~r/{{.}}/, template["data"]) |> length |> - 1`.
 Validation pattern: `{{([1-9]|[1-9][0-9])}}` — 1-99 params supported.
 
 **Parameter mismatch at send time → message fails with BSP error; `messages.errors` contains the provider error.** Common cause of "template approved but can't send".
@@ -854,45 +840,43 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Templ
 | Not visible in UI         | `is_active=false`; `status` null; sync hasn't run (`update_hsms` hourly)            |
 | Rejected                  | `session_templates.reason` field has Meta's reason                                  |
 
----
+--
 
 --- entry
 heading: 6. Webhooks — Complete Reference › 6A. Outgoing Webhooks ("Call Webhook" flow node) › Default Payload (exact)
 source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
 ---
 
-Built by `Glific.Flows.Webhook.do_create_body/2` :
-
 ```json
 {
-  "contact": {
-    "id": 42,
-    "name": "Asha",
-    "phone": "919876543210",
-    "fields": {
-      "age": {
-        "value": "25",
-        "label": "Age",
-        "type": "text",
-        "inserted_at": "2026-04-15T10:00:00Z"
-      },
-      "language": { "id": 1, "label": "English" }
-    }
-  },
-  "wa_group": {
-    "id": null,
-    "label": null,
-    "wa_managed_phone_id": null
-  },
-  "results": {
-    "survey_q1": "answer_a",
-    "quiz_score": 7
-  },
-  "flow": {
-    "name": "Onboarding Flow",
-    "id": 12
-  },
-  "organization_id": 1
+ "contact": {
+ "id": 42,
+ "name": "Asha",
+ "phone": "919876543210",
+ "fields": {
+ "age": {
+ "value": "25",
+ "label": "Age",
+ "type": "text",
+ "inserted_at": "2026-04-15T10:00:00Z"
+ },
+ "language": { "id": 1, "label": "English" }
+ }
+ },
+ "wa_group": {
+ "id": null,
+ "label": null,
+ "wa_managed_phone_id": null
+ },
+ "results": {
+ "survey_q1": "answer_a",
+ "quiz_score": 7
+ },
+ "flow": {
+ "name": "Onboarding Flow",
+ "id": 12
+ },
+ "organization_id": 1
 }
 ```
 
@@ -906,13 +890,12 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 - Method: **GET**, **POST**, or **FUNCTION** — the flow editor offers only these three (`METHOD_OPTIONS` in the floweditor; PUT / DELETE / HEAD / PATCH are commented out). `FUNCTION` is a local dispatch, not an HTTP call (§6C).
 - Headers: `X-Glific-Signature` always added; user-configured headers merged in.
 - Signature format: `X-Glific-Signature: t=<unix_seconds>,v1=<hmac_sha256_hex>`.
-- Algorithm :
-  ```elixir
-  secret = organization.signature_phrase || "This is a dummy secret"
-  signed_payload = "#{timestamp}.#{body}"
-  hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
-  Base.encode16(hmac, case: :lower)
-  ```
+ ```elixir
+ secret = organization.signature_phrase || "This is a dummy secret"
+ signed_payload = "#{timestamp}.#{body}"
+ hmac =:crypto.mac(:hmac,:sha256, secret, signed_payload)
+ Base.encode16(hmac, case::lower)
+ ```
 - Secret: `organizations.signature_phrase` column — falls back to `"This is a dummy secret"` if empty. **Customers must verify using this value.**
 
 --- entry
@@ -925,10 +908,10 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 - GET: 10s (`Tesla.get(..., opts: [adapter: [recv_timeout: 10_000]])`, ).
 - POST: no explicit timeout — Tesla/Hackney default.
 - **Async webhook park:** if the node body carries a `wait_time` key, `Action.webhook_wait_time/1` parses it and `Action.validate/3` caps it at **300 s** (`@max_webhook_wait_time`). A larger value publishes with a Warning and the cap is applied anyway.
-  - Queue: `:webhook`
-  - `max_attempts: 2` (= 1 initial + 1 retry)
-  - Dedup window: 60s by `(context_id, url, action_id)`
-  - Default exponential backoff
+ - Queue: `:webhook`
+ - `max_attempts: 2` (= 1 initial + 1 retry)
+ - Dedup window: 60s by `(context_id, url, action_id)`
+ - Default exponential backoff
 - **Not user-configurable** at flow design time.
 
 --- entry
@@ -938,7 +921,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Call%20a%20webhook/
 
-- Success: HTTP 200-299 AND JSON-parseable body .
+- Success: HTTP 200-299 AND JSON-parseable body.
 - Non-JSON → logged: `"Could not decode message body: <body>"`, result = nil, flow takes "Failure" exit.
 - Non-2xx → logged: `"Did not return a 200..299 status code"`, result = nil, "Failure" exit.
 - Response parsed into `@results.<result_name>`. For node named `survey`, access keys as `@results.survey.<key>`.
@@ -955,11 +938,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 heading: 6. Webhooks — Complete Reference › 6A. Outgoing Webhooks ("Call Webhook" flow node) › Variable Substitution in URL & Body
 ---
 
-`parse_header_and_url/2` :
-
 ```
 header = MessageVarParser.parse_map(action.headers, fields)
-url    = MessageVarParser.parse(action.url, fields)
+url = MessageVarParser.parse(action.url, fields)
 ```
 
 Supports `@contact.*`, `@results.*`, `@flow.*`, `@wa_group.*`.
@@ -985,21 +966,19 @@ heading: 6. Webhooks — Complete Reference › 6A. Outgoing Webhooks ("Call Web
 heading: 6. Webhooks — Complete Reference › 6C. "Call a Function" Node
 ---
 
-Method `FUNCTION` on a Call Webhook node invokes an Elixir module inside Glific rather than making an HTTP request :
-
 ```elixir
 defp do_action("function", function, fields, headers) do
-  {:ok, :function, dispatch_function(function, fields, headers)}
+ {:ok,:function, dispatch_function(function, fields, headers)}
 end
 
 defp dispatch_function(function, fields, headers) do
-  case Registry.lookup(function) do
-    module when not is_nil(module) and is_atom(module) ->
-      Dispatcher.dispatch(function, fields, headers)
+ case Registry.lookup(function) do
+ module when not is_nil(module) and is_atom(module) ->
+ Dispatcher.dispatch(function, fields, headers)
 
-    _ ->
-      function |> Glific.Clients.webhook(fields) |> wrap_legacy_result()
-  end
+ _ ->
+ function |> Glific.Clients.webhook(fields) |> wrap_legacy_result
+ end
 end
 ```
 
@@ -1031,7 +1010,7 @@ These eleven names are the whole list. Any other name with method `FUNCTION` fal
 - `detect_language` — no implementation.
 - `call_and_wait` — never a function name. It is a **seeded sample flow** ("Call and Wait Flow", `priv/data/flows/call_and_wait.json`) that demonstrates the async pattern using `filesearch-gpt` with a `callback_url`.
 - `unified-llm-call` / `unified-voice-llm-call` — internal Kaapi call shapes, not flow-node names. The flow-node names are `filesearch-gpt` and `voice-filesearch-gpt`.
-- There is no `CommonWebhook` module any more; each built-in lives in its own module under .
+- There is no `CommonWebhook` module any more;
 
 --- entry
 heading: 6. Webhooks — Complete Reference › 6C. "Call a Function" Node › Async nodes and the resume path
@@ -1043,7 +1022,7 @@ The four async nodes acknowledge immediately, park the flow, and are resumed by 
 heading: 6. Webhooks — Complete Reference › 6C. "Call a Function" Node › Per-org custom clients
 ---
 
-Tap, Sol, Avanti, Stir, Lahi, ReapBenefit, MukkaMaar, Balajanaagraha, DigitalGreen, NayiDisha, ArogyaWorld, Bandhu, KEF, PehlayAkshar, SunoSunao, Udhyam, DigitalGreenJharkhand, QuestAlliance, Oblf, BharatRohan, Atecf (and more). Registered in the `plugins()` map keyed by organization id, and reached only when the name is not in the Registry.
+Tap, Sol, Avanti, Stir, Lahi, ReapBenefit, MukkaMaar, Balajanaagraha, DigitalGreen, NayiDisha, ArogyaWorld, Bandhu, KEF, PehlayAkshar, SunoSunao, Udhyam, DigitalGreenJharkhand, QuestAlliance, Oblf, BharatRohan, Atecf (and more). Registered in the `plugins` map keyed by organization id, and reached only when the name is not in the Registry.
 
 --- entry
 heading: 6. Webhooks — Complete Reference › 6B & 6F. Incoming Webhooks › All routes
@@ -1117,15 +1096,15 @@ Request body:
 
 ```json
 {
-  "success": true,
-  "message": "ok",
-  "result_name": "my_node",
-  "organization_id": 1,
-  "flow_id": 12,
-  "contact_id": 42,
-  "timestamp": 1713180000000000,
-  "signature": "<hex>",
-  "data": { "response": { ... } }
+ "success": true,
+ "message": "ok",
+ "result_name": "my_node",
+ "organization_id": 1,
+ "flow_id": 12,
+ "contact_id": 42,
+ "timestamp": 1713180000000000,
+ "signature": "<hex>",
+ "data": { "response": {... } }
 }
 ```
 
@@ -1133,7 +1112,7 @@ Request body:
 heading: 6. Webhooks — Complete Reference › 6B & 6F. Incoming Webhooks › Stripe webhook
 ---
 
-Plug `GlificWeb.StripeWebhook` verifies via `Stripe.Webhook.construct_event/3` using `Application.fetch_env!(:stripity_stripe, :signing_secret)`. Handles `invoice.created/paid/failed`, `customer.subscription.*`, `customer.updated/deleted`.
+Plug `GlificWeb.StripeWebhook` verifies via `Stripe.Webhook.construct_event/3` using `Application.fetch_env!(:stripity_stripe,:signing_secret)`. Handles `invoice.created/paid/failed`, `customer.subscription.*`, `customer.updated/deleted`.
 
 --- entry
 heading: 6. Webhooks — Complete Reference › 6B & 6F. Incoming Webhooks › Exotel opt-in
@@ -1170,15 +1149,15 @@ heading: 6. Webhooks — Complete Reference › 6E. Common Webhook Issues — De
 ```
 "Webhook not firing / no response"
 ├── Did the flow reach the webhook node?
-│   ├── Check: flow_contexts.node_uuid for this contact
-│   ├── No → flow died earlier; check prior nodes and is_killed/reason
-│   └── Yes → Did webhook_logs get a row?
-│       └── Row exists → inspect status_code and error columns
-│           ├── Timeout (10s for GET) → external server too slow
-│           ├── 4xx → auth/URL issue
-│           ├── 5xx → external server error
-│           ├── 2xx but null response_json → non-JSON body
-│           └── 2xx + JSON but results missing → result_name typo or nesting
+│ ├── Check: flow_contexts.node_uuid for this contact
+│ ├── No → flow died earlier; check prior nodes and is_killed/reason
+│ └── Yes → Did webhook_logs get a row?
+│ └── Row exists → inspect status_code and error columns
+│ ├── Timeout (10s for GET) → external server too slow
+│ ├── 4xx → auth/URL issue
+│ ├── 5xx → external server error
+│ ├── 2xx but null response_json → non-JSON body
+│ └── 2xx + JSON but results missing → result_name typo or nesting
 
 "Webhook works in Postman but not Glific"
 ├── Body differs — Glific sends {contact, wa_group, results, flow, organization_id}
@@ -1206,7 +1185,7 @@ heading: 6. Webhooks — Complete Reference › API to Start Flow Externally
 
 GraphQL mutations (see §1.2): `startContactFlow`, `startWaGroupFlow`, `startGroupFlow`. Auth via user token scoped to org. No REST equivalent exists; external systems typically authenticate as a service user and call GraphQL.
 
----
+--
 
 --- entry
 section: 7.3
@@ -1216,12 +1195,11 @@ source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
-Every minute, `MinuteWorker` dispatches `triggers_and_broadcast` → `Triggers.execute_triggers(org_id)` .
+Every minute, `MinuteWorker` dispatches `triggers_and_broadcast` → `Triggers.execute_triggers(org_id)`.
 
 Query:
 
 
-Per-trigger fire check :
 
 ```
 IF last_trigger_at IS NULL OR Date.diff(today, last_trigger_date) < 0 → fire
@@ -1267,7 +1245,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 | Wrong fire time               | `start_at` in org timezone? `Helper.compute_next` uses Timex with org tz                                               |
 | One-time trigger still active | `is_repeating=false` but not yet fired; after firing, is_active flips to false                                         |
 
----
+--
 
 --- entry
 section: 8.2
@@ -1362,7 +1340,7 @@ Log patterns (search in production logs):
 - Credential JSON rotated but not updated in Glific org settings.
 - Schema drift: a column added to Glific's `messages` table but not to BigQuery → `INSERT_ERRORS` with `"no such field"`.
 
----
+--
 
 --- entry
 section: 9.3
@@ -1395,7 +1373,7 @@ heading: 9. Notifications System › 9.3 Categories & Sources (authoritative lis
 | `WA Group Member Upload` | `user_job_worker.ex`       | Bulk group-member import result                                                                          | user_job_id                                          |
 | `AI Evaluation`       | `ai_evaluations.ex`           | Evaluation run outcome                                                                                   | evaluation id                                        |
 
-**Categories that do not exist.** There is no `Trigger`, `Webhook`, `Contact` or `Collection` category — nothing in  or  calls `create_notification`. A failing trigger surfaces as a `Flow` notification (from the flow it started) or as nothing at all, so `trigger_logs` is the evidence to read; webhook failures live in `webhook_logs`. Querying `notifications` with a non-existent category returns an empty list, not an error — which reads misleadingly as "nothing is wrong".
+**Categories that do not exist.** There is no `Trigger`, `Webhook`, `Contact` or `Collection` category — nothing in or calls `create_notification`. A failing trigger surfaces as a `Flow` notification (from the flow it started) or as nothing at all, so `trigger_logs` is the evidence to read; webhook failures live in `webhook_logs`. Querying `notifications` with a non-existent category returns an empty list, not an error — which reads misleadingly as "nothing is wrong".
 
 --- entry
 section: 9.4
@@ -1428,7 +1406,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 | `"Template expression is null in the flow"`                              | Template variable unresolved                          | Ensure prior node set the variable                          |
 | `"New Ticket created"`                                                   | Flow created a ticket                                 | Route to support tool                                       |
 
----
+--
 
 --- entry
 section: 10.1
@@ -1442,22 +1420,22 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows
 Is flows.is_active = true?
 ├── No → Flow disabled. Enable in Flows screen.
 └── Yes → Is there a flow_revision with status='published' for this flow?
-    ├── No → Flow is in draft only. Publish it.
-    └── Yes → Is contact.optin_status = true? (AND contact.status = :valid)
-        ├── No → Contact opted out or invalid. Check contact_histories.
-        └── Yes → Is contact.bsp_status valid for the send type?
-            ├── :none → No session, no opt-in. Contact can't receive anything.
-            └── OK → Check flow_contexts WHERE contact_id=X AND flow_id=Y
-                ├── No contexts → Flow never triggered.
-                │   ├── Keyword path: exact match in flow_keywords cache?
-                │   ├── Trigger path: next_trigger_at passed, is_active=true?
-                │   └── Manual: did GraphQL mutation error out?
-                └── Has contexts → is_killed?
-                    ├── true → Read reason column. See §1.4.
-                    ├── false + completed_at set → completed normally
-                    └── false + completed_at null →
-                        ├── wakeup_at in future → waiting for time (normal)
-                        └── wakeup_at null → waiting for response. Check router cases vs last inbound.
+ ├── No → Flow is in draft only. Publish it.
+ └── Yes → Is contact.optin_status = true? (AND contact.status =:valid)
+ ├── No → Contact opted out or invalid. Check contact_histories.
+ └── Yes → Is contact.bsp_status valid for the send type?
+ ├──:none → No session, no opt-in. Contact can't receive anything.
+ └── OK → Check flow_contexts WHERE contact_id=X AND flow_id=Y
+ ├── No contexts → Flow never triggered.
+ │ ├── Keyword path: exact match in flow_keywords cache?
+ │ ├── Trigger path: next_trigger_at passed, is_active=true?
+ │ └── Manual: did GraphQL mutation error out?
+ └── Has contexts → is_killed?
+ ├── true → Read reason column. See §1.4.
+ ├── false + completed_at set → completed normally
+ └── false + completed_at null →
+ ├── wakeup_at in future → waiting for time (normal)
+ └── wakeup_at null → waiting for response. Check router cases vs last inbound.
 ```
 
 --- entry
@@ -1472,12 +1450,12 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Templ
 Is there a row in messages for this attempt?
 ├── No → create_and_send_message never called. Check flow_contexts / notifications.
 └── Yes → What is bsp_status?
-    │   ├── "1002" → Contact doesn't exist on WhatsApp → marked invalid automatically.
-    │   ├── "471" → Rate limit → org suspended for day.
-    │   ├── "1003" → Low balance → org suspended 3 days.
-    │   └── Other → Provider-specific error string.
-    ├── :sent (never advances) → Recipient phone off / blocked Glific / number bad. Days-old sent-but-not-delivered is typical.
-    └── :delivered / :read → Delivered fine.
+ │ ├── "1002" → Contact doesn't exist on WhatsApp → marked invalid automatically.
+ │ ├── "471" → Rate limit → org suspended for day.
+ │ ├── "1003" → Low balance → org suspended 3 days.
+ │ └── Other → Provider-specific error string.
+ ├──:sent (never advances) → Recipient phone off / blocked Glific / number bad. Days-old sent-but-not-delivered is typical.
+ └──:delivered /:read → Delivered fine.
 ```
 
 Also check gate errors before send (`can_send_message_to?`):
@@ -1497,12 +1475,12 @@ source: https://glific.github.io/docs/docs/Use%20Cases/Solving%20For%20Sheet%20S
 ```
 ├── is_active=false → Enable.
 ├── sync_status=:failed → read failure_reason:
-│   ├── "Unknown error or empty content" → Sheet tab empty or wrong tab referenced by gid.
-│   ├── "Repeated or missing headers" → Duplicate or blank header in row 1.
-│   ├── "No read access..." / "No edit access..." → Share sheet with service account email.
-│   ├── "Google Sheet not found." → URL wrong or sheet deleted.
-│   ├── "Invalid Service Account JSON" / "Error fetching token..." → Re-upload credentials.
-│   └── "Sheet with gid X not found" → Sheet tab renamed or deleted.
+│ ├── "Unknown error or empty content" → Sheet tab empty or wrong tab referenced by gid.
+│ ├── "Repeated or missing headers" → Duplicate or blank header in row 1.
+│ ├── "No read access..." / "No edit access..." → Share sheet with service account email.
+│ ├── "Google Sheet not found." → URL wrong or sheet deleted.
+│ ├── "Invalid Service Account JSON" / "Error fetching token..." → Re-upload credentials.
+│ └── "Sheet with gid X not found" → Sheet tab renamed or deleted.
 ├── sync_status=:success but old last_synced_at → Cron not running OR auto_sync=false.
 └── No sheet row for this URL → Sheet not registered. Add in Settings → Google Sheets.
 ```
@@ -1517,13 +1495,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Templ
 
 ```
 ├── status='PENDING' forever →
-│   └── bsp_id set → Still awaiting Meta. Can take hours to days.
+│ └── bsp_id set → Still awaiting Meta. Can take hours to days.
 ├── status='REJECTED' → Read `reason` field (Meta's message). Fix and resubmit.
 ├── status='FAILED' → Submission or sync error. Read `reason`.
 ├── status='APPROVED' + can't send →
-│   ├── Check messages.errors for parameter mismatch.
-│   ├── Check contact.optin_time (HSM requires opt-in).
-│   └── Check contact.bsp_status IN (:hsm, :session_and_hsm).
+│ ├── Check messages.errors for parameter mismatch.
+│ ├── Check contact.optin_time (HSM requires opt-in).
+│ └── Check contact.bsp_status IN (:hsm,:session_and_hsm).
 └── Not visible in UI → is_active=false, or sync hasn't run (update_hsms runs hourly).
 ```
 
@@ -1537,13 +1515,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
 ```
 ├── is_active=false →
-│   ├── is_repeating=false AND last_trigger_at set → already fired once (expected).
-│   ├── end_date passed → trigger expired.
-│   └── Otherwise → manually disabled.
+│ ├── is_repeating=false AND last_trigger_at set → already fired once (expected).
+│ ├── end_date passed → trigger expired.
+│ └── Otherwise → manually disabled.
 ├── is_active=true → When was last MinuteWorker run?
-│   ├── Check oban_jobs WHERE worker='Glific.Jobs.MinuteWorker' — recent completions?
-│   ├── next_trigger_at in future → not yet matured.
-│   └── next_trigger_at past + last_trigger_at recent + hourly → already fired this hour, waits next.
+│ ├── Check oban_jobs WHERE worker='Glific.Jobs.MinuteWorker' — recent completions?
+│ ├── next_trigger_at in future → not yet matured.
+│ └── next_trigger_at past + last_trigger_at recent + hourly → already fired this hour, waits next.
 └── Trigger fired but flow didn't start → Check flow.is_active, group has contacts, trigger_logs.flow_context_id.
 ```
 
@@ -1560,12 +1538,12 @@ heading: 10. Common Troubleshooting Decision Trees › 10.6 Contact Issues
 └── Organization suspended → Partners.is_suspended check
 
 "Contact opted out unexpectedly":
-├── Check contact_histories for :contact_opted_out event
+├── Check contact_histories for:contact_opted_out event
 ├── optout_method tells you what triggered it:
-│   - "BSP" → user sent STOP in WhatsApp
-│   - "Number does not exist" → error 1002 from provider
-│   - "Glific Flows" → a flow action opted them out
-│   - "Import" → CSV import set optout_time
+│ - "BSP" → user sent STOP in WhatsApp
+│ - "Number does not exist" → error 1002 from provider
+│ - "Glific Flows" → a flow action opted them out
+│ - "Import" → CSV import set optout_time
 ```
 
 --- entry
@@ -1578,10 +1556,10 @@ source: https://glific.github.io/docs/docs/Product%20Features/Reporting%20%26%20
 
 ```
 ├── No rows → Worker never ran for this org. Check credentials.
-│   ├── "Invalid Service Account JSON" → re-upload.
-│   ├── "PERMISSION_DENIED" → grant BigQuery Data Editor to service account.
-│   ├── "NOT_FOUND" → Worker will auto-create schema; monitor next run.
-│   └── "no such field" → schema drift; resync schema from Settings.
+│ ├── "Invalid Service Account JSON" → re-upload.
+│ ├── "PERMISSION_DENIED" → grant BigQuery Data Editor to service account.
+│ ├── "NOT_FOUND" → Worker will auto-create schema; monitor next run.
+│ └── "no such field" → schema drift; resync schema from Settings.
 ```
 
 --- entry
@@ -1596,19 +1574,19 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 Did flow reach the webhook node? → Check flow_contexts.node_uuid.
 ├── No → Flow died earlier. Check is_killed/reason and prior nodes.
 └── Yes → Check webhook_logs WHERE flow_context_id=? AND url LIKE '%...%'
-    ├── error set, status_code=400 → Local failure (DNS, SSL, timeout).
-    │   ├── GET timeout = 10s. If external server slower, switch to async pattern:
-    │   │   return 200 immediately, process, POST result to /webhook/flow_resume.
-    │   └── SSL errors → external server using self-signed cert.
-    ├── status_code 4xx → Auth (401/403), URL wrong (404), bad body (400).
-    ├── status_code 5xx → External server error. Check their logs.
-    ├── status_code 2xx, response_json null →
-    │   ├── Response not valid JSON — set Content-Type: application/json and return valid JSON.
-    │   └── Empty body — return at least {}.
-    └── status_code 2xx, response_json set, but @results.X not accessible in flow →
-        ├── result_name typo — must match exact value in flow node config.
-        ├── Nested JSON needs deeper path: @results.node.user.name.
-        └── Array → @results.node.0, @results.node.1.
+ ├── error set, status_code=400 → Local failure (DNS, SSL, timeout).
+ │ ├── GET timeout = 10s. If external server slower, switch to async pattern:
+ │ │ return 200 immediately, process, POST result to /webhook/flow_resume.
+ │ └── SSL errors → external server using self-signed cert.
+ ├── status_code 4xx → Auth (401/403), URL wrong (404), bad body (400).
+ ├── status_code 5xx → External server error. Check their logs.
+ ├── status_code 2xx, response_json null →
+ │ ├── Response not valid JSON — set Content-Type: application/json and return valid JSON.
+ │ └── Empty body — return at least {}.
+ └── status_code 2xx, response_json set, but @results.X not accessible in flow →
+ ├── result_name typo — must match exact value in flow node config.
+ ├── Nested JSON needs deeper path: @results.node.user.name.
+ └── Array → @results.node.0, @results.node.1.
 ```
 
 --- entry
@@ -1651,20 +1629,20 @@ heading: 10. Common Troubleshooting Decision Trees › 10.11 Incoming BSP Messag
 ```
 Are messages appearing in Glific's messages table at all?
 ├── No →
-│   ├── BSP webhook URL in provider dashboard correct?
-│   ├── Glific server reachable (DNS, SSL, public)?
-│   ├── BSP delivery logs show success to Glific endpoint?
-│   ├── organization.is_active=true? (Shunt plug rejects non-active orgs)
-│   └── Check Glific server logs for parse errors.
+│ ├── BSP webhook URL in provider dashboard correct?
+│ ├── Glific server reachable (DNS, SSL, public)?
+│ ├── BSP delivery logs show success to Glific endpoint?
+│ ├── organization.is_active=true? (Shunt plug rejects non-active orgs)
+│ └── Check Glific server logs for parse errors.
 ├── Messages appear but flow doesn't trigger →
-│   ├── Another flow already active (flow_contexts incomplete)?
-│   ├── Keyword didn't match exactly (full-message, case-insensitive)?
-│   ├── Contact opted in?
-│   └── See §1.2 priority order.
+│ ├── Another flow already active (flow_contexts incomplete)?
+│ ├── Keyword didn't match exactly (full-message, case-insensitive)?
+│ ├── Contact opted in?
+│ └── See §1.2 priority order.
 └── Messages appear, flow triggers, but webhook inside flow fails → See §10.8.
 ```
 
----
+--
 
 --- entry
 section: 11.1
@@ -1677,28 +1655,28 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 - **URL**: user-configured in flow editor (variables substituted).
 - **Method**: GET, POST, or FUNCTION (FUNCTION is a local dispatch, no HTTP — §6C).
 - **Headers sent**:
-  - `X-Glific-Signature: t=<unix_seconds>,v1=<hmac_sha256_hex>` (always)
-  - `Content-Type: application/json` (POST)
-  - User-configured headers (substituted via `@contact.*`, `@results.*`)
+ - `X-Glific-Signature: t=<unix_seconds>,v1=<hmac_sha256_hex>` (always)
+ - `Content-Type: application/json` (POST)
+ - User-configured headers (substituted via `@contact.*`, `@results.*`)
 - **Body (POST)** — exact structure:
-  ```json
-  {
-    "contact": { "id": 42, "name": "...", "phone": "...", "fields": {...} },
-    "wa_group": { "id": null, "label": null, "wa_managed_phone_id": null },
-    "results": { "<result_name>": { "<k>": "<v>" } },
-    "flow": { "name": "...", "id": 12 },
-    "organization_id": 1
-  }
-  ```
-  Plus any merged custom body fields.
+ ```json
+ {
+ "contact": { "id": 42, "name": "...", "phone": "...", "fields": {...} },
+ "wa_group": { "id": null, "label": null, "wa_managed_phone_id": null },
+ "results": { "<result_name>": { "<k>": "<v>" } },
+ "flow": { "name": "...", "id": 12 },
+ "organization_id": 1
+ }
+ ```
+ Plus any merged custom body fields.
 - **Body (GET)**: Converted to query-string.
 - **Timeout**: GET 10s; POST Tesla default.
 - **Response expected**: HTTP 200-299 with JSON body.
 - **Response success example**:
-  ```json
-  { "result": "ok", "score": 42, "name": "Asha" }
-  ```
-  Accessible as `@results.<node_name>.result`, `@results.<node_name>.score`.
+ ```json
+ { "result": "ok", "score": 42, "name": "Asha" }
+ ```
+ Accessible as `@results.<node_name>.result`, `@results.<node_name>.score`.
 
 --- entry
 heading: 11. All Webhook Endpoints Reference › 11.1 Outgoing (Glific → External) — Call Webhook Node › Signature Verification (external server)
@@ -1708,12 +1686,12 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 ```python
 import hmac, hashlib
 def verify(signature_header: str, body_str: str, secret: str) -> bool:
-    parts = dict(p.split('=', 1) for p in signature_header.split(','))
-    timestamp = parts['t']
-    expected = parts['v1']
-    signed = f"{timestamp}.{body_str}".encode()
-    computed = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(computed, expected)
+ parts = dict(p.split('=', 1) for p in signature_header.split(','))
+ timestamp = parts['t']
+ expected = parts['v1']
+ signed = f"{timestamp}.{body_str}".encode
+ computed = hmac.new(secret.encode, signed, hashlib.sha256).hexdigest
+ return hmac.compare_digest(computed, expected)
 ```
 
 Secret = value of `organizations.signature_phrase` for the calling org. Default fallback: `"This is a dummy secret"`.
@@ -1785,15 +1763,15 @@ GraphQL (auth: user bearer token, org-scoped):
 
 ```graphql
 mutation {
-  startContactFlow(flowId: 123, contactId: 456, defaultResults: { x: "y" }) {
-    success
-  }
+ startContactFlow(flowId: 123, contactId: 456, defaultResults: { x: "y" }) {
+ success
+ }
 }
 ```
 
 Also `startWaGroupFlow(flowId, waGroupId)` and `startGroupFlow(flowId, groupId)`.
 
-To **resume** a flow parked on a Wait-for-result node from your own system, use `resumeContactFlow(flowId, contactId, result)` — `result` is a JSON scalar, and the mutation is gated at Manager level . That is a different path from the signed `/webhook/flow_resume` callback Glific's own async nodes use.
+To **resume** a flow parked on a Wait-for-result node from your own system, use `resumeContactFlow(flowId, contactId, result)` — `result` is a JSON scalar, and the mutation is gated at Manager level. That is a different path from the signed `/webhook/flow_resume` callback Glific's own async nodes use.
 
 No REST equivalent for any of these. External integrations create a service user, obtain a token via `POST /api/v1/session`, and call the GraphQL endpoint at `POST /api`.
 
@@ -1831,7 +1809,7 @@ heading: 11. All Webhook Endpoints Reference › 11.5 Setting Up BSP Webhooks
 1. Kaapi callback URL for async LLM: configured in Kaapi-side per request via `signature_payload`.
 2. Glific's `signature_phrase` is shared secret.
 
----
+--
 
 --- entry
 section: 12.1
@@ -1841,10 +1819,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Mess
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages/
 
-`Glific.Enums.InteractiveMessageType` :
 
 ```elixir
-@interactive_message_type_const [:list, :quick_reply, :location_request_message]
+@interactive_message_type_const [:list,:quick_reply,:location_request_message]
 ```
 
 | Type                       | API value                  | Purpose                                                                   |
@@ -1879,10 +1856,9 @@ Aggregate check — `validate_interactive_content_length/1`:
 
 ```elixir
 if total_length > 1024 do
-  {:error, "The total length of the body and options exceeds 1024 characters"}
+ {:error, "The total length of the body and options exceeds 1024 characters"}
 ```
 
-Auto-trim warning on save :
 
 > "Trimming has been done for the following languages due to exceeding character limits: [Language Names]. Please verify the content before saving."
 
@@ -1893,7 +1869,7 @@ heading: 12. Interactive Messages › 12.4 Translations Field
 
 Shape: `translations[<language_id_as_string>] = <full content map>`.
 
-Resolution at send time: `InteractiveTemplates.formatted_data/2` → `translated_content/2` → `get_translations/2` . Falls back to `interactive_content` if language missing.
+Resolution at send time: `InteractiveTemplates.formatted_data/2` → `translated_content/2` → `get_translations/2`. Falls back to `interactive_content` if language missing.
 
 --- entry
 section: 12.5
@@ -1903,7 +1879,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Send%20the%20contact%20an%20interactive%20message/
 
-`process_dynamic_interactive_content/3`  replaces `items[0].options` with entries built from webhook/flow params:
 
 ```elixir
 interactive_content
@@ -1917,7 +1892,7 @@ Each param becomes:
 - `title` ← `param["label"]` (auto-trimmed to 20 via `meet_waba_button_spec/1`)
 - `id` / `postbackText` ← `param["id"]`
 
-Before dynamic content is applied, `MessageVarParser.parse_map/2`  walks the entire content map substituting `@contact.*`, `@results.*`, `@global.*`, `@calendar.*`.
+Before dynamic content is applied, `MessageVarParser.parse_map/2` walks the entire content map substituting `@contact.*`, `@results.*`, `@global.*`, `@calendar.*`.
 
 **There is no built-in "populate from Google Sheet" — it flows through a webhook whose response is used as `params`.**
 
@@ -1929,7 +1904,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Mess
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Messages%20Re-response/
 
-Case handlers in , compared against `msg.clean_body` .
+Case handlers in, compared against `msg.clean_body`.
 
 | Case type         | Matcher                           | Source        |
 | ----------------- | --------------------------------- | ------------- |
@@ -1958,16 +1933,16 @@ section: 12.8
 heading: 12. Interactive Messages › 12.8 Send-Path Validation Chain
 ---
 
-`Messages.send_and_create_message/2` → `check_for_interactive/2`  → provider `:send_interactive` handler.
+`Messages.send_and_create_message/2` → `check_for_interactive/2` → provider `:send_interactive` handler.
 
 Errors that may fire:
 
-- `"The total length of the body and options exceeds 1024 characters"` —
-- `"Button text cannot contain any markdown characters..."` —  (blocks `**bold**`, `*italic*`, `__x__`, `_x_`, `#h`, `[l](u)`)
-- `"Could not send message to contact: Check Gupshup Setting"` —  (no provider wired)
-- `{:error, reason}` from BSP → `bsp_status: :error`, `errors` JSON populated
+- `"The total length of the body and options exceeds 1024 characters"`
+- `"Button text cannot contain any markdown characters..."` — (blocks `**bold**`, `*italic*`, `__x__`, `_x_`, `#h`, `[l](u)`)
+- `"Could not send message to contact: Check Gupshup Setting"` — (no provider wired)
+- `{:error, reason}` from BSP → `bsp_status::error`, `errors` JSON populated
 
----
+--
 
 --- entry
 section: 13.1
@@ -1983,7 +1958,7 @@ source: https://glific.github.io/docs/docs/Integrations/ChatGPT%20using%20OpenAI
 | Gemini                                 | `Glific.ThirdParty.Gemini`                                           | `"gemini"` credential                                                            | Configurable                                        |
 | Kaapi (async LLM/STT/TTS orchestrator) | `Glific.ThirdParty.Kaapi`                                            | internal service, keys in `organization.services`                                | —                                                   |
 
-Assistant IDs use the OpenAI format `asst_<24 alphanumerics>` .
+Assistant IDs use the OpenAI format `asst_<24 alphanumerics>`.
 
 **Model catalogue.** The model list shown in the Assistants UI is served by the backend (`Glific.ThirdParty.Kaapi.list_models_with_metadata/1`), cached globally, and annotated into two buckets:
 
@@ -2000,7 +1975,7 @@ source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20Ope
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
 
-There is **no dedicated AI node**. Every AI step is a **Call Webhook** node with Method `FUNCTION` and the function name in the URL field. The implementations live under  and are registered in .
+There is **no dedicated AI node**. Every AI step is a **Call Webhook** node with Method `FUNCTION` and the function name in the URL field.
 
 | Function name | Module | Sync? | Notes |
 | ---------------------- | --------------------------------- | --------- | ------------------------------------------------------------- |
@@ -2014,18 +1989,18 @@ There is **no dedicated AI node**. Every AI step is a **Call Webhook** node with
 There is no `parse_via_gpt` — the name is `parse_via_chat_gpt`. There is no `/kaapi/voice_flow_resume` route; the `/kaapi/*` scope carries only `knowledge_base_version`, `prompt_generation`, `assistant_chat`, `improve_prompt` and `evaluation_run`. All four async flow nodes come back through `POST /webhook/flow_resume`.
 
 
-**Required body fields for every async node** (`KaapiSupport.parse_flow_fields/1`): `organization_id`, `flow_id`, `contact_id`, each parseable as an integer. Missing or malformed → `{:error, :invalid_input, "Invalid or missing flow metadata for Kaapi webhook"}`. `speech_to_text` additionally requires `speech` to be an `https` URL (`"Media URL is invalid"` / `"Media URL is needed"`).
+**Required body fields for every async node** (`KaapiSupport.parse_flow_fields/1`): `organization_id`, `flow_id`, `contact_id`, each parseable as an integer. Missing or malformed → `{:error,:invalid_input, "Invalid or missing flow metadata for Kaapi webhook"}`. `speech_to_text` additionally requires `speech` to be an `https` URL (`"Media URL is invalid"` / `"Media URL is needed"`).
 
 Body params for `filesearch-gpt`:
 
 ```json
 {
-  "assistant_id": "asst_abc123",
-  "question": "What does section 3 say?",
-  "thread_id": "@contact.fields.thread_id",
-  "organization_id": "@organization.id",
-  "flow_id": "@flow.id",
-  "contact_id": "@contact.id"
+ "assistant_id": "asst_abc123",
+ "question": "What does section 3 say?",
+ "thread_id": "@contact.fields.thread_id",
+ "organization_id": "@organization.id",
+ "flow_id": "@flow.id",
+ "contact_id": "@contact.id"
 }
 ```
 
@@ -2039,17 +2014,16 @@ source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20Ope
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Filesearch%20Using%20OpenAI%20Assistants/
 
-Schemas: `assistants`, `assistant_config_versions`, `knowledge_bases`, `knowledge_base_versions`. The code lives in  and  — there is no .
+Schemas: `assistants`, `assistant_config_versions`, `knowledge_bases`, `knowledge_base_versions`. The code lives in and — there is no.
 
-**Supported file extensions**  — this is the whole list:
 
 ```
-csv  doc  docx  htm  html  md  markdown  pdf  txt
+csv doc docx htm html md markdown pdf txt
 ```
 
 Anything else (json, py, js, pptx, source files, images) is rejected. Note that filesearch indexes **text only** — images embedded in a PDF are not analysed.
 
-Upload goes through **Kaapi**, not direct OpenAI calls: `Assistants.upload_file/2` hands the file to Kaapi, which builds the vector store and reports back on `POST /kaapi/knowledge_base_version`. `Kaapi.upsert/…` passes `vector_store_ids_add` from `tool_resources.file_search.vector_store_ids` .
+Upload goes through **Kaapi**, not direct OpenAI calls: `Assistants.upload_file/2` hands the file to Kaapi, which builds the vector store and reports back on `POST /kaapi/knowledge_base_version`. `Kaapi.upsert/…` passes `vector_store_ids_add` from `tool_resources.file_search.vector_store_ids`.
 
 Status mapping from Kaapi (`@knowledge_base_version_status_mapping`):
 
@@ -2059,7 +2033,7 @@ Status mapping from Kaapi (`@knowledge_base_version_status_mapping`):
 | `SUCCESSFUL` | `completed` |
 | `FAILED` | `failed` |
 
-`kaapi_job_id` is nil for legacy direct-OpenAI uploads. A new assistant created without an explicit model gets `Kaapi.default_model()` = `"gpt-4o"` .
+`kaapi_job_id` is nil for legacy direct-OpenAI uploads. A new assistant created without an explicit model gets `Kaapi.default_model` = `"gpt-4o"`.
 
 --- entry
 section: 13.4
@@ -2115,14 +2089,13 @@ heading: 13. LLM & AI Integration › 13.6 WhatsApp 1024-char limit
 
 No truncation in Glific code. The 1024-char limit is enforced by the BSP layer. LLM responses are sent through to Gupshup as-is. Long responses are either rejected by the BSP or split by the WhatsApp client — not by Glific. If chunking is required, do it inside the LLM's system prompt or a post-process webhook.
 
----
+--
 
 --- entry
 section: 14
 heading: 14. Voice & Speech (STT/TTS)
 ---
 
-> **Bhashini has been removed.** The old `speech_to_text_with_bhasini`, `text_to_speech_with_bhasini` and `nmt_tts_with_bhasini` webhooks no longer exist as implementations — the only trace left in the codebase is the deprecation map in , which makes publishing a flow that still calls one fail validation:
 >
 > ```
 > The '<old name>' webhook is deprecated. Please migrate this node to the '<new name>' node before publishing.
@@ -2140,18 +2113,18 @@ source: https://glific.github.io/docs/docs/Integrations/Speech-to-text%20and%20T
 
 ```
 user voice (audio URL from Gupshup)
-  → STT  (Kaapi, async — `speech_to_text` node)
-  → LLM  (Kaapi, async — `filesearch-gpt`)
-  → TTS  (Kaapi, async — `text_to_speech` node)
-  → base64 mp3 in the callback → GCS upload → HTTPS URL
-  → outbound audio message
+ → STT (Kaapi, async — `speech_to_text` node)
+ → LLM (Kaapi, async — `filesearch-gpt`)
+ → TTS (Kaapi, async — `text_to_speech` node)
+ → base64 mp3 in the callback → GCS upload → HTTPS URL
+ → outbound audio message
 ```
 
 Every one of these is an **async** webhook (`Glific.Flows.Webhooks.Async`). Each fires a Kaapi request with a signed `callback_url`, parks the flow, and is resumed by `POST /webhook/flow_resume` (`GlificWeb.Flows.FlowResumeController`). Place a **Wait for result** node after each.
 
 Two execution modes:
 
-- **Unified:** `voice-filesearch-gpt` does STT → LLM → TTS in one node .
+- **Unified:** `voice-filesearch-gpt` does STT → LLM → TTS in one node.
 - **Split:** separate `speech_to_text` / `filesearch-gpt` / `text_to_speech` nodes — three Kaapi callbacks.
 
 --- entry
@@ -2159,7 +2132,7 @@ section: 14.2
 heading: 14. Voice & Speech (STT/TTS) › 14.2 Engine selection
 ---
 
-Speech runs on **Gemini** , with OpenAI as an alternative TTS engine.
+Speech runs on **Gemini**, with OpenAI as an alternative TTS engine.
 
 - `Gemini.speech_to_text(audio_url, organization_id)` — transcription.
 - `Gemini.text_to_speech(organization_id, text)` — synthesis, uploads to GCS and returns the URL.
@@ -2206,9 +2179,9 @@ The upload happens on the callback path, in `Glific.Flows.Webhook.maybe_upload_t
 remote_name = "Kaapi/outbound/#{uuid}.mp3"
 
 with {:ok, decoded_audio} <- Base.decode64(base64_audio),
-     :ok <- File.write(mp3_file, decoded_audio),
-     {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
-  {:ok, media_meta.url}
+:ok <- File.write(mp3_file, decoded_audio),
+ {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
+ {:ok, media_meta.url}
 end
 ```
 
@@ -2242,7 +2215,7 @@ source: https://glific.github.io/docs/docs/Integrations/Text%20to%20speech%20cap
 
 WhatsApp's API cannot accept base64 audio bodies — only media URLs. The base64 audio is decoded to a temp mp3, uploaded to GCS, and the returned URL is what gets sent. If the upload fails, the node's result carries `success: false` and a nil message, and the flow should route the Failure exit.
 
----
+--
 
 --- entry
 section: 15.1
@@ -2263,10 +2236,10 @@ source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 
-1. `create_whatsapp_form/2`  creates a row with `status: "draft"`.
-2. `publish_whatsapp_form/1`  calls Gupshup `POST /flows/{id}/publish`, flips status to `:published`.
-3. `deactivate_whatsapp_form/1`  → `:inactive`.
-4. `activate_whatsapp_form/1`  re-enables.
+1. `create_whatsapp_form/2` creates a row with `status: "draft"`.
+2. `publish_whatsapp_form/1` calls Gupshup `POST /flows/{id}/publish`, flips status to `:published`.
+3. `deactivate_whatsapp_form/1` → `:inactive`.
+4. `activate_whatsapp_form/1` re-enables.
 
 --- entry
 section: 15.3
@@ -2301,7 +2274,7 @@ heading: 15. WhatsApp Forms › 15.5 Known Issue Strings
 ---
 
 - "Something unexpected happened" / "Unauthorized access" — **not** in Glific code. These originate from Meta's form renderer; check Gupshup response body on create/publish for the actual error.
-- All form API errors are logged with status code + raw response  and returned as-is.
+- All form API errors are logged with status code + raw response and returned as-is.
 
 --- entry
 section: 15.6
@@ -2318,7 +2291,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 | "Unauthorized access"                    | Partner token expired — see §16.3                                                                                         |
 | Responses not arriving                   | Subscription for `FLOW_MESSAGE` not set, or webhook URL wrong in Gupshup — verify `POST /app/subscription` was successful |
 
----
+--
 
 --- entry
 section: 16.2
@@ -2342,7 +2315,7 @@ Note the Settings screen does **not** show all of these: `Glific.Partners.list_p
 
 --- entry
 section: 16.3
-heading: 16. Gupshup & BSP Integration › 16.3 Partner API (Gupshup ISV) —
+heading: 16. Gupshup & BSP Integration › 16.3 Partner API (Gupshup ISV)
 ---
 
 | Endpoint                                                        | Purpose                                | Line    |
@@ -2353,7 +2326,7 @@ heading: 16. Gupshup & BSP Integration › 16.3 Partner API (Gupshup ISV) —
 | `PUT /app/{app_id}/appPreference` body `{isHSMEnabled: "true"}` | Enable HSM                             | —       |
 | `POST /app/{app_id}/subscription`                               | Register webhook events                | —       |
 
-Errors from any Partner API call are wrapped in `PartnerAPI.Error`  and surfaced to UI. The exact strings "Linking App to partner failed" and "Only one partner linking request per 24 hours" are **not in the codebase** — they come from Gupshup's error body verbatim.
+Errors from any Partner API call are wrapped in `PartnerAPI.Error` and surfaced to UI. The exact strings "Linking App to partner failed" and "Only one partner linking request per 24 hours" are **not in the codebase** — they come from Gupshup's error body verbatim.
 
 --- entry
 section: 16.4
@@ -2394,7 +2367,7 @@ heading: 16. Gupshup & BSP Integration › 16.6 Inbound Error Codes Handled
 | 471  | Rate limit / WABA rejecting | Suspend org                       |
 | 1003 | Insufficient BSP balance    | Suspend org                       |
 
----
+--
 
 --- entry
 section: 17.1
@@ -2423,7 +2396,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 
-Elixir syntax — not FLOIP or Liquid. Entry: `Glific.execute_eex/1` . There are **two evaluators**, selected per org by the `:safe_expressions` FunWithFlags flag:
+Elixir syntax — not FLOIP or Liquid. Entry: `Glific.execute_eex/1`. There are **two evaluators**, selected per org by the `:safe_expressions` FunWithFlags flag:
 
 | Flag | Path | Behaviour |
 | ---- | ---- | --------- |
@@ -2432,7 +2405,6 @@ Elixir syntax — not FLOIP or Liquid. Entry: `Glific.execute_eex/1` . There are
 
 Both paths return `"Invalid Code"` on `EEx.SyntaxError` or any other exception, and emit AppSignal telemetry tagged by `path` (safe / legacy / denylist) and `status` (ok / error / blocked / syntax).
 
-**The safe interpreter's allowlist** :
 
 - Modules: `String`, `Decimal`, `Enum`, `List`, `Map`, `MapSet`, `Integer`, `Float`, `URI`, `Jason`, `Date`, `Time`, `DateTime`, `NaiveDateTime`, `Calendar.strftime/2`, `Timex` (incl. `Timex.Timezone.convert/2`), `Regex`, plus `Glific.send_template/2` and a handful of per-NGO `Glific.Clients.*` template helpers. Module resolution goes through `@mfa` only, keyed on the *literal* alias — `alias System, as: Timex` cannot smuggle a call through.
 - Bare Kernel forms: arithmetic, comparison, `<>`, `and`/`or`/`not`, `in`, `to_string`, `inspect`, the `is_*` guards, `max`/`min`/`then`/`hd`/`elem`/`length`, and ranges.
@@ -2450,16 +2422,16 @@ heading: 17. Contact Variables & Expressions › 17.3 Contact Field Storage
 
 ```json
 {
-  "age": {
-    "value": "25",
-    "label": "Age",
-    "type": "text",
-    "inserted_at": "2026-04-15T10:30:00Z"
-  }
+ "age": {
+ "value": "25",
+ "label": "Age",
+ "type": "text",
+ "inserted_at": "2026-04-15T10:30:00Z"
+ }
 }
 ```
 
-Writer: `ContactField.do_add_contact_field/5` . Mirrors to `active_profile.fields` when contact has an active profile .
+Writer: `ContactField.do_add_contact_field/5`. Mirrors to `active_profile.fields` when contact has an active profile.
 
 --- entry
 section: 17.4
@@ -2469,16 +2441,16 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Update%20the%20contact/
 
-Action type `"set_contact_field"` . Runs:
+Action type `"set_contact_field"`. Runs:
 
 1. `MessageVarParser.parse` on both name and value.
 2. Optional `Glific.execute_eex` on the final value (so `<%= @contact.fields.counter + 1 %>` works) — via the safe interpreter or legacy EEx depending on the org's `:safe_expressions` flag (§17.2).
 
 **Only updates the current flowing contact** — no cross-contact writes.
 
-**Which properties the node can actually set.** The flow engine has `execute/3` clauses for `set_contact_field`, `set_contact_field_valid`, `set_contact_language`, `set_contact_name` and `set_contact_profile` only. There is **no handler for `set_contact_channel` or `set_contact_status`** — an action of that type hits the catch-all `execute/3` at  and raises `UndefinedFunctionError "Unsupported action type"`. In the flow editor, Glific's fork trims the property dropdown to **Language** and **Channel** plus contact fields (`getContactProperties` in  — Name and Status are commented out), so Channel is selectable but not executable. Do not build on it.
+**Which properties the node can actually set.** The flow engine has `execute/3` clauses for `set_contact_field`, `set_contact_field_valid`, `set_contact_language`, `set_contact_name` and `set_contact_profile` only. There is **no handler for `set_contact_channel` or `set_contact_status`** — an action of that type hits the catch-all `execute/3` at and raises `UndefinedFunctionError "Unsupported action type"`. In the flow editor, Glific's fork trims the property dropdown to **Language** and **Channel** plus contact fields (`getContactProperties` in — Name and Status are commented out), so Channel is selectable but not executable. Do not build on it.
 
-Reset-all action `"reset_contact_fields"` sets `fields: %{}` .
+Reset-all action `"reset_contact_fields"` sets `fields: %{}`.
 
 --- entry
 section: 17.5
@@ -2488,13 +2460,12 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Wait%20for%20the%20contact%20to%20respond/
 
-:
 
 - Text: `has_number_eq`, `has_number_between`, `has_number`, `has_any_word`, `has_phrase`, `has_only_phrase`, `has_only_text`, `has_all_words`, `has_multiple`, `has_phone`, `has_email`, `has_pattern` (regex), `has_beginning`
 - Intent: `has_intent`, `has_top_intent` (with confidence threshold)
 - Media/group: `has_group`, `has_category`, `has_location`, `has_media`, `has_audio`, `has_video`, `has_image`, `has_file`
 
-That is what the **engine** executes. The **editor** exposes fewer: the Glific frontend passes an `excludeOperators` list that removes `has_text`, `has_value`, `has_error`, `has_group`, `has_category`, every `has_date*`, `has_time`, the numeric `<`/`>`/`<=`/`>=` comparisons, and the location operators `has_state` / `has_district` / `has_ward` (). So `has_group` and `has_category` will run if present in imported flow JSON, but an author cannot pick them from the UI.
+That is what the **engine** executes. The **editor** exposes fewer: the Glific frontend passes an `excludeOperators` list that removes `has_text`, `has_value`, `has_error`, `has_group`, `has_category`, every `has_date*`, `has_time`, the numeric `<`/`>`/`<=`/`>=` comparisons, and the location operators `has_state` / `has_district` / `has_ward`. So `has_group` and `has_category` will run if present in imported flow JSON, but an author cannot pick them from the UI.
 
 --- entry
 section: 17.6
@@ -2517,7 +2488,7 @@ section: 18.2
 heading: 18. Language & Translation › 18.2 Contact Language
 ---
 
-`contacts.language_id`. Defaults to org default on creation. Flow `send_msg` picks translation via `Localization.get_translation/_`  — falls back to original action text if no translation exists for contact's language.
+`contacts.language_id`. Defaults to org default on creation. Flow `send_msg` picks translation via `Localization.get_translation/_` — falls back to original action text if no translation exists for contact's language.
 
 --- entry
 section: 18.4
@@ -2527,18 +2498,16 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20Auto%20translate/
 
-Provider selection lives in `Glific.Flows.Translate.Translate.impl/1` :
 
 - `Flags.get_google_auto_translation_enabled(organization)` true → `Glific.Flows.Translate.GoogleTranslate`
-- otherwise → whatever `config :glific, :adaptors, translators:` points at
+- otherwise → whatever `config:glific,:adaptors, translators:` points at
 
 There is no `Glific.Flows.Translate.OpenAI` module; the implementations present are `GoogleTranslate` and `Simple`. Strings over the token threshold (`@token_chunk_size 200`) are replaced with a warning by `check_large_strings/2` rather than being translated.
 
-**"Auto-translate only adds translation in empty nodes"** — exact code :
 
 ```elixir
 if translation == "" and language != source_language do
-  # collect for translation
+ # collect for translation
 ```
 
 Existing non-empty translations are skipped. To retranslate, clear the target cell first.
@@ -2551,7 +2520,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Flows%20Auto%20translate/
 
-Modules `Glific.Flows.Translate.Export` and `Glific.Flows.Translate.Import`. CSV row: `[Type, UUID, lang1, lang2, …, Node_uuid]` .
+Modules `Glific.Flows.Translate.Export` and `Glific.Flows.Translate.Import`. CSV row: `[Type, UUID, lang1, lang2, …, Node_uuid]`.
 
 Interactive-template CSV import drives `import_location_message/4` (§12.7) — empty cells silently become nil bodies. Validate CSV column count against active languages before upload.
 
@@ -2563,9 +2532,9 @@ source: https://glific.github.io/docs/docs/Integrations/Speech-to-text%20and%20T
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Speech-to-text%20and%20Text-to-speech%20in%20Glific/
 
-The translate step in the voice pipeline uses **Google Translate** , called from `Gemini.nmt_text_to_speech/5` before synthesis. Bhashini / IndicTrans is gone — there is no `Glific.Bhasini` module. The 14 languages it covers are in §14.3.
+The translate step in the voice pipeline uses **Google Translate**, called from `Gemini.nmt_text_to_speech/5` before synthesis. Bhashini / IndicTrans is gone — there is no `Glific.Bhasini` module. The 14 languages it covers are in §14.3.
 
----
+--
 
 --- entry
 section: 19.1
@@ -2575,7 +2544,6 @@ source: https://glific.github.io/docs/docs/Pre%20Onboarding/Google%20Cloud%20Sto
 
 📖 Source: https://glific.github.io/docs/docs/Pre%20Onboarding/Google%20Cloud%20Storage%20Setup%20-%20GCS/
 
-`organization.services["google_cloud_storage"]` :
 
 - `service_account` JSON (loaded via Goth)
 - `bucket` (public)
@@ -2591,13 +2559,13 @@ heading: 19. GCS & Media › 19.2 Sync Pipeline
 - **Unsynced**: retroactive, oldest-first, limited to messages within last **30 days** (Gupshup URL TTL). Resets every **20 h** (`@nightly_interval_hrs`).
 - **Incremental**: continuous sync of inbound messages.
 
-Worker: `GcsWorker.perform_periodic/2` .
+Worker: `GcsWorker.perform_periodic/2`.
 
 File naming: `YYYYMMDDhhmmss_C{contact_id}_F{flow_id}_M{media_id}.{ext}`.
 Public URL: `https://storage.googleapis.com/{bucket}/public/{path}`.
 Signed URL: 300-s expiry (configurable).
 
-`GCS_FILE_COUNT` env var (default **5**, `config/runtime.exs:112`) caps files per run; fallback **10** .
+`GCS_FILE_COUNT` env var (default **5**, `config/runtime.exs:112`) caps files per run; fallback **10**.
 
 --- entry
 section: 19.3
@@ -2611,7 +2579,6 @@ heading: 19. GCS & Media › 19.3 Supported Media
 | `audio`    | `.mp3`     |
 | `document` | `.pdf`     |
 
-Size caps are enforced **by Glific too**, not only by the BSP — `Glific.Messages.validate_media/2` HEADs the URL and compares `content-length` against `@size_limit` :
 
 | Type | Limit | Error on breach |
 | ---- | ----- | --------------- |
@@ -2646,7 +2613,7 @@ source: https://glific.github.io/docs/docs/FAQ/Managing%20Gupshup%20Wallet%20Bal
 📖 Source: https://glific.github.io/docs/docs/FAQ/Managing%20Gupshup%20Wallet%20Balance%20and%20Suspension/
 
 ISV wallet name constant: `"4000202160_wallet"`.
-Balance query: `Partners.get_bsp_balance/1` → `{:ok, %{"balance" => amount}}` .
+Balance query: `Partners.get_bsp_balance/1` → `{:ok, %{"balance" => amount}}`.
 
 --- entry
 section: 20.3
@@ -2661,11 +2628,10 @@ Thresholds on `settings`:
 - `low_balance_threshold` — default **$10** (warning cadence: every 7 days).
 - `critical_balance_threshold` — default **$3** (cadence: every 72 hours).
 
-Worker: `BSPBalanceWorker.perform_periodic/1` . Dedup via `MailLog` lookback.
+Worker: `BSPBalanceWorker.perform_periodic/1`. Dedup via `MailLog` lookback.
 
-Email template :
 
-- Subject: `"[URGENT Low balance] : Messages on Glific will stop soon"`
+- Subject: `"[URGENT Low balance]: Messages on Glific will stop soon"`
 - Body includes `"Your balance is low $#{bsp_balance}. Please top up your account..."`
 - `MailLog.category = "low_bsp_balance"`.
 
@@ -2693,7 +2659,7 @@ heading: 20. Billing & Wallet › 20.6 Per-Flow / Per-Trigger Expense
 
 **Not tracked.** Billing is org-level only. Usage goes to Stripe via `Stripe.SubscriptionItem.Usage.report_usage/_`. No cost attribution to flow or trigger.
 
----
+--
 
 --- entry
 section: 21.1
@@ -2702,7 +2668,6 @@ heading: 21. Geolocation › 21.1 Storage
 
 Separate `locations` table — NOT embedded in `messages`.
 
-:
 
 | Field                          | Type         |
 | ------------------------------ | ------------ |
@@ -2711,7 +2676,7 @@ Separate `locations` table — NOT embedded in `messages`.
 | `latitude`, `longitude`        | float        |
 | `organization_id`              | FK           |
 
-Message type `:location` in the enum .
+Message type `:location` in the enum.
 
 --- entry
 section: 21.2
@@ -2725,9 +2690,9 @@ Body (from `priv/data/flows/geolocation.json:7–15`):
 
 ```json
 {
-  "type": "location_request_message",
-  "body": { "type": "text", "text": "Please send your location" },
-  "action": { "name": "send_location" }
+ "type": "location_request_message",
+ "body": { "type": "text", "text": "Please send your location" },
+ "action": { "name": "send_location" }
 }
 ```
 
@@ -2739,7 +2704,7 @@ source: https://glific.github.io/docs/docs/Integrations/Google%20Maps%20API%20fo
 
 📖 Source: https://glific.github.io/docs/docs/Integrations/Google%20Maps%20API%20for%20reverse%20geo%20location/
 
-Only lat/lon from pin drops are stored in `locations`. A typed address stays in `message.body` as plain text — **it is not parsed into coordinates**. To capture both, branch on `message.type == :location` in the flow and save text to a contact field when it's not.
+Only lat/lon from pin drops are stored in `locations`. A typed address stays in `message.body` as plain text — **it is not parsed into coordinates**. To capture both, branch on `message.type ==:location` in the flow and save text to a contact field when it's not.
 
 --- entry
 section: 21.4
@@ -2751,9 +2716,9 @@ source: https://glific.github.io/docs/docs/Integrations/Google%20Maps%20API%20fo
 
 
 2. Inside flow, use a webhook or custom action to copy lat/lon into `contact.fields` so `@contact.fields.latitude` works thereafter.
-3. For the current message: `@input.location.latitude` (present only when `message.type = :location`).
+3. For the current message: `@input.location.latitude` (present only when `message.type =:location`).
 
----
+--
 
 --- entry
 section: 22.1
@@ -2768,7 +2733,7 @@ Maytapi is a third-party WhatsApp API for group management. Credentials at `orga
 - `product_id` — Maytapi product UUID
 - `token` — API token
 
-HTTP client: `Glific.Providers.Maytapi.ApiClient` .
+HTTP client: `Glific.Providers.Maytapi.ApiClient`.
 
 --- entry
 section: 22.2
@@ -2784,8 +2749,6 @@ heading: 22. WhatsApp Groups (Maytapi) › 22.2 Tables
 | `wa_messages`           | `body`, `type`, `status`, `bsp_status`, `wa_group_id`, `wa_managed_phone_id` |
 | `wa_polls`              | `question`, `options`, `wa_group_id`                                         |
 
-Schemas: , .
-
 --- entry
 section: 22.3
 heading: 22. WhatsApp Groups (Maytapi) › 22.3 Managed-Phone Statuses
@@ -2800,11 +2763,10 @@ section: 22.4
 heading: 22. WhatsApp Groups (Maytapi) › 22.4 Maytapi Webhook Events
 ---
 
-Handler: . Events: `message`, `group_join`, `group_leave`, `message_ack`.
+Events: `message`, `group_join`, `group_leave`, `message_ack`.
 
-Status classification :
 
-- 200–299 → success, extract `msgId`, mark `bsp_status: :sent`.
+- 200–299 → success, extract `msgId`, mark `bsp_status::sent`.
 - 400–499 → client error, no retry.
 
 --- entry
@@ -2830,10 +2792,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Man
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Management%20%26%20Role%20Management/
 
-:
 
 ```elixir
-[:none, :staff, :manager, :admin, :glific_admin]
+[:none,:staff,:manager,:admin,:glific_admin]
 ```
 
 No `saas_admin` in this enum. SaaS super-admin is handled separately via `Glific.Saas.*` modules (platform-level, not per-org).
@@ -2846,7 +2807,6 @@ source: https://glific.github.io/docs/docs/FAQ/Using%20Glific%20APIs%20for%20OTP
 
 📖 Source: https://glific.github.io/docs/docs/FAQ/Using%20Glific%20APIs%20for%20OTP%20Authentication/
 
-Controller: .
 
 | Endpoint                                   | Behavior                                                                                                                                                                                                                                              | Error strings                                                                                                                                                                     |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2871,14 +2831,14 @@ heading: 23. Platform & Login › 23.5 Send-OTP Failure Reasons
 
 `"Cannot send the otp to #{phone}"` surfaces when:
 
-- Contact `bsp_status = :none` → no WhatsApp registration.
+- Contact `bsp_status =:none` → no WhatsApp registration.
 - Org is suspended.
 - BSP rejection (balance, WABA state).
 - HSM template for OTP is not approved / has wrong params.
 
-Fallback path uses Glific's own Gupshup account if org's balance is zero .
+Fallback path uses Glific's own Gupshup account if org's balance is zero.
 
----
+--
 
 --- entry
 section: 24.1
@@ -2888,7 +2848,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections/
 
-Schema :
 
 | Field                 | Default                                                      |
 | --------------------- | ------------------------------------------------------------ |
@@ -2898,7 +2857,7 @@ Schema :
 | `last_message_number` | 0                                                            |
 | `group_type`          | `"WABA"`                                                     |
 
-Join table `contacts_groups` : `(contact_id, group_id)` unique.
+Join table `contacts_groups`: `(contact_id, group_id)` unique.
 
 --- entry
 section: 24.2
@@ -2908,7 +2867,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Add%20or%20Remove%20the%20contact%20to%20a%20collection/
 
-Actions: `add_contact_groups` / `remove_contact_groups` .
+Actions: `add_contact_groups` / `remove_contact_groups`.
 
 `action.groups = [%{"uuid" => "<group_id>", "name" => "<label>"}]`. For each entry:
 
@@ -2916,7 +2875,7 @@ Actions: `add_contact_groups` / `remove_contact_groups` .
 2. `Groups.create_contact_group/_`.
 3. `contact_history` event with label `"Added to collection: \"<name>\""`.
 
-If `parse_maybe_integer` fails (group UUID not a real id): `Logger.error("Could not parse action groups: ...")` — **silently skips that group**. No exception. Symptom: collection stays empty despite the flow action "running successfully."
+If `parse_maybe_integer` fails (group UUID not a real id): `Logger.error("Could not parse action groups:...")` — **silently skips that group**. No exception. Symptom: collection stays empty despite the flow action "running successfully."
 
 `remove_contact_groups` accepts `["all_groups"]` to purge all memberships.
 
@@ -2928,7 +2887,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Start%20somebody%20else%20in%20a%20flow/
 
-`Flows.Broadcast.broadcast_flow_to_group/4` :
 
 - Inputs: `flow`, `group_ids`, `default_results`, opts.
 - Chunks contacts into `@contact_chunk = 1000` batches.
@@ -2958,8 +2916,6 @@ section: 24.5
 heading: 24. Contacts & Collections — Deep Dive › 24.5 Flow Selection Priority for an Inbound Message
 ---
 
-:
-
 1. `draft:<keyword>` prefix → draft flow preview.
 2. `template:<name>` prefix → template preview.
 3. **New contact flow** — only if `state.newcontact == true` **and** `org.newcontact_flow_id` set. State.newcontact is set by `consumer_tagger`.
@@ -2967,11 +2923,10 @@ heading: 24. Contacts & Collections — Deep Dive › 24.5 Flow Selection Priori
 5. Regex match against `org.regx_flow`.
 6. Otherwise: optin flow (if opted out and no active context), else drop.
 
-Opt-in flow gate :
 
 ```elixir
 if start_optin_flow?(message.contact, context, body),
-   do: start_optin_flow(...), else: move_forward(...)
+ do: start_optin_flow(...), else: move_forward(...)
 ```
 
 --- entry
@@ -2992,11 +2947,10 @@ source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
-Opt-in session send gate combines both checks :
 
 ```elixir
-contact.bsp_status in [:session_and_hsm, :session] and
-  Glific.in_past_time(contact.last_message_at, :hours, 24)
+contact.bsp_status in [:session_and_hsm,:session] and
+ Glific.in_past_time(contact.last_message_at,:hours, 24)
 ```
 
 A non-opt-in contact can receive messages only while both conditions hold. After 2 inbound messages that cross the 24-h boundary, the flow silently stops sending — no error visible to staff unless they check `notifications` / `messages.errors`.
@@ -3008,14 +2962,14 @@ heading: 24. Contacts & Collections — Deep Dive › 24.8 API Update Collection
 
 GraphQL `updateGroup(input: {id, label, description, isRestricted})` → `Groups.update_group/2`. Validates unique `(label, organization_id)` tuple. Any label collision returns a changeset error.
 
----
+--
 
 --- entry
 section: 25.1
 heading: 25. Flow Builder Advanced Features › 25.1 `ignore_keywords`
 ---
 
-`flows.ignore_keywords` boolean (default false). Effect in : if contact has an active FlowContext with this flag set, inbound messages are **not** checked against the keyword cache — they go straight to the flow.
+`flows.ignore_keywords` boolean (default false). Effect in: if contact has an active FlowContext with this flag set, inbound messages are **not** checked against the keyword cache — they go straight to the flow.
 
 Edge case: applies only once a context exists. New contacts without context still trigger keyword matches (§24.5 step 4).
 
@@ -3024,7 +2978,7 @@ section: 25.2
 heading: 25. Flow Builder Advanced Features › 25.2 Simulator vs Real
 ---
 
-Simulator detection: `Contacts.simulator_contact?/1`  — the phone starts with `@simulator_phone_prefix`, which is **`"9876543210"`** , not `"923"`.
+Simulator detection: `Contacts.simulator_contact?/1` — the phone starts with `@simulator_phone_prefix`, which is **`"9876543210"`**, not `"923"`.
 
 Bypassed in simulator:
 
@@ -3045,7 +2999,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overv
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
 
-`flow_revisions.status` ∈ `draft` | `published` | `archived`. Only **one** `published` row per `flow_id`. Validator :
+`flow_revisions.status` ∈ `draft` | `published` | `archived`. Only **one** `published` row per `flow_id`.
 
 > `"Flow is already published with id #{flow_revision.id}, please archive it instead"`
 
@@ -3059,7 +3013,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Enter%20another%20flow/
 
-. On enter:
+On enter:
 
 - Loop guard: if target `flow_uuid` already in `context.uuids_seen`, aborts with `"Repeated loop, hence finished the flow"`.
 - Parent id: if current node is `is_terminal`, inherit `context.parent_id`; else current `context.id`.
@@ -3099,7 +3053,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/New%20Conta
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/New%20Contact%2C%20Default%20flow%20Out%20of%20office%20hours%20notifications/
 
-Reiterated for quick reference :
 
 1. `draft:` prefix
 2. `template:` prefix
@@ -3109,7 +3062,7 @@ Reiterated for quick reference :
 6. Opt-in flow (if opted out)
 7. Drop
 
----
+--
 
 --- entry
 section: 26.1
@@ -3161,9 +3114,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 
-Schema : `category`, `entity` (map), `message`, `severity`, `is_read`.
+Schema: `category`, `entity` (map), `message`, `severity`, `is_read`.
 
-Severities : `Critical`, `Warning`, `Information`. Only `Critical` sends admin email (dedup by `MailLog` 72 h lookback).
+Severities: `Critical`, `Warning`, `Information`. Only `Critical` sends admin email (dedup by `MailLog` 72 h lookback).
 
 | Category            | Example message                     | Entity payload                                    | Source                             |
 | ------------------- | ----------------------------------- | ------------------------------------------------- | ---------------------------------- |
@@ -3183,11 +3136,11 @@ heading: 26. Error Code Reference › 26.4 Common `{:error, _}` Tuples to Fronte
 ---
 
 - `{:error, "Resource not found"}` — flow/node UUID invalid.
-- `{:error, "Could not parse action groups: ..."}` — bad group UUID.
+- `{:error, "Could not parse action groups:..."}` — bad group UUID.
 - `{:error, ["resource", "Contact not found"]}` — `Repo.fetch_by` miss.
-- `{:error, "Account does not have sufficient permissions to create dataset"}` — BigQuery PERMISSION_DENIED .
-- `{:error, "Account deactivated with error code X status Y"}` — generic BigQuery failure .
+- `{:error, "Account does not have sufficient permissions to create dataset"}` — BigQuery PERMISSION_DENIED.
+- `{:error, "Account deactivated with error code X status Y"}` — generic BigQuery failure.
 
----
+--
 
 _End of manual. Every error string, line reference, limit and enum value was sourced directly from the `glific/lib/` codebase. When code changes, re-verify timeout values (§13.4), session gate logic (§24.7), BSP error code handlers (§26.1), and new notification categories — they drift fastest._

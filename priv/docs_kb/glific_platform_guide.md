@@ -4,9 +4,9 @@ heading: Glific Platform Guide
 
 A comprehensive reference for the Glific WhatsApp chatbot platform, written for an AI support chatbot that helps NGO staff. The chatbot cannot see screenshots — every UI element is described in plain text using the exact labels that appear in the product.
 
-> Glific is built on React 19 + TypeScript + Apollo (GraphQL) + MUI v7. The frontend lives in . Routes are defined in . The left-sidebar menu is configured in .
+> Glific is built on React 19 + TypeScript + Apollo (GraphQL) + MUI v7.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Navigation & Layout › Overall layout
@@ -35,8 +35,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Man
 heading: Glific Platform Guide › Navigation & Layout › Sidebar menu (left, top to bottom)
 ---
 
-The exact items shown in the side drawer come from :
-
 | Menu item                    | URL                    | Roles        | Notes                                                                                                                                                                                                                                                                                                    |
 | ---------------------------- | ---------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Chats**                    | `/chat`                | All          | The default landing screen                                                                                                                                                                                                                                                                               |
@@ -57,7 +55,7 @@ User-account menu (bottom of sidebar / avatar):
 - **Settings** (`/settings`) — Admin only; routes to Organization, Flows config, Billing, and provider tiles.
 - **Logout** (`/logout/user`).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Chat › Screen: Chats (main inbox)
@@ -72,13 +70,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/Chats/
 
 1. **Tab bar (top of left panel):** **Contacts** | **Collections** | **Searches**.
 2. **Left panel — conversation list:**
-   - Search bar with placeholder **"Search conversations"** (1-second debounce).
-   - **Saved Search Toolbar** — quick filter pills, typically **All**, **Unread**, **Not Responded**, with count badges like "(12)". A `…` button reveals additional saved searches.
-   - List of conversations: each row shows avatar (initials), contact name, last-message preview (truncated to ~100 chars), relative timestamp ("now", "2m", "1h", "Yesterday"), unread badge, and an icon for the last message type (text/media/template/interactive).
+ - Search bar with placeholder **"Search conversations"** (1-second debounce).
+ - **Saved Search Toolbar** — quick filter pills, typically **All**, **Unread**, **Not Responded**, with count badges like "(12)". A `…` button reveals additional saved searches.
+ - List of conversations: each row shows avatar (initials), contact name, last-message preview (truncated to ~100 chars), relative timestamp ("now", "2m", "1h", "Yesterday"), unread badge, and an icon for the last message type (text/media/template/interactive).
 3. **Right panel — chat thread:**
-   - **Conversation header** with the contact name (max 40 chars), comma-separated list of collections the contact belongs to, and a **session timer** showing **"Time left: HH:MM"** counting down the 24-hour messaging window. A dropdown arrow opens an actions menu.
-   - **Message list** with date separators ("Today", "Yesterday", or full date), per-message timestamps, and status icons (single check = sent, double check = delivered, double check filled = read, ⚠ = failed; hover for error).
-   - **Chat input** at bottom (see "How to send messages" below).
+ - **Conversation header** with the contact name (max 40 chars), comma-separated list of collections the contact belongs to, and a **session timer** showing **"Time left: HH:MM"** counting down the 24-hour messaging window. A dropdown arrow opens an actions menu.
+ - **Message list** with date separators ("Today", "Yesterday", or full date), per-message timestamps, and status icons (single check = sent, double check = delivered, double check filled = read, ⚠ = failed; hover for error).
+ - **Chat input** at bottom (see "How to send messages" below).
 
 **Conversation header — dropdown menu items:**
 
@@ -124,7 +122,7 @@ The chat input has, left-to-right: **down-arrow** (quick send picker) · **paper
 - _"Sorry, unable to send the attachment."_ — verify file size and format.
 - _"Sorry, unable to upload audio."_ — try recording again.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Chat › Screen: Group Chats (WhatsApp Groups)
@@ -135,7 +133,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Chats/
 - **Purpose:** Same UX as `/chat` but for WhatsApp groups (multi-participant). Visible when `whatsappGroupEnabled` org service is enabled.
 - **Differences from contact chat:** sender's contact name appears above each incoming message ("Message from: ContactName"). Block, Clear conversation, and Terminate flows are not available. **Start a flow** for a group runs the flow for all participants — toast _"Your flow will start in a couple of minutes."_
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Flows › Screen: Flow list
@@ -275,7 +273,7 @@ Webhook, sub-flow, ticket and flow-result nodes also serialize as combined actio
 
 **Import / export flows:** Export downloads a JSON file. Import accepts the same JSON. After import a status dialog reports per-flow success/failure (with a help link if linked OpenAI assistants couldn't be auto-created).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Speed Sends
@@ -289,7 +287,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Speed%20Sends/
 - **Fields:** Language bar (multilingual switch) · **Title** \* (≤50 chars) · **Message** \* (EmojiInput, supports `@variable` insertion) · **Attachment Type** (IMAGE URL / AUDIO URL / VIDEO URL / DOCUMENT URL / STICKER URL) · **Attachment URL** (validated, required when a type is set).
 - **Notes:** picking **STICKER** warns _"Animated stickers are not supported."_ and _"Captions along with stickers are not supported."_; picking **AUDIO** warns _"Captions along with audio are not supported."_
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › HSM Templates
@@ -317,9 +315,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 - **Variables (Template Variables)** — for each `{{n}}` in the body, define an example value (used for approval and preview). Error: _"Variable is required" / "Text cannot be empty"_.
 - **Footer** — ≤60 chars (optional).
 - **Add buttons** — checkbox; opens button section with type radio (**Call to Action** / **Quick Reply** / **WhatsApp Form**).
-  - Call to Action: pick **Phone Number** or **URL**, set Title and Value; URL Type Static/Dynamic; max 2 buttons.
-  - Quick Reply: text-only buttons (Value).
-  - WhatsApp Form: pick a published form, button title, and screen.
+ - Call to Action: pick **Phone Number** or **URL**, set Title and Value; URL Type Static/Dynamic; max 2 buttons.
+ - Quick Reply: text-only buttons (Value).
+ - WhatsApp Form: pick a published form, button title, and screen.
 - **Category** \* — **Utility** or **Marketing**. (WhatsApp's Authentication category is not offered by Glific.)
 - **Attachment Type** — TEXT (default), IMAGE, VIDEO, DOCUMENT; "UPLOAD ATTACHMENT" appears if Google Cloud Storage is configured.
 - **Attachment URL** — required when type is set; validated on blur.
@@ -329,7 +327,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
 **Right-side simulator** previews the template with substituted variables, footer, attachment, and buttons.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Triggers
@@ -356,7 +354,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Triggers/
 
 **Per-row actions:** View · Copy (toast: _"Copy of the trigger has been created!"_) · Edit · Delete.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Collections
@@ -380,7 +378,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections
 
 **Membership view (`/collection/:id/contacts`):** lists Name (with masked phone), Status, other Collections. Buttons to **Add Contacts** (search dialog) and **Remove** selected.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Contacts & Contact Management › Screen: Contact Management (bulk import)
@@ -437,10 +435,10 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20P
 - **URL:** `/contact-fields`
 - **Purpose:** Define custom fields beyond Name/Phone/Language.
 - **Fields:**
-  - **Name** \* — display label.
-  - **Shortcode** \* — lowercase letters and underscores only (`^[a-z_]+$`, error _"Only lowercase alphabets and underscore is allowed."_); referenced in flows as `@contact.fields.<shortcode>`.
+ - **Name** \* — display label.
+ - **Shortcode** \* — lowercase letters and underscores only (`^[a-z_]+$`, error _"Only lowercase alphabets and underscore is allowed."_); referenced in flows as `@contact.fields.<shortcode>`.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Tags
@@ -453,7 +451,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Tags/
 - **Purpose:** Categorize contacts/messages.
 - **Field:** **Name** \* (label).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Searches (Saved Searches)
@@ -464,9 +462,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Searches/
 
 - **URL:** `/search`, `/search/add`, `/search/:id/edit`
 - **Purpose:** Save complex chat filters as named pills usable in the chat saved-search toolbar.
-- **Fields:** **Title** _ (≤20 chars) · **Description** _ · **Enter name, label, keyword** (free text term) · **Includes Labels** · **Includes Collections** · **Includes Staff** · **Date Range** (toggle **Use Expression** for dynamic Timex expressions like `<%= Timex.shift(Timex.today(), days: -2) %>`).
+- **Fields:** **Title** _ (≤20 chars) · **Description** _ · **Enter name, label, keyword** (free text term) · **Includes Labels** · **Includes Collections** · **Includes Staff** · **Date Range** (toggle **Use Expression** for dynamic Timex expressions like `<%= Timex.shift(Timex.today, days: -2) %>`).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Interactive Messages
@@ -494,7 +492,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Mess
 
 **Right-side simulator** previews the rendered message with buttons/list selectable.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › WhatsApp Forms
@@ -510,7 +508,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 - **Activate / Deactivate** toggles available; toasts _"Form activated successfully"_ / _"Form deactivated successfully"_.
 - **Sync** action pulls forms from WhatsApp; failure shows _"Sorry, failed to sync whatsapp forms updates."_
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Webhook Logs
@@ -532,14 +530,14 @@ source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 - **Severity filter (radio):** All / Critical / Warning / Info.
 - **Auto-mark-as-read:** items load as unread, then marked read 1 second later.
 - **Check action** navigates to the relevant entity:
-  - Message → `/chat/{id}`
-  - Flow → `/flow/configure/{flow_uuid}`
-  - Templates → `/template/{id}/edit`
-  - Partner → `/settings/{shortcode}`
-  - Ticket → `/tickets`
-  - WA Group → `/group/chat/{id}`
-  - Contact Upload → downloads CSV status report
-  - Custom Certificates → `/certificate/{template_id}/edit`
+ - Message → `/chat/{id}`
+ - Flow → `/flow/configure/{flow_uuid}`
+ - Templates → `/template/{id}/edit`
+ - Partner → `/settings/{shortcode}`
+ - Ticket → `/tickets`
+ - WA Group → `/group/chat/{id}`
+ - Contact Upload → downloads CSV status report
+ - Custom Certificates → `/certificate/{template_id}/edit`
 
 --- entry
 heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Support Tickets
@@ -550,7 +548,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 - **Purpose:** Track agent escalations created by **Open Ticket** flow nodes.
 - **Actions:** Close tickets (toast _"Tickets closed successfully"_).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › AI Assistants
@@ -568,14 +566,14 @@ source: https://glific.github.io/docs/docs/Integrations/Creating%20and%20modifyi
 - **Model** \* — the dropdown is served by the backend model catalogue, not hard-coded in the UI, so the exact list changes over time. Models are grouped as **recommended** (currently `gpt-5.6-luna` "Best value", `gpt-5-nano` "Fastest", `gpt-5-mini` "Budget", `gpt-5.6-terra` and `gpt-5.4` "All-rounder") and **deprecating** (`gpt-4o`, `gpt-4o-mini`). An assistant created without an explicit model still gets `gpt-4o`.
 - **Instructions/Prompt** _ — _"Set the instructions according to your requirements."\* Expandable textarea.
 - **Temperature** — slider 0.0–2.0 (default 0.1). Helper: _"Controls randomness: Lowering results in less random completions…"_.
-- **Knowledge Base Files** — drag-and-drop. Accepts `.csv .doc .docx .html .htm .md .markdown .pdf .txt`. Max 20 MB per file, up to 10 concurrent uploads, automatic retry up to 5 times. Status pills: uploading / queued / failed / attached. Toast _"$oversizedFileNames were/was above 20MB"_ if too large.
+- **Knowledge Base Files** — drag-and-drop. Accepts `.csv.doc.docx.html.htm.md.markdown.pdf.txt`. Max 20 MB per file, up to 10 concurrent uploads, automatic retry up to 5 times. Status pills: uploading / queued / failed / attached. Toast _"$oversizedFileNames were/was above 20MB"_ if too large.
 - **Version Description / Notes** — free text per-version.
 
 **Actions:** **Save** · **Clone** (warning _"Cloned assistants may behave differently from the original…"_) · **Delete** (confirmation) · version selector (with **Set as live**).
 
 **Knowledge base creation** is async — toast _"Knowledge base creation in progress, will notify once it's done"_.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Sheet Integration (Google Sheets)
@@ -587,13 +585,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 - **URL:** `/sheet-integration`, `/sheet-integration/add`, `/sheet-integration/:uuid/edit`
 - **Purpose:** Connect a sheet for the **Link Google sheet** flow node to read or write rows.
 - **Fields:**
-  - **Allowed Operations** — _"What operations are allowed to be performed in the sheet?"_ — Read / Write / Read & Write (default Read).
-  - **Sheet Name** \*.
-  - **URL** \* — link to the Google Sheet (with **View Sample**).
-  - **Auto Sync** — _"Data will be synced from the sheet on a daily basis"_.
+ - **Allowed Operations** — _"What operations are allowed to be performed in the sheet?"_ — Read / Write / Read & Write (default Read).
+ - **Sheet Name** \*.
+ - **URL** \* — link to the Google Sheet (with **View Sample**).
+ - **Auto Sync** — _"Data will be synced from the sheet on a daily basis"_.
 - **Permissions:** the GCP service account configured in `/settings/google_sheets` must have read/write access to the sheet (share the sheet with the service account email).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Certificates
@@ -607,7 +605,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Custom%20Certifica
 - **Fields:** **Title** _ (≤40) · **Description** (≤150) · **URL** _ — Google Slides link, must end with `slide=id.p` (regex `^https://docs.google.com/presentation/d/[a-zA-Z0-9_-]+/edit.*$` and `slide=id\.g…$`).
 - **Sizing guidance** (helper text): Landscape 3300×2550 px · Portrait 816×1056 px · Badges (square) ≥ 600×600 px.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Polls (WhatsApp Group Polls)
@@ -619,7 +617,7 @@ source: https://glific.github.io/docs/docs/WhatsApp%20Groups%20Automation/Sendin
 - **URL:** `/group/polls`, `/group/polls/add`, `/group/polls/:id/edit`
 - **Purpose:** Create polls for WhatsApp groups (when feature enabled).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Staff Management
@@ -631,15 +629,15 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Man
 - **URL:** `/staff-management`, `/staff-management/:id/edit`
 - **Purpose:** Manage user accounts, roles, and collection access.
 - **Fields:**
-  - **Username** \* (text).
-  - **Phone Number** — read-only (set from contact).
-  - **Roles** \* — single-select for standard orgs, multi-select for orgs with dynamic roles. Managers cannot grant Admin.
-  - **Assigned to collection(s)** — multi-select.
-  - **Can chat with contacts from assigned collection only** — checkbox (Staff role only).
+ - **Username** \* (text).
+ - **Phone Number** — read-only (set from contact).
+ - **Roles** \* — single-select for standard orgs, multi-select for orgs with dynamic roles. Managers cannot grant Admin.
+ - **Assigned to collection(s)** — multi-select.
+ - **Can chat with contacts from assigned collection only** — checkbox (Staff role only).
 - **Help dialog:** clicking "help?" opens a modal explaining each role.
 - **Self-demotion:** if an Admin removes their own Admin role, they're auto-logged-out (`/logout/user`).
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Roles
@@ -652,7 +650,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Man
 - **Visibility:** only when org doesn't use dynamic roles.
 - **Fields:** **Label** _ · **Description** _.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Organizations (multi-tenant — Glific_admin)
@@ -661,7 +659,7 @@ heading: Glific Platform Guide › Screens › Organizations (multi-tenant — G
 - **URL:** `/organizations`, `/organizations/:id/extensions`, `/organizations/:id/customer`
 - **Purpose:** Manage all NGOs on the Glific platform; install extensions; access customer info.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Screens › Consulting Hours (Glific_admin)
@@ -671,7 +669,7 @@ heading: Glific Platform Guide › Screens › Consulting Hours (Glific_admin)
 - **Purpose:** Track support consulting time delivered by the Glific team.
 - **Fields:** **Select Organization** _ · **Participants** _ · **Select date** _ · **Enter time (in mins)** _ — must be a positive multiple of 15 · **Billable / Non-Billable** _ (radio) · **Support team** _ · **Notes** \*.
 
----
+--
 
 --- entry
 section: 1
@@ -876,7 +874,7 @@ source: https://glific.github.io/docs/docs/Pre%20Onboarding/Google%20Cloud%20Sto
 2. Open `/settings/google_cloud_storage` → toggle **Active?** → paste credentials → **Save**.
 3. After this, the **Attachment Type → UPLOAD ATTACHMENT** option appears on HSM templates and elsewhere.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Settings Reference › Settings landing page (`/settings`)
@@ -895,8 +893,8 @@ heading: Glific Platform Guide › Settings Reference › `/settings/organizatio
 - **Organization phone number** _ (≤30 chars, copy button to clipboard). If `allowBotNumberUpdate` is set, updates trigger confirmation _"Are you sure you want to update the phone number? It will not be possible to update the number later."\*
 - **WhatsApp tier** — read-only display (quality rating).
 - **Receive warning mails?** — checkbox; reveals:
-  - **Low balance threshold for warning emails** — number ≥0; alerts once a week.
-  - **Critical balance threshold for warning emails** — number ≥0; alerts every two days.
+ - **Low balance threshold for warning emails** — number ≥0; alerts once a week.
+ - **Critical balance threshold for warning emails** — number ≥0; alerts every two days.
 
 --- entry
 heading: Glific Platform Guide › Settings Reference › `/settings/organization-flows` — Flows config
@@ -942,7 +940,7 @@ Tiles you can actually expect:
 
 Each provider page has an **Active?** toggle (required fields enforced when active) and per-field labels read from the backend schema.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Error Messages › Chat & messaging
@@ -1058,7 +1056,7 @@ These appear inline below input fields:
 - Date: _"End date should be greater than the start date"_, _"Start time should be greater than current time"_.
 - Duplicates: _"Title already exists."_.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Keyboard Shortcuts & Tips
@@ -1075,7 +1073,7 @@ heading: Glific Platform Guide › Keyboard Shortcuts & Tips
 - Reusing a saved search: bookmark `/chat/saved-searches/:contactId` directly to deep-link into a search context.
 - For long-running async actions (bulk import, sheet sync, knowledge-base build, HSM sync), the answer is always: open `/notifications`.
 
----
+--
 
 --- entry
 heading: Glific Platform Guide › Cheat sheet — URLs

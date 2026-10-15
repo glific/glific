@@ -71,7 +71,7 @@ Result variables have several suffixes:
 
 For webhook results: `@results.<webhook_name>.<json_key>` — see section 4.3.
 
----
+--
 
 --- entry
 section: 2.1
@@ -79,31 +79,31 @@ heading: 2. Quick Syntax Reference (cheatsheet) › 2.1 Reading values
 ---
 
 ```
-@contact.name                          # contact's display name
-@contact.phone                         # contact's phone number
-@contact.id                            # internal Glific id
-@contact.language                      # the contact's language
-@contact.fields.gender                 # gender, if you created it as a contact variable
-@contact.optin_status                  # true / false
-@contact.optin_time                    # timestamp of opt-in
-@contact.optout_time                   # timestamp of opt-out
-@contact.optin_method                  # how they opted in (whatsapp/website/etc.)
-@contact.status                        # processing / valid / invalid / blocked / failed
-@contact.bsp_status                    # none / session / session_and_hsm / hsm
-@contact.list_profiles                 # all profiles linked to this contact
-@contact.in_groups                     # collections this contact belongs to
-@contact.last_message_at               # timestamp of last inbound message
-@contact.fields.<custom_field_name>    # any custom contact field
+@contact.name # contact's display name
+@contact.phone # contact's phone number
+@contact.id # internal Glific id
+@contact.language # the contact's language
+@contact.fields.gender # gender, if you created it as a contact variable
+@contact.optin_status # true / false
+@contact.optin_time # timestamp of opt-in
+@contact.optout_time # timestamp of opt-out
+@contact.optin_method # how they opted in (whatsapp/website/etc.)
+@contact.status # processing / valid / invalid / blocked / failed
+@contact.bsp_status # none / session / session_and_hsm / hsm
+@contact.list_profiles # all profiles linked to this contact
+@contact.in_groups # collections this contact belongs to
+@contact.last_message_at # timestamp of last inbound message
+@contact.fields.<custom_field_name> # any custom contact field
 ```
 
 ```
-@results.<result_name>                 # raw response, same as .input
-@results.<result_name>.input           # raw text response
-@results.<result_name>.category        # categorized bucket value
-@results.<result_name>.url             # media URL
-@results.<result_name>.caption         # media caption
-@results.flow_keyword.input            # the keyword that started this flow
-@results.flow_keyword.category         # full sentence the contact sent
+@results.<result_name> # raw response, same as.input
+@results.<result_name>.input # raw text response
+@results.<result_name>.category # categorized bucket value
+@results.<result_name>.url # media URL
+@results.<result_name>.caption # media caption
+@results.flow_keyword.input # the keyword that started this flow
+@results.flow_keyword.category # full sentence the contact sent
 ```
 
 --- entry
@@ -115,8 +115,8 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Varia
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Parent%20and%20Child%20variable/
 
 ```
-@results.parent.<variable_name>.input      # value from the parent (calling) flow
-@results.child.<variable_name>.input       # value from the child (called/sub) flow
+@results.parent.<variable_name>.input # value from the parent (calling) flow
+@results.child.<variable_name>.input # value from the child (called/sub) flow
 ```
 
 Concrete example: parent flow has a result named `state`. From inside the child / sub-flow:
@@ -161,30 +161,30 @@ When a Google Sheet integration node named `sheet` reads a row, columns become k
 
 ```
 @results.sheet.<column_header>
-@results.sheet.image                   # for example, an "image" column with a public URL
+@results.sheet.image # for example, an "image" column with a public URL
 ```
 
 --- entry
 section: 2.5
-heading: 2. Quick Syntax Reference (cheatsheet) › 2.5 Custom expressions (Elixir-style, `<%= ... %>`)
+heading: 2. Quick Syntax Reference (cheatsheet) › 2.5 Custom expressions (Elixir-style, `<%=... %>`)
 source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 ---
 
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 
 ```
-<%= @contact.fields.counter + 1 %>                              # increment a counter
-<%= (@contact.fields.counter || 0) + (@contact.fields.add_counter || 0) %>   # safe add of two counters
-<%= Timex.today("Asia/Kolkata") |> Date.to_string() %>          # today's date in IST
-<%= DateTime.now!("Asia/Kolkata") |> DateTime.to_string() %>    # today's date and time in IST
-<%= DateTime.now!("Asia/Kolkata") |> Calendar.strftime("%H:%M:%S") %>   # current time HH:MM:SS in IST
-<%= Time.diff(Time.from_iso8601!("@contact.fields.time_end"), Time.from_iso8601!("@contact.fields.time_start"), :second) %>   # seconds between two times
-<%= "@contact.fields.batch_start_date" |> Timex.parse!("{D}/{0M}/{YYYY}") |> then(&(Timex.diff(Timex.now(), &1, :day))) %>   # days since a stored date
-<%= String.downcase("@results.resultname") %>                   # convert to lowercase
-<%= if "collection 1" in @contact.in_groups, do: 1, else: if "collection 2" in @contact.in_groups, do: 2, else: 3 %>  # branch by collection membership
-<%= if "@contact.fields.is_registered" == "1", do: 1, else: 0 %>   # branch by registration flag
-<%= if @contact.optin_status == true, do: 1, else: 2 %>           # branch by opt-in status
-<%= case "@results.assigned_arm_id" do "@results.control_arm_id" -> "Control"; "@results.treatment_arm_id" -> "Treatment"; end %>   # match value against multiple variables
+<%= @contact.fields.counter + 1 %> # increment a counter
+<%= (@contact.fields.counter || 0) + (@contact.fields.add_counter || 0) %> # safe add of two counters
+<%= Timex.today("Asia/Kolkata") |> Date.to_string %> # today's date in IST
+<%= DateTime.now!("Asia/Kolkata") |> DateTime.to_string %> # today's date and time in IST
+<%= DateTime.now!("Asia/Kolkata") |> Calendar.strftime("%H:%M:%S") %> # current time HH:MM:SS in IST
+<%= Time.diff(Time.from_iso8601!("@contact.fields.time_end"), Time.from_iso8601!("@contact.fields.time_start"),:second) %> # seconds between two times
+<%= "@contact.fields.batch_start_date" |> Timex.parse!("{D}/{0M}/{YYYY}") |> then(&(Timex.diff(Timex.now, &1,:day))) %> # days since a stored date
+<%= String.downcase("@results.resultname") %> # convert to lowercase
+<%= if "collection 1" in @contact.in_groups, do: 1, else: if "collection 2" in @contact.in_groups, do: 2, else: 3 %> # branch by collection membership
+<%= if "@contact.fields.is_registered" == "1", do: 1, else: 0 %> # branch by registration flag
+<%= if @contact.optin_status == true, do: 1, else: 2 %> # branch by opt-in status
+<%= case "@results.assigned_arm_id" do "@results.control_arm_id" -> "Control"; "@results.treatment_arm_id" -> "Treatment"; end %> # match value against multiple variables
 ```
 
 --- entry
@@ -193,12 +193,12 @@ heading: 2. Quick Syntax Reference (cheatsheet) › 2.7 Common regex patterns
 ---
 
 ```
-^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$        # DD/MM/YYYY any year
-^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/(?:202[5-9]|2030)$   # DD/MM/YYYY 2025-2030
-([01][0-9]|2[0-3]):([0-5][0-9])$                            # HH:MM 24-hour time
+^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$ # DD/MM/YYYY any year
+^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/(?:202[5-9]|2030)$ # DD/MM/YYYY 2025-2030
+([01][0-9]|2[0-3]):([0-5][0-9])$ # HH:MM 24-hour time
 ```
 
----
+--
 
 --- entry
 section: 3.1
@@ -305,8 +305,8 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/How%2
 Use the built-in `flow_keyword` result, no setup required:
 
 ```
-@results.flow_keyword.input        # the matched keyword (e.g., "key1")
-@results.flow_keyword.category     # the full sentence the user typed
+@results.flow_keyword.input # the matched keyword (e.g., "key1")
+@results.flow_keyword.category # the full sentence the user typed
 ```
 
 **Caveat.** If a staff member starts the flow for a contact from the Glific dashboard (rather than the contact triggering it via WhatsApp), `@results.flow_keyword.category` will be either null or literally the string `@results.flow_keyword.category`.
@@ -323,9 +323,9 @@ Three steps:
 
 1. **Initialize** — Add an `Update Contact` node, choose `counter` (or any field name) from the dropdown, set the value to `0`.
 2. **Increment** — At the spot where you want to count an event, add another `Update Contact` node on `counter` with value:
-   ```
-   <%= @contact.fields.counter + 1 %>
-   ```
+ ```
+ <%= @contact.fields.counter + 1 %>
+ ```
 3. **Read** — Reference the counter anywhere as `@contact.fields.counter`.
 
 To branch on the counter (e.g., "stop nudging after 3 attempts"), use a **Split by Contact Field** node on `counter`.
@@ -419,7 +419,7 @@ Examples:
 - ✅ `contact_name`, `age_group`, `score_q1`
 - ❌ `Contact Name`, `age-group`, `2nd_score`, `name!`
 
----
+--
 
 --- entry
 section: 4.1
@@ -498,19 +498,19 @@ _Numeric:_
 _Contact details:_
 
 - **has a phone number** — accepts:
-  - 10-digit mobile (`XXXXXXXXXX`)
-  - 10-digit with leading 0 (`0XXXXXXXXXX`)
-  - With country code (`+91 XXXXXXXXXX`)
-  - Landline `XXX XXXXXXX`, `0XXX XXXXXXX`, `+91 XXX XXXXXXX`
+ - 10-digit mobile (`XXXXXXXXXX`)
+ - 10-digit with leading 0 (`0XXXXXXXXXX`)
+ - With country code (`+91 XXXXXXXXXX`)
+ - Landline `XXX XXXXXXX`, `0XXX XXXXXXX`, `+91 XXX XXXXXXX`
 - **has an email** — accepts `abc@xyz.xyz`, `abc@xyz`.
 
 _Media:_
 
 - **has media** — jpeg, png, mp4. Stores both URL and caption:
-  ```
-  @results.<name>.url
-  @results.<name>.caption
-  ```
+ ```
+ @results.<name>.url
+ @results.<name>.caption
+ ```
 - **has audio** — audio file.
 - **has video** — mp4.
 - **has image** — jpeg, png.
@@ -520,9 +520,9 @@ _Other:_
 
 - **has location** — captures longitude + latitude. For human-readable address use the Google Maps reverse geo webhook integration.
 - **Matches Regex** — validate against a regex pattern. Example DOB:
-  ```
-  ^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$
-  ```
+ ```
+ ^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$
+ ```
 
 **No-response handling.** Tick "Continue if there is no response for" and pick a duration. You can chain reminders (e.g., one every hour, up to 3 nudges).
 
@@ -542,14 +542,14 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 2. Method: **GET**, **POST**, or **FUNCTION**. `FUNCTION` means "one of Glific's built-in webhooks" (see [20](#20-built-in-webhooks-reference)) and takes the function name in the URL field instead of a URL. PUT, DELETE and PATCH are disabled in Glific.
 3. URL: target URL (or the built-in function name when Method is `FUNCTION`).
 4. Post Body: a JSON object with the variables to send. Example:
-   ```json
-   {
-     "contact": "@contact",
-     "results": "@results",
-     "Emp_name": "Mohit",
-     "Emp_age": "@results.age.input"
-   }
-   ```
+ ```json
+ {
+ "contact": "@contact",
+ "results": "@results",
+ "Emp_name": "Mohit",
+ "Emp_age": "@results.age.input"
+ }
+ ```
 5. Result Name: e.g., `mywebhook` (this becomes the prefix for response keys).
 
 **Reading the response.** If your webhook returns:
@@ -624,16 +624,16 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 **Examples:**
 
 - Capture a feedback rating:
-  ```
-  Result: user_rating
-  Value: @(input)
-  Category: Rating
-  ```
-  Then in the next message: `Thank you! Your rating of @results.user_rating is noted.`
+ ```
+ Result: user_rating
+ Value: @(input)
+ Category: Rating
+ ```
+ Then in the next message: `Thank you! Your rating of @results.user_rating is noted.`
 - Save with title-casing:
-  ```
-  Value: @(title(input))
-  ```
+ ```
+ Value: @(title(input))
+ ```
 
 --- entry
 section: 4.6
@@ -807,11 +807,11 @@ The Split By node branches the flow on a condition. The variants available in Gl
 
 **Split by URN Type** exists upstream but is switched off in Glific, and there is no "Consent Status" split — to branch on opt-in, use **Split by Expression** on `@contact.optin_status` (see [5.6](#56-branching-by-collection--opt-in--registration)).
 
----
+--
 
 --- entry
 section: 5
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference
 ---
 
 Custom expressions use Elixir syntax. They're evaluated server-side and substitute the result inline. Used in:
@@ -832,7 +832,7 @@ Custom expressions use Elixir syntax. They're evaluated server-side and substitu
 
 --- entry
 section: 5.1
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.1 General syntax
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.1 General syntax
 source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 ---
 
@@ -846,7 +846,7 @@ Anything between `<%=` and `%>` is computed. The result replaces the entire expr
 
 --- entry
 section: 5.2
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.2 Conditionals
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.2 Conditionals
 source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 ---
 
@@ -871,7 +871,7 @@ Nested:
 
 --- entry
 section: 5.3
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.3 Pattern matching with `case`
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.3 Pattern matching with `case`
 source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Custom%20Expression/
 ---
 
@@ -885,23 +885,23 @@ This compares `@results.assigned_arm_id` against the values of two other variabl
 
 --- entry
 section: 5.4
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.4 Date & time
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.4 Date & time
 ---
 
 ```
-<%= Timex.today("Asia/Kolkata") |> Date.to_string() %>             # today's date IST
-<%= DateTime.now!("Asia/Kolkata") |> DateTime.to_string() %>       # today's datetime IST
-<%= DateTime.now!("Asia/Kolkata") |> Calendar.strftime("%H:%M:%S") %>   # current HH:MM:SS IST
+<%= Timex.today("Asia/Kolkata") |> Date.to_string %> # today's date IST
+<%= DateTime.now!("Asia/Kolkata") |> DateTime.to_string %> # today's datetime IST
+<%= DateTime.now!("Asia/Kolkata") |> Calendar.strftime("%H:%M:%S") %> # current HH:MM:SS IST
 ```
 
 Common pattern — capture flow start time, end time, then compute duration:
 
 ```
 <%= Time.diff(
-      Time.from_iso8601!("@contact.fields.time_end"),
-      Time.from_iso8601!("@contact.fields.time_start"),
-      :second
-    ) %>
+ Time.from_iso8601!("@contact.fields.time_end"),
+ Time.from_iso8601!("@contact.fields.time_start"),
+:second
+ ) %>
 ```
 
 Days since a stored date (date in `D/0M/YYYY` format):
@@ -916,11 +916,11 @@ Days since a stored date (date in `D/0M/YYYY` format):
 
 --- entry
 section: 5.5
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.5 String operations
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.5 String operations
 ---
 
 ```
-<%= String.downcase("@results.resultname") %>     # lowercase
+<%= String.downcase("@results.resultname") %> # lowercase
 ```
 
 Concatenation in Glific is implicit when you place variables next to text in a node value:
@@ -935,7 +935,7 @@ You can also append to an existing field — the **node value** can include the 
 
 --- entry
 section: 5.6
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.6 Branching by collection / opt-in / registration
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.6 Branching by collection / opt-in / registration
 source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actions/Split%20By/Collection%20Membership/
 ---
 
@@ -951,7 +951,7 @@ The result (`1`, `2`, `3`) becomes the category which the Split By node uses to 
 
 --- entry
 section: 5.7
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.7 Regex validation
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.7 Regex validation
 ---
 
 Use **Wait for Response → matches regex** (`has_pattern`) or **Split by Expression** for input validation.
@@ -978,12 +978,12 @@ To support different separators or formats (`MM/DD/YYYY`, `DD-MM-YYYY`), adjust 
 
 --- entry
 section: 5.8
-heading: 5. Custom Expressions (the `<%= ... %>` block) — comprehensive reference › 5.8 Where to ask for help with custom expressions
+heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive reference › 5.8 Where to ask for help with custom expressions
 ---
 
 If a particular expression isn't covered here, post in the [Glific Discord](https://discord.com/channels/717975833226248303/1037981805653008404). The team has tooling to help generate exact syntax for new use cases.
 
----
+--
 
 --- entry
 section: 6.1
@@ -1008,12 +1008,12 @@ source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Mess
 1. Left menu → **Quick tools** → **Interactive msg**.
 2. Click **+ Create**.
 3. Fill in:
-   - **Type** (Reply buttons / List / Location request)
-   - **Title** — for internal search (and optionally show on top of message)
-   - **Message** — body content
-   - **Footer** — subtext
-   - Type-specific section (button labels, list items + descriptions, etc.)
-   - **Tag** — for searchability later
+ - **Type** (Reply buttons / List / Location request)
+ - **Title** — for internal search (and optionally show on top of message)
+ - **Message** — body content
+ - **Footer** — subtext
+ - Type-specific section (button labels, list items + descriptions, etc.)
+ - **Tag** — for searchability later
 
 --- entry
 section: 6.3
@@ -1067,7 +1067,7 @@ For nested options (District → Block → School) or option lists exceeding the
 
 This pattern bypasses WhatsApp's 10-item list limit by paginating.
 
----
+--
 
 --- entry
 section: 7.1
@@ -1104,18 +1104,18 @@ source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 
 1. **Quick tools → HSM Templates → + Add Template**.
 2. Fill the form:
-   - **Language** — pick the language for approval.
-   - **Translate existing HSM** — tick if creating a language variant of an already-approved template.
-   - **Element Name** — WABA namespace title; use a short identifier.
-   - **Title** — display name in Glific. Use a use-case-descriptive name (e.g., `OTP`, `OptIn`, `ActivityPreference`). **Title and Element Name must NOT be identical** to avoid mapping issues.
-   - **Message** — the body. Insert variables via **Add Variable** (rendered as `{{1}}`, `{{2}}`, etc.). Provide sample values.
-   - **Footer** — optional subtext.
-   - **Add Buttons** — optional. Two button modes:
-     - **Quick Replies** — up to **10** buttons.
-     - **Call to Action** — Phone Number and/or URL buttons. Up to **2 URL** buttons + **1 Phone Number** button. Phone numbers without country code (e.g., Exotel virtual numbers) are rejected — put them in the body instead.
-   - **Category** — **Utility** (transactional: order updates, account, appointments, alerts) or **Marketing** (promotions, launches, offers). These are the only two Glific offers; WhatsApp's Authentication category is not available.
-   - **Attachment Type** + **Attachment URL** — optional. Use a public URL from your GCS bucket (not Google Drive).
-   - **Tags** — optional.
+ - **Language** — pick the language for approval.
+ - **Translate existing HSM** — tick if creating a language variant of an already-approved template.
+ - **Element Name** — WABA namespace title; use a short identifier.
+ - **Title** — display name in Glific. Use a use-case-descriptive name (e.g., `OTP`, `OptIn`, `ActivityPreference`). **Title and Element Name must NOT be identical** to avoid mapping issues.
+ - **Message** — the body. Insert variables via **Add Variable** (rendered as `{{1}}`, `{{2}}`, etc.). Provide sample values.
+ - **Footer** — optional subtext.
+ - **Add Buttons** — optional. Two button modes:
+ - **Quick Replies** — up to **10** buttons.
+ - **Call to Action** — Phone Number and/or URL buttons. Up to **2 URL** buttons + **1 Phone Number** button. Phone numbers without country code (e.g., Exotel virtual numbers) are rejected — put them in the body instead.
+ - **Category** — **Utility** (transactional: order updates, account, appointments, alerts) or **Marketing** (promotions, launches, offers). These are the only two Glific offers; WhatsApp's Authentication category is not available.
+ - **Attachment Type** + **Attachment URL** — optional. Use a public URL from your GCS bucket (not Google Drive).
+ - **Tags** — optional.
 3. Click **Submit for Approval**.
 4. Click **Sync** on the template list page after a couple of minutes. Status moves Pending → Approved or Rejected.
 
@@ -1176,7 +1176,7 @@ When an HSM message fails to send, you'll usually see one of these errors. The f
 - **Account not registered** — your Gupshup-Meta linkage isn't complete; check Gupshup account status.
 - **Character policy violated** — markdown chars `*`, `_` are not allowed in template headers and buttons.
 
----
+--
 
 --- entry
 section: 8.1
@@ -1322,8 +1322,8 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/How%2
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/How%20to%20identify%20which%20keyword%20triggered%20the%20flow/
 
 ```
-@results.flow_keyword.input        # the matched keyword
-@results.flow_keyword.category     # the full sentence the user typed
+@results.flow_keyword.input # the matched keyword
+@results.flow_keyword.category # the full sentence the user typed
 ```
 
 No setup required — `flow_keyword` is auto-populated.
@@ -1388,7 +1388,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 Use the **Open a ticket with a human agent** node. The conversation is suspended (the bot stops auto-replying); a staff member picks up from Chats. They close the ticket when done, and the flow resumes (if configured to).
 
----
+--
 
 --- entry
 section: 9
@@ -1418,7 +1418,7 @@ heading: 9. Limits & Constraints (single-line answers)
 | Wait for time with no delay set               | ~4 seconds inline                           |
 | Session window                                | 24 hours after last contact inbound message |
 
----
+--
 
 --- entry
 section: 10
@@ -1438,7 +1438,7 @@ When a flow isn't behaving, check these in order:
 9. **HSM template approval status** — Templates page; status must be Approved.
 10. **Ignore Keywords setting** — if enabled on another active flow, it may be blocking this flow's keyword from triggering.
 
----
+--
 
 --- entry
 section: 11.1
@@ -1512,9 +1512,9 @@ Common reasons:
 - Column header mismatch — Glific looks for exact header names.
 - Sheet exceeded row/cell limits.
 - Quota or rate limits hit.
-  See `Why is the google sheet sync failing` and `Solving For Sheet Sync Failures Issues` in main docs.
+ See `Why is the google sheet sync failing` and `Solving For Sheet Sync Failures Issues` in main docs.
 
----
+--
 
 --- entry
 section: 12
@@ -1534,7 +1534,7 @@ heading: 12. Integrations — when to use which
 | **Google Cloud Storage (GCS)**           | Required for sending/receiving media. See `Google Cloud Storage Setup - GCS`.                                                      |
 | **WhatsApp Groups Automation (Maytapi)** | Manage WhatsApp Groups, send polls. See `WhatsApp Groups Automation Features`.                                                     |
 
----
+--
 
 --- entry
 section: 13
@@ -1570,7 +1570,7 @@ source: https://glific.github.io/docs/docs/Starter%20Kit/12%20Pre-launch%20Chatb
 - **Green Tick** (verified business badge): apply via Meta after meeting volume + traffic criteria. See `How to get Green Tick in Whatsapp Business`.
 - **WhatsApp Quality Rating** check: monitor in Meta Business Manager. Low rating risks throttling. See `Check WhatsApp Quality Rating and Messaging Limits`.
 
----
+--
 
 --- entry
 section: 14
@@ -1607,7 +1607,7 @@ source: https://glific.github.io/docs/docs/FAQ/Get%20Glific%20Support/
 - **Weekly Tuesday support call**: any NGO can join.
 - **Consulting** for deeper help: paid; see consulting overview document linked in main docs.
 
----
+--
 
 --- entry
 section: 15.1
@@ -1709,7 +1709,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections
 
 Named groups of contacts. A collection has a Title, a Description and optional assigned staff — membership is **not** rule-based; contacts are added manually, by CSV import, or by the **Add to Collection** / **Remove from Collection** flow nodes. Used for targeted broadcasts, AB-test cohorts, and **Split by collection Membership**. (For a rule-based view of contacts, use a **Saved Search** instead.)
 
----
+--
 
 --- entry
 section: 16
@@ -1742,7 +1742,7 @@ heading: 16. Where to find specific things in the platform UI
 | Generate WhatsApp link / QR for a flow               | Flow row → **Share** icon (needs the flow to have keywords)             |
 | Export / Import a flow                               | Flow row → Export ↔ Flows page → **Import flow**                        |
 
----
+--
 
 --- entry
 section: 19
@@ -1923,12 +1923,12 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 1. Add a **Wait for Response** node, set Response Type to **has audio**, give it a result name (e.g., `voice_note`).
 2. The audio URL becomes available as `@results.voice_note` (or `@results.voice_note.url`).
 3. Add a **Call a webhook** node pointing to your backend API. In the Post Body, include the audio URL:
-   ```json
-   {
-     "contact": "@contact",
-     "audio_url": "@results.voice_note"
-   }
-   ```
+ ```json
+ {
+ "contact": "@contact",
+ "audio_url": "@results.voice_note"
+ }
+ ```
 4. Your backend downloads the audio from the URL and processes it (transcription, storage, etc.).
 
 You don't need to base64-encode anything inside Glific — the webhook just sends the URL string, and your backend fetches the audio.
@@ -2325,7 +2325,7 @@ Preview only runs the flow in the simulator — it doesn't change visibility on 
 
 If after all of these the flow is still not visible, reach out to support.
 
----
+--
 
 --- entry
 section: 20
@@ -2358,10 +2358,10 @@ heading: 20. Built-in Webhooks Reference › 20.1 `parse_via_chat_gpt` — call 
 
 ```json
 {
-  "question_text": "@results.user_question",
-  "prompt": "You are a helpful assistant for an NGO helpline.",
-  "model": "gpt-4o",
-  "temperature": 0
+ "question_text": "@results.user_question",
+ "prompt": "You are a helpful assistant for an NGO helpline.",
+ "model": "gpt-4o",
+ "temperature": 0
 }
 ```
 
@@ -2373,8 +2373,8 @@ heading: 20. Built-in Webhooks Reference › 20.1 `parse_via_chat_gpt` — call 
 
 ```json
 {
-  "success": true,
-  "parsed_msg": "I'm sorry, but I need the specific details of the issues reported..."
+ "success": true,
+ "parsed_msg": "I'm sorry, but I need the specific details of the issues reported..."
 }
 ```
 
@@ -2393,9 +2393,9 @@ heading: 20. Built-in Webhooks Reference › 20.2 `parse_via_gpt_vision` — ana
 
 ```json
 {
-  "prompt": "Describe what is in this photo and list the objects as JSON.",
-  "url": "@input.media_url",
-  "organization_id": "@organization.id"
+ "prompt": "Describe what is in this photo and list the objects as JSON.",
+ "url": "@input.media_url",
+ "organization_id": "@organization.id"
 }
 ```
 
@@ -2407,11 +2407,11 @@ heading: 20. Built-in Webhooks Reference › 20.2 `parse_via_gpt_vision` — ana
 
 ```json
 {
-  "success": true,
-  "response": {
-    "summary": "A car parked near trees on a sunny road.",
-    "detected_objects": ["car", "tree", "road"]
-  }
+ "success": true,
+ "response": {
+ "summary": "A car parked near trees on a sunny road.",
+ "detected_objects": ["car", "tree", "road"]
+ }
 }
 ```
 
@@ -2430,10 +2430,10 @@ heading: 20. Built-in Webhooks Reference › 20.3 `speech_to_text` — transcrib
 
 ```json
 {
-  "speech": "@input.media_url",
-  "organization_id": "@organization.id",
-  "flow_id": "@flow.id",
-  "contact_id": "@contact.id"
+ "speech": "@input.media_url",
+ "organization_id": "@organization.id",
+ "flow_id": "@flow.id",
+ "contact_id": "@contact.id"
 }
 ```
 
@@ -2456,10 +2456,10 @@ heading: 20. Built-in Webhooks Reference › 20.4 `text_to_speech` — generate 
 
 ```json
 {
-  "text": "@results.answer",
-  "organization_id": "@organization.id",
-  "flow_id": "@flow.id",
-  "contact_id": "@contact.id"
+ "text": "@results.answer",
+ "organization_id": "@organization.id",
+ "flow_id": "@flow.id",
+ "contact_id": "@contact.id"
 }
 ```
 
@@ -2496,18 +2496,18 @@ The pattern:
 1. **Call a webhook** node, Method `FUNCTION`, URL `filesearch-gpt`, with a `callback_url` in the body pointing at Glific's flow-resume endpoint.
 2. A **Wait for result** node right after it (see [4.4](#44-wait-for-result)). This parks the flow until the callback arrives or the wait expires.
 
-   Separately, if you put a `wait_time` key in the **Call a webhook** node's own body (the async-webhook form), the backend caps it at **5 minutes** — configure more and publishing warns you and uses 5 minutes anyway.
+ Separately, if you put a `wait_time` key in the **Call a webhook** node's own body (the async-webhook form), the backend caps it at **5 minutes** — configure more and publishing warns you and uses 5 minutes anyway.
 3. When the assistant finishes, the callback resumes the flow and the answer is available under the webhook node's result name.
 
 Body shape for step 1:
 
 ```json
 {
-  "question": "@results.user_question",
-  "flow_id": "@flow.id",
-  "contact_id": "@contact.id",
-  "assistant_id": "asst_xxxxxxxx",
-  "callback_url": "https://<your-org>.glific.com/webhook/flow_resume"
+ "question": "@results.user_question",
+ "flow_id": "@flow.id",
+ "contact_id": "@contact.id",
+ "assistant_id": "asst_xxxxxxxx",
+ "callback_url": "https://<your-org>.glific.com/webhook/flow_resume"
 }
 ```
 
@@ -2524,12 +2524,12 @@ This is an **async** webhook — it acknowledges immediately, parks the flow, an
 
 ```json
 {
-  "question": "@results.user_question",
-  "assistant_id": "asst_xxxxxxxx",
-  "organization_id": "@organization.id",
-  "flow_id": "@flow.id",
-  "contact_id": "@contact.id",
-  "thread_id": "@contact.fields.thread_id"
+ "question": "@results.user_question",
+ "assistant_id": "asst_xxxxxxxx",
+ "organization_id": "@organization.id",
+ "flow_id": "@flow.id",
+ "contact_id": "@contact.id",
+ "thread_id": "@contact.fields.thread_id"
 }
 ```
 
@@ -2541,9 +2541,9 @@ This is an **async** webhook — it acknowledges immediately, parks the flow, an
 
 ```json
 {
-  "thread_id": "resp_0942351ee8cef32b0068f1e9c178808197b5802d79b26ec5eb",
-  "success": true,
-  "message": "The document does not contain that information.\n\nIf you have any specific questions about the ASER Report 2024, feel free to ask!"
+ "thread_id": "resp_0942351ee8cef32b0068f1e9c178808197b5802d79b26ec5eb",
+ "success": true,
+ "message": "The document does not contain that information.\n\nIf you have any specific questions about the ASER Report 2024, feel free to ask!"
 }
 ```
 
@@ -2566,11 +2566,11 @@ Optional body key `speech_engine`: leave it out (or empty) for the default **Gem
 
 ```json
 {
-  "contact": "",
-  "speech": "",
-  "assistant_id": "",
-  "source_language": "",
-  "target_language": ""
+ "contact": "",
+ "speech": "",
+ "assistant_id": "",
+ "source_language": "",
+ "target_language": ""
 }
 ```
 
@@ -2580,10 +2580,10 @@ Pass `@contact` for `contact`, the voice-note URL (`@input.media_url`) for `spee
 
 ```json
 {
-  "translated_text": "\"To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.\" — Ralph Waldo Emerson\n\nIt seems like you might be expressing a sense of feeling overwhelmed or misunderstood...",
-  "thread_id": "thread_UBXPd3VOCDIOux5TMwsT1qYQ",
-  "success": true,
-  "media_url": "https://storage.googleapis.com/cc-tides/uploads/Bhasini/outbound/7472cd34-...mp3"
+ "translated_text": "\"To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.\" — Ralph Waldo Emerson\n\nIt seems like you might be expressing a sense of feeling overwhelmed or misunderstood...",
+ "thread_id": "thread_UBXPd3VOCDIOux5TMwsT1qYQ",
+ "success": true,
+ "media_url": "https://storage.googleapis.com/cc-tides/uploads/Bhasini/outbound/7472cd34-...mp3"
 }
 ```
 
@@ -2602,8 +2602,8 @@ heading: 20. Built-in Webhooks Reference › 20.9 `geolocation` — reverse-geoc
 
 ```json
 {
-  "lat": "",
-  "long": ""
+ "lat": "",
+ "long": ""
 }
 ```
 
@@ -2613,13 +2613,13 @@ Use `@input.location.latitude` and `@input.location.longitude` when the incoming
 
 ```json
 {
-  "success": true,
-  "city": "Lucknow",
-  "state": "Uttar Pradesh",
-  "country": "India",
-  "postal_code": "226016",
-  "district": "Gomti Nagar",
-  "address": "B-4/32, Vivek Khand, Gomti Nagar, Lucknow, Uttar Pradesh 226016, India"
+ "success": true,
+ "city": "Lucknow",
+ "state": "Uttar Pradesh",
+ "country": "India",
+ "postal_code": "226016",
+ "district": "Gomti Nagar",
+ "address": "B-4/32, Vivek Khand, Gomti Nagar, Lucknow, Uttar Pradesh 226016, India"
 }
 ```
 
@@ -2638,9 +2638,9 @@ heading: 20. Built-in Webhooks Reference › 20.10 `send_wa_group_poll` — push
 
 ```json
 {
-  "wa_group": "@contact.id",
-  "poll_uuid": "the-poll-uuid",
-  "organization_id": "@organization.id"
+ "wa_group": "@contact.id",
+ "poll_uuid": "the-poll-uuid",
+ "organization_id": "@organization.id"
 }
 ```
 
@@ -2650,8 +2650,8 @@ heading: 20. Built-in Webhooks Reference › 20.10 `send_wa_group_poll` — push
 
 ```json
 {
-  "success": true,
-  "message": "Poll sent successfully to the WhatsApp group."
+ "success": true,
+ "message": "Poll sent successfully to the WhatsApp group."
 }
 ```
 
@@ -2670,10 +2670,10 @@ heading: 20. Built-in Webhooks Reference › 20.11 `create_certificate` — gene
 
 ```json
 {
-  "certificate_id": 5,
-  "contact": "@contact",
-  "replace_texts": { "name": "@contact.name", "course": "Module 4" },
-  "organization_id": "@organization.id"
+ "certificate_id": 5,
+ "contact": "@contact",
+ "replace_texts": { "name": "@contact.name", "course": "Module 4" },
+ "organization_id": "@organization.id"
 }
 ```
 
@@ -2688,8 +2688,8 @@ All four keys are **required**:
 
 ```json
 {
-  "certificate_url": "https://storage.googleapis.com/glific-media-bucket/certificate_id_5_contact_12345.png",
-  "success": true
+ "certificate_url": "https://storage.googleapis.com/glific-media-bucket/certificate_id_5_contact_12345.png",
+ "success": true
 }
 ```
 
@@ -2697,7 +2697,7 @@ All four keys are **required**:
 
 **Use it for:** course-completion certificates, participation badges, leaderboard awards. See [15.5](#155-custom-certificates) for template setup.
 
----
+--
 
 _End of companion knowledge base. For UI screenshots and visual examples, refer back to the main `merged_documentation 2.md` or the live docs at https://glific.github.io/docs/._
 
@@ -2712,7 +2712,7 @@ heading: 20. Built-in Webhooks Reference › 20.12 `get_buttons` — split text 
 
 ```json
 {
-  "buttons_data": "@results.options"
+ "buttons_data": "@results.options"
 }
 ```
 
@@ -2720,9 +2720,9 @@ heading: 20. Built-in Webhooks Reference › 20.12 `get_buttons` — split text 
 
 ```json
 {
-  "buttons": { "button_1": "Yes", "button_2": "No", "button_3": "Maybe" },
-  "button_count": 3,
-  "is_valid": true
+ "buttons": { "button_1": "Yes", "button_2": "No", "button_3": "Maybe" },
+ "button_count": 3,
+ "is_valid": true
 }
 ```
 
@@ -2739,8 +2739,8 @@ heading: 20. Built-in Webhooks Reference › 20.13 `check_response` — compare 
 
 ```json
 {
-  "correct_response": "@results.answer_key",
-  "user_response": "@results.user_answer"
+ "correct_response": "@results.answer_key",
+ "user_response": "@results.user_answer"
 }
 ```
 

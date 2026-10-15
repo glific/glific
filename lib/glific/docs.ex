@@ -289,11 +289,6 @@ defmodule Glific.Docs do
     |> Enum.take(Keyword.get(opts, :limit, 5))
   end
 
-  # A one-word question can only ever score a single heading match, so holding
-  # it to the full floor would reject every one of them.
-  defp floor_for([_one_term]), do: @heading_weight
-  defp floor_for(_several), do: @minimum_overlap
-
   @doc "The lexical pass on its own."
   @spec lexical(String.t(), [entry()]) :: [section()]
   def lexical(question, entries) do
@@ -303,13 +298,11 @@ defmodule Glific.Docs do
       []
     else
       identifiers = identifiers(question)
-      floor = floor_for(terms)
-
       patterns = matchers(terms)
 
       entries
       |> Enum.map(&{overlap(&1.section, patterns, identifiers), &1.section})
-      |> Enum.filter(&keep?(&1, floor, length(terms)))
+      |> Enum.filter(&keep?(&1, length(terms)))
       |> Enum.sort_by(fn {{score, _matched}, section} -> {-score, byte_size(section.body)} end)
       |> Enum.take(@candidates)
       |> Enum.map(&elem(&1, 1))
@@ -386,9 +379,18 @@ defmodule Glific.Docs do
   @spec title(section()) :: String.t()
   def title(section), do: section.heading_path |> String.split(@separator) |> List.last()
 
-  defp keep?({{score, matched}, _section}, floor, count) do
-    if count < @minimum_overlap, do: matched == count, else: score >= floor
-  end
+  # How many terms a question has decides what it can score, so each length
+  # qualifies its own way. One word says too little to trust where it appears
+  # in prose alone, so it has to name the section or be an identifier. Too few
+  # words to reach @minimum_overlap on body text — a pasted error string — must
+  # match every term they have instead. Longer questions clear the floor on
+  # weight alone.
+  defp keep?({{score, _matched}, _section}, 1), do: score >= @heading_weight
+
+  defp keep?({{_score, matched}, _section}, count) when count < @minimum_overlap,
+    do: matched == count
+
+  defp keep?({{score, _matched}, _section}, _count), do: score >= @minimum_overlap
 
   defp overlap(section, terms, identifiers) do
     heading = String.downcase(section.heading_path)
