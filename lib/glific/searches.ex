@@ -187,15 +187,20 @@ defmodule Glific.Searches do
 
   @spec where_in_inbox(Ecto.Query.t()) :: Ecto.Query.t()
   defp where_in_inbox(query) do
+    organization_id = Repo.get_organization_id()
+
+    # An uncorrelated, organization-scoped subquery: a correlated EXISTS made Postgres scan every
+    # organization's web identities on each inbox query.
+    web_contact_ids =
+      from(ci in ContactIdentity,
+        where: ci.organization_id == ^organization_id and ci.channel == :web,
+        select: ci.contact_id
+      )
+
     where(
       query,
       [c: c],
-      c.contact_type in ["WABA", "WABA+WA"] or
-        exists(
-          from(ci in ContactIdentity,
-            where: ci.contact_id == parent_as(:c).id and ci.channel == :web
-          )
-        )
+      c.contact_type in ["WABA", "WABA+WA"] or c.id in subquery(web_contact_ids)
     )
   end
 
