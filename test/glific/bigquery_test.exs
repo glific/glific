@@ -12,11 +12,13 @@ defmodule Glific.BigQueryTest do
     BigQuery.Schema,
     Contacts.Contact,
     Flows.FlowResult,
+    Jobs,
     Partners,
     Partners.Saas,
     Repo,
     RepoReplica,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Tickets.Ticket
   }
 
   import Glific.Fixtures
@@ -1047,6 +1049,86 @@ defmodule Glific.BigQueryTest do
 
       assert job_after.table_id != initial_table_id
     end
+  end
+
+  describe "update sync watermark" do
+    setup %{organization_id: organization_id} do
+      BigQuery.insert_bigquery_jobs(organization_id)
+      Repo.delete_all(from t in Ticket, where: t.organization_id == ^organization_id)
+      :ok
+    end
+
+    test "advances a stale watermark to just before now when no rows changed, sending nothing",
+         %{organization_id: organization_id} do
+      set_tickets_watermark(organization_id, ~U[2022-01-01 00:00:00.000000Z])
+      test_pid = self()
+
+      Tesla.Mock.mock(fn env ->
+        send(test_pid, {:bigquery_request, env.url})
+        %Tesla.Env{status: 200, body: "{}"}
+      end)
+
+      perform_tickets_update(organization_id)
+
+      seconds_behind_now = DateTime.diff(DateTime.utc_now(), tickets_watermark(organization_id))
+      assert seconds_behind_now in 300..330
+      refute_received {:bigquery_request, _}
+    end
+
+    test "keeps a watermark that is already recent when no rows changed",
+         %{organization_id: organization_id} do
+      recent_watermark = DateTime.add(DateTime.utc_now(), -60, :second)
+      set_tickets_watermark(organization_id, recent_watermark)
+
+      perform_tickets_update(organization_id)
+
+      assert DateTime.compare(tickets_watermark(organization_id), recent_watermark) == :eq
+    end
+
+    test "moves the watermark to the newest changed row, not to now, when rows changed",
+         %{organization_id: organization_id} do
+      set_tickets_watermark(organization_id, ~U[2022-01-01 00:00:00.000000Z])
+      contact = contact_fixture(%{organization_id: organization_id})
+
+      Repo.insert!(%Ticket{
+        contact_id: contact.id,
+        status: "open",
+        organization_id: organization_id,
+        inserted_at: ~U[2023-05-01 10:00:00Z],
+        updated_at: ~U[2023-05-01 10:00:30Z]
+      })
+
+      Tesla.Mock.mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+      end)
+
+      perform_tickets_update(organization_id)
+
+      assert DateTime.compare(tickets_watermark(organization_id), ~U[2023-05-01 10:00:30Z]) ==
+               :eq
+    end
+  end
+
+  defp set_tickets_watermark(organization_id, last_updated_at) do
+    {:ok, _bigquery_job} =
+      Jobs.update_bigquery_job(organization_id, "tickets", %{last_updated_at: last_updated_at})
+  end
+
+  defp tickets_watermark(organization_id) do
+    Repo.get_by!(BigQueryJob, organization_id: organization_id, table: "tickets").last_updated_at
+  end
+
+  defp perform_tickets_update(organization_id) do
+    BigQueryWorker.perform(%Oban.Job{
+      args: %{"table" => "tickets", "organization_id" => organization_id, "action" => "update"}
+    })
   end
 
   describe "validate_bigquery_credentials/1" do

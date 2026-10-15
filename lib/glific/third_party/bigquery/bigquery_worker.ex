@@ -79,6 +79,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @per_min_limit 500
 
+  # Rows can become visible with an updated_at slightly in the past (open transactions,
+  # replica lag), so an idle table's watermark stops this far short of now.
+  @idle_watermark_lag_seconds 300
+
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to bigquery
@@ -243,28 +247,35 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_id
   end
 
-  @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
+  @spec insert_last_updated(String.t(), DateTime.t(), non_neg_integer) :: DateTime.t() | nil
   defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
     Logger.debug(
       "Checking for bigquery job for org_id: #{organization_id} table: #{table_name} since: #{table_last_updated_at}"
     )
 
-    max_last_update =
-      BigQuery.get_table_struct(table_name)
-      |> where([tb], tb.updated_at > ^table_last_updated_at)
-      |> where(
-        [tb],
-        ## Adding clause so that we don't pick the newly inserted rows.
-        fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
-      )
-      |> add_organization_id(table_name, organization_id)
-      |> order_by([tb], [tb.updated_at, tb.id])
-      |> limit(@per_min_limit)
-      |> RepoReplica.aggregate(:max, :updated_at, timeout: 40_000)
+    BigQuery.get_table_struct(table_name)
+    |> where([tb], tb.updated_at > ^table_last_updated_at)
+    |> where(
+      [tb],
+      ## Adding clause so that we don't pick the newly inserted rows.
+      fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
+    )
+    |> add_organization_id(table_name, organization_id)
+    |> order_by([tb], [tb.updated_at, tb.id])
+    |> limit(@per_min_limit)
+    |> RepoReplica.aggregate(:max, :updated_at, timeout: 40_000)
+  end
 
-    if is_nil(max_last_update),
-      do: table_last_updated_at,
-      else: max_last_update
+  # A watermark left behind on an idle table makes every later run rescan all rows
+  # updated since then, across orgs, so it catches up once a run finds nothing.
+  @spec advance_idle_watermark(String.t(), DateTime.t(), non_neg_integer) :: :ok
+  defp advance_idle_watermark(table, table_last_updated_at, organization_id) do
+    caught_up_at = DateTime.add(DateTime.utc_now(), -@idle_watermark_lag_seconds, :second)
+
+    if DateTime.compare(caught_up_at, table_last_updated_at) == :gt,
+      do: Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: caught_up_at})
+
+    :ok
   end
 
   @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer, String.t()) ::
@@ -307,14 +318,19 @@ defmodule Glific.BigQuery.BigQueryWorker do
       :ok
     else
       table_last_updated_at = table_last_updated_at || DateTime.utc_now()
-      last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-      queue_table_data(table, organization_id, %{
-        action: :update,
-        max_id: nil,
-        last_updated_at: last_updated_at,
-        table_last_updated_at: table_last_updated_at
-      })
+      case insert_last_updated(table, table_last_updated_at, organization_id) do
+        nil ->
+          advance_idle_watermark(table, table_last_updated_at, organization_id)
+
+        last_updated_at ->
+          queue_table_data(table, organization_id, %{
+            action: :update,
+            max_id: nil,
+            last_updated_at: last_updated_at,
+            table_last_updated_at: table_last_updated_at
+          })
+      end
     end
   end
 
