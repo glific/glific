@@ -26,16 +26,42 @@ defmodule GlificWeb.Schema.GuardrailTest do
     :ok
   end
 
+  @doc_links %{
+    "gender_assumption_bias" =>
+      "https://projecttech4devai.github.io/kaapi-docs/guardrails/gender-neutrality",
+    "uli_slur_match" =>
+      "https://projecttech4devai.github.io/kaapi-docs/guardrails/content-safety",
+    "pii_remover" =>
+      "https://projecttech4devai.github.io/kaapi-docs/guardrails/privacy-protection",
+    "topic_relevance_llm" =>
+      "https://projecttech4devai.github.io/kaapi-docs/guardrails/scope-control"
+  }
+
+  defp mock_kaapi_response(status, body) do
+    Tesla.Mock.mock(fn %{method: :get} ->
+      %Tesla.Env{
+        status: status,
+        headers: [{"content-type", "application/json"}],
+        body: Jason.encode!(body)
+      }
+    end)
+  end
+
   test "guardrailValidators returns only supported validator types with their schema and doc link",
-       %{
-         manager: user
-       } do
+       %{manager: user} do
     Tesla.Mock.mock(fn %{method: :get, url: url, headers: headers} ->
       assert String.ends_with?(url, "/api/v1/guardrails")
       assert {"X-API-KEY", "sk_test_key"} in headers
 
       validators =
-        for type <- ["profanity_free", "pii_remover", "llm_critic", "uli_slur_match"],
+        for type <- [
+              "profanity_free",
+              "gender_assumption_bias",
+              "uli_slur_match",
+              "llm_critic",
+              "pii_remover",
+              "topic_relevance_llm"
+            ],
             do: %{"type" => type, "config" => @schema}
 
       %Tesla.Env{
@@ -46,34 +72,33 @@ defmodule GlificWeb.Schema.GuardrailTest do
     end)
 
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+    validators = get_in(query_data, [:data, "guardrailValidators", "validators"])
 
-    assert [
-             %{
-               "type" => "pii_remover",
-               "config" => pii_config,
-               "link" =>
-                 "https://projecttech4devai.github.io/kaapi-docs/guardrails/privacy-protection"
-             },
-             %{
-               "type" => "uli_slur_match",
-               "config" => slur_config,
-               "link" =>
-                 "https://projecttech4devai.github.io/kaapi-docs/guardrails/content-safety"
-             }
-           ] = get_in(query_data, [:data, "guardrailValidators", "validators"])
+    assert Enum.map(validators, & &1["type"]) ==
+             ["gender_assumption_bias", "uli_slur_match", "pii_remover", "topic_relevance_llm"]
 
-    assert Jason.decode!(pii_config) == @schema
-    assert Jason.decode!(slur_config) == @schema
+    for validator <- validators do
+      assert validator["link"] == @doc_links[validator["type"]]
+      assert Jason.decode!(validator["config"]) == @schema
+    end
   end
 
   test "guardrailValidators returns the error of a failed Kaapi response", %{manager: user} do
-    Tesla.Mock.mock(fn %{method: :get} ->
-      %Tesla.Env{status: 500, body: %{success: false, error: "Failed to retrieve schema"}}
-    end)
+    mock_kaapi_response(401, %{success: false, error: "Invalid API key"})
 
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
 
-    assert [%{message: "Failed to retrieve schema"}] = query_data.errors
+    assert [%{message: "Invalid API key"}] = query_data.errors
+  end
+
+  test "guardrailValidators returns a generic error when Kaapi's error body has no message",
+       %{manager: user} do
+    mock_kaapi_response(422, %{detail: [%{msg: "field required"}]})
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+
+    assert [%{message: "An unknown error occurred, please contact Glific support."}] =
+             query_data.errors
   end
 
   test "guardrailValidators returns a retry message when Kaapi times out", %{manager: user} do
@@ -101,5 +126,13 @@ defmodule GlificWeb.Schema.GuardrailTest do
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
 
     assert [%{message: "Kaapi is not active"}] = query_data.errors
+  end
+
+  test "returns unauthorized for a user below staff role" do
+    user = Fixtures.user_fixture(%{roles: ["none"]})
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+
+    assert [%{message: "Unauthorized"}] = query_data.errors
   end
 end
