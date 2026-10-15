@@ -15,7 +15,7 @@ defmodule GlificWeb.Resolvers.ContactIdentities do
   @spec contact_by_identity(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def contact_by_identity(_, %{channel: channel, identifier: identifier}, _context) do
-    case Contacts.fetch_by_identity(channel, identifier) do
+    case Contacts.find_by_identity(channel, identifier) do
       {:ok, contact} ->
         {:ok, %{contact: contact}}
 

@@ -6,10 +6,11 @@ defmodule Glific.Search.Full do
   import Ecto.Query
 
   alias Glific.{
-    Contacts.Identities,
+    Contacts.TermSearch,
     Flows.FlowLabel,
     Groups.ContactGroup,
-    Repo
+    Repo,
+    Users.User
   }
 
   @doc """
@@ -17,12 +18,13 @@ defmodule Glific.Search.Full do
   and sanitizing the input. The two functions combined serve to augment
   the query with the link to the full text index
   """
-  @spec run(Ecto.Query.t(), String.t(), map()) :: Ecto.Query.t()
-  def run(query, term, args) do
+  @spec run(Ecto.Query.t(), String.t(), map(), User.t() | nil) :: Ecto.Query.t()
+  def run(query, term, args, user) do
     query
     |> run_helper(
       term |> normalize(),
-      args
+      args,
+      user
     )
   end
 
@@ -57,21 +59,20 @@ defmodule Glific.Search.Full do
 
   defp run_include_labels(query, _args), do: query
 
-  @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
-  defp run_helper(query, term, args) when term != nil and term != "" do
+  @spec run_helper(Ecto.Queryable.t(), String.t(), map(), User.t() | nil) ::
+          Ecto.Queryable.t()
+  defp run_helper(query, term, args, user) when term != nil and term != "" do
     query
-    |> where([m: m], ilike(m.body, ^"%#{term}%"))
-    |> or_where(
+    |> where(
       ^dynamic(
-        [c: c],
-        ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%") or
-          ^Identities.identifier_match(term)
+        [m: m, c: c],
+        ilike(m.body, ^"%#{term}%") or ^TermSearch.match(term, user)
       )
     )
     |> apply_filters(args.filter)
   end
 
-  defp run_helper(query, _, args),
+  defp run_helper(query, _, args, _user),
     do:
       query
       |> apply_filters(args.filter)

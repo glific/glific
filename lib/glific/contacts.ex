@@ -18,6 +18,7 @@ defmodule Glific.Contacts do
     Contacts.ContactHistory,
     Contacts.Identities,
     Contacts.Location,
+    Contacts.TermSearch,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.UserGroup,
@@ -99,19 +100,11 @@ defmodule Glific.Contacts do
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
+    user = Repo.get_current_user()
 
     Enum.reduce(filter, query, fn
       {:term, term}, query ->
-        pattern = "%#{term}%"
-
-        where(
-          query,
-          ^dynamic(
-            [q],
-            ilike(field(q, :name), ^pattern) or ilike(field(q, :phone), ^pattern) or
-              ^Identities.identifier_match(term)
-          )
-        )
+        where(query, ^TermSearch.match(term, user))
 
       {:status, status}, query ->
         from(q in query, where: q.status == ^status)
@@ -1103,28 +1096,38 @@ defmodule Glific.Contacts do
   """
   @spec fetch_by_identity(:whatsapp | :web, String.t() | nil) ::
           {:ok, Contact.t()} | {:error, :no_identifier | :not_found}
-  def fetch_by_identity(_channel, identifier) when identifier in [nil, ""],
-    do: {:error, :no_identifier}
-
-  def fetch_by_identity(:web, identifier) when is_binary(identifier),
-    do: Identities.fetch_contact(:web, identifier)
-
-  def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
-    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone) do
-      fetch_by_phone_and_add_whatsapp_identity(phone)
+  def fetch_by_identity(:whatsapp, phone) when is_binary(phone) and phone != "" do
+    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone),
+         {:ok, contact} <- fetch_by_phone(phone) do
+      Identities.set_whatsapp_identity(contact)
+      {:ok, contact}
     end
   end
 
-  @spec fetch_by_phone_and_add_whatsapp_identity(String.t()) ::
-          {:ok, Contact.t()} | {:error, :not_found}
-  defp fetch_by_phone_and_add_whatsapp_identity(phone) do
-    case Repo.get_by(Contact, %{phone: phone}) do
-      nil ->
-        {:error, :not_found}
+  def fetch_by_identity(channel, identifier), do: find_by_identity(channel, identifier)
 
-      contact ->
-        Identities.set_whatsapp_identity(contact)
-        {:ok, contact}
+  @doc """
+  Like `fetch_by_identity/2`, but never writes: a WhatsApp phone with no identity row is found
+  through `contacts.phone` and the missing row is not added.
+  """
+  @spec find_by_identity(:whatsapp | :web, String.t() | nil) ::
+          {:ok, Contact.t()} | {:error, :no_identifier | :not_found}
+  def find_by_identity(_channel, identifier) when identifier in [nil, ""],
+    do: {:error, :no_identifier}
+
+  def find_by_identity(:web, identifier) when is_binary(identifier),
+    do: Identities.fetch_contact(:web, identifier)
+
+  def find_by_identity(:whatsapp, phone) when is_binary(phone) do
+    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone),
+         do: fetch_by_phone(phone)
+  end
+
+  @spec fetch_by_phone(String.t()) :: {:ok, Contact.t()} | {:error, :not_found}
+  defp fetch_by_phone(phone) do
+    case Repo.get_by(Contact, %{phone: phone}) do
+      nil -> {:error, :not_found}
+      contact -> {:ok, contact}
     end
   end
 

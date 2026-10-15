@@ -135,6 +135,20 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
                to_string(contact.id)
     end
 
+    test "a whatsapp lookup through contacts.phone does not write an identity row", %{
+      manager: user
+    } do
+      contact = Fixtures.contact_fixture(%{phone: "919876500778"})
+      Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id))
+
+      assert {:ok, query_data} = by_identity(user, "919876500778", "WHATSAPP")
+
+      assert get_in(query_data, [:data, "contactByIdentity", "contact", "id"]) ==
+               to_string(contact.id)
+
+      assert [] == Repo.all(from(i in ContactIdentity, where: i.contact_id == ^contact.id))
+    end
+
     test "returns an error when no contact has the identifier", %{manager: user} do
       assert {:ok, query_data} = by_identity(user, "nobody")
 

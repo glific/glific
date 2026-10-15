@@ -1,8 +1,13 @@
 defmodule Glific.Searches.InboxTest do
   use Glific.DataCase
 
+  import Ecto.Query
+
   alias Glific.{
+    Contacts.Contact,
+    Contacts.TermSearch,
     Fixtures,
+    Groups,
     Repo,
     Searches
   }
@@ -79,12 +84,37 @@ defmodule Glific.Searches.InboxTest do
   end
 
   describe "search by identifier" do
-    test "a manager finds a contact by a part of its username, in any case", %{
+    test "a manager finds a contact by the start of its username, in any case", %{
       organization_id: organization_id
     } do
       contact = username_contact()
 
-      assert contact.id in search_contact_ids(organization_id, %{term: "AVI_1"})
+      assert contact.id in search_contact_ids(organization_id, %{term: "RAVI_1"})
+      assert contact.id in search_contact_ids(organization_id, %{term: "ravi"})
+    end
+
+    test "a username is not matched in the middle", %{organization_id: organization_id} do
+      contact = username_contact()
+
+      refute contact.id in search_contact_ids(organization_id, %{term: "avi_12"})
+      refute contact.id in search_contact_ids(organization_id, %{term: "12"})
+    end
+
+    test "_ and % in the term match literally", %{organization_id: organization_id} do
+      [literal, underscore_wildcard, percent_wildcard] =
+        for username <- ["ravi_1x", "ravix1", "ravi21"] do
+          contact = Fixtures.contact_without_phone_fixture()
+          Fixtures.contact_identity_fixture(%{contact_id: contact.id, identifier: username})
+          contact
+        end
+
+      results = search_contact_ids(organization_id, %{term: "ravi_1"})
+
+      assert literal.id in results
+      refute underscore_wildcard.id in results
+      refute percent_wildcard.id in results
+      refute literal.id in search_contact_ids(organization_id, %{term: "%"})
+      refute literal.id in search_contact_ids(organization_id, %{term: "ravi%"})
     end
 
     test "a staff user does not find a contact by its username", %{
@@ -96,7 +126,48 @@ defmodule Glific.Searches.InboxTest do
       refute contact.id in search_contact_ids(organization_id, %{term: "ravi_12"})
     end
 
-    test "another organization's identity is not matched", %{organization_id: organization_id} do
+    test "a blocked contact is not found by its username or name", %{
+      organization_id: organization_id
+    } do
+      contact = username_contact(%{name: "Blocked Ravi", status: :blocked})
+
+      refute contact.id in search_contact_ids(organization_id, %{term: "ravi_12"})
+      refute contact.id in search_contact_ids(organization_id, %{term: "Blocked Ravi"})
+    end
+
+    test "a restricted staff user finds a name match only within their groups", %{
+      organization_id: organization_id
+    } do
+      user = Fixtures.user_fixture(%{roles: ["staff"], is_restricted: true})
+      group = Fixtures.group_fixture(%{label: "Ravi group"})
+
+      {:ok, _user_group} =
+        Groups.create_user_group(%{
+          user_id: user.id,
+          group_id: group.id,
+          organization_id: organization_id
+        })
+
+      visible = Fixtures.contact_fixture(%{name: "Zorbax visible"})
+      hidden = Fixtures.contact_fixture(%{name: "Zorbax hidden"})
+
+      {:ok, _contact_group} =
+        Groups.create_contact_group(%{
+          contact_id: visible.id,
+          group_id: group.id,
+          organization_id: organization_id
+        })
+
+      Repo.put_current_user(user)
+      results = search_contact_ids(organization_id, %{term: "Zorbax"})
+
+      assert visible.id in results
+      refute hidden.id in results
+    end
+
+    test "the username match stays within the organization of the outer query", %{
+      organization_id: organization_id
+    } do
       other_organization = Fixtures.organization_fixture()
 
       other =
@@ -110,7 +181,26 @@ defmodule Glific.Searches.InboxTest do
 
       Repo.put_organization_id(organization_id)
 
-      refute other.id in search_contact_ids(organization_id, %{term: "ravi_12"})
+      matched =
+        Contact
+        |> where(^TermSearch.match("ravi_12", Repo.get_current_user()))
+        |> select([c], c.id)
+        |> Repo.all(skip_organization_id: true)
+
+      refute other.id in matched
+    end
+
+    test "no username is matched without a user", %{organization_id: organization_id} do
+      contact = username_contact()
+
+      matched =
+        Contact
+        |> where(^TermSearch.match("ravi_12", nil))
+        |> select([c], c.id)
+        |> Repo.all()
+
+      refute contact.id in matched
+      assert organization_id == contact.organization_id
     end
   end
 end
