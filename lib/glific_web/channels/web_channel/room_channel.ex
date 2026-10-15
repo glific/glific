@@ -242,17 +242,19 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   def handle_in("renew_token", _params, socket),
     do: {:reply, {:error, %{reason: "invalid_token"}}, socket}
 
+  # A socket renews only with the kind of token it connected with, so an NGO token can never extend
+  # a one-time-code session past its cap.
   @spec renewed_expiry(String.t(), Phoenix.Socket.t()) :: {:ok, integer()} | :error
-  defp renewed_expiry(token, socket) do
-    case Token.verify_contact_token(token) do
-      {:ok, payload} ->
-        if payload.contact_id == socket.assigns.current_contact.id and
-             payload.org_id == socket.assigns.organization_id,
-           do: {:ok, payload.exp},
-           else: :error
+  defp renewed_expiry(token, %{assigns: %{token_kind: :ngo}} = socket),
+    do: renewed_ngo_expiry(token, socket)
 
-      {:error, _reason} ->
-        renewed_ngo_expiry(token, socket)
+  defp renewed_expiry(token, socket) do
+    with {:ok, payload} <- Token.verify_contact_token(token),
+         true <- payload.contact_id == socket.assigns.current_contact.id,
+         true <- payload.org_id == socket.assigns.organization_id do
+      {:ok, payload.exp}
+    else
+      _refused -> :error
     end
   end
 

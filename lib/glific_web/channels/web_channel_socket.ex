@@ -33,6 +33,7 @@ defmodule GlificWeb.WebChannelSocket do
         |> assign(:token_exp, session.token_exp)
         |> assign(:session_id, session.session_id)
         |> assign(:session_started_at, session.session_started_at)
+        |> assign(:token_kind, session.token_kind)
 
       {:ok, socket}
     else
@@ -73,7 +74,8 @@ defmodule GlificWeb.WebChannelSocket do
          organization_id: payload.org_id,
          token_exp: payload.exp,
          session_id: payload.session_id,
-         session_started_at: payload.session_started_at
+         session_started_at: payload.session_started_at,
+         token_kind: :glific
        }}
     else
       _refused -> :error
@@ -94,7 +96,8 @@ defmodule GlificWeb.WebChannelSocket do
          organization_id: organization_id,
          token_exp: claims.exp,
          session_id: "web:" <> claims.sub,
-         session_started_at: System.system_time(:second)
+         session_started_at: System.system_time(:second),
+         token_kind: :ngo
        }}
     else
       _refused -> :error

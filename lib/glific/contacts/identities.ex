@@ -25,8 +25,7 @@ defmodule Glific.Contacts.Identities do
   @insert_chunk_size 1_000
 
   @doc """
-  The contact holding an identity in the current organization; web identifiers are case-insensitive.
-  A WhatsApp identity only counts while it still equals the contact's phone.
+  The contact holding an identity; web usernames are case-insensitive, WhatsApp ones must equal its phone.
   """
   @spec fetch_contact(MessageChannel.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, :not_found}
@@ -61,8 +60,7 @@ defmodule Glific.Contacts.Identities do
   end
 
   @doc """
-  Makes a contact's WhatsApp identity match its current phone, creating it if it has none. A row
-  for that phone left on another contact whose phone has since changed is deleted first.
+  Makes the contact's WhatsApp identity its current phone, replacing older or stale rows for it.
   """
   @spec set_whatsapp_identity(Contact.t()) :: :ok
   def set_whatsapp_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
@@ -70,17 +68,14 @@ defmodule Glific.Contacts.Identities do
   def set_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
     delete_stale_whatsapp_identities(contact)
 
-    {updated, _rows} =
-      from(i in ContactIdentity,
-        where: i.channel == :whatsapp and i.contact_id == ^contact_id
-      )
-      |> Repo.update_all(set: [identifier: phone, updated_at: DateTime.utc_now()])
+    from(i in ContactIdentity,
+      where: i.channel == :whatsapp and i.contact_id == ^contact_id and i.identifier != ^phone
+    )
+    |> Repo.delete_all()
 
-    if updated == 0 do
-      contact
-      |> identity_changeset(:whatsapp, phone)
-      |> Repo.insert(ignore_conflict_opts())
-    end
+    contact
+    |> identity_changeset(:whatsapp, phone)
+    |> Repo.insert(ignore_conflict_opts())
 
     :ok
   end
@@ -102,8 +97,7 @@ defmodule Glific.Contacts.Identities do
   end
 
   @doc """
-  Records the `(whatsapp, phone)` identity of many contacts at once, skipping those that exist,
-  inserting any number of rows in batches. Every row belongs to `organization_id`.
+  Bulk-inserts the WhatsApp identity of each saved contact row, in batches, skipping existing ones.
   """
   @spec insert_whatsapp_identities([map()], non_neg_integer()) :: :ok
   def insert_whatsapp_identities(rows, organization_id) do
@@ -132,8 +126,7 @@ defmodule Glific.Contacts.Identities do
   end
 
   @doc """
-  Adds a web username to a contact. Succeeds without change when the contact already holds it;
-  a username held by another contact is never moved and comes back as an error on `:identifier`.
+  Adds a web username to a contact; one it already holds is accepted, one another contact holds is refused.
   """
   @spec add_web_identity(Contact.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
@@ -161,8 +154,8 @@ defmodule Glific.Contacts.Identities do
   @spec identifier_taken?(Ecto.Changeset.t()) :: boolean()
   def identifier_taken?(changeset),
     do:
-      Enum.any?(changeset.errors, fn {_field, {_message, opts}} ->
-        opts[:constraint] == :unique
+      Enum.any?(changeset.errors, fn {field, {_message, opts}} ->
+        field == :identifier and opts[:constraint] == :unique
       end)
 
   @spec identifier_matches_phone(MessageChannel.t()) :: Ecto.Query.dynamic_expr()
