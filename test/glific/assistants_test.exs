@@ -1,5 +1,6 @@
 defmodule Glific.AssistantsTest do
   use Glific.DataCase
+  import Glific.WebhookTestHelpers
   import Tesla.Mock
 
   import Ecto.Query
@@ -3187,6 +3188,48 @@ defmodule Glific.AssistantsTest do
                )
     end
 
+    test "asks Kaapi for guardrail metadata when the flag is enabled",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      FunWithFlags.enable(:is_ai_guardrail_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        assert Jason.decode!(body)["include_guardrail_metadata"] == true
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_004"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_chat_004"}} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
+    test "does not ask for guardrail metadata when the flag is disabled",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      FunWithFlags.disable(:is_ai_guardrail_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        assert Jason.decode!(body)["include_guardrail_metadata"] == false
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_005"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_chat_005"}} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
     test "returns an error when Kaapi dispatch fails",
          %{organization_id: organization_id} do
       assistant = create_live_assistant(organization_id)
@@ -3231,6 +3274,39 @@ defmodule Glific.AssistantsTest do
     test "logs and does not raise on a malformed payload", %{organization_id: organization_id} do
       assert :ok =
                Assistants.handle_assistant_chat_callback(organization_id, %{"unexpected" => true})
+    end
+
+    test "includes the guardrail stages when Kaapi sends guardrail metadata" do
+      response =
+        :with_input_and_output_guardrail
+        |> kaapi_llm_callback()
+        |> Assistants.build_assistant_chat_response("req-3")
+
+      assert response.request_id == "req-3"
+      assert response.input_from_user == "call me kutta at 8979220110 from Ram village"
+      assert response.input_to_llm == "call me [REDACTED_SLUR] at <phone_number> from <location>"
+      assert response.output_from_llm == response.answer
+      assert response.output_to_user == response.answer
+      assert length(response.input_guardrail) == 2
+      assert length(response.output_guardrail) == 1
+    end
+
+    test "leaves the guardrail stages nil when Kaapi sends no guardrail metadata" do
+      response =
+        :without_guardrail
+        |> kaapi_llm_callback()
+        |> Assistants.build_assistant_chat_response("req-4")
+
+      assert is_binary(response.answer)
+
+      assert %{
+               input_from_user: nil,
+               input_to_llm: nil,
+               output_from_llm: nil,
+               output_to_user: nil,
+               input_guardrail: nil,
+               output_guardrail: nil
+             } = response
     end
   end
 
