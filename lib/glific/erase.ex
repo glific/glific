@@ -622,6 +622,7 @@ defmodule Glific.Erase do
       flow_results
       flow_revisions
       flow_roles
+      llm_calls
       flows
       gcs_jobs
       glific_ai_events
@@ -635,7 +636,6 @@ defmodule Glific.Erase do
       issued_certificates
       knowledge_base_versions
       knowledge_bases
-      llm_calls
       locations
       mail_logs
       message_broadcast_contacts

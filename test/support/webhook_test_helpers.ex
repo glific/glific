@@ -156,10 +156,7 @@ defmodule Glific.WebhookTestHelpers do
     }
   end
 
-  @doc """
-  A Kaapi `/llm/call` callback body exactly as Kaapi sends it, before the echoed request metadata
-  is merged in: `:without_guardrail`, `:with_input_guardrail` or `:with_input_and_output_guardrail`.
-  """
+  @doc "Raw Kaapi `/llm/call` callback body: `:without_guardrail`, `:with_input_guardrail` or `:with_input_and_output_guardrail`."
   @spec kaapi_llm_callback(atom()) :: map()
   def kaapi_llm_callback(:without_guardrail),
     do:

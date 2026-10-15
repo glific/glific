@@ -13,7 +13,7 @@ defmodule Glific.LlmCalls.LlmCall do
     Partners.Organization
   }
 
-  @required_fields [:organization_id]
+  @required_fields [:organization_id, :flow_id, :contact_id]
   @optional_fields [
     :success,
     :error,
@@ -27,9 +27,7 @@ defmodule Glific.LlmCalls.LlmCall do
     :output_to_user,
     :input_guardrail,
     :output_guardrail,
-    :tokens,
-    :flow_id,
-    :contact_id
+    :tokens
   ]
 
   @type t() :: %__MODULE__{

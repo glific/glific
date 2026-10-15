@@ -30,6 +30,12 @@ defmodule Glific.LlmCallsTest do
     "validators" => [%{"name" => "PIIRemover", "outcome" => "FAIL"}]
   }
 
+  setup %{organization_id: organization_id} do
+    contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+    flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+    %{response: %{"contact_id" => contact.id, "flow_id" => flow.id}}
+  end
+
   defp callback(attrs) do
     Map.merge(
       %{
@@ -57,7 +63,7 @@ defmodule Glific.LlmCallsTest do
   end
 
   test "create_llm_call_from_callback/3 stores the guardrail input and output",
-       %{organization_id: organization_id} do
+       %{organization_id: organization_id, response: response} do
     result =
       callback(%{
         "metadata" => %{
@@ -66,7 +72,8 @@ defmodule Glific.LlmCallsTest do
         }
       })
 
-    assert {:ok, llm_call} = LlmCalls.create_llm_call_from_callback(organization_id, result, %{})
+    assert {:ok, llm_call} =
+             LlmCalls.create_llm_call_from_callback(organization_id, result, response)
 
     assert llm_call.success
     assert llm_call.input_from_user == @input_guardrail["input_from_user"]
@@ -81,7 +88,7 @@ defmodule Glific.LlmCallsTest do
   end
 
   test "create_llm_call_from_callback/3 falls back to the question and LLM output without guardrails",
-       %{organization_id: organization_id} do
+       %{organization_id: organization_id, response: response} do
     webhook_log =
       Fixtures.webhook_log_fixture(%{
         organization_id: organization_id,
@@ -89,9 +96,11 @@ defmodule Glific.LlmCallsTest do
       })
 
     assert {:ok, llm_call} =
-             LlmCalls.create_llm_call_from_callback(organization_id, callback(%{}), %{
-               "webhook_log_id" => webhook_log.id
-             })
+             LlmCalls.create_llm_call_from_callback(
+               organization_id,
+               callback(%{}),
+               Map.put(response, "webhook_log_id", webhook_log.id)
+             )
 
     assert llm_call.input_from_user == "What is Glific?"
     assert llm_call.input_to_llm == "What is Glific?"
@@ -101,15 +110,22 @@ defmodule Glific.LlmCallsTest do
   end
 
   test "create_llm_call_from_callback/3 records a failed call", %{
-    organization_id: organization_id
+    organization_id: organization_id,
+    response: response
   } do
     result = %{"success" => false, "data" => nil, "error" => "Kaapi failed", "metadata" => %{}}
 
-    assert {:ok, llm_call} = LlmCalls.create_llm_call_from_callback(organization_id, result, %{})
+    assert {:ok, llm_call} =
+             LlmCalls.create_llm_call_from_callback(organization_id, result, response)
 
     refute llm_call.success
     assert llm_call.error == "Kaapi failed"
     assert llm_call.output_to_user == nil
+  end
+
+  test "create_llm_call/1 requires a flow and a contact", %{organization_id: organization_id} do
+    assert {:error, changeset} = LlmCalls.create_llm_call(%{organization_id: organization_id})
+    assert %{flow_id: ["can't be blank"], contact_id: ["can't be blank"]} = errors_on(changeset)
   end
 
   test "Webhook.resume/3 records only LLM callbacks", %{organization_id: organization_id} do
