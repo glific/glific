@@ -19,6 +19,7 @@ defmodule Glific.Contacts.Identities do
     Contacts.Contact,
     Contacts.ContactIdentity,
     Enums.MessageChannel,
+    Partners,
     Repo
   }
 
@@ -34,6 +35,7 @@ defmodule Glific.Contacts.Identities do
 
   @doc """
   The contact holding an identity in the current organization; web identifiers are case-insensitive.
+  A WhatsApp identity only counts while it still equals the contact's phone.
   """
   @spec fetch_contact(MessageChannel.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, :not_found}
@@ -44,6 +46,7 @@ defmodule Glific.Contacts.Identities do
       from(i in ContactIdentity,
         join: c in assoc(i, :contact),
         where: i.channel == ^channel and i.identifier == ^identifier,
+        where: ^identifier_matches_phone(channel),
         select: c
       )
 
@@ -98,10 +101,10 @@ defmodule Glific.Contacts.Identities do
   @doc """
   Records that a contact signed in to the web with its phone, doing nothing if it already has.
   """
-  @spec add_web_phone_identity(Contact.t()) :: :ok
-  def add_web_phone_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
+  @spec add_web_identity_for_phone(Contact.t()) :: :ok
+  def add_web_identity_for_phone(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
 
-  def add_web_phone_identity(%Contact{} = contact) do
+  def add_web_identity_for_phone(%Contact{} = contact) do
     contact
     |> identity_changeset(:web, contact.phone)
     |> Repo.insert(ignore_conflict_opts())
@@ -110,12 +113,15 @@ defmodule Glific.Contacts.Identities do
   end
 
   @doc """
-  Makes a contact's WhatsApp identity match its current phone, creating it if it has none.
+  Makes a contact's WhatsApp identity match its current phone, creating it if it has none. A row
+  for that phone left on another contact whose phone has since changed is deleted first.
   """
-  @spec put_whatsapp_identity(Contact.t()) :: :ok
-  def put_whatsapp_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
+  @spec set_whatsapp_identity(Contact.t()) :: :ok
+  def set_whatsapp_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
 
-  def put_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
+  def set_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
+    delete_stale_whatsapp_identities(contact)
+
     {updated, _rows} =
       from(i in ContactIdentity,
         where: i.channel == :whatsapp and i.contact_id == ^contact_id
@@ -129,6 +135,22 @@ defmodule Glific.Contacts.Identities do
     end
 
     :ok
+  end
+
+  @spec delete_stale_whatsapp_identities(Contact.t()) :: non_neg_integer()
+  defp delete_stale_whatsapp_identities(%Contact{id: contact_id, phone: phone}) do
+    stale_ids =
+      from(i in ContactIdentity,
+        join: c in assoc(i, :contact),
+        where: i.channel == :whatsapp and i.identifier == ^phone and i.contact_id != ^contact_id,
+        where: is_nil(c.phone) or c.phone != ^phone,
+        select: i.id
+      )
+
+    {deleted, _rows} =
+      Repo.delete_all(from(i in ContactIdentity, where: i.id in subquery(stale_ids)))
+
+    deleted
   end
 
   @doc """
@@ -162,8 +184,18 @@ defmodule Glific.Contacts.Identities do
   end
 
   @spec find_contact_by_id_or_phone(non_neg_integer(), claims()) :: Contact.t() | nil
-  defp find_contact_by_id_or_phone(organization_id, claims),
-    do: contact_in_organization(organization_id, claims[:contact_id]) || contact_by_phone(claims)
+  defp find_contact_by_id_or_phone(organization_id, claims) do
+    [contact_in_organization(organization_id, claims[:contact_id]), contact_by_phone(claims)]
+    |> Enum.find(&linkable?(&1, organization_id))
+  end
+
+  @spec linkable?(Contact.t() | nil, non_neg_integer()) :: boolean()
+  defp linkable?(nil, _organization_id), do: false
+
+  defp linkable?(%Contact{} = contact, organization_id),
+    do:
+      contact.id != Partners.organization_contact_id(organization_id) and
+        not Contacts.simulator_contact?(contact.phone)
 
   @spec contact_in_organization(non_neg_integer(), integer() | nil) :: Contact.t() | nil
   defp contact_in_organization(_organization_id, nil), do: nil
@@ -186,12 +218,12 @@ defmodule Glific.Contacts.Identities do
            contact
            |> identity_changeset(:web, identifier)
            |> Repo.insert(ignore_conflict_opts()) do
-      fetch_holder_or(identifier, contact)
+      fetch_username_owner(identifier, contact)
     end
   end
 
-  @spec fetch_holder_or(String.t(), Contact.t()) :: {:ok, Contact.t()}
-  defp fetch_holder_or(identifier, fallback) do
+  @spec fetch_username_owner(String.t(), Contact.t()) :: {:ok, Contact.t()}
+  defp fetch_username_owner(identifier, fallback) do
     case fetch_contact(:web, identifier) do
       {:ok, contact} -> {:ok, contact}
       {:error, :not_found} -> {:ok, fallback}
@@ -204,7 +236,7 @@ defmodule Glific.Contacts.Identities do
     attrs = %{
       organization_id: organization_id,
       name: claims[:name] || identifier,
-      phone: phone_if_unclaimed(claims[:phone]),
+      phone: phone_not_taken(claims[:phone]),
       status: :valid,
       bsp_status: :none,
       contact_type: nil
@@ -216,7 +248,7 @@ defmodule Glific.Contacts.Identities do
 
       {:error, %Ecto.Changeset{data: %ContactIdentity{}} = changeset} ->
         if identifier_taken?(changeset),
-          do: retry_after_identifier_race(organization_id, identifier, claims),
+          do: refetch_or_create_web_contact(organization_id, identifier, claims),
           else: {:error, changeset}
 
       result ->
@@ -231,13 +263,15 @@ defmodule Glific.Contacts.Identities do
         opts[:constraint] == :unique
       end)
 
-  @spec phone_if_unclaimed(String.t() | nil) :: String.t() | nil
-  defp phone_if_unclaimed(nil), do: nil
+  @spec phone_not_taken(String.t() | nil) :: String.t() | nil
+  defp phone_not_taken(nil), do: nil
 
-  defp phone_if_unclaimed(phone) do
-    case Contacts.fetch_by_identity(:whatsapp, phone) do
-      {:ok, _contact} -> nil
-      {:error, _reason} -> phone
+  defp phone_not_taken(phone) do
+    with false <- Contacts.simulator_contact?(phone),
+         {:error, _reason} <- Contacts.fetch_by_identity(:whatsapp, phone) do
+      phone
+    else
+      _unavailable -> nil
     end
   end
 
@@ -246,7 +280,8 @@ defmodule Glific.Contacts.Identities do
   defp add_web_identity_to_phone_owner(changeset, %{phone: phone}, identifier)
        when is_binary(phone) do
     with true <- Keyword.has_key?(changeset.errors, :phone),
-         {:ok, owner} <- Contacts.fetch_by_identity(:whatsapp, phone) do
+         {:ok, owner} <- Contacts.fetch_by_identity(:whatsapp, phone),
+         true <- linkable?(owner, changeset.data.organization_id) do
       add_web_identity(owner, identifier)
     else
       _no_recovery -> {:error, changeset}
@@ -255,13 +290,17 @@ defmodule Glific.Contacts.Identities do
 
   defp add_web_identity_to_phone_owner(changeset, _attrs, _identifier), do: {:error, changeset}
 
-  @spec retry_after_identifier_race(non_neg_integer(), String.t(), claims()) ::
+  @spec refetch_or_create_web_contact(non_neg_integer(), String.t(), claims()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp retry_after_identifier_race(organization_id, identifier, claims) do
+  defp refetch_or_create_web_contact(organization_id, identifier, claims) do
     with {:error, :not_found} <- fetch_contact(:web, identifier) do
       create_web_contact(organization_id, identifier, claims)
     end
   end
+
+  @spec identifier_matches_phone(MessageChannel.t()) :: Ecto.Query.dynamic_expr()
+  defp identifier_matches_phone(:whatsapp), do: dynamic([i, c], c.phone == i.identifier)
+  defp identifier_matches_phone(_channel), do: dynamic(true)
 
   @spec lookup_key(MessageChannel.t(), String.t()) :: String.t()
   defp lookup_key(:web, identifier), do: String.downcase(identifier)

@@ -347,7 +347,7 @@ defmodule Glific.Contacts do
     Repo.transaction(fn ->
       case Repo.update(changeset) do
         {:ok, contact} ->
-          Identities.put_whatsapp_identity(contact)
+          Identities.set_whatsapp_identity(contact)
           contact
 
         {:error, changeset} ->
@@ -1104,19 +1104,19 @@ defmodule Glific.Contacts do
 
   def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
     with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone) do
-      fetch_by_phone_and_repair_identity(phone)
+      fetch_by_phone_and_add_whatsapp_identity(phone)
     end
   end
 
-  @spec fetch_by_phone_and_repair_identity(String.t()) ::
+  @spec fetch_by_phone_and_add_whatsapp_identity(String.t()) ::
           {:ok, Contact.t()} | {:error, :not_found}
-  defp fetch_by_phone_and_repair_identity(phone) do
+  defp fetch_by_phone_and_add_whatsapp_identity(phone) do
     case Repo.get_by(Contact, %{phone: phone}) do
       nil ->
         {:error, :not_found}
 
       contact ->
-        Identities.put_whatsapp_identity(contact)
+        Identities.set_whatsapp_identity(contact)
         {:ok, contact}
     end
   end

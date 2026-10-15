@@ -9,6 +9,8 @@ defmodule GlificWeb.WebChannel.LoginToken do
   old one. Both live in the organization's `web_channel` credential, so the organization is the
   request's, not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
 
+  A secret shorter than 32 characters is ignored, so a token can never verify against it.
+
   This is not `GlificWeb.WebChannel.Token`, which is the token Glific itself issues after a phone
   and one-time code login.
   """
@@ -21,6 +23,7 @@ defmodule GlificWeb.WebChannel.LoginToken do
   @max_lifetime_seconds 86_400
   @leeway_seconds 60
   @max_length 255
+  @min_secret_length 32
   @provider_code "web_channel"
   @secret_fields [:jwt_signature_secret_1, :jwt_signature_secret_2]
 
@@ -63,7 +66,7 @@ defmodule GlificWeb.WebChannel.LoginToken do
 
         @secret_fields
         |> Enum.map(&(secrets[Atom.to_string(&1)] || secrets[&1]))
-        |> Enum.filter(&(is_binary(&1) and &1 != ""))
+        |> Enum.filter(&(is_binary(&1) and String.length(&1) >= @min_secret_length))
     end
   end
 
