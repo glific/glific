@@ -1,9 +1,9 @@
-defmodule GlificWeb.WebChannel.LoginTokenTest do
+defmodule GlificWeb.WebChannel.JwtTokenTest do
   # Not async: it flips the global `web_channel_enabled` and writes the organization's credential.
   use Glific.DataCase
 
   alias Glific.{WebChannelFlagHelpers, WebChannelLoginHelpers}
-  alias GlificWeb.WebChannel.LoginToken
+  alias GlificWeb.WebChannel.JwtToken
 
   @secret "first-secret-first-secret-0123456"
   @second_secret "second-secret-second-secret-012345"
@@ -22,7 +22,7 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
     token =
       overrides |> WebChannelLoginHelpers.claims(@now) |> WebChannelLoginHelpers.sign(secret)
 
-    LoginToken.verify(organization_id, token, @now)
+    JwtToken.verify(organization_id, token, @now)
   end
 
   test "accepts a valid token", %{organization_id: organization_id} do
@@ -116,7 +116,7 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
     claims = WebChannelLoginHelpers.claims(%{}, @now)
 
     assert {:error, :invalid} =
-             LoginToken.verify(
+             JwtToken.verify(
                organization_id,
                WebChannelLoginHelpers.sign(claims, @secret, "HS512"),
                @now
@@ -126,19 +126,19 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
     payload = Base.url_encode64(Jason.encode!(claims), padding: false)
 
     assert {:error, :invalid} =
-             LoginToken.verify(organization_id, "#{unsigned}.#{payload}.", @now)
+             JwtToken.verify(organization_id, "#{unsigned}.#{payload}.", @now)
   end
 
   test "rejects a token that is not a JWT", %{organization_id: organization_id} do
-    assert {:error, :invalid} = LoginToken.verify(organization_id, "not-a-token", @now)
-    assert {:error, :invalid} = LoginToken.verify(organization_id, "", @now)
-    assert {:error, :invalid} = LoginToken.verify(organization_id, nil, @now)
+    assert {:error, :invalid} = JwtToken.verify(organization_id, "not-a-token", @now)
+    assert {:error, :invalid} = JwtToken.verify(organization_id, "", @now)
+    assert {:error, :invalid} = JwtToken.verify(organization_id, nil, @now)
   end
 
   test "rejects an organization that does not exist" do
     token = %{} |> WebChannelLoginHelpers.claims(@now) |> WebChannelLoginHelpers.sign(@secret)
 
-    assert {:error, :invalid} = LoginToken.verify(0, token, @now)
+    assert {:error, :invalid} = JwtToken.verify(0, token, @now)
   end
 
   describe "required claims" do
