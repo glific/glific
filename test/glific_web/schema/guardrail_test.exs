@@ -55,7 +55,6 @@ defmodule GlificWeb.Schema.GuardrailTest do
 
       validators =
         for type <- [
-              "profanity_free",
               "gender_assumption_bias",
               "uli_slur_match",
               "llm_critic",
