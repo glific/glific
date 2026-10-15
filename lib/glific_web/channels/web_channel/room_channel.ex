@@ -24,7 +24,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     WebChannel.Rooms
   }
 
-  alias GlificWeb.WebChannel.{LoginToken, MessageSerializer, Presence, Token}
+  alias GlificWeb.WebChannel.{JwtToken, MessageSerializer, Presence, Token}
 
   @page_size 100
   @max_body_length 4_096
@@ -261,7 +261,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   defp renewed_ngo_expiry(token, socket) do
     current = socket.assigns.current_contact
 
-    with {:ok, claims} <- LoginToken.verify(socket.assigns.organization_id, token),
+    with {:ok, claims} <- JwtToken.verify(socket.assigns.organization_id, token),
          {:ok, %Contact{id: id}} when id == current.id <-
            Identities.fetch_contact(:web, claims.sub) do
       {:ok, claims.exp}

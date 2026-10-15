@@ -1,4 +1,4 @@
-defmodule GlificWeb.WebChannel.LoginToken do
+defmodule GlificWeb.WebChannel.JwtToken do
   @moduledoc """
   Verifies the JWT an NGO's backend signs to authenticate one of its users on the web channel
   socket. A token may live at most 24 hours; an NGO may issue shorter ones.
@@ -43,7 +43,7 @@ defmodule GlificWeb.WebChannel.LoginToken do
   def verify(organization_id, token, now \\ System.system_time(:second))
 
   def verify(organization_id, token, now) when is_binary(token) and token != "" do
-    with [_ | _] = secrets <- signature_secrets(organization_id),
+    with [_ | _] = secrets <- jwt_signature_secret(organization_id),
          {:ok, fields} <- verify_signature(secrets, token),
          :ok <- validate_timing(fields, now),
          {:ok, claims} <- extract_claims(fields) do
@@ -55,8 +55,8 @@ defmodule GlificWeb.WebChannel.LoginToken do
 
   def verify(_organization_id, _token, _now), do: {:error, :invalid}
 
-  @spec signature_secrets(non_neg_integer()) :: [String.t()]
-  defp signature_secrets(organization_id) do
+  @spec jwt_signature_secret(non_neg_integer()) :: [String.t()]
+  defp jwt_signature_secret(organization_id) do
     case Partners.organization(organization_id) do
       {:error, _reason} ->
         []

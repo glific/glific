@@ -5,7 +5,7 @@ defmodule GlificWeb.WebChannelSocket do
   API) — connections here authenticate as a single `Contact`, never a staff `User`.
 
   A connection presents either Glific's own token (phone and one-time code login) or a JWT signed
-  by an NGO's backend (`GlificWeb.WebChannel.LoginToken`), which is what authenticates the
+  by an NGO's backend (`GlificWeb.WebChannel.JwtToken`), which is what authenticates the
   socket directly when the NGO's own system manages its users.
   """
 
@@ -16,7 +16,7 @@ defmodule GlificWeb.WebChannelSocket do
   alias Glific.RateLimit
   alias Glific.Repo
   alias GlificWeb.SubdomainPlug
-  alias GlificWeb.WebChannel.{Flag, LoginToken, Token}
+  alias GlificWeb.WebChannel.{Flag, JwtToken, Token}
 
   channel("web_channel:*", GlificWeb.WebChannel.RoomChannel)
 
@@ -87,7 +87,7 @@ defmodule GlificWeb.WebChannelSocket do
   defp ngo_session(token, connect_info) do
     with {:ok, organization_id} <- organization_from_host(connect_info),
          :ok <- enter_organization(organization_id),
-         {:ok, claims} <- LoginToken.verify(organization_id, token),
+         {:ok, claims} <- JwtToken.verify(organization_id, token),
          {:ok, contact} <- Identities.resolve_or_create(:web, claims.sub, claims) do
       {:ok,
        %{
