@@ -359,7 +359,7 @@ defmodule Glific.Fixtures do
     uuid = Ecto.UUID.generate()
 
     valid_attrs_2 = %{
-      label: "Another Template Label",
+      label: "Another Template Label #{uuid}",
       shortcode: "another template",
       body: "Another Template",
       type: :text,
