@@ -189,20 +189,18 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
   end
 
   describe "optional claims" do
-    test "name, phone and contact_id are returned", %{organization_id: organization_id} do
+    test "name and phone are returned", %{organization_id: organization_id} do
       assert {:ok, claims} =
                verify(organization_id, %{
                  "name" => "Ravi",
-                 "phone" => "+91 98765 43210",
-                 "contact_id" => 42
+                 "phone" => "+91 98765 43210"
                })
 
       assert %{
                sub: "ravi_12",
                exp: @now + 600,
                name: "Ravi",
-               phone: "919876543210",
-               contact_id: 42
+               phone: "919876543210"
              } ==
                claims
     end
@@ -212,11 +210,8 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
       refute Map.has_key?(claims, :phone)
     end
 
-    test "a name over 255 characters or a non-integer contact_id is rejected", %{
-      organization_id: organization_id
-    } do
+    test "a name over 255 characters is rejected", %{organization_id: organization_id} do
       assert {:error, :invalid} = verify(organization_id, %{"name" => String.duplicate("a", 256)})
-      assert {:error, :invalid} = verify(organization_id, %{"contact_id" => "42"})
     end
   end
 

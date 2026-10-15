@@ -908,7 +908,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       with_web_channel_enabled(fn ->
         phone_contact_id = verify_otp_login(conn, phone)
 
-        assert {:ok, %{id: ^phone_contact_id}} = Contacts.find_or_create_web_contact(phone, %{})
+        assert {:ok, %{id: ^phone_contact_id}} = Contacts.maybe_create_contact(%{}, :web, phone)
       end)
     end
 
@@ -918,7 +918,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       phone = unique_phone()
 
       with_web_channel_enabled(fn ->
-        {:ok, username_contact} = Contacts.find_or_create_web_contact(phone, %{})
+        {:ok, username_contact} = Contacts.maybe_create_contact(%{}, :web, phone)
 
         phone_contact_id = verify_otp_login(conn, phone)
 

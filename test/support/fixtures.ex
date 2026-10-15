@@ -162,12 +162,12 @@ defmodule Glific.Fixtures do
     sender_id =
       if attrs[:sender_id],
         do: attrs.sender_id,
-        else: contact_fixture(Map.delete(attrs, :channel)).id
+        else: contact_fixture(attrs).id
 
     receiver_id =
       if attrs[:receiver_id],
         do: attrs.receiver_id,
-        else: contact_fixture(Map.delete(attrs, :channel)).id
+        else: contact_fixture(attrs).id
 
     valid_attrs = %{
       body: Faker.Lorem.sentence(),

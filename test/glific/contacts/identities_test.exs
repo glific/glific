@@ -24,9 +24,9 @@ defmodule Glific.Contacts.IdentitiesTest do
     Repo.get_by(ContactIdentity, %{channel: :whatsapp, identifier: phone})
   end
 
-  describe "resolve_or_create/3" do
+  describe "maybe_create_contact/3 on web" do
     test "an unknown identifier creates a contact with no phone, and its identity" do
-      assert {:ok, %Contact{} = contact} = Contacts.find_or_create_web_contact("ravi_12", %{})
+      assert {:ok, %Contact{} = contact} = Contacts.maybe_create_contact(%{}, :web, "ravi_12")
 
       assert contact.phone == nil
       assert contact.name == "ravi_12"
@@ -39,20 +39,20 @@ defmodule Glific.Contacts.IdentitiesTest do
       contacts_before = Repo.aggregate(Contact, :count)
 
       assert {:error, %Ecto.Changeset{} = changeset} =
-               Contacts.find_or_create_web_contact(String.duplicate("a", 256), %{name: "Ravi"})
+               Contacts.maybe_create_contact(%{name: "Ravi"}, :web, String.duplicate("a", 256))
 
       assert %{identifier: [_too_long]} = errors_on(changeset)
       assert Repo.aggregate(Contact, :count) == contacts_before
     end
 
     test "uses the name claim as the contact's name" do
-      assert {:ok, contact} = Contacts.find_or_create_web_contact("ravi_12", %{name: "Ravi"})
+      assert {:ok, contact} = Contacts.maybe_create_contact(%{name: "Ravi"}, :web, "ravi_12")
       assert contact.name == "Ravi"
     end
 
     test "identifiers differing only in case are the same contact" do
-      {:ok, first} = Contacts.find_or_create_web_contact("Ravi_Web", %{})
-      assert {:ok, second} = Contacts.find_or_create_web_contact("ravi_web", %{})
+      {:ok, first} = Contacts.maybe_create_contact(%{}, :web, "Ravi_Web")
+      assert {:ok, second} = Contacts.maybe_create_contact(%{}, :web, "ravi_web")
 
       assert first.id == second.id
       assert length(identities_of(first.id)) == 1
@@ -61,35 +61,35 @@ defmodule Glific.Contacts.IdentitiesTest do
     end
 
     test "a known identifier returns the same contact" do
-      {:ok, first} = Contacts.find_or_create_web_contact("ravi_12", %{})
-      assert {:ok, second} = Contacts.find_or_create_web_contact("ravi_12", %{})
+      {:ok, first} = Contacts.maybe_create_contact(%{}, :web, "ravi_12")
+      assert {:ok, second} = Contacts.maybe_create_contact(%{}, :web, "ravi_12")
 
       assert first.id == second.id
       assert length(identities_of(first.id)) == 1
     end
 
     test "the claims are ignored for a known identifier", %{organization_id: organization_id} do
-      {:ok, existing} = Contacts.find_or_create_web_contact("ravi_12", %{})
+      {:ok, existing} = Contacts.maybe_create_contact(%{}, :web, "ravi_12")
       other = Fixtures.contact_fixture(%{organization_id: organization_id})
 
       assert {:ok, resolved} =
-               Contacts.find_or_create_web_contact("ravi_12", %{
-                 contact_id: other.id,
-                 phone: other.phone,
-                 name: "Someone Else"
-               })
+               Contacts.maybe_create_contact(
+                 %{phone: other.phone, name: "Someone Else"},
+                 :web,
+                 "ravi_12"
+               )
 
       assert resolved.id == existing.id
       assert identities_of(other.id) |> Enum.all?(&(&1.channel == :whatsapp))
     end
 
-    test "the contact_id claim links to a contact of the same organization", %{
+    test "the phone claim links to the WhatsApp contact with that phone", %{
       organization_id: organization_id
     } do
       target = Fixtures.contact_fixture(%{organization_id: organization_id})
 
       assert {:ok, contact} =
-               Contacts.find_or_create_web_contact("ravi_12", %{contact_id: target.id})
+               Contacts.maybe_create_contact(%{phone: target.phone}, :web, "ravi_12")
 
       assert contact.id == target.id
       assert [:whatsapp, :web] = identities_of(target.id) |> Enum.map(& &1.channel)
@@ -98,60 +98,16 @@ defmodule Glific.Contacts.IdentitiesTest do
     test "a contact may have several web identities", %{organization_id: organization_id} do
       target = Fixtures.contact_fixture(%{organization_id: organization_id})
 
-      {:ok, _} = Contacts.find_or_create_web_contact("first", %{contact_id: target.id})
-      {:ok, _} = Contacts.find_or_create_web_contact("second", %{contact_id: target.id})
+      {:ok, _} = Contacts.maybe_create_contact(%{phone: target.phone}, :web, "first")
+      {:ok, _} = Contacts.maybe_create_contact(%{phone: target.phone}, :web, "second")
 
       assert 2 == identities_of(target.id) |> Enum.count(&(&1.channel == :web))
-    end
-
-    test "a contact_id of another organization is not a target and is not revealed", %{
-      organization_id: organization_id
-    } do
-      other_organization = Fixtures.organization_fixture()
-      foreign = Fixtures.contact_fixture(%{organization_id: other_organization.id})
-      Repo.put_organization_id(organization_id)
-
-      assert {:ok, contact} =
-               Contacts.find_or_create_web_contact("ravi_12", %{contact_id: foreign.id})
-
-      refute contact.id == foreign.id
-      assert contact.phone == nil
-      assert identities_of(foreign.id) |> Enum.all?(&(&1.channel == :whatsapp))
-    end
-
-    test "an unknown contact_id falls through to no target" do
-      assert {:ok, contact} = Contacts.find_or_create_web_contact("ravi_12", %{contact_id: 0})
-      assert contact.phone == nil
-    end
-
-    test "the phone claim links to an existing WhatsApp contact", %{
-      organization_id: organization_id
-    } do
-      target = Fixtures.contact_fixture(%{organization_id: organization_id})
-
-      assert {:ok, contact} =
-               Contacts.find_or_create_web_contact("ravi_12", %{phone: target.phone})
-
-      assert contact.id == target.id
-    end
-
-    test "contact_id wins over the phone claim", %{organization_id: organization_id} do
-      by_id = Fixtures.contact_fixture(%{organization_id: organization_id})
-      by_phone = Fixtures.contact_fixture(%{organization_id: organization_id})
-
-      assert {:ok, contact} =
-               Contacts.find_or_create_web_contact("ravi_12", %{
-                 contact_id: by_id.id,
-                 phone: by_phone.phone
-               })
-
-      assert contact.id == by_id.id
     end
 
     test "a phone claim no contact has becomes the new contact's phone, without a WhatsApp identity" do
       phone = "919876543210"
 
-      assert {:ok, contact} = Contacts.find_or_create_web_contact("ravi_12", %{phone: phone})
+      assert {:ok, contact} = Contacts.maybe_create_contact(%{phone: phone}, :web, "ravi_12")
 
       assert contact.phone == phone
       assert nil == whatsapp_identity(phone)
@@ -159,41 +115,11 @@ defmodule Glific.Contacts.IdentitiesTest do
 
     test "that phone gets its WhatsApp identity when it first messages on WhatsApp" do
       phone = "919876543211"
-      {:ok, contact} = Contacts.find_or_create_web_contact("ravi_13", %{phone: phone})
+      {:ok, contact} = Contacts.maybe_create_contact(%{phone: phone}, :web, "ravi_13")
 
       assert {:ok, %{id: id}} = Contacts.fetch_by_identity(:whatsapp, phone)
       assert id == contact.id
       assert whatsapp_identity(phone).contact_id == contact.id
-    end
-
-    test "a contact_id claim naming the organization's own contact creates a new contact", %{
-      organization_id: organization_id
-    } do
-      org_contact_id = Partners.organization_contact_id(organization_id)
-      before = Repo.get!(Contact, org_contact_id)
-
-      assert {:ok, contact} =
-               Contacts.find_or_create_web_contact("bot_link", %{contact_id: org_contact_id})
-
-      refute contact.id == org_contact_id
-      assert Repo.get!(Contact, org_contact_id) == before
-      refute Enum.any?(identities_of(org_contact_id), &(&1.identifier == "bot_link"))
-    end
-
-    test "a contact_id claim naming a simulator contact creates a new contact", %{
-      organization_id: organization_id
-    } do
-      simulator =
-        Fixtures.contact_fixture(%{
-          organization_id: organization_id,
-          phone: Contacts.simulator_phone_prefix() <> "1"
-        })
-
-      assert {:ok, contact} =
-               Contacts.find_or_create_web_contact("sim_link", %{contact_id: simulator.id})
-
-      refute contact.id == simulator.id
-      refute Enum.any?(identities_of(simulator.id), &(&1.channel == :web))
     end
 
     test "a phone claim naming the organization's own contact creates a contact without it", %{
@@ -203,7 +129,7 @@ defmodule Glific.Contacts.IdentitiesTest do
         Repo.get!(Contact, Partners.organization_contact_id(organization_id))
 
       assert {:ok, contact} =
-               Contacts.find_or_create_web_contact("bot_phone", %{phone: org_contact.phone})
+               Contacts.maybe_create_contact(%{phone: org_contact.phone}, :web, "bot_phone")
 
       refute contact.id == org_contact.id
       assert contact.phone == nil
@@ -215,11 +141,11 @@ defmodule Glific.Contacts.IdentitiesTest do
     } do
       phone = Contacts.simulator_phone_prefix() <> "2"
 
-      assert {:ok, fresh} = Contacts.find_or_create_web_contact("sim_phone_a", %{phone: phone})
+      assert {:ok, fresh} = Contacts.maybe_create_contact(%{phone: phone}, :web, "sim_phone_a")
       assert fresh.phone == nil
 
       simulator = Fixtures.contact_fixture(%{organization_id: organization_id, phone: phone})
-      assert {:ok, contact} = Contacts.find_or_create_web_contact("sim_phone_b", %{phone: phone})
+      assert {:ok, contact} = Contacts.maybe_create_contact(%{phone: phone}, :web, "sim_phone_b")
 
       refute contact.id == simulator.id
       assert contact.phone == nil
@@ -233,7 +159,7 @@ defmodule Glific.Contacts.IdentitiesTest do
         |> Enum.map(fn _ ->
           Task.async(fn ->
             Repo.put_organization_id(organization_id)
-            {:ok, contact} = Contacts.find_or_create_web_contact("same_tab", %{})
+            {:ok, contact} = Contacts.maybe_create_contact(%{}, :web, "same_tab")
             contact.id
           end)
         end)
@@ -254,10 +180,10 @@ defmodule Glific.Contacts.IdentitiesTest do
     } do
       other_organization = Fixtures.organization_fixture()
       Repo.put_organization_id(organization_id)
-      {:ok, here} = Contacts.find_or_create_web_contact("shared", %{})
+      {:ok, here} = Contacts.maybe_create_contact(%{}, :web, "shared")
 
       Repo.put_organization_id(other_organization.id)
-      {:ok, there} = Contacts.find_or_create_web_contact("shared", %{})
+      {:ok, there} = Contacts.maybe_create_contact(%{}, :web, "shared")
 
       refute here.id == there.id
       assert there.organization_id == other_organization.id
@@ -343,9 +269,7 @@ defmodule Glific.Contacts.IdentitiesTest do
       attrs = %{organization_id: organization_id, phone: "919876500003", name: "Both"}
 
       assert {:ok, contact} =
-               Contacts.create_contact(
-                 Map.merge(attrs, %{channel: :web, identifier: "both_user"})
-               )
+               Contacts.create_contact(attrs, :web, "both_user")
 
       assert contact.phone == "919876500003"
 
@@ -358,9 +282,7 @@ defmodule Glific.Contacts.IdentitiesTest do
       attrs = %{organization_id: organization_id, name: "Orphan"}
 
       assert {:error, %Ecto.Changeset{data: %ContactIdentity{}}} =
-               Contacts.create_contact(
-                 Map.merge(attrs, %{channel: :web, identifier: "not valid!"})
-               )
+               Contacts.create_contact(attrs, :web, "not valid!")
 
       assert contact_count == Repo.aggregate(Contact, :count)
     end
@@ -497,7 +419,7 @@ defmodule Glific.Contacts.IdentitiesTest do
     end
 
     test "web finds the contact by identifier" do
-      {:ok, contact} = Contacts.find_or_create_web_contact("ravi_12", %{})
+      {:ok, contact} = Contacts.maybe_create_contact(%{}, :web, "ravi_12")
 
       assert {:ok, found} = Contacts.fetch_by_identity(:web, "ravi_12")
       assert found.id == contact.id

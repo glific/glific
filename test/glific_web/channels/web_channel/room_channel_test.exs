@@ -613,7 +613,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
     test "a valid token for a different username is refused and the contact unchanged" do
       with_ngo_socket(%{}, fn socket, contact ->
-        {:ok, other} = Contacts.find_or_create_web_contact("someone_else", %{})
+        {:ok, other} = Contacts.maybe_create_contact(%{}, :web, "someone_else")
         ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => "someone_else"})})
         assert_reply ref, :error, %{reason: "invalid_token"}
 

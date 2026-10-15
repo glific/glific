@@ -48,7 +48,9 @@ defmodule GlificWeb.Resolvers.Contacts do
           {:ok, any} | {:error, any}
   def create_contact(_, %{input: params}, %{context: %{current_user: user}}) do
     with :ok <- check_channel(params, user.organization_id),
-         {:ok, contact} <- Contacts.create_contact(params) do
+         {channel, params} = Map.pop(params, :channel, :whatsapp),
+         {identifier, params} = Map.pop(params, :identifier),
+         {:ok, contact} <- Contacts.create_contact(params, channel, identifier) do
       {:ok, %{contact: contact}}
     end
   end
