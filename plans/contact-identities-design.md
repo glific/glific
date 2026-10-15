@@ -67,7 +67,7 @@ Gupshup/Maytapi webhook {phone}
 The contact's `(whatsapp, phone, <phone>)` identity is written when it's created (or on its first
 lookup, so existing contacts keep working until the WhatsApp identities are backfilled in the next PR).
 Every channel creates a contact through `Identities.create_contact_with_identity/4`, which inserts the contact and
-its identity in one transaction: a contact never exists without its identity. `put_whatsapp_identity/1`
+its identity in one transaction: a contact never exists without its identity. `set_whatsapp_identity/1`
 keeps the WhatsApp identity in step with the phone.
 
 ### 4.2 Web, phone + OTP
@@ -100,13 +100,17 @@ token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
 → not found:
      target = contact by phone, or contact by contact_id (must be in this org)
      target found → insert identity on target (add_web_identity), even if it already has other web identities
-     otherwise    → create new contact (4.3), keeping an unclaimed phone in contacts.phone but
+     otherwise    → create new contact (4.3), keeping a phone no contact has in contacts.phone but
                     writing NO (whatsapp, phone) identity: the phone was not verified (no OTP), so the
                     WhatsApp identity is only written when that number first messages on WhatsApp
                     (the contacts.phone fallback in fetch_by_identity)
      unique conflict on (org, web, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
-Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
+A phone sent in the token is treated as the user's own: the new contact owns that number in
+`contacts.phone`, including its later WhatsApp messages, so NGOs must only send phones they have
+verified belong to the user (NGO-trust assumption).
+
+Guards: a `contact_id` from another org is treated as not found · the organization's own contact and simulator contacts are never linked to (treated as not found, and their phone is never stored on a new contact) · an identifier that already exists
 is never moved by a token · an identity always takes its `organization_id` from its contact.
 
 ### 4.5 Telegram / RCS / SwiftChat (later)
@@ -135,7 +139,8 @@ A reply goes out on the channel the conversation/flow came in on (already built 
   the org's `web_channel` credential (set on the Settings page). To rotate, fill the empty slot, switch
   the backend, then clear the old one. The organization comes from the
   subdomain; there is no `kid`.
-- Algorithm pinned to HS256. Valid signature.
+- Algorithm pinned to HS256. Valid signature. A secret shorter than 32 characters is ignored (a token cannot verify against it).
+- A `phone` claim is trusted as the user's own (see §4.4): the NGO must only send verified phones.
 - `sub`, `channel = "web"`, `iat`, `exp` required. `exp - iat ≤ 24h` (the NGO may issue shorter
   tokens, e.g. 6h). ≤ 60s clock leeway. `sub` ≤ 255.
 - Any failure refuses the connection the same way.

@@ -82,8 +82,7 @@ defmodule GlificWeb.WebChannelSocket do
   end
 
   # The organization comes from the request host, as for the REST endpoints, never from the token.
-  # An NGO token has no session of its own, so every connection of one username shares one
-  # `session_id`: a reconnect or a second tab is never taken for a new login displacing the first.
+  # Stable per username, so a future one-session-per-user rule can tell a reconnect from a new login.
   @spec ngo_session(String.t(), map()) :: {:ok, map()} | :error
   defp ngo_session(token, connect_info) do
     with {:ok, organization_id} <- organization_from_host(connect_info),

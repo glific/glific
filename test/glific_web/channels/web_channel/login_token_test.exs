@@ -31,6 +31,37 @@ defmodule GlificWeb.WebChannel.LoginTokenTest do
     assert Enum.sort(Map.keys(claims)) == [:exp, :sub]
   end
 
+  test "a secret of 31 characters never verifies, one of 32 does", %{
+    organization_id: organization_id
+  } do
+    short = String.duplicate("s", 31)
+    long = String.duplicate("s", 32)
+
+    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
+      "jwt_signature_secret_1" => short
+    })
+
+    assert {:error, :invalid} = verify(organization_id, %{}, short)
+
+    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
+      "jwt_signature_secret_1" => long
+    })
+
+    assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, long)
+  end
+
+  test "both secrets too short refuses every token", %{organization_id: organization_id} do
+    short = String.duplicate("s", 31)
+
+    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
+      "jwt_signature_secret_1" => short,
+      "jwt_signature_secret_2" => "tiny"
+    })
+
+    assert {:error, :invalid} = verify(organization_id, %{}, short)
+    assert {:error, :invalid} = verify(organization_id, %{}, "tiny")
+  end
+
   test "accepts a token signed with the second slot's secret", %{
     organization_id: organization_id
   } do

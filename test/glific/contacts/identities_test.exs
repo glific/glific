@@ -9,6 +9,7 @@ defmodule Glific.Contacts.IdentitiesTest do
     Contacts.ContactIdentity,
     Contacts.Identities,
     Fixtures,
+    Partners,
     Repo
   }
 
@@ -147,7 +148,7 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert contact.id == by_id.id
     end
 
-    test "an unclaimed phone claim becomes the new contact's phone, without a WhatsApp identity" do
+    test "a phone claim no contact has becomes the new contact's phone, without a WhatsApp identity" do
       phone = "919876543210"
 
       assert {:ok, contact} = Identities.resolve_or_create(:web, "ravi_12", %{phone: phone})
@@ -163,6 +164,65 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert {:ok, %{id: id}} = Contacts.fetch_by_identity(:whatsapp, phone)
       assert id == contact.id
       assert whatsapp_identity(phone).contact_id == contact.id
+    end
+
+    test "a contact_id claim naming the organization's own contact creates a new contact", %{
+      organization_id: organization_id
+    } do
+      org_contact_id = Partners.organization_contact_id(organization_id)
+      before = Repo.get!(Contact, org_contact_id)
+
+      assert {:ok, contact} =
+               Identities.resolve_or_create(:web, "bot_link", %{contact_id: org_contact_id})
+
+      refute contact.id == org_contact_id
+      assert Repo.get!(Contact, org_contact_id) == before
+      refute Enum.any?(identities_of(org_contact_id), &(&1.identifier == "bot_link"))
+    end
+
+    test "a contact_id claim naming a simulator contact creates a new contact", %{
+      organization_id: organization_id
+    } do
+      simulator =
+        Fixtures.contact_fixture(%{
+          organization_id: organization_id,
+          phone: Contacts.simulator_phone_prefix() <> "1"
+        })
+
+      assert {:ok, contact} =
+               Identities.resolve_or_create(:web, "sim_link", %{contact_id: simulator.id})
+
+      refute contact.id == simulator.id
+      refute Enum.any?(identities_of(simulator.id), &(&1.channel == :web))
+    end
+
+    test "a phone claim naming the organization's own contact creates a contact without it", %{
+      organization_id: organization_id
+    } do
+      org_contact =
+        Repo.get!(Contact, Partners.organization_contact_id(organization_id))
+
+      assert {:ok, contact} =
+               Identities.resolve_or_create(:web, "bot_phone", %{phone: org_contact.phone})
+
+      refute contact.id == org_contact.id
+      assert contact.phone == nil
+      refute Enum.any?(identities_of(org_contact.id), &(&1.channel == :web))
+    end
+
+    test "a simulator phone claim creates a contact without that phone", %{
+      organization_id: organization_id
+    } do
+      phone = Contacts.simulator_phone_prefix() <> "2"
+
+      assert {:ok, fresh} = Identities.resolve_or_create(:web, "sim_phone_a", %{phone: phone})
+      assert fresh.phone == nil
+
+      simulator = Fixtures.contact_fixture(%{organization_id: organization_id, phone: phone})
+      assert {:ok, contact} = Identities.resolve_or_create(:web, "sim_phone_b", %{phone: phone})
+
+      refute contact.id == simulator.id
+      assert contact.phone == nil
     end
 
     test "concurrent first logins give one contact and one identity" do
@@ -304,6 +364,20 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert whatsapp_identity("919876500003").contact_id == contact.id
     end
 
+    test "set_whatsapp_identity takes over a stale row for the same phone", %{
+      organization_id: organization_id
+    } do
+      stale = Fixtures.contact_fixture(%{organization_id: organization_id})
+      other = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      phone = stale.phone
+      Repo.update_all(from(c in Contact, where: c.id == ^stale.id), set: [phone: "919876500010"])
+      {:ok, other} = Contacts.update_contact(other, %{phone: phone})
+
+      assert whatsapp_identity(phone).contact_id == other.id
+      assert :ok = Identities.set_whatsapp_identity(other)
+      assert whatsapp_identity(phone).contact_id == other.id
+    end
+
     test "an update that leaves the phone alone does not touch identities", %{
       organization_id: organization_id
     } do
@@ -316,17 +390,27 @@ defmodule Glific.Contacts.IdentitiesTest do
   end
 
   describe "fetch_by_identity/2" do
-    test "whatsapp reads the identity, whatever the contact's phone column says", %{
+    test "whatsapp ignores a stale identity and finds the real owner, who takes over the row", %{
       organization_id: organization_id
     } do
-      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      stale_owner = Fixtures.contact_fixture(%{organization_id: organization_id})
+      owner = Fixtures.contact_fixture(%{organization_id: organization_id})
+      phone = owner.phone
+      Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^owner.id))
 
-      Repo.update_all(from(c in Contact, where: c.id == ^contact.id),
+      Repo.update_all(from(c in Contact, where: c.id == ^stale_owner.id),
         set: [phone: "919876500009"]
       )
 
-      assert {:ok, found} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
-      assert found.id == contact.id
+      Repo.update_all(
+        from(i in ContactIdentity, where: i.contact_id == ^stale_owner.id),
+        set: [identifier: phone]
+      )
+
+      assert {:error, :not_found} = Identities.fetch_contact(:whatsapp, phone)
+      assert {:ok, found} = Contacts.fetch_by_identity(:whatsapp, phone)
+      assert found.id == owner.id
+      assert whatsapp_identity(phone).contact_id == owner.id
     end
 
     test "whatsapp falls back to the phone column and records the missing identity", %{
