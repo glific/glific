@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
       assert {"X-API-KEY", "sk_test_key"} in headers
 
       validators =
-        for type <- ["uli_slur_match", "pii_remover", "llm_critic", "profanity_free"],
+        for type <- ["profanity_free", "pii_remover", "llm_critic", "uli_slur_match"],
             do: %{"type" => type, "config" => @schema}
 
       %Tesla.Env{
@@ -55,15 +55,15 @@ defmodule GlificWeb.Schema.GuardrailTest do
                  "https://projecttech4devai.github.io/kaapi-docs/guardrails/privacy-protection"
              },
              %{
-               "type" => "profanity_free",
-               "config" => profanity_config,
+               "type" => "uli_slur_match",
+               "config" => slur_config,
                "link" =>
                  "https://projecttech4devai.github.io/kaapi-docs/guardrails/content-safety"
              }
            ] = get_in(query_data, [:data, "guardrailValidators", "validators"])
 
     assert Jason.decode!(pii_config) == @schema
-    assert Jason.decode!(profanity_config) == @schema
+    assert Jason.decode!(slur_config) == @schema
   end
 
   test "guardrailValidators returns the error of a failed Kaapi response", %{manager: user} do
