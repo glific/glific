@@ -13,6 +13,9 @@ An organization admin sets up to two JWT signature secrets, each with a name of 
 2. Switch your backend to sign with the new secret.
 3. Clear the old slot.
 
+Each secret must be at least 32 characters long; Glific ignores a shorter one, so tokens signed
+with it are refused.
+
 The organization is taken from the host the socket connects to (`api.<your glific host>`), never from
 the token.
 
@@ -74,6 +77,10 @@ Fetch a fresh token from your backend when `token_expiring` arrives and push it 
 The first connection with a new `sub` creates the contact. If `contact_id` or `phone` is given and
 matches a contact in the organization, the username is linked to that contact instead of creating a
 new one. If the `sub` is already known, its contact is used and `phone` and `contact_id` are ignored.
+The organization's own WhatsApp contact and simulator contacts are never linked to.
+
+Glific treats a phone you send as the user's own: the contact owns that number, including its
+WhatsApp messages.
 
 You can also create the contact ahead of the first login with the
 <a href="#create-a-contact-with-a-web-identity">createContactWithIdentity</a> mutation, and look a
