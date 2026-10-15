@@ -153,23 +153,16 @@ defmodule GlificWeb.WebChannelSocketTest do
       end)
     end
 
-    test "links to the contact named by the contact_id or phone claim", %{contact: contact} do
+    test "links to the WhatsApp contact named by the phone claim" do
       with_signature_secret(fn ->
-        {:ok, by_id} =
-          WebChannelFixtures.ngo_socket_fixture(
-            ngo_token(%{"sub" => "by_id", "contact_id" => contact.id})
-          )
+        contact = Fixtures.contact_fixture(%{phone: "919876500555"})
 
-        assert by_id.assigns.current_contact.id == contact.id
-
-        other = Fixtures.contact_fixture(%{phone: "919876500555"})
-
-        {:ok, by_phone} =
+        {:ok, socket} =
           WebChannelFixtures.ngo_socket_fixture(
             ngo_token(%{"sub" => "by_phone", "phone" => "919876500555"})
           )
 
-        assert by_phone.assigns.current_contact.id == other.id
+        assert socket.assigns.current_contact.id == contact.id
       end)
     end
 

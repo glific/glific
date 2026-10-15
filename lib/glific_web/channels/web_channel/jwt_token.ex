@@ -31,8 +31,7 @@ defmodule GlificWeb.WebChannel.JwtToken do
           required(:sub) => String.t(),
           required(:exp) => integer(),
           optional(:name) => String.t(),
-          optional(:phone) => String.t(),
-          optional(:contact_id) => integer()
+          optional(:phone) => String.t()
         }
 
   @doc """
@@ -97,14 +96,12 @@ defmodule GlificWeb.WebChannel.JwtToken do
   defp extract_claims(%{"sub" => sub, "channel" => @channel} = fields)
        when is_binary(sub) and byte_size(sub) > 0 do
     with true <- String.length(sub) <= @max_length,
-         {:ok, name} <- optional_name(fields["name"]),
-         {:ok, contact_id} <- optional_contact_id(fields["contact_id"]) do
+         {:ok, name} <- optional_name(fields["name"]) do
       claims =
         %{
           sub: sub,
           exp: fields["exp"],
           name: name,
-          contact_id: contact_id,
           phone: normalise_phone(fields["phone"])
         }
         |> Map.reject(fn {_key, value} -> is_nil(value) end)
@@ -124,11 +121,6 @@ defmodule GlificWeb.WebChannel.JwtToken do
     do: if(String.length(name) <= @max_length, do: {:ok, name}, else: :error)
 
   defp optional_name(_name), do: :error
-
-  @spec optional_contact_id(any()) :: {:ok, integer() | nil} | :error
-  defp optional_contact_id(nil), do: {:ok, nil}
-  defp optional_contact_id(contact_id) when is_integer(contact_id), do: {:ok, contact_id}
-  defp optional_contact_id(_contact_id), do: :error
 
   @spec normalise_phone(any()) :: String.t() | nil
   defp normalise_phone(phone) when is_binary(phone) do

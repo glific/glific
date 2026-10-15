@@ -87,7 +87,7 @@ defmodule GlificWeb.WebChannelSocket do
     with {:ok, organization_id} <- organization_from_host(connect_info),
          :ok <- enter_organization(organization_id),
          {:ok, claims} <- JwtToken.verify(organization_id, token),
-         {:ok, contact} <- Contacts.find_or_create_web_contact(claims.sub, claims) do
+         {:ok, contact} <- Contacts.maybe_create_contact(claims, :web, claims.sub) do
       {:ok,
        %{
          contact: contact,

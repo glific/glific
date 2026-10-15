@@ -31,7 +31,6 @@ A JWT signed with a JWT signature secret.
   difference of up to 60 seconds is tolerated.
 * `name` (optional): the contact's name for a new contact. Defaults to `sub`.
 * `phone` (optional): the user's WhatsApp number as digits with the country code and no `+`.
-* `contact_id` (optional): the id of an existing Glific contact to link the user to.
 
 ```javascript
 // Node.js, using the jsonwebtoken package
@@ -74,10 +73,11 @@ Fetch a fresh token from your backend when `token_expiring` arrives and push it 
 
 ## Contacts
 
-The first connection with a new `sub` creates the contact. If `contact_id` or `phone` is given and
-matches a contact in the organization, the username is linked to that contact instead of creating a
-new one. If the `sub` is already known, its contact is used and `phone` and `contact_id` are ignored.
-The organization's own WhatsApp contact and simulator contacts are never linked to.
+The first connection with a new `sub` creates the contact. If `phone` is given and is the number of a
+WhatsApp contact in the organization, the username is linked to that contact instead, so the user
+has one conversation across WhatsApp and the web. If the `sub` is already known, its contact is used
+and `phone` is ignored. The organization's own WhatsApp contact and simulator contacts are never
+linked to.
 
 Glific treats a phone you send as the user's own: the contact owns that number, including its
 WhatsApp messages.
@@ -89,8 +89,8 @@ user's contact up with <a href="#get-a-contact-by-identity">contactByIdentity</a
 
 ## Your responsibilities
 
-* Only send a `phone` or `contact_id` you have verified belongs to the user. Glific trusts the
-  token, and linking attaches the user to that contact's conversation.
+* Only send a `phone` you have verified belongs to the user. Glific trusts the token, and linking
+  attaches the user to that number's conversation.
 * A `sub` is permanent for a user and must be unique across every system you sign tokens from. Two
   systems issuing the same `sub` log in as the same contact. Reconciling ids between your systems
   is your job.
