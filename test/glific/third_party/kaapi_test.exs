@@ -704,7 +704,7 @@ defmodule Glific.ThirdParty.KaapiTest do
         decoded_body = Jason.decode!(body)
 
         assert decoded_body["config_blob"]["input_guardrails"] == [
-                 %{"type" => "pii_remover", "on_fail" => "fix"}
+                 %{"type" => "pii_remover"}
                ]
 
         assert decoded_body["config_blob"]["output_guardrails"] == []
@@ -721,7 +721,7 @@ defmodule Glific.ThirdParty.KaapiTest do
         prompt: "You are a helpful assistant",
         knowledge_base_ids: [],
         settings: %{"temperature" => 1},
-        input_guardrails: [%{"type" => "pii_remover", "on_fail" => "fix"}],
+        input_guardrails: [%{"type" => "pii_remover"}],
         output_guardrails: []
       }
 

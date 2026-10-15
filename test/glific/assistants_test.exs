@@ -812,7 +812,7 @@ defmodule Glific.AssistantsTest do
           decoded_body = Jason.decode!(body)
 
           assert decoded_body["config_blob"]["input_guardrails"] == [
-                   %{"type" => "pii_remover", "on_fail" => "fix"}
+                   %{"type" => "pii_remover"}
                  ]
 
           assert decoded_body["config_blob"]["output_guardrails"] == [
@@ -830,7 +830,7 @@ defmodule Glific.AssistantsTest do
                  instructions: config_version.prompt,
                  model: config_version.model,
                  temperature: get_in(config_version.settings, ["temperature"]),
-                 input_guardrails: [%{"type" => "pii_remover", "on_fail" => "fix"}],
+                 input_guardrails: [%{"type" => "pii_remover"}],
                  output_guardrails: [%{"type" => "gender_assumption_bias"}],
                  organization_id: organization_id
                })
@@ -846,7 +846,7 @@ defmodule Glific.AssistantsTest do
         |> Repo.one()
 
       assert new_config_version.input_guardrails == [
-               %{"type" => "pii_remover", "on_fail" => "fix"}
+               %{"type" => "pii_remover"}
              ]
 
       assert new_config_version.output_guardrails == [%{"type" => "gender_assumption_bias"}]

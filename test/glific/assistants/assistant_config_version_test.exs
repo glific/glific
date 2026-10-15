@@ -139,7 +139,7 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
     test "changeset accepts guardrail specs with a type", %{valid_attrs: valid_attrs} do
       attrs =
         Map.merge(valid_attrs, %{
-          input_guardrails: [%{"type" => "pii_remover", "on_fail" => "fix"}],
+          input_guardrails: [%{"type" => "pii_remover"}],
           output_guardrails: [%{"type" => "gender_assumption_bias"}]
         })
 
