@@ -8,12 +8,12 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Varia
 
 Glific has **four** distinct kinds of variables. The `@` prefix is required when referencing any of them inside a flow node.
 
-| Kind                                           | Prefix                                              | Scope                                          | Created by                                                        |
-| ---------------------------------------------- | --------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- |
-| Contact variable (a.k.a. contact field)        | `@contact.fields.<name>`                            | Persists across **all** flows for that contact | `Update Contact` node, or auto-created                            |
-| Predefined contact variable                    | `@contact.<name>`                                   | Persists across all flows; system-managed      | Auto-populated by Glific (name, phone, language, etc.)            |
-| Flow variable (a.k.a. result, result variable) | `@results.<name>`                                   | Lives only inside the **current** flow run     | `Wait for Response` node, `Save Flow Result` node, `webhook` node |
-| Parent/child flow variable                     | `@results.parent.<name>` or `@results.child.<name>` | Crosses the parent ↔ child flow boundary       | Defined in the other flow                                         |
+| Kind | Prefix | Scope | Created by |
+| --- | --- | --- | --- |
+| Contact variable (a.k.a. contact field) | `@contact.fields.<name>` | Persists across **all** flows for that contact | `Update Contact` node, or auto-created |
+| Predefined contact variable | `@contact.<name>` | Persists across all flows; system-managed | Auto-populated by Glific (name, phone, language, etc.) |
+| Flow variable (a.k.a. result, result variable) | `@results.<name>` | Lives only inside the **current** flow run | `Wait for Response` node, `Save Flow Result` node, `webhook` node |
+| Parent/child flow variable | `@results.parent.<name>` or `@results.child.<name>` | Crosses the parent ↔ child flow boundary | Defined in the other flow |
 
 **Rule of thumb:**
 
@@ -62,16 +62,16 @@ heading: 1. Glific Vocabulary & Concepts (read this first) › 1.4 `.input` vs `
 
 Result variables have several suffixes:
 
-| Suffix                                       | What it returns                                                                               |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `@results.<name>` or `@results.<name>.input` | The raw text the contact entered                                                              |
-| `@results.<name>.category`                   | The category bucket the response fell into (e.g., "M" for Male, "Yes" for any of "yes/y/yup") |
-| `@results.<name>.url`                        | For media: the URL of the uploaded file                                                       |
-| `@results.<name>.caption`                    | For media: the caption sent with the file                                                     |
+| Suffix | What it returns |
+| --- | --- |
+| `@results.<name>` or `@results.<name>.input` | The raw text the contact entered |
+| `@results.<name>.category` | The category bucket the response fell into (e.g., "M" for Male, "Yes" for any of "yes/y/yup") |
+| `@results.<name>.url` | For media: the URL of the uploaded file |
+| `@results.<name>.caption` | For media: the caption sent with the file |
 
 For webhook results: `@results.<webhook_name>.<json_key>` — see section 4.3.
 
---
+---
 
 --- entry
 section: 2.1
@@ -198,7 +198,7 @@ heading: 2. Quick Syntax Reference (cheatsheet) › 2.7 Common regex patterns
 ([01][0-9]|2[0-3]):([0-5][0-9])$ # HH:MM 24-hour time
 ```
 
---
+---
 
 --- entry
 section: 3.1
@@ -419,7 +419,7 @@ Examples:
 - ✅ `contact_name`, `age_group`, `score_q1`
 - ❌ `Contact Name`, `age-group`, `2nd_score`, `name!`
 
---
+---
 
 --- entry
 section: 4.1
@@ -807,7 +807,7 @@ The Split By node branches the flow on a condition. The variants available in Gl
 
 **Split by URN Type** exists upstream but is switched off in Glific, and there is no "Consent Status" split — to branch on opt-in, use **Split by Expression** on `@contact.optin_status` (see [5.6](#56-branching-by-collection--opt-in--registration)).
 
---
+---
 
 --- entry
 section: 5
@@ -908,8 +908,8 @@ Days since a stored date (date in `D/0M/YYYY` format):
 
 ```
 <%= "@contact.fields.batch_start_date"
-    |> Timex.parse!("{D}/{0M}/{YYYY}")
-    |> then(&(Timex.diff(Timex.now(), &1, :day))) %>
+| > Timex.parse!("{D}/{0M}/{YYYY}") |
+| > then(&(Timex.diff(Timex.now(), &1, :day))) %> |
 ```
 
 `@calendar.current_date` returns today as `D/0M/YYYY` (e.g., `2/01/2025`, `11/10/2024`). Useful for storing an onboarding date and later computing days-since.
@@ -983,7 +983,7 @@ heading: 5. Custom Expressions (the `<%=... %>` block) — comprehensive referen
 
 If a particular expression isn't covered here, post in the [Glific Discord](https://discord.com/channels/717975833226248303/1037981805653008404). The team has tooling to help generate exact syntax for new use cases.
 
---
+---
 
 --- entry
 section: 6.1
@@ -1067,7 +1067,7 @@ For nested options (District → Block → School) or option lists exceeding the
 
 This pattern bypasses WhatsApp's 10-item list limit by paginating.
 
---
+---
 
 --- entry
 section: 7.1
@@ -1176,7 +1176,7 @@ When an HSM message fails to send, you'll usually see one of these errors. The f
 - **Account not registered** — your Gupshup-Meta linkage isn't complete; check Gupshup account status.
 - **Character policy violated** — markdown chars `*`, `_` are not allowed in template headers and buttons.
 
---
+---
 
 --- entry
 section: 8.1
@@ -1369,6 +1369,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Import%20%2
 Export from source: Flows page → **Export** on the flow row (downloads JSON). Import to destination: Flows page → **Import flow** → upload the JSON; a status dialog reports per-flow success or failure. Note that anything the flow references by name — collections, contact variables, interactive messages, HSM templates, sheets, assistants — has to exist in the destination org too.
 
 --- entry
+section: 8.18
+heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.18 How do I revert a flow to a previous version?
+---
+
+Inside the flow editor: **Revision History** button. Glific keeps a list of versions; pick one and revert. Useful when a published change broke production.
+
+--- entry
 section: 8.19
 heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.19 How do I count how many users opted-in?
 source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
@@ -1388,37 +1395,37 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 Use the **Open a ticket with a human agent** node. The conversation is suspended (the bot stops auto-replying); a staff member picks up from Chats. They close the ticket when done, and the flow resumes (if configured to).
 
---
+---
 
 --- entry
 section: 9
 heading: 9. Limits & Constraints (single-line answers)
 ---
 
-| Thing                                         | Limit                                       |
-| --------------------------------------------- | ------------------------------------------- |
-| Quick Reply buttons in an Interactive Message | 3 max                                       |
-| List items in an Interactive Message          | 10 max (per list)                           |
-| Quick Reply buttons in an HSM Template        | 10 max                                      |
-| URL buttons in an HSM Template                | 2 max                                       |
-| Phone Number buttons in an HSM Template       | 1 max                                       |
-| Phone Number buttons without country code     | Not allowed (use body instead)              |
-| Send Message text body                        | 4096 chars                                  |
-| Image attachment                              | 5.12 MB                                     |
-| Video attachment                              | 16.384 MB                                   |
-| Audio attachment                              | 16.384 MB                                   |
-| Document attachment                           | 102.4 MB                                    |
-| Sticker attachment                            | 0.09 MB, 512×512 px, .webp only             |
-| .gif files                                    | NOT supported (convert to mp4)              |
-| Webhook methods                               | GET, POST, FUNCTION only (no PUT/DELETE/PATCH) |
-| Webhook exits                                 | Success / Failure                           |
-| Webhook timeout                               | 5 seconds (use Wait for Result for longer)  |
-| Async webhook `wait_time` in the body         | 5 minutes max (longer is clamped, with a publish warning) |
-| Wait for Result / Wait for time duration      | Days. A wait of 24 h or more means the next message must be an HSM |
-| Wait for time with no delay set               | ~4 seconds inline                           |
-| Session window                                | 24 hours after last contact inbound message |
+| Thing | Limit |
+| --- | --- |
+| Quick Reply buttons in an Interactive Message | 3 max |
+| List items in an Interactive Message | 10 max (per list) |
+| Quick Reply buttons in an HSM Template | 10 max |
+| URL buttons in an HSM Template | 2 max |
+| Phone Number buttons in an HSM Template | 1 max |
+| Phone Number buttons without country code | Not allowed (use body instead) |
+| Send Message text body | 4096 chars |
+| Image attachment | 5.12 MB |
+| Video attachment | 16.384 MB |
+| Audio attachment | 16.384 MB |
+| Document attachment | 102.4 MB |
+| Sticker attachment | 0.09 MB, 512×512 px, .webp only |
+| .gif files | NOT supported (convert to mp4) |
+| Webhook methods | GET, POST, FUNCTION only (no PUT/DELETE/PATCH) |
+| Webhook exits | Success / Failure |
+| Webhook timeout | 5 seconds (use Wait for Result for longer) |
+| Async webhook `wait_time` in the body | 5 minutes max (longer is clamped, with a publish warning) |
+| Wait for Result / Wait for time duration | Days. A wait of 24 h or more means the next message must be an HSM |
+| Wait for time with no delay set | ~4 seconds inline |
+| Session window | 24 hours after last contact inbound message |
 
---
+---
 
 --- entry
 section: 10
@@ -1438,7 +1445,7 @@ When a flow isn't behaving, check these in order:
 9. **HSM template approval status** — Templates page; status must be Approved.
 10. **Ignore Keywords setting** — if enabled on another active flow, it may be blocking this flow's keyword from triggering.
 
---
+---
 
 --- entry
 section: 11.1
@@ -1514,27 +1521,27 @@ Common reasons:
 - Quota or rate limits hit.
  See `Why is the google sheet sync failing` and `Solving For Sheet Sync Failures Issues` in main docs.
 
---
+---
 
 --- entry
 section: 12
 heading: 12. Integrations — when to use which
 ---
 
-| Integration                              | What it does                                                                                                                       |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **GPT (OpenAI)**                         | Send a contact's message to ChatGPT and use the reply in flow. See `ChatGPT using OpenAI APIs`.                                    |
-| **GPT for image recognition**            | Pass an image URL to GPT-4 vision; receive description / answer. See `GPT integration for image recognition`.                      |
-| **Filesearch (OpenAI Assistants)**       | RAG over uploaded PDFs/docs. See `Filesearch Using OpenAI Assistants`.                                                             |
-| **Structured GPT responses**             | Force GPT to return JSON with named fields, parsable as `@results.gpt.<key>`. See `Structured responses in GPT webhook functions`. |
-| **AI Assistants — file attachments**     | Send PDF / doc files as attachments via OpenAI Assistants. See `AI Assistants To Send Files As Attachments`.                       |
-| **Gemini (speech)**                      | Speech-to-text and text-to-speech, used by `speech_to_text`, `text_to_speech` and `voice-filesearch-gpt`. Replaced the older Bhashini webhooks, which are removed. |
-| **Exotel**                               | Telephony / IVR routing. See `Setting up Exotel`.                                                                                  |
-| **Google Maps API**                      | Reverse geo-locate a `has location` response into an address. See `Google Maps API for reverse geo location`.                      |
-| **Google Cloud Storage (GCS)**           | Required for sending/receiving media. See `Google Cloud Storage Setup - GCS`.                                                      |
-| **WhatsApp Groups Automation (Maytapi)** | Manage WhatsApp Groups, send polls. See `WhatsApp Groups Automation Features`.                                                     |
+| Integration | What it does |
+| --- | --- |
+| **GPT (OpenAI)** | Send a contact's message to ChatGPT and use the reply in flow. See `ChatGPT using OpenAI APIs`. |
+| **GPT for image recognition** | Pass an image URL to GPT-4 vision; receive description / answer. See `GPT integration for image recognition`. |
+| **Filesearch (OpenAI Assistants)** | RAG over uploaded PDFs/docs. See `Filesearch Using OpenAI Assistants`. |
+| **Structured GPT responses** | Force GPT to return JSON with named fields, parsable as `@results.gpt.<key>`. See `Structured responses in GPT webhook functions`. |
+| **AI Assistants — file attachments** | Send PDF / doc files as attachments via OpenAI Assistants. See `AI Assistants To Send Files As Attachments`. |
+| **Gemini (speech)** | Speech-to-text and text-to-speech, used by `speech_to_text`, `text_to_speech` and `voice-filesearch-gpt`. Replaced the older Bhashini webhooks, which are removed. |
+| **Exotel** | Telephony / IVR routing. See `Setting up Exotel`. |
+| **Google Maps API** | Reverse geo-locate a `has location` response into an address. See `Google Maps API for reverse geo location`. |
+| **Google Cloud Storage (GCS)** | Required for sending/receiving media. See `Google Cloud Storage Setup - GCS`. |
+| **WhatsApp Groups Automation (Maytapi)** | Manage WhatsApp Groups, send polls. See `WhatsApp Groups Automation Features`. |
 
---
+---
 
 --- entry
 section: 13
@@ -1570,25 +1577,25 @@ source: https://glific.github.io/docs/docs/Starter%20Kit/12%20Pre-launch%20Chatb
 - **Green Tick** (verified business badge): apply via Meta after meeting volume + traffic criteria. See `How to get Green Tick in Whatsapp Business`.
 - **WhatsApp Quality Rating** check: monitor in Meta Business Manager. Low rating risks throttling. See `Check WhatsApp Quality Rating and Messaging Limits`.
 
---
+---
 
 --- entry
 section: 14
 heading: 14. Onboarding / setup (single-glance answers)
 ---
 
-| Task                                               | Where                                                                            |
-| -------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Pre-onboarding requirements                        | `Glific Overview` (top-level)                                                    |
-| Onboarding form                                    | `Pre Onboarding / Onboarding Form Fill Up`                                       |
-| Facebook business verification                     | `Pre Onboarding / Facebook Verification Process for WhatsApp Business API`       |
-| Gupshup setup                                      | `Pre Onboarding / Gupshup Setup`                                                 |
-| GCS setup                                          | `Pre Onboarding / Google Cloud Storage Setup - GCS`                              |
-| BigQuery setup                                     | `Product Features / Reporting & Dashboard / BigQuery Setup and link with Glific` |
-| Migrating from another tool                        | `Pre Onboarding / Migration to Glific`                                           |
-| Suspending or deleting an account                  | `FAQ / Managing an Organization's Glific Account: Suspension and Deletion`       |
-| Manage Gupshup wallet & suspension                 | `FAQ / Managing Gupshup Wallet Balance and Suspension`                           |
-| Get Glific support (Discord, weekly Tuesday calls) | `FAQ / Get Glific Support`                                                       |
+| Task | Where |
+| --- | --- |
+| Pre-onboarding requirements | `Glific Overview` (top-level) |
+| Onboarding form | `Pre Onboarding / Onboarding Form Fill Up` |
+| Facebook business verification | `Pre Onboarding / Facebook Verification Process for WhatsApp Business API` |
+| Gupshup setup | `Pre Onboarding / Gupshup Setup` |
+| GCS setup | `Pre Onboarding / Google Cloud Storage Setup - GCS` |
+| BigQuery setup | `Product Features / Reporting & Dashboard / BigQuery Setup and link with Glific` |
+| Migrating from another tool | `Pre Onboarding / Migration to Glific` |
+| Suspending or deleting an account | `FAQ / Managing an Organization's Glific Account: Suspension and Deletion` |
+| Manage Gupshup wallet & suspension | `FAQ / Managing Gupshup Wallet Balance and Suspension` |
+| Get Glific support (Discord, weekly Tuesday calls) | `FAQ / Get Glific Support` |
 
 
 14.1 Operating cost rule of thumb
@@ -1607,7 +1614,7 @@ source: https://glific.github.io/docs/docs/FAQ/Get%20Glific%20Support/
 - **Weekly Tuesday support call**: any NGO can join.
 - **Consulting** for deeper help: paid; see consulting overview document linked in main docs.
 
---
+---
 
 --- entry
 section: 15.1
@@ -1709,40 +1716,40 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections
 
 Named groups of contacts. A collection has a Title, a Description and optional assigned staff — membership is **not** rule-based; contacts are added manually, by CSV import, or by the **Add to Collection** / **Remove from Collection** flow nodes. Used for targeted broadcasts, AB-test cohorts, and **Split by collection Membership**. (For a rule-based view of contacts, use a **Saved Search** instead.)
 
---
+---
 
 --- entry
 section: 16
 heading: 16. Where to find specific things in the platform UI
 ---
 
-| To find…                                             | Click…                                                                  |
-| ---------------------------------------------------- | ----------------------------------------------------------------------- |
-| Flows list                                           | Left panel → **Flows** → **Flows**                                      |
-| Flow listing page filters (Active / Inactive)        | Flows page → filter dropdown (top-left of list). There is no Template filter — flow templates are on hold. |
-| Webhook logs                                         | Left panel → **Flows** → **Webhook logs**                               |
-| Google sheets integration                            | Left panel → **Flows** → **Google sheets**                              |
-| Custom contact variables list                        | Left panel → **Manage** → **Contact variables**                         |
-| HSM Templates                                        | Left panel → **Quick tools** → **HSM Templates**                        |
-| Interactive Messages                                 | Left panel → **Quick tools** → **Interactive Msg**                      |
-| Triggers (scheduled flows)                           | Left panel → **Quick tools** → **Triggers**                             |
-| Saved searches                                       | Left panel → **Quick tools** → **Searches**                             |
-| Speed sends                                          | Left panel → **Quick tools** → **Speed Sends**                          |
-| Chats with contacts                                  | Left panel → **Chats**                                                  |
-| Contact profile & history                            | Click any contact → opens their profile                                 |
-| Collections                                          | Left panel → **Manage** → **Collections**                               |
-| Tags                                                 | Left panel → **Manage** → **Tags**                                      |
-| Staff / role management                              | Left panel → **Manage** → **Staff**                                     |
-| Blocked contacts                                     | Left panel → **Manage** → **Blocked contacts**                          |
-| Settings (org config)                                | Avatar / user menu → **Settings** (Admin only)                          |
-| Notifications                                        | Left panel → **Notifications** (shows an unread badge)                  |
-| AI assistants                                        | Left panel → **AI toolkit** → **AI Assistant**                          |
-| Reset flow counts                                    | Inside a flow → editor header → **More** → **Reset flow count**         |
-| Flow Revision History                                | Inside a flow → editor → **Revision History**                           |
-| Generate WhatsApp link / QR for a flow               | Flow row → **Share** icon (needs the flow to have keywords)             |
-| Export / Import a flow                               | Flow row → Export ↔ Flows page → **Import flow**                        |
+| To find… | Click… |
+| --- | --- |
+| Flows list | Left panel → **Flows** → **Flows** |
+| Flow listing page filters (Active / Inactive) | Flows page → filter dropdown (top-left of list). There is no Template filter — flow templates are on hold. |
+| Webhook logs | Left panel → **Flows** → **Webhook logs** |
+| Google sheets integration | Left panel → **Flows** → **Google sheets** |
+| Custom contact variables list | Left panel → **Manage** → **Contact variables** |
+| HSM Templates | Left panel → **Quick tools** → **HSM Templates** |
+| Interactive Messages | Left panel → **Quick tools** → **Interactive Msg** |
+| Triggers (scheduled flows) | Left panel → **Quick tools** → **Triggers** |
+| Saved searches | Left panel → **Quick tools** → **Searches** |
+| Speed sends | Left panel → **Quick tools** → **Speed Sends** |
+| Chats with contacts | Left panel → **Chats** |
+| Contact profile & history | Click any contact → opens their profile |
+| Collections | Left panel → **Manage** → **Collections** |
+| Tags | Left panel → **Manage** → **Tags** |
+| Staff / role management | Left panel → **Manage** → **Staff** |
+| Blocked contacts | Left panel → **Manage** → **Blocked contacts** |
+| Settings (org config) | Avatar / user menu → **Settings** (Admin only) |
+| Notifications | Left panel → **Notifications** (shows an unread badge) |
+| AI assistants | Left panel → **AI toolkit** → **AI Assistant** |
+| Reset flow counts | Inside a flow → editor header → **More** → **Reset flow count** |
+| Flow Revision History | Inside a flow → editor → **Revision History** |
+| Generate WhatsApp link / QR for a flow | Flow row → **Share** icon (needs the flow to have keywords) |
+| Export / Import a flow | Flow row → Export ↔ Flows page → **Import flow** |
 
---
+---
 
 --- entry
 section: 19
@@ -2325,7 +2332,7 @@ Preview only runs the flow in the simulator — it doesn't change visibility on 
 
 If after all of these the flow is still not visible, reach out to support.
 
---
+---
 
 --- entry
 section: 20
@@ -2697,7 +2704,7 @@ All four keys are **required**:
 
 **Use it for:** course-completion certificates, participation badges, leaderboard awards. See [15.5](#155-custom-certificates) for template setup.
 
---
+---
 
 _End of companion knowledge base. For UI screenshots and visual examples, refer back to the main `merged_documentation 2.md` or the live docs at https://glific.github.io/docs/._
 

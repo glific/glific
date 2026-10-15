@@ -57,6 +57,19 @@ defmodule Glific.Docs do
   # numbers were measured: they sit between what an off-topic question scores
   # and what a real one does.
   @minimum_similarity 0.45
+
+  # Longer than any real identifier, and past what a pasted dump can compile to.
+  @longest_term 128
+
+  # A question this short cannot reach @minimum_overlap on body text alone, so
+  # it qualifies on terms matched rather than on score. Separate from the floor
+  # because it counts a different thing: raising one should not move the other.
+  @short_question 4
+
+  # Two headings named. Enough to say a section is about what was asked even
+  # with a term unaccounted for, and out of reach of one heading plus a word
+  # that merely occurs in prose.
+  @strong_partial 8
   @minimum_overlap 5
 
   @stopwords MapSet.new(~w(
@@ -371,7 +384,10 @@ defmodule Glific.Docs do
     ~r/[@\p{L}\p{N}][\p{L}\p{M}\p{N}._\-]*/u
     |> Regex.scan(String.downcase(question))
     |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
-    |> Enum.reject(&(String.length(&1) < 2 or MapSet.member?(@stopwords, &1)))
+    |> Enum.reject(
+      &(String.length(&1) < 2 or String.length(&1) > @longest_term or
+          MapSet.member?(@stopwords, &1))
+    )
     |> Enum.uniq()
   end
 
@@ -387,8 +403,8 @@ defmodule Glific.Docs do
   # weight alone.
   defp keep?({{score, _matched}, _section}, 1), do: score >= @heading_weight
 
-  defp keep?({{_score, matched}, _section}, count) when count < @minimum_overlap,
-    do: matched == count
+  defp keep?({{score, matched}, _section}, count) when count <= @short_question,
+    do: matched == count or score >= @strong_partial
 
   defp keep?({{score, _matched}, _section}, _count), do: score >= @minimum_overlap
 
@@ -407,8 +423,10 @@ defmodule Glific.Docs do
 
   defp matchers(terms) do
     Enum.map(terms, fn term ->
-      {term,
-       Regex.compile!("(?<![\\p{L}\\p{N}_])" <> Regex.escape(term) <> "(?![\\p{L}\\p{N}_])", "u")}
+      pattern =
+        "(?<![\\p{L}\\p{N}_])" <> Regex.escape(term) <> "(?:e?s)?(?![\\p{L}\\p{N}_])"
+
+      {term, Regex.compile!(pattern, "u")}
     end)
   end
 
@@ -429,7 +447,7 @@ defmodule Glific.Docs do
   end
 
   defp identifier?(token) do
-    String.contains?(token, ".") or String.starts_with?(token, "@") or
-      Regex.match?(~r/[a-z][A-Z]/, token)
+    String.contains?(token, ".") or String.contains?(token, "_") or
+      String.starts_with?(token, "@") or Regex.match?(~r/[a-z][A-Z]/, token)
   end
 end

@@ -221,6 +221,18 @@ defmodule Glific.DocsTest do
              end)
     end
 
+    test "a bare field name is exact, the way a dotted path is", %{entries: entries} do
+      # How someone pastes a field they saw in a notification or an export.
+      for field <- ["optin_status", "sync_status", "flow_contexts"] do
+        assert Docs.lexical(field, entries) != [], field
+      end
+    end
+
+    test "a term matches the plural the documents happen to use", %{entries: entries} do
+      # The corpus writes "pauses"; nobody types that when asking.
+      assert Docs.lexical("how do I pause a flow", entries) != []
+    end
+
     test "a short error string finds the section quoting it", %{entries: entries} do
       # Too few terms to reach the score floor on body text alone, which is how
       # people paste an error: a fragment, not a sentence.
@@ -229,9 +241,17 @@ defmodule Glific.DocsTest do
       end
     end
 
-    test "a short question matching only some of its terms is not a hit", %{entries: entries} do
-      # "start" and "flow" both appear in the corpus; "sourdough" does not.
-      assert Docs.lexical("how to start a sourdough flow", entries) == []
+    test "a short question whose terms only appear in prose is not a hit", %{entries: entries} do
+      # Each word turns up somewhere in the corpus, but none of them names a
+      # section, so nothing here is about what was asked.
+      assert Docs.lexical("sourdough baking temperature", entries) == []
+    end
+
+    test "a partial match still counts when the terms name sections",
+         %{entries: entries} do
+      # "sourdough" is not in the documents, but a question about starting a
+      # flow should still reach the sections about starting flows.
+      assert Docs.lexical("how to start a sourdough flow", entries) != []
     end
 
     test "notation survives tokenising whole" do
