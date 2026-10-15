@@ -66,6 +66,11 @@ defmodule GlificWeb.Resolvers.Contacts do
     end
   end
 
+  defp check_channel(%{identifier: identifier}, _organization_id)
+       when identifier not in [nil, ""],
+       do:
+         {:error, ["Identifier", dgettext("errors", "An identifier is only for a web contact.")]}
+
   defp check_channel(_params, _organization_id), do: :ok
 
   @doc false

@@ -595,6 +595,22 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       )
     end
 
+    test "a one-time-code session cannot be renewed with an NGO token for its phone" do
+      Glific.WebChannelFlagHelpers.with_web_channel_secrets(
+        1,
+        %{"jwt_signature_secret_1" => @secret},
+        fn ->
+          contact = Fixtures.contact_fixture(%{phone: "919876500777"})
+          {:ok, _contact} = Glific.Contacts.add_identity(contact, :web, contact.phone)
+          {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+          {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
+
+          ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => contact.phone})})
+          assert_reply ref, :error, %{reason: "invalid_token"}
+        end
+      )
+    end
+
     test "the same contact's fresh token updates the expiry and clears the warning" do
       with_ngo_socket(%{}, fn socket, _contact ->
         now = System.system_time(:second)

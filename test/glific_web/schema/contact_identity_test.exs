@@ -101,6 +101,17 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
                get_in(query_data, [:data, "createContact", "contact"])
     end
 
+    test "an identifier without the web channel is refused", %{manager: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_contact, user,
+          variables: %{
+            "input" => %{"name" => "Mixed", "phone" => "919876500778", "identifier" => "ravi_12"}
+          }
+        )
+
+      assert [%{"key" => "Identifier"}] = get_in(query_data, [:data, "createContact", "errors"])
+    end
+
     test "a WhatsApp contact still needs a phone", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:create_contact, user, variables: %{"input" => %{"name" => "No phone"}})

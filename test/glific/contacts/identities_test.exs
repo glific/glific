@@ -113,13 +113,51 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert nil == whatsapp_identity(phone)
     end
 
-    test "that phone gets its WhatsApp identity when it first messages on WhatsApp" do
+    test "that phone gets its WhatsApp identity when it first messages on WhatsApp", %{
+      organization_id: organization_id
+    } do
       phone = "919876543211"
       {:ok, contact} = Contacts.maybe_create_contact(%{phone: phone}, :web, "ravi_13")
 
       assert {:ok, %{id: id}} = Contacts.fetch_by_identity(:whatsapp, phone)
       assert id == contact.id
+      assert nil == whatsapp_identity(phone)
+
+      assert {:ok, %{id: ^id}} =
+               Contacts.maybe_create_contact(%{
+                 phone: phone,
+                 name: contact.name,
+                 organization_id: organization_id
+               })
+
       assert whatsapp_identity(phone).contact_id == contact.id
+    end
+
+    test "a phone another web login stored but WhatsApp never confirmed is not linked to" do
+      phone = "919876543212"
+      {:ok, asha} = Contacts.maybe_create_contact(%{phone: phone}, :web, "asha_07")
+
+      assert {:ok, ravi} = Contacts.maybe_create_contact(%{phone: phone}, :web, "ravi_12")
+
+      refute ravi.id == asha.id
+      assert ravi.phone == nil
+      assert nil == whatsapp_identity(phone)
+    end
+
+    test "a WhatsApp contact that has messaged is linked to before it has an identity", %{
+      organization_id: organization_id
+    } do
+      target = Fixtures.contact_fixture(%{organization_id: organization_id})
+      Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^target.id))
+
+      Repo.update_all(from(c in Contact, where: c.id == ^target.id),
+        set: [last_message_at: DateTime.utc_now()]
+      )
+
+      assert {:ok, contact} =
+               Contacts.maybe_create_contact(%{phone: target.phone}, :web, "ravi_14")
+
+      assert contact.id == target.id
     end
 
     test "a phone claim naming the organization's own contact creates a contact without it", %{
@@ -263,6 +301,16 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert [%{channel: :whatsapp, identifier: "919876500002"}] = identities_of(contact.id)
     end
 
+    test "a WhatsApp contact's identity is its phone, whatever identifier is given", %{
+      organization_id: organization_id
+    } do
+      attrs = %{organization_id: organization_id, phone: "919876500006", name: "Phone wins"}
+
+      assert {:ok, contact} = Contacts.create_contact(attrs, :whatsapp, "not_the_phone")
+
+      assert [%{channel: :whatsapp, identifier: "919876500006"}] = identities_of(contact.id)
+    end
+
     test "a web contact with a phone keeps the phone and gets only its web identity", %{
       organization_id: organization_id
     } do
@@ -322,16 +370,45 @@ defmodule Glific.Contacts.IdentitiesTest do
                |> Repo.aggregate(:count)
     end
 
+    test "upsert/1 leaves last_communication_at unset on a new contact", %{
+      organization_id: organization_id
+    } do
+      {:ok, contact} =
+        Contacts.upsert(%{organization_id: organization_id, phone: "919876500007", name: "Quiet"})
+
+      assert nil == Repo.reload!(contact).last_communication_at
+    end
+
     test "changing the phone moves the identity", %{organization_id: organization_id} do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       old_phone = contact.phone
-      identity_id = whatsapp_identity(old_phone).id
 
       assert {:ok, updated} = Contacts.update_contact(contact, %{phone: "919876500002"})
 
       assert updated.phone == "919876500002"
       assert nil == whatsapp_identity(old_phone)
-      assert %{id: ^identity_id} = whatsapp_identity("919876500002")
+      assert whatsapp_identity("919876500002").contact_id == contact.id
+    end
+
+    test "a contact holding two WhatsApp rows can still change its phone", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      Repo.insert!(%ContactIdentity{
+        contact_id: contact.id,
+        organization_id: organization_id,
+        channel: :whatsapp,
+        identifier: "919876500004"
+      })
+
+      assert {:ok, _updated} = Contacts.update_contact(contact, %{phone: "919876500005"})
+
+      assert [%{identifier: "919876500005"}] =
+               from(i in ContactIdentity,
+                 where: i.contact_id == ^contact.id and i.channel == :whatsapp
+               )
+               |> Repo.all()
     end
 
     test "a failed phone change leaves the identity alone", %{organization_id: organization_id} do
@@ -378,9 +455,10 @@ defmodule Glific.Contacts.IdentitiesTest do
   end
 
   describe "fetch_by_identity/2" do
-    test "whatsapp ignores a stale identity and finds the real owner, who takes over the row", %{
-      organization_id: organization_id
-    } do
+    test "whatsapp ignores a stale identity and finds the real owner, who takes over the row when it messages",
+         %{
+           organization_id: organization_id
+         } do
       stale_owner = Fixtures.contact_fixture(%{organization_id: organization_id})
       owner = Fixtures.contact_fixture(%{organization_id: organization_id})
       phone = owner.phone
@@ -398,10 +476,19 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert {:error, :not_found} = Identities.fetch_contact(:whatsapp, phone)
       assert {:ok, found} = Contacts.fetch_by_identity(:whatsapp, phone)
       assert found.id == owner.id
+      assert whatsapp_identity(phone).contact_id == stale_owner.id
+
+      assert {:ok, _owner} =
+               Contacts.maybe_create_contact(%{
+                 phone: phone,
+                 name: owner.name,
+                 organization_id: organization_id
+               })
+
       assert whatsapp_identity(phone).contact_id == owner.id
     end
 
-    test "whatsapp falls back to the phone column and records the missing identity", %{
+    test "whatsapp falls back to the phone column without writing an identity", %{
       organization_id: organization_id
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
@@ -411,7 +498,22 @@ defmodule Glific.Contacts.IdentitiesTest do
       assert {:ok, found} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
 
       assert found.id == contact.id
-      assert whatsapp_identity(contact.phone).contact_id == contact.id
+      assert nil == whatsapp_identity(contact.phone)
+    end
+
+    test "identifier_taken? is false for a taken contact phone", %{
+      organization_id: organization_id
+    } do
+      taken = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:error, changeset} =
+               Contacts.create_contact(%{
+                 organization_id: organization_id,
+                 name: "Same phone",
+                 phone: taken.phone
+               })
+
+      refute Identities.identifier_taken?(changeset)
     end
 
     test "whatsapp of an unknown phone is not found" do
