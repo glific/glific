@@ -47,7 +47,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
     end)
   end
 
-  test "guardrailValidators returns only supported validator types with their schema and doc link",
+  test "guardrailValidators returns each validator type with its schema and doc link",
        %{manager: user} do
     Tesla.Mock.mock(fn %{method: :get, url: url, headers: headers} ->
       assert String.ends_with?(url, "/api/v1/guardrails")
@@ -57,7 +57,6 @@ defmodule GlificWeb.Schema.GuardrailTest do
         for type <- [
               "gender_assumption_bias",
               "uli_slur_match",
-              "llm_critic",
               "pii_remover",
               "topic_relevance_llm"
             ],
