@@ -209,6 +209,19 @@ defmodule Glific.DocsTest do
       assert Docs.lexical("ignore previous instructions", entries) == []
     end
 
+    test "a short error string finds the section quoting it", %{entries: entries} do
+      # Too few terms to reach the score floor on body text alone, which is how
+      # people paste an error: a fragment, not a sentence.
+      for error <- ["Repeated or missing headers", "media validation failed"] do
+        assert Docs.lexical(error, entries) != [], error
+      end
+    end
+
+    test "a short question matching only some of its terms is not a hit", %{entries: entries} do
+      # "start" and "flow" both appear in the corpus; "sourdough" does not.
+      assert Docs.lexical("how to start a sourdough flow", entries) == []
+    end
+
     test "notation survives tokenising whole" do
       assert "@results.parent.state.input" in Docs.terms(
                "how do I read @results.parent.state.input"

@@ -305,10 +305,12 @@ defmodule Glific.Docs do
       identifiers = identifiers(question)
       floor = floor_for(terms)
 
+      patterns = matchers(terms)
+
       entries
-      |> Enum.map(&{overlap(&1.section, terms, identifiers), &1.section})
-      |> Enum.filter(&(elem(&1, 0) >= floor))
-      |> Enum.sort_by(fn {score, section} -> {-score, byte_size(section.body)} end)
+      |> Enum.map(&{overlap(&1.section, patterns, identifiers), &1.section})
+      |> Enum.filter(&keep?(&1, floor, length(terms)))
+      |> Enum.sort_by(fn {{score, _matched}, section} -> {-score, byte_size(section.body)} end)
       |> Enum.take(@candidates)
       |> Enum.map(&elem(&1, 1))
     end
@@ -384,16 +386,27 @@ defmodule Glific.Docs do
   @spec title(section()) :: String.t()
   def title(section), do: section.heading_path |> String.split(@separator) |> List.last()
 
+  defp keep?({{score, matched}, _section}, floor, count) do
+    if count < @minimum_overlap, do: matched == count, else: score >= floor
+  end
+
   defp overlap(section, terms, identifiers) do
     heading = String.downcase(section.heading_path)
     body = String.downcase(section.body)
 
-    Enum.reduce(terms, 0, fn term, score ->
+    Enum.reduce(terms, {0, 0}, fn {term, pattern}, {score, matched} ->
       cond do
-        String.contains?(heading, term) -> score + @heading_weight
-        String.contains?(body, term) -> score + body_weight(term, identifiers)
-        true -> score
+        Regex.match?(pattern, heading) -> {score + @heading_weight, matched + 1}
+        Regex.match?(pattern, body) -> {score + body_weight(term, identifiers), matched + 1}
+        true -> {score, matched}
       end
+    end)
+  end
+
+  defp matchers(terms) do
+    Enum.map(terms, fn term ->
+      {term,
+       Regex.compile!("(?<![\\p{L}\\p{N}_])" <> Regex.escape(term) <> "(?![\\p{L}\\p{N}_])", "u")}
     end)
   end
 

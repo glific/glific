@@ -1,14 +1,4 @@
 --- entry
-heading: Glific Chatbot Knowledge Base — Comprehensive Companion Guide
----
-
-> **Purpose of this document.** This file is a structured, retrieval-optimized companion to the main Glific documentation (`merged_documentation 2.md`). The main file relies heavily on screenshots; when those images are stripped (as in the chatbot's knowledge base), key syntax and step-by-step details get lost in narrative paragraphs. This document re-states every important fact in plain text, in self-contained chunks, with the exact syntax in code blocks. Each section is written so that a retrieval system can return a single chunk and the LLM can answer the question without needing surrounding context.
->
-> **Vocabulary note.** Users ask about the same concept with different words. This doc deliberately includes synonyms ("sub-flow" = "child flow" = "linked flow" = "called flow"; "result variable" = "flow variable" = "@results variable"; "contact variable" = "contact field" = "@contact.fields variable"). If a user asks using one term, the answer should still surface.
-
----
-
---- entry
 section: 1.1
 heading: 1. Glific Vocabulary & Concepts (read this first) › 1.1 Variables in Glific — the four kinds
 source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Variables/Flow%20variables%20vs%20Contact%20variables/
@@ -82,13 +72,6 @@ Result variables have several suffixes:
 For webhook results: `@results.<webhook_name>.<json_key>` — see section 4.3.
 
 ---
-
---- entry
-section: 2
-heading: 2. Quick Syntax Reference (cheatsheet)
----
-
-Every code-block below is a **complete, copy-pasteable** expression that goes inside a flow node.
 
 --- entry
 section: 2.1
@@ -202,15 +185,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 <%= if "@contact.fields.is_registered" == "1", do: 1, else: 0 %>   # branch by registration flag
 <%= if @contact.optin_status == true, do: 1, else: 2 %>           # branch by opt-in status
 <%= case "@results.assigned_arm_id" do "@results.control_arm_id" -> "Control"; "@results.treatment_arm_id" -> "Treatment"; end %>   # match value against multiple variables
-```
-
---- entry
-section: 2.6
-heading: 2. Quick Syntax Reference (cheatsheet) › 2.6 Calendar variable
----
-
-```
-@calendar.current_date                 # today, formatted D/0M/YYYY (e.g., 2/01/2025, 11/10/2024)
 ```
 
 --- entry
@@ -1395,13 +1369,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Import%20%2
 Export from source: Flows page → **Export** on the flow row (downloads JSON). Import to destination: Flows page → **Import flow** → upload the JSON; a status dialog reports per-flow success or failure. Note that anything the flow references by name — collections, contact variables, interactive messages, HSM templates, sheets, assistants — has to exist in the destination org too.
 
 --- entry
-section: 8.18
-heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.18 How do I revert a flow to a previous version?
----
-
-Inside the flow editor: **Revision History** button. Glific keeps a list of versions; pick one and revert. Useful when a published change broke production.
-
---- entry
 section: 8.19
 heading: 8. Common "How do I…?" recipes (paraphrased the way users ask) › 8.19 How do I count how many users opted-in?
 source: https://glific.github.io/docs/docs/FAQ/Glific%20BigQuery%20Tables%20Guide/
@@ -1494,8 +1461,6 @@ Tables include (non-exhaustive):
 - `contacts_fields` — custom field definitions
 
 There are ~34 tables in an org's dataset. The full column-by-column reference is in the BigQuery Tables Guide.
-
-Typical query: "How many users completed the registration flow?" → `SELECT COUNT(DISTINCT contact_phone) FROM flow_results WHERE flow_uuid = '<id>'`.
 
 --- entry
 section: 11.2

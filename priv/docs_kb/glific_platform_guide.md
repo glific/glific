@@ -1,4 +1,14 @@
 --- entry
+heading: Glific Platform Guide
+---
+
+A comprehensive reference for the Glific WhatsApp chatbot platform, written for an AI support chatbot that helps NGO staff. The chatbot cannot see screenshots — every UI element is described in plain text using the exact labels that appear in the product.
+
+> Glific is built on React 19 + TypeScript + Apollo (GraphQL) + MUI v7. The frontend lives in . Routes are defined in . The left-sidebar menu is configured in .
+
+---
+
+--- entry
 heading: Glific Platform Guide › Navigation & Layout › Overall layout
 ---
 
@@ -22,11 +32,32 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Man
 - **Dynamic roles** — organizations can define custom roles via `/role`; behavior set per-role.
 
 --- entry
-heading: Glific Platform Guide › Screens › Chat
-source: https://glific.github.io/docs/docs/Product%20Features/Chats/
+heading: Glific Platform Guide › Navigation & Layout › Sidebar menu (left, top to bottom)
 ---
 
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Chats/
+The exact items shown in the side drawer come from :
+
+| Menu item                    | URL                    | Roles        | Notes                                                                                                                                                                                                                                                                                                    |
+| ---------------------------- | ---------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Chats**                    | `/chat`                | All          | The default landing screen                                                                                                                                                                                                                                                                               |
+| **WhatsApp Groups** (parent) | `/group/chat`          | All          | Visible only when the `whatsappGroupEnabled` org service is on. Children: **Group Chats** (`/group/chat`), **Group Collections** (`/group/collection`), **Group Polls** (`/group/polls`), **WhatsApp Phones** (`/group/phones`, Manager+)                                                                 |
+| **Flows** (parent)           | `/flow`                | Manager+     | Children: **Flows** (`/flow`), **Google sheets** (`/sheet-integration`), **Webhook logs** (`/webhook-logs`), **Support tickets** (`/ticket`, only when `ticketingEnabled`), **Certificates** (`/certificates`, only when `certificateEnabled`)                                                            |
+| **Support tickets**          | `/ticket`              | Staff (only) | Top-level for the Staff role; Manager+ reach it via the Flows submenu. Only when `ticketingEnabled`.                                                                                                                                                                                                     |
+| **Quick tools** (parent)     | `/interactive-message` | Manager+     | Children: **Interactive Msg** (`/interactive-message`), **HSM Templates** (`/template`), **WhatsApp Forms** (`/whatsapp-forms`, only when `whatsappFormsEnabled`), **Triggers** (`/trigger`), **Searches** (`/search`), **Speed Sends** (`/speed-send`)                                                   |
+| **Notifications**            | `/notifications`       | Manager+     | Shows badge with unread count                                                                                                                                                                                                                                                                            |
+| **AI toolkit** (parent)      | `/assistants`          | Manager+     | Children: **AI Assistant** (`/assistants`), **AI Evals** (`/ai-evaluations`)                                                                                                                                                                                                                             |
+| **Data Analytics**           | `/analytics`           | All          | Marked "new" in the menu                                                                                                                                                                                                                                                                                 |
+| **Manage** (parent)          | `/collection`          | Staff+       | Children: **Collections** (`/collection`), **Staff** (`/staff-management`, Manager+), **Contacts** (`/contact-management`, Admin+), **Blocked contacts** (`/blocked-contacts`), **Contact variables** (`/contact-fields`, Manager+), **Tags** (`/tag`, Manager+), **Roles** (`/role`, only when the org doesn't use Dynamic roles), **Organizations** (`/organizations`, Glific_admin), **Consulting** (`/consulting-hours`, Glific_admin) |
+| **Resources**                | external (Glific docs) | All          |                                                                                                                                                                                                                                                                                                          |
+| **Discord**                  | external               | All          |                                                                                                                                                                                                                                                                                                          |
+
+User-account menu (bottom of sidebar / avatar):
+
+- **My Account** (`/myaccount`) — change password, language preference.
+- **Settings** (`/settings`) — Admin only; routes to Organization, Flows config, Billing, and provider tiles.
+- **Logout** (`/logout/user`).
+
+---
 
 --- entry
 heading: Glific Platform Guide › Screens › Chat › Screen: Chats (main inbox)
@@ -105,13 +136,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Chats/
 - **Differences from contact chat:** sender's contact name appears above each incoming message ("Message from: ContactName"). Block, Clear conversation, and Terminate flows are not available. **Start a flow** for a group runs the flow for all participants — toast _"Your flow will start in a couple of minutes."_
 
 ---
-
---- entry
-heading: Glific Platform Guide › Screens › Flows
-source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
----
-
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
 
 --- entry
 heading: Glific Platform Guide › Screens › Flows › Screen: Flow list
@@ -359,13 +383,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections
 ---
 
 --- entry
-heading: Glific Platform Guide › Screens › Contacts & Contact Management
-source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
----
-
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
-
---- entry
 heading: Glific Platform Guide › Screens › Contacts & Contact Management › Screen: Contact Management (bulk import)
 source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
 ---
@@ -494,13 +511,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 - **Sync** action pulls forms from WhatsApp; failure shows _"Sorry, failed to sync whatsapp forms updates."_
 
 ---
-
---- entry
-heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications
-source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
----
-
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 
 --- entry
 heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Webhook Logs
@@ -660,15 +670,6 @@ heading: Glific Platform Guide › Screens › Consulting Hours (Glific_admin)
 - **URL:** `/consulting-hours/`
 - **Purpose:** Track support consulting time delivered by the Glific team.
 - **Fields:** **Select Organization** _ · **Participants** _ · **Select date** _ · **Enter time (in mins)** _ — must be a positive multiple of 15 · **Billable / Non-Billable** _ (radio) · **Support team** _ · **Notes** \*.
-
----
-
---- entry
-heading: Glific Platform Guide › Screens › My Account
----
-
-- **URL:** `/myaccount`
-- **Purpose:** Change your password and account preferences.
 
 ---
 
@@ -942,12 +943,6 @@ Tiles you can actually expect:
 Each provider page has an **Active?** toggle (required fields enforced when active) and per-field labels read from the backend schema.
 
 ---
-
---- entry
-heading: Glific Platform Guide › Error Messages
----
-
-Format: **"Exact text"** — Cause → Fix.
 
 --- entry
 heading: Glific Platform Guide › Error Messages › Chat & messaging
