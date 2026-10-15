@@ -18,7 +18,6 @@ defmodule Glific.Contacts.BulkImport do
     Contacts.Contact,
     Contacts.ContactHistory,
     Contacts.ContactsField,
-    Contacts.Identities,
     Contacts.Import,
     Groups,
     Groups.ContactGroup,
@@ -278,14 +277,11 @@ defmodule Glific.Contacts.BulkImport do
   defp do_upsert(rows, params, now, optin?) do
     entries = Enum.map(rows, &contact_entry(&1, params, now, optin?))
 
-    {_count, saved} =
-      Repo.insert_all(Contact, entries,
+    saved =
+      Contacts.insert_contacts(entries,
         on_conflict: on_conflict(optin?),
-        conflict_target: [:phone, :organization_id],
-        returning: [:id, :phone, :fields]
+        organization_id: params.organization_id
       )
-
-    Identities.insert_whatsapp_identities(saved, params.organization_id)
 
     Map.new(saved, &{&1.phone, %{id: &1.id, fields: &1.fields}})
   end

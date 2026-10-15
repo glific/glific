@@ -16,7 +16,6 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     Communications.WebMessage,
     Contacts,
     Contacts.Contact,
-    Contacts.Identities,
     GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
@@ -263,7 +262,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
     with {:ok, claims} <- JwtToken.verify(socket.assigns.organization_id, token),
          {:ok, %Contact{id: id}} when id == current.id <-
-           Identities.fetch_contact(:web, claims.sub) do
+           Contacts.fetch_by_identity(:web, claims.sub) do
       {:ok, claims.exp}
     else
       _refused -> :error

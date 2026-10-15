@@ -1,29 +1,38 @@
 defmodule GlificWeb.Resolvers.ContactIdentities do
   @moduledoc """
-  Resolver for creating contacts with a web login identity, between the GraphQL schema and
-  `Glific.Contacts.Identities`.
+  Resolver for adding a login identity to a contact, between the GraphQL schema and
+  `Glific.Contacts`.
   """
 
   use Gettext, backend: GlificWeb.Gettext
 
-  alias Glific.{Contacts, Contacts.Identities}
+  alias Glific.{Contacts, Contacts.Contact, Repo}
   alias GlificWeb.WebChannel.Flag
 
-  @max_length 255
-
   @doc false
-  @spec create_contact_with_identity(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def create_contact_with_identity(_, %{input: input}, %{context: %{current_user: user}}) do
-    with :ok <- check_enabled(user.organization_id),
-         {:ok, identifier} <- check_identifier(input.identifier),
-         {:ok, contact} <- Identities.resolve_or_create(:web, identifier, claims(input)) do
+  @spec add_contact_identity(
+          Absinthe.Resolution.t(),
+          %{contact_id: integer(), channel: :whatsapp | :web, identifier: String.t()},
+          %{context: map()}
+        ) :: {:ok, any} | {:error, any}
+  def add_contact_identity(
+        _,
+        %{contact_id: contact_id, channel: channel, identifier: identifier},
+        %{context: %{current_user: user}}
+      ) do
+    with :ok <- check_channel_enabled(channel, user.organization_id),
+         {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
+         {:ok, contact} <- Contacts.add_identity(contact, channel, identifier) do
       {:ok, %{contact: contact}}
     end
   end
 
-  @spec check_enabled(non_neg_integer()) :: :ok | {:error, any()}
-  defp check_enabled(organization_id) do
+  @doc """
+  Refuses a web identity while the web channel is off for the organization.
+  """
+  @spec check_channel_enabled(:whatsapp | :web, non_neg_integer()) :: :ok | {:error, any()}
+  def check_channel_enabled(:web, organization_id) do
     if Flag.web_channel_enabled?(organization_id),
       do: :ok,
       else:
@@ -34,28 +43,5 @@ defmodule GlificWeb.Resolvers.ContactIdentities do
          ]}
   end
 
-  @spec check_identifier(String.t()) :: {:ok, String.t()} | {:error, any()}
-  defp check_identifier(identifier) do
-    if String.length(identifier) in 1..@max_length,
-      do: {:ok, identifier},
-      else:
-        {:error,
-         ["Identifier", dgettext("errors", "Identifier must be 1 to 255 characters long.")]}
-  end
-
-  @spec claims(map()) :: Identities.claims()
-  defp claims(input) do
-    %{name: input[:name], phone: normalised_phone(input[:phone])}
-    |> Map.reject(fn {_key, value} -> is_nil(value) end)
-  end
-
-  @spec normalised_phone(String.t() | nil) :: String.t() | nil
-  defp normalised_phone(nil), do: nil
-
-  defp normalised_phone(phone) do
-    case Contacts.parse_phone_number(phone) do
-      {:ok, normalised} -> normalised
-      {:error, _reason} -> nil
-    end
-  end
+  def check_channel_enabled(_channel, _organization_id), do: :ok
 end

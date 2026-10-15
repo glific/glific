@@ -4,7 +4,6 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
   alias Glific.{
     Contacts,
-    Contacts.Identities,
     Contacts.Location,
     Fixtures,
     GcsFixtures,
@@ -614,7 +613,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
     test "a valid token for a different username is refused and the contact unchanged" do
       with_ngo_socket(%{}, fn socket, contact ->
-        {:ok, other} = Identities.resolve_or_create(:web, "someone_else", %{})
+        {:ok, other} = Contacts.find_or_create_web_contact("someone_else", %{})
         ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => "someone_else"})})
         assert_reply ref, :error, %{reason: "invalid_token"}
 
@@ -629,7 +628,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         assert_reply ref, :error, %{reason: "invalid_token"}
 
         assert {:error, :not_found} =
-                 Identities.fetch_contact(:web, "never_seen")
+                 Contacts.fetch_by_identity(:web, "never_seen")
       end)
     end
 

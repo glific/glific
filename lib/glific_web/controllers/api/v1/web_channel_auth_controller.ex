@@ -17,7 +17,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Contacts.Identities,
     Messages,
     OTP,
     Partners,
@@ -122,7 +121,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
     case ensure_contact(organization_id, normalized) do
       {:ok, contact} ->
-        Identities.add_web_identity_for_phone(contact)
+        Contacts.add_identity(contact, :web, contact.phone)
 
         json(conn, %{
           data: %{

@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation createContactWithIdentity($input: ContactIdentityInput!) {
-  createContactWithIdentity(input: $input) {
-    ...ContactIdentityFields
-
-    ...ErrorFields
-  }
-}

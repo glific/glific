@@ -1,13 +1,13 @@
 defmodule Glific.Contacts.Identities do
   @moduledoc """
-  Reads and writes `Glific.Contacts.ContactIdentity` rows: the logins a contact can be reached or
-  recognised by.
+  Internal to `Glific.Contacts`, which is the only module that calls it. Reads and writes
+  `Glific.Contacts.ContactIdentity` rows: the logins a contact can be reached or recognised by.
 
   A `:whatsapp` identity mirrors `contacts.phone` and is kept in step with it by the contact write
   paths. A `:web` identity is an opaque username issued by an NGO's own system, and is never a
   phone: a contact signing in with a one-time code is found by `contacts.phone`, and recording it
   here would let an NGO username equal to that phone number reach the same conversation.
-  `resolve_or_create/3` is how a first connect turns a username into a contact.
+  `find_or_create_web_contact/2` is how a first connect turns a username into a contact.
   """
 
   import Ecto.Query
@@ -61,16 +61,16 @@ defmodule Glific.Contacts.Identities do
   its contact and ignores the claims; otherwise the `contact_id` claim, then the `phone` claim,
   name an existing contact to add the identity to, and with neither a new contact is created.
   """
-  @spec resolve_or_create(:web, String.t(), claims()) ::
+  @spec find_or_create_web_contact(String.t(), claims()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def resolve_or_create(:web, identifier, claims) do
+  def find_or_create_web_contact(identifier, claims) do
     identifier = String.downcase(identifier)
 
     with {:error, :not_found} <- fetch_contact(:web, identifier) do
       organization_id = Repo.get_organization_id()
 
       case find_contact_by_id_or_phone(organization_id, claims) do
-        %Contact{} = contact -> add_web_identity(contact, identifier)
+        %Contact{} = contact -> link_web_identity(contact, identifier)
         nil -> create_web_contact(organization_id, identifier, claims)
       end
     end
@@ -96,20 +96,6 @@ defmodule Glific.Contacts.Identities do
       {:ok, %{contact: contact}} -> {:ok, contact}
       {:error, _step, changeset, _changes} -> {:error, changeset}
     end
-  end
-
-  @doc """
-  Records that a contact signed in to the web with its phone, doing nothing if it already has.
-  """
-  @spec add_web_identity_for_phone(Contact.t()) :: :ok
-  def add_web_identity_for_phone(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
-
-  def add_web_identity_for_phone(%Contact{} = contact) do
-    contact
-    |> identity_changeset(:web, contact.phone)
-    |> Repo.insert(ignore_conflict_opts())
-
-    :ok
   end
 
   @doc """
@@ -211,9 +197,33 @@ defmodule Glific.Contacts.Identities do
     end
   end
 
+  @doc """
+  Adds a web username to a contact. Succeeds without change when the contact already holds it;
+  a username held by another contact is never moved and comes back as an error on `:identifier`.
+  """
   @spec add_web_identity(Contact.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp add_web_identity(contact, identifier) do
+  def add_web_identity(contact, identifier) do
+    case contact |> identity_changeset(:web, identifier) |> Repo.insert() do
+      {:ok, _identity} -> {:ok, contact}
+      {:error, changeset} -> ok_if_already_held(contact, identifier, changeset)
+    end
+  end
+
+  @spec ok_if_already_held(Contact.t(), String.t(), Ecto.Changeset.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp ok_if_already_held(contact, identifier, changeset) do
+    with true <- identifier_taken?(changeset),
+         {:ok, %Contact{id: id}} when id == contact.id <- fetch_contact(:web, identifier) do
+      {:ok, contact}
+    else
+      _held_by_another -> {:error, changeset}
+    end
+  end
+
+  @spec link_web_identity(Contact.t(), String.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp link_web_identity(contact, identifier) do
     with {:ok, _identity} <-
            contact
            |> identity_changeset(:web, identifier)
@@ -242,7 +252,7 @@ defmodule Glific.Contacts.Identities do
       contact_type: nil
     }
 
-    case create_contact_with_identity(attrs, :web, identifier) do
+    case Contacts.create_contact(Map.merge(attrs, %{channel: :web, identifier: identifier})) do
       {:error, %Ecto.Changeset{data: %Contact{}} = changeset} ->
         add_web_identity_to_phone_owner(changeset, attrs, identifier)
 
@@ -282,7 +292,7 @@ defmodule Glific.Contacts.Identities do
     with true <- Keyword.has_key?(changeset.errors, :phone),
          {:ok, owner} <- Contacts.fetch_by_identity(:whatsapp, phone),
          true <- linkable?(owner, changeset.data.organization_id) do
-      add_web_identity(owner, identifier)
+      link_web_identity(owner, identifier)
     else
       _no_recovery -> {:error, changeset}
     end
