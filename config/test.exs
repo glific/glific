@@ -98,3 +98,7 @@ config :glific, gupshup_partner_client_secret: "test_client_secret"
 # No org in the test suite has GCS credentials configured, so route web channel uploads to local
 # disk instead — never enabled in dev/prod.
 config :glific, :web_channel_local_media, true
+
+# The documentation search must not reach an embedding provider from a test.
+config :glific,
+  docs_embedding_request_options: [req_http_options: [plug: Glific.Docs.StubEmbeddings]]

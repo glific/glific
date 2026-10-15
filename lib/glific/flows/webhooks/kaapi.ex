@@ -5,6 +5,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   """
 
   alias Glific.Assistants.Assistant
+  alias Glific.Flags
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Partners
   alias Glific.Repo
@@ -99,6 +100,13 @@ defmodule Glific.Flows.Webhooks.Kaapi do
              version_number,
              callback_url,
              request_metadata
+           )
+           |> Map.put(
+             :include_guardrail_metadata,
+             Flags.get_flag_enabled(
+               :is_ai_guardrail_enabled,
+               Partners.organization(organization_id)
+             )
            ),
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
       Kaapi.normalize_kaapi_body(body)

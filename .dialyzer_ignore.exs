@@ -22,5 +22,7 @@
   {"lib/glific_web/views"},
   {"lib/glific/accounts.ex"},
   {"lib/glific/accounts/user_token.ex"},
-  {"lib/glific_web/templates/layout/_user_menu.html.heex"}
+  {"lib/glific_web/templates/layout/_user_menu.html.heex"},
+  # Mix is not in the PLT, so a mix task's calls into it cannot be resolved.
+  {"lib/mix/tasks/glific.docs.index.ex"}
 ]
