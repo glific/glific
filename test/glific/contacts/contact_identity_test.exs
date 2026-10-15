@@ -30,7 +30,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
   end
 
   describe "changeset/2" do
-    test "inserts a login for a contact", %{organization_id: organization_id} do
+    test "inserts a identity for a contact", %{organization_id: organization_id} do
       contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
 
       assert {:ok, %ContactIdentity{} = identity} =
