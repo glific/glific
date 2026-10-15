@@ -12,8 +12,9 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
     WebChannelFlagHelpers
   }
 
-  load_gql(:create, GlificWeb.Schema, "assets/gql/contact_identities/create.gql")
   load_gql(:by_identity, GlificWeb.Schema, "assets/gql/contact_identities/by_identity.gql")
+  load_gql(:add, GlificWeb.Schema, "assets/gql/contact_identities/add.gql")
+  load_gql(:create_contact, GlificWeb.Schema, "assets/gql/contact_identities/create_contact.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contact_identities/list.gql")
 
   setup do
@@ -24,83 +25,188 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
   defp with_web_channel(fun),
     do: WebChannelFlagHelpers.with_web_channel_enabled(1, fun)
 
-  defp input(attrs), do: %{"input" => Map.merge(%{"identifier" => "ravi_12"}, attrs)}
+  defp web_input(attrs),
+    do: %{"input" => Map.merge(%{"channel" => "WEB", "identifier" => "ravi_12"}, attrs)}
 
-  test "a manager creates a contact for a web identifier", %{manager: user} do
-    with_web_channel(fn ->
+  defp add_variables(contact, attrs \\ %{}),
+    do:
+      Map.merge(
+        %{"contactId" => to_string(contact.id), "channel" => "WEB", "identifier" => "ravi_12"},
+        attrs
+      )
+
+  describe "createContact on the web channel" do
+    test "creates a contact without a phone and with its web identity", %{manager: user} do
+      with_web_channel(fn ->
+        assert {:ok, query_data} =
+                 auth_query_gql_by(:create_contact, user,
+                   variables: web_input(%{"name" => "Ravi"})
+                 )
+
+        assert %{
+                 "id" => contact_id,
+                 "name" => "Ravi",
+                 "identities" => [%{"channel" => "WEB", "identifier" => "ravi_12"}]
+               } = get_in(query_data, [:data, "createContact", "contact"])
+
+        assert %{contact_id: id} =
+                 Repo.get_by!(ContactIdentity, %{channel: :web, identifier: "ravi_12"})
+
+        assert to_string(id) == contact_id
+        assert nil == Repo.get(Glific.Contacts.Contact, id).phone
+      end)
+    end
+
+    test "requires an identifier", %{manager: user} do
+      with_web_channel(fn ->
+        {:ok, query_data} =
+          auth_query_gql_by(:create_contact, user,
+            variables: %{"input" => %{"channel" => "WEB", "name" => "Ravi"}}
+          )
+
+        assert [%{"key" => "Identifier", "message" => message}] =
+                 get_in(query_data, [:data, "createContact", "errors"])
+
+        assert message =~ "required"
+      end)
+    end
+
+    test "is refused while the web channel is off", %{manager: user} do
       assert {:ok, query_data} =
-               auth_query_gql_by(:create, user, variables: input(%{"name" => "Ravi"}))
+               auth_query_gql_by(:create_contact, user, variables: web_input(%{}))
 
-      assert %{
-               "id" => contact_id,
-               "name" => "Ravi",
-               "identities" => [%{"channel" => "WEB", "identifier" => "ravi_12"}]
-             } =
-               get_in(query_data, [:data, "createContactWithIdentity", "contact"])
+      assert [%{"message" => message}] = get_in(query_data, [:data, "createContact", "errors"])
+      assert message =~ "not enabled"
+      assert nil == Repo.get_by(ContactIdentity, %{identifier: "ravi_12"})
+    end
 
-      assert %{contact_id: id} =
-               Repo.get_by!(ContactIdentity, %{channel: :web, identifier: "ravi_12"})
+    test "an identifier longer than 255 characters is refused", %{manager: user} do
+      with_web_channel(fn ->
+        {:ok, query_data} =
+          auth_query_gql_by(:create_contact, user,
+            variables: web_input(%{"identifier" => String.duplicate("a", 256)})
+          )
 
-      assert to_string(id) == contact_id
-    end)
-  end
+        assert [%{"message" => _}] = get_in(query_data, [:data, "createContact", "errors"])
+      end)
+    end
 
-  test "repeating the call returns the same contact", %{manager: user} do
-    with_web_channel(fn ->
-      {:ok, first} = auth_query_gql_by(:create, user, variables: input(%{}))
-      {:ok, second} = auth_query_gql_by(:create, user, variables: input(%{}))
-
-      path = [:data, "createContactWithIdentity", "contact", "id"]
-      assert get_in(first, path) == get_in(second, path)
-
-      assert 1 ==
-               ContactIdentity |> where([i], i.identifier == "ravi_12") |> Repo.aggregate(:count)
-    end)
-  end
-
-  test "a phone of an existing contact links to it", %{manager: user} do
-    with_web_channel(fn ->
-      contact = Fixtures.contact_fixture(%{phone: "919876500456"})
-
+    test "without a channel it still creates a WhatsApp contact", %{manager: user} do
       {:ok, query_data} =
-        auth_query_gql_by(:create, user, variables: input(%{"phone" => "+91 98765 00456"}))
-
-      assert get_in(query_data, [:data, "createContactWithIdentity", "contact", "id"]) ==
-               to_string(contact.id)
-    end)
-  end
-
-  test "an identifier longer than 255 characters is refused", %{manager: user} do
-    with_web_channel(fn ->
-      {:ok, query_data} =
-        auth_query_gql_by(:create, user,
-          variables: input(%{"identifier" => String.duplicate("a", 256)})
+        auth_query_gql_by(:create_contact, user,
+          variables: %{"input" => %{"name" => "Plain", "phone" => "919876500777"}}
         )
 
-      assert [%{"key" => "Identifier", "message" => message}] =
-               get_in(query_data, [:data, "createContactWithIdentity", "errors"])
+      assert %{"identities" => [%{"channel" => "WHATSAPP", "identifier" => "919876500777"}]} =
+               get_in(query_data, [:data, "createContact", "contact"])
+    end
 
-      assert message =~ "1 to 255"
-    end)
+    test "a WhatsApp contact still needs a phone", %{manager: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_contact, user, variables: %{"input" => %{"name" => "No phone"}})
+
+      assert [%{"key" => "phone"}] = get_in(query_data, [:data, "createContact", "errors"])
+    end
   end
 
-  test "is refused while the web channel is off", %{manager: user} do
-    assert {:ok, query_data} = auth_query_gql_by(:create, user, variables: input(%{}))
+  describe "addContactIdentity" do
+    setup do
+      %{contact: Fixtures.contact_without_phone_fixture()}
+    end
 
-    assert [%{"message" => message}] =
-             get_in(query_data, [:data, "createContactWithIdentity", "errors"])
+    test "a manager adds a web identity", %{manager: user, contact: contact} do
+      with_web_channel(fn ->
+        assert {:ok, query_data} =
+                 auth_query_gql_by(:add, user,
+                   variables: add_variables(contact, %{"identifier" => "Ravi_12"})
+                 )
 
-    assert message =~ "not enabled"
-    assert nil == Repo.get_by(ContactIdentity, %{identifier: "ravi_12"})
-  end
+        assert [%{"channel" => "WEB", "identifier" => "ravi_12"}] =
+                 get_in(query_data, [:data, "addContactIdentity", "contact", "identities"])
+      end)
+    end
 
-  test "a staff user is refused", %{staff: user} do
-    with_web_channel(fn ->
-      assert {:ok, query_data} = auth_query_gql_by(:create, user, variables: input(%{}))
+    test "adding the same identity to the same contact is idempotent", %{
+      manager: user,
+      contact: contact
+    } do
+      with_web_channel(fn ->
+        {:ok, _first} = auth_query_gql_by(:add, user, variables: add_variables(contact))
+        {:ok, second} = auth_query_gql_by(:add, user, variables: add_variables(contact))
 
-      assert [%{message: "Unauthorized"}] = query_data.errors
-      assert nil == Repo.get_by(ContactIdentity, %{identifier: "ravi_12"})
-    end)
+        assert nil == get_in(second, [:data, "addContactIdentity", "errors"])
+
+        assert 1 ==
+                 ContactIdentity
+                 |> where([i], i.identifier == "ravi_12")
+                 |> Repo.aggregate(:count)
+      end)
+    end
+
+    test "an identifier held by another contact is refused and not moved", %{
+      manager: user,
+      contact: contact
+    } do
+      with_web_channel(fn ->
+        other = Fixtures.contact_without_phone_fixture()
+        Fixtures.contact_identity_fixture(%{contact_id: other.id, identifier: "ravi_12"})
+
+        {:ok, query_data} = auth_query_gql_by(:add, user, variables: add_variables(contact))
+
+        assert [%{"key" => "identifier", "message" => "Identifier: has already been taken"}] =
+                 get_in(query_data, [:data, "addContactIdentity", "errors"])
+
+        assert %{contact_id: owner_id} = Repo.get_by!(ContactIdentity, %{identifier: "ravi_12"})
+        assert owner_id == other.id
+      end)
+    end
+
+    test "only the web channel can be added", %{manager: user, contact: contact} do
+      {:ok, query_data} =
+        auth_query_gql_by(:add, user,
+          variables: add_variables(contact, %{"channel" => "WHATSAPP"})
+        )
+
+      assert [%{"key" => "channel"}] = get_in(query_data, [:data, "addContactIdentity", "errors"])
+    end
+
+    test "is refused while the web channel is off", %{manager: user, contact: contact} do
+      {:ok, query_data} = auth_query_gql_by(:add, user, variables: add_variables(contact))
+
+      assert [%{"message" => message}] =
+               get_in(query_data, [:data, "addContactIdentity", "errors"])
+
+      assert message =~ "not enabled"
+    end
+
+    test "a contact of another organization is not found", %{manager: user} do
+      with_web_channel(fn ->
+        other_organization = Fixtures.organization_fixture()
+
+        foreign =
+          Fixtures.contact_without_phone_fixture(%{organization_id: other_organization.id})
+
+        {:ok, query_data} = auth_query_gql_by(:add, user, variables: add_variables(foreign))
+
+        assert [%{"message" => "Resource not found"}] =
+                 get_in(query_data, [:data, "addContactIdentity", "errors"])
+
+        assert nil ==
+                 Repo.get_by(ContactIdentity, %{identifier: "ravi_12"},
+                   skip_organization_id: true
+                 )
+      end)
+    end
+
+    test "a staff user is refused", %{staff: user, contact: contact} do
+      with_web_channel(fn ->
+        assert {:ok, query_data} =
+                 auth_query_gql_by(:add, user, variables: add_variables(contact))
+
+        assert [%{message: "Unauthorized"}] = query_data.errors
+        assert nil == Repo.get_by(ContactIdentity, %{identifier: "ravi_12"})
+      end)
+    end
   end
 
   describe "contactByIdentity" do

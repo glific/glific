@@ -393,6 +393,11 @@ mutation createContact($input:ContactInput!) {
 | ------------------------------------------ | -------------------------- |
 | <a href="#contactresult">ContactResult</a> | The created contact object |
 
+`input` may also carry an optional `channel` (default `WHATSAPP`, which needs a `phone`) and an `identifier`. With
+`channel: WEB` the `identifier` (the username the contact logs in with, stored lowercase) is required, no phone is
+needed, the web channel must be enabled for the organization, and the contact's `identities` field lists its `WEB`
+identity.
+
 ## Update a Contact
 
 ```graphql
@@ -893,11 +898,11 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 | --------- | -------------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#contactHistoryFilter">contactHistoryFilter</a> | nil     | filter the list |
 
-## Create a Contact with a Web Identity
+## Add an Identity to a Contact
 
 ```graphql
-mutation createContactWithIdentity($input: ContactIdentityInput!) {
-  createContactWithIdentity(input: $input) {
+mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!) {
+  addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier) {
     contact {
       id
       name
@@ -917,7 +922,7 @@ mutation createContactWithIdentity($input: ContactIdentityInput!) {
 > With variables:
 
 ```json
-{ "input": { "identifier": "ravi_12", "name": "Ravi" } }
+{ "contactId": "15", "channel": "WEB", "identifier": "ravi_12" }
 ```
 
 > The above query returns JSON structured like this:
@@ -925,7 +930,7 @@ mutation createContactWithIdentity($input: ContactIdentityInput!) {
 ```json
 {
   "data": {
-    "createContactWithIdentity": {
+    "addContactIdentity": {
       "contact": { "id": "15", "name": "Ravi", "identities": [{ "channel": "WEB", "identifier": "ravi_12" }] },
       "errors": null
     }
@@ -933,15 +938,19 @@ mutation createContactWithIdentity($input: ContactIdentityInput!) {
 }
 ```
 
-Creates the contact for a <a href="#web-channel-login">web channel</a> username before its first login.
-Repeating the call for the same `identifier` returns the same contact. Requires the manager role and
-the web channel enabled for the organization.
+Gives an existing contact a <a href="#web-channel-login">web channel</a> username. Only the `WEB` channel is
+accepted: a `WHATSAPP` identity is the contact's phone and follows it. Adding a username the contact already has
+succeeds without change; a username held by another contact is refused (`identifier: has already been taken`) and
+never moved. Requires the manager role and the web channel enabled for the organization.
 
-| Field      | Type   | Description                                                                 |
-| ---------- | ------ | --------------------------------------------------------------------------- |
-| identifier | String | The username the contact logs in with, letters, digits, `_`, `@` and `.`, stored lowercase (case-insensitive), 1 to 255 characters. |
-| name       | String | The contact's name. Defaults to the identifier.                             |
-| phone      | String | A WhatsApp number. If it belongs to an existing contact, the identifier is linked to it. |
+| Parameter  | Type               | Description                                                                 |
+| ---------- | ------------------ | --------------------------------------------------------------------------- |
+| contactId  | ID                 | The contact to add the identity to.                                         |
+| channel    | MessageChannelEnum | The channel of the identity. Only `WEB` is accepted.                        |
+| identifier | String             | The username: letters, digits, `_`, `@` and `.`, stored lowercase (case-insensitive), 1 to 255 characters. |
+
+To create a contact for a web username before its first login, use <a href="#create-a-contact">createContact</a>
+with `channel: WEB` and an `identifier`.
 
 ## Get a Contact by Identity
 

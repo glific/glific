@@ -12,7 +12,6 @@ defmodule GlificWeb.WebChannelSocket do
   use Phoenix.Socket
 
   alias Glific.Contacts
-  alias Glific.Contacts.Identities
   alias Glific.RateLimit
   alias Glific.Repo
   alias GlificWeb.SubdomainPlug
@@ -88,7 +87,7 @@ defmodule GlificWeb.WebChannelSocket do
     with {:ok, organization_id} <- organization_from_host(connect_info),
          :ok <- enter_organization(organization_id),
          {:ok, claims} <- JwtToken.verify(organization_id, token),
-         {:ok, contact} <- Identities.resolve_or_create(:web, claims.sub, claims) do
+         {:ok, contact} <- Contacts.find_or_create_web_contact(claims.sub, claims) do
       {:ok,
        %{
          contact: contact,

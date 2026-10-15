@@ -267,7 +267,9 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a WhatsApp contact and its WhatsApp identity in one transaction; the phone is required.
+  Creates a contact and its identity on a channel in one transaction. Without a `channel` it is a
+  WhatsApp contact: the phone is required and is its identifier. A `:web` contact needs an
+  `identifier` (its username) and no phone.
 
   ## Examples
 
@@ -280,7 +282,57 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs) do
-    Identities.create_contact_with_identity(attrs, :whatsapp, attrs[:phone])
+    {channel, attrs} = Map.pop(attrs, :channel, :whatsapp)
+    {identifier, attrs} = Map.pop(attrs, :identifier)
+
+    Identities.create_contact_with_identity(attrs, channel, identifier || attrs[:phone])
+  end
+
+  @doc """
+  Finds, links or creates the contact for an NGO username: see `Glific.Contacts.Identities`.
+  """
+  @spec find_or_create_web_contact(String.t(), Identities.claims()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def find_or_create_web_contact(username, claims),
+    do: Identities.find_or_create_web_contact(username, claims)
+
+  @doc """
+  Gives a contact another login. Only `:web` usernames can be added: a WhatsApp identity is the
+  contact's phone and follows it. A username already on this contact is accepted unchanged; one
+  held by another contact is an error on `:identifier`.
+  """
+  @spec add_identity(Contact.t(), :whatsapp | :web, String.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def add_identity(%Contact{} = contact, :web, identifier),
+    do: Identities.add_web_identity(contact, identifier)
+
+  def add_identity(%Contact{} = contact, channel, _identifier) do
+    contact
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.add_error(:channel, "#{channel} identities follow the contact's phone")
+    |> Ecto.Changeset.apply_action(:insert)
+  end
+
+  @doc """
+  Inserts many contacts and their WhatsApp identities, with `on_conflict` from the options and
+  `organization_id` for the identities; returns the saved `id`, `phone` and `fields` rows.
+  """
+  @spec insert_contacts([map()], keyword()) :: [map()]
+  def insert_contacts(entries, opts) do
+    {organization_id, opts} = Keyword.pop!(opts, :organization_id)
+
+    {_count, saved} =
+      Repo.insert_all(
+        Contact,
+        entries,
+        Keyword.merge(opts,
+          conflict_target: [:phone, :organization_id],
+          returning: [:id, :phone, :fields]
+        )
+      )
+
+    Identities.insert_whatsapp_identities(saved, organization_id)
+    saved
   end
 
   @doc """
@@ -1090,6 +1142,13 @@ defmodule Glific.Contacts do
   @spec simulator_contact?(String.t() | nil) :: boolean
   def simulator_contact?(nil), do: false
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
+
+  @doc """
+  A query for the ids of the current organization's contacts that have a web identity, for use in
+  `subquery/1`.
+  """
+  @spec web_identity_contact_ids_query() :: Ecto.Query.t()
+  def web_identity_contact_ids_query, do: Identities.web_contact_ids_query()
 
   @doc """
   Looks a contact up by its login on a channel (web logins are case-insensitive); a nil or empty identifier is refused without querying.

@@ -11,7 +11,6 @@ defmodule Glific.EraseTest do
     Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
-    Contacts.Identities,
     Erase,
     Fixtures,
     Flows.FlowResult,
@@ -145,7 +144,7 @@ defmodule Glific.EraseTest do
   end
 
   test "delete beneficiary data by web identity", attrs do
-    {:ok, web_contact} = Identities.resolve_or_create(:web, "ravi_12", %{})
+    {:ok, web_contact} = Contacts.find_or_create_web_contact("ravi_12", %{})
     whatsapp_contact = Fixtures.contact_fixture()
 
     Fixtures.message_fixture(%{sender_id: web_contact.id})

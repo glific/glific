@@ -59,7 +59,9 @@ defmodule Glific.Contacts.ContactIdentity do
     |> validate_required(@required_fields)
     |> validate_length(:identifier, min: 1, max: 255)
     |> validate_username()
-    |> unique_constraint([:organization_id, :channel, :identifier])
+    |> unique_constraint(:identifier,
+      name: :contact_identities_organization_id_channel_identifier_index
+    )
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:organization_id)
   end

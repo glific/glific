@@ -66,8 +66,14 @@ Gupshup/Maytapi webhook {phone}
 ```
 The contact's `(whatsapp, phone, <phone>)` identity is written when it's created (or on its first
 lookup, so existing contacts keep working until the WhatsApp identities are backfilled in the next PR).
-Every channel creates a contact through `Identities.create_contact_with_identity/4`, which inserts the contact and
-its identity in one transaction: a contact never exists without its identity. `set_whatsapp_identity/1`
+Every channel creates a contact through `Contacts.create_contact/1` (optional `channel`, default `:whatsapp`, and
+`identifier`, default the phone), which inserts the contact and its identity in one transaction: a contact never exists
+without its identity.
+
+Identities are only reached through `Glific.Contacts`: an identity is part of a contact, so nothing outside
+`lib/glific/contacts/` calls `Glific.Contacts.Identities` or queries `ContactIdentity`. `Identities` is internal to the
+context; callers use `Contacts.create_contact/1`, `fetch_by_identity/2`, `find_or_create_web_contact/2`,
+`add_identity/3` and `insert_contacts/2` (bulk import). `set_whatsapp_identity/1`
 keeps the WhatsApp identity in step with the phone.
 
 ### 4.2 Web, phone + OTP
@@ -149,8 +155,9 @@ A reply goes out on the channel the conversation/flow came in on (already built 
   socket, which must resolve to the same contact; the expiry is updated in memory. A background sweep
   closes any socket whose token has expired. Reissuing tokens is the NGO's job.
 - Glific's own web channel (phone + OTP) keeps its platform-issued token and `renew-token`.
-- A contact is created on the first connect with a new username (`Identities.resolve_or_create/3`), or
-  ahead of time by staff through the GraphQL mutation `createContactWithIdentity`. There is no REST
+- A contact is created on the first connect with a new username (`Contacts.find_or_create_web_contact/2`), or
+  ahead of time by staff through the GraphQL `createContact` mutation with `channel: WEB` and an `identifier`, or by
+  adding a username to an existing contact with `addContactIdentity(contactId, channel: WEB, identifier)`. There is no REST
   provisioning endpoint.
 - NGO contract: `sub` must be unique across every system the NGO signs tokens from. A `sub` must never be another person's phone number: web identities from phone + OTP logins
   share the namespace, so such a `sub` would sign in as that person. Identities are

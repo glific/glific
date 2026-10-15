@@ -83,7 +83,8 @@ Glific treats a phone you send as the user's own: the contact owns that number, 
 WhatsApp messages.
 
 You can also create the contact ahead of the first login with the
-<a href="#create-a-contact-with-a-web-identity">createContactWithIdentity</a> mutation, and look a
+<a href="#create-a-contact">createContact</a> mutation with `channel: WEB` and an `identifier` (or give an
+existing contact a username with <a href="#add-an-identity-to-a-contact">addContactIdentity</a>), and look a
 user's contact up with <a href="#get-a-contact-by-identity">contactByIdentity</a>.
 
 ## Your responsibilities

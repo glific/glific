@@ -11,7 +11,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     Contacts,
     Contacts.Contact,
     Contacts.ContactIdentity,
-    Contacts.Identities,
     Fixtures,
     OTP,
     Partners,
@@ -909,7 +908,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       with_web_channel_enabled(fn ->
         phone_contact_id = verify_otp_login(conn, phone)
 
-        assert {:ok, %{id: ^phone_contact_id}} = Identities.resolve_or_create(:web, phone, %{})
+        assert {:ok, %{id: ^phone_contact_id}} = Contacts.find_or_create_web_contact(phone, %{})
       end)
     end
 
@@ -919,7 +918,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       phone = unique_phone()
 
       with_web_channel_enabled(fn ->
-        {:ok, username_contact} = Identities.resolve_or_create(:web, phone, %{})
+        {:ok, username_contact} = Contacts.find_or_create_web_contact(phone, %{})
 
         phone_contact_id = verify_otp_login(conn, phone)
 

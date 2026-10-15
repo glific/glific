@@ -3,7 +3,7 @@ defmodule GlificWeb.WebChannelSocketTest do
   use GlificWeb.ChannelCase
 
   alias Glific.{
-    Contacts.Identities,
+    Contacts,
     Fixtures,
     Partners,
     WebChannelFixtures,
@@ -124,7 +124,7 @@ defmodule GlificWeb.WebChannelSocketTest do
         contact = ws_socket.assigns.current_contact
 
         assert contact.phone == nil
-        assert {:ok, ^contact} = Identities.fetch_contact(:web, "ravi_12")
+        assert {:ok, ^contact} = Contacts.fetch_by_identity(:web, "ravi_12")
         assert ws_socket.assigns.organization_id == 1
         assert is_integer(ws_socket.assigns.token_exp)
 

@@ -10,8 +10,8 @@ defmodule Glific.Searches do
   Conversations.WAConversation
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
-    Contacts.ContactIdentity,
     Contacts.TermSearch,
     Conversations,
     Conversations.Conversation,
@@ -187,15 +187,9 @@ defmodule Glific.Searches do
 
   @spec where_in_inbox(Ecto.Query.t()) :: Ecto.Query.t()
   defp where_in_inbox(query) do
-    organization_id = Repo.get_organization_id()
-
     # An uncorrelated, organization-scoped subquery: a correlated EXISTS made Postgres scan every
     # organization's web identities on each inbox query.
-    web_contact_ids =
-      from(ci in ContactIdentity,
-        where: ci.organization_id == ^organization_id and ci.channel == :web,
-        select: ci.contact_id
-      )
+    web_contact_ids = Contacts.web_identity_contact_ids_query()
 
     where(
       query,

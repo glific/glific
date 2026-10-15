@@ -9,7 +9,7 @@ defmodule Glific.Contacts.TermSearch do
 
   import Ecto.Query
 
-  alias Glific.{Contacts.ContactIdentity, Repo, Users.User}
+  alias Glific.{Contacts.Identities, Users.User}
 
   @doc """
   A condition on the first binding, a contact, for ANDing into a contact query. The username
@@ -33,16 +33,7 @@ defmodule Glific.Contacts.TermSearch do
   @spec username_match(String.t()) :: Ecto.Query.dynamic_expr()
   defp username_match(term) do
     pattern = "#{term |> String.downcase() |> escape_like()}%"
-    organization_id = Repo.get_organization_id()
-
-    # Repo scoping skips subqueries, so the organization is filtered here.
-    matching =
-      from(i in ContactIdentity,
-        where:
-          i.organization_id == ^organization_id and i.channel == :web and
-            like(i.identifier, ^pattern),
-        select: i.contact_id
-      )
+    matching = Identities.web_contact_ids_query(pattern)
 
     dynamic([c], c.id in subquery(matching))
   end

@@ -124,7 +124,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  identifier: "asha_07"
                })
 
-      assert %{organization_id: ["has already been taken"]} = errors_on(changeset)
+      assert %{identifier: ["has already been taken"]} = errors_on(changeset)
     end
 
     test "allows the same identifier on another channel", %{organization_id: organization_id} do
@@ -148,7 +148,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
         identifier: "ravi_web"
       })
 
-      assert %{organization_id: ["has already been taken"]} =
+      assert %{identifier: ["has already been taken"]} =
                identifier_errors(organization_id, "Ravi_Web")
     end
 
