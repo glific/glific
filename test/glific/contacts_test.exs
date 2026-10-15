@@ -2066,7 +2066,7 @@ defmodule Glific.ContactsTest do
       assert %Contact{masked_phone: nil} = Contact.populate_masked_phone(%Contact{phone: nil})
     end
 
-    test "several can exist in one organization", %{organization_id: organization_id} do
+    test "several contacts without phone can exist in one organization", %{organization_id: organization_id} do
       first = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
       second = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
 
