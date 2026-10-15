@@ -202,10 +202,14 @@ defmodule Glific.Contacts.Identities do
   @spec web_identifier_match(String.t()) :: Ecto.Query.dynamic_expr()
   defp web_identifier_match(term) do
     pattern = "%#{String.downcase(term)}%"
+    organization_id = Repo.get_organization_id()
 
+    # Repo scoping skips subqueries, so the organization is filtered here.
     matching =
       from(i in ContactIdentity,
-        where: i.channel == :web and ilike(i.identifier, ^pattern),
+        where:
+          i.organization_id == ^organization_id and i.channel == :web and
+            ilike(i.identifier, ^pattern),
         select: i.contact_id
       )
 
