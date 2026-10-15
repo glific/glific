@@ -135,6 +135,36 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert get_change(changeset, :status) == nil
       assert get_field(changeset, :status) == :in_progress
     end
+
+    test "changeset accepts guardrail specs with a type", %{valid_attrs: valid_attrs} do
+      attrs =
+        Map.merge(valid_attrs, %{
+          input_guardrails: [%{"type" => "pii_remover", "on_fail" => "fix"}],
+          output_guardrails: [%{"type" => "gender_assumption_bias"}]
+        })
+
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
+
+      assert changeset.valid?
+    end
+
+    test "changeset rejects a guardrail spec without a type", %{valid_attrs: valid_attrs} do
+      attrs = Map.put(valid_attrs, :output_guardrails, [%{"on_fail" => "fix"}])
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
+
+      refute changeset.valid?
+
+      assert %{output_guardrails: ["each guardrail needs a non-empty \"type\""]} =
+               errors_on(changeset)
+    end
+
+    test "changeset rejects a non-list guardrail value", %{valid_attrs: valid_attrs} do
+      attrs = Map.put(valid_attrs, :input_guardrails, %{"type" => "pii_remover"})
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
+
+      refute changeset.valid?
+      assert %{input_guardrails: ["is invalid"]} = errors_on(changeset)
+    end
   end
 
   describe "version_label/1" do

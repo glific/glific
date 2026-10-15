@@ -29,6 +29,8 @@ defmodule Glific.Assistants.AssistantConfigVersion do
           provider: String.t() | nil,
           model: String.t() | nil,
           settings: map(),
+          input_guardrails: [map()],
+          output_guardrails: [map()],
           status: AssistantConfigVersionStatus.t(),
           failure_reason: String.t() | nil,
           deleted_at: DateTime.t() | nil,
@@ -56,7 +58,9 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     :minor_version,
     :bump_type,
     :kaapi_version_number,
-    :deleted_at
+    :deleted_at,
+    :input_guardrails,
+    :output_guardrails
   ]
 
   schema "assistant_config_versions" do
@@ -71,6 +75,8 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     field(:model, :string)
 
     field(:settings, :map, default: %{})
+    field(:input_guardrails, {:array, :map}, default: [])
+    field(:output_guardrails, {:array, :map}, default: [])
     field(:status, AssistantConfigVersionStatus, default: :in_progress)
     field(:failure_reason, :string)
     field(:deleted_at, :utc_datetime_usec)
@@ -95,12 +101,29 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     config_version
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_guardrails()
     |> assoc_constraint(:assistant)
     |> unique_constraint(
       [:assistant_id, :major_version, :minor_version],
       name: :assistant_config_versions_assistant_id_major_version_minor_vers
     )
   end
+
+  # Kaapi validates the full spec; Glific only guards the shape it relies on.
+  @spec validate_guardrails(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_guardrails(changeset) do
+    Enum.reduce([:input_guardrails, :output_guardrails], changeset, fn field, changeset ->
+      validate_change(changeset, field, fn ^field, guardrails ->
+        if Enum.all?(guardrails, &valid_guardrail_spec?/1),
+          do: [],
+          else: [{field, "each guardrail needs a non-empty \"type\""}]
+      end)
+    end)
+  end
+
+  @spec valid_guardrail_spec?(any()) :: boolean()
+  defp valid_guardrail_spec?(%{"type" => type}) when is_binary(type), do: type != ""
+  defp valid_guardrail_spec?(_spec), do: false
 
   @doc "Display label for a config version, e.g. `\"1.3\"`."
   @spec version_label(map()) :: String.t() | nil

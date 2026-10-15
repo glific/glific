@@ -340,7 +340,9 @@ defmodule Glific.ThirdParty.Kaapi do
         type: "text",
         provider: params[:provider] || "openai",
         params: completion_params
-      }
+      },
+      input_guardrails: params[:input_guardrails] || [],
+      output_guardrails: params[:output_guardrails] || []
     }
   end
 
