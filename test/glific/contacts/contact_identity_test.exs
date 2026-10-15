@@ -98,6 +98,8 @@ defmodule Glific.Contacts.ContactIdentityTest do
       contact =
         Fixtures.contact_fixture(%{organization_id: organization_id, phone: "919876543210"})
 
+      Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id))
+
       assert {:ok, identity} =
                insert_identity(%{
                  contact_id: contact.id,
