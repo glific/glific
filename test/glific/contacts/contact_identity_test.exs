@@ -92,20 +92,21 @@ defmodule Glific.Contacts.ContactIdentityTest do
                identifier_errors(organization_id, "ravi-web")
     end
 
-    test "keeps a WhatsApp identifier exactly as the phone is stored", %{
+    test "stores a WhatsApp identifier as the contact's phone", %{
       organization_id: organization_id
     } do
-      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      contact =
+        Fixtures.contact_fixture(%{organization_id: organization_id, phone: "919876543210"})
 
       assert {:ok, identity} =
                insert_identity(%{
                  contact_id: contact.id,
                  organization_id: organization_id,
                  channel: :whatsapp,
-                 identifier: "+91 98765-43210"
+                 identifier: contact.phone
                })
 
-      assert identity.identifier == "+91 98765-43210"
+      assert identity.identifier == "919876543210"
     end
 
     test "rejects a duplicate identifier on the same channel", %{organization_id: organization_id} do
