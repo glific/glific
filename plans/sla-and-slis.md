@@ -159,10 +159,19 @@ Per-org drill-down stays on the existing org-tagged `oban_job_latency`.
 Every job and request needs a DB connection, so a saturated Ecto pool shows up as latency in
 every queue at once while CPU and the DB itself can look healthy.
 
-Per node, the Oban queues in `config/config.exs` allow up to **201 concurrent jobs** (sum of
-`limit`/`local_limit`), plus web requests and Oban's own queries — against `POOL_SIZE` (default
-20, `config/runtime.exs`). Most jobs spend time off the DB (HTTP calls), so this is not
-automatically a problem, but it is the first place to look when every queue slows at once.
+There are two separate limits, and they fail differently:
+
+- **Server-side**: production uses ~130 connections against Postgres `max_connections` = 600,
+  so the database has plenty of headroom.
+- **Client-side (per node)**: each node's Ecto pool is capped at `POOL_SIZE`
+  (`config/runtime.exs`), while the Oban queues in `config/config.exs` allow up to
+  **201 concurrent jobs per node** (sum of `limit`/`local_limit`), plus web requests and Oban's
+  own queries. Most jobs spend time off the DB (HTTP calls), so this is not automatically a
+  problem, but when the pool is exhausted, work waits in the pool queue on the node even though
+  the server could accept more connections.
+
+So the likely bottleneck is the per-node pool, not Postgres — and with ~470 spare server
+connections, raising `POOL_SIZE` is a cheap fix *if* the metrics below show pool waits.
 
 Ecto's `[:glific, :repo, :query]` event (already attached, handled by
 `Glific.Appsignal.handle_event/4`) carries `queue_time`: time spent waiting to check out a
@@ -174,13 +183,15 @@ transaction), so `nil` is skipped.
 | `db_pool_queue_ms` | distribution, sampled at `APPSIGNAL_SAMPLING_RATE` (very high volume) | `repo` | `measurement.queue_time` |
 | `db_pool_queue_slow_count` | counter, unsampled | `repo` | `queue_time` > 50ms |
 | `db_connection_count` | gauge | `state` (`active`, `idle`, `idle in transaction`) | telemetry poller (60s): `pg_stat_activity` for the app's role — cluster-wide view across nodes |
+| `db_connection_utilization_percent` | gauge | — | same poller: total connections ÷ `max_connections` (600) |
 | `glific.repo.db_connection_error` | counter (exists) | `repo`, `reason` | checkout timeouts / dropped connections |
 
 Reading them together:
 
 | Pattern | Meaning |
 |---|---|
-| `db_pool_queue_ms` p95 high, `db_connection_count{active}` ≈ pool × nodes | pool too small for concurrency — raise `POOL_SIZE` or lower queue limits |
+| `db_pool_queue_ms` p95 high, server utilization low (~130/600) | per-node pool too small — raise `POOL_SIZE`; headroom exists |
+| `db_pool_queue_ms` p95 high, server utilization near 600 | server-side limit — needs a pooler (PgBouncer) or fewer connections per node, not a bigger pool |
 | `db_pool_queue_ms` high, many `idle in transaction` | connections held during slow non-DB work inside transactions |
 | `db_pool_queue_ms` low, `oban_queue_wait_seconds` high | bottleneck is queue limits, not the DB pool |
 | `db_connection_error` rising | pool exhausted past `queue_target`/`queue_interval`; requests failing |
@@ -198,6 +209,7 @@ Reading them together:
 | GraphQL 5xx ratio | > 1% | > 5% |
 | `db_pool_queue_ms` p95 (`repo`) | > 50ms | > 500ms |
 | `glific.repo.db_connection_error` | > 0 | > 10 / min |
+| `db_connection_utilization_percent` | > 60% (360) | > 80% (480) |
 | `MinuteWorker` heartbeat check-in | missed 2 min | missed 5 min |
 
 ## AppSignal setup
