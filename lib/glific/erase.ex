@@ -846,6 +846,7 @@ defmodule Glific.Erase do
       flow_results
       flow_revisions
       flow_roles
+      llm_calls
       flows
       gcs_jobs
       glific_ai_events
