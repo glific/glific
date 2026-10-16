@@ -6,8 +6,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Signing in records no consent. `contacts.optin_*` keeps its existing meaning of WhatsApp
-  consent (#5713); web-channel consent is captured in the widget UI, not persisted here.
+  Verifying a code records the contact's consent on the web channel, never on WhatsApp:
+  `contacts.optin_*` keeps its meaning of WhatsApp consent. The code itself is a transactional
+  message and is exempt from that opt-in (`Contacts.can_send_message_to?/3`).
   """
 
   use GlificWeb, :controller
@@ -122,6 +123,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     case ensure_contact(organization_id, normalized) do
       {:ok, contact} ->
         Contacts.add_identity(contact, :web, contact.phone)
+        record_web_optin(contact)
 
         json(conn, %{
           data: %{
@@ -292,6 +294,22 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       )
 
       :ok
+  end
+
+  @spec record_web_optin(Contact.t()) :: :ok
+  defp record_web_optin(contact) do
+    case Contacts.record_channel_optin(contact, :web, method: "web_channel_otp") do
+      {:ok, _contact_channel} ->
+        :ok
+
+      {:error, error} ->
+        Glific.log_error(
+          "Could not record the web opt-in of contact #{contact.id}: " <>
+            SafeLog.safe_inspect(error)
+        )
+
+        :ok
+    end
   end
 
   # Local development has no BSP, so the HSM never arrives and there is no way to read the code.
