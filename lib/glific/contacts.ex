@@ -266,7 +266,8 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a contact.
+  Creates a WhatsApp contact, so the phone is required. A contact on the web channel is created together with its
+  login identity, from `new_contact_changeset/2`.
 
   ## Examples
 
@@ -278,21 +279,27 @@ defmodule Glific.Contacts do
 
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact(%{organization_id: organization_id} = attrs) do
-    attrs =
-      attrs
-      |> Map.put(
-        :language_id,
-        attrs[:language_id] || Partners.organization_language_id(organization_id)
-      )
-      |> Map.put(
-        :last_communication_at,
-        attrs[:last_communication_at] || DateTime.utc_now()
-      )
-
-    %Contact{}
-    |> Contact.changeset(attrs)
+  def create_contact(attrs) do
+    attrs
+    |> new_contact_changeset(:whatsapp)
     |> Repo.insert()
+  end
+
+  @doc """
+  The changeset for a new contact on a channel, with the organization's defaults filled in.
+  """
+  @spec new_contact_changeset(map(), :whatsapp | :web) :: Ecto.Changeset.t()
+  def new_contact_changeset(attrs, channel),
+    do: Contact.changeset(%Contact{}, with_new_contact_defaults(attrs), channel)
+
+  @spec with_new_contact_defaults(map()) :: map()
+  defp with_new_contact_defaults(%{organization_id: organization_id} = attrs) do
+    attrs
+    |> Map.put(
+      :language_id,
+      attrs[:language_id] || Partners.organization_language_id(organization_id)
+    )
+    |> Map.put(:last_communication_at, attrs[:last_communication_at] || DateTime.utc_now())
   end
 
   @doc """
@@ -407,7 +414,8 @@ defmodule Glific.Contacts do
 
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
-  it returns the existing contact, else it creates a new one
+  it returns the existing contact, else it creates a new one. The phone is the conflict target,
+  so it is required: a nil phone would never conflict and would insert a contact without one.
   """
   @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(%{organization_id: organization_id} = attrs) do
@@ -714,7 +722,7 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
   # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
   # contact that has only ever existed in a browser sits at `:none`, which both clauses above
-  # refuse. A web contact is reachable over their open socket regardless, so the only thing left
+  # refuse. A contact on the web channel is reachable over their open socket regardless, so the only thing left
   # to check when staff reply is that the contact is not blocked.
   def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
       when channel in [:web, "web"] do
