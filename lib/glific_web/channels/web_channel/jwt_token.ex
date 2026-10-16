@@ -4,9 +4,10 @@ defmodule GlificWeb.WebChannel.JwtToken do
   socket. A token may live at most 24 hours; an NGO may issue shorter ones.
 
   The token is signed (HS256, pinned: the token's own `alg` is never trusted) with any of the
-  organization's JWT signature secrets, a list of `%{"name" => ..., "secret" => ...}` under
-  `jwt_signature_secrets` in its `web_channel` credential. None is "current" or "previous", so
-  rotating is a matter of adding the new secret and later removing the old one. The organization is
+  organization's JWT signature secrets, a list of at most two `%{"name" => ..., "secret" => ...}`
+  under `jwt_signature_secrets` in its `web_channel` credential; entries past the second are ignored.
+  Neither is "current" or "previous", so rotating is a matter of adding the new secret and later
+  removing the old one. The organization is
   the request's, not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
 
   A secret shorter than 32 characters is ignored, so a token can never verify against it.
@@ -24,6 +25,7 @@ defmodule GlificWeb.WebChannel.JwtToken do
   @leeway_seconds 60
   @max_length 255
   @min_secret_length 32
+  @max_secrets 2
   @provider_code "web_channel"
 
   @type claims :: %{
@@ -64,6 +66,7 @@ defmodule GlificWeb.WebChannel.JwtToken do
 
         (secrets["jwt_signature_secrets"] || secrets[:jwt_signature_secrets])
         |> List.wrap()
+        |> Enum.take(@max_secrets)
         |> Enum.map(&secret_of/1)
         |> Enum.filter(&(is_binary(&1) and String.length(&1) >= @min_secret_length))
     end
