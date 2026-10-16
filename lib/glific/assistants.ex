@@ -98,6 +98,8 @@ defmodule Glific.Assistants do
            model: version.model,
            prompt: version.prompt,
            settings: version.settings,
+           input_guardrails: version.input_guardrails,
+           output_guardrails: version.output_guardrails,
            status: version.status,
            is_live: version.id == assistant.active_config_version_id,
            description: version.description,
@@ -212,6 +214,8 @@ defmodule Glific.Assistants do
       model: version.model,
       provider: version.provider,
       settings: version.settings,
+      input_guardrails: version.input_guardrails,
+      output_guardrails: version.output_guardrails,
       status: version.status,
       kaapi_version_number: version.kaapi_version_number,
       bump_type: :major
@@ -334,6 +338,8 @@ defmodule Glific.Assistants do
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
       effort: get_in(active_config_version.settings || %{}, ["effort"]),
       settings: active_config_version.settings,
+      input_guardrails: active_config_version.input_guardrails,
+      output_guardrails: active_config_version.output_guardrails,
       model: active_config_version.model,
       instructions: active_config_version.prompt,
       status: to_string(active_config_version.status),
@@ -733,14 +739,30 @@ defmodule Glific.Assistants do
       user_params[:instructions] == active_config.prompt and
       user_params[:model] == active_config.model and
       build_settings(user_params) == (active_config.settings || %{}) and
+      guardrails_unchanged?(user_params, active_config) and
       kb_unchanged
   end
+
+  @spec guardrails_unchanged?(map(), AssistantConfigVersion.t()) :: boolean()
+  defp guardrails_unchanged?(user_params, active_config),
+    do:
+      {user_params[:input_guardrails] || [], user_params[:output_guardrails] || []} ==
+        {active_config.input_guardrails, active_config.output_guardrails}
 
   @spec name_only_change?(map()) :: boolean()
   defp name_only_change?(user_params) do
     not is_nil(user_params[:name]) and
       not Enum.any?(
-        [:instructions, :model, :temperature, :effort, :settings, :knowledge_base_version_id],
+        [
+          :instructions,
+          :model,
+          :temperature,
+          :effort,
+          :settings,
+          :input_guardrails,
+          :output_guardrails,
+          :knowledge_base_version_id
+        ],
         &Map.has_key?(user_params, &1)
       )
   end
@@ -843,6 +865,8 @@ defmodule Glific.Assistants do
 
     config = %{
       settings: build_settings(user_params),
+      input_guardrails: user_params[:input_guardrails] || [],
+      output_guardrails: user_params[:output_guardrails] || [],
       model: user_params[:model] || Kaapi.default_model(),
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
@@ -957,6 +981,8 @@ defmodule Glific.Assistants do
       model: kaapi_config.model,
       provider: "openai",
       settings: kaapi_config.settings,
+      input_guardrails: kaapi_config.input_guardrails,
+      output_guardrails: kaapi_config.output_guardrails,
       status: :in_progress,
       organization_id: kaapi_config.organization_id
     })
@@ -978,6 +1004,8 @@ defmodule Glific.Assistants do
       model: kaapi_config.model,
       provider: "openai",
       settings: kaapi_config.settings,
+      input_guardrails: kaapi_config.input_guardrails,
+      output_guardrails: kaapi_config.output_guardrails,
       status: status,
       organization_id: kaapi_config.organization_id
     })
@@ -1471,6 +1499,8 @@ defmodule Glific.Assistants do
       prompt: config_version.prompt,
       description: config_version.description || "Assistant configuration",
       settings: config_version.settings || %{},
+      input_guardrails: config_version.input_guardrails,
+      output_guardrails: config_version.output_guardrails,
       knowledge_base_ids: [knowledge_base_version.llm_service_id],
       organization_id: assistant.organization_id
     }
