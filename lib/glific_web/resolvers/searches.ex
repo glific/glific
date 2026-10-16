@@ -92,11 +92,12 @@ defmodule GlificWeb.Resolvers.Searches do
   @doc false
   @spec search_multi(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, Search.t()}
-  def search_multi(_, params, context) do
+  def search_multi(_, params, %{context: %{current_user: user}} = context) do
     {:ok,
      Searches.search_multi(
        params.filter[:term],
-       Helper.add_org_filter(params, context)
+       Helper.add_org_filter(params, context),
+       user
      )}
   end
 

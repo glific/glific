@@ -6,6 +6,8 @@ fragment AssistantFields on AssistantResult {
     temperature
     effort
     settings
+    input_guardrails
+    output_guardrails
     status
     new_version_in_progress
     last_evaluation_summary

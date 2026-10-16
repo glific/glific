@@ -271,4 +271,17 @@ defmodule Glific.Communications.WebMessageTest do
       end)
     end
   end
+
+  describe "a contact without a phone" do
+    test "an inbound message is stored against the contact", %{organization_id: organization_id} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Message{} = message} =
+               WebMessage.receive_message(contact, %{body: "hello"}, :text)
+
+      assert %{contact_id: contact_id, sender_id: sender_id, channel: :web} = message
+      assert contact_id == contact.id
+      assert sender_id == contact.id
+    end
+  end
 end

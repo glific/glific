@@ -439,9 +439,7 @@ defmodule Glific.Partners do
   defp update_org_contact(org, phone) do
     case Repo.fetch(Contact, org.contact_id) do
       {:ok, contact} ->
-        contact
-        |> Contact.changeset(%{phone: phone})
-        |> Repo.update()
+        Contacts.update_phone(contact, phone)
 
       _ ->
         {:error, "Organization contact not found"}

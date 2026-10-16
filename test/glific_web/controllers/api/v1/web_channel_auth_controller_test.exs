@@ -10,6 +10,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactIdentity,
     Fixtures,
     OTP,
     Partners,
@@ -831,6 +832,17 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
+  defp verify_otp_login(conn, phone) do
+    code = OTP.generate_code(:web_channel, phone)
+
+    conn
+    |> post(
+      Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{"phone" => phone, "otp" => code})
+    )
+    |> json_response(200)
+    |> get_in(["data", "contact_id"])
+  end
+
   describe "verify_otp/2" do
     test "a correct code returns a valid contact-scoped token and resolves the contact", %{
       conn: conn,
@@ -860,6 +872,59 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         assert {:ok, %Contact{phone: ^phone, organization_id: ^organization_id}} =
                  Repo.fetch_by(Contact, %{id: contact_id, organization_id: organization_id})
+      end)
+    end
+
+    test "records the contact's WhatsApp identity", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        contact_id = verify_otp_login(conn, phone)
+
+        assert [%{contact_id: ^contact_id}] =
+                 ContactIdentity
+                 |> where([i], i.channel == :whatsapp and i.identifier == ^phone)
+                 |> Repo.all()
+      end)
+    end
+
+    test "records the contact's web identity once, however often it signs in", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        contact_id = verify_otp_login(conn, phone)
+        ^contact_id = verify_otp_login(conn, phone)
+
+        assert [%{contact_id: ^contact_id}] =
+                 ContactIdentity
+                 |> where([i], i.channel == :web and i.identifier == ^phone)
+                 |> Repo.all()
+      end)
+    end
+
+    test "a username equal to an OTP user's phone resolves to that user", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        phone_contact_id = verify_otp_login(conn, phone)
+
+        assert {:ok, %{id: ^phone_contact_id}} = Contacts.maybe_create_contact(%{}, :web, phone)
+      end)
+    end
+
+    test "a username equal to the phone is a different contact from the phone login", %{
+      conn: conn
+    } do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        {:ok, username_contact} = Contacts.maybe_create_contact(%{}, :web, phone)
+
+        phone_contact_id = verify_otp_login(conn, phone)
+
+        refute phone_contact_id == username_contact.id
+        assert {:ok, found} = Contacts.fetch_by_identity(:web, phone)
+        assert found.id == username_contact.id
       end)
     end
 

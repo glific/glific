@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Repo, State}
+  alias GlificWeb.Resolvers.ContactIdentities
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -45,11 +46,32 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc false
   @spec create_contact(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_contact(_, %{input: params}, _) do
-    with {:ok, contact} <- Contacts.create_contact(params) do
+  def create_contact(_, %{input: params}, %{context: %{current_user: user}}) do
+    with :ok <- check_channel(params, user.organization_id),
+         {channel, params} = Map.pop(params, :channel, :whatsapp),
+         {identifier, params} = Map.pop(params, :identifier),
+         {:ok, contact} <- Contacts.create_contact(params, channel, identifier) do
       {:ok, %{contact: contact}}
     end
   end
+
+  @spec check_channel(map(), non_neg_integer()) :: :ok | {:error, any()}
+  defp check_channel(%{channel: :web} = params, organization_id) do
+    with :ok <- ContactIdentities.check_channel_enabled(:web, organization_id) do
+      if params[:identifier] in [nil, ""],
+        do:
+          {:error,
+           ["Identifier", dgettext("errors", "Identifier is required for a web contact.")]},
+        else: :ok
+    end
+  end
+
+  defp check_channel(%{identifier: identifier}, _organization_id)
+       when identifier not in [nil, ""],
+       do:
+         {:error, ["Identifier", dgettext("errors", "An identifier is only for a web contact.")]}
+
+  defp check_channel(_params, _organization_id), do: :ok
 
   @doc false
   @spec update_contact(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
@@ -63,7 +85,7 @@ defmodule GlificWeb.Resolvers.Contacts do
     end
   end
 
-  @read_only_fields [:phone, :bspStatus]
+  @read_only_fields [:phone, :bspStatus, :channel, :identifier]
 
   @spec validate_params(map()) :: {:ok, map()} | {:error, String.t()}
   defp validate_params(params) do

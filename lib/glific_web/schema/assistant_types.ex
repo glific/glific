@@ -83,6 +83,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :model, :string
     field :prompt, :string
     field :settings, :json
+    field :input_guardrails, :json
+    field :output_guardrails, :json
     field :status, :string
     field :is_live, :boolean
     field :description, :string
@@ -116,6 +118,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :temperature, :float
     field :effort, :string
     field :settings, :json
+    field :input_guardrails, :json
+    field :output_guardrails, :json
     field :status, :string
     field :new_version_in_progress, :boolean
     field :live_version_label, :string
@@ -149,6 +153,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :temperature, :float
     field :effort, :string
     field :settings, :json
+    field :input_guardrails, :json
+    field :output_guardrails, :json
     field :knowledge_base_version_id, :string
   end
 
@@ -196,6 +202,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :provider, :string
     field :model, :string
     field :settings, :json
+    field :input_guardrails, :json
+    field :output_guardrails, :json
     field :status, :string
     field :assistant_name, :string
     field :failure_reason, :string

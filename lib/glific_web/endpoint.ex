@@ -29,7 +29,7 @@ defmodule GlificWeb.Endpoint do
   # forwarded headers are the only way WebChannelSocket can rate limit by address.
   socket("/web_socket", GlificWeb.WebChannelSocket,
     websocket: [
-      connect_info: [:x_headers, :peer_data],
+      connect_info: [:x_headers, :peer_data, :uri],
       error_handler: {GlificWeb.WebChannelSocket, :handle_connect_error, []}
     ],
     longpoll: false
