@@ -3149,6 +3149,7 @@ defmodule Glific.AssistantsTest do
       mock(fn %Tesla.Env{method: :post, body: body} ->
         decoded = Jason.decode!(body)
         assert decoded["config"] == %{"id" => "kaapi_uuid_001", "version" => 7}
+        assert decoded["include_guardrail_metadata"] == false
         %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_003"}}}
       end)
 
@@ -3207,27 +3208,10 @@ defmodule Glific.AssistantsTest do
                  organization_id,
                  1
                )
-    end
-
-    test "does not ask for guardrail metadata when the flag is disabled",
-         %{organization_id: organization_id} do
-      assistant = create_live_assistant(organization_id)
 
       FunWithFlags.disable(:is_ai_guardrail_enabled,
         for_actor: %{organization_id: organization_id}
       )
-
-      mock(fn %Tesla.Env{method: :post, body: body} ->
-        assert Jason.decode!(body)["include_guardrail_metadata"] == false
-        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_005"}}}
-      end)
-
-      assert {:ok, %{job_id: "job_chat_005"}} =
-               Assistants.send_message(
-                 %{assistant_id: assistant.id, input: "Hello"},
-                 organization_id,
-                 1
-               )
     end
 
     test "returns an error when Kaapi dispatch fails",
@@ -3275,7 +3259,9 @@ defmodule Glific.AssistantsTest do
       assert :ok =
                Assistants.handle_assistant_chat_callback(organization_id, %{"unexpected" => true})
     end
+  end
 
+  describe "build_assistant_chat_response/2" do
     test "includes the guardrail stages when Kaapi sends guardrail metadata" do
       response =
         :with_input_and_output_guardrail
@@ -3283,12 +3269,16 @@ defmodule Glific.AssistantsTest do
         |> Assistants.build_assistant_chat_response("req-3")
 
       assert response.request_id == "req-3"
+      assert response.answer =~ "can’t help use hateful slurs or place a call"
       assert response.input_from_user == "call me kutta at 8979220110 from Ram village"
       assert response.input_to_llm == "call me [REDACTED_SLUR] at <phone_number> from <location>"
       assert response.output_from_llm == response.answer
       assert response.output_to_user == response.answer
-      assert length(response.input_guardrail) == 2
-      assert length(response.output_guardrail) == 1
+
+      assert [%{"name" => "PIIRemover", "outcome" => "FAIL"}, %{"name" => "LexicalSlur"}] =
+               response.input_guardrail
+
+      assert [%{"name" => "PIIRemover", "outcome" => "PASS"}] = response.output_guardrail
     end
 
     test "leaves the guardrail stages nil when Kaapi sends no guardrail metadata" do
@@ -3297,7 +3287,7 @@ defmodule Glific.AssistantsTest do
         |> kaapi_llm_callback()
         |> Assistants.build_assistant_chat_response("req-4")
 
-      assert is_binary(response.answer)
+      assert response.answer =~ "not sure what you’d like to know about **<PERSON>**"
 
       assert %{
                input_from_user: nil,
