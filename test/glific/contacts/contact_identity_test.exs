@@ -98,6 +98,8 @@ defmodule Glific.Contacts.ContactIdentityTest do
       contact =
         Fixtures.contact_fixture(%{organization_id: organization_id, phone: "919876543210"})
 
+      Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id))
+
       assert {:ok, identity} =
                insert_identity(%{
                  contact_id: contact.id,
@@ -125,7 +127,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
                  identifier: "asha_07"
                })
 
-      assert %{organization_id: ["has already been taken"]} = errors_on(changeset)
+      assert %{identifier: ["has already been taken"]} = errors_on(changeset)
     end
 
     test "allows the same identifier on another channel", %{organization_id: organization_id} do
@@ -149,7 +151,7 @@ defmodule Glific.Contacts.ContactIdentityTest do
         identifier: "ravi_web"
       })
 
-      assert %{organization_id: ["has already been taken"]} =
+      assert %{identifier: ["has already been taken"]} =
                identifier_errors(organization_id, "Ravi_Web")
     end
 

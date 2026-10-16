@@ -33,12 +33,25 @@ defmodule Glific.WebChannelFixtures do
   end
 
   @doc """
-  Joins `web_channel:<contact.id>` on `socket`.
+  Connects a `WebChannelSocket` with `token` the way a browser does, the organization coming from
+  `opts[:host]` (the default organization's host when omitted).
   """
-  @spec join_web_channel(Phoenix.Socket.t(), Contact.t()) ::
+  @spec ngo_socket_fixture(String.t(), keyword()) :: {:ok, Phoenix.Socket.t()} | :error
+  def ngo_socket_fixture(token, opts \\ []) do
+    host = Keyword.get(opts, :host, "localhost")
+
+    connect(WebChannelSocket, %{"token" => token},
+      connect_info: %{uri: %URI{scheme: "wss", host: host}}
+    )
+  end
+
+  @doc """
+  Joins `web_channel:conversation` on `socket`.
+  """
+  @spec join_web_channel(Phoenix.Socket.t()) ::
           {:ok, map(), Phoenix.Socket.t()} | {:error, map()}
-  def join_web_channel(socket, %Contact{} = contact),
-    do: subscribe_and_join(socket, RoomChannel, "web_channel:#{contact.id}")
+  def join_web_channel(socket),
+    do: subscribe_and_join(socket, RoomChannel, "web_channel:conversation")
 
   @doc """
   Default valid web channel JWT claims for `contact`, letting a test override just the field it

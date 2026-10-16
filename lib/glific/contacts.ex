@@ -12,10 +12,14 @@ defmodule Glific.Contacts do
 
   require Logger
 
+  alias Ecto.Multi
+
   alias Glific.{
     Clients,
     Contacts.Contact,
     Contacts.ContactHistory,
+    Contacts.ContactIdentities,
+    Contacts.ContactIdentity,
     Contacts.Location,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
@@ -29,6 +33,13 @@ defmodule Glific.Contacts do
   }
 
   @delete_timeout 400_000
+
+  @type web_claims :: %{
+          optional(:sub) => String.t(),
+          optional(:exp) => integer(),
+          optional(:name) => String.t(),
+          optional(:phone) => String.t()
+        }
 
   @doc """
   Add permission specific to groups, in this case we want to restrict the visibility of
@@ -266,8 +277,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Creates a WhatsApp contact, so the phone is required. A contact on the web channel is created together with its
-  login identity, from `new_contact_changeset/2`.
+  Creates a contact and its identity in one transaction: its phone on `:whatsapp`, `identifier` on `:web`.
 
   ## Examples
 
@@ -278,11 +288,64 @@ defmodule Glific.Contacts do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact(attrs) do
-    attrs
-    |> new_contact_changeset(:whatsapp)
-    |> Repo.insert()
+  @spec create_contact(map(), :whatsapp | :web, String.t() | nil) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def create_contact(attrs, channel \\ :whatsapp, identifier \\ nil)
+
+  def create_contact(attrs, :whatsapp, _identifier),
+    do:
+      attrs |> new_contact_changeset(:whatsapp) |> insert_with_identity(:whatsapp, attrs[:phone])
+
+  def create_contact(attrs, :web, identifier),
+    do: attrs |> new_contact_changeset(:web) |> insert_with_identity(:web, identifier)
+
+  @spec insert_with_identity(Ecto.Changeset.t(), :whatsapp | :web, String.t() | nil, keyword()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp insert_with_identity(changeset, channel, identifier, insert_opts \\ []) do
+    Multi.new()
+    |> Multi.insert(:contact, changeset, insert_opts)
+    |> ContactIdentities.insert_identity(channel, identifier)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{contact: contact}} -> {:ok, contact}
+      {:error, _step, changeset, _changes} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Adds a web username to a contact; one it already has is accepted, one another contact holds is refused.
+  """
+  @spec add_identity(Contact.t(), :whatsapp | :web, String.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def add_identity(%Contact{} = contact, :web, identifier),
+    do: ContactIdentities.add_web_identity(contact, identifier)
+
+  def add_identity(%Contact{} = contact, channel, _identifier) do
+    contact
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.add_error(:channel, "#{channel} identities follow the contact's phone")
+    |> Ecto.Changeset.apply_action(:insert)
+  end
+
+  @doc """
+  Bulk-inserts contacts and their WhatsApp identities, returning the saved `id`, `phone` and `fields`.
+  """
+  @spec insert_contacts([map()], keyword()) :: [map()]
+  def insert_contacts(entries, opts) do
+    {organization_id, opts} = Keyword.pop!(opts, :organization_id)
+
+    {_count, saved} =
+      Repo.insert_all(
+        Contact,
+        entries,
+        Keyword.merge(opts,
+          conflict_target: [:phone, :organization_id],
+          returning: [:id, :phone, :fields]
+        )
+      )
+
+    ContactIdentities.insert_whatsapp_identities(saved, organization_id)
+    saved
   end
 
   @doc """
@@ -325,12 +388,39 @@ defmodule Glific.Contacts do
       else
         contact
         |> Contact.changeset(attrs)
-        |> Repo.update()
+        |> persist_update()
       end
     else
       raise "Permission denied"
     end
   end
+
+  @doc """
+  Sets a contact's phone and moves its WhatsApp identity, for system callers with no current user.
+  """
+  @spec update_phone(Contact.t(), String.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def update_phone(%Contact{} = contact, phone) do
+    contact
+    |> Contact.changeset(%{phone: phone})
+    |> persist_update()
+  end
+
+  @spec persist_update(Ecto.Changeset.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp persist_update(%{changes: %{phone: _phone}} = changeset) do
+    Repo.transaction(fn ->
+      case Repo.update(changeset) do
+        {:ok, contact} ->
+          ContactIdentities.set_whatsapp_identity(contact)
+          contact
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  defp persist_update(changeset), do: Repo.update(changeset)
 
   # We do not want to block the simulator
   @spec simulator_block?(Contact.t(), map()) :: boolean
@@ -426,16 +516,97 @@ defmodule Glific.Contacts do
       language_id: attrs[:language_id] || Partners.organization_language_id(organization_id)
     }
 
-    contact =
-      Repo.insert!(
-        change_contact(%Contact{}, Map.merge(other_attrs, attrs)),
-        returning: true,
-        on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
-        conflict_target: [:phone, :organization_id]
-      )
+    insert_opts = [
+      returning: true,
+      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
+      conflict_target: [:phone, :organization_id]
+    ]
 
-    {:ok, contact}
+    case %Contact{}
+         |> Contact.changeset(Map.merge(other_attrs, attrs))
+         |> insert_with_identity(:whatsapp, attrs[:phone], insert_opts) do
+      {:ok, contact} ->
+        {:ok, contact}
+
+      {:error, changeset} ->
+        raise Ecto.InvalidChangesetError, action: :insert, changeset: changeset
+    end
   end
+
+  # A username joins the contact owning the phone claim when that contact is on WhatsApp: it holds
+  # the phone as its WhatsApp identity or has messaged. A phone only another web login stored is
+  # neither, so it is not linked to, nor stored again.
+  @spec resolve_phone_claim(String.t() | nil) ::
+          {:link, Contact.t()} | {:create, String.t() | nil}
+  defp resolve_phone_claim(nil), do: {:create, nil}
+
+  defp resolve_phone_claim(phone) do
+    with false <- simulator_contact?(phone),
+         {:ok, contact, has_identity?} <- fetch_whatsapp_contact(phone) do
+      if linkable_contact?(contact, has_identity?), do: {:link, contact}, else: {:create, nil}
+    else
+      true -> {:create, nil}
+      {:error, :not_found} -> {:create, phone}
+    end
+  end
+
+  @spec linkable_contact?(Contact.t(), boolean()) :: boolean()
+  defp linkable_contact?(contact, has_identity?),
+    do:
+      (has_identity? or contact.last_message_at != nil) and
+        contact.id != Partners.organization_contact_id(contact.organization_id)
+
+  @spec add_or_create_web_contact(
+          {:link, Contact.t()} | {:create, String.t() | nil},
+          web_claims(),
+          String.t()
+        ) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp add_or_create_web_contact({:link, contact}, _claims, identifier),
+    do: add_identity(contact, :web, identifier)
+
+  defp add_or_create_web_contact({:create, phone}, claims, identifier),
+    do: claims |> web_contact_attrs(identifier, phone) |> create_contact(:web, identifier)
+
+  @spec web_contact_attrs(web_claims(), String.t(), String.t() | nil) :: map()
+  defp web_contact_attrs(claims, identifier, phone) do
+    %{
+      organization_id: Repo.get_organization_id(),
+      name: claims[:name] || identifier,
+      phone: phone,
+      status: :valid,
+      bsp_status: :none,
+      contact_type: nil
+    }
+  end
+
+  # Two first connects can race on the same new username or the same phone. The loser of a username
+  # race returns the winner's contact; the loser of a phone race looks again, now finding the phone.
+  @spec retry_web_login_race(
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()},
+          web_claims(),
+          String.t()
+        ) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp retry_web_login_race({:error, changeset} = error, claims, identifier) do
+    cond do
+      ContactIdentities.identifier_taken?(changeset) ->
+        with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier), do: error
+
+      phone_taken?(changeset) ->
+        maybe_create_contact(claims, :web, identifier)
+
+      true ->
+        error
+    end
+  end
+
+  defp retry_web_login_race(result, _claims, _identifier), do: result
+
+  @spec phone_taken?(Ecto.Changeset.t()) :: boolean()
+  defp phone_taken?(changeset),
+    do:
+      Enum.any?(changeset.errors, fn {field, {_message, opts}} ->
+        field == :phone and opts[:constraint] == :unique
+      end)
 
   @spec handle_phone_error(map(), Ecto.Changeset.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
@@ -459,15 +630,25 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  This function is called by the messaging framework for all incoming messages, hence
-  might be a good candidate to maintain a contact level cache at some point
-
-  We use a fetch followed by create, to avoid the explosion in the id namespace. We also
-  avoid updating the contact to skip the DB call, and only do so if the name has changed
+  Returns the contact for a WhatsApp sender or an NGO token's username, creating it if it does not exist.
   """
-  @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_create_contact(sender) do
-    case fetch_by_identity(:whatsapp, Map.get(sender, :phone)) do
+  @spec maybe_create_contact(map() | web_claims(), :whatsapp | :web, String.t() | nil) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_create_contact(attrs, channel \\ :whatsapp, identifier \\ nil)
+
+  def maybe_create_contact(claims, :web, identifier) do
+    identifier = String.downcase(identifier)
+
+    with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier) do
+      claims[:phone]
+      |> resolve_phone_claim()
+      |> add_or_create_web_contact(claims, identifier)
+      |> retry_web_login_race(claims, identifier)
+    end
+  end
+
+  def maybe_create_contact(sender, :whatsapp, _identifier) do
+    case fetch_whatsapp_sender(Map.get(sender, :phone)) do
       {:error, :no_identifier} ->
         missing_phone_error(sender)
 
@@ -1057,17 +1238,59 @@ defmodule Glific.Contacts do
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  Looks a contact up by its login on a channel; a nil or empty identifier is refused without querying.
+  Looks a contact up by its identity on a channel (web identities are case-insensitive).
   """
-  @spec fetch_by_identity(:whatsapp, String.t() | nil) ::
+  @spec fetch_by_identity(:whatsapp | :web, String.t() | nil) ::
           {:ok, Contact.t()} | {:error, :no_identifier | :not_found}
   def fetch_by_identity(_channel, identifier) when identifier in [nil, ""],
     do: {:error, :no_identifier}
 
-  def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
+  def fetch_by_identity(:web, identifier) when is_binary(identifier),
+    do: ContactIdentities.fetch_contact(:web, identifier)
+
+  def fetch_by_identity(:whatsapp, phone) when is_binary(phone), do: fetch_by_phone(phone)
+
+  @spec fetch_by_phone(String.t()) :: {:ok, Contact.t()} | {:error, :not_found}
+  defp fetch_by_phone(phone) do
     case Repo.get_by(Contact, %{phone: phone}) do
       nil -> {:error, :not_found}
       contact -> {:ok, contact}
+    end
+  end
+
+  @spec fetch_whatsapp_contact(String.t()) :: {:ok, Contact.t(), boolean()} | {:error, :not_found}
+  defp fetch_whatsapp_contact(phone) do
+    query =
+      from(c in Contact,
+        left_join: i in ContactIdentity,
+        on: i.contact_id == c.id and i.channel == :whatsapp and i.identifier == c.phone,
+        where: c.phone == ^phone,
+        select: {c, not is_nil(i.id)}
+      )
+
+    case Repo.one(query) do
+      nil -> {:error, :not_found}
+      {contact, has_identity?} -> {:ok, contact, has_identity?}
+    end
+  end
+
+  # An inbound WhatsApp message confirms the number, so a contact found only by its phone gets its
+  # WhatsApp identity here rather than in any lookup.
+  @spec fetch_whatsapp_sender(String.t() | nil) ::
+          {:ok, Contact.t()} | {:error, :not_found | :no_identifier}
+  defp fetch_whatsapp_sender(phone) when phone in [nil, ""], do: {:error, :no_identifier}
+
+  defp fetch_whatsapp_sender(phone) do
+    case fetch_whatsapp_contact(phone) do
+      {:ok, contact, true} ->
+        {:ok, contact}
+
+      {:ok, contact, false} ->
+        ContactIdentities.set_whatsapp_identity(contact)
+        {:ok, contact}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
     end
   end
 

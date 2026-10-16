@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.OrganizationTypes)
   import_types(__MODULE__.ProfileTypes)
   import_types(__MODULE__.ContactTypes)
+  import_types(__MODULE__.ContactIdentityTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.EnumTypes)
   import_types(__MODULE__.GenericTypes)
@@ -158,6 +159,7 @@ defmodule GlificWeb.Schema do
     import_fields(:profile_mutations)
 
     import_fields(:contact_mutations)
+    import_fields(:contact_identity_mutations)
 
     import_fields(:contact_tag_mutations)
 

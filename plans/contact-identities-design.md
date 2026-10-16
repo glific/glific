@@ -16,7 +16,7 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 contacts                        contact_identities
 id | name | phone               contact_id | channel  | identifier
 42 | Asha | 919876543210        42         | whatsapp | 919876543210  (WhatsApp)
-                                42         | web      | asha_07       (Tap, linked via phone)
+                                42         | web      | asha_07       (NGO username, linked via phone)
 57 | Ravi | NULL                57         | web      | ravi_12       (username only)
 ```
 
@@ -54,7 +54,7 @@ Not added: `contacts.channels`, per-channel username columns. No backfill. `cont
 3. **Across channels:** duplicates are OK when nothing links them.
 4. **Linking is one insert (or one row update), never a merge.** No history is rewritten.
 5. **Never look up a contact by a nil phone.**
-6. **A token is only trusted if it's signed with the login secret (or previous secret) of the org it's used in.**
+6. **A token is only trusted if it's signed with the JWT signature secret (or previous secret) of the org it's used in.**
 
 ## 4. Flows
 
@@ -65,17 +65,28 @@ Gupshup/Maytapi webhook {phone}
 → contact
 ```
 The contact's `(whatsapp, phone, <phone>)` identity is written when it's created (or on its first
-lookup, until the backfill has covered every existing contact).
+lookup, so existing contacts keep working until the WhatsApp identities are backfilled in the next PR).
+Every channel creates a contact through `Contacts.create_contact(attrs, channel \\ :whatsapp, identifier \\ nil)`
+(the identifier defaults to the phone), which inserts the contact and its identity in one transaction: a contact never exists
+without its identity.
+
+Identities are only reached through `Glific.Contacts`: an identity is part of a contact, so nothing outside
+`lib/glific/contacts/` calls `Glific.Contacts.ContactIdentities` or queries `ContactIdentity`. `ContactIdentities` is internal to the
+context; callers use `Contacts.create_contact/1`, `fetch_by_identity/2`, `maybe_create_contact/3`,
+`add_identity/3` and `insert_contacts/2` (bulk import). `set_whatsapp_identity/1`
+keeps the WhatsApp identity in step with the phone.
 
 ### 4.2 Web, phone + OTP
 ```
 request-otp(phone) → code over WhatsApp → verify-otp(phone, code)
 → find/create the contact by phone   (same contact as WhatsApp; that's the web↔WhatsApp link)
+→ record (web, <phone>) on that contact if missing   (it signed in on the web with its phone)
 → Glific signs its own token {sub: contact_id}
 ```
-No web identity is written: `contacts.phone` (and its WhatsApp identity) is already this path's
-lookup. A `(web, <phone>)` row would share the web namespace with NGO usernames, so a username equal
-to someone's phone number (many NGOs use phone or roll numbers) would log into their conversation.
+OTP contacts also get their `(whatsapp, <phone>)` identity when created (the phone is verified by the
+code sent over WhatsApp). Web identities share one namespace for phones and NGO usernames, so an NGO
+username equal to an OTP user's phone resolves to that user: NGOs must never use another person's
+phone number as a username (NGO contract, §5).
 
 ### 4.3 Web, NGO token with username only
 ```
@@ -87,26 +98,37 @@ WebSocket connect with token {sub:"ravi_12", channel:"web", iat, exp}
                unique conflict (two tabs) → re-read, return existing
 ```
 
-### 4.4 Web, NGO token with username + phone / contact_id (Tap)
+### 4.4 Web, NGO token with username + phone
 ```
-token {sub:"asha_07", phone:"919876543210"}  or  {sub:"asha_07", contact_id: 42}
+token {sub:"asha_07", phone:"919876543210"}
 → verify token (§5)
-→ (org, web, "asha_07") already exists → that contact; phone/contact_id IGNORED
+→ (org, web, "asha_07") already exists → that contact; phone IGNORED
 → not found:
-     target = contact by phone, or contact by contact_id (must be in this org)
-     target found → insert identity on target (link), even if it already has other web identities
-     otherwise    → create new contact (4.3)
+     phone is a WhatsApp contact's phone → add (web, "asha_07") to that contact: one person, one
+                                           contact across channels
+     otherwise → create a new contact (4.3), keeping the phone in contacts.phone but writing NO
+                 (whatsapp, phone) identity: the phone was not verified (no OTP), so the WhatsApp
+                 identity is only written when that number first messages on WhatsApp (the
+                 contacts.phone fallback in fetch_by_identity)
      unique conflict on (org, web, "asha_07") (two tabs) → re-read, return the existing identity's contact
 ```
-Guards: a `contact_id` from another org is treated as not found · an identifier that already exists
-is never moved by a token · an identity always takes its `organization_id` from its contact.
+The token has no `contact_id` claim; staff can also link a username to any contact with
+`addContactIdentity`.
+
+A phone sent in the token is treated as the user's own: the username joins that number's
+conversation, or the new contact owns it, so NGOs must only send phones they have verified belong
+to the user (NGO-trust assumption).
+
+Guards: the organization's own contact and simulator contacts are never linked to, and their phones
+are never stored on a new contact · an identifier that already exists is never moved by a token ·
+an identity always takes its `organization_id` from its contact.
 
 ### 4.5 Telegram / RCS / SwiftChat (later)
 Same as 4.3 with `channel = :telegram` etc. That only needs a new enum value, not a new table.
 
 ### 4.6 After resolution (all paths)
 ```
-contact_id → socket topic web_channel:<contact_id>
+contact_id → internal PubSub topic web_channel:<contact_id>, relayed to the client's `web_channel:conversation` join
            → messages(channel=web)   (no contact_identity_id: messages record the channel, not the login)
            → flows / flow_results / tags / inbox exactly as today
 ```
@@ -122,10 +144,13 @@ again by phone.
 A reply goes out on the channel the conversation/flow came in on (already built in #5660).
 
 ## 5. Token verification (NGO-signed)
-- Signed with the organization's `login_secret`, or `previous_login_secret` while rotating, both kept in
-  the org's `web_channel` credential (set on the Settings page). The organization comes from the
+- Signed with any of the organization's JWT signature secrets: one list, `jwt_signature_secrets`, of
+  at most two `{name, secret}` entries (none is "current" or "previous"), kept in the org's `web_channel`
+  credential (set on the Settings page). To rotate, add the new secret, switch the backend, then
+  remove the old one. The organization comes from the
   subdomain; there is no `kid`.
-- Algorithm pinned to HS256. Valid signature.
+- Algorithm pinned to HS256. Valid signature. A secret shorter than 32 characters is ignored (a token cannot verify against it).
+- A `phone` claim is trusted as the user's own (see §4.4): the NGO must only send verified phones.
 - `sub`, `channel = "web"`, `iat`, `exp` required. `exp - iat ≤ 24h` (the NGO may issue shorter
   tokens, e.g. 6h). ≤ 60s clock leeway. `sub` ≤ 255.
 - Any failure refuses the connection the same way.
@@ -134,9 +159,12 @@ A reply goes out on the channel the conversation/flow came in on (already built 
   socket, which must resolve to the same contact; the expiry is updated in memory. A background sweep
   closes any socket whose token has expired. Reissuing tokens is the NGO's job.
 - Glific's own web channel (phone + OTP) keeps its platform-issued token and `renew-token`.
-- `POST /web_channel/contacts` (same token) creates or returns the contact without connecting, so an
-  NGO backend can provision ahead of the first connection.
-- NGO contract: `sub` must be unique across every system the NGO signs tokens from. Identities are
+- A contact is created on the first connect with a new username (`Contacts.maybe_create_contact(claims, :web, username)`), or
+  ahead of time by staff through the GraphQL `createContact` mutation with `channel: WEB` and an `identifier`, or by
+  adding a username to an existing contact with `addContactIdentity(contactId, channel: WEB, identifier)`. There is no REST
+  provisioning endpoint.
+- NGO contract: `sub` must be unique across every system the NGO signs tokens from. A `sub` must never be another person's phone number: web identities from phone + OTP logins
+  share the namespace, so such a `sub` would sign in as that person. Identities are
   unique per organization, so two systems issuing the same `sub` would log in as one contact.
 - Phones (in the `phone` claim and in identifiers) are digits with country code and no `+`, the format
   `Contacts.parse_phone_number/1` stores. Identifiers may only contain letters, digits, `_`, `@` and
@@ -177,13 +205,13 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 ## 8. Console / admin
 - **Inbox:** `contact_type in [...] OR EXISTS (identity for c.id)`
 - **Contact:** `identities` field, hidden from `:staff` like `phone`
-- **Login secret:** set and rotated on the Web Channel settings page (the `web_channel` credential); no separate key management
+- **JWT signature secret:** set and rotated on the Web Channel settings page (the `web_channel` credential); no separate key management
 - **Move identity** (optional follow-up instead of merge): re-point one identity row to another contact; history stays where it is
 
 ## 9. Not doing
 - Merge contacts (the issue forbids it)
 - `contacts.channels` or per-channel username columns
-- Backfilling WhatsApp identity rows
+- Backfilling WhatsApp identity rows in this PR (done in the next PR with web opt-in)
 - BigQuery export of identities (phone-less rows must not break REQUIRED phone columns; handle in #5759)
 - CSV import by username
 - Dropping `contact_type`
@@ -193,7 +221,7 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 |---|---|
 | 1 | Nil-phone safety (§7) |
 | 2 | Migrations + schemas (§2) |
-| 3 | Login secret, verifier, WebSocket connect + renewal with the NGO token, provisioning API, resolve/link (§4.3–4.4, §5), WhatsApp identities + backfill |
+| 3 | JWT signature secret, verifier, WebSocket connect + renewal with the NGO token, find-or-create (§4.3–4.4, §5), WhatsApp identities written on create and phone change, with a lookup fallback to `contacts.phone` |
 | 4 | Inbox + GraphQL (§8) |
 
 ## 11. Open
@@ -209,7 +237,9 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 For each column: what it does, whether it's written on every message (hot path), whether it
 belongs to the **person** or to a **channel**, and what to do with it.
 "Move" means to `contact_identities`. **Nothing moves in #5703.** Moves happen in the next PR
-(opt-in migration), which also does the WhatsApp backfill.
+(opt-in migration), which also backfills the WhatsApp identities. That backfill must skip contacts
+whose phone came from an NGO token (they have a web identity and no WhatsApp activity), or it would
+undo §4.4's rule; and the `contacts.phone` fallback in `fetch_by_identity` stays permanent for them.
 
 Enums: `status` = blocked / failed / invalid / processing / valid ·
 `bsp_status` = none / session / session_and_hsm / hsm.
