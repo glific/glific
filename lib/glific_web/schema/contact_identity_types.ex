@@ -18,7 +18,7 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
   end
 
   object :contact_identity_queries do
-    @desc "Get the contact that logs in with an identifier on a channel; web identifiers are case-insensitive"
+    @desc "Get the contact with an identity on a channel; web identities are case-insensitive"
     field :contact_by_identity, :contact_result do
       arg(:channel, non_null(:message_channel_enum))
       arg(:identifier, non_null(:string))
