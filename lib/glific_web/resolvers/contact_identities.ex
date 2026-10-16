@@ -1,13 +1,29 @@
 defmodule GlificWeb.Resolvers.ContactIdentities do
   @moduledoc """
-  Resolver for adding an identity to a contact, between the GraphQL schema and
-  `Glific.Contacts`.
+  Resolver for finding a contact by identity and adding an identity to a contact, between the
+  GraphQL schema and `Glific.Contacts`.
   """
 
   use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{Contacts, Contacts.Contact, Repo}
   alias GlificWeb.WebChannel.Flag
+
+  @doc false
+  @spec contact_by_identity(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_by_identity(_, %{channel: channel, identifier: identifier}, %{
+        context: %{current_user: user}
+      }) do
+    case Contacts.fetch_by_identity(channel, identifier) do
+      {:ok, %Contact{organization_id: organization_id} = contact}
+      when organization_id == user.organization_id ->
+        {:ok, %{contact: contact}}
+
+      _not_found ->
+        {:error, ["Contact", dgettext("errors", "Contact not found or permission denied.")]}
+    end
+  end
 
   @doc false
   @spec add_contact_identity(

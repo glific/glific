@@ -1,6 +1,7 @@
 defmodule GlificWeb.Schema.ContactIdentityTypes do
   @moduledoc """
-  GraphQL types for a contact's identities and the mutation to add one to a contact.
+  GraphQL types for a contact's identities: the identity object, the lookup by identifier, and the
+  mutation to add an identity to a contact.
   """
 
   use Absinthe.Schema.Notation
@@ -14,6 +15,16 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
     field(:channel, :message_channel_enum)
     field(:identifier, :string)
     field(:inserted_at, :datetime)
+  end
+
+  object :contact_identity_queries do
+    @desc "Get the contact with an identity on a channel; web identities are case-insensitive"
+    field :contact_by_identity, :contact_result do
+      arg(:channel, non_null(:message_channel_enum))
+      arg(:identifier, non_null(:string))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.ContactIdentities.contact_by_identity/3)
+    end
   end
 
   object :contact_identity_mutations do

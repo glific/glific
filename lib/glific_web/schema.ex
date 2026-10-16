@@ -75,6 +75,7 @@ defmodule GlificWeb.Schema do
     import_fields(:profile_queries)
 
     import_fields(:contact_queries)
+    import_fields(:contact_identity_queries)
 
     import_fields(:language_queries)
 

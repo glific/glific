@@ -393,6 +393,11 @@ mutation createContact($input:ContactInput!) {
 | ------------------------------------------ | -------------------------- |
 | <a href="#contactresult">ContactResult</a> | The created contact object |
 
+`input` may also carry an optional `channel` (default `WHATSAPP`, which needs a `phone`) and an `identifier`. With
+`channel: WEB` the `identifier` (the username the contact logs in with, stored lowercase) is required, no phone is
+needed, the web channel must be enabled for the organization, and the contact's `identities` field lists its `WEB`
+identity.
+
 ## Update a Contact
 
 ```graphql
@@ -893,6 +898,114 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 | --------- | -------------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#contactHistoryFilter">contactHistoryFilter</a> | nil     | filter the list |
 
+## Add an Identity to a Contact
+
+```graphql
+mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!) {
+  addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier) {
+    contact {
+      id
+      name
+      identities {
+        channel
+        identifier
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+```
+
+> With variables:
+
+```json
+{ "contactId": "15", "channel": "WEB", "identifier": "ravi_12" }
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "addContactIdentity": {
+      "contact": { "id": "15", "name": "Ravi", "identities": [{ "channel": "WEB", "identifier": "ravi_12" }] },
+      "errors": null
+    }
+  }
+}
+```
+
+Gives an existing contact a <a href="#web-channel-login">web channel</a> username. Only the `WEB` channel is
+accepted: a `WHATSAPP` identity is the contact's phone and follows it. Adding a username the contact already has
+succeeds without change; a username held by another contact is refused (`identifier: has already been taken`) and
+never moved. Requires the manager role and the web channel enabled for the organization.
+
+| Parameter  | Type               | Description                                                                 |
+| ---------- | ------------------ | --------------------------------------------------------------------------- |
+| contactId  | ID                 | The contact to add the identity to.                                         |
+| channel    | MessageChannelEnum | The channel of the identity. Only `WEB` is accepted.                        |
+| identifier | String             | The username: letters, digits, `_`, `@` and `.`, stored lowercase (case-insensitive), 1 to 255 characters. |
+
+To create a contact for a web username before its first login, use <a href="#create-a-contact">createContact</a>
+with `channel: WEB` and an `identifier`.
+
+## Get a Contact by Identity
+
+```graphql
+query contactByIdentity($channel: MessageChannelEnum!, $identifier: String!) {
+  contactByIdentity(channel: $channel, identifier: $identifier) {
+    contact {
+      id
+      name
+      identities {
+        channel
+        identifier
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+```
+
+> With variables:
+
+```json
+{ "channel": "WEB", "identifier": "ravi_12" }
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "contactByIdentity": {
+      "contact": {
+        "id": "15",
+        "name": "Ravi",
+        "identities": [{ "channel": "WEB", "identifier": "ravi_12" }]
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+Finds the contact that logs in with an identifier on a channel, for example a web channel username.
+Web identifiers are case-insensitive. It never creates a contact; an unknown identifier returns an
+error. Requires the manager role: identifiers are personal data, and the `identities` field of a
+contact is empty for a staff user.
+
+| Parameter  | Type                                   | Description                          |
+| ---------- | -------------------------------------- | ------------------------------------ |
+| channel    | MessageChannelEnum | `WEB` or `WHATSAPP`.   |
+| identifier | String                                 | The username, or the phone number.   |
+
 ## Contact Objects
 
 ### Contact
@@ -916,6 +1029,11 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 <td colspan="2" valign="top"><strong>name</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>identities</strong></td>
+<td valign="top">[ContactIdentity]</td>
+<td>How the contact logs in on each channel (<code>id</code>, <code>channel</code>, <code>identifier</code>, <code>insertedAt</code>). Empty for a staff user.</td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>optinTime</strong></td>

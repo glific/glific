@@ -46,6 +46,23 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
+  The ids of an organization's contacts with a web identity, optionally matching a `LIKE` pattern.
+  """
+  @spec web_contact_ids_query(non_neg_integer(), String.t() | nil) :: Ecto.Query.t()
+  def web_contact_ids_query(organization_id, like_pattern \\ nil) do
+    # Repo scoping skips subqueries, so the organization is filtered here.
+    from(i in ContactIdentity,
+      where: i.organization_id == ^organization_id and i.channel == :web,
+      where: ^username_matches(like_pattern),
+      select: i.contact_id
+    )
+  end
+
+  @spec username_matches(String.t() | nil) :: Ecto.Query.dynamic_expr()
+  defp username_matches(nil), do: dynamic(true)
+  defp username_matches(pattern), do: dynamic([i], like(i.identifier, ^pattern))
+
+  @doc """
   Adds to `multi` the insert of the identity for the contact its `:contact` step inserted.
   """
   @spec insert_identity(Multi.t(), MessageChannel.t(), String.t() | nil) :: Multi.t()

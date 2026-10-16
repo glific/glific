@@ -21,6 +21,7 @@ defmodule Glific.Contacts do
     Contacts.ContactIdentities,
     Contacts.ContactIdentity,
     Contacts.Location,
+    Contacts.TermSearch,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.UserGroup,
@@ -109,12 +110,11 @@ defmodule Glific.Contacts do
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
+    user = Repo.get_current_user()
 
     Enum.reduce(filter, query, fn
       {:term, term}, query ->
-        from(q in query,
-          where: ilike(field(q, :name), ^"%#{term}%") or ilike(field(q, :phone), ^"%#{term}%")
-        )
+        where(query, ^TermSearch.match(term, user))
 
       {:status, status}, query ->
         from(q in query, where: q.status == ^status)
@@ -1236,6 +1236,13 @@ defmodule Glific.Contacts do
   @spec simulator_contact?(String.t() | nil) :: boolean
   def simulator_contact?(nil), do: false
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
+
+  @doc """
+  The ids of an organization's contacts with a web identity, for use in `subquery/1`.
+  """
+  @spec web_identity_contact_ids_query(non_neg_integer()) :: Ecto.Query.t()
+  def web_identity_contact_ids_query(organization_id),
+    do: ContactIdentities.web_contact_ids_query(organization_id)
 
   @doc """
   Looks a contact up by its identity on a channel (web identities are case-insensitive).
