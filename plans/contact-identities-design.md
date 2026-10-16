@@ -16,7 +16,7 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 contacts                        contact_identities
 id | name | phone               contact_id | channel  | identifier
 42 | Asha | 919876543210        42         | whatsapp | 919876543210  (WhatsApp)
-                                42         | web      | asha_07       (Tap, linked via phone)
+                                42         | web      | asha_07       (NGO username, linked via phone)
 57 | Ravi | NULL                57         | web      | ravi_12       (username only)
 ```
 
@@ -98,7 +98,7 @@ WebSocket connect with token {sub:"ravi_12", channel:"web", iat, exp}
                unique conflict (two tabs) → re-read, return existing
 ```
 
-### 4.4 Web, NGO token with username + phone (Tap)
+### 4.4 Web, NGO token with username + phone
 ```
 token {sub:"asha_07", phone:"919876543210"}
 → verify token (§5)
