@@ -14,6 +14,8 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Flags
+  alias Glific.LlmCalls
   alias Glific.Metrics
   alias Glific.Notifications
   alias Glific.Partners
@@ -1324,7 +1326,9 @@ defmodule Glific.Assistants do
       query: %{input: input, conversation: build_conversation(conversation_id)},
       config: %{id: kaapi_uuid, version: kaapi_version_number},
       callback_url: build_assistant_chat_callback_url(organization_id),
-      request_metadata: %{request_id: request_id, user_id: user_id}
+      request_metadata: %{request_id: request_id, user_id: user_id},
+      include_guardrail_metadata:
+        Flags.get_flag_enabled(:is_ai_guardrail_enabled, Partners.organization(organization_id))
     }
   end
 
@@ -1368,12 +1372,14 @@ defmodule Glific.Assistants do
 
   @spec build_assistant_chat_response(map(), String.t()) :: map()
   defp build_assistant_chat_response(%{"success" => true} = params, request_id) do
-    %{
+    params
+    |> LlmCalls.guardrail_metadata()
+    |> Map.merge(%{
       request_id: request_id,
       conversation_id: get_in(params, ["data", "response", "conversation_id"]),
       answer: get_in(params, ["data", "response", "output", "content", "value"]),
       errors: []
-    }
+    })
   end
 
   defp build_assistant_chat_response(params, request_id) do
