@@ -79,8 +79,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @per_min_limit 500
 
-  # Rows can become visible with an updated_at slightly in the past (open transactions,
-  # replica lag), so an idle table's watermark stops this far short of now.
+  # A transaction can commit rows whose updated_at is already in the past, so an idle
+  # table's watermark stops this far short of what the replica has replayed.
   @idle_watermark_lag_seconds 300
 
   @doc """
@@ -270,12 +270,25 @@ defmodule Glific.BigQuery.BigQueryWorker do
   # updated since then, across orgs, so it catches up once a run finds nothing.
   @spec advance_idle_watermark(String.t(), DateTime.t(), non_neg_integer) :: :ok
   defp advance_idle_watermark(table, table_last_updated_at, organization_id) do
-    caught_up_at = DateTime.add(DateTime.utc_now(), -@idle_watermark_lag_seconds, :second)
+    caught_up_at =
+      DateTime.add(replica_visible_until(), -@idle_watermark_lag_seconds, :second)
 
     if DateTime.compare(caught_up_at, table_last_updated_at) == :gt,
       do: Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: caught_up_at})
 
     :ok
+  end
+
+  # The scan cannot have seen commits the replica has not replayed yet, so a lagging
+  # replica holds the watermark back. On a primary the function returns NULL.
+  @spec replica_visible_until() :: DateTime.t()
+  defp replica_visible_until do
+    now = DateTime.utc_now()
+
+    case RepoReplica.query("SELECT pg_last_xact_replay_timestamp()", []) do
+      {:ok, %{rows: [[%DateTime{} = replayed_at]]}} -> Enum.min([now, replayed_at], DateTime)
+      _ -> now
+    end
   end
 
   @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer, String.t()) ::

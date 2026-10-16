@@ -1068,11 +1068,30 @@ defmodule Glific.BigQueryTest do
         %Tesla.Env{status: 200, body: "{}"}
       end)
 
+      started_at = DateTime.utc_now()
       perform_tickets_update(organization_id)
+      finished_at = DateTime.utc_now()
 
-      seconds_behind_now = DateTime.diff(DateTime.utc_now(), tickets_watermark(organization_id))
-      assert seconds_behind_now in 300..330
+      watermark = tickets_watermark(organization_id)
+      assert DateTime.compare(watermark, DateTime.add(started_at, -300, :second)) != :lt
+      assert DateTime.compare(watermark, DateTime.add(finished_at, -300, :second)) != :gt
       refute_received {:bigquery_request, _}
+    end
+
+    test "holds a stale watermark back by the replica's replay lag when no rows changed",
+         %{organization_id: organization_id} do
+      set_tickets_watermark(organization_id, ~U[2022-01-01 00:00:00.000000Z])
+      replayed_at = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      with_mock RepoReplica, [:passthrough],
+        query: fn "SELECT pg_last_xact_replay_timestamp()", [] ->
+          {:ok, %Postgrex.Result{rows: [[replayed_at]], num_rows: 1}}
+        end do
+        perform_tickets_update(organization_id)
+      end
+
+      expected_watermark = DateTime.add(replayed_at, -300, :second)
+      assert DateTime.compare(tickets_watermark(organization_id), expected_watermark) == :eq
     end
 
     test "keeps a watermark that is already recent when no rows changed",
