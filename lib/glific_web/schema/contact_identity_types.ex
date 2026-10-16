@@ -9,7 +9,7 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
-  @desc "How a contact logs in on a channel"
+  @desc "A contact's identity on a channel"
   object :contact_identity do
     field(:id, :id)
     field(:channel, :message_channel_enum)

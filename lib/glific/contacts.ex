@@ -18,7 +18,7 @@ defmodule Glific.Contacts do
     Clients,
     Contacts.Contact,
     Contacts.ContactHistory,
-    Contacts.Identities,
+    Contacts.ContactIdentities,
     Contacts.Location,
     Contacts.TermSearch,
     Groups.ContactGroup,
@@ -303,7 +303,7 @@ defmodule Glific.Contacts do
   defp insert_with_identity(changeset, channel, identifier, insert_opts \\ []) do
     Multi.new()
     |> Multi.insert(:contact, changeset, insert_opts)
-    |> Identities.insert_identity(channel, identifier)
+    |> ContactIdentities.insert_identity(channel, identifier)
     |> Repo.transaction()
     |> case do
       {:ok, %{contact: contact}} -> {:ok, contact}
@@ -317,7 +317,7 @@ defmodule Glific.Contacts do
   @spec add_identity(Contact.t(), :whatsapp | :web, String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def add_identity(%Contact{} = contact, :web, identifier),
-    do: Identities.add_web_identity(contact, identifier)
+    do: ContactIdentities.add_web_identity(contact, identifier)
 
   def add_identity(%Contact{} = contact, channel, _identifier) do
     contact
@@ -343,7 +343,7 @@ defmodule Glific.Contacts do
         )
       )
 
-    Identities.insert_whatsapp_identities(saved, organization_id)
+    ContactIdentities.insert_whatsapp_identities(saved, organization_id)
     saved
   end
 
@@ -410,7 +410,7 @@ defmodule Glific.Contacts do
     Repo.transaction(fn ->
       case Repo.update(changeset) do
         {:ok, contact} ->
-          Identities.set_whatsapp_identity(contact)
+          ContactIdentities.set_whatsapp_identity(contact)
           contact
 
         {:error, changeset} ->
@@ -543,7 +543,7 @@ defmodule Glific.Contacts do
 
   @spec phone_owner_target(String.t()) :: {:link, Contact.t()} | {:create, String.t() | nil}
   defp phone_owner_target(phone) do
-    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone),
+    with {:error, :not_found} <- ContactIdentities.fetch_contact(:whatsapp, phone),
          {:ok, %Contact{last_message_at: nil}} <- fetch_by_phone(phone) do
       {:create, nil}
     else
@@ -591,8 +591,8 @@ defmodule Glific.Contacts do
         ) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp retry_web_login_race({:error, changeset} = error, claims, identifier) do
     cond do
-      Identities.identifier_taken?(changeset) ->
-        with {:error, :not_found} <- Identities.fetch_contact(:web, identifier), do: error
+      ContactIdentities.identifier_taken?(changeset) ->
+        with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier), do: error
 
       phone_taken?(changeset) ->
         maybe_create_contact(claims, :web, identifier)
@@ -642,7 +642,7 @@ defmodule Glific.Contacts do
   def maybe_create_contact(claims, :web, identifier) do
     identifier = String.downcase(identifier)
 
-    with {:error, :not_found} <- Identities.fetch_contact(:web, identifier) do
+    with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier) do
       claims[:phone]
       |> web_login_target()
       |> add_or_create_web_contact(claims, identifier)
@@ -1256,10 +1256,10 @@ defmodule Glific.Contacts do
     do: {:error, :no_identifier}
 
   def fetch_by_identity(:web, identifier) when is_binary(identifier),
-    do: Identities.fetch_contact(:web, identifier)
+    do: ContactIdentities.fetch_contact(:web, identifier)
 
   def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
-    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone),
+    with {:error, :not_found} <- ContactIdentities.fetch_contact(:whatsapp, phone),
          do: fetch_by_phone(phone)
   end
 
@@ -1278,9 +1278,9 @@ defmodule Glific.Contacts do
   defp fetch_whatsapp_sender(phone) when phone in [nil, ""], do: {:error, :no_identifier}
 
   defp fetch_whatsapp_sender(phone) do
-    with {:error, :not_found} <- Identities.fetch_contact(:whatsapp, phone),
+    with {:error, :not_found} <- ContactIdentities.fetch_contact(:whatsapp, phone),
          {:ok, contact} <- fetch_by_phone(phone) do
-      Identities.set_whatsapp_identity(contact)
+      ContactIdentities.set_whatsapp_identity(contact)
       {:ok, contact}
     end
   end
