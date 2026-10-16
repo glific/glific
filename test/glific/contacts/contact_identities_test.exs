@@ -6,8 +6,8 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Contacts.ContactIdentity,
     Contacts.ContactIdentities,
+    Contacts.ContactIdentity,
     Fixtures,
     Partners,
     Repo
