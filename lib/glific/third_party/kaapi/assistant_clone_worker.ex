@@ -242,6 +242,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       prompt: config_version.prompt,
       model: config_version.model,
       settings: config_version.settings || %{},
+      input_guardrails: config_version.input_guardrails,
+      output_guardrails: config_version.output_guardrails,
       description: "Cloned version",
       organization_id: organization_id,
       knowledge_base_ids: knowledge_base_ids
@@ -620,6 +622,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       model: params.model,
       provider: "openai",
       settings: params.settings,
+      input_guardrails: params.input_guardrails,
+      output_guardrails: params.output_guardrails,
       status: :ready,
       organization_id: params.organization_id,
       kaapi_version_number: kaapi_config_version

@@ -804,6 +804,93 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
     end
+
+    test "creates a new config version when only the guardrails change",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["input_guardrails"] == [
+                   %{"type" => "pii_remover"}
+                 ]
+
+          assert decoded_body["config_blob"]["output_guardrails"] == [
+                   %{"type" => "gender_assumption_bias"}
+                 ]
+
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_abc", version: 2}}}
+      end)
+
+      initial_config_count = count_config_versions(assistant.id)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: config_version.prompt,
+                 model: config_version.model,
+                 temperature: get_in(config_version.settings, ["temperature"]),
+                 input_guardrails: [%{"type" => "pii_remover"}],
+                 output_guardrails: [%{"type" => "gender_assumption_bias"}],
+                 organization_id: organization_id
+               })
+
+      assert count_config_versions(assistant.id) == initial_config_count + 1
+      assert result.name == assistant.name
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.major_version, desc: acv.minor_version)
+        |> limit(1)
+        |> Repo.one()
+
+      assert new_config_version.input_guardrails == [
+               %{"type" => "pii_remover"}
+             ]
+
+      assert new_config_version.output_guardrails == [%{"type" => "gender_assumption_bias"}]
+      assert new_config_version.status == :ready
+      assert new_config_version.kaapi_version_number == 2
+    end
+
+    test "treats identical guardrails as no change",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
+      {:ok, _config_version} =
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          input_guardrails: [%{"type" => "pii_remover"}]
+        })
+        |> Repo.update()
+
+      initial_config_count = count_config_versions(assistant.id)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: config_version.prompt,
+                 model: config_version.model,
+                 temperature: get_in(config_version.settings, ["temperature"]),
+                 input_guardrails: [%{"type" => "pii_remover"}],
+                 organization_id: organization_id
+               })
+
+      assert result.input_guardrails == [%{"type" => "pii_remover"}]
+      assert count_config_versions(assistant.id) == initial_config_count
+    end
+
+    test "rejects a guardrail without a type",
+         %{organization_id: organization_id, assistant: assistant} do
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 input_guardrails: [%{"on_fail" => "fix"}],
+                 organization_id: organization_id
+               })
+
+      assert %{input_guardrails: ["each guardrail needs a non-empty \"type\""]} =
+               errors_on(changeset)
+    end
   end
 
   describe "update_assistant/2 with no existing knowledge base" do
@@ -1393,6 +1480,59 @@ defmodule Glific.AssistantsTest do
                })
 
       assert config_version.settings == %{"effort" => "none"}
+    end
+
+    test "stores inline guardrails on the config version and sends them to Kaapi",
+         %{organization_id: organization_id} do
+      Fixtures.kaapi_credential_fixture(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["input_guardrails"] == [
+                   %{"type" => "pii_remover"},
+                   %{
+                     "type" => "topic_relevance_llm",
+                     "on_fail" => "rephrase",
+                     "is_enabled" => false
+                   }
+                 ]
+
+          assert decoded_body["config_blob"]["output_guardrails"] == []
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_guardrail_uuid", version: %{version: 1}}}
+          }
+      end)
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Guarded Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 input_guardrails: [
+                   %{"type" => "pii_remover"},
+                   %{
+                     "type" => "topic_relevance_llm",
+                     "on_fail" => "rephrase",
+                     "is_enabled" => false
+                   }
+                 ],
+                 organization_id: organization_id
+               })
+
+      assert assistant.kaapi_uuid == "kaapi_guardrail_uuid"
+      assert config_version.status == :ready
+
+      assert config_version.input_guardrails == [
+               %{"type" => "pii_remover"},
+               %{"type" => "topic_relevance_llm", "on_fail" => "rephrase", "is_enabled" => false}
+             ]
+
+      assert config_version.output_guardrails == []
     end
   end
 
