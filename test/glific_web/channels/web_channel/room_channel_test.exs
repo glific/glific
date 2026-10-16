@@ -585,7 +585,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     defp with_ngo_socket(overrides, fun) do
       Glific.WebChannelFlagHelpers.with_web_channel_secrets(
         1,
-        %{"jwt_signature_secret_1" => @secret},
+        Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
         fn ->
           {:ok, ws_socket} = overrides |> ngo_token() |> WebChannelFixtures.ngo_socket_fixture()
           contact = ws_socket.assigns.current_contact
@@ -598,7 +598,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "a one-time-code session cannot be renewed with an NGO token for its phone" do
       Glific.WebChannelFlagHelpers.with_web_channel_secrets(
         1,
-        %{"jwt_signature_secret_1" => @secret},
+        Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
         fn ->
           contact = Fixtures.contact_fixture(%{phone: "919876500777"})
           {:ok, _contact} = Glific.Contacts.add_identity(contact, :web, contact.phone)
@@ -860,7 +860,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "returns the contact id to an NGO token socket" do
       Glific.WebChannelFlagHelpers.with_web_channel_secrets(
         1,
-        %{"jwt_signature_secret_1" => @secret},
+        Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
         fn ->
           token =
             %{}

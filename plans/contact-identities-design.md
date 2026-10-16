@@ -144,10 +144,10 @@ again by phone.
 A reply goes out on the channel the conversation/flow came in on (already built in #5660).
 
 ## 5. Token verification (NGO-signed)
-- Signed with either of the organization's two JWT signature secrets (`jwt_signature_secret_1`, `jwt_signature_secret_2`,
-  each beside a user-chosen name; neither is "current" or "previous"), kept in
-  the org's `web_channel` credential (set on the Settings page). To rotate, fill the empty slot, switch
-  the backend, then clear the old one. The organization comes from the
+- Signed with any of the organization's JWT signature secrets: one list, `jwt_signature_secrets`, of
+  `{name, secret}` entries (none is "current" or "previous"), kept in the org's `web_channel`
+  credential (set on the Settings page). To rotate, add the new secret, switch the backend, then
+  remove the old one. The organization comes from the
   subdomain; there is no `kid`.
 - Algorithm pinned to HS256. Valid signature. A secret shorter than 32 characters is ignored (a token cannot verify against it).
 - A `phone` claim is trusted as the user's own (see §4.4): the NGO must only send verified phones.

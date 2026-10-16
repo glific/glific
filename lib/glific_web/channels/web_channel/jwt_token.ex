@@ -3,11 +3,11 @@ defmodule GlificWeb.WebChannel.JwtToken do
   Verifies the JWT an NGO's backend signs to authenticate one of its users on the web channel
   socket. A token may live at most 24 hours; an NGO may issue shorter ones.
 
-  The token is signed (HS256, pinned: the token's own `alg` is never trusted) with either of the
-  organization's two JWT signature secrets (`jwt_signature_secret_1`, `jwt_signature_secret_2`); neither is
-  "current" or "previous", so rotating is a matter of filling the empty slot and later clearing the
-  old one. Both live in the organization's `web_channel` credential, so the organization is the
-  request's, not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
+  The token is signed (HS256, pinned: the token's own `alg` is never trusted) with any of the
+  organization's JWT signature secrets, a list of `%{"name" => ..., "secret" => ...}` under
+  `jwt_signature_secrets` in its `web_channel` credential. None is "current" or "previous", so
+  rotating is a matter of adding the new secret and later removing the old one. The organization is
+  the request's, not the token's. Every way a token can be wrong gives the same `{:error, :invalid}`.
 
   A secret shorter than 32 characters is ignored, so a token can never verify against it.
 
@@ -25,7 +25,6 @@ defmodule GlificWeb.WebChannel.JwtToken do
   @max_length 255
   @min_secret_length 32
   @provider_code "web_channel"
-  @secret_fields [:jwt_signature_secret_1, :jwt_signature_secret_2]
 
   @type claims :: %{
           required(:sub) => String.t(),
@@ -35,14 +34,14 @@ defmodule GlificWeb.WebChannel.JwtToken do
         }
 
   @doc """
-  The claims of a token signed with either of the organization's JWT signature secrets, if it is valid now.
+  The claims of a token signed with any of the organization's JWT signature secrets, if it is valid now.
   """
   @spec verify(non_neg_integer(), String.t() | nil, integer()) ::
           {:ok, claims()} | {:error, :invalid}
   def verify(organization_id, token, now \\ System.system_time(:second))
 
   def verify(organization_id, token, now) when is_binary(token) and token != "" do
-    with [_ | _] = secrets <- jwt_signature_secret(organization_id),
+    with [_ | _] = secrets <- jwt_signature_secrets(organization_id),
          {:ok, fields} <- verify_signature(secrets, token),
          :ok <- validate_timing(fields, now),
          {:ok, claims} <- extract_claims(fields) do
@@ -54,8 +53,8 @@ defmodule GlificWeb.WebChannel.JwtToken do
 
   def verify(_organization_id, _token, _now), do: {:error, :invalid}
 
-  @spec jwt_signature_secret(non_neg_integer()) :: [String.t()]
-  defp jwt_signature_secret(organization_id) do
+  @spec jwt_signature_secrets(non_neg_integer()) :: [String.t()]
+  defp jwt_signature_secrets(organization_id) do
     case Partners.organization(organization_id) do
       {:error, _reason} ->
         []
@@ -63,11 +62,17 @@ defmodule GlificWeb.WebChannel.JwtToken do
       organization ->
         secrets = get_in(organization.services, [@provider_code, :secrets]) || %{}
 
-        @secret_fields
-        |> Enum.map(&(secrets[Atom.to_string(&1)] || secrets[&1]))
+        (secrets["jwt_signature_secrets"] || secrets[:jwt_signature_secrets])
+        |> List.wrap()
+        |> Enum.map(&secret_of/1)
         |> Enum.filter(&(is_binary(&1) and String.length(&1) >= @min_secret_length))
     end
   end
+
+  @spec secret_of(any()) :: String.t() | nil
+  defp secret_of(%{"secret" => secret}), do: secret
+  defp secret_of(%{secret: secret}), do: secret
+  defp secret_of(_entry), do: nil
 
   @spec verify_signature([String.t()], String.t()) :: {:ok, map()} | :error
   defp verify_signature(secrets, token) do

@@ -10,13 +10,17 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
   @now 1_800_000_000
 
   setup %{organization_id: organization_id} do
-    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "jwt_signature_secret_1" => @secret,
-      "jwt_signature_secret_2" => @second_secret
-    })
-
+    activate_secrets(organization_id, [@secret, @second_secret])
     :ok
   end
+
+  defp activate_secrets(organization_id, secrets),
+    do:
+      WebChannelFlagHelpers.activate_web_channel(
+        organization_id,
+        %{},
+        WebChannelFlagHelpers.jwt_signature_secrets(secrets)
+      )
 
   defp verify(organization_id, overrides, secret \\ @secret) do
     token =
@@ -37,54 +41,47 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
     short = String.duplicate("s", 31)
     long = String.duplicate("s", 32)
 
-    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "jwt_signature_secret_1" => short
-    })
-
+    activate_secrets(organization_id, [short])
     assert {:error, :invalid} = verify(organization_id, %{}, short)
 
-    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "jwt_signature_secret_1" => long
-    })
+    activate_secrets(organization_id, [long])
 
     assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, long)
   end
 
-  test "both secrets too short refuses every token", %{organization_id: organization_id} do
+  test "every secret too short refuses every token", %{organization_id: organization_id} do
     short = String.duplicate("s", 31)
 
-    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "jwt_signature_secret_1" => short,
-      "jwt_signature_secret_2" => "tiny"
-    })
+    activate_secrets(organization_id, [short, "tiny"])
 
     assert {:error, :invalid} = verify(organization_id, %{}, short)
     assert {:error, :invalid} = verify(organization_id, %{}, "tiny")
   end
 
-  test "accepts a token signed with the second slot's secret", %{
+  test "accepts a token signed with the second secret in the list", %{
     organization_id: organization_id
   } do
     assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, @second_secret)
   end
 
-  test "accepts either secret when only the second slot is filled", %{
-    organization_id: organization_id
-  } do
-    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "jwt_signature_secret_2" => @second_secret
-    })
+  test "a removed secret no longer verifies", %{organization_id: organization_id} do
+    activate_secrets(organization_id, [@second_secret])
 
     assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, @second_secret)
     assert {:error, :invalid} = verify(organization_id, %{}, @secret)
   end
 
-  test "slot names do not affect verification", %{organization_id: organization_id} do
-    WebChannelFlagHelpers.activate_web_channel(
-      organization_id,
-      %{"jwt_signature_secret_1_name" => "2026", "jwt_signature_secret_2_name" => "2025"},
-      %{"jwt_signature_secret_1" => @secret, "jwt_signature_secret_2" => @second_secret}
-    )
+  test "names do not affect verification, and malformed entries are skipped", %{
+    organization_id: organization_id
+  } do
+    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
+      "jwt_signature_secrets" => [
+        %{"name" => "2026", "secret" => @secret},
+        %{"name" => "no secret"},
+        "not an entry",
+        %{"name" => "2025", "secret" => @second_secret}
+      ]
+    })
 
     assert {:ok, _claims} = verify(organization_id, %{}, @secret)
     assert {:ok, _claims} = verify(organization_id, %{}, @second_secret)
@@ -95,7 +92,7 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
              verify(organization_id, %{}, "some-other-secret-some-other-secret")
   end
 
-  test "rejects every token when both slots are empty", %{
+  test "rejects every token when there are no secrets", %{
     organization_id: organization_id
   } do
     WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{})
@@ -103,10 +100,8 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
     assert {:error, :invalid} = verify(organization_id, %{})
   end
 
-  test "clearing a slot stops its tokens", %{organization_id: organization_id} do
-    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
-      "jwt_signature_secret_1" => @secret
-    })
+  test "removing a secret stops its tokens", %{organization_id: organization_id} do
+    activate_secrets(organization_id, [@secret])
 
     assert {:error, :invalid} = verify(organization_id, %{}, @second_secret)
     assert {:ok, _claims} = verify(organization_id, %{}, @secret)
