@@ -9,7 +9,7 @@ defmodule Glific.Contacts.TermSearch do
 
   import Ecto.Query
 
-  alias Glific.{Contacts.Identities, Users.User}
+  alias Glific.{Contacts.ContactIdentities, Users.User}
 
   @doc """
   A condition on the first binding, a contact, for ANDing into a contact query. The username
@@ -22,7 +22,7 @@ defmodule Glific.Contacts.TermSearch do
     name_or_phone = dynamic([c], ilike(c.name, ^pattern) or ilike(c.phone, ^pattern))
 
     if include_usernames?(user),
-      do: dynamic([c], ^name_or_phone or ^username_match(term)),
+      do: dynamic([c], ^name_or_phone or ^username_match(term, user.organization_id)),
       else: name_or_phone
   end
 
@@ -30,10 +30,10 @@ defmodule Glific.Contacts.TermSearch do
   defp include_usernames?(%{roles: roles}), do: :staff not in roles
   defp include_usernames?(nil), do: false
 
-  @spec username_match(String.t()) :: Ecto.Query.dynamic_expr()
-  defp username_match(term) do
+  @spec username_match(String.t(), non_neg_integer()) :: Ecto.Query.dynamic_expr()
+  defp username_match(term, organization_id) do
     pattern = "#{term |> String.downcase() |> escape_like()}%"
-    matching = Identities.web_contact_ids_query(pattern)
+    matching = ContactIdentities.web_contact_ids_query(organization_id, pattern)
 
     dynamic([c], c.id in subquery(matching))
   end

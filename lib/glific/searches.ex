@@ -189,7 +189,7 @@ defmodule Glific.Searches do
   defp where_in_inbox(query) do
     # An uncorrelated, organization-scoped subquery: a correlated EXISTS made Postgres scan every
     # organization's web identities on each inbox query.
-    web_contact_ids = Contacts.web_identity_contact_ids_query()
+    web_contact_ids = Contacts.web_identity_contact_ids_query(repo().get_organization_id())
 
     where(
       query,

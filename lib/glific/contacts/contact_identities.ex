@@ -47,14 +47,11 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
-  A query for the ids of the current organization's contacts that have a web identity, optionally
-  only those whose username matches a `LIKE` pattern.
+  The ids of an organization's contacts with a web identity, optionally matching a `LIKE` pattern.
   """
-  @spec web_contact_ids_query(String.t() | nil) :: Ecto.Query.t()
-  def web_contact_ids_query(like_pattern \\ nil) do
+  @spec web_contact_ids_query(non_neg_integer(), String.t() | nil) :: Ecto.Query.t()
+  def web_contact_ids_query(organization_id, like_pattern \\ nil) do
     # Repo scoping skips subqueries, so the organization is filtered here.
-    organization_id = Repo.get_organization_id()
-
     from(i in ContactIdentity,
       where: i.organization_id == ^organization_id and i.channel == :web,
       where: ^username_matches(like_pattern),

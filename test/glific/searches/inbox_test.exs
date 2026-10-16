@@ -190,6 +190,26 @@ defmodule Glific.Searches.InboxTest do
       refute other.id in matched
     end
 
+    test "the username match takes the organization from the user, not the process", %{
+      organization_id: organization_id
+    } do
+      contact = username_contact()
+      user = Repo.get_current_user()
+
+      # A multi-search task on the read replica has no Glific.Repo organization set.
+      Repo.put_organization_id(nil)
+      condition = TermSearch.match("ravi_12", user)
+      Repo.put_organization_id(organization_id)
+
+      matched =
+        Contact
+        |> where(^condition)
+        |> select([c], c.id)
+        |> Repo.all()
+
+      assert contact.id in matched
+    end
+
     test "no username is matched without a user", %{organization_id: organization_id} do
       contact = username_contact()
 

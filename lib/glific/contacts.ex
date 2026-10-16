@@ -1241,11 +1241,11 @@ defmodule Glific.Contacts do
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  A query for the ids of the current organization's contacts that have a web identity, for use in
-  `subquery/1`.
+  The ids of an organization's contacts with a web identity, for use in `subquery/1`.
   """
-  @spec web_identity_contact_ids_query() :: Ecto.Query.t()
-  def web_identity_contact_ids_query, do: Identities.web_contact_ids_query()
+  @spec web_identity_contact_ids_query(non_neg_integer()) :: Ecto.Query.t()
+  def web_identity_contact_ids_query(organization_id),
+    do: ContactIdentities.web_contact_ids_query(organization_id)
 
   @doc """
   Looks a contact up by its login on a channel (web logins are case-insensitive); a nil or empty identifier is refused without querying.
