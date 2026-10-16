@@ -19,6 +19,7 @@ defmodule Glific.Contacts do
     Contacts.Contact,
     Contacts.ContactHistory,
     Contacts.ContactIdentities,
+    Contacts.ContactIdentity,
     Contacts.Location,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
@@ -532,32 +533,28 @@ defmodule Glific.Contacts do
     end
   end
 
-  # A phone is only linked to when WhatsApp has confirmed it: the contact holds its WhatsApp
-  # identity or has messaged. A phone an NGO token stored but that never messaged is not.
-  @spec web_login_target(String.t() | nil) :: {:link, Contact.t()} | {:create, String.t() | nil}
-  defp web_login_target(nil), do: {:create, nil}
+  # A username joins the contact owning the phone claim when that contact is on WhatsApp: it holds
+  # the phone as its WhatsApp identity or has messaged. A phone only another web login stored is
+  # neither, so it is not linked to, nor stored again.
+  @spec resolve_phone_claim(String.t() | nil) ::
+          {:link, Contact.t()} | {:create, String.t() | nil}
+  defp resolve_phone_claim(nil), do: {:create, nil}
 
-  defp web_login_target(phone) do
-    if simulator_contact?(phone), do: {:create, nil}, else: phone_owner_target(phone)
-  end
-
-  @spec phone_owner_target(String.t()) :: {:link, Contact.t()} | {:create, String.t() | nil}
-  defp phone_owner_target(phone) do
-    with {:error, :not_found} <- ContactIdentities.fetch_contact(:whatsapp, phone),
-         {:ok, %Contact{last_message_at: nil}} <- fetch_by_phone(phone) do
-      {:create, nil}
+  defp resolve_phone_claim(phone) do
+    with false <- simulator_contact?(phone),
+         {:ok, contact, has_identity?} <- fetch_whatsapp_contact(phone) do
+      if linkable_contact?(contact, has_identity?), do: {:link, contact}, else: {:create, nil}
     else
-      {:ok, owner} -> link_unless_organization_contact(owner)
+      true -> {:create, nil}
       {:error, :not_found} -> {:create, phone}
     end
   end
 
-  @spec link_unless_organization_contact(Contact.t()) :: {:link, Contact.t()} | {:create, nil}
-  defp link_unless_organization_contact(owner) do
-    if owner.id == Partners.organization_contact_id(owner.organization_id),
-      do: {:create, nil},
-      else: {:link, owner}
-  end
+  @spec linkable_contact?(Contact.t(), boolean()) :: boolean()
+  defp linkable_contact?(contact, has_identity?),
+    do:
+      (has_identity? or contact.last_message_at != nil) and
+        contact.id != Partners.organization_contact_id(contact.organization_id)
 
   @spec add_or_create_web_contact(
           {:link, Contact.t()} | {:create, String.t() | nil},
@@ -644,7 +641,7 @@ defmodule Glific.Contacts do
 
     with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier) do
       claims[:phone]
-      |> web_login_target()
+      |> resolve_phone_claim()
       |> add_or_create_web_contact(claims, identifier)
       |> retry_web_login_race(claims, identifier)
     end
@@ -1241,7 +1238,7 @@ defmodule Glific.Contacts do
   def simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  Looks a contact up by its login on a channel (web logins are case-insensitive); a nil or empty identifier is refused without querying.
+  Looks a contact up by its identity on a channel (web identities are case-insensitive).
   """
   @spec fetch_by_identity(:whatsapp | :web, String.t() | nil) ::
           {:ok, Contact.t()} | {:error, :no_identifier | :not_found}
@@ -1251,16 +1248,29 @@ defmodule Glific.Contacts do
   def fetch_by_identity(:web, identifier) when is_binary(identifier),
     do: ContactIdentities.fetch_contact(:web, identifier)
 
-  def fetch_by_identity(:whatsapp, phone) when is_binary(phone) do
-    with {:error, :not_found} <- ContactIdentities.fetch_contact(:whatsapp, phone),
-         do: fetch_by_phone(phone)
-  end
+  def fetch_by_identity(:whatsapp, phone) when is_binary(phone), do: fetch_by_phone(phone)
 
   @spec fetch_by_phone(String.t()) :: {:ok, Contact.t()} | {:error, :not_found}
   defp fetch_by_phone(phone) do
     case Repo.get_by(Contact, %{phone: phone}) do
       nil -> {:error, :not_found}
       contact -> {:ok, contact}
+    end
+  end
+
+  @spec fetch_whatsapp_contact(String.t()) :: {:ok, Contact.t(), boolean()} | {:error, :not_found}
+  defp fetch_whatsapp_contact(phone) do
+    query =
+      from(c in Contact,
+        left_join: i in ContactIdentity,
+        on: i.contact_id == c.id and i.channel == :whatsapp and i.identifier == c.phone,
+        where: c.phone == ^phone,
+        select: {c, not is_nil(i.id)}
+      )
+
+    case Repo.one(query) do
+      nil -> {:error, :not_found}
+      {contact, has_identity?} -> {:ok, contact, has_identity?}
     end
   end
 
@@ -1271,10 +1281,16 @@ defmodule Glific.Contacts do
   defp fetch_whatsapp_sender(phone) when phone in [nil, ""], do: {:error, :no_identifier}
 
   defp fetch_whatsapp_sender(phone) do
-    with {:error, :not_found} <- ContactIdentities.fetch_contact(:whatsapp, phone),
-         {:ok, contact} <- fetch_by_phone(phone) do
-      ContactIdentities.set_whatsapp_identity(contact)
-      {:ok, contact}
+    case fetch_whatsapp_contact(phone) do
+      {:ok, contact, true} ->
+        {:ok, contact}
+
+      {:ok, contact, false} ->
+        ContactIdentities.set_whatsapp_identity(contact)
+        {:ok, contact}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
     end
   end
 

@@ -144,6 +144,24 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert nil == whatsapp_identity(phone)
     end
 
+    test "a staff-created contact is linked to even if it has never messaged", %{
+      organization_id: organization_id
+    } do
+      {:ok, created} =
+        Contacts.create_contact(%{
+          organization_id: organization_id,
+          name: "Imported",
+          phone: "919876543213"
+        })
+
+      assert nil == created.last_message_at
+
+      assert {:ok, contact} =
+               Contacts.maybe_create_contact(%{phone: created.phone}, :web, "ravi_15")
+
+      assert contact.id == created.id
+    end
+
     test "a WhatsApp contact that has messaged is linked to before it has an identity", %{
       organization_id: organization_id
     } do

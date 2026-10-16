@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.ContactIdentities do
   @moduledoc """
-  Resolver for adding a login identity to a contact, between the GraphQL schema and
+  Resolver for adding an identity to a contact, between the GraphQL schema and
   `Glific.Contacts`.
   """
 
