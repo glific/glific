@@ -114,7 +114,7 @@ defmodule GlificWeb.WebChannelSocketTest do
       do:
         WebChannelFlagHelpers.with_web_channel_secrets(
           1,
-          %{"jwt_signature_secret_1" => @secret},
+          Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
           fun
         )
 
@@ -200,9 +200,11 @@ defmodule GlificWeb.WebChannelSocketTest do
     test "refuses a token valid for another organization's secret on that organization's host" do
       other = Fixtures.organization_fixture(%{shortcode: "otherngo"})
 
-      WebChannelFlagHelpers.activate_web_channel(other.id, %{}, %{
-        "jwt_signature_secret_1" => "other-secret-other-secret-other"
-      })
+      WebChannelFlagHelpers.activate_web_channel(
+        other.id,
+        %{},
+        Glific.WebChannelFlagHelpers.jwt_signature_secrets(["other-secret-other-secret-other"])
+      )
 
       FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: other.id})
       other.id |> Partners.organization() |> Partners.fill_cache()
@@ -227,7 +229,12 @@ defmodule GlificWeb.WebChannelSocketTest do
     end
 
     test "refuses when the web channel is off" do
-      WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"jwt_signature_secret_1" => @secret})
+      WebChannelFlagHelpers.activate_web_channel(
+        1,
+        %{},
+        Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret])
+      )
+
       assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())
     end
 

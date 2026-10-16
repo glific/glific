@@ -68,7 +68,7 @@ defmodule Glific.WebChannelFlagHelpers do
 
   @doc """
   Runs `fun` with the web channel on for `organization_id` and `secrets`
-  (e.g. `%{"jwt_signature_secret_1" => "..."}`) in its credential, restoring the flag after.
+  (e.g. `jwt_signature_secrets(["..."])`) in its credential, restoring the flag after.
   """
   @spec with_web_channel_secrets(non_neg_integer(), map(), (-> any())) :: any()
   def with_web_channel_secrets(organization_id \\ 1, secrets, fun) do
@@ -81,5 +81,20 @@ defmodule Glific.WebChannelFlagHelpers do
     after
       reset_web_channel_flag(organization_id)
     end
+  end
+
+  @doc """
+  The credential secrets holding `secrets` as the organization's named JWT signature secrets.
+  """
+  @spec jwt_signature_secrets([String.t()]) :: map()
+  def jwt_signature_secrets(secrets) do
+    entries =
+      secrets
+      |> Enum.with_index(1)
+      |> Enum.map(fn {secret, position} ->
+        %{"name" => "secret #{position}", "secret" => secret}
+      end)
+
+    %{"jwt_signature_secrets" => entries}
   end
 end
