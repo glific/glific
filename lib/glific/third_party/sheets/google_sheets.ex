@@ -154,7 +154,7 @@ defmodule Glific.Sheets.GoogleSheets do
   @spec build_conn(String.t()) :: Tesla.Client.t()
   defp build_conn(token) do
     extra = [
-      {Tesla.Middleware.Opts, [recv_timeout: 10_000]},
+      {Tesla.Middleware.Opts, [adapter: [receive_timeout: 10_000]]},
       {Tesla.Middleware.Telemetry, metadata: %{provider: "google_sheets_api"}}
       | Glific.get_tesla_retry_middleware()
     ]

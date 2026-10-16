@@ -106,7 +106,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         categories: Enum.map(params.categories, &String.upcase/1)
       }
 
-    opts = [adapter: [recv_timeout: 60_000], path_params: [flow_id: meta_flow_id]]
+    opts = [adapter: [receive_timeout: 60_000], path_params: [flow_id: meta_flow_id]]
 
     client(url: url, headers: headers)
     |> Tesla.put("/flows/:flow_id", payload, opts: opts)
@@ -130,7 +130,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         headers: [{"content-type", "application/json"}]
       )
 
-    opts = [adapter: [recv_timeout: 60_000], path_params: [flow_id: form.meta_flow_id]]
+    opts = [adapter: [receive_timeout: 60_000], path_params: [flow_id: form.meta_flow_id]]
 
     client(url: url, headers: headers)
     |> Tesla.put("/flows/:flow_id/assets", multipart, opts: opts)

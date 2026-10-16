@@ -149,14 +149,8 @@ config :glific, Oban,
   plugins: oban_plugins,
   shutdown_grace_period: :timer.seconds(60)
 
-# Adding ssl_options to fix #3037. However I dont understand this or the implications
-# We will revisit it once we build a better understanding
-config :tesla,
-  adapter:
-    {Tesla.Adapter.Hackney,
-     ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}],
-     pool: :glific_default_pool,
-     connect_timeout: 5_000}
+# Pools (TLS and connect timeout) are configured where Glific.Finch is started in Glific.Application
+config :tesla, adapter: {Glific.Http.FinchAdapter, name: Glific.Finch, receive_timeout: 5_000}
 
 config :glific, :pow,
   user: Glific.Users.User,
