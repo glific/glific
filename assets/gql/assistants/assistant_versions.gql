@@ -7,6 +7,8 @@ query AssistantVersions($assistant_id: ID!) {
     model
     prompt
     settings
+    input_guardrails
+    output_guardrails
     status
     is_live
     description
