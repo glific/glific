@@ -240,10 +240,10 @@ Category `"Flow"`:
 | Source | Message | Entity |
 | --- | --- | --- |
 | `notification/3` | Variable (passed in) | `{flow_id, flow_uuid, contact_id, parent_id, node_uuid}` |
-|  | `"Flow execution failed due to invalid regular expression"` | `{flow_uuid, node_uuid, organization_id}` |
-|  | `"Template expression is null in the flow"` | `{template_type}` |
-|  | `"Template not found, skipping templating"` | `{template_type}` |
-|  | `"Error from Google Sheets: #{error}"` | `{spreadsheet_id, contact_id}` |
+| | `"Flow execution failed due to invalid regular expression"` | `{flow_uuid, node_uuid, organization_id}` |
+| | `"Template expression is null in the flow"` | `{template_type}` |
+| | `"Template not found, skipping templating"` | `{template_type}` |
+| | `"Error from Google Sheets: #{error}"` | `{spreadsheet_id, contact_id}` |
 
 Also raised by flow execution:
 
@@ -642,7 +642,7 @@ heading: 4. Google Sheets Integration › 4.2 `sheet_data` Table
 | `key` | string | Unique per (sheet_id, organization_id); from sheet's `"key"` column |
 | `sheet_id` | int | FK |
 | `organization_id` | int | FK |
-| `last_synced_at` | utc_datetime_usec |  |
+| `last_synced_at` | utc_datetime_usec | |
 
 --- entry
 section: 4.3
@@ -683,19 +683,19 @@ source: https://glific.github.io/docs/docs/Use%20Cases/Solving%20For%20Sheet%20S
 
 | Scenario | String | Location |
 | --- | --- | --- |
-| Empty CSV / no rows | `"Unknown error or empty content"` |  |
+| Empty CSV / no rows | `"Unknown error or empty content"` | |
 | Duplicate/empty headers | `"Repeated or missing headers"` | , |
-| No credentials | `"Google API is not active"` then `"Please add the credentials for google sheet from the settings menu"` |  |
-| Write denied (HTTP 403) | `"No edit access to the Google Sheet. Please ensure the service account has editor permissions."` |  |
-| Sheet not found (HTTP 404) | `"Google Sheet not found. Please ensure the URL is correct and the service account has access."` |  |
-| Read denied (HTTP 403) | `"No read access to the Google Sheet. Please ensure the service account has viewer permissions."` |  |
-| Not public & no creds | `"Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."` |  |
-| Bad service-account JSON | `"Invalid Service Account JSON"` |  |
-| Token fetch failed | `"Error fetching token with Service Account JSON"` |  |
-| Tab deleted/renamed | `"Sheet with gid #{gid} not found"` |  |
-| CSV parse failure | `"Sheet is not accessible or not found."` |  |
-| Generic sync fail notification | `"Google sheet sync failed"` (category `"Google sheets"`, severity warning) |  |
-| Write action error | `"Error from Google Sheets: #{error}"` (category `"Flow"`, entity has spreadsheet_id + contact_id) |  |
+| No credentials | `"Google API is not active"` then `"Please add the credentials for google sheet from the settings menu"` | |
+| Write denied (HTTP 403) | `"No edit access to the Google Sheet. Please ensure the service account has editor permissions."` | |
+| Sheet not found (HTTP 404) | `"Google Sheet not found. Please ensure the URL is correct and the service account has access."` | |
+| Read denied (HTTP 403) | `"No read access to the Google Sheet. Please ensure the service account has viewer permissions."` | |
+| Not public & no creds | `"Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."` | |
+| Bad service-account JSON | `"Invalid Service Account JSON"` | |
+| Token fetch failed | `"Error fetching token with Service Account JSON"` | |
+| Tab deleted/renamed | `"Sheet with gid #{gid} not found"` | |
+| CSV parse failure | `"Sheet is not accessible or not found."` | |
+| Generic sync fail notification | `"Google sheet sync failed"` (category `"Google sheets"`, severity warning) | |
+| Write action error | `"Error from Google Sheets: #{error}"` (category `"Flow"`, entity has spreadsheet_id + contact_id) | |
 
 --- entry
 section: 4.5
@@ -1349,26 +1349,26 @@ heading: 9. Notifications System › 9.3 Categories & Sources (authoritative lis
 
 | Category | Source file:line | Message string | Entity keys |
 | --- | --- | --- | --- |
-| `Message` |  | `"Could not send message: contact: {id}, message: '{id}', reason: {reason}"` | contact_id, message_id |
-| `Organization` |  | Dynamic cleanup messages | varies |
-| `Templates` |  | `"Template {shortcode} has been approved"` | id, shortcode |
-| `Templates` |  | `"Template {shortcode} has been rejected"` | id, shortcode, reason |
-| `Templates` |  | `"Template {shortcode} has been failed"` | id, shortcode, reason |
-| `Custom Certificates` |  | `"Custom certificate generation with template_id: {id} failed for contact_id: {id} due to {reason}"` | cert_template_id, contact_id, error_reason |
-| `Contact Upload` |  | `"Contact upload completed"` | user_job_id |
-| `Flow` |  | Variable (passed in) | flow_id, flow_uuid, contact_id, parent_id, node_uuid |
-| `Flow` |  | `"Flow execution failed due to invalid regular expression"` | flow_uuid, node_uuid, organization_id |
-| `Flow` |  | `"Error from Google Sheets: {error}"` | spreadsheet_id, contact_id |
-| `Assistant` |  | Dynamic KB message | knowledge_base_version |
-| `HSM template` |  | Sync completion/failure | provider |
-| `WhatsApp Forms` |  | `"Syncing of whatsapp form templates has started in the background."` | provider |
-| `WhatsApp Forms` |  | Sync messages | provider |
-| `WhatsApp Groups` |  | `"Syncing of WhatsApp groups and contacts has started in the background."` | Provider: Maytapi |
-| `WhatsApp Groups` |  | `"Cannot send messages. WhatsApp phone {phone} is not connected with Maytapi. Current status: {status}"` | wa_managed_phone_id, phone, status |
-| `Partner` |  | `"Disabling {shortcode}. {error_message}"` | provider_id, shortcode, error |
-| `Template` |  | Template error messages | template_type |
-| `Ticket` |  | `"New Ticket created"` | ticket_body |
-| `Google sheets` |  | `"Google sheet sync failed"` | url, id, name |
+| `Message` | | `"Could not send message: contact: {id}, message: '{id}', reason: {reason}"` | contact_id, message_id |
+| `Organization` | | Dynamic cleanup messages | varies |
+| `Templates` | | `"Template {shortcode} has been approved"` | id, shortcode |
+| `Templates` | | `"Template {shortcode} has been rejected"` | id, shortcode, reason |
+| `Templates` | | `"Template {shortcode} has been failed"` | id, shortcode, reason |
+| `Custom Certificates` | | `"Custom certificate generation with template_id: {id} failed for contact_id: {id} due to {reason}"` | cert_template_id, contact_id, error_reason |
+| `Contact Upload` | | `"Contact upload completed"` | user_job_id |
+| `Flow` | | Variable (passed in) | flow_id, flow_uuid, contact_id, parent_id, node_uuid |
+| `Flow` | | `"Flow execution failed due to invalid regular expression"` | flow_uuid, node_uuid, organization_id |
+| `Flow` | | `"Error from Google Sheets: {error}"` | spreadsheet_id, contact_id |
+| `Assistant` | | Dynamic KB message | knowledge_base_version |
+| `HSM template` | | Sync completion/failure | provider |
+| `WhatsApp Forms` | | `"Syncing of whatsapp form templates has started in the background."` | provider |
+| `WhatsApp Forms` | | Sync messages | provider |
+| `WhatsApp Groups` | | `"Syncing of WhatsApp groups and contacts has started in the background."` | Provider: Maytapi |
+| `WhatsApp Groups` | | `"Cannot send messages. WhatsApp phone {phone} is not connected with Maytapi. Current status: {status}"` | wa_managed_phone_id, phone, status |
+| `Partner` | | `"Disabling {shortcode}. {error_message}"` | provider_id, shortcode, error |
+| `Template` | | Template error messages | template_type |
+| `Ticket` | | `"New Ticket created"` | ticket_body |
+| `Google sheets` | | `"Google sheet sync failed"` | url, id, name |
 | `WA Group` | `response_handler.ex` | `"Error sending message: {error_msg}"` | wa_group_id |
 | `WA Group Member Upload` | `user_job_worker.ex` | Bulk group-member import result | user_job_id |
 | `AI Evaluation` | `ai_evaluations.ex` | Evaluation run outcome | evaluation id |
@@ -1840,17 +1840,17 @@ source: https://glific.github.io/docs/docs/Product%20Features/Interactive%20Mess
 
 | Element | Max chars | Source |
 | --- | --- | --- |
-| Quick Reply header/title | 60 |  |
-| Quick Reply body text | 1024 |  |
-| Quick Reply button title | 20 |  |
-| List body text | 1024 |  |
-| List global button title | 20 |  |
-| List item title | 24 |  |
-| List item subtitle | 24 |  |
-| List option title | 24 |  |
-| List option description | 72 |  |
-| Location Request body | 1024 |  |
-| **Aggregate content across all fields** | 1024 |  |
+| Quick Reply header/title | 60 | |
+| Quick Reply body text | 1024 | |
+| Quick Reply button title | 20 | |
+| List body text | 1024 | |
+| List global button title | 20 | |
+| List item title | 24 | |
+| List item subtitle | 24 | |
+| List option title | 24 | |
+| List option description | 72 | |
+| Location Request body | 1024 | |
+| **Aggregate content across all fields** | 1024 | |
 
 Aggregate check — `validate_interactive_content_length/1`:
 
@@ -1882,9 +1882,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 
 ```elixir
 interactive_content
-| > get_in(["items"]) |
-| > hd() |
-| > Map.put("options", build_list_items(params)) |
+|> get_in(["items"])
+|> hd()
+|> Map.put("options", build_list_items(params))
 ```
 
 Each param becomes:
@@ -1908,11 +1908,11 @@ Case handlers in, compared against `msg.clean_body`.
 
 | Case type | Matcher | Source |
 | --- | --- | --- |
-| `has_number_eq` | trimmed equality |  |
-| `has_any_word` | any word match (case-insensitive) |  |
-| `has_only_phrase` | exact phrase |  |
-| `has_phrase` | substring |  |
-| `has_all_words` | all words present |  |
+| `has_number_eq` | trimmed equality | |
+| `has_any_word` | any word match (case-insensitive) | |
+| `has_only_phrase` | exact phrase | |
+| `has_phrase` | substring | |
+| `has_all_words` | all words present | |
 
 All matching is **case-insensitive**. User typing text instead of clicking a button still routes as long as text matches a case; unmatched text → no path fires (the wait continues or times out).
 
@@ -1924,9 +1924,9 @@ heading: 12. Interactive Messages › 12.7 Common Interactive Issues (DB signatu
 | Symptom | DB signature | Why |
 | --- | --- | --- | --- |
 | Red / error chat bubble | `messages.bsp_status = :error` AND/OR `messages.status = :error`; `messages.errors` JSON with provider reason | Contact opt-out, invalid media URL, session closed, provider rejection |
-| List titles truncated at 24 chars | Trim happens in code, not DB | `trim_field/2` slices with `String.codepoints | > Enum.take(max_length)` |
+| List titles truncated at 24 chars | Trim happens in code, not DB | `trim_field/2` slices with `String.codepoints` then `Enum.take(max_length)` |
 | Updated template not reflected after save | Flow JSON caches template at publish time | **Re-publish the flow** — no live binding between template edits and published flow definition |
-| Location widget shows empty body after CSV translation upload | `interactive_content.body.text = nil` | `import_location_message/4`  does `Enum.at(translated_texts, idx)` — returns `nil` on missing column |
+| Location widget shows empty body after CSV translation upload | `interactive_content.body.text = nil` | `import_location_message/4` does `Enum.at(translated_texts, idx)` — returns `nil` on missing column |
 
 --- entry
 section: 12.8
@@ -2224,9 +2224,9 @@ heading: 15. WhatsApp Forms › 15.1 Schemas
 
 | Table | Fields | Source |
 | --- | --- | --- |
-| `whatsapp_forms` | `id`, `name`, `meta_flow_id`, `status` (`draft` \ | `published` \ | `inactive`), `definition`, `categories`, `organization_id`, `revision_id`, `sheet_id` |  |
-| `whatsapp_forms_responses` | `id`, `raw_response` (map), `submitted_at`, `contact_id`, `whatsapp_form_id`, `organization_id` |  |
-| `whatsapp_form_revisions` | `id`, `definition` (JSON), `revision_number`, `whatsapp_form_id`, `user_id`, `organization_id` |  |
+| `whatsapp_forms` | `id`, `name`, `meta_flow_id`, `status` (`draft` \| `published` \| `inactive`), `definition`, `categories`, `organization_id`, `revision_id`, `sheet_id` | |
+| `whatsapp_forms_responses` | `id`, `raw_response` (map), `submitted_at`, `contact_id`, `whatsapp_form_id`, `organization_id` | |
+| `whatsapp_form_revisions` | `id`, `definition` (JSON), `revision_number`, `whatsapp_form_id`, `user_id`, `organization_id` | |
 
 --- entry
 section: 15.2
@@ -2597,9 +2597,9 @@ heading: 19. GCS & Media › 19.4 Failures & DB Signatures
 
 | Symptom | DB / log signature | Code |
 | --- | --- | --- |
-| GCS subscription cancelled | Credential auto-disabled: `credentials.is_active = false`, reason `"Billing account is disabled"` |  |
-| Service account revoked | `Partners.get_goth_token` returns `nil`; log `"error while fetching the gcs token"`; sync skipped |  |
-| Bulk files stuck | `gcs_jobs` row stuck on old `message_media_id`; `messages_media.gcs_error` populated |  |
+| GCS subscription cancelled | Credential auto-disabled: `credentials.is_active = false`, reason `"Billing account is disabled"` | |
+| Service account revoked | `Partners.get_goth_token` returns `nil`; log `"error while fetching the gcs token"`; sync skipped | |
+| Bulk files stuck | `gcs_jobs` row stuck on old `message_media_id`; `messages_media.gcs_error` populated | |
 | Source URL expired | `messages_media` older than 30 d; sync filter excludes it | — |
 
 `messages_media.gcs_error` field is populated only in the **unsynced** phase.
@@ -2781,7 +2781,7 @@ source: https://glific.github.io/docs/docs/WhatsApp%20Groups%20Automation/WhatsA
 | --- | --- | --- |
 | Table | `messages` | `wa_messages` |
 | Send endpoint | Gupshup messages API | Maytapi `/sendMessage` |
-| BSP status set | `:sent` \ | `:delivered` \ | `:read` \ | `:error` | `:enqueued` \ | `:sent` \ | `:error` |
+| BSP status set | `:sent` \| `:delivered` \| `:read` \| `:error` | `:enqueued` \| `:sent` \| `:error` |
 | Rate limits | Gupshup WABA tier | Maytapi plan |
 
 --- entry
@@ -2810,7 +2810,7 @@ source: https://glific.github.io/docs/docs/FAQ/Using%20Glific%20APIs%20for%20OTP
 
 | Endpoint | Behavior | Error strings |
 | --- | --- | --- |
-| `POST /api/v1/registration/send_otp` | Body `{phone, registration: "true"\ | "false"}`. For register: checks `user exists? → error`, opts-in contact, validates can-send. For login: checks `user exists? → error`. Calls `create_and_send_verification_code/1` (sends HSM-based OTP via BSP). | `"Account with phone number #{phone} already exists"` (line 146), `"Account with phone number #{phone} does not exist"` (line 176), `"Cannot send the otp to #{phone}"` (156/172) |
+| `POST /api/v1/registration/send_otp` | Body `{phone, registration: "true"\|"false"}`. For register: checks `user exists? → error`, opts-in contact, validates can-send. For login: checks `user exists? → error`. Calls `create_and_send_verification_code/1` (sends HSM-based OTP via BSP). | `"Account with phone number #{phone} already exists"` (line 146), `"Account with phone number #{phone} does not exist"` (line 176), `"Cannot send the otp to #{phone}"` (156/172) |
 | `POST /api/v1/registration` (create) | Verifies OTP via `PasswordlessAuth.verify_code/2`; creates user via Pow; issues access + renewal tokens. | Error codes: `:attempt_blocked`, `:code_expired`, `:does_not_exist`, `:incorrect_code` (line 56), `"Couldn't create user"` (line 40) |
 | `POST /api/v1/registration/reset_password` | Verifies OTP + resets password; returns fresh tokens. | `"Couldn't update user password"` (line 229) |
 
@@ -3071,9 +3071,9 @@ heading: 26. Error Code Reference › 26.1 WhatsApp / Meta Codes Handled in Code
 
 | Code | Handled at | Action taken |
 | --- | --- | --- |
-| 1002 |  | Opt-out contact, mark invalid |
-| 471 |  | Suspend org (rate-limit) |
-| 1003 |  | Suspend org (no BSP balance) |
+| 1002 | | Opt-out contact, mark invalid |
+| 471 | | Suspend org (rate-limit) |
+| 1003 | | Suspend org (no BSP balance) |
 
 Other Meta codes (e.g. **131049** quality/spam) are surfaced verbatim in `messages.errors`; Glific has no specific branch for them.
 
@@ -3087,24 +3087,24 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/HSM%20Templ
 
 | Error text | Cause | Source |
 | --- | --- | --- |
-| "Contact status is not valid." | `contact.status != :valid` |  |
-| "Cannot send hsm message to contact, invalid BSP status." | BSP status not in `[:session_and_hsm, :hsm]` |  |
-| "Cannot send hsm message to contact, not opted in." | `optin_time` nil |  |
-| "Cannot send hsm message to contact, organization is in suspended state" | `org.is_suspended=true` |  |
-| "Sorry! 24 hrs window closed. Your message cannot be sent at this time." | session send + closed window |  |
-| "Cannot send session message to contact, invalid BSP status or not messaged in 24 hour window." | Opt-in flow variant of the above |  |
-| "Could not find interactive template" | Interactive template id missing |  |
-| "Infinite loop detected, body: #{body}. Aborting flow." | Same body sent > `@max_loop_limit` (3) in 6 h |  |
-| "The total length of the body and options exceeds 1024 characters" | Interactive content too large |  |
-| "Button text cannot contain any markdown characters..." | Markdown detected in button |  |
-| "Could not send message to contact: Check Gupshup Setting" | No provider handler |  |
-| "Flow is already published with id ..., please archive it instead" | Publishing when one is already published |  |
-| "Repeated loop, hence finished the flow" | Sub-flow cycle |  |
-| "Flow terminated because it has been set to inactive." | `is_active` toggled while running |  |
+| "Contact status is not valid." | `contact.status != :valid` | |
+| "Cannot send hsm message to contact, invalid BSP status." | BSP status not in `[:session_and_hsm, :hsm]` | |
+| "Cannot send hsm message to contact, not opted in." | `optin_time` nil | |
+| "Cannot send hsm message to contact, organization is in suspended state" | `org.is_suspended=true` | |
+| "Sorry! 24 hrs window closed. Your message cannot be sent at this time." | session send + closed window | |
+| "Cannot send session message to contact, invalid BSP status or not messaged in 24 hour window." | Opt-in flow variant of the above | |
+| "Could not find interactive template" | Interactive template id missing | |
+| "Infinite loop detected, body: #{body}. Aborting flow." | Same body sent > `@max_loop_limit` (3) in 6 h | |
+| "The total length of the body and options exceeds 1024 characters" | Interactive content too large | |
+| "Button text cannot contain any markdown characters..." | Markdown detected in button | |
+| "Could not send message to contact: Check Gupshup Setting" | No provider handler | |
+| "Flow is already published with id ..., please archive it instead" | Publishing when one is already published | |
+| "Repeated loop, hence finished the flow" | Sub-flow cycle | |
+| "Flow terminated because it has been set to inactive." | `is_active` toggled while running | |
 | `error_type: "tts_upload_failed"` with the GCS error in `reason` | TTS audio could not be uploaded (often no GCS credential) | `flows/webhook.ex` `upload_tts_audio/2` |
-| "Suspicious Code. Please change your code. ..." | EEx suspicious pattern guard |  |
-| "Account with phone number #{phone} already exists" / "... does not exist" | Signup/login phone lookup |  |
-| "Cannot send the otp to #{phone}" | OTP HSM send failure |  |
+| "Suspicious Code. Please change your code. ..." | EEx suspicious pattern guard | |
+| "Account with phone number #{phone} already exists" / "... does not exist" | Signup/login phone lookup | |
+| "Cannot send the otp to #{phone}" | OTP HSM send failure | |
 
 --- entry
 section: 26.3
@@ -3120,14 +3120,14 @@ Severities: `Critical`, `Warning`, `Information`. Only `Critical` sends admin em
 
 | Category | Example message | Entity payload | Source |
 | --- | --- | --- | --- |
-| `"Flow"` | `"Infinite loop detected, body: X"` | `contact_id, flow_id, flow_uuid, node_uuid, name` |  |
-| `"Contact Upload"` | `"Contact upload in progress"` | `user_job_id` |  |
-| `"Gupshup Setup"` | `"Setup failed: <reason>"` | integration details |  |
-| `"HSM template"` | `"Template rejected: <reason>"` | `template_id`, reason |  |
-| `"Google sheets"` | `"Sheet sync failed: <reason>"` | `sheet_id`, row count |  |
-| `"Organization"` | Deactivation / suspension | `org_id`, reason |  |
+| `"Flow"` | `"Infinite loop detected, body: X"` | `contact_id, flow_id, flow_uuid, node_uuid, name` | |
+| `"Contact Upload"` | `"Contact upload in progress"` | `user_job_id` | |
+| `"Gupshup Setup"` | `"Setup failed: <reason>"` | integration details | |
+| `"HSM template"` | `"Template rejected: <reason>"` | `template_id`, reason | |
+| `"Google sheets"` | `"Sheet sync failed: <reason>"` | `sheet_id`, row count | |
+| `"Organization"` | Deactivation / suspension | `org_id`, reason | |
 | `"WA Group"` | `"Group message failed"` | `group_id`, `contact_id` | `wa_group_action.ex` |
-| `"Ticket"` | `"Ticket creation failed"` | `ticket_id`, reason |  |
+| `"Ticket"` | `"Ticket creation failed"` | `ticket_id`, reason | |
 | `"low_bsp_balance"` | `"[URGENT Low balance] ..."` | — | `mails/balance_alert_mail.ex` |
 
 --- entry

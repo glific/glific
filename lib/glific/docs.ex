@@ -311,7 +311,7 @@ defmodule Glific.Docs do
       []
     else
       identifiers = identifiers(question)
-      patterns = matchers(terms)
+      patterns = matchers(terms, identifiers)
 
       entries
       |> Enum.map(&{overlap(&1.section, patterns, identifiers), &1.section})
@@ -421,10 +421,15 @@ defmodule Glific.Docs do
     end)
   end
 
-  defp matchers(terms) do
+  defp matchers(terms, identifiers) do
     Enum.map(terms, fn term ->
+      # An identifier means that string and nothing else, so it takes no
+      # plural: `@results.parent.state.input` is not the `.inputs` of some
+      # other notation. Ordinary words are written both ways in the documents.
+      plural = if MapSet.member?(identifiers, term), do: "", else: "(?:e?s)?"
+
       pattern =
-        "(?<![\\p{L}\\p{N}_])" <> Regex.escape(term) <> "(?:e?s)?(?![\\p{L}\\p{N}_])"
+        "(?<![\\p{L}\\p{N}_])" <> Regex.escape(term) <> plural <> "(?![\\p{L}\\p{N}_])"
 
       {term, Regex.compile!(pattern, "u")}
     end)

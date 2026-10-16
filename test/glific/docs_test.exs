@@ -228,6 +228,22 @@ defmodule Glific.DocsTest do
       end
     end
 
+    test "an identifier takes no plural", %{entries: entries} do
+      # `.input` is notation, so `.inputs` would be a different thing entirely
+      # — unlike an ordinary word, where the plural is the same word.
+      section = %{
+        heading_path: "Nothing to do with the question",
+        body: "Read it with @results.parent.state.inputs and nothing else.",
+        doc_file: "t",
+        section_path: nil,
+        source_url: nil,
+        hash: "t"
+      }
+
+      assert Docs.lexical("@results.parent.state.input", [%{section: section, vector: nil}]) == []
+      refute Docs.lexical("@results.parent.state.input", entries) == []
+    end
+
     test "a term matches the plural the documents happen to use", %{entries: entries} do
       # The corpus writes "pauses"; nobody types that when asking.
       assert Docs.lexical("how do I pause a flow", entries) != []

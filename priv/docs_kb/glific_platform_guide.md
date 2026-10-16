@@ -46,8 +46,8 @@ heading: Glific Platform Guide › Navigation & Layout › Sidebar menu (left, t
 | **AI toolkit** (parent) | `/assistants` | Manager+ | Children: **AI Assistant** (`/assistants`), **AI Evals** (`/ai-evaluations`) |
 | **Data Analytics** | `/analytics` | All | Marked "new" in the menu |
 | **Manage** (parent) | `/collection` | Staff+ | Children: **Collections** (`/collection`), **Staff** (`/staff-management`, Manager+), **Contacts** (`/contact-management`, Admin+), **Blocked contacts** (`/blocked-contacts`), **Contact variables** (`/contact-fields`, Manager+), **Tags** (`/tag`, Manager+), **Roles** (`/role`, only when the org doesn't use Dynamic roles), **Organizations** (`/organizations`, Glific_admin), **Consulting** (`/consulting-hours`, Glific_admin) |
-| **Resources** | external (Glific docs) | All |  |
-| **Discord** | external | All |  |
+| **Resources** | external (Glific docs) | All | |
+| **Discord** | external | All | |
 
 User-account menu (bottom of sidebar / avatar):
 

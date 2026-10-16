@@ -908,8 +908,8 @@ Days since a stored date (date in `D/0M/YYYY` format):
 
 ```
 <%= "@contact.fields.batch_start_date"
-| > Timex.parse!("{D}/{0M}/{YYYY}") |
-| > then(&(Timex.diff(Timex.now(), &1, :day))) %> |
+    |> Timex.parse!("{D}/{0M}/{YYYY}")
+    |> then(&(Timex.diff(Timex.now(), &1, :day))) %>
 ```
 
 `@calendar.current_date` returns today as `D/0M/YYYY` (e.g., `2/01/2025`, `11/10/2024`). Useful for storing an onboarding date and later computing days-since.
