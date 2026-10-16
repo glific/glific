@@ -1,7 +1,7 @@
 defmodule GlificWeb.Resolvers.ContactIdentities do
   @moduledoc """
-  Resolver for finding a contact by login identity and adding an identity to a contact, between
-  the GraphQL schema and `Glific.Contacts`.
+  Resolver for finding a contact by identity and adding an identity to a contact, between the
+  GraphQL schema and `Glific.Contacts`.
   """
 
   use Gettext, backend: GlificWeb.Gettext

@@ -1,8 +1,8 @@
 defmodule Glific.Contacts.ContactIdentity do
   @moduledoc """
-  How a contact logs in on a channel. A contact is the person; it can have one identity per login
-  (a WhatsApp phone, a username issued by its NGO, later a Telegram chat id). Login credentials
-  only: per-channel state lives elsewhere.
+  A contact's identity on a channel. A contact is the person; it can have several identities (a
+  WhatsApp phone, a username issued by its NGO, later a Telegram chat id). Identities only:
+  per-channel state lives elsewhere.
 
   A web identifier (an NGO username) may contain letters, digits, `_`, `@` and `.`, and is
   case-insensitive: it is stored lowercase, so `Ravi_Web` and `ravi_web` are the same identity. A

@@ -1,14 +1,13 @@
 defmodule Glific.Contacts.ContactIdentities do
   @moduledoc """
   Internal to `Glific.Contacts`, which is the only module that calls it. Reads and writes
-  `Glific.Contacts.ContactIdentity` rows: the logins a contact can be reached or recognised by.
+  `Glific.Contacts.ContactIdentity` rows: a contact's identities on each channel.
 
   It never calls back into `Glific.Contacts`.
 
   A `:whatsapp` identity mirrors `contacts.phone` and is kept in step with it by the contact write
-  paths. A `:web` identity is an opaque username issued by an NGO's own system, and is never a
-  phone: a contact signing in with a one-time code is found by `contacts.phone`, and recording it
-  here would let an NGO username equal to that phone number reach the same conversation.
+  paths. A `:web` identity is a username issued by an NGO's own system, or the phone of a contact
+  that verified it with a one-time code.
   """
 
   import Ecto.Query
