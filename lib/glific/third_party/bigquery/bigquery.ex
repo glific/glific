@@ -469,22 +469,33 @@ defmodule Glific.BigQuery do
           Task.async(fn ->
             Repo.put_process_state(organization_id)
 
-            apply(Schema, schema_fn, [])
+            Schema
+            |> apply(schema_fn, [])
             |> alter_table(%{
               conn: conn,
               dataset_id: dataset_id,
               project_id: project_id,
               table_id: table_id
             })
+            |> log_schema_update_error(organization_id, table_id)
           end)
         end)
 
-      {:error, _} ->
-        nil
+      {:error, error} ->
+        log_schema_update_error({:error, error}, organization_id, "dataset #{dataset_id}")
     end
 
     :ok
   end
+
+  @spec log_schema_update_error(tuple(), non_neg_integer(), String.t()) :: any()
+  defp log_schema_update_error({:error, error}, organization_id, target) do
+    Glific.log_error(
+      "BigQuery schema update failed for org_id: #{organization_id}, #{target}, #{bigquery_error_summary(error)}"
+    )
+  end
+
+  defp log_schema_update_error(result, _organization_id, _target), do: result
 
   @doc """
   Format dates for the bigquery.

@@ -1490,6 +1490,40 @@ defmodule Glific.MessagesTest do
     end
   end
 
+  describe "sending to a contact without a phone" do
+    setup %{organization_id: organization_id} do
+      %{contact: Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})}
+    end
+
+    test "a WhatsApp send is refused before reaching the provider", %{contact: contact} do
+      assert {:error, "Contact has no WhatsApp number."} ==
+               Messages.create_and_send_message(%{
+                 body: "hi",
+                 flow: :outbound,
+                 type: :text,
+                 sender_id: Partners.organization_contact_id(contact.organization_id),
+                 receiver_id: contact.id,
+                 organization_id: contact.organization_id
+               })
+    end
+
+    test "a web send is delivered", %{contact: contact} do
+      assert {:ok, %Message{} = message} =
+               Messages.create_and_send_message(%{
+                 body: "hi on the web",
+                 flow: :outbound,
+                 type: :text,
+                 channel: :web,
+                 sender_id: Partners.organization_contact_id(contact.organization_id),
+                 receiver_id: contact.id,
+                 organization_id: contact.organization_id
+               })
+
+      assert %{status: status} = Repo.reload!(message)
+      refute status == :error
+    end
+  end
+
   describe "message_media" do
     @valid_attrs %{
       caption: "some caption",
