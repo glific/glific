@@ -998,6 +998,53 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert refreshed.clone_status == "completed"
     end
 
+    test "copies guardrails from the source version to the clone", %{
+      assistant: assistant,
+      non_legacy_config_version: non_legacy_config_version
+    } do
+      input_guardrails = [%{"type" => "pii_remover", "on_fail" => "fix"}]
+      output_guardrails = [%{"type" => "gender_assumption_bias"}]
+
+      {:ok, _} =
+        non_legacy_config_version
+        |> AssistantConfigVersion.changeset(%{
+          input_guardrails: input_guardrails,
+          output_guardrails: output_guardrails
+        })
+        |> Repo.update()
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url, body: body} ->
+          if String.contains?(url, "configs") do
+            decoded_body = Jason.decode!(body)
+            assert decoded_body["config_blob"]["input_guardrails"] == input_guardrails
+            assert decoded_body["config_blob"]["output_guardrails"] == output_guardrails
+
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_guarded_uuid", version: %{version: 1}}}
+            }
+          end
+      end)
+
+      assert :ok =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant.id,
+                 version_id: non_legacy_config_version.id,
+                 organization_id: @org_id,
+                 is_legacy: false
+               })
+
+      cloned_config =
+        AssistantConfigVersion
+        |> join(:inner, [acv], a in Assistant, on: a.id == acv.assistant_id)
+        |> where([_acv, a], a.kaapi_uuid == "cloned_guarded_uuid")
+        |> Repo.one()
+
+      assert cloned_config.input_guardrails == input_guardrails
+      assert cloned_config.output_guardrails == output_guardrails
+    end
+
     test "auto-generates unique name with counter when clone name already exists", %{
       assistant: assistant,
       non_legacy_config_version: non_legacy_config_version

@@ -101,7 +101,8 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     config_version
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_guardrails()
+    |> validate_change(:input_guardrails, &validate_guardrails/2)
+    |> validate_change(:output_guardrails, &validate_guardrails/2)
     |> assoc_constraint(:assistant)
     |> unique_constraint(
       [:assistant_id, :major_version, :minor_version],
@@ -110,20 +111,12 @@ defmodule Glific.Assistants.AssistantConfigVersion do
   end
 
   # Kaapi validates the full spec; Glific only guards the shape it relies on.
-  @spec validate_guardrails(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_guardrails(changeset) do
-    Enum.reduce([:input_guardrails, :output_guardrails], changeset, fn field, changeset ->
-      validate_change(changeset, field, fn ^field, guardrails ->
-        if Enum.all?(guardrails, &valid_guardrail_spec?/1),
-          do: [],
-          else: [{field, "each guardrail needs a non-empty \"type\""}]
-      end)
-    end)
+  @spec validate_guardrails(atom(), [map()]) :: [{atom(), String.t()}]
+  defp validate_guardrails(field, guardrails) do
+    if Enum.all?(guardrails, &match?(%{"type" => type} when is_binary(type) and type != "", &1)),
+      do: [],
+      else: [{field, "each guardrail needs a non-empty \"type\""}]
   end
-
-  @spec valid_guardrail_spec?(any()) :: boolean()
-  defp valid_guardrail_spec?(%{"type" => type}) when is_binary(type), do: type != ""
-  defp valid_guardrail_spec?(_spec), do: false
 
   @doc "Display label for a config version, e.g. `\"1.3\"`."
   @spec version_label(map()) :: String.t() | nil
