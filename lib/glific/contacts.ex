@@ -16,12 +16,15 @@ defmodule Glific.Contacts do
 
   alias Glific.{
     Clients,
+    Contacts.Channels,
     Contacts.Contact,
+    Contacts.ContactChannel,
     Contacts.ContactHistory,
     Contacts.ContactIdentities,
     Contacts.ContactIdentity,
     Contacts.Location,
     Contacts.TermSearch,
+    Enums.MessageChannel,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.UserGroup,
@@ -311,6 +314,45 @@ defmodule Glific.Contacts do
       {:error, _step, changeset, _changes} -> {:error, changeset}
     end
   end
+
+  @doc """
+  Records the contact's consent on `channel` once, logging it in history; never touches WhatsApp's `optin_*`.
+  """
+  @spec record_channel_optin(Contact.t(), MessageChannel.t(), Keyword.t()) ::
+          {:ok, ContactChannel.t()} | {:error, Ecto.Changeset.t()}
+  def record_channel_optin(%Contact{} = contact, channel, opts \\ []) do
+    method = Keyword.get(opts, :method)
+    optin_time = Keyword.get(opts, :optin_time, DateTime.utc_now())
+
+    with {:ok, contact_channel, outcome} <-
+           Channels.record_optin(contact, channel, method, optin_time) do
+      if outcome != :unchanged, do: capture_channel_optin_history(contact, channel, method)
+      {:ok, contact_channel}
+    end
+  end
+
+  @spec capture_channel_optin_history(Contact.t(), MessageChannel.t(), String.t() | nil) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t() | String.t()}
+  defp capture_channel_optin_history(contact, channel, method) do
+    capture_history(contact, :contact_opted_in, %{
+      event_label: "contact opted in on #{channel}, via #{method}",
+      channel: channel,
+      event_meta: %{method: method, channel: channel}
+    })
+  end
+
+  @doc """
+  The contact's state on `channel`, if any has been recorded.
+  """
+  @spec fetch_channel(Contact.t(), MessageChannel.t()) ::
+          {:ok, ContactChannel.t()} | {:error, :not_found}
+  def fetch_channel(%Contact{} = contact, channel), do: Channels.fetch(contact, channel)
+
+  @doc """
+  Whether the contact has opted in on `channel` and not opted out since.
+  """
+  @spec channel_opted_in?(Contact.t(), MessageChannel.t()) :: boolean()
+  def channel_opted_in?(%Contact{} = contact, channel), do: Channels.opted_in?(contact, channel)
 
   @doc """
   Adds a web username to a contact; one it already has is accepted, one another contact holds is refused.

@@ -806,6 +806,101 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
+  describe "a web login records web consent, not WhatsApp consent" do
+    test "an OTP to a never-opted-in number still sends, and verifying it records a web opt-in",
+         %{conn: conn} do
+      phone = unique_phone()
+
+      # The shared fixture takes two parameters; the web login sends the code alone.
+      Repo.update_all(
+        from(t in SessionTemplate, where: t.shortcode == "verify_otp"),
+        set: [number_parameters: 1]
+      )
+
+      with_web_channel_enabled(fn ->
+        assert %{status: 200} =
+                 post(
+                   conn,
+                   Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => phone})
+                 )
+
+        contact = Repo.get_by!(Contact, phone: phone)
+
+        assert Repo.exists?(
+                 from(m in Glific.Messages.Message, where: m.receiver_id == ^contact.id)
+               )
+
+        assert {:error, :not_found} = Contacts.fetch_channel(contact, :web)
+
+        assert %{status: 200} = sign_in_new_contact(conn, phone)
+
+        contact = Repo.get_by!(Contact, phone: phone)
+        assert {:ok, web} = Contacts.fetch_channel(contact, :web)
+        assert web.optin_time != nil
+        assert web.optin_method == "web_channel_otp"
+        assert Contacts.channel_opted_in?(contact, :web)
+
+        assert is_nil(contact.optin_time)
+        assert contact.optin_status == false
+        assert is_nil(contact.optin_method)
+        assert {:error, :not_found} = Contacts.fetch_channel(contact, :whatsapp)
+      end)
+    end
+
+    test "ten logins leave one opt-in row, one history event and the first opt-in time",
+         %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        contact_id = verify_otp_login(conn, phone)
+        contact = Contacts.get_contact!(contact_id)
+        {:ok, first} = Contacts.fetch_channel(contact, :web)
+
+        Enum.each(1..9, fn _ -> verify_otp_login(conn, phone) end)
+
+        assert {:ok, ^first} = Contacts.fetch_channel(contact, :web)
+
+        assert [%{channel: :web, event_meta: %{"method" => "web_channel_otp"}}] =
+                 Repo.all(
+                   from(ch in Glific.Contacts.ContactHistory,
+                     where: ch.contact_id == ^contact_id and ch.event_type == "contact_opted_in"
+                   )
+                 )
+      end)
+    end
+
+    test "a WhatsApp opt-in is left as it was and the web opt-in is recorded beside it",
+         %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        before = Repo.get_by!(Contact, phone: @reachable_phone)
+
+        assert %{status: 200} = sign_in_new_contact(conn, @reachable_phone)
+
+        after_login = Repo.get_by!(Contact, phone: @reachable_phone)
+        assert after_login.optin_time == before.optin_time
+        assert after_login.optin_method == before.optin_method
+        assert Contacts.channel_opted_in?(after_login, :web)
+      end)
+    end
+
+    test "records nothing when the web channel is off", %{conn: conn} do
+      phone = unique_phone()
+      {:ok, contact} = Contacts.maybe_create_contact(%{phone: phone, organization_id: 1})
+      code = OTP.generate_code(:web_channel, phone)
+
+      assert %{status: 404} =
+               post(
+                 conn,
+                 Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                   "phone" => phone,
+                   "otp" => code
+                 })
+               )
+
+      assert {:error, :not_found} = Contacts.fetch_channel(contact, :web)
+    end
+  end
+
   describe "the OTP the login mints" do
     test "mints a code that verify-otp accepts", %{conn: conn} do
       with_web_channel_enabled(fn ->
