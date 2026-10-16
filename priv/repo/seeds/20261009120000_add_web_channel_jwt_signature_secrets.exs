@@ -45,7 +45,7 @@ defmodule Glific.Repo.Seeds.AddWebChannelJwtSignatureSecrets do
         view_only: false,
         position: 1,
         helper_text:
-          "Named secrets your backend signs your users' login tokens with (HS256), each at least 32 characters; a shorter one is ignored. Leave the list empty to allow only phone + OTP sign-in. " <>
+          "Up to two named secrets your backend signs your users' login tokens with (HS256), each at least 32 characters; a shorter one is ignored. Leave the list empty to allow only phone + OTP sign-in. " <>
             @rotation_help
       }
     }

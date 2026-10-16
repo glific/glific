@@ -76,15 +76,26 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
   } do
     WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
       "jwt_signature_secrets" => [
-        %{"name" => "2026", "secret" => @secret},
         %{"name" => "no secret"},
-        "not an entry",
-        %{"name" => "2025", "secret" => @second_secret}
+        %{"name" => "2026", "secret" => @secret}
       ]
     })
 
     assert {:ok, _claims} = verify(organization_id, %{}, @secret)
+
+    WebChannelFlagHelpers.activate_web_channel(organization_id, %{}, %{
+      "jwt_signature_secrets" => ["not an entry", %{"name" => "2025", "secret" => @second_secret}]
+    })
+
     assert {:ok, _claims} = verify(organization_id, %{}, @second_secret)
+  end
+
+  test "only the first two secrets are read", %{organization_id: organization_id} do
+    third = "third-secret-third-secret-0123456"
+    activate_secrets(organization_id, [@secret, @second_secret, third])
+
+    assert {:ok, _claims} = verify(organization_id, %{}, @second_secret)
+    assert {:error, :invalid} = verify(organization_id, %{}, third)
   end
 
   test "rejects a token signed with any other secret", %{organization_id: organization_id} do

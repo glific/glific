@@ -145,7 +145,7 @@ A reply goes out on the channel the conversation/flow came in on (already built 
 
 ## 5. Token verification (NGO-signed)
 - Signed with any of the organization's JWT signature secrets: one list, `jwt_signature_secrets`, of
-  `{name, secret}` entries (none is "current" or "previous"), kept in the org's `web_channel`
+  at most two `{name, secret}` entries (none is "current" or "previous"), kept in the org's `web_channel`
   credential (set on the Settings page). To rotate, add the new secret, switch the backend, then
   remove the old one. The organization comes from the
   subdomain; there is no `kid`.
