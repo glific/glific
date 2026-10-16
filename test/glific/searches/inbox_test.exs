@@ -210,6 +210,21 @@ defmodule Glific.Searches.InboxTest do
       assert contact.id in matched
     end
 
+    test "no username is matched for a user with string staff roles or no roles" do
+      contact = username_contact()
+      user = Repo.get_current_user()
+
+      for roles <- [["staff"], nil] do
+        matched =
+          Contact
+          |> where(^TermSearch.match("ravi_12", %{user | roles: roles}))
+          |> select([c], c.id)
+          |> Repo.all()
+
+        refute contact.id in matched
+      end
+    end
+
     test "no username is matched without a user", %{organization_id: organization_id} do
       contact = username_contact()
 

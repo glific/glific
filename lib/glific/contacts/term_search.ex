@@ -27,8 +27,10 @@ defmodule Glific.Contacts.TermSearch do
   end
 
   @spec include_usernames?(User.t() | nil) :: boolean()
-  defp include_usernames?(%{roles: roles}), do: :staff not in roles
-  defp include_usernames?(nil), do: false
+  defp include_usernames?(%{roles: roles}) when is_list(roles),
+    do: not Enum.any?(roles, &(to_string(&1) == "staff"))
+
+  defp include_usernames?(_user), do: false
 
   @spec username_match(String.t(), non_neg_integer()) :: Ecto.Query.dynamic_expr()
   defp username_match(term, organization_id) do
