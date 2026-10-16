@@ -6,12 +6,13 @@ with it. Glific never sees your users' passwords.
 
 ## JWT signature secrets
 
-An organization admin sets up to two JWT signature secrets, each with a name of your choice, on the
-**Web Channel** settings page. A token signed with either secret is accepted. To rotate a secret:
+An organization admin adds JWT signature secrets, each with a name of your choice, on the
+**Web Channel** settings page. A token signed with any of them is accepted. Keep one secret, and a
+second only while rotating. To rotate a secret:
 
-1. Fill the empty slot with a new name and JWT signature secret.
+1. Add the new secret with a new name.
 2. Switch your backend to sign with the new secret.
-3. Clear the old slot.
+3. Remove the old secret.
 
 Each secret must be at least 32 characters long; Glific ignores a shorter one, so tokens signed
 with it are refused.
