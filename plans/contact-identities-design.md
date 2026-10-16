@@ -237,9 +237,10 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 For each column: what it does, whether it's written on every message (hot path), whether it
 belongs to the **person** or to a **channel**, and what to do with it.
 "Move" means to `contact_identities`. **Nothing moves in #5703.** Moves happen in the next PR
-(opt-in migration), which also backfills the WhatsApp identities. That backfill must skip contacts
-whose phone came from an NGO token (they have a web identity and no WhatsApp activity), or it would
-undo §4.4's rule; and the `contacts.phone` fallback in `fetch_by_identity` stays permanent for them.
+(opt-in migration), which also backfills the WhatsApp identity of every existing contact with a
+phone. The web channel isn't open to end users before it runs, so no existing phone came from an
+NGO token. The `contacts.phone` fallback in `fetch_by_identity` stays for phones an NGO token stores
+on a new contact after that.
 
 Enums: `status` = blocked / failed / invalid / processing / valid ·
 `bsp_status` = none / session / session_and_hsm / hsm.

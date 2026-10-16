@@ -2,6 +2,8 @@ defmodule GlificWeb.WebChannelSocketTest do
   @moduledoc false
   use GlificWeb.ChannelCase
 
+  import Ecto.Query
+
   alias Glific.{
     Contacts,
     Fixtures,
@@ -226,6 +228,37 @@ defmodule GlificWeb.WebChannelSocketTest do
         assert :error =
                  Phoenix.ChannelTest.connect(WebChannelSocket, %{"token" => ngo_token()})
       end)
+    end
+
+    test "records a web opt-in once across reconnects, and no WhatsApp opt-in" do
+      with_signature_secret(fn ->
+        assert {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        contact = first.assigns.current_contact
+
+        assert {:ok, %{optin_time: optin_time, optin_method: "web_channel_jwt"}} =
+                 Contacts.fetch_channel(contact, :web)
+
+        assert {:ok, _again} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+
+        assert {:ok, %{optin_time: ^optin_time}} = Contacts.fetch_channel(contact, :web)
+
+        assert [%{channel: :web}] =
+                 Glific.Repo.all(
+                   from(ch in Glific.Contacts.ContactHistory,
+                     where: ch.contact_id == ^contact.id and ch.event_type == "contact_opted_in"
+                   )
+                 )
+
+        assert is_nil(contact.optin_time)
+        assert contact.optin_status == false
+      end)
+    end
+
+    test "records nothing when the web channel is off" do
+      WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"jwt_signature_secret_1" => @secret})
+      assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+
+      refute Glific.Repo.exists?(Glific.Contacts.ContactChannel)
     end
 
     test "refuses when the web channel is off" do
