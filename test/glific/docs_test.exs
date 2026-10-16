@@ -228,19 +228,28 @@ defmodule Glific.DocsTest do
       end
     end
 
+    test "a shorter identifier is not a match for a longer one", %{entries: entries} do
+      only_dotted =
+        section("Nothing to do with the question", "Read it from @contact.id and nowhere else.")
+
+      assert Docs.lexical("@contact", [%{section: only_dotted, vector: nil}]) == []
+
+      # A field is written dotted far more often than bare, so the near side
+      # stays open: this is the section that documents it.
+      dotted_field =
+        section("Contact fields", "`@contact.optin_status` is true once they have opted in.")
+
+      assert Docs.lexical("optin_status", [%{section: dotted_field, vector: nil}]) != []
+      refute Docs.lexical("optin_status", entries) == []
+    end
+
     test "an identifier takes no plural", %{entries: entries} do
       # `.input` is notation, so `.inputs` would be a different thing entirely
       # — unlike an ordinary word, where the plural is the same word.
-      section = %{
-        heading_path: "Nothing to do with the question",
-        body: "Read it with @results.parent.state.inputs and nothing else.",
-        doc_file: "t",
-        section_path: nil,
-        source_url: nil,
-        hash: "t"
-      }
+      plural =
+        section("Nothing to do with the question", "Read it with @results.parent.state.inputs.")
 
-      assert Docs.lexical("@results.parent.state.input", [%{section: section, vector: nil}]) == []
+      assert Docs.lexical("@results.parent.state.input", [%{section: plural, vector: nil}]) == []
       refute Docs.lexical("@results.parent.state.input", entries) == []
     end
 

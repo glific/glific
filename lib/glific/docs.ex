@@ -428,8 +428,14 @@ defmodule Glific.Docs do
       # other notation. Ordinary words are written both ways in the documents.
       plural = if MapSet.member?(identifiers, term), do: "", else: "(?:e?s)?"
 
+      # A dot carries notation on, so `@contact` is no match for `@contact.id`
+      # — but only where something follows it, the dot ending a sentence being
+      # punctuation. Nothing guards the near side on purpose: the documents
+      # write a field as `@contact.optin_status` far more often than bare, and
+      # that is the section someone pasting the name is looking for.
       pattern =
-        "(?<![\\p{L}\\p{N}_])" <> Regex.escape(term) <> plural <> "(?![\\p{L}\\p{N}_])"
+        "(?<![\\p{L}\\p{N}_])" <>
+          Regex.escape(term) <> plural <> "(?![\\p{L}\\p{N}_])(?!\\.[\\p{L}\\p{N}_])"
 
       {term, Regex.compile!(pattern, "u")}
     end)
