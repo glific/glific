@@ -20,6 +20,16 @@ defmodule GlificWeb.Schema.AssistantChatTypes do
     field(:request_id, :string)
     field(:conversation_id, :string)
     field(:answer, :string)
+
+    @desc "Guardrail stages, present on the subscription payload only when the org's
+    ai_guardrail flag is enabled: the text before/after the input guardrail, the text
+    before/after the output guardrail, and the validators that ran on each side."
+    field(:input_from_user, :string)
+    field(:input_to_llm, :string)
+    field(:output_from_llm, :string)
+    field(:output_to_user, :string)
+    field(:input_guardrail, :json)
+    field(:output_guardrail, :json)
     field(:errors, list_of(:input_error))
   end
 

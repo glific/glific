@@ -21,12 +21,10 @@ defmodule Glific.LlmCalls do
   @spec create_llm_call_from_callback(non_neg_integer(), map(), map()) ::
           {:ok, LlmCall.t()} | {:error, Ecto.Changeset.t()}
   def create_llm_call_from_callback(organization_id, result, response) do
-    metadata = result["metadata"] || %{}
     llm_response = get_in(result, ["data", "response"]) || %{}
-    input_guardrail = metadata["input_guardrail"]
-    output_guardrail = metadata["output_guardrail"]
+    guardrail = guardrail_metadata(result)
     output = text_output(llm_response["output"])
-    question = input_guardrail["input_from_user"] || question(response["webhook_log_id"])
+    question = guardrail.input_from_user || question(response["webhook_log_id"])
 
     create_llm_call(%{
       organization_id: organization_id,
@@ -39,13 +37,36 @@ defmodule Glific.LlmCalls do
       provider: llm_response["provider"],
       model: llm_response["model"],
       input_from_user: question,
-      input_to_llm: input_guardrail["input_to_llm"] || question,
-      output_from_llm: output_guardrail["output_from_llm"] || output,
-      output_to_user: output_guardrail["output_to_user"] || output,
-      input_guardrail: input_guardrail["validators"],
-      output_guardrail: output_guardrail["validators"],
+      input_to_llm: guardrail.input_to_llm || question,
+      output_from_llm: guardrail.output_from_llm || output,
+      output_to_user: guardrail.output_to_user || output,
+      input_guardrail: guardrail.input_guardrail,
+      output_guardrail: guardrail.output_guardrail,
       tokens: get_in(result, ["data", "usage"])
     })
+  end
+
+  @doc "Extract the four text stages and validator lists from a Kaapi callback's guardrail metadata; every value is nil when Kaapi sent none."
+  @spec guardrail_metadata(map()) :: %{
+          input_from_user: String.t() | nil,
+          input_to_llm: String.t() | nil,
+          output_from_llm: String.t() | nil,
+          output_to_user: String.t() | nil,
+          input_guardrail: list() | nil,
+          output_guardrail: list() | nil
+        }
+  def guardrail_metadata(result) do
+    input_guardrail = get_in(result, ["metadata", "input_guardrail"]) || %{}
+    output_guardrail = get_in(result, ["metadata", "output_guardrail"]) || %{}
+
+    %{
+      input_from_user: input_guardrail["input_from_user"],
+      input_to_llm: input_guardrail["input_to_llm"],
+      output_from_llm: output_guardrail["output_from_llm"],
+      output_to_user: output_guardrail["output_to_user"],
+      input_guardrail: input_guardrail["validators"],
+      output_guardrail: output_guardrail["validators"]
+    }
   end
 
   # Without an input guardrail the callback doesn't echo the input, so read the question the
