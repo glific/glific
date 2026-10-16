@@ -14,10 +14,12 @@ defmodule Glific.Templates do
     Mails.MailLog,
     Mails.ReportGupshupMail,
     Notifications,
+    Notifications.Notification,
     Partners,
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Settings,
     Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate
@@ -483,9 +485,13 @@ defmodule Glific.Templates do
   @spec update_hsms(list(), Organization.t()) :: :ok
   def update_hsms(templates, organization) do
     db_templates = hsm_template_uuid_map()
+    locales = Settings.locale_id_map()
 
     Enum.each(templates, fn template ->
       cond do
+        unsupported_language_form_template?(template, db_templates, locales) ->
+          notify_unsupported_language(template, organization)
+
         !Map.has_key?(db_templates, template["bsp_id"]) ->
           db_templates
           |> existing_template?(template, organization)
@@ -501,6 +507,39 @@ defmodule Glific.Templates do
           true
       end
     end)
+  end
+
+  # Form templates are sent through Gupshup V3 by name and language code, which must match the
+  # code the template was registered with. Codes like en_US have no Glific language.
+  @spec unsupported_language_form_template?(map(), map(), map()) :: boolean()
+  defp unsupported_language_form_template?(template, db_templates, locales) do
+    template["buttonSupported"] == "FLOW" and
+      not Map.has_key?(db_templates, template["bsp_id"]) and
+      not Map.has_key?(locales, template["languageCode"])
+  end
+
+  @spec notify_unsupported_language(map(), Organization.t()) :: any()
+  defp notify_unsupported_language(template, organization) do
+    already_notified? =
+      Notification
+      |> where([n], n.category == "Templates")
+      |> where([n], fragment("? ->> 'bsp_id' = ?", n.entity, ^template["bsp_id"]))
+      |> Repo.exists?()
+
+    if !already_notified? do
+      Notifications.create_notification(%{
+        category: "Templates",
+        message:
+          "WhatsApp form template #{template["elementName"]} was not synced because its language (#{template["languageCode"]}) isn't supported in Glific. Change the template's language in Meta and sync again.",
+        severity: Notifications.types().warning,
+        organization_id: organization.id,
+        entity: %{
+          bsp_id: template["bsp_id"],
+          shortcode: template["elementName"],
+          language_code: template["languageCode"]
+        }
+      })
+    end
   end
 
   @doc """
