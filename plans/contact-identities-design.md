@@ -71,7 +71,7 @@ Every channel creates a contact through `Contacts.create_contact(attrs, channel 
 without its identity.
 
 Identities are only reached through `Glific.Contacts`: an identity is part of a contact, so nothing outside
-`lib/glific/contacts/` calls `Glific.Contacts.Identities` or queries `ContactIdentity`. `Identities` is internal to the
+`lib/glific/contacts/` calls `Glific.Contacts.ContactIdentities` or queries `ContactIdentity`. `ContactIdentities` is internal to the
 context; callers use `Contacts.create_contact/1`, `fetch_by_identity/2`, `maybe_create_contact/3`,
 `add_identity/3` and `insert_contacts/2` (bulk import). `set_whatsapp_identity/1`
 keeps the WhatsApp identity in step with the phone.

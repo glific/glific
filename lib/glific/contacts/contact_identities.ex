@@ -1,4 +1,4 @@
-defmodule Glific.Contacts.Identities do
+defmodule Glific.Contacts.ContactIdentities do
   @moduledoc """
   Internal to `Glific.Contacts`, which is the only module that calls it. Reads and writes
   `Glific.Contacts.ContactIdentity` rows: the logins a contact can be reached or recognised by.

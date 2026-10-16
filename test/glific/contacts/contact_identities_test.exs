@@ -1,4 +1,4 @@
-defmodule Glific.Contacts.IdentitiesTest do
+defmodule Glific.Contacts.ContactIdentitiesTest do
   use Glific.DataCase
 
   import Ecto.Query
@@ -7,7 +7,7 @@ defmodule Glific.Contacts.IdentitiesTest do
     Contacts,
     Contacts.Contact,
     Contacts.ContactIdentity,
-    Contacts.Identities,
+    Contacts.ContactIdentities,
     Fixtures,
     Partners,
     Repo
@@ -439,7 +439,7 @@ defmodule Glific.Contacts.IdentitiesTest do
       {:ok, other} = Contacts.update_contact(other, %{phone: phone})
 
       assert whatsapp_identity(phone).contact_id == other.id
-      assert :ok = Identities.set_whatsapp_identity(other)
+      assert :ok = ContactIdentities.set_whatsapp_identity(other)
       assert whatsapp_identity(phone).contact_id == other.id
     end
 
@@ -473,7 +473,7 @@ defmodule Glific.Contacts.IdentitiesTest do
         set: [identifier: phone]
       )
 
-      assert {:error, :not_found} = Identities.fetch_contact(:whatsapp, phone)
+      assert {:error, :not_found} = ContactIdentities.fetch_contact(:whatsapp, phone)
       assert {:ok, found} = Contacts.fetch_by_identity(:whatsapp, phone)
       assert found.id == owner.id
       assert whatsapp_identity(phone).contact_id == stale_owner.id
@@ -513,7 +513,7 @@ defmodule Glific.Contacts.IdentitiesTest do
                  phone: taken.phone
                })
 
-      refute Identities.identifier_taken?(changeset)
+      refute ContactIdentities.identifier_taken?(changeset)
     end
 
     test "whatsapp of an unknown phone is not found" do
