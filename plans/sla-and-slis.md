@@ -1,80 +1,97 @@
-# API availability SLI (increment 1)
+# Platform SLAs and usage metrics
 
-Goal: an overall API availability SLI plus per-GraphQL-operation SLIs, using AppSignal only.
-Later increments (message pipeline latency, queue metrics, DB pool) get their own sections once
-this one ships.
+What Glific measures and commits to, independent of the monitoring tool. Thresholds marked
+**X** are set after two weeks of baseline data.
 
-## Decisions
+## SLAs
 
-- **AppSignal only.** Grafana Cloud was evaluated and dropped: Glific routes organizations by
-  subdomain, so off-the-shelf HTTP metrics carry a per-org `host` label, and pushing metrics out
-  of Gigalixir needs extra infrastructure.
-- **No reliance on request tracing for SLIs.** ~50M API requests/month exceed the AppSignal plan,
-  so SLIs come from custom metrics (counters/distributions), not per-request transactions.
-- **Fixed thresholds, counted at source.** AppSignal distributions keep only per-minute
-  mean/p90/p95, so a monthly "% under N seconds" cannot be derived later. Each event is classified
-  `good`/`bad` when it happens and counted.
+| # | SLA | Target | Good event | Measured from |
+|---|---|---|---|---|
+| 1 | API uptime | 99.9% / month | Request answered with a non-5xx status, and an external probe of `/health` succeeds | Every HTTP request + external probe every minute |
+| 2 | API response time | 99.9% of requests < **X** s | Request completes in under X seconds | Every HTTP request (server-side duration) |
+| 3 | Flow processing latency | 99.9% of inbound messages < **X** s | Inbound message tagged and its flow step run within X seconds | `message.inserted_at` → `Processor.MessageWorker` completes |
+| 4 | Gupshup outbound latency | 99.9% of session messages < **X** s | Message accepted by Gupshup within X seconds of creation | `message.inserted_at` → `sent_at` set in `Communications.Message.handle_success_response/2` |
 
-## 1. Server up: external probe
+Definitions:
 
-- New `GET /health`: runs `SELECT 1` on `Glific.Repo`, returns `200 ok` or `503`. No auth, no
-  rate limit; added to AppSignal `ignore_actions` so probes don't create transactions.
-- AppSignal Uptime Monitor on `https://api.<root host>/health`, every minute, multiple regions.
-  The root host maps to the `glific` organization in `GlificWeb.SubdomainPlug`; a host with no
-  resolvable subdomain gets a 404 from that plug, so the probe must not use the bare Gigalixir
-  hostname.
-- Runs on AppSignal's infrastructure, so it keeps reporting when the app is down.
+- **Window**: calendar month. 99.9% allows ~43 minutes of downtime, or 0.1% of events over
+  the threshold.
+- **Uptime (1)** combines two signals: the probe catches "server unreachable", request status
+  catches "server up but failing". A minute is down if the probe failed or more than 5% of that
+  minute's requests returned 5xx.
+- **4xx responses** are client errors and count as good.
+- **Response time (2)** applies to all routes; slow-by-design routes (exports, uploads) are
+  listed as exclusions or get their own threshold.
+- **Flow processing (3)** starts at `inserted_at`, so it includes webhook handling, the queue
+  wait in `gupshup_inbound` and flow execution. Messages that time out or crash count as bad.
+- **Outbound latency (4)** covers session (non-template) messages only. HSM/template and broadcast
+  sends are deliberately paced by the per-org BSP rate limit and broadcast batching, so they are
+  tracked as a metric, not an SLA. Timing starts at `inserted_at`, not the Oban job, because
+  rate-limited jobs snooze and Oban's queue time resets on each snooze.
 
-## 2. API SLIs: custom metrics
+Exclusions (apply to every SLA):
 
-| Metric | Type | Tags | Source event |
-|---|---|---|---|
-| `api_request_count` | counter | `route` (router pattern), `result` (`good`/`bad`) | `[:phoenix, :router_dispatch, :stop]` and `:exception` |
-| `graphql_operation_count` | counter | `entrypoint`, `outcome` (`ok`/`error`/`invalid`/`exception`), `result` (`good`/`bad`) | `[:absinthe, :execute, :operation, :stop]`, plus crash handling below |
-| `graphql_operation_duration` | distribution (ms) | `entrypoint` | same |
-| `graphql_operation_duration_all` | distribution (ms) | none | same; platform-wide p95 (AppSignal cannot merge percentiles across tag values) |
+- Outages of Meta/WhatsApp and Gupshup.
+- NGO-owned webhooks, LLM providers, Google services called from flows.
+- Planned maintenance announced 48h ahead.
 
-Classification:
+## Usage metrics
 
-- **HTTP `bad`**: 5xx status or an exception. 4xx is the client's problem and stays `good`.
-- **GraphQL `bad`**: `exception`, or latency above the operation's threshold. `error`
-  (resolver returned `{:error, _}`, e.g. not found) and `invalid` (validation) are user errors and
-  stay `good`, but are tagged so they can be watched.
-- **`entrypoint`**: the schema identifier of the first root field (e.g. `create_flow`), taken from
-  the parsed document, never the client-supplied `operationName`. An allow-list of key operations
-  keeps its own value; everything else is `other`.
+| Metric | Breakdown | Purpose |
+|---|---|---|
+| API calls | REST route; GraphQL entrypoint | Which endpoints are used, and whether only by Glific's own apps or also by external integrations |
+| Active websocket connections | socket type | Load and capacity on persistent connections |
+| Websocket messages | socket type, direction (inbound/outbound) | Traffic over persistent connections |
 
-Initial allow-list and thresholds (to be tuned from two weeks of data):
+Socket types:
 
-| Entrypoints | Threshold |
+- `graphql_ws` — `GlificWeb.UserSocket` at `/socket` (frontend GraphQL subscriptions).
+- `web_channel` — `GlificWeb.WebChannelSocket` at `/web_socket` (web channel widget,
+  `RoomChannel`).
+
+Websocket message direction:
+
+- Inbound: client → server frames (`RoomChannel.handle_in/3`; GraphQL-WS client messages).
+- Outbound: server → client pushes (channel `push`/broadcasts; GraphQL subscription publishes).
+
+GraphQL **entrypoint** is the schema identifier of the operation's first root field (e.g.
+`create_flow`), read from the parsed document, never the client-supplied `operationName`.
+
+## Common dimensions
+
+Every API and websocket metric carries:
+
+| Dimension | Values |
 |---|---|
-| `create_flow`, `update_flow`, `publish_flow` | 3s |
-| `create_trigger`, `update_trigger`, `start_contact_flow`, `start_group_flow` | 2s |
-| `create_and_send_message`, `send_hsm_message`, `create_and_send_message_to_group` | 2s |
-| `contacts`, `search` (conversation list) | 1s |
-| `other` | 5s |
+| `client` | `glific_frontend`, `web_channel`, `external`, `bsp_webhook` |
+| `route` / `entrypoint` | Router pattern for REST; GraphQL entrypoint for `/api` |
+| `status_class` | `2xx`, `3xx`, `4xx`, `5xx` (HTTP only) |
+| `organization_id` | For drill-down; not used in platform-wide SLA figures |
 
-### Crashes
+How `client` is determined, in order:
 
-Absinthe's `[:absinthe, :execute, :operation, :stop]` is emitted by the last pipeline phase, so it
-never fires when a resolver raises. To count crashes against their operation:
+1. Route: BSP webhook paths (`/gupshup`, `/gupshup-enterprise`, `/maytapi`) → `bsp_webhook`;
+   `/web_socket` and `/api/v1/web_channel/*` → `web_channel`.
+2. An explicit `x-glific-client` request header sent by the Glific frontend → `glific_frontend`.
+   Requires a one-line change in the frontend's Apollo/HTTP client.
+3. Until the header ships: `Origin` matching `REQUEST_ORIGIN` / `REQUEST_ORIGIN_WILDCARD`
+   → `glific_frontend`.
+4. Anything else → `external`.
 
-1. A pipeline phase (added through `Absinthe.Plug`'s `:pipeline` option, after validation) stores
-   the resolved `entrypoint` in the process dictionary.
-2. The `[:phoenix, :router_dispatch, :exception]` handler reads it and records
-   `outcome: exception`, `result: bad`.
+## What the codebase needs
 
-## 3. Reading the SLIs
+- `GET /health` — DB check, `200`/`503`, for the external probe.
+- One structured record per HTTP request (method, route, entrypoint, status, duration, client,
+  organization) from `[:phoenix, :endpoint, :stop]`, replacing Phoenix's default two-line request
+  log.
+- GraphQL entrypoint captured after parsing (Absinthe pipeline phase) so crashes are attributed
+  to their operation.
+- Timing at the end of `Processor.MessageWorker.perform/1` and in
+  `Communications.Message.handle_success_response/2`.
+- Connection and message counters in `UserSocket` and `WebChannelSocket` / `RoomChannel`.
 
-- **Overall API availability (month)** = minutes where the probe passed and
-  `api_request_count{result: bad}` ≤ 5% of total, divided by minutes in the month.
-- **Per-operation SLI (month)** = `graphql_operation_count{entrypoint: X, result: good}` ÷ total
-  for `X`, pulled from the AppSignal API.
-- **Alerts**: uptime monitor failure; `api_request_count{result: bad}` rising; per-entrypoint
-  `bad` count above baseline.
+## Open decisions
 
-## Open questions
-
-- Do custom metrics count toward the AppSignal request quota, and how are tag combinations
-  billed? (Decides whether this stays in AppSignal long-term.)
-- Retention of custom metrics at minute/hour resolution — needed for monthly reports.
+- Values for each **X**.
+- Whether response time (2) applies to all routes or a named set of key routes/operations.
+- Whether the probe-based and request-based uptime signals are published separately or combined.
