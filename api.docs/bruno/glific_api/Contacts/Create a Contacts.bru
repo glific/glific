@@ -75,11 +75,17 @@ docs {
   |`fields`         | Json                      | Additional fields associated with the contact.      |
   | `languageId`    | ID                        | The ID of the language associated with the contact. |
   |`name`          | String                    | The name of the contact.                            |
-  | `phone`         | String                    | The phone number of the contact.                    |
+  | `phone`         | String                    | The phone number of the contact. Required unless `channel` is `WEB`. |
+  | `channel`       | MessageChannelEnum        | Optional. The channel the contact is created on; defaults to `WHATSAPP`. |
+  | `identifier`    | String                    | The username to log in with. Required when `channel` is `WEB` (which also needs the web channel enabled and no phone): letters, digits, `_`, `@` and `.`, stored lowercase, 1 to 255 characters. |
   | `settings `       | Json                      | Settings associated with the contact.               |
   | `status `         | ContactStatusEnum         | The status of the contact.                          |
   
   
+  ## Web contact example
+  `{"input": {"name": "Ravi", "channel": "WEB", "identifier": "ravi_12"}}` creates a contact without a phone whose
+  `identities` field lists its `WEB` identity.
+
   ## Request Example
   ```bash
   curl -X POST {{api_url}} \

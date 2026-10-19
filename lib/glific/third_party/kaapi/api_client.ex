@@ -349,6 +349,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  List the guardrail validator types supported by Kaapi along with their config JSON schemas.
+  """
+  @spec list_guardrail_validators(String.t()) :: {:ok, map()} | {:error, any()}
+  def list_guardrail_validators(org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/guardrails")
+    |> parse_kaapi_response()
+  end
+
   @spec evaluation_dataset_multipart(map()) :: Tesla.Multipart.t()
   defp evaluation_dataset_multipart(params) do
     Tesla.Multipart.new()

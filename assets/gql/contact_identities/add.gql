@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!) {
+  addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier) {
+    ...ContactIdentityFields
+
+    ...ErrorFields
+  }
+}

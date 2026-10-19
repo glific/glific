@@ -8,6 +8,7 @@ defmodule Glific.EraseTest do
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
+    Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
     Erase,
@@ -140,6 +141,26 @@ defmodule Glific.EraseTest do
              Erase.delete_benefeciary_data(attrs.organization_id, contact_1.phone)
 
     assert {:error, :no_identifier} = Erase.delete_benefeciary_data(attrs.organization_id, nil)
+  end
+
+  test "delete beneficiary data by web identity", attrs do
+    {:ok, web_contact} = Contacts.maybe_create_contact(%{}, :web, "ravi_12")
+    whatsapp_contact = Fixtures.contact_fixture()
+
+    Fixtures.message_fixture(%{sender_id: web_contact.id})
+    Fixtures.message_fixture(%{sender_id: whatsapp_contact.id})
+
+    assert {:error, :not_found} =
+             Erase.delete_benefeciary_data(attrs.organization_id, :web, "someone_else")
+
+    assert :ok = Erase.delete_benefeciary_data(attrs.organization_id, :web, "ravi_12")
+
+    assert Message |> where([m], m.contact_id == ^web_contact.id) |> Repo.aggregate(:count) == 0
+    assert {:error, :not_found} = Contacts.fetch_by_identity(:web, "ravi_12")
+    assert {:ok, _} = Contacts.fetch_by_identity(:whatsapp, whatsapp_contact.phone)
+
+    assert {:error, :no_identifier} =
+             Erase.delete_benefeciary_data(attrs.organization_id, :web, "")
   end
 
   test "delete old messages, stops when rows deleted become 0 first", attrs do

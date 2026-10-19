@@ -9,6 +9,7 @@ defmodule Glific.Flows.Webhook do
   alias Glific.{
     Contacts.Contact,
     GCS.GcsWorker,
+    LlmCalls,
     Messages,
     Partners,
     Repo,
@@ -517,7 +518,28 @@ defmodule Glific.Flows.Webhook do
       resume_message(result, response, organization_id)
     )
     |> report_resume_error(response)
+
+    maybe_create_llm_call(organization_id, result, response)
   end
+
+  @spec maybe_create_llm_call(non_neg_integer(), map(), map()) :: :ok
+  # Voice calls are skipped for now: their transcript never reaches the webhook log, so without an
+  # input guardrail the recorded input would be empty.
+  defp maybe_create_llm_call(organization_id, result, %{"call_type" => "llm"} = response) do
+    case LlmCalls.create_llm_call_from_callback(organization_id, result, response) do
+      {:ok, _llm_call} ->
+        :ok
+
+      {:error, changeset} ->
+        Glific.log_error(
+          "Failed to record LLM call for org_id=#{organization_id}: #{SafeLog.safe_inspect(changeset.errors)}"
+        )
+
+        :ok
+    end
+  end
+
+  defp maybe_create_llm_call(_organization_id, _result, _response), do: :ok
 
   # Route on the response-first outcome (a failed TTS upload overwrites it to success=false, so it
   # goes to Failure even though Kaapi reported success). nil keeps compatibility with non-Kaapi

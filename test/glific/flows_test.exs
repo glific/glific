@@ -2,6 +2,7 @@ defmodule Glific.FLowsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Contacts.Contact,
     Fixtures,
     Flows,
     Flows.Broadcast,
@@ -9,6 +10,7 @@ defmodule Glific.FLowsTest do
     Flows.FlowContext,
     Flows.FlowRevision,
     Flows.MessageBroadcast,
+    Flows.MessageBroadcastContact,
     Groups,
     Messages,
     Messages.Message,
@@ -1197,5 +1199,93 @@ defmodule Glific.FLowsTest do
     # do_publish_flow/2 still runs and stamps the revision with the user.
     {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
     assert revision.user_id == user.id
+  end
+
+  describe "flows for a contact without a phone" do
+    setup %{organization_id: organization_id} do
+      %{contact: Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})}
+    end
+
+    defp active_flow(organization_id) do
+      [flow | _] = Flows.list_flows(%{filter: %{organization_id: organization_id}})
+      {:ok, flow} = Flows.update_flow(flow, %{is_active: true})
+      flow
+    end
+
+    test "a flow started on the web channel runs and replies on the web",
+         %{contact: contact, organization_id: organization_id} do
+      flow = active_flow(organization_id)
+
+      {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, :web)
+
+      assert {:ok, %FlowContext{channel: :web}} =
+               Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+      replies =
+        Message
+        |> where([m], m.contact_id == ^contact.id and m.flow == :outbound)
+        |> Repo.all()
+
+      assert replies != []
+      assert Enum.all?(replies, &(&1.channel == :web and &1.status != :error))
+    end
+
+    test "a flow started on WhatsApp stops without sending or touching other contacts",
+         %{contact: contact, organization_id: organization_id} do
+      flow = active_flow(organization_id)
+      opted_out_before = Repo.aggregate(where(Contact, [c], not is_nil(c.optout_time)), :count)
+
+      Flows.start_contact_flow(flow, contact)
+
+      assert {:ok, %FlowContext{}} =
+               Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+      assert [] ==
+               Message
+               |> where([m], m.contact_id == ^contact.id and m.flow == :outbound)
+               |> where([m], m.status != :error)
+               |> Repo.all()
+
+      assert opted_out_before ==
+               Repo.aggregate(where(Contact, [c], not is_nil(c.optout_time)), :count)
+    end
+
+    test "a WhatsApp collection flow completes, and sends nothing to the contact without a phone",
+         %{contact: contact, organization_id: organization_id} do
+      flow = active_flow(organization_id)
+      with_phone = Fixtures.contact_fixture(%{organization_id: organization_id})
+      group = Fixtures.group_fixture(%{organization_id: organization_id})
+
+      for member <- [contact, with_phone] do
+        Groups.create_contact_group(%{
+          group_id: group.id,
+          contact_id: member.id,
+          organization_id: organization_id
+        })
+      end
+
+      {:ok, _flow} = Flows.start_group_flow(flow, [group.id], %{})
+      Broadcast.execute_broadcasts(organization_id)
+      Broadcast.execute_broadcasts(organization_id)
+
+      {:ok, broadcast} = Repo.fetch_by(MessageBroadcast, %{group_id: group.id, flow_id: flow.id})
+
+      statuses =
+        MessageBroadcastContact
+        |> where([mbc], mbc.message_broadcast_id == ^broadcast.id)
+        |> select([mbc], {mbc.contact_id, mbc.status})
+        |> Repo.all()
+        |> Map.new()
+
+      assert statuses[with_phone.id] == "processed"
+      assert statuses[contact.id] == "processed"
+      assert broadcast.completed_at != nil
+
+      assert [] ==
+               Message
+               |> where([m], m.contact_id == ^contact.id and m.flow == :outbound)
+               |> where([m], m.status != :error)
+               |> Repo.all()
+    end
   end
 end
