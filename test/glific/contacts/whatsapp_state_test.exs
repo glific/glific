@@ -278,6 +278,54 @@ defmodule Glific.Contacts.WhatsAppStateTest do
     end
   end
 
+  describe "update_contact/2" do
+    test "writes nothing, on the contact or its identity, when the contact change is invalid" do
+      contact = Fixtures.contact_fixture(%{phone: phone(), bsp_status: :hsm})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Contacts.update_contact(contact, %{phone: nil, bsp_status: :session})
+
+      assert Contacts.whatsapp_state(contact).bsp_status == :hsm
+    end
+
+    test "on a contact with no phone succeeds without touching WhatsApp state" do
+      contact = Fixtures.contact_without_phone_fixture()
+
+      assert {:ok, _} = Contacts.update_contact(contact, %{name: "renamed", optin_status: true})
+      assert Contacts.whatsapp_state(contact).optin_status == false
+    end
+  end
+
+  describe "identity rows that exist before the state columns" do
+    test "carry their contact's state once the migration has copied it" do
+      contact = pre_identity_contact(%{@legacy_state | optin_status: true})
+
+      Repo.insert!(
+        %Glific.Contacts.ContactIdentity{
+          contact_id: contact.id,
+          organization_id: contact.organization_id,
+          channel: :whatsapp,
+          identifier: contact.phone
+        },
+        skip_organization_id: true
+      )
+
+      assert %{optin_time: nil, bsp_status: :none} = Contacts.whatsapp_state(contact)
+      assert {:error, _} = Contacts.can_send_message_to?(contact, true)
+
+      [migration_file] =
+        Path.wildcard(
+          "priv/repo/migrations/20261019100000_add_whatsapp_state_to_contact_identities.exs"
+        )
+
+      [{migration, _}] = Code.compile_file(migration_file)
+      Repo.query!(migration.copy_state_sql(), [], skip_organization_id: true)
+
+      assert Contacts.whatsapp_state(contact) == @legacy_state
+      assert {:ok, nil} = Contacts.can_send_message_to?(contact, true)
+    end
+  end
+
   describe "opt-in and opt-out" do
     test "contact_opted_in/4 opts a pre-identity contact in on its identity" do
       contact = pre_identity_contact(%{optin_status: false, bsp_status: :none})
@@ -601,9 +649,8 @@ defmodule Glific.Contacts.WhatsAppStateTest do
       )
     end
 
-    test "an inbound WhatsApp message starts the session on the WhatsApp identity" do
+    test "an inbound WhatsApp message starts the session on the identity and, for now, on the contact" do
       contact = Fixtures.contact_fixture(%{phone: phone(), last_message_at: nil})
-      before = legacy_columns(contact)
 
       inbound_message(contact)
 
@@ -613,7 +660,7 @@ defmodule Glific.Contacts.WhatsAppStateTest do
                10
              )
 
-      assert legacy_columns(contact) == before
+      assert Glific.in_past_time(legacy_columns(contact).last_message_at, :seconds, 10)
     end
 
     test "an inbound web message does not" do
@@ -622,6 +669,7 @@ defmodule Glific.Contacts.WhatsAppStateTest do
       inbound_message(contact, %{channel: :web})
 
       assert Fixtures.fetch_identity(contact, :whatsapp).last_message_at == nil
+      assert legacy_columns(contact).last_message_at == nil
     end
 
     test "an outbound message does not" do

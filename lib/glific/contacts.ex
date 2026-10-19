@@ -366,10 +366,23 @@ defmodule Glific.Contacts do
   defdelegate whatsapp_state_from_preload(contact), to: WhatsAppState, as: :from_preload
 
   @doc """
-  The WhatsApp state of each contact, keyed by contact id.
+  The state of a contact that does not exist or has no WhatsApp number.
   """
-  @spec whatsapp_states([Contact.t()]) :: %{non_neg_integer() => whatsapp_state()}
-  def whatsapp_states(contacts), do: contacts |> Enum.map(& &1.id) |> WhatsAppState.fetch_many()
+  @spec default_whatsapp_state() :: whatsapp_state()
+  defdelegate default_whatsapp_state(), to: WhatsAppState, as: :default
+
+  @doc """
+  The WhatsApp state of each contact or contact id, keyed by contact id, in one query.
+  """
+  @spec whatsapp_states([Contact.t() | non_neg_integer()]) :: %{
+          non_neg_integer() => whatsapp_state()
+        }
+  def whatsapp_states(contacts_or_ids),
+    do: contacts_or_ids |> Enum.map(&contact_id/1) |> WhatsAppState.fetch_many()
+
+  @spec contact_id(Contact.t() | map() | non_neg_integer()) :: non_neg_integer()
+  defp contact_id(id) when is_integer(id), do: id
+  defp contact_id(%{id: id}), do: id
 
   @doc """
   The contacts among `contact_ids` that are not blocked and have not opted out of WhatsApp.
@@ -473,14 +486,33 @@ defmodule Glific.Contacts do
         {:ok, contact}
       else
         {state, attrs} = WhatsAppState.split(attrs)
-
-        with {:ok, contact} <- contact |> Contact.changeset(attrs) |> persist_update() do
-          WhatsAppState.update(contact, state)
-          {:ok, contact}
-        end
+        Repo.transaction(fn -> update_with_state(contact, attrs, state) end)
       end
     else
       raise "Permission denied"
+    end
+  end
+
+  @spec update_with_state(Contact.t(), map(), map()) :: Contact.t()
+  defp update_with_state(contact, attrs, state) do
+    case contact |> Contact.changeset(attrs) |> persist_update() do
+      {:ok, contact} ->
+        update_whatsapp_state(contact, state)
+        contact
+
+      {:error, changeset} ->
+        Repo.rollback(changeset)
+    end
+  end
+
+  @spec update_whatsapp_state(Contact.t(), map()) :: :ok
+  defp update_whatsapp_state(contact, state) do
+    case WhatsAppState.update(contact, state) do
+      :ok ->
+        :ok
+
+      {:error, :no_phone} ->
+        Logger.debug("Contact #{contact.id} has no phone, so it has no WhatsApp state to update")
     end
   end
 
@@ -983,43 +1015,11 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
 
-  @doc false
-  @spec can_send_message_to?(Contact.t(), boolean()) :: {:ok | :error, String.t() | nil}
-  def can_send_message_to?(contact, true = _is_hsm) do
-    cond do
-      whatsapp_phone(contact) == {:error, :no_phone} ->
-        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
-
-      contact.status != :valid ->
-        {:error, dgettext("errors", "Contact status is not valid.")}
-
-      true ->
-        hsm_gate(contact, whatsapp_state(contact))
-    end
-  end
-
   @doc """
-  Check if we can send a session message to the contact
+  Check if we can send a session or template message to the contact
   """
-  def can_send_message_to?(contact, false = _is_hsm) do
-    cond do
-      whatsapp_phone(contact) == {:error, :no_phone} ->
-        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
-
-      contact.status != :valid ->
-        {:error, dgettext("errors", "Contact status is not valid.")}
-
-      whatsapp_state(contact).bsp_status not in [:session_and_hsm, :session] ->
-        {:error,
-         dgettext(
-           "errors",
-           "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
-         )}
-
-      true ->
-        {:ok, nil}
-    end
-  end
+  @spec can_send_message_to?(Contact.t(), boolean()) :: {:ok | :error, String.t() | nil}
+  def can_send_message_to?(contact, is_hsm), do: check_send(contact, is_hsm, %{})
 
   @doc """
   Check if we can send a session message to the contact with some extra parameters
@@ -1037,16 +1037,16 @@ defmodule Glific.Contacts do
       else: {:ok, nil}
   end
 
-  def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
+  def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = attrs) do
     cond do
       whatsapp_phone(contact) == {:error, :no_phone} ->
         {:error, dgettext("errors", "Contact has no WhatsApp number.")}
 
       is_hsm ->
-        optin_flow_hsm_check(contact)
+        optin_flow_hsm_check(state_of(contact, attrs))
 
       true ->
-        optin_flow_session_check(contact)
+        optin_flow_session_check(state_of(contact, attrs))
     end
   end
 
@@ -1068,7 +1068,45 @@ defmodule Glific.Contacts do
     end
   end
 
-  def can_send_message_to?(contact, is_hsm, _), do: can_send_message_to?(contact, is_hsm)
+  def can_send_message_to?(contact, is_hsm, attrs), do: check_send(contact, is_hsm, attrs)
+
+  @spec check_send(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
+  defp check_send(contact, true = _is_hsm, attrs) do
+    cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
+      contact.status != :valid ->
+        {:error, dgettext("errors", "Contact status is not valid.")}
+
+      true ->
+        hsm_gate(contact, state_of(contact, attrs))
+    end
+  end
+
+  defp check_send(contact, false = _is_hsm, attrs) do
+    cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
+      contact.status != :valid ->
+        {:error, dgettext("errors", "Contact status is not valid.")}
+
+      state_of(contact, attrs).bsp_status not in [:session_and_hsm, :session] ->
+        {:error,
+         dgettext(
+           "errors",
+           "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
+         )}
+
+      true ->
+        {:ok, nil}
+    end
+  end
+
+  @spec state_of(Contact.t(), map()) :: whatsapp_state()
+  defp state_of(_contact, %{whatsapp_state: state}), do: state
+  defp state_of(contact, _attrs), do: whatsapp_state(contact)
 
   @spec hsm_gate(Contact.t(), whatsapp_state()) :: {:ok | :error, String.t() | nil}
   defp hsm_gate(contact, state) do
@@ -1094,18 +1132,16 @@ defmodule Glific.Contacts do
     end
   end
 
-  @spec optin_flow_hsm_check(Contact.t()) :: {:ok | :error, String.t() | nil}
-  defp optin_flow_hsm_check(contact) do
-    if whatsapp_state(contact).bsp_status in [:session_and_hsm, :hsm, :session],
+  @spec optin_flow_hsm_check(whatsapp_state()) :: {:ok | :error, String.t() | nil}
+  defp optin_flow_hsm_check(state) do
+    if state.bsp_status in [:session_and_hsm, :hsm, :session],
       do: {:ok, nil},
       else:
         {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
   end
 
-  @spec optin_flow_session_check(Contact.t()) :: {:ok | :error, String.t() | nil}
-  defp optin_flow_session_check(contact) do
-    state = whatsapp_state(contact)
-
+  @spec optin_flow_session_check(whatsapp_state()) :: {:ok | :error, String.t() | nil}
+  defp optin_flow_session_check(state) do
     if state.bsp_status in [:session_and_hsm, :session] &&
          Glific.in_past_time(state.last_message_at, :hours, 24),
        do: {:ok, nil},
@@ -1244,8 +1280,8 @@ defmodule Glific.Contacts do
 
   On WhatsApp the organization's BSP records it, on the contact's `(whatsapp, phone)` identity. On `:web` no BSP is
   involved: consent is recorded on the web identity `identifier` (an NGO username, or the phone verified by OTP) and
-  logged in the contact's history on the web channel. Web consent never touches the contact's WhatsApp state. The
-  first web opt-in is kept, a repeat changes nothing, and one after an opt-out clears the opt-out.
+  logged in the contact's history on the web channel. Web consent never touches the contact's WhatsApp state. Only the
+  first web opt-in is recorded; a later call, such as a reconnect, changes nothing and never clears an opt-out.
   """
   @spec optin_contact(map(), :whatsapp | :web, String.t() | nil) ::
           {:ok, Contact.t()}

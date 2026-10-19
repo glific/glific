@@ -630,9 +630,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert length(history(contact, "contact_opted_in")) == 1
     end
 
-    test "an opt-out, then a call, clears the opt-out and keeps the first opt-in", %{
-      contact: contact
-    } do
+    test "a call after an opt-out leaves the opt-out in place", %{contact: contact} do
       {:ok, _} = web_optin("consent_user")
       first = web_identity(contact)
 
@@ -651,13 +649,11 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       assert {:ok, _} = web_optin("consent_user", "web_channel_otp")
 
-      reopted = web_identity(contact)
-      assert is_nil(reopted.optout_time)
-      assert is_nil(reopted.optout_method)
-      assert reopted.optin_status
-      assert reopted.optin_time == first.optin_time
-      assert reopted.optin_method == "web_channel_jwt"
-      assert length(history(contact, "contact_opted_in")) == 2
+      unchanged = web_identity(contact)
+      assert unchanged.optout_method == "user"
+      assert unchanged.optin_status == false
+      assert unchanged.optin_time == first.optin_time
+      assert length(history(contact, "contact_opted_in")) == 1
     end
 
     test "the username is matched in any case", %{contact: contact} do

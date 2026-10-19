@@ -89,9 +89,9 @@ defmodule GlificWeb.WebChannelSocket do
     with {:ok, organization_id} <- organization_from_host(connect_info),
          :ok <- enter_organization(organization_id),
          {:ok, claims} <- JwtToken.verify(organization_id, token),
-         {:ok, contact} <- Contacts.maybe_create_contact(claims, :web, claims.sub),
-         {:ok, _contact} <-
-           Contacts.optin_contact(%{method: "web_channel_jwt"}, :web, claims.sub) do
+         {:ok, contact} <- Contacts.maybe_create_contact(claims, :web, claims.sub) do
+      record_web_optin(contact, claims.sub)
+
       {:ok,
        %{
          contact: contact,
@@ -104,6 +104,26 @@ defmodule GlificWeb.WebChannelSocket do
     else
       _refused -> :error
     end
+  end
+
+  @spec record_web_optin(Contacts.Contact.t(), String.t()) :: :ok
+  defp record_web_optin(contact, username) do
+    case Contacts.optin_contact(%{method: "web_channel_jwt"}, :web, username) do
+      {:ok, _contact} ->
+        :ok
+
+      {:error, error} ->
+        Glific.log_error(
+          "Could not record the web opt-in of contact #{contact.id}: " <>
+            Glific.SafeLog.safe_inspect(error)
+        )
+
+        :ok
+    end
+  rescue
+    exception ->
+      Glific.log_exception(exception)
+      :ok
   end
 
   @spec organization_from_host(map()) :: {:ok, non_neg_integer()} | :error

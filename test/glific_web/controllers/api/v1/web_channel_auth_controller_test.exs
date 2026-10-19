@@ -889,7 +889,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "a login after an opt-out clears the web opt-out and keeps the first opt-in",
+    test "a login after an opt-out leaves the web opt-out in place",
          %{conn: conn} do
       phone = unique_phone()
 
@@ -909,8 +909,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         verify_otp_login(conn, phone)
 
         reopted = Fixtures.fetch_identity(contact, :web)
-        assert is_nil(reopted.optout_time)
-        assert is_nil(reopted.optout_method)
+        assert reopted.optout_method == "user"
         assert reopted.optin_time == first.optin_time
       end)
     end

@@ -6,8 +6,28 @@ defmodule Glific.Repo.Migrations.AddWhatsappStateToContactIdentities do
 
   The old `contacts` columns stay in place and are no longer written; they are read only for a contact whose
   WhatsApp identity row does not exist yet, until `Glific.Contacts.IdentityBackfill` has created every row.
+
+  WhatsApp identity rows created before this migration (contacts created or re-phoned since identities
+  shipped) get their contact's current state copied onto them here, since the backfill skips existing rows.
+  They are few, so one statement is enough.
   """
   use Ecto.Migration
+
+  @doc false
+  def copy_state_sql do
+    """
+    UPDATE contact_identities i SET
+      optin_time = c.optin_time,
+      optin_status = COALESCE(c.optin_status, false),
+      optin_method = c.optin_method,
+      optout_time = c.optout_time,
+      optout_method = c.optout_method,
+      bsp_status = c.bsp_status,
+      last_message_at = c.last_message_at
+    FROM contacts c
+    WHERE i.contact_id = c.id AND i.channel = 'whatsapp' AND i.identifier = c.phone
+    """
+  end
 
   def change do
     alter table(:contact_identities) do
@@ -31,5 +51,7 @@ defmodule Glific.Repo.Migrations.AddWhatsappStateToContactIdentities do
         comment:
           "When the contact last sent a message on this channel; starts the 24 hour session"
     end
+
+    execute(copy_state_sql(), "")
   end
 end

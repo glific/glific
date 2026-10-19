@@ -155,9 +155,8 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
-  Records the contact's consent on the identity it logs in with. The first call sets the opt-in and keeps its
-  time and method for good; a later call changes nothing, unless the contact had opted out, in which case it
-  only clears the opt-out. Tells the caller whether anything changed, so it can decide whether to log history.
+  Records the contact's first opt-in on the identity it logs in with, keeping its time and method for good. Once the
+  identity has opted in, or opted in and out, nothing changes: a later login never clears an opt-out.
   """
   @spec record_optin(Contact.t(), MessageChannel.t(), String.t(), String.t() | nil, DateTime.t()) ::
           {:ok, :recorded | :unchanged} | {:error, :not_found}
@@ -169,10 +168,10 @@ defmodule Glific.Contacts.ContactIdentities do
             i.identifier == ^lookup_key(channel, identifier)
       )
 
-    case Repo.one(from(i in identity, select: {i.optin_time, i.optout_time})) do
+    case Repo.one(from(i in identity, select: {i.id, i.optin_time})) do
       nil -> {:error, :not_found}
-      {current, nil} when not is_nil(current) -> {:ok, :unchanged}
-      _not_opted_in_or_opted_out -> {:ok, set_optin(identity, method, optin_time)}
+      {_id, %DateTime{}} -> {:ok, :unchanged}
+      {_id, nil} -> {:ok, set_optin(identity, method, optin_time)}
     end
   end
 
@@ -222,21 +221,12 @@ defmodule Glific.Contacts.ContactIdentities do
 
     query =
       from(i in identity,
-        where: is_nil(i.optin_time) or not is_nil(i.optout_time),
+        where: is_nil(i.optin_time),
         update: [
           set: [
-            optin_time:
-              fragment("COALESCE(?, ?)", i.optin_time, type(^optin_time, :utc_datetime)),
+            optin_time: ^optin_time,
             optin_status: true,
-            optin_method:
-              fragment(
-                "CASE WHEN ? IS NULL THEN ? ELSE ? END",
-                i.optin_time,
-                type(^method, :string),
-                i.optin_method
-              ),
-            optout_time: nil,
-            optout_method: nil,
+            optin_method: ^method,
             updated_at: ^DateTime.utc_now()
           ]
         ]

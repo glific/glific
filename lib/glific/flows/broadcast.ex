@@ -456,6 +456,8 @@ defmodule Glific.Flows.Broadcast do
 
   @spec message_tasks(map(), Contact.t(), Keyword.t()) :: :ok
   defp message_tasks(message_params, contacts, opts) do
+    states = Contacts.whatsapp_states(contacts)
+
     stream =
       Task.Supervisor.async_stream_nolink(
         Glific.Broadcast.Supervisor,
@@ -466,7 +468,10 @@ defmodule Glific.Flows.Broadcast do
           Keyword.get(opts, :message_broadcast_id, nil)
           |> mark_message_broadcast_contact_processed(contact.id, "pending")
 
-          message_params = Map.put(message_params, :receiver_id, contact.id)
+          message_params =
+            message_params
+            |> Map.put(:receiver_id, contact.id)
+            |> Map.put(:whatsapp_state, Map.fetch!(states, contact.id))
 
           result =
             if message_params[:is_hsm] in [nil, false],

@@ -144,27 +144,27 @@ defmodule Glific.Contacts.WhatsAppState do
 
   @doc """
   Applies `changes` to the contact's state, creating its WhatsApp identity from the contact's current values
-  first when it has none, and marks the contact updated unless `touch: false`. A contact with no phone has
-  no WhatsApp state to change.
+  first when it has none, and marks the contact updated unless `touch: false`. The `contacts` row is always locked
+  before the identity row. A contact with no phone has no WhatsApp state, so it returns `{:error, :no_phone}`.
   """
   @spec update(Contact.t(), map(), Keyword.t()) :: :ok | {:error, :no_phone}
   def update(contact, changes, opts \\ [])
+  def update(_contact, changes, _opts) when map_size(changes) == 0, do: :ok
 
   def update(%Contact{phone: phone}, _changes, _opts) when phone in [nil, ""],
     do: {:error, :no_phone}
 
-  def update(_contact, changes, _opts) when map_size(changes) == 0, do: :ok
-
   def update(%Contact{id: contact_id}, changes, opts) do
     now = DateTime.utc_now()
     changes = normalize(changes)
+
+    if Keyword.get(opts, :touch, true), do: touch_contacts([contact_id], now)
 
     if update_identities([contact_id], changes, now) == 0 do
       seed([contact_id])
       update_identities([contact_id], changes, now)
     end
 
-    if Keyword.get(opts, :touch, true), do: touch_contacts([contact_id], now)
     :ok
   end
 
@@ -180,8 +180,8 @@ defmodule Glific.Contacts.WhatsAppState do
     |> Enum.reject(fn {_contact_id, changes} -> changes == %{} end)
     |> Enum.group_by(fn {_contact_id, changes} -> normalize(changes) end, &elem(&1, 0))
     |> Enum.each(fn {changes, contact_ids} ->
-      update_identities(contact_ids, changes, now)
       if Keyword.get(opts, :touch, true), do: touch_contacts(contact_ids, now)
+      update_identities(contact_ids, changes, now)
     end)
   end
 

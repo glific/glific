@@ -1,9 +1,14 @@
 defmodule Glific.Repo.Migrations.MoveLastMessageAtTriggerToWhatsappIdentity do
   @moduledoc """
   An inbound WhatsApp message restarts the 24 hour session, recorded as `last_message_at`. That clock now
-  lives on the contact's `(whatsapp, phone)` identity, so `message_before_insert_callback` updates it there
-  instead of on `contacts`. Everything else the trigger keeps on `contacts` (`last_communication_at`,
-  `last_message_number`, the read/replied flags) is channel-agnostic inbox state and is unchanged.
+  lives on the contact's `(whatsapp, phone)` identity, so `message_before_insert_callback` also updates it
+  there. It keeps setting `contacts.last_message_at` for the length of the transition, in the same statement
+  as before, so old code that is still running or is rolled back to keeps reading a current value. The
+  cleanup that removes the `contacts` columns removes that assignment too. Everything else the trigger keeps
+  on `contacts` is channel-agnostic inbox state and is unchanged.
+
+  Locks are always taken on the `contacts` row first and the identity row second, as in
+  `Glific.Contacts.update_contact/2`.
 
   A contact whose WhatsApp identity row has not been backfilled yet gets the row inserted from its current
   `contacts` values, so the message never loses the session start.
@@ -11,27 +16,14 @@ defmodule Glific.Repo.Migrations.MoveLastMessageAtTriggerToWhatsappIdentity do
   use Ecto.Migration
 
   def up do
-    execute(function_sql(new_inbound_sql(), "NEW.channel IS DISTINCT FROM 'web'"))
+    execute(function_sql(inbound_contact_sql(), "NEW.channel IS DISTINCT FROM 'web'"))
   end
 
   def down do
-    execute(function_sql(old_inbound_sql(), "false"))
+    execute(function_sql(inbound_contact_sql(), "false"))
   end
 
-  defp new_inbound_sql do
-    """
-    UPDATE contacts SET
-                last_communication_at = now,
-                last_message_number = var_message_number,
-                is_org_read = false,
-                is_org_replied = false,
-                is_contact_replied = true,
-                updated_at = now
-                WHERE id = NEW.contact_id;
-    """
-  end
-
-  defp old_inbound_sql do
+  defp inbound_contact_sql do
     """
     UPDATE contacts SET
                 last_communication_at = now,
@@ -93,9 +85,9 @@ defmodule Glific.Repo.Migrations.MoveLastMessageAtTriggerToWhatsappIdentity do
               NEW.context_message_id = var_context_id;
             END IF;
 
-            #{inbound_session_sql(whatsapp_session_condition)}
-
             #{inbound_contact_update}
+
+            #{inbound_session_sql(whatsapp_session_condition)}
           ELSE
 
             UPDATE contacts

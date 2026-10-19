@@ -255,6 +255,26 @@ defmodule GlificWeb.WebChannelSocketTest do
       end)
     end
 
+    test "a reconnect after a web opt-out leaves the opt-out in place" do
+      with_signature_secret(fn ->
+        assert {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        contact = first.assigns.current_contact
+        identity = Glific.Fixtures.fetch_identity(contact, :web)
+
+        Glific.Repo.update_all(
+          from(i in Glific.Contacts.ContactIdentity, where: i.id == ^identity.id),
+          set: [
+            optout_time: DateTime.utc_now() |> DateTime.truncate(:second),
+            optout_method: "user"
+          ]
+        )
+
+        assert {:ok, _again} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+
+        assert %{optout_method: "user"} = Glific.Fixtures.fetch_identity(contact, :web)
+      end)
+    end
+
     test "records nothing when the web channel is off" do
       WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"jwt_signature_secret_1" => @secret})
       assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())

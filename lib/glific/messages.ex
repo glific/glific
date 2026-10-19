@@ -690,10 +690,18 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message_to_contacts(map(), [], atom()) :: {:ok, list()}
   def create_and_send_message_to_contacts(message_params, contact_ids, type) do
+    states = Contacts.whatsapp_states(contact_ids)
+
     contact_ids =
       contact_ids
       |> Enum.reduce([], fn contact_id, contact_ids ->
-        message_params = Map.put(message_params, :receiver_id, contact_id)
+        message_params =
+          message_params
+          |> Map.put(:receiver_id, contact_id)
+          |> Map.put(
+            :whatsapp_state,
+            Map.get_lazy(states, contact_id, &Contacts.default_whatsapp_state/0)
+          )
 
         result =
           if type == :session,
