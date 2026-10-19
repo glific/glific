@@ -1,4 +1,4 @@
-# Web Channel Login
+# Web Channel
 
 Let your own users chat with your organization on Glific's web channel, signed in with your own
 login system. Your users never need a phone number or a Glific password.

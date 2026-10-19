@@ -938,7 +938,7 @@ mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $ide
 }
 ```
 
-Gives an existing contact a <a href="#web-channel-login">web channel</a> username. Only the `WEB` channel is
+Gives an existing contact a <a href="#web-channel">web channel</a> username. Only the `WEB` channel is
 accepted: a `WHATSAPP` identity is the contact's phone and follows it. Adding a username the contact already has
 succeeds without change; a username held by another contact is refused (`identifier: has already been taken`) and
 never moved. Requires the manager role and the web channel enabled for the organization.
