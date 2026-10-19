@@ -21,7 +21,7 @@ defmodule Glific.Application do
       # Start the Telemetry supervisor
       GlificWeb.Telemetry,
 
-      # HTTP connection pools used by Tesla — per-host size configurable via HTTP_POOL_SIZE env var
+      # HTTP connection pools used by Tesla — per-host size configurable via DEFAULT_FINCH_POOL_SIZE env var
       {Finch,
        name: Glific.Finch,
        pools: %{

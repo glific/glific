@@ -6,7 +6,7 @@ defmodule Glific.Http.FinchAdapter do
   """
   @behaviour Tesla.Adapter
 
-  alias Tesla.Adapter.Finch, as: TeslaFinch
+  alias Tesla.Adapter.Finch, as: UpstreamFinch
 
   @pool_exhausted_message "Finch was unable to provide a connection"
 
@@ -17,7 +17,7 @@ defmodule Glific.Http.FinchAdapter do
   @spec call(Tesla.Env.t(), keyword()) :: Tesla.Env.result()
   def call(env, opts) do
     env
-    |> TeslaFinch.call(opts)
+    |> UpstreamFinch.call(opts)
     |> unwrap_error()
   rescue
     # Finch raises instead of returning an error when no pooled connection frees up in time
