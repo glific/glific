@@ -227,7 +227,7 @@ upload_adapter =
     do: nil,
     else:
       {Glific.Http.FinchAdapter,
-       [name: Glific.UploadFinch, receive_timeout: 60_000, pool_timeout: 15_000]}
+       [name: :kaapi_upload_pool, receive_timeout: 60_000, pool_timeout: 15_000]}
 
 config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),

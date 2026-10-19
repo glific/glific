@@ -30,7 +30,7 @@ defmodule Glific.Application do
        }},
 
       # Dedicated pools for Kaapi document uploads
-      {Finch, name: Glific.UploadFinch, pools: %{default: http_pool_options(50, 15_000)}},
+      {Finch, name: :kaapi_upload_pool, pools: %{default: http_pool_options(50, 15_000)}},
 
       # Start the PubSub system
       {Phoenix.PubSub, name: Glific.PubSub},
@@ -107,10 +107,12 @@ defmodule Glific.Application do
   end
 
   # verify_none keeps the TLS behaviour of the previous hackney setup (#3037); Mint also passes
-  # these options to plain-HTTP sockets, so only options gen_tcp tolerates can go here
+  # these options to plain-HTTP sockets, so only options gen_tcp tolerates can go here.
+  # conn_max_idle_time matches hackney's 60s pool keep-alive (Finch defaults to never closing)
   defp http_pool_options(size, connect_timeout) do
     [
       size: size,
+      conn_max_idle_time: 60_000,
       conn_opts: [transport_opts: [verify: :verify_none, timeout: connect_timeout]]
     ]
   end
