@@ -28,6 +28,17 @@ defmodule Glific.Searches.InboxTest do
     contact
   end
 
+  defp web_linked_contact(attrs) do
+    contact = Fixtures.contact_fixture(Map.merge(%{contact_type: "WA"}, attrs))
+
+    Fixtures.contact_identity_fixture(%{
+      contact_id: contact.id,
+      identifier: "ravi_#{System.unique_integer([:positive])}"
+    })
+
+    contact
+  end
+
   describe "inbox visibility" do
     test "a username contact appears in the main list", %{organization_id: organization_id} do
       contact = username_contact()
@@ -71,9 +82,13 @@ defmodule Glific.Searches.InboxTest do
           {"Not replied", %{is_org_replied: false}},
           {"Not Responded", %{is_contact_replied: false}}
         ] do
-      test "a username contact appears in the #{tab} tab", %{organization_id: organization_id} do
-        contact = username_contact(unquote(Macro.escape(attrs)))
-        hidden = Fixtures.contact_without_phone_fixture(unquote(Macro.escape(attrs)))
+      test "a contact with a web identity appears in the #{tab} tab", %{
+        organization_id: organization_id
+      } do
+        contact = web_linked_contact(unquote(Macro.escape(attrs)))
+
+        hidden =
+          Fixtures.contact_fixture(Map.merge(%{contact_type: "WA"}, unquote(Macro.escape(attrs))))
 
         results = search_contact_ids(organization_id, %{status: unquote(tab)})
 

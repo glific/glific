@@ -4,11 +4,12 @@ Issue #5703 · Epic #5702 · Tickets: #5836 (nil-phone safety), #5837 (schema), 
 
 ## 1. Model
 
-- **`contacts`** = the person. One row per person per org. Holds name, language, fields, status,
-  and (for now) WhatsApp state. **`phone` becomes nullable.**
-- **`contact_identities`** = login credentials only: how that person is identified on a channel (a
-  WhatsApp phone, an NGO username, later a Telegram chat id). One row per login, so a contact can
-  have several. It never holds per-channel state; that lives in `contact_channels` (§6).
+- **`contacts`** = the person. One row per person per org. Holds name, language, fields and
+  `status` (blocked / valid / invalid, split later, §12.1). **`phone` becomes nullable.**
+- **`contact_identities`** = how that person is identified on a channel (a WhatsApp phone, an NGO
+  username, later a Telegram chat id), and the person's consent and session state **on that
+  channel**: opt-in and opt-out, and for WhatsApp the BSP status and the last inbound message. One
+  row per login, so a contact can have several (§6, §12.3).
 - Everything else (messages, flow contexts, flow results, tags, groups, tickets) stays keyed on
   `contact_id`. Nothing else changes.
 
@@ -175,9 +176,8 @@ A reply goes out on the channel the conversation/flow came in on (already built 
 | State | Lives on |
 |---|---|
 | name, language, fields, status, `last_communication_at` | `contacts` |
-| WhatsApp opt-in, `bsp_status`, `last_message_at` | `contacts` **for now** |
-| New channel state (web consent, Telegram opt-in…) | **`contact_channels`**: one row per `(contact_id, channel)` |
-| Moving WhatsApp state (`bsp_status`, `last_message_at`, opt-in) off `contacts` | Into `contact_channels`, with #5765; needs a backfill |
+| WhatsApp opt-in / opt-out, `bsp_status`, `last_message_at` | The contact's **`(whatsapp, phone)` identity row** (moved off `contacts` in one release, §12.3) |
+| Web consent (and later Telegram opt-in…) | The identity row the contact logs in with: `(web, username)` for an NGO token, `(web, phone)` for an OTP |
 
 **Contact variables (`contacts.fields`, `@contact.fields.*`, name, language) stay on `contacts`.**
 They describe the person, so a linked contact shares one set across channels, and a flow on any
@@ -185,9 +185,10 @@ channel reads the same values. Unlinked contacts have separate variables because
 contacts. Several people on one phone is a `profiles` concern, not an identity one.
 
 Rule: the same value for this person on every channel → `contacts`. Only meaningful for one
-channel (consent, reachability, session) → `contact_channels`. `contact_identities` holds login
-credentials only: a contact can have several identities on one channel, so no unique
-`(contact_id, channel)` can exist there, and state needs exactly one row per channel.
+channel (consent, reachability, session) → the identity row for that channel. A contact can hold
+several identities on one channel (two NGO usernames), so each carries its own consent; the
+WhatsApp channel has exactly one, the contact's phone, so its row is "the contact's WhatsApp state".
+There is no separate per-channel table.
 
 `@contact.phone` is blank for web-only contacts. Document this for NGOs (webhooks, client modules).
 
@@ -236,11 +237,11 @@ A phone-less contact still runs through code that reads `contact.phone`. Make it
 
 For each column: what it does, whether it's written on every message (hot path), whether it
 belongs to the **person** or to a **channel**, and what to do with it.
-"Move" means to `contact_identities`. **Nothing moves in #5703.** Moves happen in the next PR
-(opt-in migration), which also backfills the WhatsApp identity of every existing contact with a
-phone. The web channel isn't open to end users before it runs, so no existing phone came from an
-NGO token. The `contacts.phone` fallback in `fetch_by_identity` stays for phones an NGO token stores
-on a new contact after that.
+"Move" means to `contact_identities`. **Nothing moves in #5703.** The moves ship together in one
+later release (§12.3), whose backfill also creates the WhatsApp identity of every existing contact
+with a phone. The web channel isn't open to end users before it runs, so no existing phone came from
+an NGO token. The `contacts.phone` fallback in `fetch_by_identity` stays for phones an NGO token
+stores on a new contact after that.
 
 Enums: `status` = blocked / failed / invalid / processing / valid ·
 `bsp_status` = none / session / session_and_hsm / hsm.
@@ -281,25 +282,51 @@ Enums: `status` = blocked / failed / invalid / processing / valid ·
 | Bucket | Columns |
 |---|---|
 | **Keep on `contacts` (person)** | id, organization_id, name, language_id, fields, settings, active_profile_id, last_communication_at, is_org_read, last_message_number, inserted_at, updated_at |
-| **Move to `contact_identities` (next PR)** | bsp_status, optin_time, optin_method, optout_time, optout_method, last_message_at, `status` valid/invalid part |
-| **Becomes the WhatsApp identifier (next PR)** | phone |
+| **Move to `contact_identities` (§12.3)** | bsp_status, optin_time, optin_method, optout_time, optout_method, last_message_at, `status` valid/invalid part |
+| **Becomes the WhatsApp identifier** | phone |
 | **Retire / derive** | optin_status, optin_message_id, first_message_number, is_contact_replied (later is_org_replied) |
 | **Leave untouched, retire later** | contact_type |
 
-### 12.3 Where per-channel state goes: `contact_channels` (next PR, not #5703)
+### 12.3 Where per-channel state goes: the identity row (one release)
+
+`contact_identities` gains the moved columns, with the types they had on `contacts`:
 
 ```
-contact_channels                                  unique (contact_id, channel)
-  id, contact_id, organization_id, channel, inserted_at, updated_at
-  optin_time, optin_method, optout_time, optout_method      ← consent (web first, in the opt-in work)
-  bsp_status, delivery_status (valid/invalid)               ← reachability (#5765)
-  last_message_at                                           ← session window (#5765)
-  metadata jsonb   (e.g. provider: gupshup / maytapi = today's WABA / WA)
+contact_identities (existing: contact_id, organization_id, channel, identifier, timestamps)
+  optin_time, optin_status (default false), optin_method          ← consent
+  optout_time, optout_method
+  bsp_status (default none), last_message_at                      ← WhatsApp session
 ```
-The web opt-in work creates it (for web consent); #5765 moves WhatsApp's `bsp_status`,
-`last_message_at` and opt-in onto the `(contact, whatsapp)` row with a backfill. The unique
-`(contact_id, channel)` lets the trigger and `can_send_message_to?` find "this contact's WhatsApp
-state" in one indexed lookup. `contact_identities` stays credentials only.
+
+Not moved: `optin_message_id` (nothing reads it; the opt-in history event records the message id),
+and `status` (valid / invalid / blocked), which stays on `contacts` until it is split (§12.1).
+
+**Where each event writes**
+- A WhatsApp event (BSP opt-in/opt-out, flows, GraphQL, imports, the 24 hour session reset,
+  Maytapi, "number does not exist") writes the contact's `(whatsapp, phone)` row.
+- A web consent writes the web identity the contact logged in with, never the WhatsApp row:
+  `(web, username)` on an NGO token connect, `(web, phone)` on an OTP verify. The first opt-in is
+  kept, a repeat login changes nothing, and a login after an opt-out clears the opt-out.
+- `message_before_insert_callback` sets `last_message_at` on the WhatsApp row for an inbound
+  non-web message, found through the `contact_id` index. The other columns it maintains on
+  `contacts` (`last_communication_at`, `last_message_number`, the read and replied flags) stay.
+
+**Single release, backfill afterwards.** Nothing writes the old `contacts` columns once the release
+is out, and the backfill (`Glific.Contacts.IdentityBackfill`) runs from the console afterwards. Until
+a contact's WhatsApp row exists:
+- reads use the row when present and otherwise the contact's own columns, which are still current
+  because nothing writes them. The rule is per row, never per field: an opt-out sets `optin_time`
+  to null on the row, and that null must not fall back to the stale value on `contacts`;
+- a write first creates the row from the contact's current columns, then applies the change;
+- the backfill only inserts missing rows, copying the contact's current columns, so it never
+  overwrites a row the application created.
+
+The whole fallback lives in `Glific.Contacts.WhatsAppState` (reads, seeding, and the SQL used by
+inbox, stats and broadcast filters). The trigger inserts a missing row the same way. Once the
+backfill is complete these are deleted in one change, along with the `contacts` columns.
+
+**Rollback.** `Glific.Scripts.RestoreContactWhatsappState` copies the rows back onto `contacts`, so a
+rolled-back release sees the opt-ins, opt-outs and sessions recorded since.
 
 ### 12.4 Hot path today: what runs on every message
 
@@ -313,8 +340,8 @@ state" in one indexed lookup. `contact_identities` stays credentials only.
 Plus `set_session_status` from Elixir on every WA inbound (`bsp_status`).
 
 Implications:
-- Moving `last_message_at` / `bsp_status` to `contact_channels` means the trigger / `set_session_status`
-  update that row instead, through its unique `(contact_id, channel)` index.
+- `last_message_at` / `bsp_status` live on the WhatsApp identity row, so the trigger and
+  `set_session_status` update that row instead, through the `contact_id` index (§12.3).
 - The goal from the meeting ("message insert should be simple, derived fields in background") is
   the separate perf ticket covering `is_*`, `last_message_number` and `updated_at`. Not #5703.
 

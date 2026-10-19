@@ -4,6 +4,7 @@ defmodule Glific.Searches do
   """
 
   import Ecto.Query
+  require Glific.Contacts
   require Logger
 
   alias __MODULE__
@@ -221,14 +222,16 @@ defmodule Glific.Searches do
 
   defp filter_status_contacts_of_organization("Optout", opts) do
     status_query(opts)
+    |> Contacts.with_whatsapp_state()
     |> where([c], c.status != :blocked)
-    |> where([c], not is_nil(c.optout_time))
+    |> where([c], not is_nil(Contacts.whatsapp_value(c, :optout_time)))
   end
 
   defp filter_status_contacts_of_organization("Optin", opts) do
     status_query(opts)
+    |> Contacts.with_whatsapp_state()
     |> where([c], c.status != :blocked)
-    |> where([c], c.optin_status == true)
+    |> where([c], Contacts.whatsapp_value(c, :optin_status) == true)
   end
 
   defp filter_status_contacts_of_organization("Not replied", opts) do
@@ -552,11 +555,12 @@ defmodule Glific.Searches do
 
     query
     |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
+    |> Contacts.with_whatsapp_state(:c)
     |> where([m, c: c], c.status != :blocked)
     |> repo().add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
-    |> order_by([c: c], desc: c.last_message_at)
+    |> order_by([c: c], desc: Contacts.whatsapp_value(c, :last_message_at))
   end
 
   # codebeat:disable[ABC]
@@ -567,10 +571,12 @@ defmodule Glific.Searches do
     # since this revolves around contacts
     args
     |> basic_query()
+    |> Contacts.with_whatsapp_state(:c)
     |> where(^TermSearch.match(term, user))
     |> limit(^limit)
     |> offset(^offset)
-    |> order_by([c: c], desc: c.last_message_at)
+    |> group_by([whatsapp_state: i], i.id)
+    |> order_by([c: c], desc: Contacts.whatsapp_value(c, :last_message_at))
     |> repo().all(timeout: @search_timeout)
   end
 

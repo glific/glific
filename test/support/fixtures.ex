@@ -122,7 +122,6 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       name: Person.name(),
       status: :valid,
-      bsp_status: :none,
       contact_type: nil,
       organization_id: get_org_id(),
       language_id: 1
@@ -133,6 +132,50 @@ defmodule Glific.Fixtures do
     |> Contacts.new_contact_changeset(:web)
     |> Repo.insert!()
   end
+
+  @state_fields [
+    :optin_time,
+    :optin_status,
+    :optin_method,
+    :optout_time,
+    :optout_method,
+    :bsp_status,
+    :last_message_at
+  ]
+
+  @doc """
+  A contact as it was before contact identities: its WhatsApp state is in its own columns and it has no identity row.
+  """
+  @spec pre_identity_contact_fixture(map()) :: Contact.t()
+  def pre_identity_contact_fixture(attrs \\ %{}) do
+    {state, attrs} = Map.split(attrs, @state_fields)
+    contact = contact_fixture(attrs)
+
+    Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
+      skip_organization_id: true
+    )
+
+    legacy =
+      for {field, value} <- Map.put_new(state, :bsp_status, :none),
+          do: {:"legacy_#{field}", legacy_value(value)}
+
+    Repo.update_all(from(c in Contact, where: c.id == ^contact.id), [set: legacy],
+      skip_organization_id: true
+    )
+
+    Repo.get!(Contact, contact.id, skip_organization_id: true)
+  end
+
+  defp legacy_value(%Elixir.DateTime{} = time), do: Elixir.DateTime.truncate(time, :second)
+  defp legacy_value(value), do: value
+
+  @doc false
+  @spec fetch_identity(Contact.t(), atom()) :: ContactIdentity.t() | nil
+  def fetch_identity(%Contact{id: contact_id}, channel),
+    do:
+      Repo.one(
+        from(i in ContactIdentity, where: i.contact_id == ^contact_id and i.channel == ^channel)
+      )
 
   @doc false
   @spec contact_identity_fixture(map()) :: ContactIdentity.t()
@@ -805,6 +848,7 @@ defmodule Glific.Fixtures do
   @spec notification_fixture(map()) :: Notification.t()
   def notification_fixture(attrs) do
     [_glific_admin, contact | _] = Contacts.list_contacts(attrs)
+    state = Contacts.whatsapp_state(contact)
 
     valid_attrs = %{
       category: "Message",
@@ -815,9 +859,9 @@ defmodule Glific.Fixtures do
         id: contact.id,
         name: contact.name,
         phone: contact.phone,
-        bsp_status: contact.bsp_status,
+        bsp_status: state.bsp_status,
         status: contact.status,
-        last_message_at: contact.last_message_at
+        last_message_at: state.last_message_at
       }
     }
 

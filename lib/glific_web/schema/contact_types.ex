@@ -57,7 +57,10 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
 
     field(:status, :contact_status_enum)
-    field(:bsp_status, :contact_provider_status_enum)
+
+    field :bsp_status, :contact_provider_status_enum do
+      resolve(Resolvers.Contacts.whatsapp_state_field(:bsp_status))
+    end
 
     @desc """
     Whether the contact currently has a web channel socket open. Resolved at query time from
@@ -88,16 +91,29 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:is_contact_replied, :boolean)
     field(:last_message_number, :integer)
 
-    field(:optin_time, :datetime)
-    field(:optout_time, :datetime)
+    field :optin_time, :datetime do
+      resolve(Resolvers.Contacts.whatsapp_state_field(:optin_time))
+    end
 
-    field(:optin_method, :string)
-    field(:optout_method, :string)
+    field :optout_time, :datetime do
+      resolve(Resolvers.Contacts.whatsapp_state_field(:optout_time))
+    end
+
+    field :optin_method, :string do
+      resolve(Resolvers.Contacts.whatsapp_state_field(:optin_method))
+    end
+
+    field :optout_method, :string do
+      resolve(Resolvers.Contacts.whatsapp_state_field(:optout_method))
+    end
 
     field(:fields, :json)
     field(:settings, :json)
 
-    field(:last_message_at, :datetime)
+    field :last_message_at, :datetime do
+      resolve(Resolvers.Contacts.whatsapp_state_field(:last_message_at))
+    end
+
     field(:last_communication_at, :datetime)
 
     field(:inserted_at, :datetime)

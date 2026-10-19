@@ -847,7 +847,7 @@ defmodule Glific.PartnersTest do
       curr_org_id = Repo.get_organization_id()
       Repo.put_organization_id(organization.id)
       updated_contact = Contacts.get_contact!(contact.id)
-      assert updated_contact.bsp_status == :hsm
+      assert Contacts.whatsapp_state(updated_contact).bsp_status == :hsm
       Repo.put_organization_id(curr_org_id)
     end
   end

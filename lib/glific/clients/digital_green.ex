@@ -207,7 +207,7 @@ defmodule Glific.Clients.DigitalGreen do
              organization_id: fields["organization_id"],
              id: contact_id
            }) do
-      set_contact_reminder(contact.last_message_at)
+      set_contact_reminder(Contacts.whatsapp_state(contact).last_message_at)
     end
   end
 

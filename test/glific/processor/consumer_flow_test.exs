@@ -175,9 +175,9 @@ defmodule Glific.Processor.ConsumerFlowTest do
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count + Enum.count(@checks_1)
 
-    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
-    assert sender.optin_status == false
-    assert !is_nil(sender.optout_time)
+    state = Contacts.whatsapp_state(Repo.get_by(Contact, %{name: "Chrissy Cron"}))
+    assert state.optin_status == false
+    assert !is_nil(state.optout_time)
   end
 
   test "check regx flow sequence" do
@@ -202,9 +202,9 @@ defmodule Glific.Processor.ConsumerFlowTest do
   test "should not start optin flow when flow is inactive" do
     state = ConsumerFlow.load_state(Fixtures.get_org_id())
 
-    sender =
+    {:ok, sender} =
       Repo.get_by(Contact, %{name: "Chrissy Cron"})
-      |> Contact.changeset(%{
+      |> Contacts.update_contact(%{
         status: :invalid,
         optin_time: nil,
         optout_time: ~U[2023-12-22 12:00:00Z],
@@ -212,8 +212,6 @@ defmodule Glific.Processor.ConsumerFlowTest do
         optin_status: false,
         is_contact_replied: false
       })
-
-    sender = Repo.update!(sender)
 
     flow =
       Repo.get_by(Flow, name: "Optin Workflow")

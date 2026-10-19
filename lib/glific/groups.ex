@@ -5,9 +5,12 @@ defmodule Glific.Groups do
   import Ecto.Query
   alias __MODULE__
 
+  require Glific.Contacts
+
   alias Glific.{
     AccessControl,
     AccessControl.GroupRole,
+    Contacts,
     Contacts.Contact,
     Groups.WAGroupsCollection,
     Repo,
@@ -354,10 +357,11 @@ defmodule Glific.Groups do
 
     ContactGroup
     |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
+    |> Contacts.with_whatsapp_state(:c)
     |> where([cg], cg.group_id == ^group_id)
     |> where([c: c], c.status == :valid)
-    |> group_by([c: c], c.bsp_status)
-    |> select([c: c], [c.bsp_status, count(c.id)])
+    |> group_by([c: c], Contacts.whatsapp_value(c, :bsp_status))
+    |> select([c: c], [Contacts.whatsapp_value(c, :bsp_status), count(c.id)])
     |> Repo.all()
     |> Enum.reduce(
       result,
@@ -385,7 +389,8 @@ defmodule Glific.Groups do
   @spec contact_ids(non_neg_integer) :: list(non_neg_integer)
   def contact_ids(group_id) do
     Contact
-    |> where([c], c.status != :blocked and is_nil(c.optout_time))
+    |> Contacts.with_whatsapp_state()
+    |> where([c], c.status != :blocked and is_nil(Contacts.whatsapp_value(c, :optout_time)))
     |> join(:inner, [c], cg in ContactGroup,
       as: :cg,
       on: cg.contact_id == c.id and cg.group_id == ^group_id

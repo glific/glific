@@ -125,8 +125,8 @@ defmodule GlificWeb.ExotelControllerTest do
           organization_id: organization_id
         })
 
-      assert contact.optin_status == true
-      assert contact.optin_method == "Exotel"
+      assert Glific.Contacts.whatsapp_state(contact).optin_status == true
+      assert Glific.Contacts.whatsapp_state(contact).optin_method == "Exotel"
 
       organization_id_tag = to_string(organization_id)
 

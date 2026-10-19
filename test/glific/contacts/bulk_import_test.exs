@@ -65,6 +65,8 @@ defmodule Glific.Contacts.BulkImportTest do
     contact
   end
 
+  defp state(phone), do: phone |> fetch() |> Contacts.whatsapp_state()
+
   # Contacts.count_contacts filters phone with a LIKE, so exact identity needs an exact match
   defp exists?(phone), do: match?({:ok, _}, Repo.fetch_by(Contact, %{phone: phone}))
 
@@ -183,12 +185,12 @@ defmodule Glific.Contacts.BulkImportTest do
 
     test "opts in a new contact and sets bsp_status" do
       run("name,phone,language,city\nOptin,+919876500003,english,Pune\n")
-      contact = fetch("919876500003")
+      state = state("919876500003")
 
-      assert contact.optin_time != nil
-      assert contact.optin_status == true
-      assert contact.optin_method == "Import"
-      assert contact.bsp_status == :hsm
+      assert state.optin_time != nil
+      assert state.optin_status == true
+      assert state.optin_method == "Import"
+      assert state.bsp_status == :hsm
     end
 
     test "adds the contact to its collection" do
@@ -281,14 +283,72 @@ defmodule Glific.Contacts.BulkImportTest do
       contact = fetch("919876580201")
 
       assert contact.status == :blocked
-      assert contact.optin_time == nil
-      refute contact.optin_status
+      assert Contacts.whatsapp_state(contact).optin_time == nil
+      refute Contacts.whatsapp_state(contact).optin_status
     end
 
     test "the contact's fields are still updated" do
       run("name,phone,language,city\nBlocked,+919876580201,english,Mumbai\n")
 
       assert field(fetch("919876580201"), "city") == "Mumbai"
+    end
+  end
+
+  describe "a contact that predates identities" do
+    defp pre_identity_phone(phone, state) do
+      Glific.Fixtures.pre_identity_contact_fixture(
+        Map.merge(%{phone: phone, organization_id: org_id()}, state)
+      )
+    end
+
+    test "is opted in once, from its own columns, keeping what it had" do
+      last_message_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      contact =
+        pre_identity_phone("919876590001", %{
+          optin_time: nil,
+          optin_status: false,
+          last_message_at: last_message_at,
+          optout_method: "earlier"
+        })
+
+      run("name,phone,language,city\nLegacy,+919876590001,english,Pune\n")
+
+      assert %{
+               optin_status: true,
+               optin_method: "Import",
+               bsp_status: :session_and_hsm,
+               last_message_at: ^last_message_at,
+               optout_method: "earlier"
+             } = Glific.Fixtures.fetch_identity(contact, :whatsapp) |> Map.from_struct()
+    end
+
+    test "is not opted back in when its own columns say it opted out" do
+      contact =
+        pre_identity_phone("919876590002", %{
+          optout_time: ~U[2025-03-04 05:06:07Z],
+          optin_status: false
+        })
+
+      run("name,phone,language,city\nLegacy,+919876590002,english,Pune\n")
+
+      assert %{optin_status: false, optin_time: nil, optout_time: ~U[2025-03-04 05:06:07Z]} =
+               Contacts.whatsapp_state(contact)
+    end
+
+    test "is not opted in again when its own columns say it already opted in" do
+      contact =
+        pre_identity_phone("919876590003", %{
+          optin_time: ~U[2025-03-04 05:06:07Z],
+          optin_status: true,
+          optin_method: "WA",
+          bsp_status: :hsm
+        })
+
+      run("name,phone,language,city\nLegacy,+919876590003,english,Pune\n")
+
+      assert %{optin_method: "WA", optin_time: ~U[2025-03-04 05:06:07Z]} =
+               Contacts.whatsapp_state(contact)
     end
   end
 
@@ -522,7 +582,7 @@ defmodule Glific.Contacts.BulkImportTest do
     end
 
     test "does not change the optin time" do
-      before = fetch("919876520001").optin_time
+      before = state("919876520001").optin_time
 
       run(
         "name,phone,language,collection,attendance\nMove,+919876520001,english,moved,80%\n",
@@ -530,7 +590,7 @@ defmodule Glific.Contacts.BulkImportTest do
         nil
       )
 
-      assert fetch("919876520001").optin_time == before
+      assert state("919876520001").optin_time == before
     end
 
     test "does not create a contact that does not already exist" do

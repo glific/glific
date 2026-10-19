@@ -6,8 +6,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Verifying a code records the contact's consent on the web channel, never on WhatsApp:
-  `contacts.optin_*` keeps its meaning of WhatsApp consent. The code itself is a transactional
+  Verifying a code records the contact's consent on its web identity, never on its WhatsApp one:
+  the WhatsApp opt-in keeps its meaning of WhatsApp consent. The code itself is a transactional
   message and is exempt from that opt-in (`Contacts.can_send_message_to?/3`).
   """
 
@@ -298,8 +298,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec record_web_optin(Contact.t()) :: :ok
   defp record_web_optin(contact) do
-    case Contacts.record_channel_optin(contact, :web, method: "web_channel_otp") do
-      {:ok, _contact_channel} ->
+    case Contacts.optin_contact(%{method: "web_channel_otp"}, :web, contact.phone) do
+      {:ok, _contact} ->
         :ok
 
       {:error, error} ->

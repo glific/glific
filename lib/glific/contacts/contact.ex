@@ -27,20 +27,12 @@ defmodule Glific.Contacts.Contact do
     :phone,
     :name,
     :contact_type,
-    :bsp_status,
     :status,
     :is_org_read,
     :is_org_replied,
     :is_contact_replied,
-    :optin_time,
-    :optin_status,
-    :optin_method,
-    :optin_message_id,
-    :optout_time,
-    :optout_method,
     :first_message_number,
     :last_message_number,
-    :last_message_at,
     :last_communication_at,
     :settings,
     :fields,
@@ -55,27 +47,20 @@ defmodule Glific.Contacts.Contact do
           masked_phone: String.t() | nil,
           contact_type: String.t() | nil,
           status: ContactStatus.t() | nil,
-          bsp_status: ContactProviderStatus.t() | nil,
           is_org_read: boolean,
           is_org_replied: boolean,
           is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           identities: [ContactIdentity.t()] | Ecto.Association.NotLoaded.t(),
+          whatsapp_identity: ContactIdentity.t() | Ecto.Association.NotLoaded.t() | nil,
           active_profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           active_profile_id: non_neg_integer | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          optin_time: :utc_datetime | nil,
-          optin_method: String.t() | nil,
-          optin_status: boolean() | nil,
-          optin_message_id: String.t() | nil,
-          optout_time: :utc_datetime | nil,
-          optout_method: String.t() | nil,
           first_message_number: integer,
           last_message_number: integer,
-          last_message_at: :utc_datetime | nil,
           last_communication_at: :utc_datetime | nil,
           settings: map() | nil,
           fields: map() | nil,
@@ -90,24 +75,28 @@ defmodule Glific.Contacts.Contact do
     field(:contact_type, :string, default: "WABA")
 
     field(:status, ContactStatus)
-    field(:bsp_status, ContactProviderStatus)
+
+    # The pre-identity copy of the WhatsApp state: nothing writes it, and only
+    # `Glific.Contacts.WhatsAppState` reads it, for a contact with no WhatsApp identity row yet.
+    field(:legacy_optin_time, :utc_datetime, source: :optin_time, read_after_writes: true)
+    field(:legacy_optin_status, :boolean, source: :optin_status, read_after_writes: true)
+    field(:legacy_optin_method, :string, source: :optin_method, read_after_writes: true)
+    field(:legacy_optout_time, :utc_datetime, source: :optout_time, read_after_writes: true)
+    field(:legacy_optout_method, :string, source: :optout_method, read_after_writes: true)
+    field(:legacy_bsp_status, ContactProviderStatus, source: :bsp_status, read_after_writes: true)
+
+    field(:legacy_last_message_at, :utc_datetime,
+      source: :last_message_at,
+      read_after_writes: true
+    )
 
     field(:is_org_read, :boolean, default: true)
     field(:is_org_replied, :boolean, default: true)
     field(:is_contact_replied, :boolean, default: true)
 
-    field(:optin_time, :utc_datetime)
-    field(:optin_status, :boolean, default: false)
-    field(:optin_method, :string)
-    field(:optin_message_id, :string)
-
     field(:first_message_number, :integer, default: 1)
     field(:last_message_number, :integer, default: 0)
 
-    field(:optout_time, :utc_datetime)
-    field(:optout_method, :string)
-
-    field(:last_message_at, :utc_datetime)
     field(:last_communication_at, :utc_datetime)
 
     field(:settings, :map, default: %{})
@@ -119,6 +108,7 @@ defmodule Glific.Contacts.Contact do
 
     has_one(:user, User)
     has_many(:identities, ContactIdentity)
+    has_one(:whatsapp_identity, ContactIdentity, where: [channel: :whatsapp])
     many_to_many(:tags, Tag, join_through: "contacts_tags", on_replace: :delete)
 
     many_to_many(:groups, Group, join_through: "contacts_groups", on_replace: :delete)

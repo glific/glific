@@ -42,6 +42,13 @@ defmodule GlificWeb.Schema.ContactTest do
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/contacts/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contacts/list.gql")
+
+  load_gql(
+    :whatsapp_state,
+    GlificWeb.Schema,
+    "assets/gql/contacts/whatsapp_state.gql"
+  )
+
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/contacts/by_id.gql")
   load_gql(:by_phone, GlificWeb.Schema, "assets/gql/contacts/by_phone.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/contacts/create.gql")
@@ -118,6 +125,121 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(contacts, [Access.at(0), "name"]) != "Test"
     assert get_in(contacts, [Access.at(1), "name"]) != "Test"
     assert get_in(contacts, [Access.at(2), "name"]) != "Test"
+  end
+
+  describe "the WhatsApp state of a contact" do
+    @optin_time ~U[2025-03-04 05:06:07Z]
+    @last_message_at ~U[2026-10-01 10:11:12Z]
+
+    defp state_by_name(user, filter) do
+      {:ok, query_data} =
+        auth_query_gql_by(:whatsapp_state, user, variables: %{"filter" => filter})
+
+      query_data |> get_in([:data, "contacts"]) |> Map.new(&{&1["name"], &1})
+    end
+
+    test "is read from the WhatsApp identity", %{staff: user} do
+      Fixtures.contact_fixture(%{
+        name: "State Identity",
+        phone: "919876100001",
+        optin_time: @optin_time,
+        optin_method: "BSP",
+        optout_method: "earlier",
+        bsp_status: :session_and_hsm,
+        last_message_at: @last_message_at
+      })
+
+      assert %{"State Identity" => contact} = state_by_name(user, %{"name" => "State Identity"})
+      assert contact["optinTime"] == "2025-03-04T05:06:07Z"
+      assert contact["optinMethod"] == "BSP"
+      assert contact["optoutTime"] == nil
+      assert contact["optoutMethod"] == "earlier"
+      assert contact["bspStatus"] == "SESSION_AND_HSM"
+      assert contact["lastMessageAt"] == "2026-10-01T10:11:12Z"
+    end
+
+    test "is read from the contact's own columns while it has no identity", %{staff: user} do
+      Fixtures.pre_identity_contact_fixture(%{
+        name: "State Columns",
+        phone: "919876100002",
+        optin_time: @optin_time,
+        optin_method: "WA",
+        bsp_status: :hsm,
+        last_message_at: @last_message_at
+      })
+
+      assert %{"State Columns" => contact} = state_by_name(user, %{"name" => "State Columns"})
+      assert contact["optinTime"] == "2025-03-04T05:06:07Z"
+      assert contact["optinMethod"] == "WA"
+      assert contact["bspStatus"] == "HSM"
+      assert contact["lastMessageAt"] == "2026-10-01T10:11:12Z"
+    end
+
+    test "is none for a contact with no phone", %{staff: user} do
+      Fixtures.contact_without_phone_fixture(%{name: "State Web"})
+
+      assert %{"State Web" => contact} = state_by_name(user, %{"name" => "State Web"})
+      assert contact["bspStatus"] == "NONE"
+      assert contact["optinTime"] == nil
+      assert contact["lastMessageAt"] == nil
+    end
+
+    test "filters contacts by bspStatus, from either place", %{staff: user} do
+      Fixtures.contact_fixture(%{
+        name: "State Filter A",
+        phone: "919876100003",
+        bsp_status: :session
+      })
+
+      Fixtures.pre_identity_contact_fixture(%{
+        name: "State Filter B",
+        phone: "919876100004",
+        bsp_status: :session
+      })
+
+      Fixtures.contact_fixture(%{name: "State Filter C", phone: "919876100005", bsp_status: :hsm})
+
+      names =
+        user |> state_by_name(%{"name" => "State Filter", "bspStatus" => "SESSION"}) |> Map.keys()
+
+      assert Enum.sort(names) == ["State Filter A", "State Filter B"]
+    end
+
+    test "is loaded for a whole list with one identity query", %{staff: user} do
+      for index <- 1..4,
+          do:
+            Fixtures.contact_fixture(%{
+              name: "State Batch #{index}",
+              phone: "91987610001#{index}"
+            })
+
+      test_pid = self()
+
+      :telemetry.attach(
+        "state-batch",
+        [:glific, :repo, :query],
+        fn _event, _measurements, %{source: source}, _config ->
+          send(test_pid, {:query, source})
+        end,
+        nil
+      )
+
+      assert map_size(state_by_name(user, %{"name" => "State Batch"})) == 4
+      :telemetry.detach("state-batch")
+
+      assert Enum.count(
+               Stream.repeatedly(fn -> receive_query() end) |> Enum.take_while(& &1),
+               &(&1 == "contact_identities")
+             ) == 1
+    end
+
+    defp receive_query do
+      receive do
+        {:query, source} -> source
+      after
+        0 -> nil
+      end
+    end
   end
 
   test "count returns the number of contacts", %{staff: user} do
@@ -381,7 +503,7 @@ defmodule GlificWeb.Schema.ContactTest do
     # Phone is stored in normalized format without + prefix
     normalized_phone = "919917443992"
     contact = assert Contacts.get_contact_by_phone!(normalized_phone)
-    assert contact.optin_method == "Import"
+    assert Contacts.whatsapp_state(contact).optin_method == "Import"
     count = Contacts.count_contacts(%{filter: %{phone: normalized_phone}})
     assert count == 1
 

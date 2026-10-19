@@ -10,6 +10,7 @@ defmodule Glific.Flows.Broadcast do
   require Logger
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows,
     Flows.Flow,
@@ -560,23 +561,23 @@ defmodule Glific.Flows.Broadcast do
     # Batch inserting so that we can insert for large collections (15K+ for ex)
     contact_ids
     |> Enum.chunk_every(@contact_chunk)
-    |> Enum.each(fn contacts_chunk ->
-      contacts_chunk_str = "(" <> Enum.join(contacts_chunk, ", ") <> ")"
-
+    |> Enum.map(&Contacts.filter_not_opted_out/1)
+    |> Enum.reject(&(&1 == []))
+    |> Enum.each(fn eligible_ids ->
       query = """
       INSERT INTO message_broadcast_contacts
       (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)
 
       (SELECT $1, 'pending', $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, id, $3
        FROM contacts
-
-       WHERE (status != 'blocked') AND (optout_time is null) AND id in #{contacts_chunk_str})
+       WHERE id = ANY($4))
       """
 
       values = [
         message_broadcast.id,
         message_broadcast.organization_id,
-        group_ids
+        group_ids,
+        eligible_ids
       ]
 
       {:ok, _} = Repo.query(query, values)

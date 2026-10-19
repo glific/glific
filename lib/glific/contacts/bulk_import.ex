@@ -78,21 +78,27 @@ defmodule Glific.Contacts.BulkImport do
   defp load_existing(rows) do
     phones = Enum.map(rows, & &1["phone"])
 
-    Contact
-    |> where([c], c.phone in ^phones)
-    |> select([c], %{
-      id: c.id,
-      phone: c.phone,
-      language_id: c.language_id,
-      optin_time: c.optin_time,
-      optout_time: c.optout_time,
-      last_message_at: c.last_message_at,
-      fields: c.fields,
-      status: c.status,
-      active_profile_id: c.active_profile_id
-    })
-    |> Repo.all()
-    |> Map.new(&{&1.phone, &1})
+    contacts =
+      Contact
+      |> where([c], c.phone in ^phones)
+      |> select([c], %{
+        id: c.id,
+        phone: c.phone,
+        language_id: c.language_id,
+        fields: c.fields,
+        status: c.status,
+        active_profile_id: c.active_profile_id
+      })
+      |> Repo.all()
+
+    states = Contacts.whatsapp_states(contacts)
+
+    Map.new(contacts, fn contact ->
+      state = Map.fetch!(states, contact.id)
+
+      {contact.phone,
+       Map.merge(contact, Map.take(state, [:optin_time, :optout_time, :last_message_at]))}
+    end)
   end
 
   @spec reject_missing([map()], map(), map(), String.t()) :: {map(), [map()]}
@@ -336,12 +342,7 @@ defmodule Glific.Contacts.BulkImport do
           language_id: fragment("EXCLUDED.language_id"),
           fields: fragment("? || EXCLUDED.fields", c.fields),
           updated_at: fragment("EXCLUDED.updated_at"),
-          optin_time: fragment("EXCLUDED.optin_time"),
-          optin_status: fragment("EXCLUDED.optin_status"),
-          optin_method: fragment("EXCLUDED.optin_method"),
-          optout_time: fragment("EXCLUDED.optout_time"),
-          status: fragment("EXCLUDED.status"),
-          bsp_status: fragment("EXCLUDED.bsp_status")
+          status: fragment("EXCLUDED.status")
         ]
       ]
     )

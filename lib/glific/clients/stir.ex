@@ -1265,7 +1265,7 @@ defmodule Glific.Clients.Stir do
     with {:ok, _registration_completed_at} <-
            has_a_date(contact.fields, "registration_completed_at"),
          true <-
-           Timex.diff(Timex.today(), contact.last_message_at, :days)
+           Timex.diff(Timex.today(), Contacts.whatsapp_state(contact).last_message_at, :days)
            |> reminder_day?(type) do
       {:reminder_set, set_reminder(contact, type)}
     else

@@ -4,6 +4,7 @@ if Code.ensure_loaded?(Faker) do
     Script for populating the database at scale
     """
     alias Glific.{
+      Contacts,
       Contacts.Contact,
       Flows.FlowResult,
       Groups.ContactGroup,
@@ -153,7 +154,7 @@ if Code.ensure_loaded?(Faker) do
       # seed contacts
       contact_entries
       |> Enum.chunk_every(300)
-      |> Enum.map(&Repo.insert_all(Contact, &1))
+      |> Enum.map(&Contacts.insert_contacts(&1, on_conflict: :nothing))
     end
 
     defp seed_contact_groups(contacts_count, organization) do

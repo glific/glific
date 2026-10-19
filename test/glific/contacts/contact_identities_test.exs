@@ -154,7 +154,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
           phone: "919876543213"
         })
 
-      assert nil == created.last_message_at
+      assert nil == Contacts.whatsapp_state(created).last_message_at
 
       assert {:ok, contact} =
                Contacts.maybe_create_contact(%{phone: created.phone}, :web, "ravi_15")
@@ -169,7 +169,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^target.id))
 
       Repo.update_all(from(c in Contact, where: c.id == ^target.id),
-        set: [last_message_at: DateTime.utc_now()]
+        set: [legacy_last_message_at: DateTime.utc_now()]
       )
 
       assert {:ok, contact} =
@@ -584,6 +584,116 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       ids = %{filter: %{term: "wa_only_key"}} |> Contacts.list_contacts() |> Enum.map(& &1.id)
 
       refute contact.id in ids
+    end
+  end
+
+  describe "optin_contact/3 and contact_opted_out/5 on the web channel" do
+    setup do
+      {:ok, contact} = Contacts.maybe_create_contact(%{}, :web, "consent_user")
+      %{contact: contact}
+    end
+
+    defp web_identity(contact), do: Fixtures.fetch_identity(contact, :web)
+
+    defp web_optin(identifier, method \\ "web_channel_jwt"),
+      do: Contacts.optin_contact(%{method: method}, :web, identifier)
+
+    defp history(contact, type),
+      do:
+        Repo.all(
+          from(h in Glific.Contacts.ContactHistory,
+            where: h.contact_id == ^contact.id and h.event_type == ^type
+          )
+        )
+
+    test "the first call opts the web identity in and logs a web history event", %{
+      contact: contact
+    } do
+      assert {:ok, %Contact{id: id}} = web_optin("consent_user")
+      assert id == contact.id
+
+      assert %{optin_status: true, optin_method: "web_channel_jwt", optin_time: %DateTime{}} =
+               web_identity(contact)
+
+      assert [%{channel: :web, event_meta: %{"method" => "web_channel_jwt"}}] =
+               history(contact, "contact_opted_in")
+    end
+
+    test "a repeat call changes nothing and logs nothing", %{contact: contact} do
+      {:ok, _} = web_optin("consent_user")
+      first = web_identity(contact)
+
+      assert {:ok, _} = web_optin("consent_user", "web_channel_otp")
+
+      again = web_identity(contact)
+      assert {again.optin_time, again.optin_method} == {first.optin_time, first.optin_method}
+      assert length(history(contact, "contact_opted_in")) == 1
+    end
+
+    test "an opt-out, then a call, clears the opt-out and keeps the first opt-in", %{
+      contact: contact
+    } do
+      {:ok, _} = web_optin("consent_user")
+      first = web_identity(contact)
+
+      assert :ok =
+               Contacts.contact_opted_out("consent_user", 1, DateTime.utc_now(), "user",
+                 channel: :web
+               )
+
+      assert %{optout_method: "user", optin_status: false} = web_identity(contact)
+      assert [%{channel: :web}] = history(contact, "contact_opted_out")
+
+      assert :error =
+               Contacts.contact_opted_out("consent_user", 1, DateTime.utc_now(), "user",
+                 channel: :web
+               )
+
+      assert {:ok, _} = web_optin("consent_user", "web_channel_otp")
+
+      reopted = web_identity(contact)
+      assert is_nil(reopted.optout_time)
+      assert is_nil(reopted.optout_method)
+      assert reopted.optin_status
+      assert reopted.optin_time == first.optin_time
+      assert reopted.optin_method == "web_channel_jwt"
+      assert length(history(contact, "contact_opted_in")) == 2
+    end
+
+    test "the username is matched in any case", %{contact: contact} do
+      assert {:ok, _} = web_optin("CONSENT_User")
+      assert web_identity(contact).optin_status
+    end
+
+    test "never touches the WhatsApp identity or session", %{organization_id: organization_id} do
+      whatsapp =
+        Fixtures.contact_fixture(%{
+          organization_id: organization_id,
+          optin_time: nil,
+          optin_status: false,
+          bsp_status: :none
+        })
+
+      {:ok, whatsapp} = Contacts.add_identity(whatsapp, :web, "both_channels")
+
+      assert {:ok, _} = web_optin("both_channels", "web_channel_otp")
+
+      :ok =
+        Contacts.contact_opted_out("both_channels", 1, DateTime.utc_now(), "user", channel: :web)
+
+      assert %{optin_time: nil, optin_status: false, optout_time: nil, bsp_status: :none} =
+               Contacts.whatsapp_state(whatsapp)
+    end
+
+    test "an unknown identity is refused", %{contact: contact} do
+      assert {:error, :not_found} = web_optin("someone_else")
+
+      assert :error =
+               Contacts.contact_opted_out("someone_else", 1, DateTime.utc_now(), "x",
+                 channel: :web
+               )
+
+      assert history(contact, "contact_opted_in") == []
     end
   end
 end

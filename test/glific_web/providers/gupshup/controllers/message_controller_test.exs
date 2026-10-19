@@ -93,8 +93,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       # ensure the message has been enqueued for processing
       assert_enqueued(worker: MessageWorker, prefix: "global")
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -148,8 +154,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       # ensure the message has been enqueued for processing
       assert_enqueued(worker: MessageWorker, prefix: "global")
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -191,8 +203,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         prefix: "global"
       )
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -227,8 +245,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         prefix: "global"
       )
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -266,8 +290,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         prefix: "global"
       )
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -346,7 +376,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.media.flow == :inbound
       assert message.media.source_url == setup_config.image_payload["url"]
 
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==

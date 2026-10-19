@@ -86,7 +86,7 @@ defmodule Glific.ChatbotDiagnose do
     "contact_histories" =>
       ~w(id event_type event_label event_datetime event_meta contact_id profile_id organization_id inserted_at updated_at)a,
     "contacts" =>
-      ~w(id name phone contact_type status bsp_status is_org_read is_org_replied is_contact_replied optin_time optin_status optin_method optin_message_id optout_time optout_method first_message_number last_message_number last_message_at last_communication_at language_id active_profile_id organization_id inserted_at updated_at)a,
+      ~w(id name phone contact_type status is_org_read is_org_replied is_contact_replied first_message_number last_message_number last_communication_at language_id active_profile_id organization_id inserted_at updated_at)a,
     "contacts_fields" =>
       ~w(id name shortcode value_type scope organization_id inserted_at updated_at)a,
     "contacts_groups" => ~w(id contact_id group_id organization_id inserted_at updated_at)a,

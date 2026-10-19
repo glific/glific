@@ -235,12 +235,12 @@ defmodule GlificWeb.WebChannelSocketTest do
         assert {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
         contact = first.assigns.current_contact
 
-        assert {:ok, %{optin_time: optin_time, optin_method: "web_channel_jwt"}} =
-                 Contacts.fetch_channel(contact, :web)
+        assert %{optin_time: optin_time, optin_method: "web_channel_jwt", optin_status: true} =
+                 Glific.Fixtures.fetch_identity(contact, :web)
 
         assert {:ok, _again} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
 
-        assert {:ok, %{optin_time: ^optin_time}} = Contacts.fetch_channel(contact, :web)
+        assert %{optin_time: ^optin_time} = Glific.Fixtures.fetch_identity(contact, :web)
 
         assert [%{channel: :web}] =
                  Glific.Repo.all(
@@ -249,8 +249,9 @@ defmodule GlificWeb.WebChannelSocketTest do
                    )
                  )
 
-        assert is_nil(contact.optin_time)
-        assert contact.optin_status == false
+        assert is_nil(Contacts.whatsapp_state(contact).optin_time)
+        assert Contacts.whatsapp_state(contact).optin_status == false
+        assert is_nil(contact.phone)
       end)
     end
 
@@ -258,7 +259,11 @@ defmodule GlificWeb.WebChannelSocketTest do
       WebChannelFlagHelpers.activate_web_channel(1, %{}, %{"jwt_signature_secret_1" => @secret})
       assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())
 
-      refute Glific.Repo.exists?(Glific.Contacts.ContactChannel)
+      refute Glific.Repo.exists?(
+               from(i in Glific.Contacts.ContactIdentity,
+                 where: i.channel == :web and not is_nil(i.optin_time)
+               )
+             )
     end
 
     test "refuses when the web channel is off" do

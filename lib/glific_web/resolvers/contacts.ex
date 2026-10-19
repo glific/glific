@@ -5,8 +5,26 @@ defmodule GlificWeb.Resolvers.Contacts do
   """
   use Gettext, backend: GlificWeb.Gettext
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Repo, State}
   alias GlificWeb.Resolvers.ContactIdentities
+
+  @doc """
+  A resolver for one WhatsApp state field of a contact, batching the identity lookups of a whole list.
+  """
+  @spec whatsapp_state_field(atom()) :: (Contact.t(), map(), Absinthe.Resolution.t() -> any())
+  def whatsapp_state_field(field) do
+    fn contact, _args, %{context: %{loader: loader}} ->
+      loader
+      |> Dataloader.load(Repo, :whatsapp_identity, contact)
+      |> on_load(fn loader ->
+        identity = Dataloader.get(loader, Repo, :whatsapp_identity, contact)
+        state = Contacts.whatsapp_state_from_preload(%{contact | whatsapp_identity: identity})
+        {:ok, Map.fetch!(state, field)}
+      end)
+    end
+  end
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

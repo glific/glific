@@ -578,8 +578,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # ensure the message has been enqueued for processing
       assert_enqueued(worker: MessageWorker, prefix: "global")
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -950,8 +956,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # ensure the message has been enqueued for processing
       assert_enqueued(worker: MessageWorker, prefix: "global")
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==

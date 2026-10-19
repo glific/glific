@@ -833,7 +833,6 @@ defmodule Glific.Erase do
       certificate_templates
       consulting_hours
       contact_histories
-      contact_channels
       contact_identities
       contacts_fields
       contacts_groups

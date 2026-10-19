@@ -59,7 +59,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       {:ok, contact} =
         Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
 
-      assert contact.optin_time != nil
+      assert Glific.Contacts.whatsapp_state(contact).optin_time != nil
       assert contact.status == :valid
     end
   end
@@ -88,7 +88,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       {:ok, contact} =
         Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
 
-      assert contact.optout_time != nil
+      assert Glific.Contacts.whatsapp_state(contact).optout_time != nil
       assert contact.status == :invalid
     end
   end

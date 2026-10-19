@@ -285,7 +285,7 @@ defmodule Glific.Seeds.SeedsMigration do
           )
         end
 
-      Repo.insert_all(Contact, simulators)
+      Contacts.insert_contacts(simulators, on_conflict: :nothing)
     end
 
     :ok
@@ -334,9 +334,8 @@ defmodule Glific.Seeds.SeedsMigration do
         }
       )
 
-    Contact
-    |> struct(attrs)
-    |> Repo.insert!()
+    {:ok, contact} = Contacts.create_contact(attrs)
+    contact
   end
 
   @spec create_saas_user(Contact.t()) :: User.t()
@@ -359,11 +358,7 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @spec optin_data(list()) :: :ok
-  defp optin_data(organizations) do
-    add_optin_search(organizations)
-
-    migrate_optin_data()
-  end
+  defp optin_data(organizations), do: add_optin_search(organizations)
 
   @spec add_optin_search(list()) :: :ok
   defp add_optin_search(organizations) do
@@ -383,24 +378,6 @@ defmodule Glific.Seeds.SeedsMigration do
         organization_id: org.id
       })
     end)
-  end
-
-  @spec migrate_optin_data :: :ok
-  defp migrate_optin_data do
-    # Set false status for contacts not opted in
-    Contact
-    |> where([c], is_nil(c.optin_time))
-    |> update([c], set: [optin_status: false])
-    |> Repo.update_all([], skip_organization_id: true)
-
-    # Set true status where we have an optin_date,
-    # also set method as BSP since they opted in via Gupshup
-    Contact
-    |> where([c], not is_nil(c.optin_time))
-    |> update([c], set: [optin_status: true, optin_method: "BSP"])
-    |> Repo.update_all([], skip_organization_id: true)
-
-    :ok
   end
 
   @doc """

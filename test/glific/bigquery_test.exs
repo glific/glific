@@ -999,6 +999,77 @@ defmodule Glific.BigQueryTest do
     assert message_row["sender_phone"] == nil
   end
 
+  test "queue_table_data/3 exports a contact's WhatsApp state from its identity, or its columns before it has one",
+       %{organization_id: organization_id} do
+    with_identity =
+      contact_fixture(%{
+        organization_id: organization_id,
+        optin_time: ~U[2025-03-04 05:06:07Z],
+        optin_method: "BSP",
+        bsp_status: :session_and_hsm,
+        last_message_at: ~U[2026-10-01 10:11:12Z]
+      })
+
+    without_identity =
+      pre_identity_contact_fixture(%{
+        organization_id: organization_id,
+        optin_time: ~U[2024-01-02 03:04:05Z],
+        optin_method: "WA",
+        optout_time: ~U[2025-05-06 07:08:09Z],
+        bsp_status: :hsm
+      })
+
+    BigQuery.insert_bigquery_jobs(organization_id)
+    test_pid = self()
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :post, url: url} = env ->
+        table = url |> String.split("/tables/") |> List.last() |> String.split("/") |> hd()
+        send(test_pid, {:insert_body, table, Jason.decode!(env.body)})
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+    end)
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("contacts", organization_id, %{
+               action: :insert,
+               min_id: min(with_identity.id, without_identity.id) - 1,
+               max_id: max(with_identity.id, without_identity.id)
+             })
+
+    assert_receive {:insert_body, "contacts", %{"rows" => rows}}
+    row = fn contact -> Enum.find(rows, &(&1["json"]["id"] == contact.id))["json"] end
+
+    assert %{
+             "provider_status" => "session_and_hsm",
+             "contact_optin_method" => "BSP",
+             "optin_time" => optin_time,
+             "optout_time" => nil,
+             "last_message_at" => last_message_at
+           } = row.(with_identity)
+
+    assert optin_time =~ "2025-03-04"
+    assert last_message_at =~ "2026-10-01"
+
+    assert %{
+             "provider_status" => "hsm",
+             "contact_optin_method" => "WA",
+             "optin_time" => legacy_optin_time,
+             "optout_time" => legacy_optout_time,
+             "last_message_at" => nil
+           } = row.(without_identity)
+
+    assert legacy_optin_time =~ "2024-01-0"
+    assert legacy_optout_time =~ "2025-05-0"
+  end
+
   test "queue_table_data/3 JSON-encodes list and map profile field values", %{
     organization_id: organization_id
   } do

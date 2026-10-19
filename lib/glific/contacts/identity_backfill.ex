@@ -4,7 +4,10 @@ defmodule Glific.Contacts.IdentityBackfill do
   identities existed. It lives under `lib/glific/contacts/` because it writes `ContactIdentity`
   rows; nothing in the application calls it.
 
-  Every contact with a non-empty phone and no WhatsApp identity is backfilled.
+  Every contact with a non-empty phone and no WhatsApp identity is backfilled, and each new identity
+  starts with the contact's own opt-in, opt-out, BSP status and last inbound message. A row the
+  running application created in the meantime is never touched, so the backfill can run while the
+  application is live.
 
   Contacts are read in id order, `batch_size` at a time, across all organizations, and each batch
   is inserted in its own statement, so no lock outlives a batch. Rows that already exist, or whose
@@ -81,7 +84,18 @@ defmodule Glific.Contacts.IdentityBackfill do
     |> where([c], not exists(whatsapp_identities()))
     |> order_by([c], asc: c.id)
     |> limit(^batch_size)
-    |> select([c], %{id: c.id, organization_id: c.organization_id, phone: c.phone})
+    |> select([c], %{
+      id: c.id,
+      organization_id: c.organization_id,
+      phone: c.phone,
+      optin_time: c.legacy_optin_time,
+      optin_status: c.legacy_optin_status,
+      optin_method: c.legacy_optin_method,
+      optout_time: c.legacy_optout_time,
+      optout_method: c.legacy_optout_method,
+      bsp_status: c.legacy_bsp_status,
+      last_message_at: c.legacy_last_message_at
+    })
     |> Repo.all(skip_organization_id: true)
   end
 
@@ -103,6 +117,13 @@ defmodule Glific.Contacts.IdentityBackfill do
           organization_id: contact.organization_id,
           channel: :whatsapp,
           identifier: contact.phone,
+          optin_time: contact.optin_time,
+          optin_status: contact.optin_status == true,
+          optin_method: contact.optin_method,
+          optout_time: contact.optout_time,
+          optout_method: contact.optout_method,
+          bsp_status: contact.bsp_status || :none,
+          last_message_at: contact.last_message_at,
           inserted_at: now,
           updated_at: now
         }

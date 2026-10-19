@@ -16,7 +16,12 @@ defmodule Glific.StatsTest do
   defp dt(date, time), do: DateTime.new!(date, time, "Etc/UTC")
 
   defp update_contact(contact, updates) do
-    Repo.update_all(from(c in Contact, where: c.id == ^contact.id), set: updates)
+    {state, columns} = Keyword.split(updates, [:optin_time, :optout_time, :last_message_at])
+
+    if columns != [],
+      do: Repo.update_all(from(c in Contact, where: c.id == ^contact.id), set: columns)
+
+    if state != [], do: {:ok, _contact} = Contacts.update_contact(contact, Map.new(state))
   end
 
   defp update_message(message, updates) do

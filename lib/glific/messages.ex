@@ -396,6 +396,8 @@ defmodule Glific.Messages do
       "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{reason}"
     )
 
+    state = Contacts.whatsapp_state(contact)
+
     {:ok, _} =
       Notifications.create_notification(%{
         category: "Message",
@@ -406,9 +408,9 @@ defmodule Glific.Messages do
           id: contact.id,
           name: contact.name,
           phone: contact.phone,
-          bsp_status: contact.bsp_status,
+          bsp_status: state.bsp_status,
           status: contact.status,
-          last_message_at: contact.last_message_at,
+          last_message_at: state.last_message_at,
           is_hsm: Map.get(attrs, :is_hsm),
           flow_id: Map.get(attrs, :flow_id),
           group_id: Map.get(attrs, :group_id)

@@ -70,8 +70,14 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
       # ensure the message has been enqueued for processing
       assert_enqueued(worker: MessageWorker, prefix: "global")
 
-      assert message.sender.last_message_at != nil
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -149,7 +155,12 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
       assert message.media.url == image_payload["url"] <> image_payload["signature"]
       assert message.media.source_url == image_payload["url"] <> image_payload["signature"]
 
-      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+      assert true ==
+               Glific.in_past_time(
+                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 :seconds,
+                 10
+               )
 
       # Sender should be stored into the db
       assert message.sender.phone ==

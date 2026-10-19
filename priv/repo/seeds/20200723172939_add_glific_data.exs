@@ -6,6 +6,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   alias Glific.{
     AccessControl,
+    Contacts,
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.Flow,
@@ -505,8 +506,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def contacts(organization, en) do
-    admin =
-      Repo.insert!(%Contact{
+    {:ok, admin} =
+      Contacts.create_contact(%{
         phone: admin_phone(organization.id),
         name: "NGO Main Account",
         organization_id: organization.id,

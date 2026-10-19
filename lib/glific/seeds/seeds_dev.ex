@@ -222,7 +222,8 @@ if Code.ensure_loaded?(Faker) do
         end
 
       # seed contacts
-      Repo.insert_all(Contact, contact_entries)
+      saved = Contacts.insert_contacts(contact_entries, on_conflict: :nothing)
+      {length(saved), nil}
     end
 
     @doc false
@@ -468,8 +469,8 @@ if Code.ensure_loaded?(Faker) do
          ) do
       password = "Secret12345678!"
 
-      contact =
-        Repo.insert!(%Contact{
+      {:ok, contact} =
+        Contacts.create_contact(%{
           phone: phone,
           name: name,
           language_id: en.id,

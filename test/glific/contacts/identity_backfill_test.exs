@@ -5,7 +5,6 @@ defmodule Glific.Contacts.IdentityBackfillTest do
 
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Contacts.ContactIdentity,
     Contacts.IdentityBackfill,
     Fixtures,
@@ -22,15 +21,8 @@ defmodule Glific.Contacts.IdentityBackfillTest do
          |> String.pad_leading(5, "0")
          |> String.slice(-5, 5))
 
-  defp contact_without_identity(attrs \\ %{}) do
-    contact = Fixtures.contact_fixture(Map.merge(%{phone: phone()}, attrs))
-
-    Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
-      skip_organization_id: true
-    )
-
-    contact
-  end
+  defp contact_without_identity(attrs \\ %{}),
+    do: Fixtures.pre_identity_contact_fixture(Map.merge(%{phone: phone()}, attrs))
 
   defp add_identity(contact, channel, identifier) do
     Repo.insert!(
@@ -126,5 +118,103 @@ defmodule Glific.Contacts.IdentityBackfillTest do
 
     assert identities(first, :whatsapp) == []
     assert [_one] = identities(second, :whatsapp)
+  end
+
+  describe "the WhatsApp state of each contact" do
+    @optin_time ~U[2025-03-04 05:06:07Z]
+    @last_message_at ~U[2026-10-01 10:11:12Z]
+
+    test "is copied from the contact's own columns onto its new identity" do
+      contact =
+        contact_without_identity(%{
+          optin_time: @optin_time,
+          optin_status: true,
+          optin_method: "BSP",
+          optout_time: nil,
+          bsp_status: :session_and_hsm,
+          last_message_at: @last_message_at
+        })
+
+      IdentityBackfill.run()
+
+      assert [identity] = identities(contact, :whatsapp)
+
+      assert %{
+               optin_time: @optin_time,
+               optin_status: true,
+               optin_method: "BSP",
+               optout_time: nil,
+               optout_method: nil,
+               bsp_status: :session_and_hsm,
+               last_message_at: @last_message_at
+             } = identity
+    end
+
+    test "keeps an opt-out, and never invents an opt-in" do
+      contact =
+        contact_without_identity(%{
+          optin_time: nil,
+          optin_status: false,
+          optout_time: @optin_time,
+          optout_method: "user",
+          bsp_status: :none
+        })
+
+      IdentityBackfill.run()
+
+      assert [%{optin_time: nil, optin_status: false, optout_time: @optin_time} = identity] =
+               identities(contact, :whatsapp)
+
+      assert identity.optout_method == "user"
+      assert identity.bsp_status == :none
+    end
+
+    test "reads the same through the contact before and after the backfill" do
+      contact =
+        contact_without_identity(%{
+          optin_time: @optin_time,
+          optin_status: true,
+          bsp_status: :hsm,
+          last_message_at: @last_message_at
+        })
+
+      before_backfill = Contacts.whatsapp_state(contact)
+      IdentityBackfill.run()
+
+      assert Contacts.whatsapp_state(contact) == before_backfill
+    end
+
+    test "never overwrites an identity the application already changed" do
+      contact =
+        contact_without_identity(%{optin_time: @optin_time, optin_status: true, bsp_status: :hsm})
+
+      {:ok, _contact} = Contacts.update_contact(contact, %{bsp_status: :session_and_hsm})
+
+      assert %{bsp_status: :session_and_hsm} = Fixtures.fetch_identity(contact, :whatsapp)
+
+      IdentityBackfill.run()
+
+      assert %{bsp_status: :session_and_hsm, optin_status: true} =
+               Fixtures.fetch_identity(contact, :whatsapp)
+    end
+
+    test "in batches, resumed from the last id, gives every contact its own state" do
+      contacts =
+        for index <- 1..5,
+            do: contact_without_identity(%{optin_status: true, optin_method: "m#{index}"})
+
+      assert %{last_id: last_id} =
+               IdentityBackfill.run(batch_size: 2, after_id: List.first(contacts).id)
+
+      assert last_id >= List.last(contacts).id
+      assert identities(List.first(contacts), :whatsapp) == []
+
+      assert %{inserted: inserted} = IdentityBackfill.run(batch_size: 2)
+      assert inserted >= 1
+      assert [_one] = identities(List.first(contacts), :whatsapp)
+
+      for {contact, index} <- Enum.with_index(contacts, 1),
+          do: assert(Contacts.whatsapp_state(contact).optin_method == "m#{index}")
+    end
   end
 end

@@ -1,5 +1,8 @@
 # Web channel: separate opt-in, and let staff reply from the inbox
 
+> Superseded in one respect: web consent is not stored in a `contact_channels` table. It lives on the
+> web identity row the contact logs in with; see `plans/contact-identities-design.md` §12.3.
+
 Implements [#5713](https://github.com/glific/glific/issues/5713) plus the staff-side send it
 depends on. Three repositories, three stacked branches, all named
 `web-channel-optin-admin-send`:

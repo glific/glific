@@ -5,6 +5,7 @@ defmodule Glific.Processor.ConsumerFlow do
   """
   @dialyzer {:nowarn_function, context_nil?: 1}
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows,
     Flows.FlowContext,
@@ -237,7 +238,7 @@ defmodule Glific.Processor.ConsumerFlow do
   ## check if contact is not in the optin flow and has optout time
   @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
   defp start_optin_flow?(contact, nil, _body),
-    do: !is_nil(contact.optout_time)
+    do: !is_nil(Contacts.whatsapp_state(contact).optout_time)
 
   defp start_optin_flow?(contact, active_context, body),
     do:

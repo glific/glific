@@ -9,6 +9,7 @@ defmodule Glific.Stats do
   alias Glific.{
     BigQuery.BigQueryWorker,
     Communications.Mailer,
+    Contacts,
     Flows.FlowContext,
     Mails.DashboardMail,
     Messages.Message,
@@ -22,6 +23,7 @@ defmodule Glific.Stats do
     Users.User
   }
 
+  require Glific.Contacts
   require Resvg
   alias GlificWeb.StatsLive
 
@@ -362,8 +364,12 @@ defmodule Glific.Stats do
         do: query,
         else:
           query
-          |> where([c], c.last_message_at >= ^start)
-          |> where([c], c.last_message_at < ^finish)
+          |> Contacts.with_whatsapp_state()
+          |> where([c], Contacts.whatsapp_value(c, :last_message_at) >= ^start)
+          |> where([c], Contacts.whatsapp_value(c, :last_message_at) < ^finish)
+
+    state_query =
+      if period == :summary, do: Contacts.with_whatsapp_state(time_query), else: time_query
 
     # Get the contacts who came today irrespective of whether they are active/opted in or not
     contacts_created_query =
@@ -374,8 +380,8 @@ defmodule Glific.Stats do
           |> where([c], c.inserted_at >= ^start)
           |> where([c], c.inserted_at < ^finish)
 
-    optin = time_query |> where([c], not is_nil(c.optin_time))
-    optout = time_query |> where([c], not is_nil(c.optout_time))
+    optin = state_query |> where([c], not is_nil(Contacts.whatsapp_value(c, :optin_time)))
+    optout = state_query |> where([c], not is_nil(Contacts.whatsapp_value(c, :optout_time)))
 
     # don't generate summary contact stats for hourly snapshots
     if(period == :hour,

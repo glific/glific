@@ -90,8 +90,8 @@ defmodule GlificWeb.WebChannelSocket do
          :ok <- enter_organization(organization_id),
          {:ok, claims} <- JwtToken.verify(organization_id, token),
          {:ok, contact} <- Contacts.maybe_create_contact(claims, :web, claims.sub),
-         {:ok, _contact_channel} <-
-           Contacts.record_channel_optin(contact, :web, method: "web_channel_jwt") do
+         {:ok, _contact} <-
+           Contacts.optin_contact(%{method: "web_channel_jwt"}, :web, claims.sub) do
       {:ok,
        %{
          contact: contact,

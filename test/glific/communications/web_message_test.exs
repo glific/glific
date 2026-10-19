@@ -52,10 +52,10 @@ defmodule Glific.Communications.WebMessageTest do
   end
 
   describe "the WhatsApp session window" do
-    # last_message_at is the WhatsApp 24-hour window; a browser message must not open it, or a
+    # The WhatsApp state's last_message_at is the 24-hour window; a browser message must not open it, or a
     # contact who only ever wrote on the web — and, post-#5713, may never have consented to
     # WhatsApp — would look messageable there for 24 hours.
-    test "an inbound web message does not touch contacts.last_message_at", %{contact: contact} do
+    test "an inbound web message does not touch the WhatsApp last_message_at", %{contact: contact} do
       {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: nil})
 
       assert {:ok, _message} =
@@ -67,7 +67,7 @@ defmodule Glific.Communications.WebMessageTest do
                  :text
                )
 
-      assert %Contact{last_message_at: nil} = Repo.get!(Contact, contact.id)
+      assert Contacts.whatsapp_state(contact).last_message_at == nil
     end
 
     # The rest of the inbox state is channel-agnostic and still has to update, or a web
@@ -169,7 +169,7 @@ defmodule Glific.Communications.WebMessageTest do
        %{contact: contact} do
     # last_message_at comes from a DB trigger; bsp_status is the WhatsApp session concept and
     # only set_session_status/2 writes it, which this path never calls.
-    before_message = Repo.get!(Contact, contact.id)
+    before_state = Contacts.whatsapp_state(contact)
 
     assert {:ok, _message} =
              WebMessage.receive_message(
@@ -180,8 +180,7 @@ defmodule Glific.Communications.WebMessageTest do
                :text
              )
 
-    after_message = Repo.get!(Contact, contact.id)
-    assert after_message.bsp_status == before_message.bsp_status
+    assert Contacts.whatsapp_state(contact).bsp_status == before_state.bsp_status
   end
 
   describe "with the web channel off, nothing reaches the flow engine" do

@@ -226,11 +226,11 @@ defmodule Glific.ContactsTest do
       attrs = Map.merge(attrs, @valid_attrs)
       assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
       assert contact.name == "some name"
-      assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
-      assert contact.optout_time == nil
+      assert Contacts.whatsapp_state(contact).optin_time == ~U[2010-04-17 14:00:00Z]
+      assert Contacts.whatsapp_state(contact).optout_time == nil
       assert contact.phone == "some phone"
       assert contact.status == :valid
-      assert contact.bsp_status == :hsm
+      assert Contacts.whatsapp_state(contact).bsp_status == :hsm
 
       # Contact should be created with organization's default language
       {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
@@ -249,11 +249,11 @@ defmodule Glific.ContactsTest do
 
       assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
       assert contact.name == "some name"
-      assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
-      assert contact.optout_time == nil
+      assert Contacts.whatsapp_state(contact).optin_time == ~U[2010-04-17 14:00:00Z]
+      assert Contacts.whatsapp_state(contact).optout_time == nil
       assert contact.phone == "some phone"
       assert contact.status == :valid
-      assert contact.bsp_status == :hsm
+      assert Contacts.whatsapp_state(contact).bsp_status == :hsm
       assert contact.language_id == language.id
     end
 
@@ -442,10 +442,10 @@ defmodule Glific.ContactsTest do
 
       assert {:ok, %Contact{} = contact} = Contacts.maybe_update_contact(update_attrs)
       assert contact.name == "some updated name"
-      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
-      assert contact.optout_time == nil
+      assert Contacts.whatsapp_state(contact).optin_time == ~U[2011-05-18 15:01:01Z]
+      assert Contacts.whatsapp_state(contact).optout_time == nil
       assert contact.status == :invalid
-      assert contact.bsp_status == :hsm
+      assert Contacts.whatsapp_state(contact).bsp_status == :hsm
     end
 
     test "maybe_update_contact/1 with invalid phone number which is not in DB",
@@ -647,7 +647,8 @@ defmodule Glific.ContactsTest do
       {:ok, contact} = Repo.fetch_by(Contact, phone: "919989329297")
 
       current_date = NaiveDateTime.utc_now()
-      assert NaiveDateTime.diff(contact.optin_time, current_date) in -5..5
+
+      assert NaiveDateTime.diff(Contacts.whatsapp_state(contact).optin_time, current_date) in -5..5
 
       assert count == 1
     end
@@ -820,7 +821,7 @@ defmodule Glific.ContactsTest do
 
       {:ok, contact} = Repo.fetch_by(Contact, name: "updated")
 
-      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
+      assert Contacts.whatsapp_state(contact).optin_time == ~U[2011-05-18 15:01:01Z]
 
       assert count == 1
     end
@@ -1133,11 +1134,11 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(attrs)
       assert {:ok, %Contact{} = contact} = Contacts.update_contact(contact, @update_attrs)
       assert contact.name == "some updated name"
-      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
-      assert contact.optout_time == nil
+      assert Contacts.whatsapp_state(contact).optin_time == ~U[2011-05-18 15:01:01Z]
+      assert Contacts.whatsapp_state(contact).optout_time == nil
       assert contact.phone == "some updated phone"
       assert contact.status == :invalid
-      assert contact.bsp_status == :hsm
+      assert Contacts.whatsapp_state(contact).bsp_status == :hsm
     end
 
     test "update_contact/2 with invalid data returns error changeset",
@@ -1457,8 +1458,8 @@ defmodule Glific.ContactsTest do
         )
 
       assert contact.status == :valid
-      assert contact.optin_time != nil
-      assert contact.optout_time == nil
+      assert Contacts.whatsapp_state(contact).optin_time != nil
+      assert Contacts.whatsapp_state(contact).optout_time == nil
 
       # if the contact is blocked he want be able to optin again
       Contacts.update_contact(contact, %{status: :blocked})
@@ -1491,7 +1492,7 @@ defmodule Glific.ContactsTest do
         )
 
       assert contact.status == :invalid
-      assert contact.optout_time != nil
+      assert Contacts.whatsapp_state(contact).optout_time != nil
 
       [history | _tail] =
         Contacts.list_contact_history(
@@ -1527,10 +1528,10 @@ defmodule Glific.ContactsTest do
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
-      assert contact.bsp_status == :none
+      assert Contacts.whatsapp_state(contact).bsp_status == :none
 
       {:ok, contact} = Contacts.set_session_status(contact, :session)
-      assert contact.bsp_status == :session
+      assert Contacts.whatsapp_state(contact).bsp_status == :session
     end
 
     test "set_session_status/2 will set provider status opted in contact",
@@ -1544,10 +1545,10 @@ defmodule Glific.ContactsTest do
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
-      assert contact.bsp_status == :hsm
+      assert Contacts.whatsapp_state(contact).bsp_status == :hsm
 
       {:ok, contact} = Contacts.set_session_status(contact, :session)
-      assert contact.bsp_status == :session_and_hsm
+      assert Contacts.whatsapp_state(contact).bsp_status == :session_and_hsm
     end
 
     test "update_contact_status should update the provider status",
@@ -1564,7 +1565,7 @@ defmodule Glific.ContactsTest do
       Contacts.update_contact_status(organization_id, nil)
 
       updated_contact = Contacts.get_contact!(contact.id)
-      assert updated_contact.bsp_status == :hsm
+      assert Contacts.whatsapp_state(updated_contact).bsp_status == :hsm
     end
 
     test "contact_blocked?/1 will check if the contact is blocked",
@@ -1845,6 +1846,34 @@ defmodule Glific.ContactsTest do
       refute Map.has_key?(contact, :active_profile_name)
     end
 
+    test "get_contact_field_map/1 exposes the WhatsApp state to flows, from the identity or the contact" do
+      identity_contact =
+        Fixtures.contact_fixture(%{
+          optin_status: true,
+          optin_method: "BSP",
+          bsp_status: :session_and_hsm
+        })
+
+      pre_identity_contact =
+        Fixtures.pre_identity_contact_fixture(%{
+          optout_time: ~U[2025-03-04 05:06:07Z],
+          bsp_status: :none
+        })
+
+      map = Contacts.get_contact_field_map(identity_contact.id)
+      assert map.optin_status == true
+      assert map.optin_method == "BSP"
+      assert map.bsp_status == :session_and_hsm
+      assert %DateTime{} = map.last_message_at
+
+      map = Contacts.get_contact_field_map(pre_identity_contact.id)
+      assert map.optout_time == ~U[2025-03-04 05:06:07Z]
+      assert map.optin_status == false
+      assert map.bsp_status == :none
+      refute Map.has_key?(map, :legacy_optin_time)
+      refute Map.has_key?(map, :whatsapp_identity)
+    end
+
     test "import_contact/3 csv parse error handling" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:admin])
@@ -2026,9 +2055,6 @@ defmodule Glific.ContactsTest do
       contact = %Contact{
         phone: nil,
         status: :valid,
-        bsp_status: :session_and_hsm,
-        optin_time: DateTime.utc_now(),
-        last_message_at: DateTime.utc_now(),
         organization_id: organization_id
       }
 

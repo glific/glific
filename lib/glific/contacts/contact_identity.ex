@@ -1,13 +1,15 @@
 defmodule Glific.Contacts.ContactIdentity do
   @moduledoc """
   A contact's identity on a channel. A contact is the person; it can have several identities (a
-  WhatsApp phone, a username issued by its NGO, later a Telegram chat id). Identities only:
-  per-channel state lives elsewhere.
+  WhatsApp phone, a username issued by its NGO, later a Telegram chat id).
 
   A web identifier (an NGO username) may contain letters, digits, `_`, `@` and `.`, and is
   case-insensitive: it is stored lowercase, so `Ravi_Web` and `ravi_web` are the same identity. A
   WhatsApp identifier is the contact's phone, kept as stored. Identifiers are unique within an
   organization and channel.
+
+  The identity also holds the contact's consent and session state on its channel: opt-in and
+  opt-out, and for WhatsApp the BSP status and the time of the last inbound message.
 
   The identity's organization must be its contact's; nothing checks this, so identities are only
   written by code that takes the organization from the contact.
@@ -18,6 +20,7 @@ defmodule Glific.Contacts.ContactIdentity do
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactIdentity,
+    Enums.ContactProviderStatus,
     Enums.MessageChannel,
     Partners.Organization
   }
@@ -35,6 +38,13 @@ defmodule Glific.Contacts.ContactIdentity do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           channel: MessageChannel.t() | nil,
           identifier: String.t() | nil,
+          optin_time: DateTime.t() | nil,
+          optin_status: boolean(),
+          optin_method: String.t() | nil,
+          optout_time: DateTime.t() | nil,
+          optout_method: String.t() | nil,
+          bsp_status: ContactProviderStatus.t(),
+          last_message_at: DateTime.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -42,6 +52,14 @@ defmodule Glific.Contacts.ContactIdentity do
   schema "contact_identities" do
     field :channel, MessageChannel
     field :identifier, :string
+
+    field :optin_time, :utc_datetime
+    field :optin_status, :boolean, default: false
+    field :optin_method, :string
+    field :optout_time, :utc_datetime
+    field :optout_method, :string
+    field :bsp_status, ContactProviderStatus, default: :none
+    field :last_message_at, :utc_datetime
 
     belongs_to :contact, Contact
     belongs_to :organization, Organization
