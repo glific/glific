@@ -56,7 +56,7 @@ defmodule Glific.WebChannel.JwtSecret do
   @spec generated_entry() :: map()
   defp generated_entry do
     %{
-      "name" => "Default",
+      "name" => "Signing secret",
       "secret" =>
         @generated_bytes |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
     }

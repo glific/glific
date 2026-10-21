@@ -39,7 +39,7 @@ defmodule Glific.WebChannel.JwtSecretTest do
       assert {:ok, %Credential{is_active: true}} =
                create_credential(organization_id, %{is_active: true})
 
-      assert [%{"name" => "Default", "secret" => secret}] = stored_entries(organization_id)
+      assert [%{"name" => "Signing secret", "secret" => secret}] = stored_entries(organization_id)
       assert String.length(secret) >= 32
       assert {:ok, ^secret} = JwtSecret.fetch(organization_id)
     end
