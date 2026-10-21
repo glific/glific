@@ -4,25 +4,24 @@ The web channel lets your own app or website talk to Glific on behalf of your us
 signs a short-lived token for the logged-in user, and the user's browser opens a WebSocket to Glific
 with it. Glific never sees your users' passwords.
 
-## JWT signature secrets
+## JWT signature secret
 
-An organization admin adds up to two JWT signature secrets, each with a name of your choice, on
-the **Web Channel** settings page. A token signed with either of them is accepted. Keep one secret,
-and a second only while rotating. To rotate a secret:
+Each organization has one JWT signature secret, shown on the **Web Channel** settings page. Glific
+creates it when the web channel is enabled, and keeps it if the channel is switched off. Set your
+backend to sign with it.
 
-1. Add the new secret with a new name.
-2. Switch your backend to sign with the new secret.
-3. Remove the old secret.
+Replacing the secret signs every user of the organization out at once: tokens signed with the old
+one are refused immediately, with no grace period. Change it only when you can update your backend
+at the same time. A secret must be at least 32 characters long; Glific ignores a shorter one, so
+tokens signed with it are refused, as is every token while the organization has no secret.
 
-Each secret must be at least 32 characters long; Glific ignores a shorter one, so tokens signed
-with it are refused.
-
-The organization is taken from the host the socket connects to (`api.<your glific host>`), never from
-the token.
+The organization is taken from the host the request or socket connects to (`api.<your glific host>`),
+never from the token. This holds for every token, including the one Glific issues after a phone and
+one-time code login, and each is checked against that organization's secret only.
 
 ## Token
 
-A JWT signed with a JWT signature secret.
+A JWT signed with the organization's JWT signature secret.
 
 * The header must say `alg: HS256`; any other algorithm is refused. There is no `kid`.
 * `sub` (required): your username for the user, at most 255 characters, only letters, digits, `_`,
@@ -32,6 +31,7 @@ A JWT signed with a JWT signature secret.
   difference of up to 60 seconds is tolerated.
 * `name` (optional): the contact's name for a new contact. Defaults to `sub`.
 * `phone` (optional): the user's WhatsApp number as digits with the country code and no `+`.
+* `jti` and `sst`: reserved for the sessions Glific issues after a one-time code login. Do not send them.
 
 ```javascript
 // Node.js, using the jsonwebtoken package

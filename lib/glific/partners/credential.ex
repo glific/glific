@@ -13,6 +13,8 @@ defmodule Glific.Partners.Credential do
     Provider
   }
 
+  alias Glific.WebChannel.JwtSecret
+
   @derive {ExAudit.Tracker, except: [:secrets]}
 
   @required_fields [:organization_id, :provider_id]
@@ -54,8 +56,18 @@ defmodule Glific.Partners.Credential do
     credential
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_single_jwt_secret()
     |> unique_constraint([:provider_id, :organization_id])
     |> foreign_key_constraint(:provider_id)
     |> foreign_key_constraint(:organization_id)
+  end
+
+  @spec validate_single_jwt_secret(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_single_jwt_secret(changeset) do
+    validate_change(changeset, :secrets, fn :secrets, secrets ->
+      if is_map(secrets) and length(JwtSecret.entries(secrets)) > 1,
+        do: [secrets: "Only one JWT signature secret is allowed"],
+        else: []
+    end)
   end
 end

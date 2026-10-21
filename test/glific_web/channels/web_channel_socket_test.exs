@@ -11,11 +11,11 @@ defmodule GlificWeb.WebChannelSocketTest do
     WebChannelLoginHelpers
   }
 
-  alias GlificWeb.WebChannel.Token
   alias GlificWeb.WebChannelSocket
+  alias Plug.Crypto.KeyGenerator
 
   setup do
-    %{contact: Fixtures.contact_fixture()}
+    %{contact: WebChannelFixtures.web_contact_fixture()}
   end
 
   describe "connect/3" do
@@ -33,7 +33,10 @@ defmodule GlificWeb.WebChannelSocketTest do
     test "refuses to connect when the feature flag is off (the ChannelCase default)", %{
       contact: contact
     } do
-      assert :error = WebChannelFixtures.web_channel_socket_fixture(contact)
+      token =
+        with_web_channel_enabled(fn -> WebChannelFixtures.web_channel_session_token(contact) end)
+
+      assert :error = WebChannelFixtures.web_channel_socket_fixture(contact, token: token)
     end
 
     test "refuses an expired token", %{contact: contact} do
@@ -55,12 +58,12 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "refuses a forged token", %{contact: contact} do
       with_web_channel_enabled(fn ->
-        foreign_key = JOSE.JWK.from_oct(:crypto.strong_rand_bytes(32))
-
         forged =
           contact
           |> WebChannelFixtures.web_channel_claims()
-          |> WebChannelFixtures.sign_web_channel_claims(foreign_key)
+          |> WebChannelFixtures.sign_web_channel_claims(
+            Base.encode64(:crypto.strong_rand_bytes(32))
+          )
 
         assert :error = WebChannelFixtures.web_channel_socket_fixture(contact, token: forged)
       end)
@@ -68,11 +71,70 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "refuses a contact that no longer exists", %{contact: contact} do
       with_web_channel_enabled(fn ->
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
         Glific.Repo.delete!(contact)
 
         assert :error = WebChannelFixtures.web_channel_socket_fixture(contact, token: token)
       end)
+    end
+
+    test "a session token never creates a contact", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        token = WebChannelFixtures.web_channel_session_token(contact)
+        Glific.Repo.delete!(contact)
+
+        assert :error = WebChannelFixtures.web_channel_socket_fixture(contact, token: token)
+        assert {:error, :not_found} = Contacts.fetch_by_identity(:web, contact.phone)
+      end)
+    end
+
+    test "refuses a token signed with a key derived from secret_key_base", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        legacy_key =
+          GlificWeb.Endpoint.config(:secret_key_base)
+          |> KeyGenerator.generate("web_channel_contact_jwt", length: 32)
+
+        legacy =
+          contact
+          |> WebChannelFixtures.web_channel_claims()
+          |> WebChannelFixtures.sign_web_channel_claims(legacy_key)
+
+        assert :error = WebChannelFixtures.web_channel_socket_fixture(contact, token: legacy)
+      end)
+    end
+
+    test "refuses every token when the organization has no secret", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        token = WebChannelFixtures.web_channel_session_token(contact)
+        WebChannelFlagHelpers.remove_web_channel_secret(1)
+
+        assert :error = WebChannelFixtures.web_channel_socket_fixture(contact, token: token)
+      end)
+    end
+
+    test "refuses a session token on another organization's host", %{contact: contact} do
+      other = Fixtures.organization_fixture(%{shortcode: "othersession"})
+      WebChannelFlagHelpers.activate_web_channel(other.id)
+      FunWithFlags.enable(:web_channel_enabled, for_actor: %{organization_id: other.id})
+      other.id |> Partners.organization() |> Partners.fill_cache()
+
+      try do
+        with_web_channel_enabled(fn ->
+          token = WebChannelFixtures.web_channel_session_token(contact)
+          host = "othersession." <> Glific.base_domain()
+
+          assert :error =
+                   WebChannelFixtures.web_channel_socket_fixture(contact,
+                     token: token,
+                     host: host
+                   )
+
+          assert {:ok, _socket} =
+                   WebChannelFixtures.web_channel_socket_fixture(contact, token: token)
+        end)
+      after
+        WebChannelFlagHelpers.reset_web_channel_flag(other.id)
+      end
     end
 
     test "refuses a missing token" do
@@ -120,7 +182,7 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "a new username creates the contact and its identity, and can talk" do
       with_signature_secret(fn ->
-        assert {:ok, ws_socket} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        assert {:ok, ws_socket} = WebChannelFixtures.connect_with_token(ngo_token())
         contact = ws_socket.assigns.current_contact
 
         assert contact.phone == nil
@@ -136,8 +198,8 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "usernames differing only in case are the same contact" do
       with_signature_secret(fn ->
-        {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"sub" => "Ravi_Web"}))
-        {:ok, second} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"sub" => "ravi_web"}))
+        {:ok, first} = WebChannelFixtures.connect_with_token(ngo_token(%{"sub" => "Ravi_Web"}))
+        {:ok, second} = WebChannelFixtures.connect_with_token(ngo_token(%{"sub" => "ravi_web"}))
 
         assert first.assigns.current_contact.id == second.assigns.current_contact.id
       end)
@@ -145,8 +207,8 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "a returning username is the same contact" do
       with_signature_secret(fn ->
-        {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
-        {:ok, second} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        {:ok, first} = WebChannelFixtures.connect_with_token(ngo_token())
+        {:ok, second} = WebChannelFixtures.connect_with_token(ngo_token())
 
         assert first.assigns.current_contact.id == second.assigns.current_contact.id
         assert first.assigns.session_id == second.assigns.session_id
@@ -158,7 +220,7 @@ defmodule GlificWeb.WebChannelSocketTest do
         contact = Fixtures.contact_fixture(%{phone: "919876500555"})
 
         {:ok, socket} =
-          WebChannelFixtures.ngo_socket_fixture(
+          WebChannelFixtures.connect_with_token(
             ngo_token(%{"sub" => "by_phone", "phone" => "919876500555"})
           )
 
@@ -176,7 +238,7 @@ defmodule GlificWeb.WebChannelSocketTest do
               ngo_token(%{"channel" => "whatsapp"}),
               "garbage"
             ] do
-          assert :error = WebChannelFixtures.ngo_socket_fixture(token)
+          assert :error = WebChannelFixtures.connect_with_token(token)
         end
       end)
     end
@@ -186,12 +248,12 @@ defmodule GlificWeb.WebChannelSocketTest do
         now = System.system_time(:second)
 
         assert {:ok, _socket} =
-                 WebChannelFixtures.ngo_socket_fixture(
+                 WebChannelFixtures.connect_with_token(
                    ngo_token(%{"iat" => now, "exp" => now + 86_400})
                  )
 
         assert :error =
-                 WebChannelFixtures.ngo_socket_fixture(
+                 WebChannelFixtures.connect_with_token(
                    ngo_token(%{"iat" => now, "exp" => now + 86_401})
                  )
       end)
@@ -213,8 +275,8 @@ defmodule GlificWeb.WebChannelSocketTest do
         with_signature_secret(fn ->
           host = "otherngo." <> Glific.base_domain()
 
-          assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token(), host: host)
-          assert {:ok, _socket} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+          assert :error = WebChannelFixtures.connect_with_token(ngo_token(), host: host)
+          assert {:ok, _socket} = WebChannelFixtures.connect_with_token(ngo_token())
         end)
       after
         WebChannelFlagHelpers.reset_web_channel_flag(other.id)
@@ -235,7 +297,7 @@ defmodule GlificWeb.WebChannelSocketTest do
         Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret])
       )
 
-      assert :error = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+      assert :error = WebChannelFixtures.connect_with_token(ngo_token())
     end
 
     test "Glific's own token still connects", %{contact: contact} do
@@ -248,9 +310,7 @@ defmodule GlificWeb.WebChannelSocketTest do
 
   describe "connect/3 rate limiting" do
     defp connect_from(contact, address) do
-      connect(
-        WebChannelSocket,
-        %{"token" => Token.sign_contact_token(contact)},
+      WebChannelFixtures.web_channel_socket_fixture(contact,
         connect_info: %{x_headers: [{"x-forwarded-for", address}]}
       )
     end
