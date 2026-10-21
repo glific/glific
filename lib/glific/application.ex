@@ -21,13 +21,8 @@ defmodule Glific.Application do
       # Start the Telemetry supervisor
       GlificWeb.Telemetry,
 
-      # HTTP connection pools used by Tesla — per-host size configurable via DEFAULT_FINCH_POOL_SIZE env var
-      {Finch,
-       name: Glific.Finch,
-       pools: %{
-         default:
-           http_pool_options(Application.get_env(:glific, :http_pool, [])[:size] || 50, 5_000)
-       }},
+      # HTTP connection pools used by Tesla
+      {Finch, name: Glific.Finch, pools: http_pools()},
 
       # Dedicated pools for Kaapi document uploads
       {Finch, name: :kaapi_upload_pool, pools: %{default: http_pool_options(50, 15_000)}},
@@ -104,6 +99,33 @@ defmodule Glific.Application do
 
   defp oban_config do
     Application.get_env(:glific, Oban)
+  end
+
+  # Finch starts a separate pool per host, so the default stays small and the busiest providers
+  # get dedicated pools sized slightly above the Oban queue concurrency that calls them
+  defp http_pools do
+    default_size = Application.get_env(:glific, :http_pool, [])[:size] || 10
+
+    %{
+      :default => http_pool_options(default_size, 5_000),
+      "https://api.gupshup.io" => http_pool_options(50, 5_000),
+      "https://api.maytapi.com" => http_pool_options(20, 5_000),
+      "https://generativelanguage.googleapis.com" => http_pool_options(20, 5_000)
+    }
+    |> put_kaapi_pool()
+  end
+
+  defp put_kaapi_pool(pools) do
+    kaapi_endpoint =
+      Application.fetch_env!(:glific, Glific.ThirdParty.Kaapi.ApiClient)[:kaapi_endpoint]
+
+    case URI.parse(kaapi_endpoint) do
+      %URI{scheme: "https", host: host} ->
+        Map.put(pools, "https://#{host}", http_pool_options(20, 5_000))
+
+      _ ->
+        pools
+    end
   end
 
   # verify_none keeps the TLS behaviour of the previous hackney setup (#3037); Mint also passes
