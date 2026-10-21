@@ -6,7 +6,8 @@ defmodule Glific.Contacts.ContactIdentities do
   It never calls back into `Glific.Contacts`.
 
   A `:whatsapp` identity mirrors `contacts.phone` and is kept in step with it by the contact write
-  paths. A `:web` identity is a username issued by an NGO's own system, or the phone of a contact
+  paths. It also holds a copy of the contact's consent and session state, written alongside the
+  `contacts` columns, which stay the source of truth. A `:web` identity is a username issued by an NGO's own system, or the phone of a contact
   that verified it with a one-time code.
   """
 
@@ -22,6 +23,8 @@ defmodule Glific.Contacts.ContactIdentities do
   }
 
   @insert_chunk_size 1_000
+
+  @type changes :: %{optional(atom()) => any()}
 
   @doc """
   The contact holding an identity; web usernames are case-insensitive, WhatsApp ones must equal its phone.
@@ -63,20 +66,24 @@ defmodule Glific.Contacts.ContactIdentities do
   defp username_matches(pattern), do: dynamic([i], like(i.identifier, ^pattern))
 
   @doc """
-  Adds to `multi` the insert of the identity for the contact its `:contact` step inserted.
+  Adds to `multi` the insert of the identity for the contact its `:contact` step inserted; a WhatsApp
+  one also holds the contact's consent and session state.
   """
   @spec insert_identity(Multi.t(), MessageChannel.t(), String.t() | nil) :: Multi.t()
   def insert_identity(multi, channel, identifier) do
     Multi.insert(
       multi,
       :identity,
-      fn %{contact: contact} -> identity_changeset(contact, channel, identifier) end,
+      fn %{contact: contact} ->
+        identity_changeset(contact, channel, identifier, state_attrs(contact, channel))
+      end,
       identity_insert_opts(channel)
     )
   end
 
   @doc """
-  Makes the contact's WhatsApp identity its current phone, replacing older or stale rows for it.
+  Makes the contact's WhatsApp identity its current phone, replacing stale rows for it. An existing identity
+  moves to the phone with its consent and session state; a new one takes the contact's.
   """
   @spec set_whatsapp_identity(Contact.t()) :: :ok
   def set_whatsapp_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
@@ -84,17 +91,86 @@ defmodule Glific.Contacts.ContactIdentities do
   def set_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
     delete_stale_whatsapp_identities(contact)
 
-    from(i in ContactIdentity,
-      where: i.channel == :whatsapp and i.contact_id == ^contact_id and i.identifier != ^phone
-    )
-    |> Repo.delete_all()
+    case current_whatsapp_identity_id(contact) do
+      nil ->
+        contact
+        |> identity_changeset(:whatsapp, phone, state_attrs(contact, :whatsapp))
+        |> Repo.insert(whatsapp_insert_opts())
 
-    contact
-    |> identity_changeset(:whatsapp, phone)
-    |> Repo.insert(ignore_conflict_opts())
+      identity_id ->
+        from(i in ContactIdentity,
+          where: i.channel == :whatsapp and i.contact_id == ^contact_id and i.id != ^identity_id
+        )
+        |> Repo.delete_all()
+
+        from(i in ContactIdentity, where: i.id == ^identity_id)
+        |> Repo.update_all(set: [identifier: phone, updated_at: DateTime.utc_now()])
+    end
 
     :ok
   end
+
+  @spec current_whatsapp_identity_id(Contact.t()) :: non_neg_integer() | nil
+  defp current_whatsapp_identity_id(%Contact{id: contact_id, phone: phone}) do
+    from(i in ContactIdentity,
+      where: i.channel == :whatsapp and i.contact_id == ^contact_id,
+      order_by: [desc: i.identifier == ^phone, desc: i.id],
+      limit: 1,
+      select: i.id
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Writes the consent and session fields among `changes` to the contact's WhatsApp identity, creating the
+  identity when it is missing.
+  """
+  @spec update_whatsapp_identity(Contact.t(), changes()) :: :ok
+  def update_whatsapp_identity(%Contact{phone: phone}, _changes) when phone in [nil, ""], do: :ok
+
+  def update_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact, changes) do
+    set =
+      changes
+      |> Map.take(ContactIdentity.state_fields())
+      |> Map.put(:updated_at, DateTime.utc_now())
+
+    {updated, _rows} =
+      from(i in ContactIdentity,
+        where: i.contact_id == ^contact_id and i.channel == :whatsapp and i.identifier == ^phone
+      )
+      |> Repo.update_all(set: Map.to_list(set))
+
+    if updated == 0, do: set_whatsapp_identity(contact)
+
+    :ok
+  end
+
+  @doc """
+  Sets `bsp_status` on the WhatsApp identities of `contact_ids` that match `opted_in?`, as
+  `Glific.Contacts.set_session_status/2` does on their contacts.
+  """
+  @spec set_bsp_status([non_neg_integer()], boolean(), atom(), DateTime.t()) :: :ok
+  def set_bsp_status(contact_ids, opted_in?, bsp_status, now) do
+    ContactIdentity
+    |> where([i], i.channel == :whatsapp and i.contact_id in ^contact_ids)
+    |> where(^optin_time_filter(opted_in?))
+    |> Repo.update_all([set: [bsp_status: bsp_status, updated_at: now]],
+      skip_organization_id: true
+    )
+
+    :ok
+  end
+
+  @spec optin_time_filter(boolean()) :: Ecto.Query.dynamic_expr()
+  defp optin_time_filter(true), do: dynamic([i], not is_nil(i.optin_time))
+  defp optin_time_filter(false), do: dynamic([i], is_nil(i.optin_time))
+
+  @doc """
+  Whether a contact changeset's changes touch what a WhatsApp identity holds: the phone or the state.
+  """
+  @spec whatsapp_changes?(changes()) :: boolean()
+  def whatsapp_changes?(changes),
+    do: Enum.any?(Map.keys(changes), &(&1 == :phone or &1 in ContactIdentity.state_fields()))
 
   @spec delete_stale_whatsapp_identities(Contact.t()) :: non_neg_integer()
   defp delete_stale_whatsapp_identities(%Contact{id: contact_id, phone: phone}) do
@@ -113,7 +189,8 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
-  Bulk-inserts the WhatsApp identity of each saved contact row, in batches, skipping existing ones.
+  Bulk-inserts the WhatsApp identity of each saved contact row, with its consent and session state, in
+  batches; an existing identity takes the new state.
   """
   @spec insert_whatsapp_identities([map()], non_neg_integer()) :: :ok
   def insert_whatsapp_identities(rows, organization_id) do
@@ -122,19 +199,21 @@ defmodule Glific.Contacts.ContactIdentities do
     rows
     |> Stream.filter(&(is_binary(&1.phone) and &1.phone != ""))
     |> Stream.map(fn row ->
-      %{
+      row
+      |> state_attrs(:whatsapp)
+      |> Map.merge(%{
         contact_id: row.id,
         organization_id: organization_id,
         channel: :whatsapp,
         identifier: row.phone,
         inserted_at: now,
         updated_at: now
-      }
+      })
     end)
     |> Stream.chunk_every(@insert_chunk_size)
     |> Enum.each(
       &Repo.insert_all(ContactIdentity, &1,
-        on_conflict: :nothing,
+        on_conflict: {:replace, ContactIdentity.state_fields() ++ [:updated_at]},
         conflict_target: conflict_target(),
         skip_organization_id: true
       )
@@ -182,23 +261,40 @@ defmodule Glific.Contacts.ContactIdentities do
   defp lookup_key(:web, identifier), do: String.downcase(identifier)
   defp lookup_key(_channel, identifier), do: identifier
 
-  @spec identity_changeset(Contact.t(), MessageChannel.t(), String.t()) :: Ecto.Changeset.t()
-  defp identity_changeset(contact, channel, identifier) do
-    ContactIdentity.changeset(%ContactIdentity{}, %{
-      contact_id: contact.id,
-      organization_id: contact.organization_id,
-      channel: channel,
-      identifier: identifier
-    })
+  @spec identity_changeset(Contact.t(), MessageChannel.t(), String.t(), map()) ::
+          Ecto.Changeset.t()
+  defp identity_changeset(contact, channel, identifier, state \\ %{}) do
+    ContactIdentity.changeset(
+      %ContactIdentity{},
+      Map.merge(state, %{
+        contact_id: contact.id,
+        organization_id: contact.organization_id,
+        channel: channel,
+        identifier: identifier
+      })
+    )
   end
 
+  @spec state_attrs(Contact.t() | map(), MessageChannel.t()) :: map()
+  defp state_attrs(contact, :whatsapp) do
+    contact
+    |> Map.take(ContactIdentity.state_fields())
+    |> Map.update!(:optin_status, &(&1 == true))
+    |> Map.update!(:bsp_status, &(&1 || :none))
+  end
+
+  defp state_attrs(_contact, _channel), do: %{}
+
   @spec identity_insert_opts(MessageChannel.t()) :: keyword()
-  defp identity_insert_opts(:web), do: []
+  defp identity_insert_opts(:whatsapp), do: whatsapp_insert_opts()
+  defp identity_insert_opts(_channel), do: []
 
-  defp identity_insert_opts(_channel), do: ignore_conflict_opts()
-
-  @spec ignore_conflict_opts() :: keyword()
-  defp ignore_conflict_opts, do: [on_conflict: :nothing, conflict_target: conflict_target()]
+  @spec whatsapp_insert_opts() :: keyword()
+  defp whatsapp_insert_opts,
+    do: [
+      on_conflict: {:replace, ContactIdentity.state_fields() ++ [:updated_at]},
+      conflict_target: conflict_target()
+    ]
 
   @spec conflict_target() :: [atom()]
   defp conflict_target, do: [:organization_id, :channel, :identifier]

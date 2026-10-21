@@ -340,7 +340,7 @@ defmodule Glific.Contacts do
         entries,
         Keyword.merge(opts,
           conflict_target: [:phone, :organization_id],
-          returning: [:id, :phone, :fields]
+          returning: [:id, :phone, :fields | ContactIdentity.state_fields()]
         )
       )
 
@@ -407,20 +407,28 @@ defmodule Glific.Contacts do
   end
 
   @spec persist_update(Ecto.Changeset.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp persist_update(%{changes: %{phone: _phone}} = changeset) do
-    Repo.transaction(fn ->
-      case Repo.update(changeset) do
-        {:ok, contact} ->
-          ContactIdentities.set_whatsapp_identity(contact)
-          contact
+  defp persist_update(%{changes: changes} = changeset) do
+    if ContactIdentities.whatsapp_changes?(changes) do
+      Repo.transaction(fn ->
+        case Repo.update(changeset) do
+          {:ok, contact} ->
+            follow_identity(contact, changes)
+            contact
 
-        {:error, changeset} ->
-          Repo.rollback(changeset)
-      end
-    end)
+          {:error, changeset} ->
+            Repo.rollback(changeset)
+        end
+      end)
+    else
+      Repo.update(changeset)
+    end
   end
 
-  defp persist_update(changeset), do: Repo.update(changeset)
+  @spec follow_identity(Contact.t(), map()) :: :ok
+  defp follow_identity(contact, changes) do
+    if Map.has_key?(changes, :phone), do: ContactIdentities.set_whatsapp_identity(contact)
+    ContactIdentities.update_whatsapp_identity(contact, changes)
+  end
 
   # We do not want to block the simulator
   @spec simulator_block?(Contact.t(), map()) :: boolean
@@ -1047,6 +1055,9 @@ defmodule Glific.Contacts do
     |> where([c], not is_nil(c.optin_time))
     |> where([c], c.id in ^contact_ids)
     |> Repo.update_all([set: [bsp_status: :hsm, updated_at: now]], skip_organization_id: true)
+
+    ContactIdentities.set_bsp_status(contact_ids, false, :none, now)
+    ContactIdentities.set_bsp_status(contact_ids, true, :hsm, now)
 
     :ok
   end
