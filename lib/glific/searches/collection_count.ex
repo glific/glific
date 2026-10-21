@@ -6,8 +6,6 @@ defmodule Glific.Searches.CollectionCount do
   import Ecto.Query
   use Publicist
 
-  require Glific.Contacts
-
   alias Glific.{
     Communications,
     Contacts,
@@ -129,16 +127,14 @@ defmodule Glific.Searches.CollectionCount do
   @spec optin(map(), Ecto.Query.t()) :: map()
   defp optin(result, query) do
     query
-    |> Contacts.with_whatsapp_state()
-    |> where([c], Contacts.whatsapp_value(c, :optin_status) == true)
+    |> Contacts.filter_opted_in()
     |> make_result(result, "Optin")
   end
 
   @spec optout(map(), Ecto.Query.t()) :: map()
   defp optout(result, query) do
     query
-    |> Contacts.with_whatsapp_state()
-    |> where([c], not is_nil(Contacts.whatsapp_value(c, :optout_time)))
+    |> Contacts.filter_opted_out()
     |> make_result(result, "Optout")
   end
 end

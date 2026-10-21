@@ -77,6 +77,7 @@ docs {
   |`name`          | String                    | The name of the contact.                            |
   | `phone`         | String                    | The phone number of the contact. Required unless `channel` is `WEB`. |
   | `channel`       | MessageChannelEnum        | Optional. The channel the contact is created on; defaults to `WHATSAPP`. |
+  | `optin`         | Boolean                   | Optional, with `channel` `WEB`. `true` records the contact's web opt-in (method `web_channel_api`); `false` or absent records nothing, and never an opt-out. |
   | `identifier`    | String                    | The username to log in with. Required when `channel` is `WEB` (which also needs the web channel enabled and no phone): letters, digits, `_`, `@` and `.`, stored lowercase, 1 to 255 characters. |
   | `settings `       | Json                      | Settings associated with the contact.               |
   | `status `         | ContactStatusEnum         | The status of the contact.                          |

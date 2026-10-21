@@ -67,7 +67,7 @@ defmodule Glific.Communications.WebMessageTest do
                  :text
                )
 
-      assert Contacts.whatsapp_state(contact).last_message_at == nil
+      assert Contacts.get_contact!(contact.id).last_message_at == nil
     end
 
     # The rest of the inbox state is channel-agnostic and still has to update, or a web
@@ -169,7 +169,7 @@ defmodule Glific.Communications.WebMessageTest do
        %{contact: contact} do
     # last_message_at comes from a DB trigger; bsp_status is the WhatsApp session concept and
     # only set_session_status/2 writes it, which this path never calls.
-    before_state = Contacts.whatsapp_state(contact)
+    before_state = Contacts.get_contact!(contact.id)
 
     assert {:ok, _message} =
              WebMessage.receive_message(
@@ -180,7 +180,7 @@ defmodule Glific.Communications.WebMessageTest do
                :text
              )
 
-    assert Contacts.whatsapp_state(contact).bsp_status == before_state.bsp_status
+    assert Contacts.get_contact!(contact.id).bsp_status == before_state.bsp_status
   end
 
   describe "with the web channel off, nothing reaches the flow engine" do

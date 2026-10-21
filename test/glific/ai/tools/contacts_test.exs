@@ -29,15 +29,15 @@ defmodule Glific.AI.Tools.ContactsTest do
            } = described
   end
 
-  test "get_contact reports the state of a contact that has no identity yet from its columns" do
+  test "get_contact reports the defaults for a contact that has no identity row" do
     contact =
-      Fixtures.pre_identity_contact_fixture(%{
+      Fixtures.contact_without_identity_fixture(%{
         optin_time: @optin_time,
         optin_status: true,
         bsp_status: :hsm
       })
 
-    assert {:ok, %{bsp_status: :hsm, optin_status: true, optin_time: @optin_time}} =
+    assert {:ok, %{bsp_status: :none, optin_status: false, optin_time: nil}} =
              Contacts.run("get_contact", %{contact_id: contact.id, include: [], limit: 5})
   end
 
@@ -45,11 +45,11 @@ defmodule Glific.AI.Tools.ContactsTest do
     with_identity = Fixtures.contact_fixture(%{name: "Ai Tool Identity", bsp_status: :session})
 
     without_identity =
-      Fixtures.pre_identity_contact_fixture(%{name: "Ai Tool Columns", bsp_status: :hsm})
+      Fixtures.contact_without_identity_fixture(%{name: "Ai Tool Columns", bsp_status: :hsm})
 
     assert {:ok, contacts} = Contacts.run("list_contacts", %{term: "Ai Tool", limit: 10})
 
     assert %{bsp_status: :session} = Enum.find(contacts, &(&1.id == with_identity.id))
-    assert %{bsp_status: :hsm} = Enum.find(contacts, &(&1.id == without_identity.id))
+    assert %{bsp_status: :none} = Enum.find(contacts, &(&1.id == without_identity.id))
   end
 end

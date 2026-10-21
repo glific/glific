@@ -154,7 +154,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
           phone: "919876543213"
         })
 
-      assert nil == Contacts.whatsapp_state(created).last_message_at
+      assert nil == Contacts.get_contact!(created.id).last_message_at
 
       assert {:ok, contact} =
                Contacts.maybe_create_contact(%{phone: created.phone}, :web, "ravi_15")
@@ -162,20 +162,15 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert contact.id == created.id
     end
 
-    test "a WhatsApp contact that has messaged is linked to before it has an identity", %{
+    test "a contact without a WhatsApp identity row is not linked to", %{
       organization_id: organization_id
     } do
-      target = Fixtures.contact_fixture(%{organization_id: organization_id})
-      Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^target.id))
-
-      Repo.update_all(from(c in Contact, where: c.id == ^target.id),
-        set: [legacy_last_message_at: DateTime.utc_now()]
-      )
+      target = Fixtures.contact_without_identity_fixture(%{organization_id: organization_id})
 
       assert {:ok, contact} =
                Contacts.maybe_create_contact(%{phone: target.phone}, :web, "ravi_14")
 
-      assert contact.id == target.id
+      assert contact.id != target.id
     end
 
     test "a phone claim naming the organization's own contact creates a contact without it", %{
@@ -678,7 +673,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
         Contacts.contact_opted_out("both_channels", 1, DateTime.utc_now(), "user", channel: :web)
 
       assert %{optin_time: nil, optin_status: false, optout_time: nil, bsp_status: :none} =
-               Contacts.whatsapp_state(whatsapp)
+               Contacts.get_contact!(whatsapp.id)
     end
 
     test "an unknown identity is refused", %{contact: contact} do

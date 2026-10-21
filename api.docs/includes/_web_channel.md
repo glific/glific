@@ -32,6 +32,11 @@ A JWT signed with a JWT signature secret.
   difference of up to 60 seconds is tolerated.
 * `name` (optional): the contact's name for a new contact. Defaults to `sub`.
 * `phone` (optional): the user's WhatsApp number as digits with the country code and no `+`.
+* `optin` (optional): a boolean. `true` says the user consented to be messaged on the web channel, and Glific
+  records the web opt-in. `false` or absent records nothing: connecting never implies consent, and Glific never
+  records an opt-out from a token. Any other type makes the token invalid. It only concerns the web channel; the
+  user's WhatsApp consent is never changed, even when `phone` links the user to a WhatsApp contact. The opt-in
+  persists across sessions; see <a href="#returning-users">Returning users</a>.
 
 ```javascript
 // Node.js, using the jsonwebtoken package
@@ -87,6 +92,24 @@ You can also create the contact ahead of the first login with the
 <a href="#create-a-contact">createContact</a> mutation with `channel: WEB` and an `identifier` (or give an
 existing contact a username with <a href="#add-an-identity-to-a-contact">addContactIdentity</a>), and look a
 user's contact up with <a href="#get-a-contact-by-identity">contactByIdentity</a>.
+
+## Returning users
+
+The web opt-in is stored on the user's web identity in Glific. Logging out, the socket closing or the
+token expiring do not change it.
+
+When the user comes back, for example the next day, sign a fresh token for the same `sub` and connect
+as described in <a href="#connecting">Connecting</a>: open the socket and join `web_channel:conversation`.
+The user is back in the same conversation. You can leave `optin` out; that records nothing and the
+earlier opt-in stays.
+
+Sending `optin: true` again is harmless: if the user has already opted in, nothing new is recorded (the
+opt-in time is kept and no duplicate history is added). Send it on every login or only on the first one.
+
+Within a session, do not reconnect when the token is about to expire; renew it with `token_expiring` and
+`renew_token` instead.
+
+There is currently no way to withdraw consent with the token: `optin: false` records nothing.
 
 ## Your responsibilities
 

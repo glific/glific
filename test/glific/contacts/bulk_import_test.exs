@@ -65,7 +65,7 @@ defmodule Glific.Contacts.BulkImportTest do
     contact
   end
 
-  defp state(phone), do: phone |> fetch() |> Contacts.whatsapp_state()
+  defp state(phone), do: phone |> fetch() |> Contacts.preload_consent()
 
   # Contacts.count_contacts filters phone with a LIKE, so exact identity needs an exact match
   defp exists?(phone), do: match?({:ok, _}, Repo.fetch_by(Contact, %{phone: phone}))
@@ -283,8 +283,8 @@ defmodule Glific.Contacts.BulkImportTest do
       contact = fetch("919876580201")
 
       assert contact.status == :blocked
-      assert Contacts.whatsapp_state(contact).optin_time == nil
-      refute Contacts.whatsapp_state(contact).optin_status
+      assert Contacts.get_contact!(contact.id).optin_time == nil
+      refute Contacts.get_contact!(contact.id).optin_status
     end
 
     test "the contact's fields are still updated" do
@@ -294,61 +294,18 @@ defmodule Glific.Contacts.BulkImportTest do
     end
   end
 
-  describe "a contact that predates identities" do
-    defp pre_identity_phone(phone, state) do
-      Glific.Fixtures.pre_identity_contact_fixture(
-        Map.merge(%{phone: phone, organization_id: org_id()}, state)
-      )
-    end
-
-    test "is opted in once, from its own columns, keeping what it had" do
-      last_message_at = DateTime.utc_now() |> DateTime.truncate(:second)
-
+  describe "a contact without a WhatsApp identity row" do
+    test "is opted in, which creates the identity row" do
       contact =
-        pre_identity_phone("919876590001", %{
-          optin_time: nil,
-          optin_status: false,
-          last_message_at: last_message_at,
-          optout_method: "earlier"
+        Glific.Fixtures.contact_without_identity_fixture(%{
+          phone: "919876590001",
+          organization_id: org_id()
         })
 
-      run("name,phone,language,city\nLegacy,+919876590001,english,Pune\n")
+      run("name,phone,language,city\nNo Row,+919876590001,english,Pune\n")
 
-      assert %{
-               optin_status: true,
-               optin_method: "Import",
-               bsp_status: :session_and_hsm,
-               last_message_at: ^last_message_at,
-               optout_method: "earlier"
-             } = Glific.Fixtures.fetch_identity(contact, :whatsapp) |> Map.from_struct()
-    end
-
-    test "is not opted back in when its own columns say it opted out" do
-      contact =
-        pre_identity_phone("919876590002", %{
-          optout_time: ~U[2025-03-04 05:06:07Z],
-          optin_status: false
-        })
-
-      run("name,phone,language,city\nLegacy,+919876590002,english,Pune\n")
-
-      assert %{optin_status: false, optin_time: nil, optout_time: ~U[2025-03-04 05:06:07Z]} =
-               Contacts.whatsapp_state(contact)
-    end
-
-    test "is not opted in again when its own columns say it already opted in" do
-      contact =
-        pre_identity_phone("919876590003", %{
-          optin_time: ~U[2025-03-04 05:06:07Z],
-          optin_status: true,
-          optin_method: "WA",
-          bsp_status: :hsm
-        })
-
-      run("name,phone,language,city\nLegacy,+919876590003,english,Pune\n")
-
-      assert %{optin_method: "WA", optin_time: ~U[2025-03-04 05:06:07Z]} =
-               Contacts.whatsapp_state(contact)
+      assert %{optin_status: true, optin_method: "Import", bsp_status: :hsm} =
+               Glific.Fixtures.fetch_identity(contact, :whatsapp)
     end
   end
 

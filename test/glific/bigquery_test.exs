@@ -999,7 +999,7 @@ defmodule Glific.BigQueryTest do
     assert message_row["sender_phone"] == nil
   end
 
-  test "queue_table_data/3 exports a contact's WhatsApp state from its identity, or its columns before it has one",
+  test "queue_table_data/3 exports a contact's WhatsApp state from its identity, and the defaults without one",
        %{organization_id: organization_id} do
     with_identity =
       contact_fixture(%{
@@ -1011,7 +1011,7 @@ defmodule Glific.BigQueryTest do
       })
 
     without_identity =
-      pre_identity_contact_fixture(%{
+      contact_without_identity_fixture(%{
         organization_id: organization_id,
         optin_time: ~U[2024-01-02 03:04:05Z],
         optin_method: "WA",
@@ -1059,15 +1059,12 @@ defmodule Glific.BigQueryTest do
     assert last_message_at =~ "2026-10-01"
 
     assert %{
-             "provider_status" => "hsm",
-             "contact_optin_method" => "WA",
-             "optin_time" => legacy_optin_time,
-             "optout_time" => legacy_optout_time,
+             "provider_status" => "none",
+             "contact_optin_method" => nil,
+             "optin_time" => nil,
+             "optout_time" => nil,
              "last_message_at" => nil
            } = row.(without_identity)
-
-    assert legacy_optin_time =~ "2024-01-0"
-    assert legacy_optout_time =~ "2025-05-0"
   end
 
   test "queue_table_data/3 JSON-encodes list and map profile field values", %{

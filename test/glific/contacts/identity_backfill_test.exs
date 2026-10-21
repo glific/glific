@@ -22,7 +22,7 @@ defmodule Glific.Contacts.IdentityBackfillTest do
          |> String.slice(-5, 5))
 
   defp contact_without_identity(attrs \\ %{}),
-    do: Fixtures.pre_identity_contact_fixture(Map.merge(%{phone: phone()}, attrs))
+    do: Fixtures.contact_without_identity_fixture(Map.merge(%{phone: phone()}, attrs))
 
   defp add_identity(contact, channel, identifier) do
     Repo.insert!(
@@ -169,7 +169,7 @@ defmodule Glific.Contacts.IdentityBackfillTest do
       assert identity.bsp_status == :none
     end
 
-    test "reads the same through the contact before and after the backfill" do
+    test "reads as the defaults before the backfill and as the copied state after it" do
       contact =
         contact_without_identity(%{
           optin_time: @optin_time,
@@ -178,24 +178,67 @@ defmodule Glific.Contacts.IdentityBackfillTest do
           last_message_at: @last_message_at
         })
 
-      before_backfill = Contacts.whatsapp_state(contact)
+      assert %{optin_status: false, optin_time: nil, bsp_status: :none, last_message_at: nil} =
+               Contacts.get_contact!(contact.id)
+
       IdentityBackfill.run()
 
-      assert Contacts.whatsapp_state(contact) == before_backfill
+      assert %{
+               optin_status: true,
+               optin_time: @optin_time,
+               bsp_status: :hsm,
+               last_message_at: @last_message_at
+             } = Contacts.get_contact!(contact.id)
     end
 
-    test "never overwrites an identity the application already changed" do
+    test "fills a row the application created in the gap, keeping what it wrote" do
       contact =
         contact_without_identity(%{optin_time: @optin_time, optin_status: true, bsp_status: :hsm})
 
       {:ok, _contact} = Contacts.update_contact(contact, %{bsp_status: :session_and_hsm})
 
-      assert %{bsp_status: :session_and_hsm} = Fixtures.fetch_identity(contact, :whatsapp)
+      assert %{bsp_status: :session_and_hsm, optin_status: false} =
+               Fixtures.fetch_identity(contact, :whatsapp)
+
+      assert %{updated: updated} = IdentityBackfill.run()
+      assert updated >= 1
+
+      assert %{bsp_status: :session_and_hsm, optin_status: true, optin_time: @optin_time} =
+               Fixtures.fetch_identity(contact, :whatsapp)
+    end
+
+    test "never brings back an opt-in over an opt-out recorded in the gap" do
+      contact =
+        contact_without_identity(%{optin_time: @optin_time, optin_status: true, bsp_status: :hsm})
+
+      :ok = Contacts.contact_opted_out(contact.phone, contact.organization_id, @last_message_at)
 
       IdentityBackfill.run()
 
-      assert %{bsp_status: :session_and_hsm, optin_status: true} =
+      assert %{optin_time: nil, optin_status: false, optout_time: @last_message_at} =
                Fixtures.fetch_identity(contact, :whatsapp)
+    end
+
+    test "turns a session recorded in the gap into session_and_hsm for an opted in contact" do
+      contact =
+        contact_without_identity(%{optin_time: @optin_time, optin_status: true, bsp_status: :hsm})
+
+      {:ok, _contact} = Contacts.update_contact(contact, %{bsp_status: :session})
+
+      IdentityBackfill.run()
+
+      assert %{bsp_status: :session_and_hsm} = Fixtures.fetch_identity(contact, :whatsapp)
+    end
+
+    test "keeps the later last message time" do
+      contact = contact_without_identity(%{last_message_at: @optin_time})
+      newer = ~U[2026-10-20 00:00:00Z]
+
+      {:ok, _contact} = Contacts.update_contact(contact, %{last_message_at: newer})
+
+      IdentityBackfill.run()
+
+      assert %{last_message_at: ^newer} = Fixtures.fetch_identity(contact, :whatsapp)
     end
 
     test "in batches, resumed from the last id, gives every contact its own state" do
@@ -214,7 +257,7 @@ defmodule Glific.Contacts.IdentityBackfillTest do
       assert [_one] = identities(List.first(contacts), :whatsapp)
 
       for {contact, index} <- Enum.with_index(contacts, 1),
-          do: assert(Contacts.whatsapp_state(contact).optin_method == "m#{index}")
+          do: assert(Contacts.get_contact!(contact.id).optin_method == "m#{index}")
     end
   end
 end

@@ -211,6 +211,20 @@ defmodule GlificWeb.WebChannel.JwtTokenTest do
                claims
     end
 
+    test "optin is returned as a boolean, and absent when not sent", %{
+      organization_id: organization_id
+    } do
+      assert {:ok, %{optin: true}} = verify(organization_id, %{"optin" => true})
+      assert {:ok, %{optin: false}} = verify(organization_id, %{"optin" => false})
+      assert {:ok, claims} = verify(organization_id, %{})
+      refute Map.has_key?(claims, :optin)
+    end
+
+    test "a non-boolean optin is rejected", %{organization_id: organization_id} do
+      for value <- ["true", 1, 0, %{}, []],
+          do: assert({:error, :invalid} = verify(organization_id, %{"optin" => value}))
+    end
+
     test "an invalid phone is treated as absent", %{organization_id: organization_id} do
       assert {:ok, claims} = verify(organization_id, %{"phone" => "12"})
       refute Map.has_key?(claims, :phone)

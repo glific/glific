@@ -819,19 +819,17 @@ defmodule Glific.FLowsTest do
       assert broadcast_results["key"] == default_results.key
     end
 
-    test "start_group_flow/2 leaves out blocked contacts and contacts that opted out, wherever the opt-out is stored",
+    test "start_group_flow/2 leaves out blocked contacts and contacts that opted out, read from the identity",
          attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
       group = Fixtures.group_fixture()
       opted_out_at = ~U[2025-03-04 05:06:07Z]
 
       active = Fixtures.contact_fixture()
-      active_columns = Fixtures.pre_identity_contact_fixture()
       opted_out = Fixtures.contact_fixture(%{optout_time: opted_out_at})
-      opted_out_columns = Fixtures.pre_identity_contact_fixture(%{optout_time: opted_out_at})
       blocked = Fixtures.contact_fixture(%{status: :blocked})
 
-      for contact <- [active, active_columns, opted_out, opted_out_columns, blocked] do
+      for contact <- [active, opted_out, blocked] do
         Groups.create_contact_group(%{
           group_id: group.id,
           contact_id: contact.id,
@@ -844,7 +842,7 @@ defmodule Glific.FLowsTest do
       assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{group_id: group.id, flow_id: flow.id})
 
-      assert Enum.sort([active.id, active_columns.id]) ==
+      assert [active.id] ==
                message_broadcast |> Broadcast.get_broadcast_contact_ids() |> Enum.sort()
     end
 

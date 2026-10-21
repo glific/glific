@@ -456,8 +456,6 @@ defmodule Glific.Flows.Broadcast do
 
   @spec message_tasks(map(), Contact.t(), Keyword.t()) :: :ok
   defp message_tasks(message_params, contacts, opts) do
-    states = Contacts.whatsapp_states(contacts)
-
     stream =
       Task.Supervisor.async_stream_nolink(
         Glific.Broadcast.Supervisor,
@@ -468,10 +466,7 @@ defmodule Glific.Flows.Broadcast do
           Keyword.get(opts, :message_broadcast_id, nil)
           |> mark_message_broadcast_contact_processed(contact.id, "pending")
 
-          message_params =
-            message_params
-            |> Map.put(:receiver_id, contact.id)
-            |> Map.put(:whatsapp_state, Map.fetch!(states, contact.id))
+          message_params = Map.put(message_params, :receiver_id, contact.id)
 
           result =
             if message_params[:is_hsm] in [nil, false],
@@ -566,9 +561,14 @@ defmodule Glific.Flows.Broadcast do
     # Batch inserting so that we can insert for large collections (15K+ for ex)
     contact_ids
     |> Enum.chunk_every(@contact_chunk)
-    |> Enum.map(&Contacts.filter_not_opted_out/1)
-    |> Enum.reject(&(&1 == []))
-    |> Enum.each(fn eligible_ids ->
+    |> Enum.each(fn contacts_chunk ->
+      eligible_ids =
+        from(c in Contact, as: :contact)
+        |> where([c], c.id in ^contacts_chunk and c.status != :blocked)
+        |> Contacts.filter_not_opted_out()
+        |> select([c], c.id)
+        |> Repo.all()
+
       query = """
       INSERT INTO message_broadcast_contacts
       (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id, group_ids)

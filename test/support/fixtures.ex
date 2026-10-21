@@ -144,10 +144,11 @@ defmodule Glific.Fixtures do
   ]
 
   @doc """
-  A contact as it was before contact identities: its WhatsApp state is in its own columns and it has no identity row.
+  A contact with no WhatsApp identity row, whose `contacts` columns hold the given consent and session state:
+  what `Glific.Contacts.IdentityBackfill` reads.
   """
-  @spec pre_identity_contact_fixture(map()) :: Contact.t()
-  def pre_identity_contact_fixture(attrs \\ %{}) do
+  @spec contact_without_identity_fixture(map()) :: Contact.t()
+  def contact_without_identity_fixture(attrs \\ %{}) do
     {state, attrs} = Map.split(attrs, @state_fields)
     contact = contact_fixture(attrs)
 
@@ -155,19 +156,24 @@ defmodule Glific.Fixtures do
       skip_organization_id: true
     )
 
-    legacy =
+    columns =
       for {field, value} <- Map.put_new(state, :bsp_status, :none),
-          do: {:"legacy_#{field}", legacy_value(value)}
+          do: {field, column_value(value)}
 
-    Repo.update_all(from(c in Contact, where: c.id == ^contact.id), [set: legacy],
+    Repo.update_all(from(c in "contacts", where: c.id == ^contact.id), [set: columns],
       skip_organization_id: true
     )
 
     Repo.get!(Contact, contact.id, skip_organization_id: true)
   end
 
-  defp legacy_value(%Elixir.DateTime{} = time), do: Elixir.DateTime.truncate(time, :second)
-  defp legacy_value(value), do: value
+  defp column_value(%Elixir.DateTime{} = time), do: Elixir.DateTime.truncate(time, :second)
+  defp column_value(:none), do: "none"
+
+  defp column_value(value) when is_atom(value) and not is_boolean(value) and value != nil,
+    do: Atom.to_string(value)
+
+  defp column_value(value), do: value
 
   @doc false
   @spec fetch_identity(Contact.t(), atom()) :: ContactIdentity.t() | nil
@@ -848,7 +854,6 @@ defmodule Glific.Fixtures do
   @spec notification_fixture(map()) :: Notification.t()
   def notification_fixture(attrs) do
     [_glific_admin, contact | _] = Contacts.list_contacts(attrs)
-    state = Contacts.whatsapp_state(contact)
 
     valid_attrs = %{
       category: "Message",
@@ -859,9 +864,9 @@ defmodule Glific.Fixtures do
         id: contact.id,
         name: contact.name,
         phone: contact.phone,
-        bsp_status: state.bsp_status,
+        bsp_status: contact.bsp_status,
         status: contact.status,
-        last_message_at: state.last_message_at
+        last_message_at: contact.last_message_at
       }
     }
 

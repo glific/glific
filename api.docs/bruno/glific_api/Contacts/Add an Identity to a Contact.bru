@@ -16,8 +16,8 @@ headers {
 }
 
 body:graphql {
-  mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!) {
-    addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier) {
+  mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!, $optin: Boolean) {
+    addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier, optin: $optin) {
       contact {
         id
         name
@@ -38,7 +38,8 @@ body:graphql:vars {
   {
     "contactId": "15",
     "channel": "WEB",
-    "identifier": "ravi_12"
+    "identifier": "ravi_12",
+    "optin": true
   }
 }
 
@@ -58,6 +59,7 @@ docs {
   | `contactId`  | ID                 | The contact to add the identity to.                                                                 |
   | `channel`    | MessageChannelEnum | The channel of the identity. Only `WEB` is accepted.                                                |
   | `identifier` | String             | The username: letters, digits, `_`, `@` and `.`, stored lowercase (case-insensitive), 1 to 255 characters. |
+  | `optin`      | Boolean            | Optional. `true` records the user's web opt-in (method `web_channel_api`); `false` or absent records nothing, and never an opt-out. |
 
   ## Response
   ```json

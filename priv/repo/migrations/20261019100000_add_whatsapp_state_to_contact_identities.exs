@@ -4,8 +4,9 @@ defmodule Glific.Repo.Migrations.AddWhatsappStateToContactIdentities do
   contact. These are the columns of `contacts` that describe WhatsApp (opt-in, opt-out, the BSP session
   status and the 24 hour session clock), now also held on the contact's `(whatsapp, phone)` identity.
 
-  The old `contacts` columns stay in place and are no longer written; they are read only for a contact whose
-  WhatsApp identity row does not exist yet, until `Glific.Contacts.IdentityBackfill` has created every row.
+  The old `contacts` columns stay in place for rollback, but are neither read nor written any more: a contact
+  whose WhatsApp identity row does not exist yet reads as not opted in, until `Glific.Contacts.IdentityBackfill`
+  has created every row from them.
 
   WhatsApp identity rows created before this migration (contacts created or re-phoned since identities
   shipped) get their contact's current state copied onto them here, since the backfill skips existing rows.

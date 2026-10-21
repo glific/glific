@@ -33,6 +33,9 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
       arg(:contact_id, non_null(:id))
       arg(:channel, non_null(:message_channel_enum))
       arg(:identifier, non_null(:string))
+
+      @desc "For a WEB identity, true records the user's web opt-in; false or absent records nothing"
+      arg(:optin, :boolean)
       middleware(Authorize, :manager)
       resolve(&Resolvers.ContactIdentities.add_contact_identity/3)
     end

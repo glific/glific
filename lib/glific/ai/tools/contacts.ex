@@ -110,18 +110,16 @@ defmodule Glific.AI.Tools.Contacts do
   @spec run(String.t(), map()) :: {:ok, term()} | {:error, String.t()}
   def run("get_contact", args) do
     with {:ok, contact} <- find(args) do
-      state = Contacts.whatsapp_state(contact)
-
       described = %{
         id: contact.id,
         name: contact.name,
         phone: masked_phone(contact),
         status: contact.status,
-        bsp_status: state.bsp_status,
-        optin_status: state.optin_status,
-        optin_time: state.optin_time,
-        optout_time: state.optout_time,
-        last_message_at: state.last_message_at,
+        bsp_status: contact.bsp_status,
+        optin_status: contact.optin_status,
+        optin_time: contact.optin_time,
+        optout_time: contact.optout_time,
+        last_message_at: contact.last_message_at,
         language_id: contact.language_id,
         fields: contact.fields
       }
@@ -146,22 +144,19 @@ defmodule Glific.AI.Tools.Contacts do
     contacts =
       %{filter: filter, opts: %{limit: min(args[:limit], 100), offset: 0, order: :asc}}
       |> Contacts.list_contacts()
+      |> Enum.map(
+        &%{
+          id: &1.id,
+          name: &1.name,
+          phone: masked_phone(&1),
+          status: &1.status,
+          bsp_status: &1.bsp_status,
+          optin_status: &1.optin_status,
+          last_message_at: &1.last_message_at
+        }
+      )
 
-    states = Contacts.whatsapp_states(contacts)
-
-    {:ok,
-     Enum.map(
-       contacts,
-       &%{
-         id: &1.id,
-         name: &1.name,
-         phone: masked_phone(&1),
-         status: &1.status,
-         bsp_status: states[&1.id].bsp_status,
-         optin_status: states[&1.id].optin_status,
-         last_message_at: states[&1.id].last_message_at
-       }
-     )}
+    {:ok, contacts}
   end
 
   def run("list_tickets", args) do
@@ -309,7 +304,7 @@ defmodule Glific.AI.Tools.Contacts do
   @spec fetch(keyword(), String.t()) :: {:ok, Contact.t()} | {:error, String.t()}
   defp fetch(clauses, described) do
     case Repo.fetch_by(Contact, clauses) do
-      {:ok, contact} -> {:ok, contact}
+      {:ok, contact} -> {:ok, Contacts.preload_consent(contact)}
       {:error, _} -> {:error, "No contact with #{described} exists in this organisation."}
     end
   end

@@ -70,11 +70,11 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
       # ensure the message has been enqueued for processing
       assert_enqueued(worker: MessageWorker, prefix: "global")
 
-      assert Glific.Contacts.whatsapp_state(message.sender).last_message_at != nil
+      assert Glific.Contacts.get_contact!(message.sender.id).last_message_at != nil
 
       assert true ==
                Glific.in_past_time(
-                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 Glific.Contacts.get_contact!(message.sender.id).last_message_at,
                  :seconds,
                  10
                )
@@ -157,7 +157,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
 
       assert true ==
                Glific.in_past_time(
-                 Glific.Contacts.whatsapp_state(message.sender).last_message_at,
+                 Glific.Contacts.get_contact!(message.sender.id).last_message_at,
                  :seconds,
                  10
                )

@@ -78,27 +78,24 @@ defmodule Glific.Contacts.BulkImport do
   defp load_existing(rows) do
     phones = Enum.map(rows, & &1["phone"])
 
-    contacts =
-      Contact
-      |> where([c], c.phone in ^phones)
-      |> select([c], %{
-        id: c.id,
-        phone: c.phone,
-        language_id: c.language_id,
-        fields: c.fields,
-        status: c.status,
-        active_profile_id: c.active_profile_id
-      })
-      |> Repo.all()
-
-    states = Contacts.whatsapp_states(contacts)
-
-    Map.new(contacts, fn contact ->
-      state = Map.fetch!(states, contact.id)
-
-      {contact.phone,
-       Map.merge(contact, Map.take(state, [:optin_time, :optout_time, :last_message_at]))}
-    end)
+    Contact
+    |> where([c], c.phone in ^phones)
+    |> Repo.all()
+    |> Contacts.preload_consent()
+    |> Map.new(
+      &{&1.phone,
+       Map.take(&1, [
+         :id,
+         :phone,
+         :language_id,
+         :optin_time,
+         :optout_time,
+         :last_message_at,
+         :fields,
+         :status,
+         :active_profile_id
+       ])}
+    )
   end
 
   @spec reject_missing([map()], map(), map(), String.t()) :: {map(), [map()]}

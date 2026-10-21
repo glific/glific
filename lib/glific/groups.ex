@@ -5,8 +5,6 @@ defmodule Glific.Groups do
   import Ecto.Query
   alias __MODULE__
 
-  require Glific.Contacts
-
   alias Glific.{
     AccessControl,
     AccessControl.GroupRole,
@@ -355,13 +353,13 @@ defmodule Glific.Groups do
 
     result = %{total: total}
 
-    ContactGroup
-    |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
-    |> Contacts.with_whatsapp_state(:c)
-    |> where([cg], cg.group_id == ^group_id)
-    |> where([c: c], c.status == :valid)
-    |> group_by([c: c], Contacts.whatsapp_value(c, :bsp_status))
-    |> select([c: c], [Contacts.whatsapp_value(c, :bsp_status), count(c.id)])
+    from(c in Contact, as: :contact)
+    |> join(:inner, [c], cg in ContactGroup,
+      as: :cg,
+      on: cg.contact_id == c.id and cg.group_id == ^group_id
+    )
+    |> where([c], c.status == :valid)
+    |> Contacts.count_by_bsp_status()
     |> Repo.all()
     |> Enum.reduce(
       result,
@@ -388,9 +386,9 @@ defmodule Glific.Groups do
   """
   @spec contact_ids(non_neg_integer) :: list(non_neg_integer)
   def contact_ids(group_id) do
-    Contact
-    |> Contacts.with_whatsapp_state()
-    |> where([c], c.status != :blocked and is_nil(Contacts.whatsapp_value(c, :optout_time)))
+    from(c in Contact, as: :contact)
+    |> where([c], c.status != :blocked)
+    |> Contacts.filter_not_opted_out()
     |> join(:inner, [c], cg in ContactGroup,
       as: :cg,
       on: cg.contact_id == c.id and cg.group_id == ^group_id

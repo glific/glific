@@ -230,15 +230,16 @@ defmodule GlificWeb.WebChannelSocketTest do
       end)
     end
 
-    test "records a web opt-in once across reconnects, and no WhatsApp opt-in" do
+    test "records a web opt-in once across reconnects when the token says optin, and no WhatsApp opt-in" do
       with_signature_secret(fn ->
-        assert {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        assert {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"optin" => true}))
         contact = first.assigns.current_contact
 
         assert %{optin_time: optin_time, optin_method: "web_channel_jwt", optin_status: true} =
                  Glific.Fixtures.fetch_identity(contact, :web)
 
-        assert {:ok, _again} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        assert {:ok, _again} =
+                 WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"optin" => true}))
 
         assert %{optin_time: ^optin_time} = Glific.Fixtures.fetch_identity(contact, :web)
 
@@ -249,15 +250,70 @@ defmodule GlificWeb.WebChannelSocketTest do
                    )
                  )
 
-        assert is_nil(Contacts.whatsapp_state(contact).optin_time)
-        assert Contacts.whatsapp_state(contact).optin_status == false
+        assert is_nil(Contacts.get_contact!(contact.id).optin_time)
+        assert Contacts.get_contact!(contact.id).optin_status == false
         assert is_nil(contact.phone)
+      end)
+    end
+
+    test "connecting records no consent when optin is false or absent" do
+      with_signature_secret(fn ->
+        for {sub, claim} <- [{"no_claim", %{}}, {"false_claim", %{"optin" => false}}] do
+          assert {:ok, socket} =
+                   WebChannelFixtures.ngo_socket_fixture(ngo_token(Map.put(claim, "sub", sub)))
+
+          contact = socket.assigns.current_contact
+
+          assert %{optin_time: nil, optin_status: false, optin_method: nil, optout_time: nil} =
+                   Glific.Fixtures.fetch_identity(contact, :web)
+        end
+
+        refute Glific.Repo.exists?(
+                 from(ch in Glific.Contacts.ContactHistory,
+                   where: ch.event_type in ["contact_opted_in", "contact_opted_out"]
+                 )
+               )
+      end)
+    end
+
+    test "a token with a non-boolean optin is refused" do
+      with_signature_secret(fn ->
+        for value <- ["true", 1, "yes", %{}] do
+          assert :error =
+                   WebChannelFixtures.ngo_socket_fixture(
+                     ngo_token(%{"sub" => "bad_optin", "optin" => value})
+                   )
+        end
+      end)
+    end
+
+    test "optin true never changes the WhatsApp consent of the contact the phone claim links to" do
+      with_signature_secret(fn ->
+        contact = Fixtures.contact_fixture(%{phone: "919876500556"})
+        before = Contacts.get_contact!(contact.id)
+
+        assert {:ok, socket} =
+                 WebChannelFixtures.ngo_socket_fixture(
+                   ngo_token(%{
+                     "sub" => "linked_optin",
+                     "phone" => contact.phone,
+                     "optin" => true
+                   })
+                 )
+
+        assert socket.assigns.current_contact.id == contact.id
+        assert %{optin_status: true} = Glific.Fixtures.fetch_identity(contact, :web)
+
+        after_connect = Contacts.get_contact!(contact.id)
+
+        assert Map.take(after_connect, [:optin_time, :optin_status, :optin_method, :optout_time]) ==
+                 Map.take(before, [:optin_time, :optin_status, :optin_method, :optout_time])
       end)
     end
 
     test "a reconnect after a web opt-out leaves the opt-out in place" do
       with_signature_secret(fn ->
-        assert {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        assert {:ok, first} = WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"optin" => true}))
         contact = first.assigns.current_contact
         identity = Glific.Fixtures.fetch_identity(contact, :web)
 
@@ -269,7 +325,8 @@ defmodule GlificWeb.WebChannelSocketTest do
           ]
         )
 
-        assert {:ok, _again} = WebChannelFixtures.ngo_socket_fixture(ngo_token())
+        assert {:ok, _again} =
+                 WebChannelFixtures.ngo_socket_fixture(ngo_token(%{"optin" => true}))
 
         assert %{optout_method: "user"} = Glific.Fixtures.fetch_identity(contact, :web)
       end)

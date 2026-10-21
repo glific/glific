@@ -976,11 +976,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
 
     fetch_data("contacts", organization_id, attrs)
+    |> Contacts.preload_consent()
     |> Enum.reduce(
       [],
       fn row, acc ->
-        state = Contacts.whatsapp_state_from_preload(row)
-
         if Contacts.simulator_contact?(row.phone),
           do: acc,
           else: [
@@ -989,13 +988,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
               id: row.id,
               name: row.name,
               phone: row.phone,
-              provider_status: state.bsp_status,
+              provider_status: row.bsp_status,
               status: row.status,
               language: row.language.label,
-              optin_time: BigQuery.format_date(state.optin_time, organization_id),
-              optout_time: BigQuery.format_date(state.optout_time, organization_id),
-              contact_optin_method: state.optin_method,
-              last_message_at: BigQuery.format_date(state.last_message_at, organization_id),
+              optin_time: BigQuery.format_date(row.optin_time, organization_id),
+              optout_time: BigQuery.format_date(row.optout_time, organization_id),
+              contact_optin_method: row.optin_method,
+              last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
               inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
               updated_at: format_date_with_millisecond(row.updated_at, organization_id),
               fields: process_row(row, organization_id),
@@ -1891,7 +1890,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:language, :tags, :groups, :user, :whatsapp_identity])
+      |> preload([:language, :tags, :groups, :user])
 
   defp get_query("contact_histories", organization_id, attrs),
     do:

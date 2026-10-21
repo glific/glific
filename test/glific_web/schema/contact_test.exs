@@ -158,8 +158,8 @@ defmodule GlificWeb.Schema.ContactTest do
       assert contact["lastMessageAt"] == "2026-10-01T10:11:12Z"
     end
 
-    test "is read from the contact's own columns while it has no identity", %{staff: user} do
-      Fixtures.pre_identity_contact_fixture(%{
+    test "reads as the defaults while the contact has no identity row", %{staff: user} do
+      Fixtures.contact_without_identity_fixture(%{
         name: "State Columns",
         phone: "919876100002",
         optin_time: @optin_time,
@@ -169,10 +169,10 @@ defmodule GlificWeb.Schema.ContactTest do
       })
 
       assert %{"State Columns" => contact} = state_by_name(user, %{"name" => "State Columns"})
-      assert contact["optinTime"] == "2025-03-04T05:06:07Z"
-      assert contact["optinMethod"] == "WA"
-      assert contact["bspStatus"] == "HSM"
-      assert contact["lastMessageAt"] == "2026-10-01T10:11:12Z"
+      assert contact["optinTime"] == nil
+      assert contact["optinMethod"] == nil
+      assert contact["bspStatus"] == "NONE"
+      assert contact["lastMessageAt"] == nil
     end
 
     test "is none for a contact with no phone", %{staff: user} do
@@ -184,14 +184,16 @@ defmodule GlificWeb.Schema.ContactTest do
       assert contact["lastMessageAt"] == nil
     end
 
-    test "filters contacts by bspStatus, from either place", %{staff: user} do
+    test "filters contacts by bspStatus, a contact without the identity row counting as none", %{
+      staff: user
+    } do
       Fixtures.contact_fixture(%{
         name: "State Filter A",
         phone: "919876100003",
         bsp_status: :session
       })
 
-      Fixtures.pre_identity_contact_fixture(%{
+      Fixtures.contact_without_identity_fixture(%{
         name: "State Filter B",
         phone: "919876100004",
         bsp_status: :session
@@ -202,7 +204,12 @@ defmodule GlificWeb.Schema.ContactTest do
       names =
         user |> state_by_name(%{"name" => "State Filter", "bspStatus" => "SESSION"}) |> Map.keys()
 
-      assert Enum.sort(names) == ["State Filter A", "State Filter B"]
+      assert names == ["State Filter A"]
+
+      none_names =
+        user |> state_by_name(%{"name" => "State Filter", "bspStatus" => "NONE"}) |> Map.keys()
+
+      assert none_names == ["State Filter B"]
     end
 
     test "is loaded for a whole list with one identity query", %{staff: user} do
@@ -503,7 +510,7 @@ defmodule GlificWeb.Schema.ContactTest do
     # Phone is stored in normalized format without + prefix
     normalized_phone = "919917443992"
     contact = assert Contacts.get_contact_by_phone!(normalized_phone)
-    assert Contacts.whatsapp_state(contact).optin_method == "Import"
+    assert Contacts.get_contact!(contact.id).optin_method == "Import"
     count = Contacts.count_contacts(%{filter: %{phone: normalized_phone}})
     assert count == 1
 

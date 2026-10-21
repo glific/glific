@@ -35,6 +35,77 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
         attrs
       )
 
+  describe "web opt-in on createContact and addContactIdentity" do
+    defp web_identity(identifier),
+      do: Repo.get_by!(ContactIdentity, %{channel: :web, identifier: identifier})
+
+    test "createContact with optin true records the web opt-in only", %{manager: user} do
+      with_web_channel(fn ->
+        assert {:ok, query_data} =
+                 auth_query_gql_by(:create_contact, user,
+                   variables: web_input(%{"name" => "Ravi", "optin" => true})
+                 )
+
+        assert %{"id" => _id} = get_in(query_data, [:data, "createContact", "contact"])
+
+        assert %{optin_status: true, optin_method: "web_channel_api", optin_time: %DateTime{}} =
+                 web_identity("ravi_12")
+      end)
+    end
+
+    test "createContact with optin false or absent records nothing", %{manager: user} do
+      with_web_channel(fn ->
+        for {identifier, extra} <- [{"opt_false", %{"optin" => false}}, {"opt_absent", %{}}] do
+          assert {:ok, query_data} =
+                   auth_query_gql_by(:create_contact, user,
+                     variables: web_input(Map.merge(%{"identifier" => identifier}, extra))
+                   )
+
+          assert get_in(query_data, [:data, "createContact", "errors"]) == nil
+
+          assert %{optin_status: false, optin_time: nil, optin_method: nil, optout_time: nil} =
+                   web_identity(identifier)
+        end
+      end)
+    end
+
+    test "addContactIdentity with optin true records the web opt-in, not the WhatsApp one", %{
+      manager: user
+    } do
+      with_web_channel(fn ->
+        contact = Fixtures.contact_fixture()
+        before = Glific.Contacts.get_contact!(contact.id)
+
+        assert {:ok, query_data} =
+                 auth_query_gql_by(:add, user,
+                   variables: add_variables(contact, %{"optin" => true})
+                 )
+
+        assert get_in(query_data, [:data, "addContactIdentity", "errors"]) == nil
+
+        assert %{optin_status: true, optin_method: "web_channel_api"} = web_identity("ravi_12")
+        assert Glific.Contacts.get_contact!(contact.id) == before
+      end)
+    end
+
+    test "addContactIdentity with optin false or absent records nothing", %{manager: user} do
+      with_web_channel(fn ->
+        for {identifier, extra} <- [{"add_false", %{"optin" => false}}, {"add_absent", %{}}] do
+          contact = Fixtures.contact_fixture()
+
+          assert {:ok, _query_data} =
+                   auth_query_gql_by(:add, user,
+                     variables:
+                       add_variables(contact, Map.merge(%{"identifier" => identifier}, extra))
+                   )
+
+          assert %{optin_status: false, optin_time: nil, optout_time: nil} =
+                   web_identity(identifier)
+        end
+      end)
+    end
+  end
+
   describe "createContact on the web channel" do
     test "creates a contact without a phone and with its web identity", %{manager: user} do
       with_web_channel(fn ->
@@ -342,7 +413,8 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       assert [] == identities_of(query_data, contact)
     end
 
-    test "loading them for many contacts costs one identities query", %{manager: user} do
+    test "loading them for many contacts costs one identities query beyond the one for their state",
+         %{manager: user} do
       for _ <- 1..3 do
         contact = Fixtures.contact_without_phone_fixture()
         Fixtures.contact_identity_fixture(%{contact_id: contact.id})
@@ -363,6 +435,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       assert {:ok, _query_data} = list_identities(user)
       :telemetry.detach(handler)
 
+      assert_received :identities_query
       assert_received :identities_query
       refute_received :identities_query
     end

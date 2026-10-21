@@ -43,8 +43,7 @@ defmodule Glific.Clients.MukkaMaar do
         |> Repo.all()
 
       contact
-      |> Map.take([:fields])
-      |> Map.put(:last_message_at, Contacts.whatsapp_state(contact).last_message_at)
+      |> Map.take([:last_message_at, :fields])
       |> set_message_category(list, length(list))
     end
   end

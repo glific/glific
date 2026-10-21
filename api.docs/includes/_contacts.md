@@ -396,7 +396,8 @@ mutation createContact($input:ContactInput!) {
 `input` may also carry an optional `channel` (default `WHATSAPP`, which needs a `phone`) and an `identifier`. With
 `channel: WEB` the `identifier` (the username the contact logs in with, stored lowercase) is required, no phone is
 needed, the web channel must be enabled for the organization, and the contact's `identities` field lists its `WEB`
-identity.
+identity. With `channel: WEB`, `optin: true` also records the contact's web opt-in (method `web_channel_api`);
+`optin: false` or absent records nothing.
 
 ## Update a Contact
 
@@ -901,8 +902,8 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 ## Add an Identity to a Contact
 
 ```graphql
-mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!) {
-  addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier) {
+mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!, $optin: Boolean) {
+  addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier, optin: $optin) {
     contact {
       id
       name
@@ -922,7 +923,7 @@ mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $ide
 > With variables:
 
 ```json
-{ "contactId": "15", "channel": "WEB", "identifier": "ravi_12" }
+{ "contactId": "15", "channel": "WEB", "identifier": "ravi_12", "optin": true }
 ```
 
 > The above query returns JSON structured like this:
@@ -948,6 +949,7 @@ never moved. Requires the manager role and the web channel enabled for the organ
 | contactId  | ID                 | The contact to add the identity to.                                         |
 | channel    | MessageChannelEnum | The channel of the identity. Only `WEB` is accepted.                        |
 | identifier | String             | The username: letters, digits, `_`, `@` and `.`, stored lowercase (case-insensitive), 1 to 255 characters. |
+| optin      | Boolean            | Optional. `true` records the user's web opt-in (method `web_channel_api`); `false` or absent records nothing, and never an opt-out. |
 
 To create a contact for a web username before its first login, use <a href="#create-a-contact">createContact</a>
 with `channel: WEB` and an `identifier`.

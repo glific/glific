@@ -1439,7 +1439,7 @@ defmodule Glific.Partners do
   """
   @spec contact_organization_query(list()) :: Ecto.Query.t()
   def contact_organization_query(org_id_list) do
-    Contact
+    from(c in Contact, as: :contact)
     # block messages sent to groups
     |> where([c], c.status != :blocked)
     |> where([c], c.organization_id in ^org_id_list)

@@ -107,7 +107,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
 
       contact = Contacts.get_contact!(message.contact_id)
       assert contact.status == :invalid
-      assert Glific.Contacts.whatsapp_state(contact).optout_method == "Number does not exist"
+      assert Glific.Contacts.get_contact!(contact.id).optout_method == "Number does not exist"
     end
   end
 end

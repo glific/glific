@@ -291,8 +291,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
       updated_contact = Repo.get_by!(Contact, %{phone: receiver.phone})
-      assert Contacts.whatsapp_state(updated_contact).bsp_status in [:hsm, :session_and_hsm]
-      assert Contacts.whatsapp_state(updated_contact).optin_status == true
+      assert Contacts.get_contact!(updated_contact.id).bsp_status in [:hsm, :session_and_hsm]
+      assert Contacts.get_contact!(updated_contact.id).optin_status == true
     end
 
     test "send otp from Glific when NGO's wallet balance is less than 0", %{conn: conn} do

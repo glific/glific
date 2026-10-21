@@ -1114,10 +1114,10 @@ defmodule Glific.Flows.ActionTest do
     refute Map.has_key?(updated_context.contact.fields, "settings")
 
     {:ok, reloaded} = Repo.fetch_by(Contact, %{id: contact.id})
-    assert Contacts.whatsapp_state(reloaded).optout_time != nil
+    assert Contacts.get_contact!(reloaded.id).optout_time != nil
     assert reloaded.status == :invalid
-    assert Contacts.whatsapp_state(reloaded).bsp_status == :none
-    assert Contacts.whatsapp_state(reloaded).optin_status == false
+    assert Contacts.get_contact!(reloaded.id).bsp_status == :none
+    assert Contacts.get_contact!(reloaded.id).optin_status == false
   end
 
   test "execute set_contact_fields sets a preference via the settings key", _attrs do

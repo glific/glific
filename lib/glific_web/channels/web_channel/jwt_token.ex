@@ -12,6 +12,9 @@ defmodule GlificWeb.WebChannel.JwtToken do
 
   A secret shorter than 32 characters is ignored, so a token can never verify against it.
 
+  The optional boolean claim `optin` is the NGO's statement that the user consented to be messaged on the web
+  channel; any other type makes the token invalid.
+
   This is not `GlificWeb.WebChannel.Token`, which is the token Glific itself issues after a phone
   and one-time code login.
   """
@@ -32,7 +35,8 @@ defmodule GlificWeb.WebChannel.JwtToken do
           required(:sub) => String.t(),
           required(:exp) => integer(),
           optional(:name) => String.t(),
-          optional(:phone) => String.t()
+          optional(:phone) => String.t(),
+          optional(:optin) => boolean()
         }
 
   @doc """
@@ -104,13 +108,15 @@ defmodule GlificWeb.WebChannel.JwtToken do
   defp extract_claims(%{"sub" => sub, "channel" => @channel} = fields)
        when is_binary(sub) and byte_size(sub) > 0 do
     with true <- String.length(sub) <= @max_length,
-         {:ok, name} <- optional_name(fields["name"]) do
+         {:ok, name} <- optional_name(fields["name"]),
+         {:ok, optin} <- optional_boolean(fields["optin"]) do
       claims =
         %{
           sub: sub,
           exp: fields["exp"],
           name: name,
-          phone: normalise_phone(fields["phone"])
+          phone: normalise_phone(fields["phone"]),
+          optin: optin
         }
         |> Map.reject(fn {_key, value} -> is_nil(value) end)
 
@@ -129,6 +135,11 @@ defmodule GlificWeb.WebChannel.JwtToken do
     do: if(String.length(name) <= @max_length, do: {:ok, name}, else: :error)
 
   defp optional_name(_name), do: :error
+
+  @spec optional_boolean(any()) :: {:ok, boolean() | nil} | :error
+  defp optional_boolean(nil), do: {:ok, nil}
+  defp optional_boolean(value) when is_boolean(value), do: {:ok, value}
+  defp optional_boolean(_value), do: :error
 
   @spec normalise_phone(any()) :: String.t() | nil
   defp normalise_phone(phone) when is_binary(phone) do

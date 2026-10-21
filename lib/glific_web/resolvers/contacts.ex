@@ -5,26 +5,32 @@ defmodule GlificWeb.Resolvers.Contacts do
   """
   use Gettext, backend: GlificWeb.Gettext
 
-  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+  import Absinthe.Resolution.Helpers, only: [batch: 3]
 
   alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Repo, State}
   alias GlificWeb.Resolvers.ContactIdentities
 
   @doc """
-  A resolver for one WhatsApp state field of a contact, batching the identity lookups of a whole list.
+  A resolver for one consent or session field of a contact. A contact loaded by `Glific.Contacts` carries it; one
+  that comes through an association, such as a message's sender, is read with the others of the list in one query.
   """
-  @spec whatsapp_state_field(atom()) :: (Contact.t(), map(), Absinthe.Resolution.t() -> any())
-  def whatsapp_state_field(field) do
-    fn contact, _args, %{context: %{loader: loader}} ->
-      loader
-      |> Dataloader.load(Repo, :whatsapp_identity, contact)
-      |> on_load(fn loader ->
-        identity = Dataloader.get(loader, Repo, :whatsapp_identity, contact)
-        state = Contacts.whatsapp_state_from_preload(%{contact | whatsapp_identity: identity})
-        {:ok, Map.fetch!(state, field)}
-      end)
+  @spec consent_field(atom()) :: (Contact.t(), map(), Absinthe.Resolution.t() -> any())
+  def consent_field(field) do
+    fn
+      %Contact{bsp_status: nil} = contact, _args, _resolution ->
+        batch({__MODULE__, :load_consent}, contact, fn contacts ->
+          {:ok, contacts |> Map.fetch!(contact.id) |> Map.fetch!(field)}
+        end)
+
+      contact, _args, _resolution ->
+        {:ok, Map.fetch!(contact, field)}
     end
   end
+
+  @doc false
+  @spec load_consent(any(), [Contact.t()]) :: %{non_neg_integer() => Contact.t()}
+  def load_consent(_batch_key_arg, contacts),
+    do: contacts |> Contacts.preload_consent() |> Map.new(&{&1.id, &1})
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -68,7 +74,9 @@ defmodule GlificWeb.Resolvers.Contacts do
     with :ok <- check_channel(params, user.organization_id),
          {channel, params} = Map.pop(params, :channel, :whatsapp),
          {identifier, params} = Map.pop(params, :identifier),
-         {:ok, contact} <- Contacts.create_contact(params, channel, identifier) do
+         {optin, params} = Map.pop(params, :optin),
+         {:ok, contact} <- Contacts.create_contact(params, channel, identifier),
+         :ok <- ContactIdentities.record_web_optin(channel, identifier, optin, "web_channel_api") do
       {:ok, %{contact: contact}}
     end
   end
@@ -103,7 +111,7 @@ defmodule GlificWeb.Resolvers.Contacts do
     end
   end
 
-  @read_only_fields [:phone, :bspStatus, :channel, :identifier]
+  @read_only_fields [:phone, :bspStatus, :channel, :identifier, :optin]
 
   @spec validate_params(map()) :: {:ok, map()} | {:error, String.t()}
   defp validate_params(params) do

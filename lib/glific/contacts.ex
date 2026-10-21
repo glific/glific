@@ -22,8 +22,8 @@ defmodule Glific.Contacts do
     Contacts.ContactIdentity,
     Contacts.Location,
     Contacts.TermSearch,
-    Contacts.WhatsAppState,
     Enums.ContactProviderStatus,
+    Enums.MessageChannel,
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.UserGroup,
@@ -36,28 +36,6 @@ defmodule Glific.Contacts do
   }
 
   @delete_timeout 400_000
-
-  @typedoc "A contact's WhatsApp consent and session state."
-  @type whatsapp_state :: WhatsAppState.t()
-
-  @doc """
-  The SQL expression of one WhatsApp state field (`:optin_time`, `:bsp_status`, ...) of the contact bound
-  to `contact`; the query must have been through `with_whatsapp_state/1,2`.
-  """
-  defmacro whatsapp_value(contact, field),
-    do: WhatsAppState.value(contact, Macro.expand(field, __CALLER__))
-
-  @doc """
-  Joins each contact's WhatsApp state to a query whose first binding is the contact.
-  """
-  @spec with_whatsapp_state(Ecto.Queryable.t()) :: Ecto.Query.t()
-  defdelegate with_whatsapp_state(query), to: WhatsAppState, as: :with_identity
-
-  @doc """
-  Joins each contact's WhatsApp state to a query where the contact has the named binding `contact_binding`.
-  """
-  @spec with_whatsapp_state(Ecto.Queryable.t(), atom()) :: Ecto.Query.t()
-  defdelegate with_whatsapp_state(query, contact_binding), to: WhatsAppState, as: :with_identity
 
   @type web_claims :: %{
           optional(:sub) => String.t(),
@@ -103,9 +81,10 @@ defmodule Glific.Contacts do
   def list_contacts(args) do
     args
     |> Glific.add_limit()
-    |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
+    |> Repo.list_filter_query(contacts_query(), &Repo.opts_with_name/2, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.all()
+    |> with_channel_fields()
   end
 
   @doc """
@@ -114,10 +93,11 @@ defmodule Glific.Contacts do
   @spec list_user_contacts(map()) :: [Contact.t()]
   def list_user_contacts(args \\ %{}) do
     args
-    |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
+    |> Repo.list_filter_query(contacts_query(), &Repo.opts_with_name/2, &filter_with/2)
     |> join(:inner, [c], u in User, as: :u, on: u.contact_id == c.id)
     |> where([u: u], :none not in u.roles)
     |> Repo.all()
+    |> with_channel_fields()
   end
 
   @doc """
@@ -126,10 +106,13 @@ defmodule Glific.Contacts do
   @spec count_contacts(map()) :: integer
   def count_contacts(args) do
     args
-    |> Repo.list_filter_query(Contact, nil, &filter_with/2)
+    |> Repo.list_filter_query(contacts_query(), nil, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.aggregate(:count)
   end
+
+  @spec contacts_query() :: Ecto.Query.t()
+  defp contacts_query, do: from(c in Contact, as: :contact)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -145,8 +128,12 @@ defmodule Glific.Contacts do
 
       {:bsp_status, bsp_status}, query ->
         query
-        |> with_whatsapp_state()
-        |> where([c], whatsapp_value(c, :bsp_status) == type(^bsp_status, ContactProviderStatus))
+        |> join_state()
+        |> where(
+          [identity: i],
+          coalesce(i.bsp_status, type(^:none, ContactProviderStatus)) ==
+            type(^bsp_status, ContactProviderStatus)
+        )
 
       {:include_groups, []}, query ->
         query
@@ -225,6 +212,160 @@ defmodule Glific.Contacts do
   defp filter_contacts_with_blocked_status(query, _),
     do: from(q in query, where: q.status != "blocked")
 
+  @doc """
+  Reads the consent and session state (opt-in, opt-out, BSP status, last inbound message) into contacts that
+  were not loaded through this module, such as a message's preloaded contact. Contacts that carry it already
+  are kept as they are. The channel is WhatsApp unless given.
+  """
+  @spec preload_consent(Contact.t() | [Contact.t()], MessageChannel.t()) ::
+          Contact.t() | [Contact.t()]
+  def preload_consent(contacts, channel \\ :whatsapp)
+
+  def preload_consent(%Contact{bsp_status: nil} = contact, channel),
+    do: with_channel_fields(contact, channel)
+
+  def preload_consent(%Contact{} = contact, _channel), do: contact
+
+  def preload_consent(contacts, channel) when is_list(contacts) do
+    read =
+      contacts
+      |> Enum.filter(&is_nil(&1.bsp_status))
+      |> with_channel_fields(channel)
+      |> Map.new(&{&1.id, &1})
+
+    Enum.map(contacts, fn
+      %Contact{bsp_status: nil, id: id} -> Map.fetch!(read, id)
+      contact -> contact
+    end)
+  end
+
+  @spec with_channel_fields(Contact.t() | [Contact.t()] | nil, MessageChannel.t()) ::
+          Contact.t() | [Contact.t()] | nil
+  defp with_channel_fields(contacts, channel \\ :whatsapp)
+  defp with_channel_fields(nil, _channel), do: nil
+
+  defp with_channel_fields(contacts, channel) when is_list(contacts),
+    do: ContactIdentities.load_channel_fields(contacts, channel)
+
+  defp with_channel_fields(%Contact{} = contact, channel),
+    do: [contact] |> ContactIdentities.load_channel_fields(channel) |> hd()
+
+  @typedoc """
+  Options of the query helpers below: the `:channel` whose state is read (WhatsApp by default) and, when the
+  contact is not the query's binding named `:contact`, its name as `:binding`.
+  """
+  @type state_opts :: [channel: MessageChannel.t(), binding: atom()]
+
+  @spec join_state(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  defp join_state(query, opts \\ []),
+    do:
+      ContactIdentities.join_identity(
+        query,
+        opts[:channel] || :whatsapp,
+        opts[:binding] || :contact
+      )
+
+  @doc """
+  Keeps the contacts that are opted in: with the opt-in flag set or, with `by: :time`, an opt-in time.
+  """
+  @spec filter_opted_in(Ecto.Queryable.t(), state_opts() | [by: :time]) :: Ecto.Query.t()
+  def filter_opted_in(query, opts \\ []) do
+    query = join_state(query, opts)
+
+    if opts[:by] == :time,
+      do: where(query, [identity: i], not is_nil(i.optin_time)),
+      else: where(query, [identity: i], i.optin_status == true)
+  end
+
+  @doc """
+  Keeps the contacts that have no opt-in time.
+  """
+  @spec filter_not_opted_in(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  def filter_not_opted_in(query, opts \\ []) do
+    query |> join_state(opts) |> where([identity: i], is_nil(i.optin_time))
+  end
+
+  @doc """
+  Keeps the contacts that have opted out.
+  """
+  @spec filter_opted_out(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  def filter_opted_out(query, opts \\ []) do
+    query |> join_state(opts) |> where([identity: i], not is_nil(i.optout_time))
+  end
+
+  @doc """
+  Keeps the contacts that have not opted out.
+  """
+  @spec filter_not_opted_out(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  def filter_not_opted_out(query, opts \\ []) do
+    query |> join_state(opts) |> where([identity: i], is_nil(i.optout_time))
+  end
+
+  @doc """
+  Keeps the contacts whose last inbound message was at or after `start` and before `finish`.
+  """
+  @spec filter_last_message_between(Ecto.Queryable.t(), DateTime.t(), DateTime.t(), state_opts()) ::
+          Ecto.Query.t()
+  def filter_last_message_between(query, start, finish, opts \\ []) do
+    query
+    |> join_state(opts)
+    |> where([identity: i], i.last_message_at >= ^start and i.last_message_at < ^finish)
+  end
+
+  @doc """
+  Orders the contacts, or the rows joined to them, by the last inbound message, newest first.
+  """
+  @spec order_by_last_message(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  def order_by_last_message(query, opts \\ []) do
+    query = join_state(query, opts)
+
+    # Postgres only lets a grouped query order by a column it groups by.
+    query = if query.group_bys == [], do: query, else: group_by(query, [identity: i], i.id)
+
+    order_by(query, [identity: i], desc: i.last_message_at)
+  end
+
+  @doc """
+  Groups the contacts by BSP status and selects `[bsp_status, count]` of each; a contact without a status is `:none`.
+  """
+  @spec count_by_bsp_status(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  def count_by_bsp_status(query, opts \\ []) do
+    query
+    |> join_state(opts)
+    |> group_by(
+      [identity: i],
+      type(fragment("COALESCE(?, 'none')", i.bsp_status), ContactProviderStatus)
+    )
+    |> select([c, identity: i], [
+      type(fragment("COALESCE(?, 'none')", i.bsp_status), ContactProviderStatus),
+      count(c.id)
+    ])
+  end
+
+  @doc """
+  Selects `[id, name, phone, value]` of each contact, where `value` is its `:optin_status` or `:bsp_status`.
+  """
+  @spec select_with_consent(Ecto.Queryable.t(), :optin_status | :bsp_status, state_opts()) ::
+          Ecto.Query.t()
+  def select_with_consent(query, field, opts \\ [])
+
+  def select_with_consent(query, :optin_status, opts) do
+    query
+    |> join_state(opts)
+    |> select([q, identity: i], [q.id, q.name, q.phone, coalesce(i.optin_status, false)])
+  end
+
+  def select_with_consent(query, :bsp_status, opts) do
+    query
+    |> join_state(opts)
+    |> select([q, identity: i], [
+      q.id,
+      q.name,
+      q.phone,
+      type(fragment("COALESCE(?, 'none')", i.bsp_status), ContactProviderStatus)
+    ])
+  end
+
   @spec has_permission?(non_neg_integer) :: boolean()
   defp has_permission?(id) do
     if Repo.skip_permission?() == true do
@@ -264,6 +405,7 @@ defmodule Glific.Contacts do
     |> where([c], c.id == ^id)
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.one!()
+    |> with_channel_fields()
   end
 
   @doc """
@@ -275,6 +417,7 @@ defmodule Glific.Contacts do
     |> where([c], c.id == ^id)
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.one()
+    |> with_channel_fields()
   end
 
   @doc """
@@ -300,6 +443,7 @@ defmodule Glific.Contacts do
     |> where([c], c.phone == ^phone)
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.one!()
+    |> with_channel_fields()
   end
 
   @doc """
@@ -318,17 +462,13 @@ defmodule Glific.Contacts do
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs, channel \\ :whatsapp, identifier \\ nil)
 
-  def create_contact(attrs, :whatsapp, _identifier) do
-    {state, attrs} = WhatsAppState.split(attrs)
+  def create_contact(attrs, channel, identifier) do
+    {fields, attrs} = ContactIdentities.split_channel_fields(attrs)
+    identifier = if channel == :whatsapp, do: attrs[:phone], else: identifier
 
     attrs
-    |> new_contact_changeset(:whatsapp)
-    |> insert_with_identity(:whatsapp, attrs[:phone], state)
-  end
-
-  def create_contact(attrs, :web, identifier) do
-    {_state, attrs} = WhatsAppState.split(attrs)
-    attrs |> new_contact_changeset(:web) |> insert_with_identity(:web, identifier, %{})
+    |> new_contact_changeset(channel)
+    |> insert_with_identity(channel, identifier, fields)
   end
 
   @spec insert_with_identity(
@@ -338,63 +478,18 @@ defmodule Glific.Contacts do
           map(),
           keyword()
         ) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp insert_with_identity(changeset, channel, identifier, state, insert_opts \\ []) do
+  defp insert_with_identity(changeset, channel, identifier, fields, insert_opts \\ []) do
     Multi.new()
     |> Multi.insert(:contact, changeset, insert_opts)
     |> ContactIdentities.insert_identity(channel, identifier)
-    |> Multi.run(:whatsapp_state, fn _repo, %{contact: contact} ->
-      WhatsAppState.update(contact, state, touch: false)
-      {:ok, :ok}
+    |> Multi.run(:channel_fields, fn _repo, %{contact: contact} ->
+      {:ok, ContactIdentities.update_channel_fields([contact], channel, fields, touch: false)}
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{contact: contact}} -> {:ok, contact}
+      {:ok, %{contact: contact}} -> {:ok, with_channel_fields(contact, channel)}
       {:error, _step, changeset, _changes} -> {:error, changeset}
     end
-  end
-
-  @doc """
-  The contact's WhatsApp consent and session state.
-  """
-  @spec whatsapp_state(Contact.t()) :: whatsapp_state()
-  def whatsapp_state(%Contact{id: contact_id}), do: WhatsAppState.fetch(contact_id)
-
-  @doc """
-  The WhatsApp state of a contact loaded with its `:whatsapp_identity` preloaded, without a query.
-  """
-  @spec whatsapp_state_from_preload(Contact.t()) :: whatsapp_state()
-  defdelegate whatsapp_state_from_preload(contact), to: WhatsAppState, as: :from_preload
-
-  @doc """
-  The state of a contact that does not exist or has no WhatsApp number.
-  """
-  @spec default_whatsapp_state() :: whatsapp_state()
-  defdelegate default_whatsapp_state(), to: WhatsAppState, as: :default
-
-  @doc """
-  The WhatsApp state of each contact or contact id, keyed by contact id, in one query.
-  """
-  @spec whatsapp_states([Contact.t() | non_neg_integer()]) :: %{
-          non_neg_integer() => whatsapp_state()
-        }
-  def whatsapp_states(contacts_or_ids),
-    do: contacts_or_ids |> Enum.map(&contact_id/1) |> WhatsAppState.fetch_many()
-
-  @spec contact_id(Contact.t() | map() | non_neg_integer()) :: non_neg_integer()
-  defp contact_id(id) when is_integer(id), do: id
-  defp contact_id(%{id: id}), do: id
-
-  @doc """
-  The contacts among `contact_ids` that are not blocked and have not opted out of WhatsApp.
-  """
-  @spec filter_not_opted_out([non_neg_integer()]) :: [non_neg_integer()]
-  def filter_not_opted_out(contact_ids) do
-    Contact
-    |> with_whatsapp_state()
-    |> where([c], c.id in ^contact_ids and c.status != :blocked)
-    |> where([c], is_nil(whatsapp_value(c, :optout_time)))
-    |> select([c], c.id)
-    |> Repo.all()
   end
 
   @doc """
@@ -402,8 +497,10 @@ defmodule Glific.Contacts do
   """
   @spec add_identity(Contact.t(), :whatsapp | :web, String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def add_identity(%Contact{} = contact, :web, identifier),
-    do: ContactIdentities.add_web_identity(contact, identifier)
+  def add_identity(%Contact{} = contact, :web, identifier) do
+    with {:ok, contact} <- ContactIdentities.add_web_identity(contact, identifier),
+         do: {:ok, with_channel_fields(contact)}
+  end
 
   def add_identity(%Contact{} = contact, channel, _identifier) do
     contact
@@ -413,19 +510,17 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Bulk-inserts contacts, then their WhatsApp identities seeded with the contact's current state, applying
-  the WhatsApp state fields of an entry on top. Returns the saved `id`, `phone` and `fields`.
+  Bulk-inserts contacts and their WhatsApp identities, which hold the opt-in, opt-out, BSP status and last
+  message fields of an entry. Returns the saved `id`, `phone` and `fields`.
   """
   @spec insert_contacts([map()], keyword()) :: [map()]
   def insert_contacts(entries, opts) do
     opts = Keyword.delete(opts, :organization_id)
 
-    states =
-      for entry <- entries,
-          into: %{},
-          do: {entry.phone, entry |> WhatsAppState.split() |> elem(0)}
+    {fields, entries} =
+      entries |> Enum.map(&ContactIdentities.split_channel_fields/1) |> Enum.unzip()
 
-    entries = Enum.map(entries, &(&1 |> WhatsAppState.split() |> elem(1)))
+    fields_by_phone = entries |> Enum.map(& &1.phone) |> Enum.zip(fields) |> Map.new()
 
     {_count, saved} =
       Repo.insert_all(
@@ -433,15 +528,21 @@ defmodule Glific.Contacts do
         entries,
         Keyword.merge(opts,
           conflict_target: [:phone, :organization_id],
-          returning: [:id, :phone, :fields]
+          returning: [:id, :organization_id, :phone, :fields]
         )
       )
 
-    WhatsAppState.seed(Enum.map(saved, & &1.id))
+    saved
+    |> Enum.group_by(& &1.organization_id)
+    |> Enum.each(fn {organization_id, contacts} ->
+      ContactIdentities.insert_whatsapp_identities(contacts, organization_id)
+    end)
 
-    WhatsAppState.update_many(for(row <- saved, do: {row.id, Map.fetch!(states, row.phone)}),
-      touch: false
-    )
+    saved
+    |> Enum.group_by(&Map.fetch!(fields_by_phone, &1.phone))
+    |> Enum.each(fn {fields, contacts} ->
+      ContactIdentities.update_channel_fields(contacts, :whatsapp, fields, touch: false)
+    end)
 
     saved
   end
@@ -464,8 +565,8 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Updates a contact. The WhatsApp state fields among `attrs` (opt-in, opt-out, BSP status, last inbound
-  message) are written to the contact's WhatsApp identity.
+  Updates a contact. The consent and session fields among `attrs` (opt-in, opt-out, BSP status, last inbound
+  message) are saved for `channel`, WhatsApp by default, and the returned contact carries the saved state.
 
   ## Examples
 
@@ -476,43 +577,32 @@ defmodule Glific.Contacts do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-
-  def update_contact(%Contact{} = contact, attrs) do
+  @spec update_contact(Contact.t(), map(), MessageChannel.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def update_contact(%Contact{} = contact, attrs, channel \\ :whatsapp) do
     if has_permission?(contact.id) do
       if simulator_block?(contact, attrs) do
         # just treat it as if we blocked the simulator
         # but in reality, we don't block the simulator
         {:ok, contact}
       else
-        {state, attrs} = WhatsAppState.split(attrs)
-        Repo.transaction(fn -> update_with_state(contact, attrs, state) end)
+        {fields, attrs} = ContactIdentities.split_channel_fields(attrs)
+        Repo.transaction(fn -> update_with_fields(contact, attrs, fields, channel) end)
       end
     else
       raise "Permission denied"
     end
   end
 
-  @spec update_with_state(Contact.t(), map(), map()) :: Contact.t()
-  defp update_with_state(contact, attrs, state) do
+  @spec update_with_fields(Contact.t(), map(), map(), MessageChannel.t()) :: Contact.t()
+  defp update_with_fields(contact, attrs, fields, channel) do
     case contact |> Contact.changeset(attrs) |> persist_update() do
       {:ok, contact} ->
-        update_whatsapp_state(contact, state)
-        contact
+        ContactIdentities.update_channel_fields([contact], channel, fields)
+        with_channel_fields(contact, channel)
 
       {:error, changeset} ->
         Repo.rollback(changeset)
-    end
-  end
-
-  @spec update_whatsapp_state(Contact.t(), map()) :: :ok
-  defp update_whatsapp_state(contact, state) do
-    case WhatsAppState.update(contact, state) do
-      :ok ->
-        :ok
-
-      {:error, :no_phone} ->
-        Logger.debug("Contact #{contact.id} has no phone, so it has no WhatsApp state to update")
     end
   end
 
@@ -522,9 +612,8 @@ defmodule Glific.Contacts do
   @spec update_phone(Contact.t(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def update_phone(%Contact{} = contact, phone) do
-    contact
-    |> Contact.changeset(%{phone: phone})
-    |> persist_update()
+    with {:ok, contact} <- contact |> Contact.changeset(%{phone: phone}) |> persist_update(),
+         do: {:ok, with_channel_fields(contact)}
   end
 
   @spec persist_update(Ecto.Changeset.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
@@ -632,7 +721,7 @@ defmodule Glific.Contacts do
   def upsert(%{organization_id: organization_id} = attrs) do
     # we keep this separate to avoid overwriting the language if already set by a contact
     # this will not appear in the set field of the on_conflict: clause below
-    {state, attrs} = WhatsAppState.split(attrs)
+    {fields, attrs} = ContactIdentities.split_channel_fields(attrs)
 
     other_attrs = %{
       organization_id: organization_id,
@@ -647,7 +736,7 @@ defmodule Glific.Contacts do
 
     case %Contact{}
          |> Contact.changeset(Map.merge(other_attrs, attrs))
-         |> insert_with_identity(:whatsapp, attrs[:phone], state, insert_opts) do
+         |> insert_with_identity(:whatsapp, attrs[:phone], fields, insert_opts) do
       {:ok, contact} ->
         {:ok, contact}
 
@@ -657,8 +746,8 @@ defmodule Glific.Contacts do
   end
 
   # A username joins the contact owning the phone claim when that contact is on WhatsApp: it holds
-  # the phone as its WhatsApp identity or has messaged. A phone only another web login stored is
-  # neither, so it is not linked to, nor stored again.
+  # the phone as its WhatsApp identity. A phone only another web login stored does not, so it is not
+  # linked to, nor stored again.
   @spec resolve_phone_claim(String.t() | nil) ::
           {:link, Contact.t()} | {:create, String.t() | nil}
   defp resolve_phone_claim(nil), do: {:create, nil}
@@ -675,9 +764,7 @@ defmodule Glific.Contacts do
 
   @spec linkable_contact?(Contact.t(), boolean()) :: boolean()
   defp linkable_contact?(contact, has_identity?),
-    do:
-      (has_identity? or whatsapp_state(contact).last_message_at != nil) and
-        contact.id != Partners.organization_contact_id(contact.organization_id)
+    do: has_identity? and contact.id != Partners.organization_contact_id(contact.organization_id)
 
   @spec add_or_create_web_contact(
           {:link, Contact.t()} | {:create, String.t() | nil},
@@ -845,7 +932,7 @@ defmodule Glific.Contacts do
         event_meta: %{method: method, channel: :web}
       })
 
-      {:ok, contact}
+      fetch_by_identity(:web, identifier)
     else
       {:ok, :unchanged} -> fetch_by_identity(:web, identifier)
       {:error, _reason} -> {:error, :not_found}
@@ -866,6 +953,8 @@ defmodule Glific.Contacts do
       updated_at: DateTime.utc_now()
     }
 
+    # A contact struct's own state fields are not instructions: a flow passes the whole struct here.
+    {_fields, contact_attrs} = ContactIdentities.split_channel_fields(contact_attrs)
     attrs = Map.merge(contact_attrs, attrs)
 
     :whatsapp
@@ -908,7 +997,7 @@ defmodule Glific.Contacts do
     cond do
       # if we are already opted in and we get the optin request from
       # BSP, we ignore it
-      whatsapp_state(contact).optin_status and opts[:method] == "BSP" -> true
+      with_channel_fields(contact).optin_status and opts[:method] == "BSP" -> true
       contact.status == :blocked -> true
       true -> false
     end
@@ -1015,63 +1104,11 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
 
-  @doc """
-  Check if we can send a session or template message to the contact
-  """
+  @doc false
   @spec can_send_message_to?(Contact.t(), boolean()) :: {:ok | :error, String.t() | nil}
-  def can_send_message_to?(contact, is_hsm), do: check_send(contact, is_hsm, %{})
+  def can_send_message_to?(contact, true = _is_hsm) do
+    contact = preload_consent(contact)
 
-  @doc """
-  Check if we can send a session message to the contact with some extra parameters
-  Specifically designed for when we are trying to optin an opted out contact
-  """
-  @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
-  # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
-  # contact that has only ever existed in a browser sits at `:none`, which both clauses above
-  # refuse. A contact on the web channel is reachable over their open socket regardless, so the only thing left
-  # to check when staff reply is that the contact is not blocked.
-  def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
-      when channel in [:web, "web"] do
-    if contact.status == :blocked,
-      do: {:error, dgettext("errors", "Contact is blocked.")},
-      else: {:ok, nil}
-  end
-
-  def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = attrs) do
-    cond do
-      whatsapp_phone(contact) == {:error, :no_phone} ->
-        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
-
-      is_hsm ->
-        optin_flow_hsm_check(state_of(contact, attrs))
-
-      true ->
-        optin_flow_session_check(state_of(contact, attrs))
-    end
-  end
-
-  # The web channel OTP is transactional — the person asked for it by typing their own number into
-  # a login form — so it is exempt from the marketing opt-in that #5713 stopped a web login from
-  # creating. Without this exemption a first-time visitor could never be sent a code at all: a
-  # contact that has only ever existed on the web has no opt-in and a `:none` BSP status, which
-  # fails both clauses above.
-  def can_send_message_to?(contact, _is_hsm, %{is_web_channel_otp: true} = _attrs) do
-    cond do
-      whatsapp_phone(contact) == {:error, :no_phone} ->
-        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
-
-      contact.status == :blocked ->
-        {:error, dgettext("errors", "Contact is blocked.")}
-
-      true ->
-        {:ok, nil}
-    end
-  end
-
-  def can_send_message_to?(contact, is_hsm, attrs), do: check_send(contact, is_hsm, attrs)
-
-  @spec check_send(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
-  defp check_send(contact, true = _is_hsm, attrs) do
     cond do
       whatsapp_phone(contact) == {:error, :no_phone} ->
         {:error, dgettext("errors", "Contact has no WhatsApp number.")}
@@ -1079,42 +1116,10 @@ defmodule Glific.Contacts do
       contact.status != :valid ->
         {:error, dgettext("errors", "Contact status is not valid.")}
 
-      true ->
-        hsm_gate(contact, state_of(contact, attrs))
-    end
-  end
-
-  defp check_send(contact, false = _is_hsm, attrs) do
-    cond do
-      whatsapp_phone(contact) == {:error, :no_phone} ->
-        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
-
-      contact.status != :valid ->
-        {:error, dgettext("errors", "Contact status is not valid.")}
-
-      state_of(contact, attrs).bsp_status not in [:session_and_hsm, :session] ->
-        {:error,
-         dgettext(
-           "errors",
-           "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
-         )}
-
-      true ->
-        {:ok, nil}
-    end
-  end
-
-  @spec state_of(Contact.t(), map()) :: whatsapp_state()
-  defp state_of(_contact, %{whatsapp_state: state}), do: state
-  defp state_of(contact, _attrs), do: whatsapp_state(contact)
-
-  @spec hsm_gate(Contact.t(), whatsapp_state()) :: {:ok | :error, String.t() | nil}
-  defp hsm_gate(contact, state) do
-    cond do
-      state.bsp_status not in [:session_and_hsm, :hsm, :session] ->
+      contact.bsp_status not in [:session_and_hsm, :hsm, :session] ->
         {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
 
-      state.optin_time == nil ->
+      contact.optin_time == nil ->
         {:error, dgettext("errors", "Cannot send hsm message to contact, not opted in.")}
 
       true ->
@@ -1132,18 +1137,92 @@ defmodule Glific.Contacts do
     end
   end
 
-  @spec optin_flow_hsm_check(whatsapp_state()) :: {:ok | :error, String.t() | nil}
-  defp optin_flow_hsm_check(state) do
-    if state.bsp_status in [:session_and_hsm, :hsm, :session],
+  @doc """
+  Check if we can send a session message to the contact
+  """
+  def can_send_message_to?(contact, false = _is_hsm) do
+    contact = preload_consent(contact)
+
+    cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
+      contact.status != :valid ->
+        {:error, dgettext("errors", "Contact status is not valid.")}
+
+      contact.bsp_status not in [:session_and_hsm, :session] ->
+        {:error,
+         dgettext(
+           "errors",
+           "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
+         )}
+
+      true ->
+        {:ok, nil}
+    end
+  end
+
+  @doc """
+  Check if we can send a session message to the contact with some extra parameters
+  Specifically designed for when we are trying to optin an opted out contact
+  """
+  @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
+  # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
+  # contact that has only ever existed in a browser sits at `:none`, which both clauses above
+  # refuse. A contact on the web channel is reachable over their open socket regardless, so the only thing left
+  # to check when staff reply is that the contact is not blocked.
+  def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
+      when channel in [:web, "web"] do
+    if contact.status == :blocked,
+      do: {:error, dgettext("errors", "Contact is blocked.")},
+      else: {:ok, nil}
+  end
+
+  def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
+    cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
+      is_hsm ->
+        contact |> preload_consent() |> optin_flow_hsm_check()
+
+      true ->
+        contact |> preload_consent() |> optin_flow_session_check()
+    end
+  end
+
+  # The web channel OTP is transactional — the person asked for it by typing their own number into
+  # a login form — so it is exempt from the marketing opt-in that #5713 stopped a web login from
+  # creating. Without this exemption a first-time visitor could never be sent a code at all:
+  # `optin_time` is nil and `bsp_status` is `:none` on a contact that has only ever existed on the
+  # web, which fails both clauses above.
+  def can_send_message_to?(contact, _is_hsm, %{is_web_channel_otp: true} = _attrs) do
+    cond do
+      whatsapp_phone(contact) == {:error, :no_phone} ->
+        {:error, dgettext("errors", "Contact has no WhatsApp number.")}
+
+      contact.status == :blocked ->
+        {:error, dgettext("errors", "Contact is blocked.")}
+
+      true ->
+        {:ok, nil}
+    end
+  end
+
+  def can_send_message_to?(contact, is_hsm, _), do: can_send_message_to?(contact, is_hsm)
+
+  @spec optin_flow_hsm_check(Contact.t()) :: {:ok | :error, String.t() | nil}
+  defp optin_flow_hsm_check(contact) do
+    if contact.bsp_status in [:session_and_hsm, :hsm, :session],
       do: {:ok, nil},
       else:
         {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
   end
 
-  @spec optin_flow_session_check(whatsapp_state()) :: {:ok | :error, String.t() | nil}
-  defp optin_flow_session_check(state) do
-    if state.bsp_status in [:session_and_hsm, :session] &&
-         Glific.in_past_time(state.last_message_at, :hours, 24),
+  @spec optin_flow_session_check(Contact.t()) :: {:ok | :error, String.t() | nil}
+  defp optin_flow_session_check(contact) do
+    if contact.bsp_status in [:session_and_hsm, :session] &&
+         Glific.in_past_time(contact.last_message_at, :hours, 24),
        do: {:ok, nil},
        else:
          {:error,
@@ -1193,13 +1272,13 @@ defmodule Glific.Contacts do
   def update_contact_status(organization_id, _args) do
     t = Glific.go_back_time(24 * 60 - 1, DateTime.utc_now(), :minute)
 
-    Contact
+    contacts_query()
     |> where([c], c.organization_id == ^organization_id)
-    |> with_whatsapp_state()
-    |> where([c], whatsapp_value(c, :last_message_at) <= ^t)
+    |> join_state()
+    |> where([identity: i], i.last_message_at <= ^t)
     |> where(
-      [c],
-      whatsapp_value(c, :bsp_status) in type(
+      [identity: i],
+      i.bsp_status in type(
         ^[:session, :session_and_hsm],
         {:array, ContactProviderStatus}
       )
@@ -1215,51 +1294,43 @@ defmodule Glific.Contacts do
   @spec set_session_status(Contact.t() | [non_neg_integer], atom()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | :ok
   def set_session_status(contact, :none = _status) when is_struct(contact) do
-    state = whatsapp_state(contact)
-    set_bsp_status(contact, state, if(is_nil(state.optin_time), do: :none, else: :hsm))
+    contact = with_channel_fields(contact)
+    set_bsp_status(contact, if(is_nil(contact.optin_time), do: :none, else: :hsm))
   end
 
   def set_session_status(%Contact{} = contact, :hsm = _status) do
-    state = whatsapp_state(contact)
+    contact = with_channel_fields(contact)
     t = Glific.go_back_time(24)
 
-    if !is_nil(state.last_message_at) && Timex.compare(state.last_message_at, t) > 0,
-      do: set_bsp_status(contact, state, :session_and_hsm),
-      else: set_bsp_status(contact, state, :hsm)
+    if !is_nil(contact.last_message_at) && Timex.compare(contact.last_message_at, t) > 0,
+      do: set_bsp_status(contact, :session_and_hsm),
+      else: set_bsp_status(contact, :hsm)
   end
 
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
-    states = WhatsAppState.fetch_many(contact_ids)
-    {opted_in, not_opted_in} = Enum.split_with(contact_ids, &opted_in_state?(states[&1]))
+    {opted_in, not_opted_in} =
+      Contact
+      |> where([c], c.id in ^contact_ids)
+      |> Repo.all()
+      |> with_channel_fields()
+      |> Enum.split_with(&(not is_nil(&1.optin_time)))
 
-    WhatsAppState.seed(contact_ids)
-    WhatsAppState.update_many(Enum.map(opted_in, &{&1, %{bsp_status: :hsm}}))
-    WhatsAppState.update_many(Enum.map(not_opted_in, &{&1, %{bsp_status: :none}}))
+    ContactIdentities.update_channel_fields(opted_in, :whatsapp, %{bsp_status: :hsm})
+    ContactIdentities.update_channel_fields(not_opted_in, :whatsapp, %{bsp_status: :none})
     :ok
   end
 
   def set_session_status(contact, :session = _status) do
-    state = whatsapp_state(contact)
-
-    set_bsp_status(
-      contact,
-      state,
-      if(is_nil(state.optin_time), do: :session, else: :session_and_hsm)
-    )
+    contact = with_channel_fields(contact)
+    set_bsp_status(contact, if(is_nil(contact.optin_time), do: :session, else: :session_and_hsm))
   end
 
   def set_session_status(_, _), do: :ok
 
-  @spec set_bsp_status(Contact.t(), whatsapp_state(), atom()) ::
+  @spec set_bsp_status(Contact.t(), atom()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp set_bsp_status(contact, %{bsp_status: bsp_status}, bsp_status), do: {:ok, contact}
-
-  defp set_bsp_status(contact, _state, bsp_status),
-    do: update_contact(contact, %{bsp_status: bsp_status})
-
-  @spec opted_in_state?(whatsapp_state() | nil) :: boolean()
-  defp opted_in_state?(%{optin_time: optin_time}), do: not is_nil(optin_time)
-  defp opted_in_state?(nil), do: false
+  defp set_bsp_status(%Contact{bsp_status: bsp_status} = contact, bsp_status), do: {:ok, contact}
+  defp set_bsp_status(contact, bsp_status), do: update_contact(contact, %{bsp_status: bsp_status})
 
   @doc """
   check if contact is blocked or not
@@ -1311,7 +1382,7 @@ defmodule Glific.Contacts do
       contact_id
       |> Contacts.get_contact!()
       |> Repo.preload([:language, :groups, :active_profile])
-      |> with_whatsapp_fields()
+      |> Map.from_struct()
 
     # we are splitting this up since we need to use contact within the various function
     # calls and a lot cleaner this way
@@ -1322,14 +1393,6 @@ defmodule Glific.Contacts do
     |> get_contact_field_groups()
     |> get_contact_field_list_profiles(contact)
     |> get_contact_field_name(contact)
-  end
-
-  @spec with_whatsapp_fields(Contact.t()) :: map()
-  defp with_whatsapp_fields(contact) do
-    contact
-    |> Map.from_struct()
-    |> WhatsAppState.without_storage_fields()
-    |> Map.merge(whatsapp_state(contact))
   end
 
   @spec get_contact_fields(map(), Contact.t()) :: map()
@@ -1475,8 +1538,10 @@ defmodule Glific.Contacts do
   def fetch_by_identity(_channel, identifier) when identifier in [nil, ""],
     do: {:error, :no_identifier}
 
-  def fetch_by_identity(:web, identifier) when is_binary(identifier),
-    do: ContactIdentities.fetch_contact(:web, identifier)
+  def fetch_by_identity(:web, identifier) when is_binary(identifier) do
+    with {:ok, contact} <- ContactIdentities.fetch_contact(:web, identifier),
+         do: {:ok, with_channel_fields(contact, :web)}
+  end
 
   def fetch_by_identity(:whatsapp, phone) when is_binary(phone), do: fetch_by_phone(phone)
 
@@ -1484,7 +1549,7 @@ defmodule Glific.Contacts do
   defp fetch_by_phone(phone) do
     case Repo.get_by(Contact, %{phone: phone}) do
       nil -> {:error, :not_found}
-      contact -> {:ok, contact}
+      contact -> {:ok, with_channel_fields(contact)}
     end
   end
 
@@ -1513,11 +1578,11 @@ defmodule Glific.Contacts do
   defp fetch_whatsapp_sender(phone) do
     case fetch_whatsapp_contact(phone) do
       {:ok, contact, true} ->
-        {:ok, contact}
+        {:ok, with_channel_fields(contact)}
 
       {:ok, contact, false} ->
         ContactIdentities.set_whatsapp_identity(contact)
-        {:ok, contact}
+        {:ok, with_channel_fields(contact)}
 
       {:error, :not_found} ->
         {:error, :not_found}

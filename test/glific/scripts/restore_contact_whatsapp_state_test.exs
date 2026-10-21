@@ -5,7 +5,6 @@ defmodule Glific.Scripts.RestoreContactWhatsappStateTest do
 
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Fixtures,
     Repo,
     Scripts.RestoreContactWhatsappState
@@ -24,16 +23,16 @@ defmodule Glific.Scripts.RestoreContactWhatsappStateTest do
 
   defp columns(contact) do
     Repo.one!(
-      from(c in Contact,
+      from(c in "contacts",
         where: c.id == ^contact.id,
         select: %{
-          optin_time: c.legacy_optin_time,
-          optin_status: c.legacy_optin_status,
-          optin_method: c.legacy_optin_method,
-          optout_time: c.legacy_optout_time,
-          optout_method: c.legacy_optout_method,
-          bsp_status: c.legacy_bsp_status,
-          last_message_at: c.legacy_last_message_at
+          optin_time: type(c.optin_time, :utc_datetime),
+          optin_status: c.optin_status,
+          optin_method: c.optin_method,
+          optout_time: type(c.optout_time, :utc_datetime),
+          optout_method: c.optout_method,
+          bsp_status: type(c.bsp_status, Glific.Enums.ContactProviderStatus),
+          last_message_at: type(c.last_message_at, :utc_datetime)
         }
       ),
       skip_organization_id: true
@@ -42,7 +41,7 @@ defmodule Glific.Scripts.RestoreContactWhatsappStateTest do
 
   test "copies the state changes made on the identity back onto the contact" do
     contact =
-      Fixtures.pre_identity_contact_fixture(%{
+      Fixtures.contact_without_identity_fixture(%{
         phone: phone(),
         optin_time: @optin_time,
         optin_status: true,
@@ -64,7 +63,8 @@ defmodule Glific.Scripts.RestoreContactWhatsappStateTest do
     assert updated >= 1
     assert last_id >= contact.id
 
-    assert columns(contact) == Contacts.whatsapp_state(contact) |> Map.delete(:__struct__)
+    restored = columns(contact)
+    assert restored == Map.take(Contacts.get_contact!(contact.id), Map.keys(restored))
 
     assert %{
              optin_time: nil,
@@ -78,7 +78,7 @@ defmodule Glific.Scripts.RestoreContactWhatsappStateTest do
 
   test "leaves a contact with no identity row as it is" do
     contact =
-      Fixtures.pre_identity_contact_fixture(%{
+      Fixtures.contact_without_identity_fixture(%{
         phone: phone(),
         optin_time: @optin_time,
         optin_status: true,
@@ -100,8 +100,8 @@ defmodule Glific.Scripts.RestoreContactWhatsappStateTest do
     assert %{updated: 0} = RestoreContactWhatsappState.run()
 
     Repo.update_all(
-      from(c in Contact, where: c.id in ^[first.id, second.id]),
-      [set: [legacy_optin_method: "stale"]],
+      from(c in "contacts", where: c.id in ^[first.id, second.id]),
+      [set: [optin_method: "stale"]],
       skip_organization_id: true
     )
 

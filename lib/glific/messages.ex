@@ -390,13 +390,11 @@ defmodule Glific.Messages do
     contact =
       if is_nil(Map.get(attrs, :receiver, nil)),
         do: Contacts.get_contact!(attrs.receiver_id),
-        else: attrs.receiver
+        else: Contacts.preload_consent(attrs.receiver)
 
     Logger.error(
       "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{reason}"
     )
-
-    state = Contacts.whatsapp_state(contact)
 
     {:ok, _} =
       Notifications.create_notification(%{
@@ -408,9 +406,9 @@ defmodule Glific.Messages do
           id: contact.id,
           name: contact.name,
           phone: contact.phone,
-          bsp_status: state.bsp_status,
+          bsp_status: contact.bsp_status,
           status: contact.status,
-          last_message_at: state.last_message_at,
+          last_message_at: contact.last_message_at,
           is_hsm: Map.get(attrs, :is_hsm),
           flow_id: Map.get(attrs, :flow_id),
           group_id: Map.get(attrs, :group_id)
@@ -690,18 +688,10 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message_to_contacts(map(), [], atom()) :: {:ok, list()}
   def create_and_send_message_to_contacts(message_params, contact_ids, type) do
-    states = Contacts.whatsapp_states(contact_ids)
-
     contact_ids =
       contact_ids
       |> Enum.reduce([], fn contact_id, contact_ids ->
-        message_params =
-          message_params
-          |> Map.put(:receiver_id, contact_id)
-          |> Map.put(
-            :whatsapp_state,
-            Map.get_lazy(states, contact_id, &Contacts.default_whatsapp_state/0)
-          )
+        message_params = Map.put(message_params, :receiver_id, contact_id)
 
         result =
           if type == :session,

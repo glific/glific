@@ -5,8 +5,6 @@ defmodule Glific.Reports do
 
   import Ecto.Query
 
-  require Glific.Contacts
-
   alias Glific.{
     BigQuery.BigQueryJob,
     Contacts,
@@ -81,44 +79,38 @@ defmodule Glific.Reports do
 
   @spec get_count_query(atom()) :: Ecto.Query.t()
   defp get_count_query(:valid_contact_count) do
-    Contact
+    from(c in Contact, as: :contact)
     |> select([q], count(q.id))
     |> where([q], q.status == "valid")
   end
 
   defp get_count_query(:invalid_contact_count) do
-    Contact
+    from(c in Contact, as: :contact)
     |> select([q], count(q.id))
     |> where([q], q.status == "invalid")
   end
 
   defp get_count_query(:opted_in_contacts_count) do
-    Contact
-    |> Contacts.with_whatsapp_state()
+    from(c in Contact, as: :contact)
     |> select([q], count(q.id))
-    |> where([q], not is_nil(Contacts.whatsapp_value(q, :optin_time)))
+    |> Contacts.filter_opted_in(by: :time)
   end
 
   defp get_count_query(:opted_out_contacts_count) do
-    Contact
-    |> Contacts.with_whatsapp_state()
+    from(c in Contact, as: :contact)
     |> select([q], count(q.id))
-    |> where([q], not is_nil(Contacts.whatsapp_value(q, :optout_time)))
+    |> Contacts.filter_opted_out()
   end
 
   defp get_count_query(:non_opted_contacts_count) do
-    Contact
-    |> Contacts.with_whatsapp_state()
+    from(c in Contact, as: :contact)
     |> select([q], count(q.id))
-    |> where([q], is_nil(Contacts.whatsapp_value(q, :optin_time)))
-    |> where([q], is_nil(Contacts.whatsapp_value(q, :optout_time)))
+    |> Contacts.filter_not_opted_in()
+    |> Contacts.filter_not_opted_out()
   end
 
   defp get_count_query(:bsp_status) do
-    Contact
-    |> Contacts.with_whatsapp_state()
-    |> group_by([c], Contacts.whatsapp_value(c, :bsp_status))
-    |> select([c], [Contacts.whatsapp_value(c, :bsp_status), count(c.id)])
+    Contacts.count_by_bsp_status(from(c in Contact, as: :contact))
   end
 
   defp get_count_query(:monthly_error_count) do
@@ -541,9 +533,7 @@ defmodule Glific.Reports do
 
   @spec get_export_query(atom()) :: Ecto.Query.t()
   defp get_export_query(:optin) do
-    Contact
-    |> Contacts.with_whatsapp_state()
-    |> select([q], [q.id, q.name, q.phone, Contacts.whatsapp_value(q, :optin_status)])
+    Contacts.select_with_consent(from(c in Contact, as: :contact), :optin_status)
   end
 
   defp get_export_query(:notifications) do
@@ -557,9 +547,7 @@ defmodule Glific.Reports do
   end
 
   defp get_export_query(:contact_type) do
-    Contact
-    |> Contacts.with_whatsapp_state()
-    |> select([q], [q.id, q.name, q.phone, Contacts.whatsapp_value(q, :bsp_status)])
+    Contacts.select_with_consent(from(c in Contact, as: :contact), :bsp_status)
   end
 
   @doc """

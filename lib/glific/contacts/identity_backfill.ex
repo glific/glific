@@ -1,141 +1,144 @@
 defmodule Glific.Contacts.IdentityBackfill do
   @moduledoc """
-  One-off backfill of the `(whatsapp, contacts.phone)` identity for contacts created before
-  identities existed. It lives under `lib/glific/contacts/` because it writes `ContactIdentity`
-  rows; nothing in the application calls it.
+  One-off copy of the old `contacts` consent and session columns (opt-in, opt-out, BSP status, last inbound
+  message) onto each contact's `(whatsapp, phone)` identity, creating the identity where it is missing. It
+  lives under `lib/glific/contacts/` because it writes `ContactIdentity` rows; nothing in the application
+  calls it.
 
-  Every contact with a non-empty phone and no WhatsApp identity is backfilled, and each new identity
-  starts with the contact's own opt-in, opt-out, BSP status and last inbound message. A row the
-  running application created in the meantime is never touched, so the backfill can run while the
-  application is live.
+  The application reads those fields from identities only, so run it right after the deploy. It is set-based:
+  contacts are walked in id ranges of `batch_size` with partial phones skipped, and each range is a single
+  `INSERT ... SELECT ... ON CONFLICT` statement, so no lock outlives a batch and a rerun is safe.
 
-  Contacts are read in id order, `batch_size` at a time, across all organizations, and each batch
-  is inserted in its own statement, so no lock outlives a batch. Rows that already exist, or whose
-  phone is a WhatsApp identity of another contact, are skipped by the unique
-  `(organization_id, channel, identifier)` index, so a rerun is safe.
+  ## Rows the running application wrote first
+
+  Between the deploy and the backfill the application may already have written an identity row (an opt-in,
+  an inbound message, a new contact). An existing row is never overwritten with the older contact values:
+
+    * consent (opt-in and opt-out fields) is copied only while the row records none; once it holds any,
+      the row is newer than the contact and is left alone, so an opt-out is never undone by a stale opt-in;
+    * `bsp_status` is copied only while the row is still `none`, and a `session` status over a copied opt-in
+      becomes `session_and_hsm`;
+    * `last_message_at` keeps the later of the two times.
+
+  A row that belongs to another contact (a phone that moved) is skipped.
 
   ## Run from IEx (`gigalixir remote_console`)
 
       iex> Glific.Contacts.IdentityBackfill.run()
-      %{scanned: 6_000_000, inserted: 5_990_000, last_id: 7_123_456}
+      %{scanned: 6_000_000, inserted: 5_990_000, updated: 1_200, last_id: 7_123_456}
 
       # resume after an interrupted run, from the last id it logged
       iex> Glific.Contacts.IdentityBackfill.run(after_id: 3_000_000)
   """
 
-  import Ecto.Query
-
   require Logger
 
-  alias Glific.{
-    Contacts.Contact,
-    Contacts.ContactIdentity,
-    Repo
-  }
+  alias Glific.Repo
 
-  @default_batch_size 1_000
+  @default_batch_size 10_000
 
   @typedoc "What a run did, and the id to resume from."
   @type result :: %{
           scanned: non_neg_integer(),
           inserted: non_neg_integer(),
+          updated: non_neg_integer(),
           last_id: non_neg_integer()
         }
 
+  @consent_unrecorded """
+  (i.optin_time IS NULL AND i.optout_time IS NULL AND i.optin_method IS NULL
+   AND i.optout_method IS NULL AND NOT i.optin_status)
+  """
+
+  @merged_bsp_status """
+  CASE
+    WHEN NOT #{@consent_unrecorded} THEN i.bsp_status
+    WHEN i.bsp_status = 'none' THEN EXCLUDED.bsp_status
+    WHEN i.bsp_status = 'session' AND EXCLUDED.optin_time IS NOT NULL THEN 'session_and_hsm'
+    ELSE i.bsp_status
+  END
+  """
+
+  @copy_sql """
+  INSERT INTO contact_identities AS i
+    (contact_id, organization_id, channel, identifier, optin_time, optin_status, optin_method,
+     optout_time, optout_method, bsp_status, last_message_at, inserted_at, updated_at)
+  SELECT c.id, c.organization_id, 'whatsapp', c.phone, c.optin_time, COALESCE(c.optin_status, false),
+         c.optin_method, c.optout_time, c.optout_method, COALESCE(c.bsp_status, 'none'),
+         c.last_message_at, now(), now()
+  FROM contacts c
+  WHERE c.id > $1 AND c.id <= $2 AND c.phone IS NOT NULL AND c.phone <> ''
+  ON CONFLICT (organization_id, channel, identifier) DO UPDATE SET
+    optin_time = CASE WHEN #{@consent_unrecorded} THEN EXCLUDED.optin_time ELSE i.optin_time END,
+    optin_status = CASE WHEN #{@consent_unrecorded} THEN EXCLUDED.optin_status ELSE i.optin_status END,
+    optin_method = CASE WHEN #{@consent_unrecorded} THEN EXCLUDED.optin_method ELSE i.optin_method END,
+    optout_time = CASE WHEN #{@consent_unrecorded} THEN EXCLUDED.optout_time ELSE i.optout_time END,
+    optout_method = CASE WHEN #{@consent_unrecorded} THEN EXCLUDED.optout_method ELSE i.optout_method END,
+    bsp_status = #{@merged_bsp_status},
+    last_message_at = GREATEST(i.last_message_at, EXCLUDED.last_message_at),
+    updated_at = now()
+  WHERE i.contact_id = EXCLUDED.contact_id
+    AND (
+      (#{@consent_unrecorded} AND (EXCLUDED.optin_time IS NOT NULL OR EXCLUDED.optout_time IS NOT NULL
+        OR EXCLUDED.optin_status OR EXCLUDED.optin_method IS NOT NULL
+        OR EXCLUDED.optout_method IS NOT NULL))
+      OR (i.bsp_status, i.last_message_at) IS DISTINCT FROM
+         (#{@merged_bsp_status}, GREATEST(i.last_message_at, EXCLUDED.last_message_at))
+    )
+  RETURNING (xmax = 0) AS inserted
+  """
+
   @doc """
-  Backfills every eligible contact with an id above `:after_id` (default 0), `:batch_size` at a time.
+  Copies every contact with an id above `:after_id` (default 0), `:batch_size` contacts at a time.
   """
   @spec run(Keyword.t()) :: result()
   def run(opts \\ []) do
     after_id = Keyword.get(opts, :after_id, 0)
     batch_size = Keyword.get(opts, :batch_size, @default_batch_size)
 
-    run_batches(after_id, batch_size, %{scanned: 0, inserted: 0, last_id: after_id})
+    copy_batches(after_id, batch_size, %{scanned: 0, inserted: 0, updated: 0, last_id: after_id})
   end
 
-  @spec run_batches(non_neg_integer(), pos_integer(), result()) :: result()
-  defp run_batches(after_id, batch_size, totals) do
-    contacts = fetch_batch(after_id, batch_size)
-
-    case List.last(contacts) do
+  @spec copy_batches(non_neg_integer(), pos_integer(), result()) :: result()
+  defp copy_batches(after_id, batch_size, totals) do
+    case batch_upper_bound(after_id, batch_size) do
       nil ->
         totals
 
-      %{id: last_id} ->
-        inserted = insert_whatsapp_identities(contacts)
-        Logger.info("Contact identity backfill reached contact #{last_id}")
+      {upto, scanned} ->
+        %{rows: rows} =
+          Repo.query!(@copy_sql, [after_id, upto], timeout: :infinity, skip_organization_id: true)
+
+        inserted = Enum.count(rows, fn [inserted?] -> inserted? end)
+        Logger.info("Contact identity backfill reached contact #{upto}")
 
         totals = %{
-          scanned: totals.scanned + length(contacts),
+          scanned: totals.scanned + scanned,
           inserted: totals.inserted + inserted,
-          last_id: last_id
+          updated: totals.updated + length(rows) - inserted,
+          last_id: upto
         }
 
-        if length(contacts) < batch_size,
-          do: totals,
-          else: run_batches(last_id, batch_size, totals)
+        if scanned < batch_size, do: totals, else: copy_batches(upto, batch_size, totals)
     end
   end
 
-  @spec fetch_batch(non_neg_integer(), pos_integer()) :: [map()]
-  defp fetch_batch(after_id, batch_size) do
-    from(c in Contact, as: :contact)
-    |> where([c], c.id > ^after_id and not is_nil(c.phone) and c.phone != "")
-    |> where([c], not exists(whatsapp_identities()))
-    |> order_by([c], asc: c.id)
-    |> limit(^batch_size)
-    |> select([c], %{
-      id: c.id,
-      organization_id: c.organization_id,
-      phone: c.phone,
-      optin_time: c.legacy_optin_time,
-      optin_status: c.legacy_optin_status,
-      optin_method: c.legacy_optin_method,
-      optout_time: c.legacy_optout_time,
-      optout_method: c.legacy_optout_method,
-      bsp_status: c.legacy_bsp_status,
-      last_message_at: c.legacy_last_message_at
-    })
-    |> Repo.all(skip_organization_id: true)
-  end
-
-  @spec whatsapp_identities() :: Ecto.Query.t()
-  defp whatsapp_identities do
-    from(i in ContactIdentity,
-      where: i.contact_id == parent_as(:contact).id and i.channel == :whatsapp
-    )
-  end
-
-  @spec insert_whatsapp_identities([map()]) :: non_neg_integer()
-  defp insert_whatsapp_identities(contacts) do
-    now = DateTime.utc_now()
-
-    rows =
-      Enum.map(contacts, fn contact ->
-        %{
-          contact_id: contact.id,
-          organization_id: contact.organization_id,
-          channel: :whatsapp,
-          identifier: contact.phone,
-          optin_time: contact.optin_time,
-          optin_status: contact.optin_status == true,
-          optin_method: contact.optin_method,
-          optout_time: contact.optout_time,
-          optout_method: contact.optout_method,
-          bsp_status: contact.bsp_status || :none,
-          last_message_at: contact.last_message_at,
-          inserted_at: now,
-          updated_at: now
-        }
-      end)
-
-    {inserted, _rows} =
-      Repo.insert_all(ContactIdentity, rows,
-        on_conflict: :nothing,
-        conflict_target: [:organization_id, :channel, :identifier],
+  @spec batch_upper_bound(non_neg_integer(), pos_integer()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
+  defp batch_upper_bound(after_id, batch_size) do
+    %{rows: [[upto, scanned]]} =
+      Repo.query!(
+        """
+        SELECT MAX(id), COUNT(*) FROM (
+          SELECT id FROM contacts
+          WHERE id > $1 AND phone IS NOT NULL AND phone <> ''
+          ORDER BY id LIMIT $2
+        ) batch
+        """,
+        [after_id, batch_size],
         skip_organization_id: true
       )
 
-    inserted
+    if is_nil(upto), do: nil, else: {upto, scanned}
   end
 end
