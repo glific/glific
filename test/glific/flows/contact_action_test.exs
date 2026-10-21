@@ -39,11 +39,14 @@ defmodule Glific.Flows.ContactActionTest do
     contact = Contacts.get_contact!(contact.id)
     assert contact.optout_time != nil
     assert contact.optin_time == nil
+    assert %{contact: state, identity: state} = Fixtures.whatsapp_state(contact)
 
     ContactAction.optin(context)
     contact = Contacts.get_contact!(contact.id)
     assert contact.optout_time == nil
     assert contact.optin_time != nil
+    assert %{contact: state, identity: state} = Fixtures.whatsapp_state(contact)
+    assert state.optin_status
   end
 
   test "send message text", attrs do

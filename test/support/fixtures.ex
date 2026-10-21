@@ -134,6 +134,74 @@ defmodule Glific.Fixtures do
     |> Repo.insert!()
   end
 
+  @whatsapp_state_fields [
+    :optin_time,
+    :optin_status,
+    :optin_method,
+    :optout_time,
+    :optout_method,
+    :bsp_status,
+    :last_message_at
+  ]
+
+  @doc """
+  A contact with no WhatsApp identity row, whose `contacts` columns hold the given consent and session state:
+  what `Glific.Contacts.IdentityBackfill` copies from.
+  """
+  @spec contact_without_identity_fixture(map()) :: Contact.t()
+  def contact_without_identity_fixture(attrs \\ %{}) do
+    {state, attrs} = Map.split(attrs, @whatsapp_state_fields)
+    contact = contact_fixture(attrs)
+
+    Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
+      skip_organization_id: true
+    )
+
+    columns =
+      for {field, value} <- Map.put_new(state, :bsp_status, :none),
+          do: {field, column_value(value)}
+
+    Repo.update_all(from(c in "contacts", where: c.id == ^contact.id), [set: columns],
+      skip_organization_id: true
+    )
+
+    Repo.get!(Contact, contact.id, skip_organization_id: true)
+  end
+
+  defp column_value(%Elixir.DateTime{} = time), do: Elixir.DateTime.truncate(time, :second)
+
+  defp column_value(value) when is_atom(value) and not is_boolean(value) and value != nil,
+    do: Atom.to_string(value)
+
+  defp column_value(value), do: value
+
+  @doc """
+  The WhatsApp identity of a contact, as stored.
+  """
+  @spec whatsapp_identity(Contact.t()) :: ContactIdentity.t() | nil
+  def whatsapp_identity(%Contact{id: contact_id}),
+    do:
+      Repo.one(
+        from(i in ContactIdentity, where: i.contact_id == ^contact_id and i.channel == :whatsapp),
+        skip_organization_id: true
+      )
+
+  @doc """
+  The consent and session state the stored contact holds, and the state its WhatsApp identity holds, as maps
+  that are equal when the two agree.
+  """
+  @spec whatsapp_state(Contact.t()) :: %{contact: map(), identity: map() | nil}
+  def whatsapp_state(%Contact{id: contact_id} = contact) do
+    stored = Repo.get!(Contact, contact_id, skip_organization_id: true)
+    identity = whatsapp_identity(contact)
+
+    %{
+      contact:
+        stored |> Map.take(@whatsapp_state_fields) |> Map.update!(:optin_status, &(&1 == true)),
+      identity: identity && Map.take(identity, @whatsapp_state_fields)
+    }
+  end
+
   @doc false
   @spec contact_identity_fixture(map()) :: ContactIdentity.t()
   def contact_identity_fixture(attrs \\ %{}) do
