@@ -1,0 +1,9 @@
+query guardrailValidators {
+  guardrailValidators {
+    validators {
+      type
+      config
+      link
+    }
+  }
+}

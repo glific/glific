@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.OrganizationTypes)
   import_types(__MODULE__.ProfileTypes)
   import_types(__MODULE__.ContactTypes)
+  import_types(__MODULE__.ContactIdentityTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.EnumTypes)
   import_types(__MODULE__.GenericTypes)
@@ -62,6 +63,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.AssistantChatTypes)
   import_types(__MODULE__.PromptGeneratorTypes)
   import_types(__MODULE__.AIEvaluationTypes)
+  import_types(__MODULE__.GuardrailTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
   import_types(__MODULE__.WhatsappFormTypes)
@@ -73,6 +75,7 @@ defmodule GlificWeb.Schema do
     import_fields(:profile_queries)
 
     import_fields(:contact_queries)
+    import_fields(:contact_identity_queries)
 
     import_fields(:language_queries)
 
@@ -146,6 +149,8 @@ defmodule GlificWeb.Schema do
 
     import_fields(:ai_evaluation_queries)
 
+    import_fields(:guardrail_queries)
+
     import_fields(:ask_glific_queries)
 
     import_fields(:prompt_generator_queries)
@@ -155,6 +160,7 @@ defmodule GlificWeb.Schema do
     import_fields(:profile_mutations)
 
     import_fields(:contact_mutations)
+    import_fields(:contact_identity_mutations)
 
     import_fields(:contact_tag_mutations)
 

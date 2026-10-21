@@ -11,6 +11,8 @@ query AssistantConfigVersions {
     provider
     model
     settings
+    inputGuardrails
+    outputGuardrails
     status
     failureReason
     insertedAt

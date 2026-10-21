@@ -70,6 +70,15 @@ defmodule GlificWeb.Schema.ContactTypes do
       end)
     end
 
+    @desc "The contact's identities on each channel; always empty for a staff user"
+    field :identities, list_of(:contact_identity) do
+      resolve(fn contact, args, %{context: %{current_user: user}} = resolution ->
+        if Enum.member?(user.roles, :staff),
+          do: {:ok, []},
+          else: dataloader(Repo).(contact, args, resolution)
+      end)
+    end
+
     field :active_profile, :profile do
       resolve(dataloader(Repo))
     end
@@ -145,7 +154,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   @desc "Filtering options for contacts"
   input_object :contact_filter do
-    @desc "Match the name or phone"
+    @desc "Match the name or phone, or the start of a web username (never for a staff user)"
     field(:term, :string)
 
     @desc "Match the name"
@@ -203,6 +212,12 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:active_profile_id, :id)
     field(:fields, :json)
     field(:settings, :json)
+
+    @desc "The channel the contact is created on when creating a contact; defaults to WHATSAPP, which needs a phone"
+    field(:channel, :message_channel_enum)
+
+    @desc "The username to log in with, required when creating a WEB contact: letters, digits, _, @ and ., stored lowercase, 1 to 255 characters"
+    field(:identifier, :string)
   end
 
   @desc "Filtering options for contacts history"

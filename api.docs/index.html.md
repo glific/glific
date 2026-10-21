@@ -17,6 +17,7 @@ includes:
   - organizations
   - users
   - contacts
+  - web_channel
   - tags
   - contact_tag
   - messages_tags

@@ -910,6 +910,41 @@ defmodule GlificWeb.Schema.SearchTest do
     assert messages != []
   end
 
+  describe "searchMulti by username" do
+    setup do
+      contact = Fixtures.contact_without_phone_fixture(%{name: "Nameless visitor"})
+      Fixtures.contact_identity_fixture(%{contact_id: contact.id, identifier: "ravi_web"})
+      %{contact: contact}
+    end
+
+    defp search_multi_contact_ids(user, term) do
+      {:ok, query_data} =
+        auth_query_gql_by(:search_multi, user,
+          variables: %{
+            "filter" => %{"term" => term},
+            "contactOpts" => %{"limit" => 50},
+            "messageOpts" => %{"limit" => 1}
+          }
+        )
+
+      query_data |> get_in([:data, "searchMulti", "contacts"]) |> Enum.map(& &1["id"])
+    end
+
+    test "a manager finds a contact by the start of its username", %{
+      manager: user,
+      contact: contact
+    } do
+      assert "#{contact.id}" in search_multi_contact_ids(user, "ravi_w")
+    end
+
+    test "a staff user does not find a contact by its username", %{
+      staff: user,
+      contact: contact
+    } do
+      refute "#{contact.id}" in search_multi_contact_ids(user, "ravi_w")
+    end
+  end
+
   test "WA Search by term will return the search input", %{staff: user} = attrs do
     {:ok, wa_phone} = Repo.fetch_by(WAManagedPhone, %{organization_id: attrs.organization_id})
 
