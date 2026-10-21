@@ -107,7 +107,10 @@ defmodule Glific.Application do
     default_size = Application.get_env(:glific, :http_pool, [])[:size] || 10
 
     %{
-      :default => http_pool_options(default_size, 5_000),
+      # flow webhooks can reach any host, so idle default pools are shut down instead of
+      # accumulating one per host for the life of the node
+      :default =>
+        Keyword.put(http_pool_options(default_size, 5_000), :pool_max_idle_time, 60_000),
       "https://api.gupshup.io" => http_pool_options(50, 5_000),
       "https://api.maytapi.com" => http_pool_options(20, 5_000),
       "https://generativelanguage.googleapis.com" => http_pool_options(20, 5_000)
@@ -120,8 +123,8 @@ defmodule Glific.Application do
       Application.fetch_env!(:glific, Glific.ThirdParty.Kaapi.ApiClient)[:kaapi_endpoint]
 
     case URI.parse(kaapi_endpoint) do
-      %URI{scheme: "https", host: host} ->
-        Map.put(pools, "https://#{host}", http_pool_options(20, 5_000))
+      %URI{scheme: "https", host: host, port: port} ->
+        Map.put(pools, "https://#{host}:#{port}", http_pool_options(20, 5_000))
 
       _ ->
         pools
