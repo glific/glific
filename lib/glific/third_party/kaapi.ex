@@ -1020,7 +1020,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec handle_evaluation_dataset_v2_response(
           {:ok, map()} | {:error, map() | binary() | :timeout},
           non_neg_integer()
-        ) :: {:ok, map()} | {:error, map() | binary()}
+        ) :: {:ok, map()} | {:error, map() | binary() | :timeout}
   defp handle_evaluation_dataset_v2_response(
          {:ok, %{data: %{dataset_id: dataset_id, original_items: original_items}}},
          _organization_id
