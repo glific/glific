@@ -163,7 +163,7 @@ defmodule Glific.Searches do
 
   defp filter_active_contacts_of_organization(contact_ids)
        when is_list(contact_ids) do
-    query = from(c in Contact, as: :c)
+    query = from(c in Contact, as: :contact)
 
     query
     |> where([c], c.id in ^contact_ids)
@@ -174,7 +174,7 @@ defmodule Glific.Searches do
 
   @spec status_query(map()) :: Ecto.Query.t()
   defp status_query(opts) do
-    query = from(c in Contact, as: :c)
+    query = from(c in Contact, as: :contact)
 
     query
     |> where([c], c.status != :blocked)
@@ -193,7 +193,7 @@ defmodule Glific.Searches do
 
     where(
       query,
-      [c: c],
+      [contact: c],
       c.contact_type in ["WABA", "WABA+WA"] or c.id in subquery(web_contact_ids)
     )
   end
@@ -222,13 +222,13 @@ defmodule Glific.Searches do
   defp filter_status_contacts_of_organization("Optout", opts) do
     status_query(opts)
     |> where([c], c.status != :blocked)
-    |> Contacts.filter_opted_out(binding: :c)
+    |> Contacts.filter_opted_out()
   end
 
   defp filter_status_contacts_of_organization("Optin", opts) do
     status_query(opts)
     |> where([c], c.status != :blocked)
-    |> Contacts.filter_opted_in(binding: :c)
+    |> Contacts.filter_opted_in()
   end
 
   defp filter_status_contacts_of_organization("Not replied", opts) do
@@ -260,19 +260,19 @@ defmodule Glific.Searches do
     sub_query = permission_query(user)
 
     query
-    |> where([c: c], c.id == ^user.contact_id or c.id in subquery(sub_query))
+    |> where([contact: c], c.id == ^user.contact_id or c.id in subquery(sub_query))
   end
 
   @spec basic_query(map()) :: Ecto.Query.t()
   defp basic_query(args) do
-    query = from(c in Contact, as: :c)
+    query = from(c in Contact, as: :contact)
 
     query
     |> add_message_clause(args)
-    |> order_by([c: c], desc: c.last_communication_at, desc: c.id)
-    |> where([c: c], c.status != :blocked)
+    |> order_by([contact: c], desc: c.last_communication_at, desc: c.id)
+    |> where([contact: c], c.status != :blocked)
     |> where_in_inbox()
-    |> group_by([c: c], c.id)
+    |> group_by([contact: c], c.id)
     |> repo().add_permission(&Searches.add_permission/2)
   end
 
@@ -280,7 +280,7 @@ defmodule Glific.Searches do
   defp add_message_clause(query, %{filter: filters} = _args)
        when is_map(filters) do
     if map_size(filters) > 1,
-      do: query |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id),
+      do: query |> join(:left, [contact: c], m in Message, as: :m, on: c.id == m.contact_id),
       else: query
   end
 
@@ -296,7 +296,7 @@ defmodule Glific.Searches do
   defp search_query(term, args) do
     basic_query(args)
     |> add_contact_opts(args.contact_opts)
-    |> select([c: c], c.id)
+    |> select([contact: c], c.id)
     |> Full.run(term, args, Repo.get_current_user())
   end
 
@@ -551,12 +551,12 @@ defmodule Glific.Searches do
     query = from(m in Message, as: :m)
 
     query
-    |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
-    |> where([m, c: c], c.status != :blocked)
+    |> join(:left, [m: m], c in Contact, as: :contact, on: m.contact_id == c.id)
+    |> where([m, contact: c], c.status != :blocked)
     |> repo().add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
-    |> Contacts.order_by_last_message(binding: :c)
+    |> Contacts.order_by_last_message()
   end
 
   # codebeat:disable[ABC]
@@ -570,7 +570,7 @@ defmodule Glific.Searches do
     |> where(^TermSearch.match(term, user))
     |> limit(^limit)
     |> offset(^offset)
-    |> Contacts.order_by_last_message(binding: :c)
+    |> Contacts.order_by_last_message()
     |> repo().all(timeout: @search_timeout)
   end
 

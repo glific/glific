@@ -76,6 +76,53 @@ defmodule Glific.Scripts.RestoreContactWhatsappStateTest do
            } = columns(contact)
   end
 
+  test "does not overwrite a recorded opt-in with the defaults of a row created without consent" do
+    contact =
+      Fixtures.contact_without_identity_fixture(%{
+        phone: phone(),
+        optin_time: @optin_time,
+        optin_status: true,
+        optin_method: "BSP",
+        bsp_status: :hsm
+      })
+
+    {:ok, _contact} = Contacts.update_contact(contact, %{last_message_at: @last_message_at})
+
+    assert %{optin_status: false, optin_time: nil} = Fixtures.fetch_identity(contact, :whatsapp)
+
+    RestoreContactWhatsappState.run()
+
+    assert %{
+             optin_time: @optin_time,
+             optin_status: true,
+             optin_method: "BSP",
+             bsp_status: :hsm,
+             last_message_at: @last_message_at
+           } = columns(contact)
+  end
+
+  test "adds a session from a row created without consent to the contact's own status" do
+    contact = Fixtures.contact_without_identity_fixture(%{phone: phone(), bsp_status: :hsm})
+
+    {:ok, _contact} = Contacts.update_contact(contact, %{bsp_status: :session})
+    RestoreContactWhatsappState.run()
+
+    assert %{bsp_status: :session_and_hsm, optin_status: false} = columns(contact)
+  end
+
+  test "copies a recorded opt-in back onto the contact" do
+    contact = Fixtures.contact_without_identity_fixture(%{phone: phone()})
+
+    {:ok, _contact} = Contacts.contact_opted_in(%{phone: contact.phone}, 1, @optin_time)
+
+    assert %{optin_status: false, optin_time: nil} = columns(contact)
+
+    RestoreContactWhatsappState.run()
+
+    assert %{optin_status: true, optin_time: @optin_time, optin_method: "BSP", bsp_status: :hsm} =
+             columns(contact)
+  end
+
   test "leaves a contact with no identity row as it is" do
     contact =
       Fixtures.contact_without_identity_fixture(%{

@@ -114,7 +114,7 @@ defmodule Glific.Contacts.IdentityBackfillTest do
     first = contact_without_identity()
     second = contact_without_identity()
 
-    IdentityBackfill.run(after_id: first.id)
+    IdentityBackfill.run(phase: :full, after_id: first.id)
 
     assert identities(first, :whatsapp) == []
     assert [_one] = identities(second, :whatsapp)
@@ -247,7 +247,11 @@ defmodule Glific.Contacts.IdentityBackfillTest do
             do: contact_without_identity(%{optin_status: true, optin_method: "m#{index}"})
 
       assert %{last_id: last_id} =
-               IdentityBackfill.run(batch_size: 2, after_id: List.first(contacts).id)
+               IdentityBackfill.run(
+                 phase: :full,
+                 batch_size: 2,
+                 after_id: List.first(contacts).id
+               )
 
       assert last_id >= List.last(contacts).id
       assert identities(List.first(contacts), :whatsapp) == []
@@ -258,6 +262,84 @@ defmodule Glific.Contacts.IdentityBackfillTest do
 
       for {contact, index} <- Enum.with_index(contacts, 1),
           do: assert(Contacts.get_contact!(contact.id).optin_method == "m#{index}")
+    end
+  end
+
+  describe "the priority pass" do
+    @recent ~U[2026-10-20 00:00:00Z]
+
+    defp priority_contacts do
+      %{
+        opted_out:
+          contact_without_identity(%{
+            optin_status: false,
+            optout_time: ~U[2025-03-04 05:06:07Z],
+            optout_method: "user"
+          }),
+        recent:
+          contact_without_identity(%{
+            optin_status: true,
+            optin_time: ~U[2025-03-04 05:06:07Z],
+            last_message_at:
+              DateTime.utc_now() |> DateTime.add(-3600) |> DateTime.truncate(:second)
+          }),
+        dormant:
+          contact_without_identity(%{
+            optin_status: true,
+            optin_time: ~U[2025-03-04 05:06:07Z],
+            last_message_at:
+              DateTime.utc_now() |> DateTime.add(-40 * 86_400) |> DateTime.truncate(:second)
+          })
+      }
+    end
+
+    test "copies the opted out and the recently active contacts, and not the others" do
+      %{opted_out: opted_out, recent: recent, dormant: dormant} = priority_contacts()
+
+      assert %{phase: :priority, inserted: inserted} = IdentityBackfill.run(phase: :priority)
+      assert inserted >= 2
+
+      assert %{optout_method: "user"} = Fixtures.fetch_identity(opted_out, :whatsapp)
+      assert %{optin_status: true} = Fixtures.fetch_identity(recent, :whatsapp)
+      assert is_nil(Fixtures.fetch_identity(dormant, :whatsapp))
+
+      refute Contacts.get_contact!(dormant.id).optin_status
+    end
+
+    test "is followed by the full pass, which leaves the first pass's rows as they are" do
+      %{opted_out: opted_out, dormant: dormant} = priority_contacts()
+
+      assert %{phase: :full, inserted: inserted} = IdentityBackfill.run()
+      assert inserted >= 1
+
+      assert %{optout_method: "user"} = Fixtures.fetch_identity(opted_out, :whatsapp)
+      assert %{optin_status: true} = Fixtures.fetch_identity(dormant, :whatsapp)
+      assert %{inserted: 0, updated: 0} = IdentityBackfill.run(phase: :full)
+    end
+
+    test "resumes from a contact id within its own pass" do
+      %{opted_out: opted_out, recent: recent} = priority_contacts()
+
+      IdentityBackfill.run(phase: :priority, after_id: opted_out.id)
+
+      assert is_nil(Fixtures.fetch_identity(opted_out, :whatsapp))
+      assert %{optin_status: true} = Fixtures.fetch_identity(recent, :whatsapp)
+    end
+
+    test "an :after_id needs a pass to belong to" do
+      assert_raise ArgumentError, fn -> IdentityBackfill.run(after_id: 5) end
+    end
+
+    test "never undoes an opt-out the application recorded in the gap" do
+      contact =
+        contact_without_identity(%{optin_status: true, optin_time: @recent, bsp_status: :hsm})
+
+      :ok = Contacts.contact_opted_out(contact.phone, contact.organization_id, @recent)
+
+      IdentityBackfill.run(phase: :priority)
+
+      assert %{optin_status: false, optout_time: @recent} =
+               Fixtures.fetch_identity(contact, :whatsapp)
     end
   end
 end

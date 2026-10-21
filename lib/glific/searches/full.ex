@@ -65,7 +65,7 @@ defmodule Glific.Search.Full do
     query
     |> where(
       ^dynamic(
-        [m: m, c: c],
+        [m: m],
         ilike(m.body, ^"%#{term}%") or ^TermSearch.match(term, user)
       )
     )

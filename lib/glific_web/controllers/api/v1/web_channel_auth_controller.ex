@@ -122,8 +122,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
     case ensure_contact(organization_id, normalized) do
       {:ok, contact} ->
-        Contacts.add_identity(contact, :web, contact.phone)
-        record_web_optin(contact)
+        Contacts.add_identity(contact, :web, contact.phone,
+          optin: true,
+          method: "web_channel_otp"
+        )
 
         json(conn, %{
           data: %{
@@ -294,22 +296,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       )
 
       :ok
-  end
-
-  @spec record_web_optin(Contact.t()) :: :ok
-  defp record_web_optin(contact) do
-    case Contacts.optin_contact(%{method: "web_channel_otp"}, :web, contact.phone) do
-      {:ok, _contact} ->
-        :ok
-
-      {:error, error} ->
-        Glific.log_error(
-          "Could not record the web opt-in of contact #{contact.id}: " <>
-            SafeLog.safe_inspect(error)
-        )
-
-        :ok
-    end
   end
 
   # Local development has no BSP, so the HSM never arrives and there is no way to read the code.

@@ -93,7 +93,7 @@ defmodule Glific.Reports do
   defp get_count_query(:opted_in_contacts_count) do
     from(c in Contact, as: :contact)
     |> select([q], count(q.id))
-    |> Contacts.filter_opted_in(by: :time)
+    |> Contacts.filter_with_optin_time()
   end
 
   defp get_count_query(:opted_out_contacts_count) do
@@ -105,7 +105,7 @@ defmodule Glific.Reports do
   defp get_count_query(:non_opted_contacts_count) do
     from(c in Contact, as: :contact)
     |> select([q], count(q.id))
-    |> Contacts.filter_not_opted_in()
+    |> Contacts.filter_without_optin_time()
     |> Contacts.filter_not_opted_out()
   end
 

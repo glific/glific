@@ -54,8 +54,8 @@ defmodule Glific.Contacts.ContactIdentities do
     contact_ids = Enum.map(contacts, & &1.id)
     organization_ids = contacts |> Enum.map(& &1.organization_id) |> Enum.uniq()
 
-    # The contacts' own organizations scope the read, so it is safe in a process with no organization set,
-    # such as a GraphQL batch. The lowest id wins where a contact has several identities on a channel.
+    # A GraphQL batch runs in a task with no organization set; the contacts' own organizations scope the read instead.
+    # A contact can hold several web identities; the lowest id is read, and Map.new keeps the last of the desc order.
     found =
       from(i in ContactIdentity,
         where: i.contact_id in ^contact_ids and i.organization_id in ^organization_ids,
@@ -73,10 +73,10 @@ defmodule Glific.Contacts.ContactIdentities do
 
   @doc """
   Left-joins each contact's identity on `channel` as the named binding `:identity`. The contact is the query's
-  binding named `contact_binding`; a query that already has the join is returned as it is.
+  binding named `:contact`; a query that already has the join is returned as it is.
   """
-  @spec join_identity(Ecto.Queryable.t(), MessageChannel.t(), atom()) :: Ecto.Query.t()
-  def join_identity(query, channel, contact_binding \\ :contact) do
+  @spec join_identity(Ecto.Queryable.t(), MessageChannel.t()) :: Ecto.Query.t()
+  def join_identity(query, channel) do
     query = Ecto.Queryable.to_query(query)
 
     if has_named_binding?(query, :identity),
@@ -84,7 +84,7 @@ defmodule Glific.Contacts.ContactIdentities do
       else:
         join(query, :left, [], i in ContactIdentity,
           as: :identity,
-          on: i.contact_id == field(as(^contact_binding), :id) and i.channel == ^channel
+          on: i.contact_id == field(as(:contact), :id) and i.channel == ^channel
         )
   end
 
@@ -106,15 +106,12 @@ defmodule Glific.Contacts.ContactIdentities do
     set = Map.to_list(normalize(changes)) ++ [updated_at: now]
 
     if Keyword.get(opts, :touch, true),
-      do:
-        Repo.update_all(from(c in Contact, where: c.id in ^contact_ids), [set: [updated_at: now]],
-          skip_organization_id: true
-        )
+      do: Repo.update_all(from(c in Contact, where: c.id in ^contact_ids), set: [updated_at: now])
 
     identities =
       from(i in ContactIdentity, where: i.contact_id in ^contact_ids and i.channel == ^channel)
 
-    {updated, _rows} = Repo.update_all(identities, [set: set], skip_organization_id: true)
+    {updated, _rows} = Repo.update_all(identities, set: set)
 
     if channel == :whatsapp and updated < length(contacts) do
       contacts
@@ -123,7 +120,7 @@ defmodule Glific.Contacts.ContactIdentities do
         insert_whatsapp_identities(group, organization_id)
       end)
 
-      Repo.update_all(identities, [set: set], skip_organization_id: true)
+      Repo.update_all(identities, set: set)
     end
 
     :ok
@@ -272,8 +269,7 @@ defmodule Glific.Contacts.ContactIdentities do
     |> Enum.each(
       &Repo.insert_all(ContactIdentity, &1,
         on_conflict: :nothing,
-        conflict_target: conflict_target(),
-        skip_organization_id: true
+        conflict_target: conflict_target()
       )
     )
   end

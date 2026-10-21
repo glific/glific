@@ -44,29 +44,11 @@ defmodule GlificWeb.Resolvers.ContactIdentities do
     with :ok <- check_channel_enabled(channel, user.organization_id),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
-         {:ok, contact} <- Contacts.add_identity(contact, channel, identifier),
-         :ok <- record_web_optin(channel, identifier, args[:optin], "web_channel_api") do
+         {:ok, contact} <-
+           Contacts.add_identity(contact, channel, identifier, optin: args[:optin]) do
       {:ok, %{contact: contact}}
     end
   end
-
-  @doc """
-  Records the web opt-in of `identifier` when the caller says the user consented (`optin` is `true`); `false` or
-  absent records nothing, and never an opt-out. Other channels are not touched.
-  """
-  @spec record_web_optin(:whatsapp | :web, String.t() | nil, boolean() | nil, String.t()) ::
-          :ok | {:error, any()}
-  def record_web_optin(:web, identifier, true, method) do
-    case Contacts.optin_contact(%{method: method}, :web, identifier) do
-      {:ok, _contact} ->
-        :ok
-
-      {:error, _reason} ->
-        {:error, ["Contact", dgettext("errors", "Could not record the web opt-in.")]}
-    end
-  end
-
-  def record_web_optin(_channel, _identifier, _optin, _method), do: :ok
 
   @doc """
   Refuses a web identity while the web channel is off for the organization.

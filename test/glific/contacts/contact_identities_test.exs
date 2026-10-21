@@ -676,6 +676,22 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                Contacts.get_contact!(whatsapp.id)
     end
 
+    test "contact_opted_in/4 takes the channel as an option, like contact_opted_out/5", %{
+      contact: contact
+    } do
+      assert {:ok, %Contact{id: id}} =
+               Contacts.contact_opted_in(
+                 %{identifier: "consent_user"},
+                 1,
+                 DateTime.utc_now(),
+                 channel: :web,
+                 method: "web_channel_otp"
+               )
+
+      assert id == contact.id
+      assert %{optin_status: true, optin_method: "web_channel_otp"} = web_identity(contact)
+    end
+
     test "an unknown identity is refused", %{contact: contact} do
       assert {:error, :not_found} = web_optin("someone_else")
 

@@ -372,7 +372,7 @@ defmodule Glific.Stats do
           |> where([c], c.inserted_at >= ^start)
           |> where([c], c.inserted_at < ^finish)
 
-    optin = Contacts.filter_opted_in(time_query, by: :time)
+    optin = Contacts.filter_with_optin_time(time_query)
     optout = Contacts.filter_opted_out(time_query)
 
     # don't generate summary contact stats for hourly snapshots

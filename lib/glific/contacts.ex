@@ -41,7 +41,8 @@ defmodule Glific.Contacts do
           optional(:sub) => String.t(),
           optional(:exp) => integer(),
           optional(:name) => String.t(),
-          optional(:phone) => String.t()
+          optional(:phone) => String.t(),
+          optional(:optin) => boolean()
         }
 
   @doc """
@@ -251,37 +252,36 @@ defmodule Glific.Contacts do
     do: [contact] |> ContactIdentities.load_channel_fields(channel) |> hd()
 
   @typedoc """
-  Options of the query helpers below: the `:channel` whose state is read (WhatsApp by default) and, when the
-  contact is not the query's binding named `:contact`, its name as `:binding`.
+  Option of the query helpers below: the `:channel` whose state is read (WhatsApp by default). The contact must be the
+  query's binding named `:contact`.
   """
-  @type state_opts :: [channel: MessageChannel.t(), binding: atom()]
+  @type state_opts :: [channel: MessageChannel.t()]
 
   @spec join_state(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
   defp join_state(query, opts \\ []),
-    do:
-      ContactIdentities.join_identity(
-        query,
-        opts[:channel] || :whatsapp,
-        opts[:binding] || :contact
-      )
+    do: ContactIdentities.join_identity(query, opts[:channel] || :whatsapp)
 
   @doc """
-  Keeps the contacts that are opted in: with the opt-in flag set or, with `by: :time`, an opt-in time.
+  Keeps the contacts whose opt-in flag is set.
   """
-  @spec filter_opted_in(Ecto.Queryable.t(), state_opts() | [by: :time]) :: Ecto.Query.t()
+  @spec filter_opted_in(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
   def filter_opted_in(query, opts \\ []) do
-    query = join_state(query, opts)
+    query |> join_state(opts) |> where([identity: i], i.optin_status == true)
+  end
 
-    if opts[:by] == :time,
-      do: where(query, [identity: i], not is_nil(i.optin_time)),
-      else: where(query, [identity: i], i.optin_status == true)
+  @doc """
+  Keeps the contacts that have an opt-in time, whether or not they have since opted out.
+  """
+  @spec filter_with_optin_time(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  def filter_with_optin_time(query, opts \\ []) do
+    query |> join_state(opts) |> where([identity: i], not is_nil(i.optin_time))
   end
 
   @doc """
   Keeps the contacts that have no opt-in time.
   """
-  @spec filter_not_opted_in(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
-  def filter_not_opted_in(query, opts \\ []) do
+  @spec filter_without_optin_time(Ecto.Queryable.t(), state_opts()) :: Ecto.Query.t()
+  def filter_without_optin_time(query, opts \\ []) do
     query |> join_state(opts) |> where([identity: i], is_nil(i.optin_time))
   end
 
@@ -448,6 +448,7 @@ defmodule Glific.Contacts do
 
   @doc """
   Creates a contact and its identity in one transaction: its phone on `:whatsapp`, `identifier` on `:web`.
+  A web contact whose `attrs` say `optin: true` is also opted in on the web channel.
 
   ## Examples
 
@@ -469,6 +470,7 @@ defmodule Glific.Contacts do
     attrs
     |> new_contact_changeset(channel)
     |> insert_with_identity(channel, identifier, fields)
+    |> record_api_web_optin(channel, identifier, attrs[:optin] == true, "web_channel_api")
   end
 
   @spec insert_with_identity(
@@ -494,15 +496,26 @@ defmodule Glific.Contacts do
 
   @doc """
   Adds a web username to a contact; one it already has is accepted, one another contact holds is refused.
+  With `optin: true` the identity is also opted in on the web channel, recorded as `:method` (`"web_channel_api"` by
+  default).
   """
-  @spec add_identity(Contact.t(), :whatsapp | :web, String.t()) ::
+  @spec add_identity(Contact.t(), :whatsapp | :web, String.t(), keyword()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def add_identity(%Contact{} = contact, :web, identifier) do
-    with {:ok, contact} <- ContactIdentities.add_web_identity(contact, identifier),
-         do: {:ok, with_channel_fields(contact)}
+  def add_identity(contact, channel, identifier, opts \\ [])
+
+  def add_identity(%Contact{} = contact, :web, identifier, opts) do
+    with {:ok, contact} <- ContactIdentities.add_web_identity(contact, identifier) do
+      {:ok, with_channel_fields(contact)}
+      |> record_api_web_optin(
+        :web,
+        identifier,
+        opts[:optin] == true,
+        Keyword.get(opts, :method, "web_channel_api")
+      )
+    end
   end
 
-  def add_identity(%Contact{} = contact, channel, _identifier) do
+  def add_identity(%Contact{} = contact, channel, _identifier, _opts) do
     contact
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.add_error(:channel, "#{channel} identities follow the contact's phone")
@@ -801,7 +814,7 @@ defmodule Glific.Contacts do
         with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier), do: error
 
       phone_taken?(changeset) ->
-        maybe_create_contact(claims, :web, identifier)
+        find_or_create_web_contact(claims, identifier)
 
       true ->
         error
@@ -839,7 +852,8 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Returns the contact for a WhatsApp sender or an NGO token's username, creating it if it does not exist.
+  Returns the contact for a WhatsApp sender or an NGO token's username, creating it if it does not exist. A token
+  with `optin: true` also opts the web identity in.
   """
   @spec maybe_create_contact(map() | web_claims(), :whatsapp | :web, String.t() | nil) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
@@ -848,11 +862,16 @@ defmodule Glific.Contacts do
   def maybe_create_contact(claims, :web, identifier) do
     identifier = String.downcase(identifier)
 
-    with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier) do
-      claims[:phone]
-      |> resolve_phone_claim()
-      |> add_or_create_web_contact(claims, identifier)
-      |> retry_web_login_race(claims, identifier)
+    with {:ok, contact} <- find_or_create_web_contact(claims, identifier) do
+      # A failed opt-in is logged by the opt-in itself and never refuses the login.
+      if claims[:optin] == true,
+        do:
+          contact_opted_in(%{identifier: identifier}, contact.organization_id, DateTime.utc_now(),
+            channel: :web,
+            method: "web_channel_jwt"
+          )
+
+      {:ok, contact}
     end
   end
 
@@ -879,6 +898,17 @@ defmodule Glific.Contacts do
           attrs ->
             update_contact(contact, attrs)
         end
+    end
+  end
+
+  @spec find_or_create_web_contact(web_claims(), String.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp find_or_create_web_contact(claims, identifier) do
+    with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier) do
+      claims[:phone]
+      |> resolve_phone_claim()
+      |> add_or_create_web_contact(claims, identifier)
+      |> retry_web_login_race(claims, identifier)
     end
   end
 
@@ -912,17 +942,77 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Update DB fields when contact opted in and ignore if it's blocked
+  Records an opt-in on a channel (`channel: :whatsapp` by default) and ignores it if the contact is blocked.
+
+  On WhatsApp `contact_attrs` holds the contact's `:phone`. With `channel: :web` it holds the web identity's
+  `:identifier` and only the first opt-in is recorded, with `:method`, on that identity.
   """
   @spec contact_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def contact_opted_in(contact_attrs, organization_id, utc_time, opts \\ []),
-    do: whatsapp_opted_in(contact_attrs, organization_id, utc_time, opts)
+          {:ok, Contact.t()}
+          | {:error, Ecto.Changeset.t()}
+          | {:error, :not_found | :failed}
+  def contact_opted_in(contact_attrs, organization_id, utc_time, opts \\ []) do
+    case Keyword.get(opts, :channel, :whatsapp) do
+      :web ->
+        web_opted_in(contact_attrs.identifier, Keyword.get(opts, :method), utc_time)
 
-  @spec web_opted_in(String.t(), String.t() | nil) :: {:ok, Contact.t()} | {:error, :not_found}
-  defp web_opted_in(identifier, method) do
-    utc_time = DateTime.utc_now()
+      :whatsapp ->
+        %{phone: phone} = contact_attrs
 
+        attrs = %{
+          phone: phone,
+          optin_time: utc_time,
+          optin_status: true,
+          optin_method: Keyword.get(opts, :method, "BSP"),
+          optout_time: nil,
+          status: :valid,
+          organization_id: organization_id,
+          updated_at: DateTime.utc_now()
+        }
+
+        # A contact struct's own state fields are not instructions: a flow passes the whole struct here.
+        {_fields, contact_attrs} = ContactIdentities.split_channel_fields(contact_attrs)
+        attrs = Map.merge(contact_attrs, attrs)
+
+        :whatsapp
+        |> fetch_by_identity(phone)
+        |> case do
+          {:error, :no_identifier} ->
+            missing_phone_error(attrs)
+
+          {:error, :not_found} ->
+            create_contact(attrs)
+
+          {:ok, contact} ->
+            # we ignore the optin from the BSP if we are already opted in
+            if ignore_optin?(contact, opts),
+              do: {:ok, contact},
+              else: update_contact(contact, attrs)
+        end
+        |> case do
+          {:ok, contact} ->
+            {:ok, contact} = set_session_status(contact, :hsm)
+
+            capture_history(contact.id, :contact_opted_in, %{
+              event_label: "contact opted in, via #{attrs.optin_method}",
+              event_meta: %{
+                method: attrs[:optin_method],
+                utc_time: utc_time,
+                optin_message_id: Keyword.get(opts, :message_id)
+              }
+            })
+
+            {:ok, contact}
+
+          {:error, changeset} ->
+            {:error, changeset}
+        end
+    end
+  end
+
+  @spec web_opted_in(String.t(), String.t() | nil, DateTime.t()) ::
+          {:ok, Contact.t()} | {:error, :not_found | :failed}
+  defp web_opted_in(identifier, method, utc_time) do
     with {:ok, contact} <- fetch_by_identity(:web, identifier),
          {:ok, :recorded} <-
            ContactIdentities.record_optin(contact, :web, identifier, method, utc_time) do
@@ -934,63 +1024,44 @@ defmodule Glific.Contacts do
 
       fetch_by_identity(:web, identifier)
     else
-      {:ok, :unchanged} -> fetch_by_identity(:web, identifier)
-      {:error, _reason} -> {:error, :not_found}
+      {:ok, :unchanged} ->
+        fetch_by_identity(:web, identifier)
+
+      {:error, _reason} ->
+        Glific.log_error("Could not record a web opt-in: no contact holds the web identity")
+        {:error, :not_found}
+    end
+  rescue
+    # Connecting opts in as a side effect, so a failure here must not take the connection down.
+    exception ->
+      Glific.log_exception(exception)
+      {:error, :failed}
+  end
+
+  @spec record_api_web_optin(
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()},
+          :whatsapp | :web,
+          String.t() | nil,
+          boolean(),
+          String.t()
+        ) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp record_api_web_optin({:ok, contact} = created, :web, identifier, true, method) do
+    case contact_opted_in(%{identifier: identifier}, contact.organization_id, DateTime.utc_now(),
+           channel: :web,
+           method: method
+         ) do
+      {:ok, _contact} ->
+        created
+
+      {:error, _reason} ->
+        contact
+        |> Ecto.Changeset.change()
+        |> Ecto.Changeset.add_error(:optin, "could not be recorded")
+        |> Ecto.Changeset.apply_action(:insert)
     end
   end
 
-  @spec whatsapp_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp whatsapp_opted_in(%{phone: phone} = contact_attrs, organization_id, utc_time, opts) do
-    attrs = %{
-      phone: phone,
-      optin_time: utc_time,
-      optin_status: true,
-      optin_method: Keyword.get(opts, :method, "BSP"),
-      optout_time: nil,
-      status: :valid,
-      organization_id: organization_id,
-      updated_at: DateTime.utc_now()
-    }
-
-    # A contact struct's own state fields are not instructions: a flow passes the whole struct here.
-    {_fields, contact_attrs} = ContactIdentities.split_channel_fields(contact_attrs)
-    attrs = Map.merge(contact_attrs, attrs)
-
-    :whatsapp
-    |> fetch_by_identity(phone)
-    |> case do
-      {:error, :no_identifier} ->
-        missing_phone_error(attrs)
-
-      {:error, :not_found} ->
-        create_contact(attrs)
-
-      {:ok, contact} ->
-        # we ignore the optin from the BSP if we are already opted in
-        if ignore_optin?(contact, opts),
-          do: {:ok, contact},
-          else: update_contact(contact, attrs)
-    end
-    |> case do
-      {:ok, contact} ->
-        {:ok, contact} = set_session_status(contact, :hsm)
-
-        capture_history(contact.id, :contact_opted_in, %{
-          event_label: "contact opted in, via #{attrs.optin_method}",
-          event_meta: %{
-            method: attrs[:optin_method],
-            utc_time: utc_time,
-            optin_message_id: Keyword.get(opts, :message_id)
-          }
-        })
-
-        {:ok, contact}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
-  end
+  defp record_api_web_optin(result, _channel, _identifier, _optin, _method), do: result
 
   @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
   defp ignore_optin?(contact, opts) do
@@ -1032,9 +1103,15 @@ defmodule Glific.Contacts do
         utc_time,
         method \\ "Glific Flows",
         opts \\ []
-      )
+      ) do
+    case Keyword.get(opts, :channel, :whatsapp) do
+      :web -> web_opted_out(identifier, utc_time, method)
+      :whatsapp -> whatsapp_opted_out(identifier, organization_id, utc_time, method)
+    end
+  end
 
-  def contact_opted_out(identifier, _organization_id, utc_time, method, channel: :web) do
+  @spec web_opted_out(String.t(), DateTime.t(), String.t()) :: :ok | :error
+  defp web_opted_out(identifier, utc_time, method) do
     with {:ok, contact} <- fetch_by_identity(:web, identifier),
          {:ok, :recorded} <-
            ContactIdentities.record_optout(contact, :web, identifier, method, utc_time) do
@@ -1050,7 +1127,8 @@ defmodule Glific.Contacts do
     end
   end
 
-  def contact_opted_out(phone, organization_id, utc_time, method, _opts) do
+  @spec whatsapp_opted_out(String.t(), non_neg_integer, DateTime.t(), String.t()) :: :ok | :error
+  defp whatsapp_opted_out(phone, organization_id, utc_time, method) do
     if simulator_contact?(phone) do
       :ok
     else
@@ -1358,11 +1436,18 @@ defmodule Glific.Contacts do
           {:ok, Contact.t()}
           | {:error, Ecto.Changeset.t()}
           | {:error, String.t()}
-          | {:error, :not_found}
+          | {:error, :not_found | :failed}
   def optin_contact(attrs, channel \\ :whatsapp, identifier \\ nil)
 
-  def optin_contact(attrs, :web, identifier),
-    do: web_opted_in(identifier, Map.get(attrs, :method))
+  def optin_contact(attrs, :web, identifier) do
+    contact_opted_in(
+      %{identifier: identifier},
+      Repo.get_organization_id(),
+      DateTime.utc_now(),
+      channel: :web,
+      method: Map.get(attrs, :method)
+    )
+  end
 
   def optin_contact(%{organization_id: _organization_id, phone: phone}, :whatsapp, _identifier)
       when phone in [nil, ""],

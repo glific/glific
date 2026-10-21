@@ -2260,4 +2260,45 @@ defmodule Glific.ContactsTest do
       assert [] == Glific.Messages.list_messages(%{filter: %{contact_id: contact.id}})
     end
   end
+
+  describe "opt-in query filters" do
+    import Ecto.Query
+
+    defp filtered_ids(filter) do
+      Contact
+      |> from(as: :contact)
+      |> filter.()
+      |> select([contact: contact], contact.id)
+      |> Repo.all()
+    end
+
+    test "the flag and the opt-in time are tested separately" do
+      opted_out_later =
+        Fixtures.contact_fixture(%{
+          optin_time: ~U[2026-01-02 03:04:05Z],
+          optin_status: false,
+          optout_time: ~U[2026-02-02 03:04:05Z]
+        })
+
+      opted_in =
+        Fixtures.contact_fixture(%{optin_time: ~U[2026-01-02 03:04:05Z], optin_status: true})
+
+      never = Fixtures.contact_fixture(%{optin_time: nil, optin_status: false})
+
+      flagged = filtered_ids(&Contacts.filter_opted_in/1)
+      assert opted_in.id in flagged
+      refute opted_out_later.id in flagged
+      refute never.id in flagged
+
+      with_time = filtered_ids(&Contacts.filter_with_optin_time/1)
+      assert opted_in.id in with_time
+      assert opted_out_later.id in with_time
+      refute never.id in with_time
+
+      without_time = filtered_ids(&Contacts.filter_without_optin_time/1)
+      assert never.id in without_time
+      refute opted_in.id in without_time
+      refute opted_out_later.id in without_time
+    end
+  end
 end

@@ -74,9 +74,7 @@ defmodule GlificWeb.Resolvers.Contacts do
     with :ok <- check_channel(params, user.organization_id),
          {channel, params} = Map.pop(params, :channel, :whatsapp),
          {identifier, params} = Map.pop(params, :identifier),
-         {optin, params} = Map.pop(params, :optin),
-         {:ok, contact} <- Contacts.create_contact(params, channel, identifier),
-         :ok <- ContactIdentities.record_web_optin(channel, identifier, optin, "web_channel_api") do
+         {:ok, contact} <- Contacts.create_contact(params, channel, identifier) do
       {:ok, %{contact: contact}}
     end
   end
