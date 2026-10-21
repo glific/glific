@@ -11,7 +11,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     Assistants.AssistantConfigVersion,
-    Flags,
     Metrics,
     Partners,
     Repo,
@@ -152,15 +151,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   end
 
   @spec upload_dataset(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  defp upload_dataset(dataset, organization_id) do
-    organization = Partners.organization(organization_id)
-
-    if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
-      Kaapi.upload_evaluation_dataset_v2(dataset, organization.id)
-    else
-      Kaapi.upload_evaluation_dataset(dataset, organization.id)
-    end
-  end
+  defp upload_dataset(dataset, organization_id),
+    do: Kaapi.upload_evaluation_dataset_v2(dataset, organization_id)
 
   @spec create_golden_qa_record(
           map(),
@@ -500,17 +492,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
           {:ok, map()} | {:error, any()}
   defp run_kaapi_evaluation(kaapi_input, duplication_factor, organization_id) do
     organization = Partners.organization(organization_id)
+    callback_url = Glific.api_callback_base(organization.shortcode) <> "/kaapi/evaluation_run"
 
-    if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
-      callback_url = Glific.api_callback_base(organization.shortcode) <> "/kaapi/evaluation_run"
-
-      kaapi_input
-      |> Map.put(:callback_url, callback_url)
-      |> Map.put(:duplication_factor, duplication_factor)
-      |> Kaapi.create_evaluation_v2(organization_id)
-    else
-      Kaapi.create_evaluation(kaapi_input, organization_id)
-    end
+    kaapi_input
+    |> Map.put(:callback_url, callback_url)
+    |> Map.put(:duplication_factor, duplication_factor)
+    |> Kaapi.create_evaluation_v2(organization_id)
   end
 
   @spec parse_ai_evaluation_status(String.t()) :: {:ok, atom()} | {:error, String.t()}

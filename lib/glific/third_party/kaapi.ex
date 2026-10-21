@@ -696,27 +696,6 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Create an evaluation on Kaapi.
-  """
-  @spec create_evaluation(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  def create_evaluation(params, organization_id) do
-    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <- ApiClient.create_evaluation(params, secrets["api_key"]) do
-      {:ok, result}
-    else
-      {:error, reason} ->
-        Glific.log_exception(%Error{
-          message:
-            "Kaapi evaluation creation failed: evaluation_name=#{params[:experiment_name]}",
-          organization_id: organization_id,
-          reason: safe_inspect(reason)
-        })
-
-        {:error, reason}
-    end
-  end
-
-  @doc """
   Create an evaluation on Kaapi via the v2 endpoint.
   """
   @spec create_evaluation_v2(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
@@ -902,45 +881,6 @@ defmodule Glific.ThirdParty.Kaapi do
           organization_id: organization_id,
           reason: safe_inspect(reason)
         })
-
-        {:error, reason}
-    end
-  end
-
-  @doc """
-  Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
-  """
-  @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
-          {:ok, map()} | {:error, map() | binary()} | {:error, :timeout}
-  def upload_evaluation_dataset(params, organization_id) do
-    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <- ApiClient.upload_evaluation_dataset(params, secrets["api_key"]) do
-      case result do
-        %{data: %{dataset_name: dataset_name, dataset_id: dataset_id}} ->
-          {:ok, %{name: dataset_name, dataset_id: dataset_id}}
-
-        error ->
-          Appsignal.send_error(
-            %Error{
-              message: "Got unexpected response from Kaapi while uploading evaluation dataset",
-              organization_id: organization_id,
-              reason: safe_inspect(error)
-            },
-            []
-          )
-
-          {:error, "An unknown error occurred, please contact Glific support."}
-      end
-    else
-      {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to upload evaluation dataset to Kaapi",
-            organization_id: organization_id,
-            reason: safe_inspect(reason)
-          },
-          []
-        )
 
         {:error, reason}
     end

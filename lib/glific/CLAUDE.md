@@ -131,7 +131,7 @@ end
   `get_x_enabled/1`/`set_x_enabled/1` wrapper either** — for a plain single-flag check, call
   the generic `Glific.Flags.get_flag_enabled(flag, organization)` /
   `set_flag_enabled(organization, flag)` inline at the call site instead. See
-  `high_trigger_tps_enabled`, `ai_evaluations_enabled`, `template_v2_enabled` in
+  `high_trigger_tps_enabled`, `glific_ai_enabled`, `template_v2_enabled` in
   `Partners.get_org_services_by_id/1` and the `set_flag_enabled` calls in the `Flags.set_*`
   pipeline inside `Partners.fill_cache/1` (both in `lib/glific/partners.ex`) for the pattern.
   Only write a dedicated per-flag function when there's real extra logic beyond the flag check
