@@ -755,7 +755,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       with_web_channel_enabled(fn ->
         assert %{status: 200} = sign_in_new_contact(conn, phone)
 
-        state = Contacts.preload_consent(Repo.get_by!(Contact, phone: phone))
+        state = Contacts.preload_channel_fields(Repo.get_by!(Contact, phone: phone))
 
         assert is_nil(state.optin_time)
         assert state.optin_status == false
@@ -877,7 +877,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     test "a WhatsApp opt-in is left as it was and the web opt-in is recorded beside it",
          %{conn: conn} do
       with_web_channel_enabled(fn ->
-        before = Contacts.preload_consent(Repo.get_by!(Contact, phone: @reachable_phone))
+        before = Contacts.preload_channel_fields(Repo.get_by!(Contact, phone: @reachable_phone))
 
         assert %{status: 200} = sign_in_new_contact(conn, @reachable_phone)
 

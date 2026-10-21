@@ -217,16 +217,16 @@ defmodule Glific.Contacts do
   were not loaded through this module, such as a message's preloaded contact. Contacts that carry it already
   are kept as they are. The channel is WhatsApp unless given.
   """
-  @spec preload_consent(Contact.t() | [Contact.t()], MessageChannel.t()) ::
+  @spec preload_channel_fields(Contact.t() | [Contact.t()], MessageChannel.t()) ::
           Contact.t() | [Contact.t()]
-  def preload_consent(contacts, channel \\ :whatsapp)
+  def preload_channel_fields(contacts, channel \\ :whatsapp)
 
-  def preload_consent(%Contact{bsp_status: nil} = contact, channel),
+  def preload_channel_fields(%Contact{bsp_status: nil} = contact, channel),
     do: with_channel_fields(contact, channel)
 
-  def preload_consent(%Contact{} = contact, _channel), do: contact
+  def preload_channel_fields(%Contact{} = contact, _channel), do: contact
 
-  def preload_consent(contacts, channel) when is_list(contacts) do
+  def preload_channel_fields(contacts, channel) when is_list(contacts) do
     read =
       contacts
       |> Enum.filter(&is_nil(&1.bsp_status))
@@ -345,17 +345,17 @@ defmodule Glific.Contacts do
   @doc """
   Selects `[id, name, phone, value]` of each contact, where `value` is its `:optin_status` or `:bsp_status`.
   """
-  @spec select_with_consent(Ecto.Queryable.t(), :optin_status | :bsp_status, state_opts()) ::
+  @spec select_channel_field(Ecto.Queryable.t(), :optin_status | :bsp_status, state_opts()) ::
           Ecto.Query.t()
-  def select_with_consent(query, field, opts \\ [])
+  def select_channel_field(query, field, opts \\ [])
 
-  def select_with_consent(query, :optin_status, opts) do
+  def select_channel_field(query, :optin_status, opts) do
     query
     |> join_state(opts)
     |> select([q, identity: i], [q.id, q.name, q.phone, coalesce(i.optin_status, false)])
   end
 
-  def select_with_consent(query, :bsp_status, opts) do
+  def select_channel_field(query, :bsp_status, opts) do
     query
     |> join_state(opts)
     |> select([q, identity: i], [
@@ -1107,7 +1107,7 @@ defmodule Glific.Contacts do
   @doc false
   @spec can_send_message_to?(Contact.t(), boolean()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact, true = _is_hsm) do
-    contact = preload_consent(contact)
+    contact = preload_channel_fields(contact)
 
     cond do
       whatsapp_phone(contact) == {:error, :no_phone} ->
@@ -1141,7 +1141,7 @@ defmodule Glific.Contacts do
   Check if we can send a session message to the contact
   """
   def can_send_message_to?(contact, false = _is_hsm) do
-    contact = preload_consent(contact)
+    contact = preload_channel_fields(contact)
 
     cond do
       whatsapp_phone(contact) == {:error, :no_phone} ->
@@ -1184,10 +1184,10 @@ defmodule Glific.Contacts do
         {:error, dgettext("errors", "Contact has no WhatsApp number.")}
 
       is_hsm ->
-        contact |> preload_consent() |> optin_flow_hsm_check()
+        contact |> preload_channel_fields() |> optin_flow_hsm_check()
 
       true ->
-        contact |> preload_consent() |> optin_flow_session_check()
+        contact |> preload_channel_fields() |> optin_flow_session_check()
     end
   end
 

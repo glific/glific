@@ -14,11 +14,11 @@ defmodule GlificWeb.Resolvers.Contacts do
   A resolver for one consent or session field of a contact. A contact loaded by `Glific.Contacts` carries it; one
   that comes through an association, such as a message's sender, is read with the others of the list in one query.
   """
-  @spec consent_field(atom()) :: (Contact.t(), map(), Absinthe.Resolution.t() -> any())
-  def consent_field(field) do
+  @spec channel_field(atom()) :: (Contact.t(), map(), Absinthe.Resolution.t() -> any())
+  def channel_field(field) do
     fn
       %Contact{bsp_status: nil} = contact, _args, _resolution ->
-        batch({__MODULE__, :load_consent}, contact, fn contacts ->
+        batch({__MODULE__, :load_channel_fields}, contact, fn contacts ->
           {:ok, contacts |> Map.fetch!(contact.id) |> Map.fetch!(field)}
         end)
 
@@ -28,9 +28,9 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc false
-  @spec load_consent(any(), [Contact.t()]) :: %{non_neg_integer() => Contact.t()}
-  def load_consent(_batch_key_arg, contacts),
-    do: contacts |> Contacts.preload_consent() |> Map.new(&{&1.id, &1})
+  @spec load_channel_fields(any(), [Contact.t()]) :: %{non_neg_integer() => Contact.t()}
+  def load_channel_fields(_batch_key_arg, contacts),
+    do: contacts |> Contacts.preload_channel_fields() |> Map.new(&{&1.id, &1})
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

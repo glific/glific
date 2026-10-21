@@ -65,7 +65,7 @@ defmodule Glific.Contacts.BulkImportTest do
     contact
   end
 
-  defp state(phone), do: phone |> fetch() |> Contacts.preload_consent()
+  defp state(phone), do: phone |> fetch() |> Contacts.preload_channel_fields()
 
   # Contacts.count_contacts filters phone with a LIKE, so exact identity needs an exact match
   defp exists?(phone), do: match?({:ok, _}, Repo.fetch_by(Contact, %{phone: phone}))

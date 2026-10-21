@@ -533,7 +533,7 @@ defmodule Glific.Reports do
 
   @spec get_export_query(atom()) :: Ecto.Query.t()
   defp get_export_query(:optin) do
-    Contacts.select_with_consent(from(c in Contact, as: :contact), :optin_status)
+    Contacts.select_channel_field(from(c in Contact, as: :contact), :optin_status)
   end
 
   defp get_export_query(:notifications) do
@@ -547,7 +547,7 @@ defmodule Glific.Reports do
   end
 
   defp get_export_query(:contact_type) do
-    Contacts.select_with_consent(from(c in Contact, as: :contact), :bsp_status)
+    Contacts.select_channel_field(from(c in Contact, as: :contact), :bsp_status)
   end
 
   @doc """

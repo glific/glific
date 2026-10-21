@@ -304,7 +304,7 @@ defmodule Glific.AI.Tools.Contacts do
   @spec fetch(keyword(), String.t()) :: {:ok, Contact.t()} | {:error, String.t()}
   defp fetch(clauses, described) do
     case Repo.fetch_by(Contact, clauses) do
-      {:ok, contact} -> {:ok, Contacts.preload_consent(contact)}
+      {:ok, contact} -> {:ok, Contacts.preload_channel_fields(contact)}
       {:error, _} -> {:error, "No contact with #{described} exists in this organisation."}
     end
   end

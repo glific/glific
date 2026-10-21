@@ -59,7 +59,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:status, :contact_status_enum)
 
     field :bsp_status, :contact_provider_status_enum do
-      resolve(Resolvers.Contacts.consent_field(:bsp_status))
+      resolve(Resolvers.Contacts.channel_field(:bsp_status))
     end
 
     @desc """
@@ -92,26 +92,26 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:last_message_number, :integer)
 
     field :optin_time, :datetime do
-      resolve(Resolvers.Contacts.consent_field(:optin_time))
+      resolve(Resolvers.Contacts.channel_field(:optin_time))
     end
 
     field :optout_time, :datetime do
-      resolve(Resolvers.Contacts.consent_field(:optout_time))
+      resolve(Resolvers.Contacts.channel_field(:optout_time))
     end
 
     field :optin_method, :string do
-      resolve(Resolvers.Contacts.consent_field(:optin_method))
+      resolve(Resolvers.Contacts.channel_field(:optin_method))
     end
 
     field :optout_method, :string do
-      resolve(Resolvers.Contacts.consent_field(:optout_method))
+      resolve(Resolvers.Contacts.channel_field(:optout_method))
     end
 
     field(:fields, :json)
     field(:settings, :json)
 
     field :last_message_at, :datetime do
-      resolve(Resolvers.Contacts.consent_field(:last_message_at))
+      resolve(Resolvers.Contacts.channel_field(:last_message_at))
     end
 
     field(:last_communication_at, :datetime)

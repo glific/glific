@@ -175,7 +175,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count + Enum.count(@checks_1)
 
-    state = Contacts.preload_consent(Repo.get_by(Contact, %{name: "Chrissy Cron"}))
+    state = Contacts.preload_channel_fields(Repo.get_by(Contact, %{name: "Chrissy Cron"}))
     assert state.optin_status == false
     assert !is_nil(state.optout_time)
   end

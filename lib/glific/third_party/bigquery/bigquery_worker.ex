@@ -976,7 +976,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
 
     fetch_data("contacts", organization_id, attrs)
-    |> Contacts.preload_consent()
+    |> Contacts.preload_channel_fields()
     |> Enum.reduce(
       [],
       fn row, acc ->

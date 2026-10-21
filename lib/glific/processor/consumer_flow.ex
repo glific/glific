@@ -238,7 +238,7 @@ defmodule Glific.Processor.ConsumerFlow do
   ## check if contact is not in the optin flow and has optout time
   @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
   defp start_optin_flow?(contact, nil, _body),
-    do: !is_nil(Contacts.preload_consent(contact).optout_time)
+    do: !is_nil(Contacts.preload_channel_fields(contact).optout_time)
 
   defp start_optin_flow?(contact, active_context, body),
     do:

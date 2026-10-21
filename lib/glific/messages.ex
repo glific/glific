@@ -390,7 +390,7 @@ defmodule Glific.Messages do
     contact =
       if is_nil(Map.get(attrs, :receiver, nil)),
         do: Contacts.get_contact!(attrs.receiver_id),
-        else: Contacts.preload_consent(attrs.receiver)
+        else: Contacts.preload_channel_fields(attrs.receiver)
 
     Logger.error(
       "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{reason}"

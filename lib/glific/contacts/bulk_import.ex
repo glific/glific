@@ -81,7 +81,7 @@ defmodule Glific.Contacts.BulkImport do
     Contact
     |> where([c], c.phone in ^phones)
     |> Repo.all()
-    |> Contacts.preload_consent()
+    |> Contacts.preload_channel_fields()
     |> Map.new(
       &{&1.phone,
        Map.take(&1, [

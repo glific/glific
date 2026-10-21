@@ -1874,18 +1874,18 @@ defmodule Glific.ContactsTest do
       refute Enum.find(contacts, &(&1.id == without_row.id)).optin_status
     end
 
-    test "preload_consent/2 reads contacts loaded elsewhere and keeps those that carry the state" do
+    test "preload_channel_fields/2 reads contacts loaded elsewhere and keeps those that carry the state" do
       contact = Fixtures.contact_fixture(%{optin_status: true, optin_method: "BSP"})
       raw = Repo.get!(Contact, contact.id)
 
       assert is_nil(raw.bsp_status)
-      assert %{optin_status: true, optin_method: "BSP"} = Contacts.preload_consent(raw)
+      assert %{optin_status: true, optin_method: "BSP"} = Contacts.preload_channel_fields(raw)
 
       loaded = %{raw | bsp_status: :session, optin_method: "kept"}
-      assert %{optin_method: "kept"} = Contacts.preload_consent(loaded)
+      assert %{optin_method: "kept"} = Contacts.preload_channel_fields(loaded)
 
       assert [%{optin_method: "BSP"}, %{optin_method: "kept"}] =
-               Contacts.preload_consent([raw, loaded])
+               Contacts.preload_channel_fields([raw, loaded])
     end
 
     test "update_contact/3 creates the missing identity row and applies the change" do
