@@ -45,6 +45,7 @@ defmodule Glific.Partners do
     Settings.Language,
     Stats,
     Users.User,
+    WebChannel.JwtSecret,
     WebChannel.Rooms
   }
 
@@ -956,6 +957,7 @@ defmodule Glific.Partners do
             %Credential{}
             |> Credential.changeset(attrs)
             |> Repo.insert()
+            |> ensure_web_channel_secret(attrs[:shortcode])
 
           {:error, reason} ->
             Glific.log_exception(
@@ -1027,15 +1029,12 @@ defmodule Glific.Partners do
 
     case validate_credential_permissions(credential.provider.shortcode, attrs) do
       :ok ->
-        {:ok, credential} =
-          credential
-          |> Credential.changeset(attrs)
-          |> Repo.update()
+        with {:ok, credential} <- credential |> Credential.changeset(attrs) |> Repo.update() do
+          credential = credential |> Repo.preload([:provider, :organization])
 
-        credential = credential |> Repo.preload([:provider, :organization])
-
-        credential.organization
-        |> credential_update_callback(credential, credential.provider.shortcode)
+          credential.organization
+          |> credential_update_callback(credential, credential.provider.shortcode)
+        end
 
       {:error, reason} ->
         Glific.log_exception(
@@ -1181,10 +1180,22 @@ defmodule Glific.Partners do
   defp credential_update_callback(organization, credential, "web_channel") do
     if !credential.is_active, do: Rooms.close_all(organization.id)
 
-    {:ok, credential}
+    ensure_web_channel_secret({:ok, credential}, "web_channel")
   end
 
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
+
+  @spec ensure_web_channel_secret({:ok, Credential.t()} | {:error, any()}, String.t() | nil) ::
+          {:ok, Credential.t()} | {:error, any()}
+  defp ensure_web_channel_secret({:ok, %Credential{is_active: true} = credential}, "web_channel") do
+    with {:ok, credential} <- JwtSecret.ensure(credential) do
+      organization = get_organization!(credential.organization_id)
+      remove_organization_cache(organization.id, organization.shortcode)
+      {:ok, credential}
+    end
+  end
+
+  defp ensure_web_channel_secret(result, _shortcode), do: result
 
   @doc """
   Verify BSP credentials and update the organization cache.

@@ -1,262 +1,303 @@
 defmodule GlificWeb.WebChannel.TokenTest do
-  @moduledoc false
+  # Not async: it flips the global `web_channel_enabled` and writes the organization's credential.
   use Glific.DataCase
 
-  alias Glific.Fixtures
+  alias Glific.{WebChannelFlagHelpers, WebChannelLoginHelpers}
   alias GlificWeb.WebChannel.Token
   alias Plug.Crypto.KeyGenerator
 
-  @algorithm "HS256"
-  @key_salt "web_channel_contact_jwt"
+  @secret "first-secret-first-secret-0123456"
+  @now 1_800_000_000
 
-  setup do
-    %{contact: Fixtures.contact_fixture()}
+  setup %{organization_id: organization_id} do
+    activate_secrets(organization_id, [@secret])
+    :ok
   end
 
-  # Mirrors the module's own key derivation so tests can mint hostile tokens that are correctly
-  # signed but wrong in some other way — the only way to prove the claim checks rather than the
-  # signature check is what rejects them.
-  defp signing_key do
-    GlificWeb.Endpoint.config(:secret_key_base)
-    |> KeyGenerator.generate(@key_salt, length: 32)
-    |> JOSE.JWK.from_oct()
+  defp activate_secrets(organization_id, secrets),
+    do:
+      WebChannelFlagHelpers.activate_web_channel(
+        organization_id,
+        %{},
+        WebChannelFlagHelpers.jwt_signature_secrets(secrets)
+      )
+
+  defp verify(organization_id, overrides, secret \\ @secret) do
+    token =
+      overrides |> WebChannelLoginHelpers.claims(@now) |> WebChannelLoginHelpers.sign(secret)
+
+    Token.verify(organization_id, token, @now)
   end
 
-  defp sign(claims, jwk \\ nil, alg \\ @algorithm) do
-    {_jws, token} =
-      (jwk || signing_key())
-      |> JOSE.JWT.sign(%{"alg" => alg}, claims)
-      |> JOSE.JWS.compact()
-
-    token
+  test "accepts a valid token", %{organization_id: organization_id} do
+    assert {:ok, %{sub: "ravi_12", exp: exp} = claims} = verify(organization_id, %{})
+    assert exp == @now + 600
+    assert Enum.sort(Map.keys(claims)) == [:exp, :sub]
   end
 
-  defp valid_claims(contact, overrides \\ %{}) do
-    now = System.system_time(:second)
+  test "a secret of 31 characters never verifies, one of 32 does", %{
+    organization_id: organization_id
+  } do
+    short = String.duplicate("s", 31)
+    long = String.duplicate("s", 32)
 
-    Map.merge(
-      %{
-        "sub" => to_string(contact.id),
-        "channel" => "web",
-        "org_id" => contact.organization_id,
-        "jti" => Ecto.UUID.generate(),
-        "sst" => now,
-        "iat" => now,
-        "exp" => now + 3_600
-      },
-      overrides
-    )
+    activate_secrets(organization_id, [short])
+    assert {:error, :invalid} = verify(organization_id, %{}, short)
+
+    activate_secrets(organization_id, [long])
+
+    assert {:ok, %{sub: "ravi_12"}} = verify(organization_id, %{}, long)
   end
 
-  describe "sign_contact_token/1 and verify_contact_token/1" do
-    test "round-trips a contact", %{contact: contact} do
-      token = Token.sign_contact_token(contact)
-
-      assert {:ok, payload} = Token.verify_contact_token(token)
-      assert payload.contact_id == contact.id
-      assert payload.org_id == contact.organization_id
-      assert is_binary(payload.session_id)
-    end
-
-    test "issues a distinct session id per sign, so two logins are distinguishable", %{
-      contact: contact
-    } do
-      {:ok, first} = contact |> Token.sign_contact_token() |> Token.verify_contact_token()
-      {:ok, second} = contact |> Token.sign_contact_token() |> Token.verify_contact_token()
-
-      # #5663's eviction rule decides "same session reconnecting" vs "new login displacing the
-      # previous one" by comparing these. Equal ids there would make eviction impossible.
-      refute first.session_id == second.session_id
-    end
-
-    test "the token really is a JWT with the expected header and claims", %{contact: contact} do
-      token = Token.sign_contact_token(contact)
-
-      # Decoded off the wire rather than through JOSE.JWT.peek_protected/1, which lifts "alg"
-      # into the JWS struct and out of `fields` — so asserting on `fields` would silently prove
-      # nothing about the algorithm actually on the token.
-      [header_segment, _payload, _signature] = String.split(token, ".")
-
-      assert %{"alg" => @algorithm, "typ" => "JWT"} =
-               header_segment |> Base.url_decode64!(padding: false) |> Jason.decode!()
-
-      claims = JOSE.JWT.peek_payload(token).fields
-
-      assert claims["sub"] == to_string(contact.id)
-      assert claims["channel"] == "web"
-      assert claims["org_id"] == contact.organization_id
-      assert claims["exp"] - claims["iat"] == 3_600
-      assert claims["sst"] == claims["iat"]
-    end
+  test "rejects a token signed with any other secret", %{organization_id: organization_id} do
+    assert {:error, :invalid} =
+             verify(organization_id, %{}, "some-other-secret-some-other-secret")
   end
 
-  describe "renew_contact_token/1" do
-    test "returns a fresh token for the same session", %{contact: contact} do
-      original = Token.sign_contact_token(contact)
-      {:ok, before} = Token.verify_contact_token(original)
+  test "rejects every token when the organization has no secret", %{
+    organization_id: organization_id
+  } do
+    WebChannelFlagHelpers.remove_web_channel_secret(organization_id)
 
-      assert {:ok, renewed, ^before} = Token.renew_contact_token(original)
-      assert {:ok, after_renewal} = Token.verify_contact_token(renewed)
-
-      assert after_renewal.contact_id == contact.id
-      assert after_renewal.org_id == contact.organization_id
-
-      # jti names the session, and #5663 evicts a socket when it sees a different one. A refresh
-      # that minted a new jti would read as a second login displacing the first, so every
-      # refresh would kick the user off their own socket.
-      assert after_renewal.session_id == before.session_id
-
-      # sst is what bounds renewal. Resetting it on each refresh would make the cap unreachable
-      # and the session immortal.
-      assert after_renewal.session_started_at == before.session_started_at
-    end
-
-    test "refuses an expired token rather than resurrecting it", %{contact: contact} do
-      now = System.system_time(:second)
-
-      expired =
-        contact
-        |> valid_claims(%{"sst" => now - 7_200, "iat" => now - 7_200, "exp" => now - 60})
-        |> sign()
-
-      assert {:error, :expired} = Token.renew_contact_token(expired)
-    end
-
-    test "refuses once the session passes its absolute bound", %{contact: contact} do
-      now = System.system_time(:second)
-
-      # Individually valid — issued a minute ago, expiring in an hour — but belonging to a session
-      # that began 25 hours ago. Without the bound, a stolen token could be refreshed forever and
-      # the one hour TTL would buy nothing.
-      over_age =
-        contact
-        |> valid_claims(%{"sst" => now - 90_000, "iat" => now - 60, "exp" => now + 3_540})
-        |> sign()
-
-      assert {:error, :expired} = Token.renew_contact_token(over_age)
-      # and it is refused on plain verification too, so it cannot be spent on the socket either
-      assert {:error, :expired} = Token.verify_contact_token(over_age)
-    end
-
-    test "refuses a forged token", %{contact: contact} do
-      foreign_key = JOSE.JWK.from_oct(:crypto.strong_rand_bytes(32))
-
-      assert {:error, :invalid} =
-               contact |> valid_claims() |> sign(foreign_key) |> Token.renew_contact_token()
-    end
-
-    test "refuses a missing token" do
-      assert {:error, :missing} = Token.renew_contact_token(nil)
-      assert {:error, :missing} = Token.renew_contact_token("")
-    end
+    assert {:error, :invalid} = verify(organization_id, %{})
   end
 
-  describe "verify_contact_token/1 rejects" do
-    test "a token signed with the wrong key", %{contact: contact} do
-      foreign_key = JOSE.JWK.from_oct(:crypto.strong_rand_bytes(32))
+  test "never trusts the token's algorithm", %{organization_id: organization_id} do
+    claims = WebChannelLoginHelpers.claims(%{}, @now)
 
-      assert {:error, :invalid} =
-               contact |> valid_claims() |> sign(foreign_key) |> Token.verify_contact_token()
+    assert {:error, :invalid} =
+             Token.verify(
+               organization_id,
+               WebChannelLoginHelpers.sign(claims, @secret, "HS512"),
+               @now
+             )
+
+    unsigned = Base.url_encode64(~s({"alg":"none"}), padding: false)
+    payload = Base.url_encode64(Jason.encode!(claims), padding: false)
+
+    assert {:error, :invalid} =
+             Token.verify(organization_id, "#{unsigned}.#{payload}.", @now)
+  end
+
+  test "rejects a token that is not a JWT", %{organization_id: organization_id} do
+    assert {:error, :invalid} = Token.verify(organization_id, "not-a-token", @now)
+    assert {:error, :invalid} = Token.verify(organization_id, "", @now)
+    assert {:error, :invalid} = Token.verify(organization_id, nil, @now)
+  end
+
+  test "rejects an organization that does not exist" do
+    token = %{} |> WebChannelLoginHelpers.claims(@now) |> WebChannelLoginHelpers.sign(@secret)
+
+    assert {:error, :invalid} = Token.verify(0, token, @now)
+  end
+
+  describe "required claims" do
+    test "sub must be a string of 1 to 255 characters", %{organization_id: organization_id} do
+      for sub <- [nil, "", 12, String.duplicate("a", 256)] do
+        assert {:error, :invalid} = verify(organization_id, %{"sub" => sub}),
+               "sub #{inspect(sub)}"
+      end
+
+      assert {:ok, _} = verify(organization_id, %{"sub" => String.duplicate("a", 255)})
     end
 
-    test "an alg:none token — the classic JWT forgery", %{contact: contact} do
-      # Hand-built rather than signed, because JOSE will not mint an unsecured token without
-      # being explicitly told to allow it. This is exactly what an attacker sends: real claims,
-      # header rewritten to "none", signature dropped.
-      header =
-        %{"alg" => "none", "typ" => "JWT"} |> Jason.encode!() |> Base.url_encode64(padding: false)
-
-      payload = contact |> valid_claims() |> Jason.encode!() |> Base.url_encode64(padding: false)
-      forged = "#{header}.#{payload}."
-
-      assert {:error, :invalid} = Token.verify_contact_token(forged)
+    test "channel must be web", %{organization_id: organization_id} do
+      assert {:error, :invalid} = verify(organization_id, %{"channel" => "whatsapp"})
+      assert {:error, :invalid} = verify(organization_id, %{"channel" => nil})
     end
 
-    test "a token signed with a different HMAC algorithm", %{contact: contact} do
-      # HS512 against the *correct* key. The signature is genuine; only the algorithm differs.
-      # verify_strict/3 rejects it because the permitted algorithm comes from our code, never
-      # from the token's header.
-      assert {:error, :invalid} =
-               contact
-               |> valid_claims()
-               |> sign(signing_key(), "HS512")
-               |> Token.verify_contact_token()
-    end
-
-    test "a tampered payload", %{contact: contact} do
-      other = Fixtures.contact_fixture(%{phone: "919#{System.unique_integer([:positive])}"})
-      [header, _payload, signature] = contact |> valid_claims() |> sign() |> String.split(".")
-
-      swapped =
-        contact
-        |> valid_claims(%{"sub" => to_string(other.id)})
-        |> Jason.encode!()
-        |> Base.url_encode64(padding: false)
-
-      assert {:error, :invalid} =
-               Token.verify_contact_token("#{header}.#{swapped}.#{signature}")
-    end
-
-    test "an expired token", %{contact: contact} do
-      now = System.system_time(:second)
-
-      assert {:error, :expired} =
-               contact
-               |> valid_claims(%{
-                 "sst" => now - 7_200,
-                 "iat" => now - 7_200,
-                 "exp" => now - 3_600
-               })
-               |> sign()
-               |> Token.verify_contact_token()
-    end
-
-    test "a token issued in the future", %{contact: contact} do
-      now = System.system_time(:second)
-
-      # Without this check a forger with a valid key could mint an effectively immortal token by
-      # dating it forward, since exp is only ever compared against the clock.
-      assert {:error, :invalid} =
-               contact
-               |> valid_claims(%{
-                 "sst" => now + 3_600,
-                 "iat" => now + 3_600,
-                 "exp" => now + 7_200
-               })
-               |> sign()
-               |> Token.verify_contact_token()
-    end
-
-    test "a token for another channel", %{contact: contact} do
-      assert {:error, :invalid} =
-               contact
-               |> valid_claims(%{"channel" => "whatsapp"})
-               |> sign()
-               |> Token.verify_contact_token()
-    end
-
-    test "a token missing a required claim", %{contact: contact} do
-      for claim <- ["sub", "channel", "org_id", "jti", "sst", "iat", "exp"] do
-        token = contact |> valid_claims() |> Map.delete(claim) |> sign()
-
-        assert {:error, :invalid} = Token.verify_contact_token(token),
-               "a token with no #{claim} claim was accepted"
+    test "iat and exp must be integers", %{organization_id: organization_id} do
+      for claim <- ["iat", "exp"], value <- [nil, "1800000000", 1_800_000_000.5] do
+        assert {:error, :invalid} = verify(organization_id, %{claim => value}),
+               "#{claim} #{inspect(value)}"
       end
     end
+  end
 
-    test "a non-numeric subject", %{contact: contact} do
+  describe "timing" do
+    test "the lifetime may be 24 hours and no more", %{organization_id: organization_id} do
+      assert {:ok, _} = verify(organization_id, %{"exp" => @now + 86_400})
+      assert {:error, :invalid} = verify(organization_id, %{"exp" => @now + 86_401})
+    end
+
+    test "an expired token is rejected beyond the leeway", %{organization_id: organization_id} do
+      assert {:ok, _} =
+               verify(organization_id, %{"iat" => @now - 120, "exp" => @now - 59})
+
       assert {:error, :invalid} =
-               contact
-               |> valid_claims(%{"sub" => "1; DROP TABLE contacts"})
-               |> sign()
-               |> Token.verify_contact_token()
+               verify(organization_id, %{"iat" => @now - 120, "exp" => @now - 60})
     end
 
-    test "garbage, an empty string and nil" do
-      assert {:error, :invalid} = Token.verify_contact_token("not-a-token")
-      assert {:error, :invalid} = Token.verify_contact_token("a.b.c")
-      assert {:error, :missing} = Token.verify_contact_token("")
-      assert {:error, :missing} = Token.verify_contact_token(nil)
+    test "an iat in the future is accepted only within the leeway", %{
+      organization_id: organization_id
+    } do
+      assert {:ok, _} = verify(organization_id, %{"iat" => @now + 60, "exp" => @now + 600})
+
+      assert {:error, :invalid} =
+               verify(organization_id, %{"iat" => @now + 61, "exp" => @now + 600})
     end
+  end
+
+  describe "optional claims" do
+    test "name and phone are returned", %{organization_id: organization_id} do
+      assert {:ok, claims} =
+               verify(organization_id, %{
+                 "name" => "Ravi",
+                 "phone" => "+91 98765 43210"
+               })
+
+      assert %{
+               sub: "ravi_12",
+               exp: @now + 600,
+               name: "Ravi",
+               phone: "919876543210"
+             } ==
+               claims
+    end
+
+    test "an invalid phone is treated as absent", %{organization_id: organization_id} do
+      assert {:ok, claims} = verify(organization_id, %{"phone" => "12"})
+      refute Map.has_key?(claims, :phone)
+    end
+
+    test "a name over 255 characters is rejected", %{organization_id: organization_id} do
+      assert {:error, :invalid} = verify(organization_id, %{"name" => String.duplicate("a", 256)})
+    end
+  end
+
+  test "reads the secret of the organization the request is for", %{
+    organization_id: organization_id
+  } do
+    other_organization = Glific.Fixtures.organization_fixture()
+    Repo.put_organization_id(organization_id)
+
+    assert {:error, :invalid} = verify(other_organization.id, %{})
+  end
+
+  describe "session claims" do
+    test "jti and sst come back as the session", %{organization_id: organization_id} do
+      assert {:ok, claims} =
+               verify(organization_id, %{"jti" => "session-1", "sst" => @now - 60})
+
+      assert %{session_id: "session-1", session_started_at: started_at} = claims
+      assert started_at == @now - 60
+    end
+
+    test "one of jti and sst without the other is rejected", %{organization_id: organization_id} do
+      assert {:error, :invalid} = verify(organization_id, %{"jti" => "session-1"})
+      assert {:error, :invalid} = verify(organization_id, %{"sst" => @now})
+    end
+
+    test "a session older than 24 hours is rejected, however fresh the token", %{
+      organization_id: organization_id
+    } do
+      assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now - 86_399})
+      assert {:error, :invalid} = verify(organization_id, %{"jti" => "s", "sst" => @now - 86_400})
+    end
+
+    test "a session started in the future is rejected beyond the leeway", %{
+      organization_id: organization_id
+    } do
+      assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now + 60})
+      assert {:error, :invalid} = verify(organization_id, %{"jti" => "s", "sst" => @now + 61})
+    end
+  end
+
+  describe "sign/2" do
+    test "round-trips with the organization's secret", %{organization_id: organization_id} do
+      assert {:ok, token} = Token.sign(organization_id, %{sub: "ravi_12", name: "Ravi"})
+
+      assert {:ok, %{sub: "ravi_12", name: "Ravi", exp: exp}} =
+               Token.verify(organization_id, token)
+
+      assert_in_delta exp, System.system_time(:second) + 3_600, 5
+    end
+
+    test "fails without a secret", %{organization_id: organization_id} do
+      WebChannelFlagHelpers.remove_web_channel_secret(organization_id)
+
+      assert {:error, :no_secret} = Token.sign(organization_id, %{sub: "ravi_12"})
+    end
+  end
+
+  describe "generate/2 and renew/3" do
+    test "a session token carries sub, jti and sst", %{organization_id: organization_id} do
+      assert {:ok, token} = Token.generate(organization_id, "919876543210")
+
+      assert {:ok, %{sub: "919876543210", session_id: session_id, session_started_at: started_at}} =
+               Token.verify(organization_id, token)
+
+      assert is_binary(session_id)
+      assert_in_delta started_at, System.system_time(:second), 5
+    end
+
+    test "two sessions get distinct ids", %{organization_id: organization_id} do
+      {:ok, first} = Token.generate(organization_id, "919876543210")
+      {:ok, second} = Token.generate(organization_id, "919876543210")
+
+      assert {:ok, %{session_id: first_id}} = Token.verify(organization_id, first)
+      assert {:ok, %{session_id: second_id}} = Token.verify(organization_id, second)
+      assert first_id != second_id
+    end
+
+    test "renewal keeps jti and sst and moves exp one hour out", %{
+      organization_id: organization_id
+    } do
+      token =
+        %{"sub" => "919876543210", "jti" => "s1", "sst" => @now - 1_000}
+        |> WebChannelLoginHelpers.claims(@now - 500)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:ok, renewed, %{session_id: "s1"}} = Token.renew(organization_id, token, @now)
+
+      assert {:ok, claims} = Token.verify(organization_id, renewed, @now)
+      assert %{sub: "919876543210", session_id: "s1", exp: exp} = claims
+      assert claims.session_started_at == @now - 1_000
+      assert exp == @now + 3_600
+    end
+
+    test "renewal is refused once the session is 24 hours old", %{
+      organization_id: organization_id
+    } do
+      token =
+        %{"jti" => "s1", "sst" => @now - 86_400}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:error, :invalid} = Token.renew(organization_id, token, @now)
+    end
+
+    test "renewal is refused for a token without a session", %{organization_id: organization_id} do
+      token = %{} |> WebChannelLoginHelpers.claims(@now) |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:error, :invalid} = Token.renew(organization_id, token, @now)
+    end
+
+    test "renewal is refused for an expired token and for nil", %{
+      organization_id: organization_id
+    } do
+      expired =
+        %{"jti" => "s1", "sst" => @now - 7_200, "iat" => @now - 7_200, "exp" => @now - 3_600}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:error, :invalid} = Token.renew(organization_id, expired, @now)
+      assert {:error, :invalid} = Token.renew(organization_id, nil, @now)
+    end
+  end
+
+  test "a token signed with a key derived from secret_key_base is refused", %{
+    organization_id: organization_id
+  } do
+    legacy_key =
+      GlificWeb.Endpoint.config(:secret_key_base)
+      |> KeyGenerator.generate("web_channel_contact_jwt", length: 32)
+
+    token =
+      %{"jti" => "s1", "sst" => @now}
+      |> WebChannelLoginHelpers.claims(@now)
+      |> WebChannelLoginHelpers.sign(legacy_key)
+
+    assert {:error, :invalid} = Token.verify(organization_id, token, @now)
   end
 end

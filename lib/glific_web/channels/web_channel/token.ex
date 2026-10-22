@@ -1,207 +1,210 @@
 defmodule GlificWeb.WebChannel.Token do
   @moduledoc """
-  Signs and verifies the JWT authenticating a browser contact on the web channel socket.
+  Signs and verifies every JWT that authenticates a browser contact on the web channel, whether
+  an NGO's backend minted it or Glific did after a phone and one-time code login.
 
-  Distinct from staff auth tokens — different signing key, different payload shape — so it can
-  never authorize the staff-facing GraphQL API.
+  Both are HS256 tokens signed with the organization's own secret (`Glific.WebChannel.JwtSecret`)
+  and both name the contact by `sub`, the contact's web identity. The organization is the
+  request's, never the token's, and an organization without a secret verifies nothing. The
+  token's own `alg` is never trusted. Every way a token can be wrong gives `{:error, :invalid}`.
 
-  A JWT rather than a `Phoenix.Token` because the same socket will also accept an NGO-minted JWT
-  (`api-auth-design.md` §2), so `connect/3` verifies one shape rather than branching on two, and
-  because §4.5's session-eviction rule needs the `jti` this supplies. §2.1 there describes the
-  **NGO-minted** token, whose `kid` resolves a per-org key; this one has no `kid` — there is a
-  single key Glific owns both ends of — which is why `org_id` is carried as a claim instead.
+  A token lives at most 24 hours, with 60 seconds of clock leeway. A Glific session token also
+  carries `jti` (the session) and `sst` (when the session started): it lasts one hour, and
+  `renew/3` refreshes it only until the session is 24 hours old.
   """
 
-  alias Glific.Contacts.Contact
+  alias Glific.{Contacts, WebChannel.JwtSecret}
   alias JOSE.{JWK, JWS, JWT}
-  alias Plug.Crypto.KeyGenerator
 
   @algorithm "HS256"
-
-  # Matches the claim the NGO-minted token carries, so one verifier can reject another channel's.
   @channel "web"
-
-  # api-auth-design.md §2.4's cap. Was 24h until renewal existed, since a short TTL with no
-  # refresh signs a beneficiary out mid-conversation.
-  @ttl_seconds 3_600
-
-  # Without an outer bound a short TTL buys nothing against a stolen token: the thief refreshes it
-  # forever, and the only effect is more frequent renewals of their access.
+  @max_lifetime_seconds 86_400
+  @session_ttl_seconds 3_600
   @session_max_seconds 86_400
-
-  # The design's "clock leeway <= 60s".
   @leeway_seconds 60
+  @max_length 255
 
-  # Derived from secret_key_base rather than being it, so this token is not interchangeable with
-  # anything else signed from that base.
-  @key_salt "web_channel_contact_jwt"
-  @key_length 32
-
-  @type payload :: %{
-          contact_id: non_neg_integer(),
-          org_id: non_neg_integer(),
-          session_id: String.t(),
-          session_started_at: non_neg_integer(),
-          exp: non_neg_integer()
+  @type claims :: %{
+          required(:sub) => String.t(),
+          required(:exp) => integer(),
+          optional(:name) => String.t(),
+          optional(:phone) => String.t(),
+          optional(:session_id) => String.t(),
+          optional(:session_started_at) => integer()
         }
 
   @doc """
-  Sign a token authorizing the given contact to connect to the web channel socket.
+  The claims of a token signed with the organization's secret, if it is valid now.
   """
-  @spec sign_contact_token(Contact.t()) :: String.t()
-  def sign_contact_token(%Contact{} = contact) do
-    issued_at = System.system_time(:second)
+  @spec verify(non_neg_integer(), String.t() | nil, integer()) ::
+          {:ok, claims()} | {:error, :invalid}
+  def verify(organization_id, token, now \\ System.system_time(:second))
 
-    mint(
-      to_string(contact.id),
-      contact.organization_id,
-      # Identifies the session, not the token. #5663's eviction rule compares this to decide
-      # whether a connection is the same session reconnecting or a new login displacing it.
-      Ecto.UUID.generate(),
-      issued_at,
-      issued_at
-    )
-  end
-
-  @doc """
-  Exchange a still-valid token for a fresh one.
-
-  `jti` and `sst` carry over rather than being regenerated: a new `jti` would make every refresh
-  look to #5663's eviction rule like a second login displacing the first, and a new `sst` would
-  make renewal unbounded. An expired token is refused, or expiry would be advisory.
-  """
-  @spec renew_contact_token(String.t() | nil) ::
-          {:ok, String.t(), payload()} | {:error, :expired | :invalid | :missing}
-  def renew_contact_token(token) do
-    with {:ok, payload} <- verify_contact_token(token) do
-      now = System.system_time(:second)
-
-      if now - payload.session_started_at >= @session_max_seconds do
-        {:error, :expired}
-      else
-        renewed =
-          mint(
-            to_string(payload.contact_id),
-            payload.org_id,
-            payload.session_id,
-            payload.session_started_at,
-            now
-          )
-
-        {:ok, renewed, payload}
-      end
+  def verify(organization_id, token, now) when is_binary(token) and token != "" do
+    with {:ok, secret} <- JwtSecret.fetch(organization_id),
+         {:ok, fields} <- verify_signature(secret, token),
+         :ok <- validate_timing(fields, now),
+         {:ok, claims} <- extract_claims(fields),
+         :ok <- validate_session(claims, now) do
+      {:ok, claims}
+    else
+      _invalid -> {:error, :invalid}
     end
   end
 
-  @spec mint(String.t(), non_neg_integer(), String.t(), non_neg_integer(), non_neg_integer()) ::
-          String.t()
-  defp mint(sub, org_id, jti, session_started_at, issued_at) do
-    claims = %{
-      "sub" => sub,
-      "channel" => @channel,
-      "org_id" => org_id,
-      "jti" => jti,
-      # Preserved across renewals; bounds total session life however often it is refreshed.
-      "sst" => session_started_at,
-      "iat" => issued_at,
-      "exp" => issued_at + @ttl_seconds
-    }
+  def verify(_organization_id, _token, _now), do: {:error, :invalid}
 
-    {_jws, token} =
-      signing_key()
-      |> JWT.sign(%{"alg" => @algorithm}, claims)
-      |> JWS.compact()
+  @doc """
+  Signs a token for `claims` (`:sub`, optionally `:name`, `:phone`, `:session_id` and
+  `:session_started_at`) with the organization's secret, issued now unless `:iat` is given and
+  expiring after `:exp`, or after one hour when that is absent.
+  """
+  @spec sign(non_neg_integer(), map()) :: {:ok, String.t()} | {:error, :no_secret}
+  def sign(organization_id, claims) do
+    with {:ok, secret} <- fetch_secret(organization_id) do
+      issued_at = Map.get(claims, :iat, System.system_time(:second))
 
-    token
+      fields =
+        %{
+          "sub" => claims.sub,
+          "channel" => @channel,
+          "name" => claims[:name],
+          "phone" => claims[:phone],
+          "jti" => claims[:session_id],
+          "sst" => claims[:session_started_at],
+          "iat" => issued_at,
+          "exp" => Map.get(claims, :exp, issued_at + @session_ttl_seconds)
+        }
+        |> Map.reject(fn {_key, value} -> is_nil(value) end)
+
+      {_jws, token} =
+        secret
+        |> JWK.from_oct()
+        |> JWT.sign(%{"alg" => @algorithm}, fields)
+        |> JWS.compact()
+
+      {:ok, token}
+    end
   end
 
   @doc """
-  Verify a web channel contact token, returning the contact and organization it authorizes.
-
-  Every failure collapses to `:invalid` apart from an expired token and a missing one, so a caller
-  cannot learn *why* a token was rejected.
+  Generates a one hour token for the contact's web identity `sub`, renewable for 24 hours.
   """
-  @spec verify_contact_token(String.t() | nil) ::
-          {:ok, payload()} | {:error, :expired | :invalid | :missing}
-  def verify_contact_token(token) when is_binary(token) and token != "" do
-    case JWT.verify_strict(signing_key(), [@algorithm], token) do
-      {true, %JWT{fields: claims}, _jws} -> validate_claims(claims)
-      _ -> {:error, :invalid}
+  @spec generate(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, :no_secret}
+  def generate(organization_id, sub) do
+    sign(organization_id, %{
+      sub: sub,
+      session_id: Ecto.UUID.generate(),
+      session_started_at: System.system_time(:second)
+    })
+  end
+
+  @doc """
+  Exchanges a valid Glific session token for a fresh one in the same session.
+
+  `jti` and `sst` carry over: a new `jti` would make every refresh look like a second login, and
+  a new `sst` would make renewal unbounded. A token with no session claims is refused, since
+  renewing an NGO's token is its backend's job.
+  """
+  @spec renew(non_neg_integer(), String.t() | nil, integer()) ::
+          {:ok, String.t(), claims()} | {:error, :invalid}
+  def renew(organization_id, token, now \\ System.system_time(:second)) do
+    with {:ok, %{session_id: _, session_started_at: _} = claims} <-
+           verify(organization_id, token, now),
+         {:ok, renewed} <- sign(organization_id, claims |> Map.delete(:exp) |> Map.put(:iat, now)) do
+      {:ok, renewed, claims}
+    else
+      _refused -> {:error, :invalid}
+    end
+  end
+
+  @spec fetch_secret(non_neg_integer()) :: {:ok, String.t()} | {:error, :no_secret}
+  defp fetch_secret(organization_id) do
+    case JwtSecret.fetch(organization_id) do
+      {:ok, secret} -> {:ok, secret}
+      :error -> {:error, :no_secret}
+    end
+  end
+
+  @spec verify_signature(String.t(), String.t()) :: {:ok, map()} | :error
+  defp verify_signature(secret, token) do
+    case JWT.verify_strict(JWK.from_oct(secret), [@algorithm], token) do
+      {true, %JWT{fields: fields}, _jws} -> {:ok, fields}
+      _unverified -> :error
     end
   rescue
-    # A malformed token makes JOSE raise rather than return false.
-    _ -> {:error, :invalid}
+    _malformed -> :error
   end
 
-  def verify_contact_token(_), do: {:error, :missing}
+  @spec validate_timing(map(), integer()) :: :ok | :error
+  defp validate_timing(%{"iat" => iat, "exp" => exp}, now)
+       when is_integer(iat) and is_integer(exp) do
+    if exp - iat <= @max_lifetime_seconds and iat <= now + @leeway_seconds and
+         exp > now - @leeway_seconds,
+       do: :ok,
+       else: :error
+  end
 
-  @spec validate_claims(map()) :: {:ok, payload()} | {:error, :expired | :invalid}
-  defp validate_claims(
-         %{
-           "sub" => sub,
-           "channel" => @channel,
-           "org_id" => org_id,
-           "jti" => jti,
-           "sst" => session_started_at,
-           "iat" => iat,
-           "exp" => exp
-         } = _claims
-       )
-       when is_binary(sub) and is_integer(org_id) and is_binary(jti) and
-              is_integer(session_started_at) and is_integer(iat) and is_integer(exp) do
-    with :ok <- validate_timing(session_started_at, iat, exp) do
-      to_payload(sub, org_id, jti, session_started_at, exp)
+  defp validate_timing(_fields, _now), do: :error
+
+  @spec extract_claims(map()) :: {:ok, claims()} | :error
+  defp extract_claims(%{"sub" => sub, "channel" => @channel} = fields)
+       when is_binary(sub) and byte_size(sub) > 0 do
+    with true <- String.length(sub) <= @max_length,
+         {:ok, name} <- optional_name(fields["name"]),
+         {:ok, session} <- session_claims(fields) do
+      claims =
+        %{
+          sub: sub,
+          exp: fields["exp"],
+          name: name,
+          phone: normalise_phone(fields["phone"])
+        }
+        |> Map.merge(session)
+        |> Map.reject(fn {_key, value} -> is_nil(value) end)
+
+      {:ok, claims}
+    else
+      _invalid -> :error
     end
   end
 
-  defp validate_claims(_claims), do: {:error, :invalid}
+  defp extract_claims(_fields), do: :error
 
-  @spec validate_timing(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
-          :ok | {:error, :expired | :invalid}
-  defp validate_timing(session_started_at, iat, exp) do
-    now = System.system_time(:second)
+  @spec session_claims(map()) :: {:ok, map()} | :error
+  defp session_claims(%{"jti" => jti, "sst" => sst}) when is_binary(jti) and is_integer(sst),
+    do: {:ok, %{session_id: jti, session_started_at: sst}}
 
-    cond do
-      # Forward-dating is rejected before expiry is considered, so a token cannot be given an
-      # arbitrarily long life by claiming to have been issued in the future.
-      iat > now + @leeway_seconds -> {:error, :invalid}
-      session_started_at > now + @leeway_seconds -> {:error, :invalid}
-      exp <= now - @leeway_seconds -> {:error, :expired}
-      # A session past its absolute bound is refused on every read, not only on renewal, so an
-      # over-age token cannot be spent on the socket either.
-      now - session_started_at >= @session_max_seconds -> {:error, :expired}
-      true -> :ok
+  defp session_claims(fields)
+       when not is_map_key(fields, "jti") and not is_map_key(fields, "sst"),
+       do: {:ok, %{}}
+
+  defp session_claims(_fields), do: :error
+
+  @spec validate_session(claims(), integer()) :: :ok | :error
+  defp validate_session(%{session_started_at: started_at}, now) do
+    if started_at <= now + @leeway_seconds and now - started_at < @session_max_seconds,
+      do: :ok,
+      else: :error
+  end
+
+  defp validate_session(_claims, _now), do: :ok
+
+  @spec optional_name(any()) :: {:ok, String.t() | nil} | :error
+  defp optional_name(nil), do: {:ok, nil}
+
+  defp optional_name(name) when is_binary(name),
+    do: if(String.length(name) <= @max_length, do: {:ok, name}, else: :error)
+
+  defp optional_name(_name), do: :error
+
+  @spec normalise_phone(any()) :: String.t() | nil
+  defp normalise_phone(phone) when is_binary(phone) do
+    case Contacts.parse_phone_number(phone) do
+      {:ok, normalised} -> normalised
+      {:error, _reason} -> nil
     end
   end
 
-  @spec to_payload(
-          String.t(),
-          non_neg_integer(),
-          String.t(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: {:ok, payload()} | {:error, :invalid}
-  defp to_payload(sub, org_id, jti, session_started_at, exp) do
-    case Integer.parse(sub) do
-      {contact_id, ""} when contact_id > 0 ->
-        {:ok,
-         %{
-           contact_id: contact_id,
-           org_id: org_id,
-           session_id: jti,
-           session_started_at: session_started_at,
-           exp: exp
-         }}
-
-      _ ->
-        {:error, :invalid}
-    end
-  end
-
-  @spec signing_key() :: JWK.t()
-  defp signing_key do
-    GlificWeb.Endpoint.config(:secret_key_base)
-    |> KeyGenerator.generate(@key_salt, length: @key_length)
-    |> JWK.from_oct()
-  end
+  defp normalise_phone(_phone), do: nil
 end
