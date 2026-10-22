@@ -138,7 +138,7 @@ defmodule Glific.WebChannel.JwtSecretTest do
       {:ok, active} = create_credential(organization_id, %{is_active: true})
       {:ok, saved} = JwtSecret.fetch(organization_id)
 
-      for secrets <- [%{"jwt_signature_secrets" => []}, %{}] do
+      for secrets <- [%{"jwt_signature_secrets" => []}, %{}, nil] do
         assert {:error, %Ecto.Changeset{} = changeset} =
                  Partners.update_credential(active, %{secrets: secrets})
 

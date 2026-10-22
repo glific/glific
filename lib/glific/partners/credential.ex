@@ -62,12 +62,17 @@ defmodule Glific.Partners.Credential do
     |> foreign_key_constraint(:organization_id)
   end
 
+  # Not validate_change/3: it skips a nil change, which would let `secrets: nil` remove a saved secret.
   @spec validate_jwt_secret(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_jwt_secret(%{data: %Credential{secrets: old_secrets}} = changeset) do
-    validate_change(changeset, :secrets, fn :secrets, secrets ->
-      if is_map(secrets),
-        do: Enum.map(JwtSecret.validate_new_secret(old_secrets, secrets), &{:secrets, &1}),
-        else: []
-    end)
+    case fetch_change(changeset, :secrets) do
+      {:ok, secrets} when is_map(secrets) or is_nil(secrets) ->
+        old_secrets
+        |> JwtSecret.validate_new_secret(secrets)
+        |> Enum.reduce(changeset, &add_error(&2, :secrets, &1))
+
+      _no_change ->
+        changeset
+    end
   end
 end
