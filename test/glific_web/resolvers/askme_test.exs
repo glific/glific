@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.AskGlificTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias FunWithFlags.Store.Cache
   alias Glific.AskGlific.Conversation
   alias Glific.Repo
 
@@ -34,6 +35,11 @@ defmodule GlificWeb.Resolvers.AskGlificTest do
 
   setup do
     test_pid = self()
+
+    # these tests exercise the Dify path; the flag's cache outlives the sandbox, so a
+    # test that enabled Glific AI earlier would otherwise route these to Glific AI
+    FunWithFlags.disable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+    Cache.flush()
 
     Application.put_env(:glific, :dify_req_plug, {Req.Test, test_pid})
     Application.put_env(:glific, :dify_api_key, "test-api-key")
