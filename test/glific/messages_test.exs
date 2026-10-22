@@ -365,7 +365,7 @@ defmodule Glific.MessagesTest do
                |> Map.merge(foreign_key_constraint(attrs))
                |> Messages.create_message()
 
-      assert message.flow_label == String.duplicate("e\u0301", 127) <> "e"
+      assert message.flow_label == String.duplicate("e\u0301", 127)
     end
 
     test "create_message/1 with invalid data returns error changeset" do

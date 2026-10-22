@@ -198,12 +198,21 @@ defmodule Glific.Messages.Message do
     |> unique_constraint([:bsp_message_id, :organization_id])
   end
 
+  # varchar(255) counts codepoints, so cut on whole graphemes while the codepoint total still fits
   @spec truncate_flow_label(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp truncate_flow_label(changeset) do
     update_change(changeset, :flow_label, fn label ->
       label
-      |> String.codepoints()
-      |> Enum.take(@flow_label_max_length)
+      |> String.graphemes()
+      |> Enum.reduce_while({[], 0}, fn grapheme, {kept, count} ->
+        count = count + length(String.codepoints(grapheme))
+
+        if count <= @flow_label_max_length,
+          do: {:cont, {[grapheme | kept], count}},
+          else: {:halt, {kept, count}}
+      end)
+      |> elem(0)
+      |> Enum.reverse()
       |> Enum.join()
     end)
   end
