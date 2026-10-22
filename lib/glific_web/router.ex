@@ -57,6 +57,14 @@ defmodule GlificWeb.Router do
     plug(GlificWeb.Plugs.WebChannelAuth)
   end
 
+  # Same as :api but on the web channel's own, more generous budget: these are called by
+  # beneficiaries' browsers, where a school or office puts many unrelated people on one address.
+  pipeline :web_channel_public do
+    plug(:accepts, ["json"])
+    plug(GlificWeb.APIAuthPlug, otp_app: :glific)
+    plug(GlificWeb.RateLimitPlug, :web_channel)
+  end
+
   # Glific Default Route
   scope "/", GlificWeb do
     pipe_through(:browser)
@@ -79,8 +87,11 @@ defmodule GlificWeb.Router do
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
+  end
 
-    # Web channel
+  scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
+    pipe_through([:web_channel_public])
+
     get("/web_channel/branding", WebChannelController, :branding)
     post("/web_channel/request-otp", WebChannelAuthController, :request_otp)
     post("/web_channel/verify-otp", WebChannelAuthController, :verify_otp)

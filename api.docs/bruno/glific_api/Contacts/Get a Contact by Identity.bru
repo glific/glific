@@ -1,0 +1,83 @@
+meta {
+  name: Get a Contact by Identity
+  type: graphql
+  seq: 19
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query contactByIdentity($channel: MessageChannelEnum!, $identifier: String!) {
+    contactByIdentity(channel: $channel, identifier: $identifier) {
+      contact {
+        id
+        name
+        phone
+        identities {
+          id
+          channel
+          identifier
+          insertedAt
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "channel": "WEB",
+    "identifier": "ravi_12"
+  }
+}
+
+docs {
+  # Get a Contact by Identity
+
+  ## Description
+  Finds the contact that logs in with an identifier on a channel, for example a web channel username.
+  Web identifiers are case-insensitive. Never creates a contact. Requires the manager role; a staff
+  user receives `Unauthorized`, and the `identities` field of a contact is always empty for staff.
+
+  ## Query Variables
+
+  | Variable     | Type              | Description                                  |
+  | ------------ | ----------------- | -------------------------------------------- |
+  | `channel`    | MessageChannelEnum | `WEB` or `WHATSAPP`.                         |
+  | `identifier` | String            | The username, or the phone number.            |
+
+  ## Response
+  ```json
+  {
+    "data": {
+      "contactByIdentity": {
+        "contact": {
+          "id": "15",
+          "name": "Ravi",
+          "phone": null,
+          "identities": [
+            { "id": "31", "channel": "WEB", "identifier": "ravi_12", "insertedAt": "2026-10-14T09:30:00Z" }
+          ]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+  An unknown identifier returns `errors: [{ "key": "Contact", "message": "Contact not found or permission denied." }]`.
+}

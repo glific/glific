@@ -277,11 +277,10 @@ defmodule Glific.Contacts.BulkImport do
   defp do_upsert(rows, params, now, optin?) do
     entries = Enum.map(rows, &contact_entry(&1, params, now, optin?))
 
-    {_count, saved} =
-      Repo.insert_all(Contact, entries,
+    saved =
+      Contacts.insert_contacts(entries,
         on_conflict: on_conflict(optin?),
-        conflict_target: [:phone, :organization_id],
-        returning: [:id, :phone, :fields]
+        organization_id: params.organization_id
       )
 
     Map.new(saved, &{&1.phone, %{id: &1.id, fields: &1.fields}})
@@ -526,11 +525,11 @@ defmodule Glific.Contacts.BulkImport do
     phone = row["phone"]
 
     if Authorize.valid_role?(params.user.roles, :manager) || params.user.upload_contacts do
-      case Repo.get_by(Contact, %{phone: phone}) do
-        nil ->
+      case Contacts.fetch_by_identity(:whatsapp, phone) do
+        {:error, _} ->
           Map.put(errors, phone, "Contact does not exist")
 
-        contact ->
+        {:ok, contact} ->
           delete_one(contact, phone, errors)
       end
     else

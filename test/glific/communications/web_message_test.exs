@@ -10,7 +10,8 @@ defmodule Glific.Communications.WebMessageTest do
     Fixtures,
     Messages.Message,
     Processor.MessageWorker,
-    Repo
+    Repo,
+    WebChannelFlagHelpers
   }
 
   setup do
@@ -21,9 +22,8 @@ defmodule Glific.Communications.WebMessageTest do
     test "persists an inbound text message on the web channel", %{contact: contact} do
       assert {:ok, message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    body: "hello there"
                  },
                  :text
@@ -38,20 +38,16 @@ defmodule Glific.Communications.WebMessageTest do
       assert message.bsp_message_id == nil
     end
 
-    test "reuses an existing contact by phone rather than creating a duplicate", %{
+    test "attaches the message to the authenticated contact without looking it up by phone", %{
       contact: contact
     } do
+      phone_less = %{contact | phone: nil}
+
       assert {:ok, message} =
-               WebMessage.receive_message(
-                 %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
-                   body: "hi again"
-                 },
-                 :text
-               )
+               WebMessage.receive_message(phone_less, %{body: "hi again"}, :text)
 
       assert message.contact_id == contact.id
+      assert message.sender_id == contact.id
     end
   end
 
@@ -64,9 +60,8 @@ defmodule Glific.Communications.WebMessageTest do
 
       assert {:ok, _message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    body: "sent from the browser"
                  },
                  :text
@@ -83,9 +78,8 @@ defmodule Glific.Communications.WebMessageTest do
 
       assert {:ok, _message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    body: "sent from the browser"
                  },
                  :text
@@ -109,9 +103,8 @@ defmodule Glific.Communications.WebMessageTest do
     } do
       assert {:ok, message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    url: "https://storage.googleapis.com/test-bucket/some/image.png",
                    source_url: "https://storage.googleapis.com/test-bucket/some/image.png",
                    caption: "a caption",
@@ -137,9 +130,8 @@ defmodule Glific.Communications.WebMessageTest do
 
       assert {:error, %Ecto.Changeset{}} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    url: nil,
                    source_url: nil,
                    body: ""
@@ -155,9 +147,8 @@ defmodule Glific.Communications.WebMessageTest do
     test "creates the message before the locations row", %{contact: contact} do
       assert {:ok, message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    latitude: 12.34,
                    longitude: 56.78,
                    body: "https://www.google.com/maps?q=12.34,56.78"
@@ -182,9 +173,8 @@ defmodule Glific.Communications.WebMessageTest do
 
     assert {:ok, _message} =
              WebMessage.receive_message(
+               contact,
                %{
-                 sender: %{phone: contact.phone},
-                 organization_id: contact.organization_id,
                  body: "hello"
                },
                :text
@@ -194,15 +184,13 @@ defmodule Glific.Communications.WebMessageTest do
     assert after_message.bsp_status == before_message.bsp_status
   end
 
-  describe "no path to the flow engine or the BSP" do
-    # Reaching MessageWorker would run the flow engine, which today can only reply over
-    # WhatsApp — worse than no reply.
+  describe "with the web channel off, nothing reaches the flow engine" do
+    # Flag off (the suite default): the message is persisted but must not enter the flow engine.
     test "a text message never enqueues MessageWorker", %{contact: contact} do
       assert {:ok, _message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    body: "hello there"
                  },
                  :text
@@ -214,9 +202,8 @@ defmodule Glific.Communications.WebMessageTest do
     test "a media message never enqueues MessageWorker", %{contact: contact} do
       assert {:ok, _message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    url: "https://storage.googleapis.com/test-bucket/some/image.png",
                    source_url: "https://storage.googleapis.com/test-bucket/some/image.png",
                    caption: "a caption",
@@ -232,9 +219,8 @@ defmodule Glific.Communications.WebMessageTest do
     test "a location message never enqueues MessageWorker", %{contact: contact} do
       assert {:ok, _message} =
                WebMessage.receive_message(
+                 contact,
                  %{
-                   sender: %{phone: contact.phone},
-                   organization_id: contact.organization_id,
                    latitude: 12.34,
                    longitude: 56.78,
                    body: "https://www.google.com/maps?q=12.34,56.78"
@@ -243,6 +229,59 @@ defmodule Glific.Communications.WebMessageTest do
                )
 
       refute_enqueued(worker: MessageWorker, prefix: "global")
+    end
+  end
+
+  describe "with the web channel on, the message reaches the flow engine" do
+    # This is what lets a web keyword trigger its flow and a mid-flow reply advance it — the same
+    # MessageWorker path WhatsApp inbound uses.
+    test "a text message enqueues MessageWorker", %{contact: contact} do
+      WebChannelFlagHelpers.with_web_channel_enabled(contact.organization_id, fn ->
+        assert {:ok, message} =
+                 WebMessage.receive_message(
+                   contact,
+                   %{
+                     body: "hello there"
+                   },
+                   :text
+                 )
+
+        assert_enqueued(
+          worker: MessageWorker,
+          args: %{message_id: message.id, organization_id: contact.organization_id},
+          prefix: "global"
+        )
+      end)
+    end
+
+    test "a location message enqueues MessageWorker", %{contact: contact} do
+      WebChannelFlagHelpers.with_web_channel_enabled(contact.organization_id, fn ->
+        assert {:ok, message} =
+                 WebMessage.receive_message(
+                   contact,
+                   %{
+                     latitude: 12.34,
+                     longitude: 56.78,
+                     body: "https://www.google.com/maps?q=12.34,56.78"
+                   },
+                   :location
+                 )
+
+        assert_enqueued(worker: MessageWorker, args: %{message_id: message.id}, prefix: "global")
+      end)
+    end
+  end
+
+  describe "a contact without a phone" do
+    test "an inbound message is stored against the contact", %{organization_id: organization_id} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Message{} = message} =
+               WebMessage.receive_message(contact, %{body: "hello"}, :text)
+
+      assert %{contact_id: contact_id, sender_id: sender_id, channel: :web} = message
+      assert contact_id == contact.id
+      assert sender_id == contact.id
     end
   end
 end

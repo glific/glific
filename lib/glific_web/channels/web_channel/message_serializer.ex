@@ -15,7 +15,7 @@ defmodule GlificWeb.WebChannel.MessageSerializer do
   def serialize(message) do
     %{
       id: message.id,
-      body: message.body,
+      body: body(message),
       type: message.type,
       flow: message.flow,
       inserted_at: message.inserted_at,
@@ -23,6 +23,15 @@ defmodule GlificWeb.WebChannel.MessageSerializer do
       media: media(message)
     }
   end
+
+  # A media message's caption lives on the media row, not `message.body`, so surface it as the
+  # body — the widget renders that field as the caption, the same field it uses for a plain text
+  # message and for the caption on media it sends itself.
+  @spec body(Message.t()) :: String.t()
+  defp body(%{body: body}) when is_binary(body) and body != "", do: body
+  defp body(%{media: %{caption: caption}}) when is_binary(caption) and caption != "", do: caption
+  defp body(%{body: body}) when is_binary(body), do: body
+  defp body(_), do: ""
 
   @spec media(Message.t()) :: map() | nil
   defp media(%{media: %Ecto.Association.NotLoaded{}}), do: nil

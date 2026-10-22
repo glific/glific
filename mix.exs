@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "8.12.7",
+      version: "8.14.0",
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -116,7 +116,8 @@ defmodule Glific.MixProject do
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:dataloader, "~> 2.0"},
-      {:hackney, "~> 1.17"},
+      {:hackney, "~> 1.20.1"},
+      {:certifi, "~> 2.15", override: true},
       {:tesla, "~> 1.5"},
       {:oban, "~> 2.19"},
       {:oban_web, "~> 2.11", only: @oban_envs},
@@ -137,6 +138,7 @@ defmodule Glific.MixProject do
       {:fun_with_flags_ui, "~> 1.0"},
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal_phoenix, "~> 2.3"},
+      {:appsignal, "~> 2.18"},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},

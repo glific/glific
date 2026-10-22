@@ -6,6 +6,7 @@ defmodule Glific.Application do
   use Application
 
   alias Glific.Communications.Mailer
+  alias Glific.Docs
 
   def start(_type, _args) do
     children = [
@@ -26,6 +27,9 @@ defmodule Glific.Application do
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
 
+      # Tracks which web-channel contacts have a browser socket open
+      GlificWeb.WebChannel.Presence,
+
       # Start Mnesia to be used for pow cache store
       Pow.Store.Backend.MnesiaCache,
 
@@ -40,6 +44,9 @@ defmodule Glific.Application do
         id: :glific_cache_id,
         start: {Cachex, :start_link, [:glific_cache, []]}
       },
+
+      # After Cachex, which it publishes the shortcode index into
+      Glific.Partners.OrganizationIndex,
 
       # Add the flow metrics caching code
       Glific.Metrics,
@@ -72,12 +79,17 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for Tesla success/failure call:
     attach_tesla_telemetry_event()
 
-    # Add this :telemetry.attach/4 for Ecto query timing:
+    # Add this :telemetry.attach/4 for Ecto DB connection errors:
     attach_repo_telemetry_event()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
+
+    # Read once into :persistent_term so every process searching the
+    # documentation reads it without copying it.
+    Docs.warm()
+
     Supervisor.start_link(children, opts)
   end
 

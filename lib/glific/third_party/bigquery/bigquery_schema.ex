@@ -38,7 +38,7 @@ defmodule Glific.BigQuery.Schema do
         description: "Phone number of the user; primary point of identification",
         name: "phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description:
@@ -319,20 +319,20 @@ defmodule Glific.BigQuery.Schema do
         description: "Contact number of the sender of the message",
         name: "sender_phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Contact number of the receiver of the message",
         name: "receiver_phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description:
           "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
         name: "contact_phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description:
@@ -1674,7 +1674,7 @@ defmodule Glific.BigQuery.Schema do
         description: "Phone number of the contact interacting with the flow",
         name: "contact_phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Name of the contact interacting with the flow",
@@ -2003,7 +2003,7 @@ defmodule Glific.BigQuery.Schema do
         description: "Phone number of the user; primary point of identification",
         name: "phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Opted language of the user for templates and other communications",
@@ -2072,7 +2072,7 @@ defmodule Glific.BigQuery.Schema do
         description: "Phone number of the user; primary point of identification",
         name: "phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Unique UUID for the row (allows us to delete duplicates)",
@@ -2571,7 +2571,7 @@ defmodule Glific.BigQuery.Schema do
           "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
         name: "contact_phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description:
@@ -2981,7 +2981,7 @@ defmodule Glific.BigQuery.Schema do
         description: "The contact phone to which certificate was issued",
         name: "phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "The GCS url of the issued certificate",
@@ -3160,7 +3160,7 @@ defmodule Glific.BigQuery.Schema do
         description: "Phone number of the contact who submitted the form",
         name: "contact_phone",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Name of the contact who submitted the form",

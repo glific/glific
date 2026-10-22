@@ -27,11 +27,10 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
   missing rather than let the busiest webhook come up unguarded.
 
   The caller is taken from `x-forwarded-for` alone, rather than from `conn.remote_ip`.
-  `GlificWeb.Endpoint` runs `RemoteIp` with its defaults, which also trust `forwarded`,
-  `x-client-ip` and `x-real-ip`; our proxy only rewrites `x-forwarded-for`, so a caller
-  that sends one of the other three can put an allowlisted address last in the chain and
-  have it win. Deciding here from the one header the proxy controls keeps that out of a
-  security decision, and leaves `conn.remote_ip` untouched for rate limiting and logging.
+  `GlificWeb.Endpoint` now restricts `RemoteIp` to that same header, so the two agree, but
+  reading it here keeps this check independent of that endpoint configuration — `RemoteIp`'s
+  defaults also trust `forwarded`, `x-client-ip` and `x-real-ip`, any of which a caller can set
+  to put an allowlisted address last in the chain.
 
   A request with no usable `x-forwarded-for` cannot be attributed to anyone and is
   refused, with a distinct log line — in production every request arrives through the

@@ -176,6 +176,8 @@ defmodule Glific.Tickets do
         from(q in query, where: q.user_id == ^user_id)
 
       {:name_or_phone_or_body, name_or_phone_or_body}, query ->
+        # A free-text search filter, not a lookup: a non-matching term just finds nothing.
+        # credo:disable-for-lines:2 GlificCredo.Checks.ContactPhoneLookup
         sub_query =
           from(c in Contact,
             where:

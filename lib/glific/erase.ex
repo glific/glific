@@ -5,7 +5,7 @@ defmodule Glific.Erase do
   import Ecto.Query
 
   alias Glific.Assistants.Assistant
-  alias Glific.Contacts.Contact
+  alias Glific.Contacts
   alias Glific.Notifications
   alias Glific.Notifications.Notification
   alias Glific.Partners
@@ -30,6 +30,9 @@ defmodule Glific.Erase do
 
   @batch_sleep 10_000
   @no_of_months 2
+
+  @version_batch_sleep 5_000
+  @min_version_retention_days 7
 
   @doc """
   Do the weekly DB cleaner tasks, typically in the middle of the night on sunday morning
@@ -72,6 +75,56 @@ defmodule Glific.Erase do
   end
 
   @doc """
+  Creates an Oban job that purges `versions` (ex_audit history) rows older than the
+  retention window, one organization at a time, always keeping the latest versions of
+  every entity.
+
+  Options, each defaulting to the `Glific.Erase` application config:
+
+  - `:retention_days` - keep versions recorded within this many days
+  - `:batch_size` - rows deleted per statement
+  - `:max_rows_to_delete` - upper bound on rows deleted per organization in a single run
+  - `:keep_per_entity` - newest versions of each entity kept regardless of age
+  - `:sleep_after_delete?` - pause between batches to ease DB load (default `true`)
+
+  The job is unique across the `available`, `scheduled`, `executing` and `retryable`
+  states, so a fresh run is never enqueued while a previous one is still in flight.
+  """
+  @spec perform_version_purge(keyword()) :: {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset()}
+  def perform_version_purge(opts \\ []) do
+    purge_config = Application.get_env(:glific, __MODULE__)
+
+    retention_days =
+      version_purge_option(opts, :retention_days, purge_config, :version_retention_days)
+
+    batch_size =
+      version_purge_option(opts, :batch_size, purge_config, :version_delete_batch_size)
+
+    max_rows_to_delete =
+      version_purge_option(opts, :max_rows_to_delete, purge_config, :max_version_rows_to_delete)
+
+    keep_per_entity =
+      version_purge_option(opts, :keep_per_entity, purge_config, :versions_kept_per_entity)
+
+    __MODULE__.new(
+      %{
+        purge: "versions",
+        retention_days: retention_days,
+        batch_size: batch_size,
+        max_rows_to_delete: max_rows_to_delete,
+        keep_per_entity: keep_per_entity,
+        sleep_after_delete?: Keyword.get(opts, :sleep_after_delete?, true)
+      },
+      unique: [
+        period: :infinity,
+        keys: [:purge],
+        states: [:available, :scheduled, :executing, :retryable]
+      ]
+    )
+    |> Oban.insert()
+  end
+
+  @doc """
   Creates an Oban job for deleting an organization.
   This prevents UI timeouts when deleting organizations with large amounts of data.
   """
@@ -103,8 +156,48 @@ defmodule Glific.Erase do
     clean_whatsapp_form_revisions()
   end
 
+  # Must stay ahead of the message purge clause: both carry batch_size,
+  # max_rows_to_delete and sleep_after_delete? args.
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, any()}
+  @spec perform(Oban.Job.t()) :: :ok | {:ok, non_neg_integer()} | {:error, any()}
+  def perform(%Oban.Job{args: %{"purge" => "versions"} = args}) do
+    %{
+      "retention_days" => retention_days,
+      "batch_size" => batch_size,
+      "max_rows_to_delete" => max_rows_to_delete,
+      "keep_per_entity" => keep_per_entity,
+      "sleep_after_delete?" => sleep_after_delete?
+    } = args
+
+    with :ok <- validate_version_retention(retention_days),
+         :ok <- validate_keep_per_entity(keep_per_entity),
+         :ok <- validate_version_batch_size(batch_size) do
+      purge = %{
+        cutoff: DateTime.add(DateTime.utc_now(), -retention_days, :day),
+        batch_size: batch_size,
+        max_rows_to_delete: max_rows_to_delete,
+        keep_per_entity: keep_per_entity,
+        sleep_after_delete?: sleep_after_delete?
+      }
+
+      total_rows_deleted =
+        Organization
+        |> select([organization], organization.id)
+        |> order_by([organization], asc: organization.id)
+        # Soft-deleted orgs keep their history until hard deletion, so retention applies to them too.
+        |> Repo.all(skip_organization_id: true, include_deleted: true)
+        |> Enum.reduce(0, fn organization_id, total ->
+          total + delete_old_versions(organization_id, purge)
+        end)
+
+      Appsignal.increment_counter("versions_purged_count", total_rows_deleted)
+      Logger.info("Versions purge complete, total rows deleted: #{total_rows_deleted}")
+
+      {:ok, total_rows_deleted}
+    end
+  end
+
+  @impl Oban.Worker
   def perform(%Oban.Job{
         args: %{
           "batch_size" => batch_size,
@@ -170,7 +263,8 @@ defmodule Glific.Erase do
       "VACUUM (FULL, ANALYZE) contacts",
       "VACUUM (FULL, ANALYZE) contact_histories",
       "VACUUM (ANALYZE) messages",
-      "VACUUM (ANALYZE) messages_media"
+      "VACUUM (ANALYZE) messages_media",
+      "VACUUM (ANALYZE) versions"
     ]
     |> Enum.each(
       # need such a large timeout specifically to vacuum the messages
@@ -342,15 +436,22 @@ defmodule Glific.Erase do
   end
 
   @doc """
-  Deletes all the data related to a contact
+  Deletes all the data related to the contact with a WhatsApp phone
   """
-  @spec delete_benefeciary_data(non_neg_integer(), String.t()) :: any()
-  def delete_benefeciary_data(org_id, phone) do
+  @spec delete_benefeciary_data(non_neg_integer(), String.t() | nil) :: any()
+  def delete_benefeciary_data(org_id, phone),
+    do: delete_benefeciary_data(org_id, :whatsapp, phone)
+
+  @doc """
+  Deletes all the data related to the contact with an identity on a channel, such as a web username
+  """
+  @spec delete_benefeciary_data(non_neg_integer(), :whatsapp | :web, String.t() | nil) :: any()
+  def delete_benefeciary_data(org_id, channel, identifier) do
     get_value =
       if Application.get_env(:glific, :environment) in [:prod, :dev] do
         Task.async(fn ->
           IO.gets(
-            "Are you sure want to delete data for #{phone} of org_id #{org_id}\nPress Y or y to continue, auto aborts if idle for 10s\n"
+            "Are you sure want to delete data for #{identifier} of org_id #{org_id}\nPress Y or y to continue, auto aborts if idle for 10s\n"
           )
         end)
         |> Task.await(10_000)
@@ -361,9 +462,9 @@ defmodule Glific.Erase do
     Repo.put_process_state(org_id)
 
     with "y" <- String.trim_trailing(get_value, "\n") |> String.downcase(),
-         {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+         {:ok, contact} <- Contacts.fetch_by_identity(channel, identifier) do
       Logger.warning(
-        "Deleting beneficiary data for contact #{phone} and organization_id #{org_id}"
+        "Deleting beneficiary data for contact #{identifier} and organization_id #{org_id}"
       )
 
       delete_messages_query = """
@@ -380,7 +481,9 @@ defmodule Glific.Erase do
         Repo.query!(query, [], timeout: 400_000, skip_organization_id: true)
       end)
 
-      Logger.info("Deleted beneficiary data for contact #{phone} and organization_id #{org_id}")
+      Logger.info(
+        "Deleted beneficiary data for contact #{identifier} and organization_id #{org_id}"
+      )
 
       :ok
     end
@@ -437,6 +540,126 @@ defmodule Glific.Erase do
         sleep_after_delete?,
         total_rows_deleted
       )
+    end
+  end
+
+  @spec validate_version_retention(any()) :: :ok | {:error, String.t()}
+  defp validate_version_retention(retention_days)
+       when is_integer(retention_days) and retention_days >= @min_version_retention_days,
+       do: :ok
+
+  defp validate_version_retention(retention_days) do
+    message =
+      "Refusing to purge versions: retention of #{SafeLog.safe_inspect(retention_days)} days is below the #{@min_version_retention_days} day minimum"
+
+    Glific.log_exception(%Error{message: message, reason: :invalid_version_retention})
+    {:error, message}
+  end
+
+  @spec version_purge_option(keyword(), atom(), keyword(), atom()) :: any()
+  defp version_purge_option(opts, opt_key, purge_config, config_key) do
+    value = Keyword.get(opts, opt_key) || Keyword.get(purge_config, config_key)
+
+    case Glific.parse_maybe_integer(value) do
+      {:ok, parsed} -> parsed
+      :error -> value
+    end
+  end
+
+  @spec validate_keep_per_entity(any()) :: :ok | {:error, String.t()}
+  defp validate_keep_per_entity(keep_per_entity)
+       when is_integer(keep_per_entity) and keep_per_entity >= 0,
+       do: :ok
+
+  defp validate_keep_per_entity(keep_per_entity) do
+    message =
+      "Refusing to purge versions: invalid versions kept per entity #{SafeLog.safe_inspect(keep_per_entity)}"
+
+    Glific.log_exception(%Error{message: message, reason: :invalid_version_keep_per_entity})
+    {:error, message}
+  end
+
+  @spec validate_version_batch_size(any()) :: :ok | {:error, String.t()}
+  defp validate_version_batch_size(batch_size)
+       when is_integer(batch_size) and batch_size > 0,
+       do: :ok
+
+  defp validate_version_batch_size(batch_size) do
+    message =
+      "Refusing to purge versions: batch size must be a positive integer, got #{SafeLog.safe_inspect(batch_size)}"
+
+    Glific.log_exception(%Error{message: message, reason: :invalid_version_batch_size})
+    {:error, message}
+  end
+
+  @spec delete_old_versions(non_neg_integer(), map(), non_neg_integer()) :: non_neg_integer()
+  defp delete_old_versions(organization_id, purge, total_rows_deleted \\ 0)
+
+  defp delete_old_versions(_organization_id, purge, total_rows_deleted)
+       when total_rows_deleted >= purge.max_rows_to_delete,
+       do: total_rows_deleted
+
+  defp delete_old_versions(organization_id, purge, total_rows_deleted) do
+    start_time = System.monotonic_time(:millisecond)
+    batch_limit = min(purge.batch_size, purge.max_rows_to_delete - total_rows_deleted)
+
+    # Ranking spans all of the org's versions, recent ones included, so the newest
+    # keep_per_entity versions are counted before the age filter. Filtering before the LIMIT
+    # keeps every batch full until the org is done, which the stop condition below relies on.
+    query = """
+    WITH ranked AS (
+      SELECT id, recorded_at,
+             row_number() OVER (
+               PARTITION BY entity_schema, entity_id
+               ORDER BY id DESC
+             ) AS rn
+      FROM versions
+      WHERE organization_id = $1
+    )
+    DELETE FROM versions
+    WHERE id IN (
+      SELECT id FROM ranked
+      WHERE rn > $3 AND recorded_at < $2
+      LIMIT $4
+    )
+    """
+
+    try do
+      %{num_rows: rows_deleted} =
+        Repo.query!(
+          query,
+          [organization_id, purge.cutoff, purge.keep_per_entity, batch_limit],
+          timeout: 400_000,
+          skip_organization_id: true
+        )
+
+      duration_ms = System.monotonic_time(:millisecond) - start_time
+      total_rows_deleted = total_rows_deleted + rows_deleted
+
+      Appsignal.add_distribution_value("versions_purge_batch_duration_ms", duration_ms, %{
+        rows_deleted: rows_deleted
+      })
+
+      Logger.info(
+        "Versions deleted for org #{organization_id}: #{rows_deleted} in #{duration_ms}ms"
+      )
+
+      if rows_deleted < batch_limit or total_rows_deleted >= purge.max_rows_to_delete do
+        total_rows_deleted
+      else
+        if purge.sleep_after_delete?, do: Process.sleep(@version_batch_sleep)
+
+        delete_old_versions(organization_id, purge, total_rows_deleted)
+      end
+    rescue
+      err ->
+        Glific.log_exception(%Error{
+          message:
+            "Versions purge failed for org #{organization_id} after deleting #{total_rows_deleted} rows, reason: #{SafeLog.safe_inspect(err)}",
+          reason: err
+        })
+
+        total_rows_deleted
     end
   end
 
@@ -610,6 +833,7 @@ defmodule Glific.Erase do
       certificate_templates
       consulting_hours
       contact_histories
+      contact_identities
       contacts_fields
       contacts_groups
       contacts_tags
@@ -622,6 +846,7 @@ defmodule Glific.Erase do
       flow_results
       flow_revisions
       flow_roles
+      llm_calls
       flows
       gcs_jobs
       glific_ai_events

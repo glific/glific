@@ -1,0 +1,78 @@
+meta {
+  name: Add an Identity to a Contact
+  type: graphql
+  seq: 18
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!) {
+    addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier) {
+      contact {
+        id
+        name
+        identities {
+          channel
+          identifier
+        }
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "contactId": "15",
+    "channel": "WEB",
+    "identifier": "ravi_12"
+  }
+}
+
+docs {
+  # Add an Identity to a Contact
+
+  ## Description
+  Gives an existing contact a login on a channel. Only `WEB` identities (usernames) can be added: a `WHATSAPP`
+  identity is the contact's phone and follows it. Adding a username the contact already has succeeds without
+  change. A username held by another contact is refused and never moved. Requires the manager role, and the web
+  channel to be enabled for the organization.
+
+  ## Parameters
+
+  | Parameter    | Type               | Description                                                                                         |
+  | ------------ | ------------------ | --------------------------------------------------------------------------------------------------- |
+  | `contactId`  | ID                 | The contact to add the identity to.                                                                 |
+  | `channel`    | MessageChannelEnum | The channel of the identity. Only `WEB` is accepted.                                                |
+  | `identifier` | String             | The username: letters, digits, `_`, `@` and `.`, stored lowercase (case-insensitive), 1 to 255 characters. |
+
+  ## Response
+  ```json
+  {
+    "data": {
+      "addContactIdentity": {
+        "contact": { "id": "15", "name": "Ravi", "identities": [{ "channel": "WEB", "identifier": "ravi_12" }] },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+  Check the `errors` field: the identifier is invalid or too long (`identifier`), already held by another contact
+  (`identifier`: `has already been taken`), the channel is not `WEB` (`channel`), the contact does not exist in the
+  organization, or the web channel is not enabled. A staff user receives `Unauthorized`.
+}

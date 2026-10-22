@@ -10,6 +10,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactIdentity,
     Fixtures,
     OTP,
     Partners,
@@ -238,7 +239,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
     test "takes effect without refilling the organization cache", %{conn: conn} do
       # Not using with_web_channel_enabled/1: it refills the cache, the step being asserted as
-      # unnecessary.
+      # unnecessary. The organization's own half of the switch is on and cached already; this
+      # test is about the flag alone.
+      Glific.WebChannelFlagHelpers.activate_web_channel(1)
       Partners.organization(1) |> Partners.fill_cache()
       assert Partners.organization(1).web_channel_enabled == false
 
@@ -454,12 +457,17 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     test "an invalid E.164 phone returns 422 without consulting the rate limiter", %{conn: conn} do
       with_web_channel_enabled(fn ->
         rate_limit_key = "web_channel_send_otp:#{@reachable_phone}"
-        original_config = Application.get_env(:glific, :web_channel_otp_rate_limit)
-        Application.put_env(:glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1)
+        original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
         ExRated.delete_bucket(rate_limit_key)
 
         on_exit(fn ->
-          Application.put_env(:glific, :web_channel_otp_rate_limit, original_config)
+          Application.put_env(:glific, :rate_limit_web_channel_otp_phone, original_config)
           ExRated.delete_bucket(rate_limit_key)
         end)
 
@@ -497,12 +505,17 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     test "is rate limited to one request per phone within the window", %{conn: conn} do
       with_web_channel_enabled(fn ->
         rate_limit_key = "web_channel_send_otp:#{@reachable_phone}"
-        original_config = Application.get_env(:glific, :web_channel_otp_rate_limit)
-        Application.put_env(:glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1)
+        original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
         ExRated.delete_bucket(rate_limit_key)
 
         on_exit(fn ->
-          Application.put_env(:glific, :web_channel_otp_rate_limit, original_config)
+          Application.put_env(:glific, :rate_limit_web_channel_otp_phone, original_config)
           ExRated.delete_bucket(rate_limit_key)
         end)
 
@@ -537,12 +550,17 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       with_web_channel_enabled(fn ->
         other_phone = "917834811232"
         keys = ["web_channel_send_otp:#{@reachable_phone}", "web_channel_send_otp:#{other_phone}"]
-        original_config = Application.get_env(:glific, :web_channel_otp_rate_limit)
-        Application.put_env(:glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1)
+        original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
         Enum.each(keys, &ExRated.delete_bucket/1)
 
         on_exit(fn ->
-          Application.put_env(:glific, :web_channel_otp_rate_limit, original_config)
+          Application.put_env(:glific, :rate_limit_web_channel_otp_phone, original_config)
           Enum.each(keys, &ExRated.delete_bucket/1)
         end)
 
@@ -572,13 +590,13 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       with_web_channel_enabled(fn ->
         ip_key = "web_channel_send_otp_ip:#{GlificWeb.Tenants.remote_ip(conn)}"
         phones = ["917834811233", "917834811234", "917834811235"]
-        original_config = Application.get_env(:glific, :web_channel_otp_ip_rate_limit)
-        Application.put_env(:glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 2)
+        original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_ip)
+        Application.put_env(:glific, :rate_limit_web_channel_otp_ip, scale_ms: 60_000, count: 2)
         ExRated.delete_bucket(ip_key)
         Enum.each(phones, &ExRated.delete_bucket("web_channel_send_otp:#{&1}"))
 
         on_exit(fn ->
-          Application.put_env(:glific, :web_channel_otp_ip_rate_limit, original_config)
+          Application.put_env(:glific, :rate_limit_web_channel_otp_ip, original_config)
           ExRated.delete_bucket(ip_key)
           Enum.each(phones, &ExRated.delete_bucket("web_channel_send_otp:#{&1}"))
         end)
@@ -603,17 +621,28 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         web_channel_key = "web_channel_send_otp:#{@reachable_phone}"
         staff_key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
 
-        original_web_channel_config = Application.get_env(:glific, :web_channel_otp_rate_limit)
-        original_staff_config = Application.get_env(:glific, :otp_rate_limit)
+        original_web_channel_config =
+          Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
 
-        Application.put_env(:glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1)
-        Application.put_env(:glific, :otp_rate_limit, scale_ms: 30_000, count: 1)
+        original_staff_config = Application.get_env(:glific, :rate_limit_api_otp)
+
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone,
+          scale_ms: 30_000,
+          count: 1
+        )
+
+        Application.put_env(:glific, :rate_limit_api_otp, scale_ms: 30_000, count: 1)
         ExRated.delete_bucket(web_channel_key)
         ExRated.delete_bucket(staff_key)
 
         on_exit(fn ->
-          Application.put_env(:glific, :web_channel_otp_rate_limit, original_web_channel_config)
-          Application.put_env(:glific, :otp_rate_limit, original_staff_config)
+          Application.put_env(
+            :glific,
+            :rate_limit_web_channel_otp_phone,
+            original_web_channel_config
+          )
+
+          Application.put_env(:glific, :rate_limit_api_otp, original_staff_config)
           ExRated.delete_bucket(web_channel_key)
           ExRated.delete_bucket(staff_key)
         end)
@@ -710,21 +739,21 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     end
   end
 
-  describe "signing in records no consent" do
-    test "a first sign-in leaves every opt-in field at its default", %{conn: conn} do
+  describe "a web login never touches the WhatsApp opt-in fields (#5713)" do
+    defp sign_in_new_contact(conn, phone) do
+      code = OTP.generate_code(:web_channel, phone)
+
+      post(
+        conn,
+        Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{"phone" => phone, "otp" => code})
+      )
+    end
+
+    test "a first web login leaves every WhatsApp opt-in field at its default", %{conn: conn} do
       phone = unique_phone()
 
       with_web_channel_enabled(fn ->
-        code = OTP.generate_code(:web_channel, phone)
-
-        assert %{status: 200} =
-                 post(
-                   conn,
-                   Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
-                     "phone" => phone,
-                     "otp" => code
-                   })
-                 )
+        assert %{status: 200} = sign_in_new_contact(conn, phone)
 
         contact = Repo.get_by!(Contact, phone: phone)
 
@@ -732,28 +761,47 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         assert contact.optin_status == false
         assert is_nil(contact.optin_method)
         assert is_nil(contact.optin_message_id)
+        assert is_nil(contact.optout_time)
       end)
     end
 
-    test "an existing WhatsApp opt-in is not refreshed by a web sign-in", %{conn: conn} do
+    test "an existing WhatsApp opt-in survives a web login byte for byte", %{conn: conn} do
       with_web_channel_enabled(fn ->
         before = Repo.get_by!(Contact, phone: @reachable_phone)
-        code = OTP.generate_code(:web_channel, @reachable_phone)
 
-        assert %{status: 200} =
-                 post(
-                   conn,
-                   Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
-                     "phone" => @reachable_phone,
-                     "otp" => code
-                   })
-                 )
+        assert %{status: 200} = sign_in_new_contact(conn, @reachable_phone)
 
         unchanged = Repo.get_by!(Contact, phone: @reachable_phone)
 
         assert unchanged.optin_time == before.optin_time
+        assert unchanged.optin_status == before.optin_status
         assert unchanged.optin_method == before.optin_method
         assert unchanged.status == before.status
+      end)
+    end
+
+    test "a contact opted out of WhatsApp is not silently opted back in", %{conn: conn} do
+      phone = unique_phone()
+
+      opted_out =
+        Fixtures.contact_fixture(%{
+          phone: phone,
+          status: :invalid,
+          optin_time: nil,
+          optin_status: false,
+          optout_time: DateTime.utc_now() |> DateTime.truncate(:second),
+          optout_method: "user"
+        })
+
+      with_web_channel_enabled(fn ->
+        assert %{status: 200} = sign_in_new_contact(conn, phone)
+
+        after_login = Repo.get_by!(Contact, phone: phone)
+
+        assert after_login.optin_status == false
+        assert is_nil(after_login.optin_time)
+        assert after_login.optout_time == opted_out.optout_time
+        assert after_login.status == :invalid
       end)
     end
   end
@@ -782,6 +830,17 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
                  )
       end)
     end
+  end
+
+  defp verify_otp_login(conn, phone) do
+    code = OTP.generate_code(:web_channel, phone)
+
+    conn
+    |> post(
+      Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{"phone" => phone, "otp" => code})
+    )
+    |> json_response(200)
+    |> get_in(["data", "contact_id"])
   end
 
   describe "verify_otp/2" do
@@ -813,6 +872,59 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         assert {:ok, %Contact{phone: ^phone, organization_id: ^organization_id}} =
                  Repo.fetch_by(Contact, %{id: contact_id, organization_id: organization_id})
+      end)
+    end
+
+    test "records the contact's WhatsApp identity", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        contact_id = verify_otp_login(conn, phone)
+
+        assert [%{contact_id: ^contact_id}] =
+                 ContactIdentity
+                 |> where([i], i.channel == :whatsapp and i.identifier == ^phone)
+                 |> Repo.all()
+      end)
+    end
+
+    test "records the contact's web identity once, however often it signs in", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        contact_id = verify_otp_login(conn, phone)
+        ^contact_id = verify_otp_login(conn, phone)
+
+        assert [%{contact_id: ^contact_id}] =
+                 ContactIdentity
+                 |> where([i], i.channel == :web and i.identifier == ^phone)
+                 |> Repo.all()
+      end)
+    end
+
+    test "a username equal to an OTP user's phone resolves to that user", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        phone_contact_id = verify_otp_login(conn, phone)
+
+        assert {:ok, %{id: ^phone_contact_id}} = Contacts.maybe_create_contact(%{}, :web, phone)
+      end)
+    end
+
+    test "a username equal to the phone is a different contact from the phone login", %{
+      conn: conn
+    } do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        {:ok, username_contact} = Contacts.maybe_create_contact(%{}, :web, phone)
+
+        phone_contact_id = verify_otp_login(conn, phone)
+
+        refute phone_contact_id == username_contact.id
+        assert {:ok, found} = Contacts.fetch_by_identity(:web, phone)
+        assert found.id == username_contact.id
       end)
     end
 

@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.ExportTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Seeds.SeedsDev
   }
 
@@ -77,6 +78,11 @@ defmodule GlificWeb.Schema.ExportTest do
         roles: ["glific_admin"],
         organization_id: user.organization_id
       })
+
+    # Export filters every table by a rolling updated_at window, so the flow must
+    # be created inside it — the base-seeded flows carry the DB's creation date and
+    # fall out of the window once the test database is more than 7 days old.
+    Fixtures.flow_fixture()
 
     end_time = DateTime.utc_now()
     start_time = DateTime.add(end_time, -7, :day)

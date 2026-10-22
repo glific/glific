@@ -10,6 +10,7 @@ defmodule Glific.BigQueryTest do
     BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
     BigQuery.Schema,
+    Communications.WebMessage,
     Contacts.Contact,
     Flows.FlowResult,
     Partners,
@@ -505,6 +506,55 @@ defmodule Glific.BigQueryTest do
              )
   end
 
+  test "alter_tables/4 logs a dataset or table schema update that BigQuery refuses", %{
+    organization_id: org_id
+  } do
+    level = Logger.level()
+    Logger.configure(level: :error)
+    on_exit(fn -> Logger.configure(level: level) end)
+    conn = Connection.new("0xFAKETOKEN_Q=")
+
+    dataset_url =
+      "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114"
+
+    Tesla.Mock.mock(fn %Tesla.Env{method: :get, url: ^dataset_url} ->
+      %Tesla.Env{status: 404, body: Jason.encode!(%{"error" => %{"status" => "NOT_FOUND"}})}
+    end)
+
+    assert ExUnit.CaptureLog.capture_log(fn ->
+             BigQuery.alter_tables(conn, org_id, "917834811114", "DEFAULTPROJECTID")
+           end) =~ "BigQuery schema update failed for org_id: #{org_id}, dataset 917834811114"
+
+    test_pid = self()
+    contacts_url = dataset_url <> "/tables/contacts"
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :get, url: ^dataset_url} ->
+        %Tesla.Env{status: 200, body: "{}"}
+
+      %Tesla.Env{method: :put, url: ^contacts_url} ->
+        send(test_pid, :contacts_update_refused)
+
+        %Tesla.Env{
+          status: 400,
+          body: Jason.encode!(%{"error" => %{"status" => "INVALID_ARGUMENT"}})
+        }
+
+      %Tesla.Env{method: :put} ->
+        %Tesla.Env{status: 200, body: "{}"}
+    end)
+
+    log =
+      ExUnit.CaptureLog.capture_log(fn ->
+        BigQuery.alter_tables(conn, org_id, "917834811114", "DEFAULTPROJECTID")
+        assert_receive :contacts_update_refused, 5_000
+        Process.sleep(200)
+      end)
+
+    assert log =~ "BigQuery schema update failed for org_id: #{org_id}, contacts"
+    refute log =~ "BigQuery schema update failed for org_id: #{org_id}, messages"
+  end
+
   test "make_insert_query/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
        %{organization_id: org_id} do
     with_mocks([
@@ -898,6 +948,127 @@ defmodule Glific.BigQueryTest do
       result = BigQueryWorker.queue_table_data("contacts", org_id, %{some_attr: "value"})
       assert result == :ok
     end
+  end
+
+  test "queue_table_data/3 exports a contact without a phone and its messages with a null phone",
+       %{
+         organization_id: organization_id
+       } do
+    contact = contact_without_phone_fixture(%{organization_id: organization_id})
+    {:ok, message} = WebMessage.receive_message(contact, %{body: "hello"}, :text)
+
+    BigQuery.insert_bigquery_jobs(organization_id)
+    test_pid = self()
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :post, url: url} = env ->
+        table = url |> String.split("/tables/") |> List.last() |> String.split("/") |> hd()
+        send(test_pid, {:insert_body, table, Jason.decode!(env.body)})
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+    end)
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("contacts", organization_id, %{
+               action: :insert,
+               min_id: contact.id - 1,
+               max_id: contact.id
+             })
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("messages", organization_id, %{
+               action: :insert,
+               min_id: message.id - 1,
+               max_id: message.id
+             })
+
+    assert_receive {:insert_body, "contacts", %{"rows" => contact_rows}}
+    assert %{"json" => contact_row} = Enum.find(contact_rows, &(&1["json"]["id"] == contact.id))
+    assert contact_row["phone"] == nil
+
+    assert_receive {:insert_body, "messages", %{"rows" => message_rows}}
+    assert %{"json" => message_row} = Enum.find(message_rows, &(&1["json"]["id"] == message.id))
+    assert message_row["contact_phone"] == nil
+    assert message_row["sender_phone"] == nil
+  end
+
+  test "queue_table_data/3 JSON-encodes list and map profile field values", %{
+    organization_id: organization_id
+  } do
+    inserted_at = "2026-03-19T10:00:00Z"
+
+    profile =
+      profile_fixture(%{
+        "fields" => %{
+          "string_field" => %{
+            "label" => "Name",
+            "inserted_at" => inserted_at,
+            "type" => "string",
+            "value" => "John"
+          },
+          "map_field" => %{
+            "label" => "Settings",
+            "inserted_at" => inserted_at,
+            "type" => "string",
+            "value" => %{"email_notifications" => "allowed", "push_notifications" => false}
+          },
+          "list_field" => %{
+            "label" => "",
+            "inserted_at" => inserted_at,
+            "type" => "string",
+            "value" => ["a", "b", ""]
+          }
+        }
+      })
+
+    BigQuery.insert_bigquery_jobs(organization_id)
+    test_pid = self()
+
+    url =
+      "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/profiles/insertAll"
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :post, url: ^url} = env ->
+        send(test_pid, {:profiles_insert_body, Jason.decode!(env.body)})
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+    end)
+
+    assert :ok =
+             BigQueryWorker.queue_table_data("profiles", organization_id, %{
+               action: :insert,
+               min_id: profile.id,
+               max_id: profile.id
+             })
+
+    assert_receive {:profiles_insert_body, %{"rows" => [%{"json" => row}]}}
+
+    values_by_label = Map.new(row["fields"], &{&1["label"], &1["value"]})
+
+    assert values_by_label == %{
+             "Name" => "John",
+             "Settings" => ~s({"email_notifications":"allowed","push_notifications":false}),
+             "" => ~s(["a","b",""])
+           }
+
+    assert %BigQueryJob{table_id: table_id} =
+             Repo.get_by(BigQueryJob, organization_id: organization_id, table: "profiles")
+
+    assert table_id == profile.id
   end
 
   test "queue_table_data/3 should process and skip simulator contacts, ensuring table_id should be updated for flow_results table" do

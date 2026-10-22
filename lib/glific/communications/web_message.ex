@@ -2,11 +2,13 @@ defmodule Glific.Communications.WebMessage do
   @moduledoc """
   Persists an inbound web-channel message and publishes it to the staff inbox subscription.
 
-  Deliberately publish-only, unlike WhatsApp inbound: this never hands the message to the flow
-  engine (`Communications.Message.process_message/1`). A web inbound message reaching a
-  WhatsApp-only flow reply would send an unopted-in browser visitor a WhatsApp message, which is
-  worse than no reply at all. Flow replies land with the "flows reply on web" ticket, which
-  introduces `Providers.Web.Message` and presence-gated delivery.
+  Persists the message, publishes it to the staff inbox, and — when the web channel is enabled —
+  hands it to the flow engine via `Processor.MessageWorker`, the same path WhatsApp inbound uses.
+
+  It deliberately does not route through `Communications.Message.receive_message/2`: that path is
+  shaped around a BSP payload and does provider bookkeeping (`bsp_message_id`, session status,
+  billing events) that has no meaning for a channel with no BSP. The flow it starts inherits
+  `channel: :web`, so its replies go back over the web socket rather than to WhatsApp (#5719).
   """
 
   alias Glific.{
@@ -16,41 +18,69 @@ defmodule Glific.Communications.WebMessage do
     Messages,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo
   }
 
-  @doc """
-  Callback when we receive a message from a browser contact over the web channel.
+  # Shared web-channel switch — using it here rather than re-implementing keeps one source of truth.
+  alias GlificWeb.WebChannel.Flag
 
-  Contacts are shared across channels — this creates/reuses the contact by phone the same way
-  WhatsApp inbound does. It never calls `Contacts.set_session_status/2`: that tracks the
-  WhatsApp 24-hour session window, which has no meaning for a channel with no BSP.
+  @doc """
+  Callback when we receive a message from the contact the web socket authenticated.
+
+  It never calls `Contacts.set_session_status/2`: that tracks the WhatsApp 24-hour session window,
+  which has no meaning for a channel with no BSP.
   """
-  @spec receive_message(map(), atom()) ::
+  @spec receive_message(Contact.t(), map(), atom()) ::
           {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
-  def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
+  def receive_message(%Contact{} = contact, message_params, type \\ :text) do
+    message_params =
+      message_params
+      |> Map.merge(create_message_metadata(contact))
+      |> Map.merge(%{
+        type: type,
+        flow: :inbound,
+        channel: :web,
+        bsp_status: :delivered,
+        status: :received
+      })
+
     # Returns rather than raises throughout: the caller is a socket handler, and a raise there
     # takes the channel down instead of replying.
-    with {:ok, contact} <-
-           message_params.sender
-           |> Map.put(:organization_id, organization_id)
-           |> Contacts.maybe_create_contact() do
-      message_params =
-        message_params
-        |> Map.merge(create_message_metadata(contact, message_params))
-        |> Map.merge(%{
-          type: type,
-          flow: :inbound,
-          channel: :web,
-          bsp_status: :delivered,
-          status: :received
-        })
-
+    result =
       case type do
         :text -> receive_text(message_params)
         :location -> receive_location(message_params)
         _media -> receive_media(message_params)
       end
+
+    hand_to_flow_engine(result, contact.organization_id)
+    result
+  end
+
+  # Flag-gated: with the web channel off, a web message is still persisted and shown in the
+  # inbox, but never enters the flow engine.
+  @spec hand_to_flow_engine({:ok, Message.t()} | {:error, any()}, non_neg_integer()) :: :ok
+  defp hand_to_flow_engine({:ok, message}, organization_id) do
+    if Flag.web_channel_enabled?(organization_id), do: enqueue_flow_job(message)
+    :ok
+  end
+
+  defp hand_to_flow_engine(_result, _organization_id), do: :ok
+
+  # MessageWorker runs with max_attempts: 1, so a dropped enqueue is the message's only chance at
+  # flow processing — log it rather than let it fail silently in the inbox.
+  @spec enqueue_flow_job(Message.t()) :: any()
+  defp enqueue_flow_job(message) do
+    case MessageWorker.make_job(message) do
+      {:ok, _job} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Could not enqueue inbound web message for flow processing: " <>
+            Glific.SafeLog.safe_inspect(reason)
+        )
     end
   end
 
@@ -128,12 +158,12 @@ defmodule Glific.Communications.WebMessage do
     |> Communications.publish_data(:received_message, organization_id)
   end
 
-  @spec create_message_metadata(Contact.t(), map()) :: map()
-  defp create_message_metadata(contact, message_params) do
+  @spec create_message_metadata(Contact.t()) :: map()
+  defp create_message_metadata(contact) do
     %{
       sender_id: contact.id,
       contact_id: contact.id,
-      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      receiver_id: Partners.organization_contact_id(contact.organization_id),
       organization_id: contact.organization_id
     }
   end

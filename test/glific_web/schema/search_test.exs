@@ -26,7 +26,12 @@ defmodule GlificWeb.Schema.SearchTest do
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
     Fixtures.wa_managed_phone_fixture(%{organization_id: org.id})
+    # Restored on the way out: this is a global, and leaving it set makes every later test in the
+    # run search through the replica, which has no current user in its process.
+    original = Application.get_env(:glific, Glific.Searches)
     Application.put_env(:glific, Glific.Searches, %{repo_module: RepoReplica})
+    on_exit(fn -> Application.put_env(:glific, Glific.Searches, original) end)
+
     :ok
   end
 
@@ -903,6 +908,41 @@ defmodule GlificWeb.Schema.SearchTest do
     assert hd(contacts)["id"] != nil
     assert String.contains?(hd(messages)["contact"]["name"], "Default")
     assert messages != []
+  end
+
+  describe "searchMulti by username" do
+    setup do
+      contact = Fixtures.contact_without_phone_fixture(%{name: "Nameless visitor"})
+      Fixtures.contact_identity_fixture(%{contact_id: contact.id, identifier: "ravi_web"})
+      %{contact: contact}
+    end
+
+    defp search_multi_contact_ids(user, term) do
+      {:ok, query_data} =
+        auth_query_gql_by(:search_multi, user,
+          variables: %{
+            "filter" => %{"term" => term},
+            "contactOpts" => %{"limit" => 50},
+            "messageOpts" => %{"limit" => 1}
+          }
+        )
+
+      query_data |> get_in([:data, "searchMulti", "contacts"]) |> Enum.map(& &1["id"])
+    end
+
+    test "a manager finds a contact by the start of its username", %{
+      manager: user,
+      contact: contact
+    } do
+      assert "#{contact.id}" in search_multi_contact_ids(user, "ravi_w")
+    end
+
+    test "a staff user does not find a contact by its username", %{
+      staff: user,
+      contact: contact
+    } do
+      refute "#{contact.id}" in search_multi_contact_ids(user, "ravi_w")
+    end
   end
 
   test "WA Search by term will return the search input", %{staff: user} = attrs do

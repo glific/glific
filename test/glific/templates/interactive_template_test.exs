@@ -802,5 +802,34 @@ defmodule Glific.Templates.InteractiveTemplateTest do
 
       assert String.length(option["description"]) == 72
     end
+
+    test "keeps list option titles up to the 24 char WhatsApp row limit" do
+      params = [
+        %{"id" => "1", "label" => "Infection in new mothers"},
+        %{"id" => "2", "label" => "Infection in new mothers!"}
+      ]
+
+      %{"items" => [%{"options" => [full_option, trimmed_option]}]} =
+        InteractiveTemplates.process_dynamic_interactive_content(@list_content, params, %{})
+
+      assert full_option["title"] == "Infection in new mothers"
+      assert trimmed_option["title"] == "Infection in new mothers"
+    end
+
+    test "trims quick reply option titles to the 20 char WhatsApp button limit" do
+      quick_reply_content = %{
+        "type" => "quick_reply",
+        "content" => %{"type" => "text", "text" => "Pick one"},
+        "options" => []
+      }
+
+      params = [%{"id" => "1", "label" => String.duplicate("a", 21)}, String.duplicate("b", 25)]
+
+      %{"options" => [map_option, string_option]} =
+        InteractiveTemplates.process_dynamic_interactive_content(quick_reply_content, params, %{})
+
+      assert map_option["title"] == String.duplicate("a", 20)
+      assert string_option["title"] == String.duplicate("b", 20)
+    end
   end
 end

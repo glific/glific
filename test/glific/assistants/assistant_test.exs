@@ -297,7 +297,7 @@ defmodule Glific.Assistants.AssistantTest do
           }
       end)
 
-      for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"],
+      for extension <- ["doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"],
           cased_extension <- [extension, String.upcase(extension), String.capitalize(extension)] do
         upload = build_upload_for_extension(cased_extension)
 
@@ -307,11 +307,14 @@ defmodule Glific.Assistants.AssistantTest do
         assert filename == "sample.#{extension}"
       end
 
-      for cased_extension <- ["png", "PNG", "Png"] do
+      for cased_extension <- ["png", "PNG", "Png", "csv", "CSV", "Csv"] do
         unsupported_upload = build_upload_for_extension(cased_extension)
+        extension = String.downcase(cased_extension)
 
-        assert {:error, "Files with extension '.png' not supported in Assistants"} =
+        assert {:error, message} =
                  Assistants.upload_file(%{media: unsupported_upload}, organization_id)
+
+        assert message == "Files with extension '.#{extension}' not supported in Assistants"
       end
     end
 

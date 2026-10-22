@@ -2,6 +2,7 @@ defmodule Glific.FLowsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Contacts.Contact,
     Fixtures,
     Flows,
     Flows.Broadcast,
@@ -9,6 +10,7 @@ defmodule Glific.FLowsTest do
     Flows.FlowContext,
     Flows.FlowRevision,
     Flows.MessageBroadcast,
+    Flows.MessageBroadcastContact,
     Groups,
     Messages,
     Messages.Message,
@@ -385,6 +387,277 @@ defmodule Glific.FLowsTest do
       assert loaded_flow_new.keywords != loaded_flow.keywords
     end
 
+    test "publish_flow/2 refuses a web flow carrying a WhatsApp-only node, and publishes once it is removed",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      flow = set_channel(flow, :web)
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      version_before = revision.version
+      clean_definition = revision.definition
+      [first_node | rest] = clean_definition["nodes"]
+
+      wa_group_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "set_wa_group_field",
+        "field" => %{"key" => "group_name", "name" => "Group Name"},
+        "value" => "cohort 1"
+      }
+
+      offending_definition =
+        Map.put(clean_definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [wa_group_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: offending_definition}) |> Repo.update()
+
+      assert {:errors, errors} = Flows.publish_flow(flow, user.id)
+      assert Enum.any?(errors, fn error -> error.blocking end)
+
+      assert Enum.any?(errors, fn error ->
+               error.message == "Updating a WhatsApp group field"
+             end)
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      assert revision.version == version_before
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: clean_definition}) |> Repo.update()
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      assert revision.version == version_before + 1
+    end
+
+    test "publish_flow/2 names every whatsapp-only node in a web flow",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      flow = set_channel(flow, :web)
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      offending_actions = [
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "send_msg",
+          "text" => "your appointment is confirmed",
+          "templating" => %{"uuid" => Ecto.UUID.generate(), "expression" => "@results.template"}
+        },
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "set_wa_group_field",
+          "field" => %{"key" => "group_name", "name" => "Group Name"},
+          "value" => "cohort 1"
+        },
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "call_webhook",
+          "url" => "send_wa_group_poll",
+          "method" => "FUNCTION",
+          "headers" => %{},
+          "result_name" => "poll_result"
+        }
+      ]
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ offending_actions)
+          | rest ++ [split_by_collection_node()]
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:errors, errors} = Flows.publish_flow(flow, user.id)
+
+      blocking_messages =
+        errors
+        |> Enum.filter(fn error -> error.blocking end)
+        |> Enum.map(fn error -> error.message end)
+
+      assert length(blocking_messages) == 4
+
+      for label <- [
+            "Sending a WhatsApp template (HSM)",
+            "Updating a WhatsApp group field",
+            "Sending a WhatsApp group poll",
+            "Splitting by collection"
+          ] do
+        assert Enum.any?(blocking_messages, fn message -> String.starts_with?(message, label) end),
+               "expected a blocking error for #{label}"
+      end
+    end
+
+    test "publish_flow/2 refuses a web flow that enters a whatsapp sub-flow",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, parent} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(parent) end)
+
+      parent = set_channel(parent, :web)
+
+      {:ok, sub_flow} =
+        Repo.fetch_by(Flow, %{name: "Help Workflow", organization_id: organization_id})
+
+      assert sub_flow.channel == :whatsapp
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: parent.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      enter_flow_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "enter_flow",
+        "flow" => %{"uuid" => sub_flow.uuid, "name" => sub_flow.name}
+      }
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [enter_flow_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:errors, errors} = Flows.publish_flow(parent, user.id)
+
+      assert Enum.any?(errors, fn error ->
+               error.blocking and
+                 String.contains?(error.message, "Entering the sub-flow")
+             end)
+
+      set_channel(sub_flow, :web)
+      Glific.Caches.remove(organization_id, [parent.uuid, sub_flow.uuid])
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(parent, user.id)
+    end
+
+    test "publish_flow/2 leaves a whatsapp flow with the same node publishable",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      assert flow.channel == :whatsapp
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      wa_group_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "set_wa_group_field",
+        "field" => %{"key" => "group_name", "name" => "Group Name"},
+        "value" => "cohort 1"
+      }
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [wa_group_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
+    end
+
+    test "update_flow/2 refuses to move a flow to another channel",
+         %{organization_id: organization_id} = _attrs do
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      assert flow.channel == :whatsapp
+
+      assert {:error, changeset} = Flows.update_flow(flow, %{channel: :web})
+
+      assert "cannot be changed after the flow is created" in errors_on(changeset).channel
+
+      {:ok, flow} = Repo.fetch_by(Flow, %{id: flow.id})
+      assert flow.channel == :whatsapp
+
+      assert {:ok, flow} = Flows.update_flow(flow, %{channel: :whatsapp, is_pinned: true})
+      assert flow.is_pinned
+    end
+
+    test "create_flow/1 accepts the channel the flow is created on",
+         %{organization_id: organization_id} = _attrs do
+      assert {:ok, flow} =
+               Flows.create_flow(%{
+                 name: "Web only flow",
+                 keywords: ["webonly"],
+                 channel: :web,
+                 organization_id: organization_id
+               })
+
+      assert flow.channel == :web
+    end
+
+    test "publish_flow/2 allows a web flow to broadcast to another contact",
+         %{organization_id: organization_id} = _attrs do
+      user = Repo.get_current_user()
+
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: organization_id})
+
+      on_exit(fn -> clear_flow_cache(flow) end)
+
+      flow = set_channel(flow, :web)
+
+      {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+      [first_node | rest] = revision.definition["nodes"]
+
+      broadcast_action = %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "send_broadcast",
+        "text" => "notify the team",
+        "contacts" => []
+      }
+
+      definition =
+        Map.put(revision.definition, "nodes", [
+          Map.put(first_node, "actions", first_node["actions"] ++ [broadcast_action]) | rest
+        ])
+
+      {:ok, _revision} =
+        revision |> FlowRevision.changeset(%{definition: definition}) |> Repo.update()
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow, user.id)
+    end
+
     test "publish_flow/1 updates the latest flow revision status",
          %{organization_id: organization_id} = _attrs do
       user = Repo.get_current_user()
@@ -476,6 +749,21 @@ defmodule Glific.FLowsTest do
                Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
     end
 
+    # #5706: a staff-started flow can target the web channel, so its context — and therefore its
+    # replies — route to the widget instead of defaulting to whatsapp.
+    test "start_contact_flow/4 starts the flow on the given channel", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{is_active: true})
+      contact = Fixtures.contact_fixture(attrs)
+
+      {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, :web)
+
+      assert {:ok, flow_context} =
+               Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+      assert flow_context.channel == :web
+    end
+
     test "start_group_flow/2 will setup the flow for a group of contacts", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
       group = Fixtures.group_fixture()
@@ -531,6 +819,57 @@ defmodule Glific.FLowsTest do
       assert broadcast_results["key"] == default_results.key
     end
 
+    test "export_flow/1 and import_flow/2 round-trip the channel" do
+      user = Repo.get_current_user()
+      flow = flow_fixture()
+      web_flow = set_channel(flow, :web)
+
+      payload = Flows.export_flow(web_flow.id) |> Jason.encode!() |> Jason.decode!()
+
+      [exported_flow | _] = payload["flows"]
+      assert exported_flow["channel"] == "web"
+
+      uuid = exported_flow["definition"]["uuid"]
+      Flows.delete_flow(web_flow)
+
+      Flows.import_flow(payload, user.organization_id)
+
+      {:ok, imported} =
+        Repo.fetch_by(Flow, %{uuid: uuid, organization_id: user.organization_id})
+
+      assert imported.channel == :web
+    end
+
+    test "import_flow/2 defaults a channel-less export to whatsapp" do
+      user = Repo.get_current_user()
+      flow = flow_fixture()
+
+      payload = Flows.export_flow(flow.id) |> Jason.encode!() |> Jason.decode!()
+
+      legacy_flows = Enum.map(payload["flows"], fn f -> Map.delete(f, "channel") end)
+      payload = Map.put(payload, "flows", legacy_flows)
+
+      uuid = hd(legacy_flows)["definition"]["uuid"]
+      Flows.delete_flow(flow)
+
+      Flows.import_flow(payload, user.organization_id)
+
+      {:ok, imported} =
+        Repo.fetch_by(Flow, %{uuid: uuid, organization_id: user.organization_id})
+
+      assert imported.channel == :whatsapp
+    end
+
+    test "copy_flow/2 keeps the channel of the flow it copied" do
+      flow = flow_fixture()
+      web_flow = set_channel(flow, :web)
+
+      assert {:ok, %Flow{} = copied_flow} =
+               Flows.copy_flow(web_flow, %{name: "copied web flow", keywords: []})
+
+      assert copied_flow.channel == :web
+    end
+
     test "copy_flow/2 with valid data makes a copy of flow" do
       flow = flow_fixture()
 
@@ -568,6 +907,43 @@ defmodule Glific.FLowsTest do
                  keyword != Glific.string_clean(keyword)
                end)
     end
+  end
+
+  defp clear_flow_cache(flow) do
+    keys =
+      for status <- ["draft", "published"],
+          key <-
+            [{:flow_uuid, flow.uuid, status}, {:flow_id, flow.id, status}] ++
+              Enum.map(flow.keywords, &{:flow_keyword, &1, status}),
+          do: key
+
+    Glific.Caches.remove(flow.organization_id, keys)
+  end
+
+  defp set_channel(flow, channel) do
+    updated = flow |> Ecto.Changeset.change(channel: channel) |> Repo.update!()
+    clear_flow_cache(flow)
+    updated
+  end
+
+  defp split_by_collection_node do
+    exit_uuid = Ecto.UUID.generate()
+    other_category_uuid = Ecto.UUID.generate()
+
+    %{
+      "uuid" => Ecto.UUID.generate(),
+      "actions" => [],
+      "exits" => [%{"uuid" => exit_uuid, "destination_uuid" => nil}],
+      "router" => %{
+        "type" => "switch",
+        "operand" => "@contact.groups",
+        "cases" => [],
+        "categories" => [
+          %{"uuid" => other_category_uuid, "name" => "Other", "exit_uuid" => exit_uuid}
+        ],
+        "default_category_uuid" => other_category_uuid
+      }
+    }
   end
 
   defp expected_error(str) do
@@ -823,5 +1199,93 @@ defmodule Glific.FLowsTest do
     # do_publish_flow/2 still runs and stamps the revision with the user.
     {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
     assert revision.user_id == user.id
+  end
+
+  describe "flows for a contact without a phone" do
+    setup %{organization_id: organization_id} do
+      %{contact: Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})}
+    end
+
+    defp active_flow(organization_id) do
+      [flow | _] = Flows.list_flows(%{filter: %{organization_id: organization_id}})
+      {:ok, flow} = Flows.update_flow(flow, %{is_active: true})
+      flow
+    end
+
+    test "a flow started on the web channel runs and replies on the web",
+         %{contact: contact, organization_id: organization_id} do
+      flow = active_flow(organization_id)
+
+      {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, :web)
+
+      assert {:ok, %FlowContext{channel: :web}} =
+               Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+      replies =
+        Message
+        |> where([m], m.contact_id == ^contact.id and m.flow == :outbound)
+        |> Repo.all()
+
+      assert replies != []
+      assert Enum.all?(replies, &(&1.channel == :web and &1.status != :error))
+    end
+
+    test "a flow started on WhatsApp stops without sending or touching other contacts",
+         %{contact: contact, organization_id: organization_id} do
+      flow = active_flow(organization_id)
+      opted_out_before = Repo.aggregate(where(Contact, [c], not is_nil(c.optout_time)), :count)
+
+      Flows.start_contact_flow(flow, contact)
+
+      assert {:ok, %FlowContext{}} =
+               Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+
+      assert [] ==
+               Message
+               |> where([m], m.contact_id == ^contact.id and m.flow == :outbound)
+               |> where([m], m.status != :error)
+               |> Repo.all()
+
+      assert opted_out_before ==
+               Repo.aggregate(where(Contact, [c], not is_nil(c.optout_time)), :count)
+    end
+
+    test "a WhatsApp collection flow completes, and sends nothing to the contact without a phone",
+         %{contact: contact, organization_id: organization_id} do
+      flow = active_flow(organization_id)
+      with_phone = Fixtures.contact_fixture(%{organization_id: organization_id})
+      group = Fixtures.group_fixture(%{organization_id: organization_id})
+
+      for member <- [contact, with_phone] do
+        Groups.create_contact_group(%{
+          group_id: group.id,
+          contact_id: member.id,
+          organization_id: organization_id
+        })
+      end
+
+      {:ok, _flow} = Flows.start_group_flow(flow, [group.id], %{})
+      Broadcast.execute_broadcasts(organization_id)
+      Broadcast.execute_broadcasts(organization_id)
+
+      {:ok, broadcast} = Repo.fetch_by(MessageBroadcast, %{group_id: group.id, flow_id: flow.id})
+
+      statuses =
+        MessageBroadcastContact
+        |> where([mbc], mbc.message_broadcast_id == ^broadcast.id)
+        |> select([mbc], {mbc.contact_id, mbc.status})
+        |> Repo.all()
+        |> Map.new()
+
+      assert statuses[with_phone.id] == "processed"
+      assert statuses[contact.id] == "processed"
+      assert broadcast.completed_at != nil
+
+      assert [] ==
+               Message
+               |> where([m], m.contact_id == ^contact.id and m.flow == :outbound)
+               |> where([m], m.status != :error)
+               |> Repo.all()
+    end
   end
 end

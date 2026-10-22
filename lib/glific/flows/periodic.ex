@@ -146,7 +146,9 @@ defmodule Glific.Flows.Periodic do
   defp init_common_flow(state, flow_id, message) do
     case Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase}) do
       {:ok, flow} ->
-        opts = Keyword.put(Keyword.new(), :flow_keyword, message.body)
+        # Inherit the triggering message's channel so a default/out-of-office flow started for a
+        # web message replies over the widget, not the BSP.
+        opts = [flow_keyword: message.body, channel: message.channel]
         FlowContext.init_context(flow, message.contact, @final_phrase, opts)
         {state, true}
 
