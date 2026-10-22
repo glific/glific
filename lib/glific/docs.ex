@@ -57,6 +57,19 @@ defmodule Glific.Docs do
   # numbers were measured: they sit between what an off-topic question scores
   # and what a real one does.
   @minimum_similarity 0.45
+
+  # Longer than any real identifier, and past what a pasted dump can compile to.
+  @longest_term 128
+
+  # A question this short cannot reach @minimum_overlap on body text alone, so
+  # it qualifies on terms matched rather than on score. Separate from the floor
+  # because it counts a different thing: raising one should not move the other.
+  @short_question 4
+
+  # Two headings named. Enough to say a section is about what was asked even
+  # with a term unaccounted for, and out of reach of one heading plus a word
+  # that merely occurs in prose.
+  @strong_partial 8
   @minimum_overlap 5
 
   @stopwords MapSet.new(~w(
@@ -289,11 +302,6 @@ defmodule Glific.Docs do
     |> Enum.take(Keyword.get(opts, :limit, 5))
   end
 
-  # A one-word question can only ever score a single heading match, so holding
-  # it to the full floor would reject every one of them.
-  defp floor_for([_one_term]), do: @heading_weight
-  defp floor_for(_several), do: @minimum_overlap
-
   @doc "The lexical pass on its own."
   @spec lexical(String.t(), [entry()]) :: [section()]
   def lexical(question, entries) do
@@ -303,12 +311,12 @@ defmodule Glific.Docs do
       []
     else
       identifiers = identifiers(question)
-      floor = floor_for(terms)
+      patterns = matchers(terms, identifiers)
 
       entries
-      |> Enum.map(&{overlap(&1.section, terms, identifiers), &1.section})
-      |> Enum.filter(&(elem(&1, 0) >= floor))
-      |> Enum.sort_by(fn {score, section} -> {-score, byte_size(section.body)} end)
+      |> Enum.map(&{overlap(&1.section, patterns, identifiers), &1.section})
+      |> Enum.filter(&keep?(&1, length(terms)))
+      |> Enum.sort_by(fn {{score, _matched}, section} -> {-score, byte_size(section.body)} end)
       |> Enum.take(@candidates)
       |> Enum.map(&elem(&1, 1))
     end
@@ -376,7 +384,10 @@ defmodule Glific.Docs do
     ~r/[@\p{L}\p{N}][\p{L}\p{M}\p{N}._\-]*/u
     |> Regex.scan(String.downcase(question))
     |> Enum.map(&(&1 |> List.first() |> String.trim(".")))
-    |> Enum.reject(&(String.length(&1) < 2 or MapSet.member?(@stopwords, &1)))
+    |> Enum.reject(
+      &(String.length(&1) < 2 or String.length(&1) > @longest_term or
+          MapSet.member?(@stopwords, &1))
+    )
     |> Enum.uniq()
   end
 
@@ -384,16 +395,49 @@ defmodule Glific.Docs do
   @spec title(section()) :: String.t()
   def title(section), do: section.heading_path |> String.split(@separator) |> List.last()
 
+  # How many terms a question has decides what it can score, so each length
+  # qualifies its own way. One word says too little to trust where it appears
+  # in prose alone, so it has to name the section or be an identifier. Too few
+  # words to reach @minimum_overlap on body text — a pasted error string — must
+  # match every term they have instead. Longer questions clear the floor on
+  # weight alone.
+  defp keep?({{score, _matched}, _section}, 1), do: score >= @heading_weight
+
+  defp keep?({{score, matched}, _section}, count) when count <= @short_question,
+    do: matched == count or score >= @strong_partial
+
+  defp keep?({{score, _matched}, _section}, _count), do: score >= @minimum_overlap
+
   defp overlap(section, terms, identifiers) do
     heading = String.downcase(section.heading_path)
     body = String.downcase(section.body)
 
-    Enum.reduce(terms, 0, fn term, score ->
+    Enum.reduce(terms, {0, 0}, fn {term, pattern}, {score, matched} ->
       cond do
-        String.contains?(heading, term) -> score + @heading_weight
-        String.contains?(body, term) -> score + body_weight(term, identifiers)
-        true -> score
+        Regex.match?(pattern, heading) -> {score + @heading_weight, matched + 1}
+        Regex.match?(pattern, body) -> {score + body_weight(term, identifiers), matched + 1}
+        true -> {score, matched}
       end
+    end)
+  end
+
+  defp matchers(terms, identifiers) do
+    Enum.map(terms, fn term ->
+      # An identifier means that string and nothing else, so it takes no
+      # plural: `@results.parent.state.input` is not the `.inputs` of some
+      # other notation. Ordinary words are written both ways in the documents.
+      plural = if MapSet.member?(identifiers, term), do: "", else: "(?:e?s)?"
+
+      # A dot carries notation on, so `@contact` is no match for `@contact.id`
+      # — but only where something follows it, the dot ending a sentence being
+      # punctuation. Nothing guards the near side on purpose: the documents
+      # write a field as `@contact.optin_status` far more often than bare, and
+      # that is the section someone pasting the name is looking for.
+      pattern =
+        "(?<![\\p{L}\\p{N}_])" <>
+          Regex.escape(term) <> plural <> "(?![\\p{L}\\p{N}_])(?!\\.[\\p{L}\\p{N}_])"
+
+      {term, Regex.compile!(pattern, "u")}
     end)
   end
 
@@ -414,7 +458,7 @@ defmodule Glific.Docs do
   end
 
   defp identifier?(token) do
-    String.contains?(token, ".") or String.starts_with?(token, "@") or
-      Regex.match?(~r/[a-z][A-Z]/, token)
+    String.contains?(token, ".") or String.contains?(token, "_") or
+      String.starts_with?(token, "@") or Regex.match?(~r/[a-z][A-Z]/, token)
   end
 end

@@ -1,4 +1,14 @@
 --- entry
+heading: Glific Platform Guide
+---
+
+A comprehensive reference for the Glific WhatsApp chatbot platform, written for an AI support chatbot that helps NGO staff. The chatbot cannot see screenshots — every UI element is described in plain text using the exact labels that appear in the product.
+
+> Glific is built on React 19 + TypeScript + Apollo (GraphQL) + MUI v7.
+
+---
+
+--- entry
 heading: Glific Platform Guide › Navigation & Layout › Overall layout
 ---
 
@@ -22,11 +32,30 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Man
 - **Dynamic roles** — organizations can define custom roles via `/role`; behavior set per-role.
 
 --- entry
-heading: Glific Platform Guide › Screens › Chat
-source: https://glific.github.io/docs/docs/Product%20Features/Chats/
+heading: Glific Platform Guide › Navigation & Layout › Sidebar menu (left, top to bottom)
 ---
 
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Chats/
+| Menu item | URL | Roles | Notes |
+| --- | --- | --- | --- |
+| **Chats** | `/chat` | All | The default landing screen |
+| **WhatsApp Groups** (parent) | `/group/chat` | All | Visible only when the `whatsappGroupEnabled` org service is on. Children: **Group Chats** (`/group/chat`), **Group Collections** (`/group/collection`), **Group Polls** (`/group/polls`), **WhatsApp Phones** (`/group/phones`, Manager+) |
+| **Flows** (parent) | `/flow` | Manager+ | Children: **Flows** (`/flow`), **Google sheets** (`/sheet-integration`), **Webhook logs** (`/webhook-logs`), **Support tickets** (`/ticket`, only when `ticketingEnabled`), **Certificates** (`/certificates`, only when `certificateEnabled`) |
+| **Support tickets** | `/ticket` | Staff (only) | Top-level for the Staff role; Manager+ reach it via the Flows submenu. Only when `ticketingEnabled`. |
+| **Quick tools** (parent) | `/interactive-message` | Manager+ | Children: **Interactive Msg** (`/interactive-message`), **HSM Templates** (`/template`), **WhatsApp Forms** (`/whatsapp-forms`, only when `whatsappFormsEnabled`), **Triggers** (`/trigger`), **Searches** (`/search`), **Speed Sends** (`/speed-send`) |
+| **Notifications** | `/notifications` | Manager+ | Shows badge with unread count |
+| **AI toolkit** (parent) | `/assistants` | Manager+ | Children: **AI Assistant** (`/assistants`), **AI Evals** (`/ai-evaluations`) |
+| **Data Analytics** | `/analytics` | All | Marked "new" in the menu |
+| **Manage** (parent) | `/collection` | Staff+ | Children: **Collections** (`/collection`), **Staff** (`/staff-management`, Manager+), **Contacts** (`/contact-management`, Admin+), **Blocked contacts** (`/blocked-contacts`), **Contact variables** (`/contact-fields`, Manager+), **Tags** (`/tag`, Manager+), **Roles** (`/role`, only when the org doesn't use Dynamic roles), **Organizations** (`/organizations`, Glific_admin), **Consulting** (`/consulting-hours`, Glific_admin) |
+| **Resources** | external (Glific docs) | All | |
+| **Discord** | external | All | |
+
+User-account menu (bottom of sidebar / avatar):
+
+- **My Account** (`/myaccount`) — change password, language preference.
+- **Settings** (`/settings`) — Admin only; routes to Organization, Flows config, Billing, and provider tiles.
+- **Logout** (`/logout/user`).
+
+---
 
 --- entry
 heading: Glific Platform Guide › Screens › Chat › Screen: Chats (main inbox)
@@ -41,13 +70,13 @@ source: https://glific.github.io/docs/docs/Product%20Features/Chats/
 
 1. **Tab bar (top of left panel):** **Contacts** | **Collections** | **Searches**.
 2. **Left panel — conversation list:**
-   - Search bar with placeholder **"Search conversations"** (1-second debounce).
-   - **Saved Search Toolbar** — quick filter pills, typically **All**, **Unread**, **Not Responded**, with count badges like "(12)". A `…` button reveals additional saved searches.
-   - List of conversations: each row shows avatar (initials), contact name, last-message preview (truncated to ~100 chars), relative timestamp ("now", "2m", "1h", "Yesterday"), unread badge, and an icon for the last message type (text/media/template/interactive).
+ - Search bar with placeholder **"Search conversations"** (1-second debounce).
+ - **Saved Search Toolbar** — quick filter pills, typically **All**, **Unread**, **Not Responded**, with count badges like "(12)". A `…` button reveals additional saved searches.
+ - List of conversations: each row shows avatar (initials), contact name, last-message preview (truncated to ~100 chars), relative timestamp ("now", "2m", "1h", "Yesterday"), unread badge, and an icon for the last message type (text/media/template/interactive).
 3. **Right panel — chat thread:**
-   - **Conversation header** with the contact name (max 40 chars), comma-separated list of collections the contact belongs to, and a **session timer** showing **"Time left: HH:MM"** counting down the 24-hour messaging window. A dropdown arrow opens an actions menu.
-   - **Message list** with date separators ("Today", "Yesterday", or full date), per-message timestamps, and status icons (single check = sent, double check = delivered, double check filled = read, ⚠ = failed; hover for error).
-   - **Chat input** at bottom (see "How to send messages" below).
+ - **Conversation header** with the contact name (max 40 chars), comma-separated list of collections the contact belongs to, and a **session timer** showing **"Time left: HH:MM"** counting down the 24-hour messaging window. A dropdown arrow opens an actions menu.
+ - **Message list** with date separators ("Today", "Yesterday", or full date), per-message timestamps, and status icons (single check = sent, double check = delivered, double check filled = read, ⚠ = failed; hover for error).
+ - **Chat input** at bottom (see "How to send messages" below).
 
 **Conversation header — dropdown menu items:**
 
@@ -105,13 +134,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Chats/
 - **Differences from contact chat:** sender's contact name appears above each incoming message ("Message from: ContactName"). Block, Clear conversation, and Terminate flows are not available. **Start a flow** for a group runs the flow for all participants — toast _"Your flow will start in a couple of minutes."_
 
 ---
-
---- entry
-heading: Glific Platform Guide › Screens › Flows
-source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
----
-
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Overview/
 
 --- entry
 heading: Glific Platform Guide › Screens › Flows › Screen: Flow list
@@ -181,60 +203,60 @@ Every node is added by dragging from the node palette or clicking on the canvas.
 
 **A. Send / Output actions**
 
-| Node UI label             | Internal type          | What it does                                                   | Key fields                                                                                                                                                                                        |
-| ------------------------- | ---------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Send Message**          | `send_msg`             | Sends a text message to the contact.                           | Message text (Gupshup rejects >4096 chars) · **Labels** to apply to the outgoing message · **Attachments** tab (one attachment per node) · **HSM Templates** tab (template + variables). No quick-reply field and no Facebook "Topic" field in Glific. |
-| **Interactive Message**   | `send_interactive_msg` | Sends a button or list interactive message (WhatsApp).         | Pick an existing Interactive Message template. Buttons/list items are defined on the template, not on the node — this is how you get reply buttons.                                                |
-| **Send message to staff** | `send_broadcast`       | Sends a message to selected staff/users, not to the contact.   | Message text, recipient staff                                                                                                                                                                     |
-| **Save Flow Result**      | `set_run_result`       | Stores a named variable usable later in the flow.              | Result name, Result value (expression or fixed), Category                                                                                                                                         |
+| Node UI label | Internal type | What it does | Key fields |
+| --- | --- | --- | --- |
+| **Send Message** | `send_msg` | Sends a text message to the contact. | Message text (Gupshup rejects >4096 chars) · **Labels** to apply to the outgoing message · **Attachments** tab (one attachment per node) · **HSM Templates** tab (template + variables). No quick-reply field and no Facebook "Topic" field in Glific. |
+| **Interactive Message** | `send_interactive_msg` | Sends a button or list interactive message (WhatsApp). | Pick an existing Interactive Message template. Buttons/list items are defined on the template, not on the node — this is how you get reply buttons. |
+| **Send message to staff** | `send_broadcast` | Sends a message to selected staff/users, not to the contact. | Message text, recipient staff |
+| **Save Flow Result** | `set_run_result` | Stores a named variable usable later in the flow. | Result name, Result value (expression or fixed), Category |
 
 **Attachment limits** (enforced server-side by `validate-media`): image ≤ 5 MB · video ≤ 16 MB · audio ≤ 16 MB · document ≤ 100 MB · sticker ≤ 100 KB. Uploading a file needs Google Cloud Storage configured for the org; otherwise you paste a public media URL.
 
 **B. Contact management actions**
 
-| Node UI label              | Internal type                                  | What it does                                                                                                            |
-| -------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Update Contact**         | `set_contact_field` / `set_contact_language`   | Updates a contact field or the contact's language. The property dropdown in Glific offers **Language** and **Channel** plus every contact field — Name and Status are removed from the list. |
-| **Add to Collection**      | `add_contact_groups`                           | Adds the contact to one or more collections.                                                                            |
-| **Remove from Collection** | `remove_contact_groups`                        | Removes from collections.                                                                                               |
-| **Add Labels**             | `add_input_labels`                             | Tags the incoming message with flow labels.                                                                             |
-| **Update WhatsApp Group**  | `set_wa_group_field`                           | Sets a WhatsApp-group field. Only visible when the **WhatsApp Groups** feature is enabled for the org.                   |
-| **Manage profile**         | `set_contact_profile`                          | Switch / create / deactivate profile. Only visible when the **Contact Profiles** feature is enabled for the org.         |
+| Node UI label | Internal type | What it does |
+| --- | --- | --- |
+| **Update Contact** | `set_contact_field` / `set_contact_language` | Updates a contact field or the contact's language. The property dropdown in Glific offers **Language** and **Channel** plus every contact field — Name and Status are removed from the list. |
+| **Add to Collection** | `add_contact_groups` | Adds the contact to one or more collections. |
+| **Remove from Collection** | `remove_contact_groups` | Removes from collections. |
+| **Add Labels** | `add_input_labels` | Tags the incoming message with flow labels. |
+| **Update WhatsApp Group** | `set_wa_group_field` | Sets a WhatsApp-group field. Only visible when the **WhatsApp Groups** feature is enabled for the org. |
+| **Manage profile** | `set_contact_profile` | Switch / create / deactivate profile. Only visible when the **Contact Profiles** feature is enabled for the org. |
 
 > The flow engine handles `set_contact_field`, `set_contact_language`, `set_contact_name` (legacy flows) and `set_contact_profile`. There is no handler for `set_contact_channel` or `set_contact_status`, so don't build on the Channel option — a flow that uses it fails at runtime with "Unsupported action type".
 
 **C. Flow-control actions / routers**
 
-| Node UI label           | Internal type       | What it does                                                                                                                                                                          |
-| ----------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enter a Flow**        | `enter_flow`        | Calls another flow as a sub-flow; resumes when it completes. Exits: Completed / Expired.                                                                                              |
-| **Start Somebody Else** | `start_session`     | Starts a different contact or collection in a flow (fire-and-forget). Lets you select recipients manually, by collection, or create a new contact.                                    |
-| **Call Webhook**        | `call_webhook`      | HTTP call. Method is **GET**, **POST**, or **FUNCTION** (a Glific built-in webhook) — PUT/DELETE/PATCH are disabled. Configure URL, Headers, POST body, result name. Exits: Success / Failure. |
-| **Link Google sheet**   | `link_google_sheet` | Reads from / writes to a configured Google Sheet. Configure sheet, row lookup, result name.                                                                                          |
-| **Open Ticket**         | `open_ticket`       | Creates a support ticket and routes on Success / Failure. Used with the Ticketing feature.                                                                                           |
-| **Split by Intent**     | `split_by_intent` (`call_classifier`) | Runs the Dialogflow classifier; one exit per intent + fallback. **Only appears when the Dialogflow service is enabled** for the org.                           |
+| Node UI label | Internal type | What it does |
+| --- | --- | --- |
+| **Enter a Flow** | `enter_flow` | Calls another flow as a sub-flow; resumes when it completes. Exits: Completed / Expired. |
+| **Start Somebody Else** | `start_session` | Starts a different contact or collection in a flow (fire-and-forget). Lets you select recipients manually, by collection, or create a new contact. |
+| **Call Webhook** | `call_webhook` | HTTP call. Method is **GET**, **POST**, or **FUNCTION** (a Glific built-in webhook) — PUT/DELETE/PATCH are disabled. Configure URL, Headers, POST body, result name. Exits: Success / Failure. |
+| **Link Google sheet** | `link_google_sheet` | Reads from / writes to a configured Google Sheet. Configure sheet, row lookup, result name. |
+| **Open Ticket** | `open_ticket` | Creates a support ticket and routes on Success / Failure. Used with the Ticketing feature. |
+| **Split by Intent** | `split_by_intent` (`call_classifier`) | Runs the Dialogflow classifier; one exit per intent + fallback. **Only appears when the Dialogflow service is enabled** for the org. |
 
 **AI / LLM steps are built with Call Webhook, not with a dedicated AI node.** Glific ships a set of built-in **FUNCTION** webhooks — set the webhook Method to `FUNCTION` and put the function name in the URL field (`parse_via_chat_gpt`, `parse_via_gpt_vision`, `filesearch-gpt`, `speech_to_text`, `text_to_speech`, `call_and_wait`, `geolocation`, `create_certificate`, and others). The result lands in `@results.<result_name>` and you branch on it with **Split by Flow Result** / **Wait for result**. The full list and request bodies are in the Built-in Webhooks Reference (section 20 of the chatbot knowledge base).
 
 **D. Wait / input routers**
 
-| Node UI label         | Internal type       | What it does                                                                                                                                                     |
-| --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Wait for Response** | `wait_for_response` | Waits for the next contact message. Define **Categories** (named outcomes) and **Cases** (operators, see below). Optional timeout with its own exit.             |
-| **Wait for Time**     | `wait_for_time`     | Pauses the flow for a delay (blank/0 falls back to a short built-in wait); the contact is woken by the background worker.                                        |
-| **Wait for result**   | `wait_for_result`   | Parks the flow until an external system calls Glific's Resume Flow API. Set the wait; a wait of 24 hours or more makes the next message need to be an HSM, and publishing warns you about it.                              |
+| Node UI label | Internal type | What it does |
+| --- | --- | --- |
+| **Wait for Response** | `wait_for_response` | Waits for the next contact message. Define **Categories** (named outcomes) and **Cases** (operators, see below). Optional timeout with its own exit. |
+| **Wait for Time** | `wait_for_time` | Pauses the flow for a delay (blank/0 falls back to a short built-in wait); the contact is woken by the background worker. |
+| **Wait for result** | `wait_for_result` | Parks the flow until an external system calls Glific's Resume Flow API. Set the wait; a wait of 24 hours or more makes the next message need to be an HSM, and publishing warns you about it. |
 
 **Operators available in Cases** (many RapidPro operators are switched off in Glific): `has_any_word`, `has_all_words`, `has_phrase`, `has_only_phrase`, `has_beginning`, `has_multiple`, `has_number`, `has_number_eq`, `has_number_between`, `has_phone`, `has_email`, `has_pattern` (regex), `has_media`, `has_image`, `has_audio`, `has_video`, `has_file`, `has_location`, plus `has_intent` / `has_top_intent` when a classifier is configured. Date/time comparisons (`has_date*`, `has_time`), numeric `<`/`>` comparisons, `has_text`, `has_value`, `has_error`, `has_group`, `has_category` and location operators (`has_state`, `has_district`, `has_ward`) are excluded from the editor.
 
 **E. Split / routing routers**
 
-| Node UI label                      | Internal type            | What it does                                             |
-| ---------------------------------- | ------------------------ | -------------------------------------------------------- |
-| **Split by Expression**            | `split_by_expression`    | Evaluates an expression (e.g. `@contact.fields.age`) and routes it through the same operator-based cases as Wait for Response. |
-| **Split by Contact Field**         | `split_by_contact_field` | Routes on a contact field.                               |
-| **Split by Flow Result**           | `split_by_run_result`    | Routes on a previously saved flow result.                |
-| **Split Randomly**                 | `split_by_random`        | A/B split across N buckets.                              |
-| **Split by collection Membership** | `split_by_groups`        | In-collection vs not-in-collection.                      |
+| Node UI label | Internal type | What it does |
+| --- | --- | --- |
+| **Split by Expression** | `split_by_expression` | Evaluates an expression (e.g. `@contact.fields.age`) and routes it through the same operator-based cases as Wait for Response. |
+| **Split by Contact Field** | `split_by_contact_field` | Routes on a contact field. |
+| **Split by Flow Result** | `split_by_run_result` | Routes on a previously saved flow result. |
+| **Split Randomly** | `split_by_random` | A/B split across N buckets. |
+| **Split by collection Membership** | `split_by_groups` | In-collection vs not-in-collection. |
 
 Webhook, sub-flow, ticket and flow-result nodes also serialize as combined action+router variants (`split_by_webhook`, `split_by_subflow`, `split_by_ticket`, `split_by_run_result_delimited`) — the same node, just how the JSON names it.
 
@@ -293,9 +315,9 @@ source: https://glific.github.io/docs/docs/Product%20Features/HSM%20Templates/
 - **Variables (Template Variables)** — for each `{{n}}` in the body, define an example value (used for approval and preview). Error: _"Variable is required" / "Text cannot be empty"_.
 - **Footer** — ≤60 chars (optional).
 - **Add buttons** — checkbox; opens button section with type radio (**Call to Action** / **Quick Reply** / **WhatsApp Form**).
-  - Call to Action: pick **Phone Number** or **URL**, set Title and Value; URL Type Static/Dynamic; max 2 buttons.
-  - Quick Reply: text-only buttons (Value).
-  - WhatsApp Form: pick a published form, button title, and screen.
+ - Call to Action: pick **Phone Number** or **URL**, set Title and Value; URL Type Static/Dynamic; max 2 buttons.
+ - Quick Reply: text-only buttons (Value).
+ - WhatsApp Form: pick a published form, button title, and screen.
 - **Category** \* — **Utility** or **Marketing**. (WhatsApp's Authentication category is not offered by Glific.)
 - **Attachment Type** — TEXT (default), IMAGE, VIDEO, DOCUMENT; "UPLOAD ATTACHMENT" appears if Google Cloud Storage is configured.
 - **Attachment URL** — required when type is set; validated on blur.
@@ -359,13 +381,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Collections
 ---
 
 --- entry
-heading: Glific Platform Guide › Screens › Contacts & Contact Management
-source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
----
-
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
-
---- entry
 heading: Glific Platform Guide › Screens › Contacts & Contact Management › Screen: Contact Management (bulk import)
 source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20Profile%20%26%20History/
 ---
@@ -420,8 +435,8 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Contact%20P
 - **URL:** `/contact-fields`
 - **Purpose:** Define custom fields beyond Name/Phone/Language.
 - **Fields:**
-  - **Name** \* — display label.
-  - **Shortcode** \* — lowercase letters and underscores only (`^[a-z_]+$`, error _"Only lowercase alphabets and underscore is allowed."_); referenced in flows as `@contact.fields.<shortcode>`.
+ - **Name** \* — display label.
+ - **Shortcode** \* — lowercase letters and underscores only (`^[a-z_]+$`, error _"Only lowercase alphabets and underscore is allowed."_); referenced in flows as `@contact.fields.<shortcode>`.
 
 ---
 
@@ -447,7 +462,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Searches/
 
 - **URL:** `/search`, `/search/add`, `/search/:id/edit`
 - **Purpose:** Save complex chat filters as named pills usable in the chat saved-search toolbar.
-- **Fields:** **Title** _ (≤20 chars) · **Description** _ · **Enter name, label, keyword** (free text term) · **Includes Labels** · **Includes Collections** · **Includes Staff** · **Date Range** (toggle **Use Expression** for dynamic Timex expressions like `<%= Timex.shift(Timex.today(), days: -2) %>`).
+- **Fields:** **Title** _ (≤20 chars) · **Description** _ · **Enter name, label, keyword** (free text term) · **Includes Labels** · **Includes Collections** · **Includes Staff** · **Date Range** (toggle **Use Expression** for dynamic Timex expressions like `<%= Timex.shift(Timex.today, days: -2) %>`).
 
 ---
 
@@ -496,13 +511,6 @@ source: https://glific.github.io/docs/docs/Product%20Features/WhatsApp%20Forms/
 ---
 
 --- entry
-heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications
-source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
----
-
-📖 Source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
-
---- entry
 heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Webhook Logs
 source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 ---
@@ -522,14 +530,14 @@ source: https://glific.github.io/docs/docs/Product%20Features/Notifications/
 - **Severity filter (radio):** All / Critical / Warning / Info.
 - **Auto-mark-as-read:** items load as unread, then marked read 1 second later.
 - **Check action** navigates to the relevant entity:
-  - Message → `/chat/{id}`
-  - Flow → `/flow/configure/{flow_uuid}`
-  - Templates → `/template/{id}/edit`
-  - Partner → `/settings/{shortcode}`
-  - Ticket → `/tickets`
-  - WA Group → `/group/chat/{id}`
-  - Contact Upload → downloads CSV status report
-  - Custom Certificates → `/certificate/{template_id}/edit`
+ - Message → `/chat/{id}`
+ - Flow → `/flow/configure/{flow_uuid}`
+ - Templates → `/template/{id}/edit`
+ - Partner → `/settings/{shortcode}`
+ - Ticket → `/tickets`
+ - WA Group → `/group/chat/{id}`
+ - Contact Upload → downloads CSV status report
+ - Custom Certificates → `/certificate/{template_id}/edit`
 
 --- entry
 heading: Glific Platform Guide › Screens › Triggers, Tickets, Webhook Logs, Notifications › Support Tickets
@@ -558,7 +566,7 @@ source: https://glific.github.io/docs/docs/Integrations/Creating%20and%20modifyi
 - **Model** \* — the dropdown is served by the backend model catalogue, not hard-coded in the UI, so the exact list changes over time. Models are grouped as **recommended** (currently `gpt-5.6-luna` "Best value", `gpt-5-nano` "Fastest", `gpt-5-mini` "Budget", `gpt-5.6-terra` and `gpt-5.4` "All-rounder") and **deprecating** (`gpt-4o`, `gpt-4o-mini`). An assistant created without an explicit model still gets `gpt-4o`.
 - **Instructions/Prompt** _ — _"Set the instructions according to your requirements."\* Expandable textarea.
 - **Temperature** — slider 0.0–2.0 (default 0.1). Helper: _"Controls randomness: Lowering results in less random completions…"_.
-- **Knowledge Base Files** — drag-and-drop. Accepts `.csv .doc .docx .html .htm .md .markdown .pdf .txt`. Max 20 MB per file, up to 10 concurrent uploads, automatic retry up to 5 times. Status pills: uploading / queued / failed / attached. Toast _"$oversizedFileNames were/was above 20MB"_ if too large.
+- **Knowledge Base Files** — drag-and-drop. Accepts `.csv.doc.docx.html.htm.md.markdown.pdf.txt`. Max 20 MB per file, up to 10 concurrent uploads, automatic retry up to 5 times. Status pills: uploading / queued / failed / attached. Toast _"$oversizedFileNames were/was above 20MB"_ if too large.
 - **Version Description / Notes** — free text per-version.
 
 **Actions:** **Save** · **Clone** (warning _"Cloned assistants may behave differently from the original…"_) · **Delete** (confirmation) · version selector (with **Set as live**).
@@ -577,10 +585,10 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Flow%20Actio
 - **URL:** `/sheet-integration`, `/sheet-integration/add`, `/sheet-integration/:uuid/edit`
 - **Purpose:** Connect a sheet for the **Link Google sheet** flow node to read or write rows.
 - **Fields:**
-  - **Allowed Operations** — _"What operations are allowed to be performed in the sheet?"_ — Read / Write / Read & Write (default Read).
-  - **Sheet Name** \*.
-  - **URL** \* — link to the Google Sheet (with **View Sample**).
-  - **Auto Sync** — _"Data will be synced from the sheet on a daily basis"_.
+ - **Allowed Operations** — _"What operations are allowed to be performed in the sheet?"_ — Read / Write / Read & Write (default Read).
+ - **Sheet Name** \*.
+ - **URL** \* — link to the Google Sheet (with **View Sample**).
+ - **Auto Sync** — _"Data will be synced from the sheet on a daily basis"_.
 - **Permissions:** the GCP service account configured in `/settings/google_sheets` must have read/write access to the sheet (share the sheet with the service account email).
 
 ---
@@ -621,11 +629,11 @@ source: https://glific.github.io/docs/docs/Product%20Features/Others/Staff%20Man
 - **URL:** `/staff-management`, `/staff-management/:id/edit`
 - **Purpose:** Manage user accounts, roles, and collection access.
 - **Fields:**
-  - **Username** \* (text).
-  - **Phone Number** — read-only (set from contact).
-  - **Roles** \* — single-select for standard orgs, multi-select for orgs with dynamic roles. Managers cannot grant Admin.
-  - **Assigned to collection(s)** — multi-select.
-  - **Can chat with contacts from assigned collection only** — checkbox (Staff role only).
+ - **Username** \* (text).
+ - **Phone Number** — read-only (set from contact).
+ - **Roles** \* — single-select for standard orgs, multi-select for orgs with dynamic roles. Managers cannot grant Admin.
+ - **Assigned to collection(s)** — multi-select.
+ - **Can chat with contacts from assigned collection only** — checkbox (Staff role only).
 - **Help dialog:** clicking "help?" opens a modal explaining each role.
 - **Self-demotion:** if an Admin removes their own Admin role, they're auto-logged-out (`/logout/user`).
 
@@ -660,15 +668,6 @@ heading: Glific Platform Guide › Screens › Consulting Hours (Glific_admin)
 - **URL:** `/consulting-hours/`
 - **Purpose:** Track support consulting time delivered by the Glific team.
 - **Fields:** **Select Organization** _ · **Participants** _ · **Select date** _ · **Enter time (in mins)** _ — must be a positive multiple of 15 · **Billable / Non-Billable** _ (radio) · **Support team** _ · **Notes** \*.
-
----
-
---- entry
-heading: Glific Platform Guide › Screens › My Account
----
-
-- **URL:** `/myaccount`
-- **Purpose:** Change your password and account preferences.
 
 ---
 
@@ -894,8 +893,8 @@ heading: Glific Platform Guide › Settings Reference › `/settings/organizatio
 - **Organization phone number** _ (≤30 chars, copy button to clipboard). If `allowBotNumberUpdate` is set, updates trigger confirmation _"Are you sure you want to update the phone number? It will not be possible to update the number later."\*
 - **WhatsApp tier** — read-only display (quality rating).
 - **Receive warning mails?** — checkbox; reveals:
-  - **Low balance threshold for warning emails** — number ≥0; alerts once a week.
-  - **Critical balance threshold for warning emails** — number ≥0; alerts every two days.
+ - **Low balance threshold for warning emails** — number ≥0; alerts once a week.
+ - **Critical balance threshold for warning emails** — number ≥0; alerts every two days.
 
 --- entry
 heading: Glific Platform Guide › Settings Reference › `/settings/organization-flows` — Flows config
@@ -942,12 +941,6 @@ Tiles you can actually expect:
 Each provider page has an **Active?** toggle (required fields enforced when active) and per-field labels read from the backend schema.
 
 ---
-
---- entry
-heading: Glific Platform Guide › Error Messages
----
-
-Format: **"Exact text"** — Cause → Fix.
 
 --- entry
 heading: Glific Platform Guide › Error Messages › Chat & messaging
@@ -1086,47 +1079,47 @@ heading: Glific Platform Guide › Keyboard Shortcuts & Tips
 heading: Glific Platform Guide › Cheat sheet — URLs
 ---
 
-| Path                                                                                                  | Screen                                                                                                         |
-| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `/chat`, `/chat/:contactId`                                                                           | Chat with contact                                                                                              |
-| `/chat/collection`, `/chat/collection/:id`                                                            | Chat with collection                                                                                           |
-| `/chat/saved-searches`, `/chat/saved-searches/:contactId`                                             | Saved-search results                                                                                           |
-| `/group/chat`, `/group/chat/:id`                                                                      | WhatsApp group chat                                                                                            |
-| `/group/chat/collection`                                                                              | Group collections chat                                                                                         |
-| `/group/collection`, `/group/collection/add`, `/group/collection/:id/edit`                            | Group collections admin                                                                                        |
-| `/group/polls`, `/group/polls/add`, `/group/polls/:id/edit`                                           | WA group polls                                                                                                 |
-| `/group-details/:id/*`                                                                                | WA group details                                                                                               |
-| `/flow`, `/flow/add`, `/flow/:id/edit`, `/flow/:id/view`                                              | Flows                                                                                                          |
-| `/flow/configure/:uuid`                                                                               | Flow editor                                                                                                    |
-| `/sheet-integration`, `/sheet-integration/add`, `/sheet-integration/:id/edit`                         | Google Sheets                                                                                                  |
-| `/webhook-logs`                                                                                       | Webhook logs                                                                                                   |
-| `/contact-fields/`                                                                                    | Contact variables (custom fields)                                                                              |
-| `/ticket`                                                                                             | Support tickets                                                                                                |
-| `/certificates`, `/certificate/add`, `/certificate/:id/edit`                                          | Certificates                                                                                                   |
-| `/interactive-message`, `/interactive-message/add`, `/interactive-message/:id/edit`                   | Interactive messages                                                                                           |
-| `/template`, `/template/add`, `/template/:id/edit`                                                    | HSM templates                                                                                                  |
-| `/whatsapp-forms`, `/whatsapp-forms/add`, `/whatsapp-forms/:id/edit`, `/whatsapp-forms/:id/configure` | WhatsApp forms                                                                                                 |
-| `/trigger`, `/trigger/add`, `/trigger/:id/edit`                                                       | Triggers                                                                                                       |
-| `/search`, `/search/add`, `/search/:id/edit`                                                          | Saved searches                                                                                                 |
-| `/speed-send`, `/speed-send/add`, `/speed-send/:id/edit`                                              | Speed sends                                                                                                    |
-| `/tag`, `/tag/add`, `/tag/:id/edit`                                                                   | Tags                                                                                                           |
-| `/notifications`                                                                                      | Notifications                                                                                                  |
-| `/assistants`, `/assistants/add`, `/assistants/:assistantId`                                          | AI assistants                                                                                                  |
-| `/collection`, `/collection/add`, `/collection/:id/edit`                                              | Collections                                                                                                    |
-| `/collection/:id/contacts`, `/collection/:id/groups`                                                  | Collection membership                                                                                          |
-| `/staff-management`, `/staff-management/:id/edit`                                                     | Staff                                                                                                          |
-| `/contact-management`                                                                                 | Bulk contacts admin                                                                                            |
-| `/contact-profile/:id/*`                                                                              | Contact profile                                                                                                |
-| `/blocked-contacts`                                                                                   | Blocked contacts                                                                                               |
-| `/role`, `/role/add`, `/role/:id/edit`                                                                | Roles                                                                                                          |
-| `/organizations`                                                                                      | Organizations (Glific_admin)                                                                                   |
-| `/consulting-hours/`                                                                                  | Consulting (Glific_admin)                                                                                      |
-| `/settings`                                                                                           | Settings landing                                                                                               |
-| `/settings/organization`                                                                              | Organization settings                                                                                          |
-| `/settings/organization-flows`                                                                        | Org flow defaults                                                                                              |
-| `/settings/billing`                                                                                   | Billing                                                                                                        |
-| `/settings/{provider}`                                                                                | Provider config (gupshup, google_sheets, bigquery, google_cloud_storage, google_slides, maytapi, exotel)      |
-| `/myaccount`                                                                                          | My account                                                                                                     |
-| `/ai-evaluations`, `/ai-evaluations/create`, `/ai-evaluations/intro`                                  | AI evaluations                                                                                                 |
-| `/analytics`                                                                                          | Data Analytics                                                                                                 |
-| `/group/phones`                                                                                       | WhatsApp phones (WA Groups)                                                                                    |
+| Path | Screen |
+| --- | --- |
+| `/chat`, `/chat/:contactId` | Chat with contact |
+| `/chat/collection`, `/chat/collection/:id` | Chat with collection |
+| `/chat/saved-searches`, `/chat/saved-searches/:contactId` | Saved-search results |
+| `/group/chat`, `/group/chat/:id` | WhatsApp group chat |
+| `/group/chat/collection` | Group collections chat |
+| `/group/collection`, `/group/collection/add`, `/group/collection/:id/edit` | Group collections admin |
+| `/group/polls`, `/group/polls/add`, `/group/polls/:id/edit` | WA group polls |
+| `/group-details/:id/*` | WA group details |
+| `/flow`, `/flow/add`, `/flow/:id/edit`, `/flow/:id/view` | Flows |
+| `/flow/configure/:uuid` | Flow editor |
+| `/sheet-integration`, `/sheet-integration/add`, `/sheet-integration/:id/edit` | Google Sheets |
+| `/webhook-logs` | Webhook logs |
+| `/contact-fields/` | Contact variables (custom fields) |
+| `/ticket` | Support tickets |
+| `/certificates`, `/certificate/add`, `/certificate/:id/edit` | Certificates |
+| `/interactive-message`, `/interactive-message/add`, `/interactive-message/:id/edit` | Interactive messages |
+| `/template`, `/template/add`, `/template/:id/edit` | HSM templates |
+| `/whatsapp-forms`, `/whatsapp-forms/add`, `/whatsapp-forms/:id/edit`, `/whatsapp-forms/:id/configure` | WhatsApp forms |
+| `/trigger`, `/trigger/add`, `/trigger/:id/edit` | Triggers |
+| `/search`, `/search/add`, `/search/:id/edit` | Saved searches |
+| `/speed-send`, `/speed-send/add`, `/speed-send/:id/edit` | Speed sends |
+| `/tag`, `/tag/add`, `/tag/:id/edit` | Tags |
+| `/notifications` | Notifications |
+| `/assistants`, `/assistants/add`, `/assistants/:assistantId` | AI assistants |
+| `/collection`, `/collection/add`, `/collection/:id/edit` | Collections |
+| `/collection/:id/contacts`, `/collection/:id/groups` | Collection membership |
+| `/staff-management`, `/staff-management/:id/edit` | Staff |
+| `/contact-management` | Bulk contacts admin |
+| `/contact-profile/:id/*` | Contact profile |
+| `/blocked-contacts` | Blocked contacts |
+| `/role`, `/role/add`, `/role/:id/edit` | Roles |
+| `/organizations` | Organizations (Glific_admin) |
+| `/consulting-hours/` | Consulting (Glific_admin) |
+| `/settings` | Settings landing |
+| `/settings/organization` | Organization settings |
+| `/settings/organization-flows` | Org flow defaults |
+| `/settings/billing` | Billing |
+| `/settings/{provider}` | Provider config (gupshup, google_sheets, bigquery, google_cloud_storage, google_slides, maytapi, exotel) |
+| `/myaccount` | My account |
+| `/ai-evaluations`, `/ai-evaluations/create`, `/ai-evaluations/intro` | AI evaluations |
+| `/analytics` | Data Analytics |
+| `/group/phones` | WhatsApp phones (WA Groups) |
