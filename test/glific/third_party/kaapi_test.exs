@@ -698,6 +698,35 @@ defmodule Glific.ThirdParty.KaapiTest do
       assert {:ok, %{success: true, data: %{id: "asst_5", version: %{version: 1}}}} =
                Kaapi.create_assistant_config(params, 1)
     end
+
+    test "adds inline guardrails to the config blob" do
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded_body = Jason.decode!(body)
+
+        assert decoded_body["config_blob"]["input_guardrails"] == [
+                 %{"type" => "pii_remover"}
+               ]
+
+        assert decoded_body["config_blob"]["output_guardrails"] == []
+
+        %Tesla.Env{
+          status: 200,
+          body: %{success: true, data: %{id: "asst_1", version: %{version: 1}}, metadata: %{}}
+        }
+      end)
+
+      params = %{
+        name: "Guarded Assistant",
+        model: "gpt-4.1",
+        prompt: "You are a helpful assistant",
+        knowledge_base_ids: [],
+        settings: %{"temperature" => 1},
+        input_guardrails: [%{"type" => "pii_remover"}],
+        output_guardrails: []
+      }
+
+      assert {:ok, %{success: true}} = Kaapi.create_assistant_config(params, 1)
+    end
   end
 
   describe "normalize_kaapi_body/1" do
