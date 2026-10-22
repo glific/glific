@@ -10,10 +10,10 @@ Each organization has one JWT signature secret, shown on the **Web Channel** set
 creates it when the web channel is enabled, and keeps it if the channel is switched off. Set your
 backend to sign with it.
 
-Replacing the secret signs every user of the organization out at once: tokens signed with the old
-one are refused immediately, with no grace period. Change it only when you can update your backend
-at the same time. A secret must be at least 32 characters long; Glific ignores a shorter one, so
-tokens signed with it are refused, as is every token while the organization has no secret.
+Replacing the secret signs every user of the organization out: tokens signed with the old one stop
+being accepted, with no grace period (allow up to a day for every Glific server to switch over).
+Change it only when you can update your backend at the same time. A secret must be at least 32
+characters long, and it can be replaced but not removed.
 
 The organization is taken from the host the request or socket connects to (`api.<your glific host>`),
 never from the token. This holds for every token, including the one Glific issues after a phone and
