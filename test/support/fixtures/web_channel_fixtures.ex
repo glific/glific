@@ -3,7 +3,7 @@ defmodule Glific.WebChannelFixtures do
   Test helpers for an authenticated web channel socket, so a channel test doesn't have to
   repeat the JWT mint/connect/join dance in every file.
 
-  Mints a real token via `GlificWeb.WebChannel.Token.sign_session/2` rather than stubbing
+  Mints a real token via `GlificWeb.WebChannel.Token.generate/2` rather than stubbing
   `verify/3` — the whole point of the socket is that it rejects bad credentials, and a stubbed
   verifier would test nothing about it.
   """
@@ -36,7 +36,7 @@ defmodule Glific.WebChannelFixtures do
   @spec web_channel_session_token(Contact.t()) :: String.t()
   def web_channel_session_token(%Contact{} = contact) do
     {:ok, _contact} = Contacts.add_identity(contact, :web, contact.phone)
-    {:ok, token} = Token.sign_session(contact.organization_id, contact.phone)
+    {:ok, token} = Token.generate(contact.organization_id, contact.phone)
     token
   end
 
@@ -75,7 +75,7 @@ defmodule Glific.WebChannelFixtures do
   @doc """
   Default valid session claims for `contact`, letting a test override just the field it cares
   about (an already-past `"exp"`, an old `"sst"`, etc.) — the sweep and expiry tests need claim
-  shapes `Token.sign_session/2` has no way to express.
+  shapes `Token.generate/2` has no way to express.
   """
   @spec web_channel_claims(Contact.t(), map()) :: map()
   def web_channel_claims(%Contact{} = contact, overrides \\ %{}) do

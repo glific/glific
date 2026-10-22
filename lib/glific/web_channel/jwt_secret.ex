@@ -57,8 +57,8 @@ defmodule Glific.WebChannel.JwtSecret do
   Why a credential cannot go from `old_secrets` to `new_secrets`: more than one secret, a secret
   shorter than the minimum, or a saved secret removed. Empty when the change is allowed.
   """
-  @spec errors(map() | nil, map() | nil) :: [String.t()]
-  def errors(old_secrets, new_secrets) do
+  @spec validate_new_secret(map() | nil, map() | nil) :: [String.t()]
+  def validate_new_secret(old_secrets, new_secrets) do
     old_entries = entries(old_secrets || %{})
     new_entries = entries(new_secrets || %{})
 

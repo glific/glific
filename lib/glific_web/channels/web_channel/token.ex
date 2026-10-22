@@ -88,10 +88,10 @@ defmodule GlificWeb.WebChannel.Token do
   end
 
   @doc """
-  Starts a Glific session for the contact's web identity `sub`, as a one hour token.
+  Generates a one hour token for the contact's web identity `sub`, renewable for 24 hours.
   """
-  @spec sign_session(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, :no_secret}
-  def sign_session(organization_id, sub) do
+  @spec generate(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, :no_secret}
+  def generate(organization_id, sub) do
     sign(organization_id, %{
       sub: sub,
       session_id: Ecto.UUID.generate(),

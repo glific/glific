@@ -66,7 +66,7 @@ defmodule Glific.Partners.Credential do
   defp validate_jwt_secret(%{data: %Credential{secrets: old_secrets}} = changeset) do
     validate_change(changeset, :secrets, fn :secrets, secrets ->
       if is_map(secrets),
-        do: Enum.map(JwtSecret.errors(old_secrets, secrets), &{:secrets, &1}),
+        do: Enum.map(JwtSecret.validate_new_secret(old_secrets, secrets), &{:secrets, &1}),
         else: []
     end)
   end

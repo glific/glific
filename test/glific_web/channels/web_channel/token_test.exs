@@ -220,9 +220,9 @@ defmodule GlificWeb.WebChannel.TokenTest do
     end
   end
 
-  describe "sign_session/2 and renew/3" do
+  describe "generate/2 and renew/3" do
     test "a session token carries sub, jti and sst", %{organization_id: organization_id} do
-      assert {:ok, token} = Token.sign_session(organization_id, "919876543210")
+      assert {:ok, token} = Token.generate(organization_id, "919876543210")
 
       assert {:ok, %{sub: "919876543210", session_id: session_id, session_started_at: started_at}} =
                Token.verify(organization_id, token)
@@ -232,8 +232,8 @@ defmodule GlificWeb.WebChannel.TokenTest do
     end
 
     test "two sessions get distinct ids", %{organization_id: organization_id} do
-      {:ok, first} = Token.sign_session(organization_id, "919876543210")
-      {:ok, second} = Token.sign_session(organization_id, "919876543210")
+      {:ok, first} = Token.generate(organization_id, "919876543210")
+      {:ok, second} = Token.generate(organization_id, "919876543210")
 
       assert {:ok, %{session_id: first_id}} = Token.verify(organization_id, first)
       assert {:ok, %{session_id: second_id}} = Token.verify(organization_id, second)

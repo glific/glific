@@ -121,7 +121,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
     with {:ok, contact} <- ensure_contact(organization_id, normalized),
          {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
-         {:ok, token} <- Token.sign_session(organization_id, contact.phone) do
+         {:ok, token} <- Token.generate(organization_id, contact.phone) do
       json(conn, %{
         data: %{
           token: token,

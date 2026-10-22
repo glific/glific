@@ -160,7 +160,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     test "refuses a token signed for another organization", %{conn: conn, phone: phone} do
       other = Fixtures.organization_fixture(%{shortcode: "otherrenew"})
       WebChannelFlagHelpers.activate_web_channel(other.id)
-      {:ok, foreign} = Token.sign_session(other.id, phone)
+      {:ok, foreign} = Token.generate(other.id, phone)
 
       with_web_channel_enabled(fn ->
         renew_conn =
@@ -206,7 +206,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
     test "refuses a token for a contact with no web identity", %{conn: conn} do
       with_web_channel_enabled(fn ->
-        {:ok, token} = Token.sign_session(1, "never_signed_in")
+        {:ok, token} = Token.generate(1, "never_signed_in")
 
         renew_conn =
           post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
