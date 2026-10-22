@@ -198,23 +198,32 @@ defmodule Glific.Messages.Message do
     |> unique_constraint([:bsp_message_id, :organization_id])
   end
 
-  # varchar(255) counts codepoints, so cut on whole graphemes while the codepoint total still fits
   @spec truncate_flow_label(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp truncate_flow_label(changeset) do
-    update_change(changeset, :flow_label, fn label ->
-      label
-      |> String.graphemes()
-      |> Enum.reduce_while({[], 0}, fn grapheme, {kept, count} ->
-        count = count + length(String.codepoints(grapheme))
+  defp truncate_flow_label(changeset),
+    do: update_change(changeset, :flow_label, &fit_flow_label/1)
 
-        if count <= @flow_label_max_length,
-          do: {:cont, {[grapheme | kept], count}},
-          else: {:halt, {kept, count}}
-      end)
-      |> elem(0)
-      |> Enum.reverse()
-      |> Enum.join()
-    end)
+  # a label within the limit in bytes is within it in codepoints, so only longer ones are walked
+  @spec fit_flow_label(String.t() | nil) :: String.t() | nil
+  defp fit_flow_label(label) when is_binary(label) and byte_size(label) > @flow_label_max_length,
+    do: binary_part(label, 0, fitting_prefix_size(label, @flow_label_max_length, 0))
+
+  defp fit_flow_label(label), do: label
+
+  # varchar(255) counts codepoints; stop at the last whole grapheme that fits, so the walk is
+  # bounded by the limit rather than by the length of the label
+  @spec fitting_prefix_size(String.t(), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  defp fitting_prefix_size(rest, budget, size) do
+    case String.next_grapheme(rest) do
+      {grapheme, rest} ->
+        cost = length(String.codepoints(grapheme))
+
+        if cost <= budget,
+          do: fitting_prefix_size(rest, budget - cost, size + byte_size(grapheme)),
+          else: size
+
+      nil ->
+        size
+    end
   end
 
   @doc """
