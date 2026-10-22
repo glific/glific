@@ -56,17 +56,17 @@ defmodule Glific.Partners.Credential do
     credential
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_single_jwt_secret()
+    |> validate_jwt_secret()
     |> unique_constraint([:provider_id, :organization_id])
     |> foreign_key_constraint(:provider_id)
     |> foreign_key_constraint(:organization_id)
   end
 
-  @spec validate_single_jwt_secret(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_single_jwt_secret(changeset) do
+  @spec validate_jwt_secret(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_jwt_secret(%{data: %Credential{secrets: old_secrets}} = changeset) do
     validate_change(changeset, :secrets, fn :secrets, secrets ->
-      if is_map(secrets) and length(JwtSecret.entries(secrets)) > 1,
-        do: [secrets: "Only one JWT signature secret is allowed"],
+      if is_map(secrets),
+        do: Enum.map(JwtSecret.errors(old_secrets, secrets), &{:secrets, &1}),
         else: []
     end)
   end

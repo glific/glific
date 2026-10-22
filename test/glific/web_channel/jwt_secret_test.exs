@@ -125,6 +125,29 @@ defmodule Glific.WebChannel.JwtSecretTest do
       assert {:ok, "first-secret-first-secret-0123456"} = JwtSecret.fetch(organization_id)
     end
 
+    test "rejects a secret shorter than 32 characters", %{organization_id: organization_id} do
+      short = %{"jwt_signature_secrets" => [%{"name" => "short", "secret" => "too-short"}]}
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               create_credential(organization_id, %{is_active: true, secrets: short})
+
+      assert "The JWT signature secret must be at least 32 characters" in errors_on(changeset).secrets
+    end
+
+    test "rejects removing a saved secret and keeps it", %{organization_id: organization_id} do
+      {:ok, active} = create_credential(organization_id, %{is_active: true})
+      {:ok, saved} = JwtSecret.fetch(organization_id)
+
+      for secrets <- [%{"jwt_signature_secrets" => []}, %{}] do
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 Partners.update_credential(active, %{secrets: secrets})
+
+        assert "The JWT signature secret can be replaced but not removed" in errors_on(changeset).secrets
+      end
+
+      assert {:ok, ^saved} = JwtSecret.fetch(organization_id)
+    end
+
     test "replacing the single secret takes effect at once", %{organization_id: organization_id} do
       {:ok, active} = create_credential(organization_id, %{is_active: true})
       {:ok, old} = JwtSecret.fetch(organization_id)
@@ -144,7 +167,13 @@ defmodule Glific.WebChannel.JwtSecretTest do
   describe "fetch/1" do
     test "ignores a secret shorter than 32 characters", %{organization_id: organization_id} do
       short = %{"jwt_signature_secrets" => [%{"name" => "short", "secret" => "tiny"}]}
-      {:ok, _credential} = create_credential(organization_id, %{is_active: true, secrets: short})
+      {:ok, active} = create_credential(organization_id, %{is_active: true})
+      {:ok, _credential} = active |> Ecto.Changeset.change(%{secrets: short}) |> Repo.update()
+
+      Partners.remove_organization_cache(
+        organization_id,
+        Partners.organization(organization_id).shortcode
+      )
 
       assert :error = JwtSecret.fetch(organization_id)
     end
@@ -157,7 +186,7 @@ defmodule Glific.WebChannel.JwtSecretTest do
   describe "ensure/1" do
     test "gives a credential with no secrets one", %{organization_id: organization_id} do
       {:ok, active} = create_credential(organization_id, %{is_active: true})
-      {:ok, bare} = active |> Credential.changeset(%{secrets: %{}}) |> Repo.update()
+      {:ok, bare} = active |> Ecto.Changeset.change(%{secrets: %{}}) |> Repo.update()
 
       assert {:ok, %Credential{secrets: %{"jwt_signature_secrets" => [_entry]}}} =
                JwtSecret.ensure(bare)
@@ -192,7 +221,7 @@ defmodule Glific.WebChannel.JwtSecretTest do
 
     test "gives an enabled organization without a secret one", %{organization_id: organization_id} do
       {:ok, active} = create_credential(organization_id, %{is_active: true})
-      {:ok, _bare} = active |> Credential.changeset(%{secrets: %{}}) |> Repo.update()
+      {:ok, _bare} = active |> Ecto.Changeset.change(%{secrets: %{}}) |> Repo.update()
 
       run_seed()
 

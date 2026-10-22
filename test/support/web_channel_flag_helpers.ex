@@ -8,7 +8,7 @@ defmodule Glific.WebChannelFlagHelpers do
   """
 
   alias FunWithFlags.Store.Cache
-  alias Glific.{Partners, Partners.Credential, Repo, WebChannel.JwtSecret}
+  alias Glific.{Partners, Repo, WebChannel.JwtSecret}
 
   @shortcode "web_channel"
 
@@ -32,6 +32,7 @@ defmodule Glific.WebChannelFlagHelpers do
   def activate_web_channel(organization_id \\ 1, keys \\ %{}, secrets \\ %{}) do
     case Partners.get_credential(%{organization_id: organization_id, shortcode: @shortcode}) do
       {:ok, credential} ->
+        secrets = Map.merge(credential.secrets || %{}, secrets)
         Partners.update_credential(credential, %{keys: keys, secrets: secrets, is_active: true})
 
       _not_yet ->
@@ -92,7 +93,8 @@ defmodule Glific.WebChannelFlagHelpers do
     {:ok, credential} =
       Partners.get_credential(%{organization_id: organization_id, shortcode: @shortcode})
 
-    {:ok, _credential} = credential |> Credential.changeset(%{secrets: %{}}) |> Repo.update()
+    # Past the changeset, which refuses to remove a saved secret.
+    {:ok, _credential} = credential |> Ecto.Changeset.change(%{secrets: %{}}) |> Repo.update()
 
     organization = Partners.organization(organization_id)
     Partners.remove_organization_cache(organization.id, organization.shortcode)

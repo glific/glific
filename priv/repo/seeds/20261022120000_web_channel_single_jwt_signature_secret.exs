@@ -50,7 +50,8 @@ defmodule Glific.Repo.Seeds.WebChannelSingleJwtSignatureSecret do
   defp settle(%Credential{secrets: secrets} = credential) do
     case JwtSecret.entries(secrets || %{}) do
       [] ->
-        if credential.is_active, do: JwtSecret.ensure(credential)
+        if credential.is_active,
+          do: credential |> JwtSecret.ensure() |> log_result(credential, "generated a secret")
 
       [_only] ->
         :ok
@@ -59,7 +60,30 @@ defmodule Glific.Repo.Seeds.WebChannelSingleJwtSignatureSecret do
         credential
         |> Credential.changeset(%{secrets: Map.put(secrets, "jwt_signature_secrets", [first])})
         |> Repo.update()
+        |> log_result(credential, "kept only the first of its secrets")
     end
+  end
+
+  @spec log_result(
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()},
+          Credential.t(),
+          String.t()
+        ) ::
+          :ok
+  defp log_result({:ok, _credential}, credential, action) do
+    Appsignal.Logger.info(
+      "web_channel_secret",
+      "Web channel credential of organization #{credential.organization_id} #{action}"
+    )
+  end
+
+  defp log_result({:error, changeset}, credential, action) do
+    Glific.log_error(
+      "Web channel credential of organization #{credential.organization_id} could not be " <>
+        "updated (#{action}): #{inspect(changeset.errors)}"
+    )
+
+    :ok
   end
 
   @spec secrets() :: map()

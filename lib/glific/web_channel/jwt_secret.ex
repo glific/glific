@@ -53,6 +53,30 @@ defmodule Glific.WebChannel.JwtSecret do
   @spec entries(map()) :: [map()]
   def entries(secrets), do: List.wrap(secrets[@secrets_key] || secrets[:jwt_signature_secrets])
 
+  @doc """
+  Why a credential cannot go from `old_secrets` to `new_secrets`: more than one secret, a secret
+  shorter than the minimum, or a saved secret removed. Empty when the change is allowed.
+  """
+  @spec errors(map() | nil, map() | nil) :: [String.t()]
+  def errors(old_secrets, new_secrets) do
+    old_entries = entries(old_secrets || %{})
+    new_entries = entries(new_secrets || %{})
+
+    cond do
+      length(new_entries) > 1 ->
+        ["Only one JWT signature secret is allowed"]
+
+      new_entries == [] and old_entries != [] ->
+        ["The JWT signature secret can be replaced but not removed"]
+
+      Enum.any?(new_entries, &(String.length(secret_of(&1) || "") < @min_length)) ->
+        ["The JWT signature secret must be at least #{@min_length} characters"]
+
+      true ->
+        []
+    end
+  end
+
   @spec generated_entry() :: map()
   defp generated_entry do
     %{
