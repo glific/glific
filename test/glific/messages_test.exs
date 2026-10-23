@@ -368,6 +368,18 @@ defmodule Glific.MessagesTest do
       assert message.flow_label == String.duplicate("e\u0301", 127)
     end
 
+    test "create_message/1 keeps a multibyte flow label that fits the column", attrs do
+      flow_label = String.duplicate("\u0915", 255)
+
+      assert {:ok, message} =
+               @valid_attrs
+               |> Map.put(:flow_label, flow_label)
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_message()
+
+      assert Repo.get!(Message, message.id).flow_label == flow_label
+    end
+
     test "update_message/2 clears a flow label set to nil", attrs do
       message =
         attrs
