@@ -22,6 +22,7 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     sent
     delivered
     read
+    statuses      # V3 (Meta format) payload with entry[].changes[].value.statuses
   message
     # payload.type
     text
@@ -49,6 +50,7 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/sent", MessageEventController, :sent)
       post("/delivered", MessageEventController, :delivered)
       post("/read", MessageEventController, :read)
+      post("/statuses", MessageEventController, :statuses)
       post("/*unknown", DefaultController, :unknown)
     end
 
