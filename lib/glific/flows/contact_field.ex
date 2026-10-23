@@ -9,6 +9,7 @@ defmodule Glific.Flows.ContactField do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Contacts.ContactsField,
     Flows.FlowContext,
     Flows.MessageVarParser,
@@ -25,7 +26,7 @@ defmodule Glific.Flows.ContactField do
   @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) ::
           FlowContext.t()
   def add_contact_field(context, field, label, value, type) do
-    contact = do_add_contact_field(context.contact, field, label, value, type)
+    contact = do_add_contact_field(context.contact, field, label, value, type, context.channel)
 
     Map.put(context, :contact, contact)
   end
@@ -44,9 +45,9 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Add contact field taking contact as parameter. We should change the name of this function for the consistency
   """
-  @spec do_add_contact_field(Contact.t(), String.t(), String.t(), any(), String.t()) ::
+  @spec do_add_contact_field(Contact.t(), String.t(), String.t(), any(), String.t(), atom()) ::
           Contact.t()
-  def do_add_contact_field(contact, field, label, value, type \\ "string") do
+  def do_add_contact_field(contact, field, label, value, type \\ "string", channel \\ :whatsapp) do
     contact_fields =
       if is_nil(contact.fields),
         do: %{},
@@ -80,6 +81,7 @@ defmodule Glific.Flows.ContactField do
 
     {:ok, _} =
       Contacts.capture_history(contact, :contact_fields_updated, %{
+        channel: channel,
         event_meta: %{
           field: %{
             data: field,
@@ -96,6 +98,118 @@ defmodule Glific.Flows.ContactField do
   end
 
   @doc """
+  Add several fields to a contact in one pass.
+  """
+  @spec add_contact_fields(FlowContext.t(), [map()]) :: FlowContext.t()
+  def add_contact_fields(context, entries) do
+    contact = do_add_contact_fields(context.contact, entries, context.channel)
+
+    Map.put(context, :contact, contact)
+  end
+
+  @doc """
+  Bulk counterpart of do_add_contact_field/6, taking a list of
+  `%{key: _, label: _, value: _}` entries.
+  """
+  @spec do_add_contact_fields(Contact.t(), [map()], atom()) :: Contact.t()
+  def do_add_contact_fields(contact, entries, channel \\ :whatsapp)
+
+  def do_add_contact_fields(contact, [], _channel), do: contact
+
+  def do_add_contact_fields(contact, entries, channel) do
+    now = DateTime.utc_now()
+    previous_fields = contact.fields || %{}
+    entries = dedupe_entries(entries)
+
+    fields = Map.merge(previous_fields, build_fields(entries, now))
+
+    {:ok, contact} = Contacts.update_contact(contact, %{fields: fields})
+
+    maybe_update_profile_field(contact, fields)
+    upsert_field_registry(entries, contact.organization_id, now)
+    insert_field_histories(entries, previous_fields, contact, channel, now)
+
+    contact
+  end
+
+  @spec dedupe_entries([map()]) :: [map()]
+  defp dedupe_entries(entries) do
+    entries
+    |> Enum.map(&Map.put(&1, :key, String.trim(&1.key)))
+    |> Enum.reverse()
+    |> Enum.uniq_by(& &1.key)
+    |> Enum.reverse()
+  end
+
+  @spec build_fields([map()], DateTime.t()) :: map()
+  defp build_fields(entries, now) do
+    Map.new(entries, fn entry ->
+      {entry.key,
+       %{
+         value: entry.value,
+         label: entry.label,
+         type: Map.get(entry, :type, "string"),
+         inserted_at: now
+       }}
+    end)
+  end
+
+  # on_conflict: :nothing covers both unique indexes on contacts_fields, so an
+  # existing definition is left alone rather than being relabelled - a label change
+  # here would rewrite that field's label on every contact in the org.
+  @spec upsert_field_registry([map()], non_neg_integer(), DateTime.t()) :: :ok
+  defp upsert_field_registry(entries, organization_id, now) do
+    now = DateTime.truncate(now, :second)
+
+    rows =
+      Enum.map(
+        entries,
+        &%{
+          name: &1.label,
+          shortcode: Glific.string_snake_case(&1.key),
+          value_type: :text,
+          scope: :contact,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      )
+
+    Repo.insert_all(ContactsField, rows, on_conflict: :nothing)
+    :ok
+  end
+
+  @spec insert_field_histories([map()], map(), Contact.t(), atom(), DateTime.t()) :: :ok
+  defp insert_field_histories(entries, previous_fields, contact, channel, now) do
+    rows =
+      Enum.map(
+        entries,
+        &%{
+          contact_id: contact.id,
+          organization_id: contact.organization_id,
+          event_type: "contact_fields_updated",
+          event_label: "Value for #{&1.label} is updated to #{&1.value}",
+          event_datetime: DateTime.truncate(now, :second),
+          channel: channel,
+          event_meta: %{
+            field: %{
+              data: &1.key,
+              label: &1.label,
+              value: &1.value,
+              old_value: Map.get(previous_fields, &1.key),
+              new_value: &1.value
+            }
+          },
+          inserted_at: now,
+          updated_at: now
+        }
+      )
+
+    Repo.insert_all(ContactHistory, rows)
+    :ok
+  end
+
+  @doc """
   Reset the fields for a contact.
   """
   @spec reset_contact_fields(FlowContext.t()) :: FlowContext.t()
@@ -108,6 +222,7 @@ defmodule Glific.Flows.ContactField do
 
     {:ok, _} =
       Contacts.capture_history(contact, :contact_fields_reset, %{
+        channel: context.channel,
         event_label: "All contact fields are reset"
       })
 

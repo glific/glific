@@ -19,6 +19,8 @@ defmodule Glific.Groups.ContactWAGroups do
   import Ecto.Query
   @primary_key false
 
+  @add_member_interval_ms 2000
+
   @type t() :: %__MODULE__{
           wa_group_contacts: [ContactWAGroup.t()],
           number_deleted: non_neg_integer
@@ -145,16 +147,15 @@ defmodule Glific.Groups.ContactWAGroups do
 
     Enum.reduce(contact_ids, 0, fn contact_id, numbers_deleted ->
       contact = Contacts.get_contact!(contact_id)
-      payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
 
-      case ApiClient.remove_group_member(org_id, payload, wa_group.primary_phone.phone_id) do
-        :ok ->
-          fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
-          {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)
-          numbers_deleted + number_deleted
-
-        {:error, _} ->
-          numbers_deleted
+      with {:ok, phone} <- Contacts.whatsapp_phone(contact),
+           payload = %{conversation_id: wa_group.bsp_id, number: phone},
+           :ok <- ApiClient.remove_group_member(org_id, payload, wa_group.primary_phone.phone_id) do
+        fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
+        {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)
+        numbers_deleted + number_deleted
+      else
+        {:error, _} -> numbers_deleted
       end
     end)
   end
@@ -235,7 +236,12 @@ defmodule Glific.Groups.ContactWAGroups do
           {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
   defp do_add_members(org_id, wa_group, acting_phone_id, phones) do
     result =
-      Enum.reduce(phones, %{added: 0, failed: %{}}, fn phone, acc ->
+      phones
+      |> Enum.with_index()
+      |> Enum.reduce(%{added: 0, failed: %{}}, fn {phone, index}, acc ->
+        # Maytapi rate-limits back-to-back group/add calls
+        if index > 0, do: Process.sleep(@add_member_interval_ms)
+
         case add_member(org_id, wa_group, acting_phone_id, phone) do
           :ok -> %{acc | added: acc.added + 1}
           {:error, message} -> %{acc | failed: Map.put(acc.failed, phone, message)}
@@ -290,16 +296,16 @@ defmodule Glific.Groups.ContactWAGroups do
           {:ok, non_neg_integer()} | {:error, String.t()}
   defp do_remove_member(org_id, wa_group, acting_phone_id, contact_id) do
     contact = Contacts.get_contact!(contact_id)
+
     # /group/remove takes a single plain phone number (a string, not an array).
-    payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
-
-    case ApiClient.remove_group_member(org_id, payload, acting_phone_id) do
-      :ok ->
-        delete_wa_group_contacts_by_ids(wa_group.id, [contact_id])
-        {:ok, 1}
-
-      {:error, message} ->
-        {:error, message}
+    with {:ok, phone} <- Contacts.whatsapp_phone(contact),
+         payload = %{conversation_id: wa_group.bsp_id, number: phone},
+         :ok <- ApiClient.remove_group_member(org_id, payload, acting_phone_id) do
+      delete_wa_group_contacts_by_ids(wa_group.id, [contact_id])
+      {:ok, 1}
+    else
+      {:error, :no_phone} -> {:error, "Contact has no WhatsApp number."}
+      {:error, message} -> {:error, message}
     end
   end
 end

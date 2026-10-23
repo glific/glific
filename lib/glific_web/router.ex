@@ -52,6 +52,19 @@ defmodule GlificWeb.Router do
     plug(GlificWeb.ContextPlug)
   end
 
+  pipeline :web_channel_api do
+    plug(:accepts, ["json"])
+    plug(GlificWeb.Plugs.WebChannelAuth)
+  end
+
+  # Same as :api but on the web channel's own, more generous budget: these are called by
+  # beneficiaries' browsers, where a school or office puts many unrelated people on one address.
+  pipeline :web_channel_public do
+    plug(:accepts, ["json"])
+    plug(GlificWeb.APIAuthPlug, otp_app: :glific)
+    plug(GlificWeb.RateLimitPlug, :web_channel)
+  end
+
   # Glific Default Route
   scope "/", GlificWeb do
     pipe_through(:browser)
@@ -74,8 +87,11 @@ defmodule GlificWeb.Router do
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
+  end
 
-    # Web channel
+  scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
+    pipe_through([:web_channel_public])
+
     get("/web_channel/branding", WebChannelController, :branding)
     post("/web_channel/request-otp", WebChannelAuthController, :request_otp)
     post("/web_channel/verify-otp", WebChannelAuthController, :verify_otp)
@@ -87,6 +103,12 @@ defmodule GlificWeb.Router do
 
     post("/get-embed-token", SupersetController, :embed_token)
     post("/simulator/message", SimulatorController, :message)
+  end
+
+  scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
+    pipe_through([:web_channel_api])
+
+    post("/web_channel/upload-url", WebChannelMediaController, :upload_url)
   end
 
   # Enables LiveDashboard only for development

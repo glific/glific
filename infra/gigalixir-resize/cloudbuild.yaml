@@ -1,0 +1,33 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      [
+        "build",
+        "-t",
+        "${_IMAGE}:${SHORT_SHA}",
+        "-t",
+        "${_IMAGE}:latest",
+        "infra/gigalixir-resize",
+      ]
+
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "--all-tags", "${_IMAGE}"]
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        for job in ${_JOBS}; do
+          gcloud run jobs update "$$job" --region "${_REGION}" --image "${_IMAGE}:${SHORT_SHA}"
+        done
+
+substitutions:
+  _REGION: asia-south1
+  _IMAGE: asia-south1-docker.pkg.dev/${PROJECT_ID}/glific-infra/gigalixir-resize
+  _JOBS: gigalixir-size-up gigalixir-size-down
+
+options:
+  dynamicSubstitutions: true
+  logging: CLOUD_LOGGING_ONLY

@@ -13,8 +13,8 @@ config :glific,
 
 # Configures Elixir's Logger
 config :logger, :default_formatter,
-  format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id, :user_id, :org_id, :params]
+  format: "$time [$level] $metadata$message\n",
+  metadata: [:request_id, :remote_ip, :user_id, :org_id, :params]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
@@ -118,6 +118,8 @@ oban_crontab = [
   # 21:00 Sat UTC is  02:30 SAT IST, running the msg purging a day before other DB purges
   # to test this in isolation
   {"0 21 * * FRI", Glific.Jobs.MinuteWorker, args: %{job: :weekly_message_purge}},
+  # 21:30 Fri UTC is 03:00 Sat IST, a day ahead of the versions VACUUM in :weekly_tasks
+  {"30 21 * * FRI", Glific.Jobs.MinuteWorker, args: %{job: :weekly_version_purge}},
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}},
   # We are sending report of previous week(MON to SUN)
@@ -155,8 +157,6 @@ config :tesla,
      ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}],
      pool: :glific_default_pool,
      connect_timeout: 5_000}
-
-config :glific, :max_rate_limit_request, 60
 
 config :glific, :pow,
   user: Glific.Users.User,
@@ -242,18 +242,6 @@ config :ex_audit,
     DateTime
   ]
 
-# Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
-config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
-
-# Throttle web channel OTP requests separately from staff registration (default 1 / 30s), so the
-# two flows never share a rate-limit budget.
-config :glific, :web_channel_otp_rate_limit, scale_ms: 30_000, count: 1
-
-# The per-IP companion to the above. Deliberately loose: one carrier-grade NAT address can front
-# a whole district of beneficiaries, so this bounds enumeration from a single host rather than
-# throttling an individual.
-config :glific, :web_channel_otp_ip_rate_limit, scale_ms: 60_000, count: 20
-
 config :mime, :types, %{
   "audio/amr" => ["amr"],
   "audio/mp4" => ["m4a"],
@@ -277,6 +265,12 @@ config :glific, Glific.AI.Agent,
   max_run_steps: 12,
   max_run_cost_usd: "0.50",
   max_run_duration_ms: 120_000
+
+# The documentation search. These must match what `mix glific.docs.index` last
+# wrote, or the stored vectors rank at random.
+config :glific, Glific.Docs,
+  embedding_model: "openai:text-embedding-3-small",
+  embedding_dimensions: 256
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

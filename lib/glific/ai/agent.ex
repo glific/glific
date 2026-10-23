@@ -21,6 +21,7 @@ defmodule Glific.AI.Agent do
     AI.ChatMessage,
     AI.Event,
     AI.Instrumentation,
+    AI.Langfuse,
     AI.Message,
     AI.Provider,
     AI.Router,
@@ -44,6 +45,7 @@ defmodule Glific.AI.Agent do
   """
   @type run() :: %{
           usage: Provider.usage(),
+          last_call: Provider.usage(),
           step: pos_integer(),
           steps: non_neg_integer(),
           answer_event_id: non_neg_integer() | nil
@@ -191,7 +193,11 @@ defmodule Glific.AI.Agent do
           map()
         ) :: outcome()
   defp handle_reply(message, _user, _messages, %ChatMessage{tool_calls: []} = reply, run, _ctx) do
-    event = append(message, :assistant, reply.content, %{}, nil, run.step)
+    event =
+      run
+      |> turn_usage()
+      |> then(&append(message, :assistant, reply.content, &1, nil, run.step))
+
     {:ok, reply.content || "", %{run | answer_event_id: event.id}}
   end
 
@@ -209,20 +215,17 @@ defmodule Glific.AI.Agent do
     numbered = Enum.with_index(running)
 
     Enum.each(numbered, fn {call, index} ->
-      append(
-        message,
-        :tool_call,
-        call.name,
-        %{"arguments" => call.args},
-        call.id,
-        run.step + index * 2
-      )
+      usage = if index == 0, do: turn_usage(run), else: %{}
+
+      %{"arguments" => call.args}
+      |> Map.merge(usage)
+      |> then(&append(message, :tool_call, call.name, &1, call.id, run.step + index * 2))
     end)
 
     results =
       numbered
       |> Task.async_stream(
-        fn {call, index} -> run_tool(message, user, call, run.step + index * 2 + 1, modules) end,
+        fn {call, _index} -> run_tool(user, call, modules) end,
         max_concurrency: max(length(running), 1),
         timeout: limits()[:max_run_duration_ms],
         on_timeout: :kill_task,
@@ -230,7 +233,7 @@ defmodule Glific.AI.Agent do
       )
       |> Enum.zip(numbered)
       |> Enum.map(fn
-        {{:ok, result}, _} -> result
+        {{:ok, body}, {call, index}} -> recorded(message, call, run.step + index * 2 + 1, body)
         {{:exit, reason}, {call, index}} -> died(message, call, run.step + index * 2 + 1, reason)
       end)
 
@@ -272,16 +275,29 @@ defmodule Glific.AI.Agent do
     "The lookup stopped before it finished."
   end
 
-  @spec run_tool(Message.t(), User.t(), ChatMessage.tool_call(), pos_integer(), [module()]) ::
-          ChatMessage.t()
-  defp run_tool(message, user, %{id: id, name: name, args: args}, step, modules) do
+  # Runs in its own task and only ever reads. The tool_result event is written by
+  # the caller, which is what lets the task point its reads at the read replica:
+  # the process carries that away with it when it finishes.
+  @spec run_tool(User.t(), ChatMessage.tool_call(), [module()]) :: {String.t(), DateTime.t()}
+  defp run_tool(user, %{name: name, args: args}, modules) do
     body =
       case Tools.run(name, args, user, modules) do
         {:ok, result} -> encode(result)
         {:error, reason} -> Jason.encode!(%{error: reason})
       end
 
-    append(message, :tool_result, nil, %{"output" => body}, id, step)
+    # Taken here rather than from the event row: `Enum.zip/2` below is eager, so
+    # no result is written until the slowest tool in the turn has finished, and
+    # a trace built from the row would give every tool that one duration.
+    {body, DateTime.utc_now()}
+  end
+
+  @spec recorded(Message.t(), ChatMessage.tool_call(), pos_integer(), {String.t(), DateTime.t()}) ::
+          ChatMessage.t()
+  defp recorded(message, %{id: id, name: name}, step, {body, finished_at}) do
+    data = %{"output" => body, "finished_at" => DateTime.to_iso8601(finished_at)}
+
+    append(message, :tool_result, nil, data, id, step)
     ChatMessage.tool_result(id, name, body)
   end
 
@@ -290,12 +306,14 @@ defmodule Glific.AI.Agent do
   defp finish({:ok, answer, run}, message, ctx) do
     record(message, %{status: :succeeded}, run, ctx)
     measure("succeeded", run, ctx)
+    Langfuse.trace_async(message.id)
     {:ok, answer, %{skill: ctx.skill.name(), answer_event_id: run.answer_event_id}}
   end
 
   defp finish({:stopped, reason, run}, message, ctx) do
     record(message, %{status: :failed, error: reason}, run, ctx)
     measure("failed", run, ctx)
+    Langfuse.trace_async(message.id)
     {:error, reason}
   end
 
@@ -355,7 +373,7 @@ defmodule Glific.AI.Agent do
     mine = Enum.filter(thread, fn {message_id, _, _, _} -> message_id == message.id end)
     highest = mine |> Enum.map(fn {_, step, _, _} -> step end) |> Enum.max(fn -> 0 end)
 
-    %{usage: usage, step: highest + 1, steps: 0, answer_event_id: nil}
+    %{usage: usage, last_call: @zero_usage, step: highest + 1, steps: 0, answer_event_id: nil}
   end
 
   @spec append(Message.t(), atom(), String.t() | nil, map(), String.t() | nil, pos_integer()) ::
@@ -383,11 +401,21 @@ defmodule Glific.AI.Agent do
     end
   end
 
+  @spec turn_usage(run()) :: map()
+  defp turn_usage(%{last_call: usage}) do
+    %{
+      "input_tokens" => usage.input_tokens,
+      "output_tokens" => usage.output_tokens,
+      "cost" => usage.cost
+    }
+  end
+
   @spec spend(run(), Provider.usage()) :: run()
   defp spend(run, call) do
     %{
       run
-      | usage: %{
+      | last_call: call,
+        usage: %{
           input_tokens: run.usage.input_tokens + call.input_tokens,
           output_tokens: run.usage.output_tokens + call.output_tokens,
           cost: run.usage.cost + call.cost

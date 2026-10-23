@@ -6,9 +6,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Signing in records no consent. A contact row is created if the number is new, because an HSM has
-  to be addressed to one; nothing else about the contact is touched. Consent, and the exemption
-  that makes the OTP deliverable to a contact who has never opted in, are #5713's.
+  Signing in records no consent. `contacts.optin_*` keeps its existing meaning of WhatsApp
+  consent (#5713); web-channel consent is captured in the widget UI, not persisted here.
   """
 
   use GlificWeb, :controller
@@ -18,7 +17,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Flags,
     Messages,
     OTP,
     Partners,
@@ -26,7 +24,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     SafeLog
   }
 
-  alias GlificWeb.WebChannel.{DisplayName, Token}
+  alias GlificWeb.WebChannel.{DisplayName, Flag, Token}
   alias Plug.Conn
 
   # Identical whether or not `phone` is a known contact and whether or not delivery succeeded, so
@@ -41,6 +39,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   @phone_throttled_message "An OTP was just sent. Please try again in 30 seconds."
   @ip_throttled_message "Too many sign-in attempts from your network. Please wait a few minutes and try again."
 
+  # Carried into both the sendability check and the HSM send so the two agree; see
+  # `Contacts.can_send_message_to?/3` for why a web OTP is exempt from the opt-in gate.
+  @otp_exemption %{is_web_channel_otp: true}
+
   @doc """
   Requests that an OTP be sent over WhatsApp to `phone`, so a beneficiary can sign in to the
   web channel widget. Always responds 200, whether or not `phone` belongs to a known contact
@@ -50,7 +52,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   def request_otp(conn, %{"phone" => phone}) when is_binary(phone) and phone != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if web_channel_enabled?(organization_id) do
+    if Flag.web_channel_enabled?(organization_id) do
       case Contacts.parse_phone_number(phone) do
         {:ok, normalized} -> request_otp_for(conn, organization_id, normalized)
         {:error, message} -> unprocessable_entity_error(conn, message)
@@ -86,7 +88,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       when is_binary(phone) and phone != "" and is_binary(otp) and otp != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if web_channel_enabled?(organization_id) do
+    if Flag.web_channel_enabled?(organization_id) do
       case Contacts.parse_phone_number(phone) do
         {:ok, normalized} -> verify_otp_for(conn, organization_id, normalized, otp)
         {:error, message} -> unprocessable_entity_error(conn, message)
@@ -117,17 +119,18 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # an unknown phone can genuinely race on the (phone, organization_id) unique index.
   @spec resolve_contact_and_sign_in(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
-    case ensure_contact(organization_id, normalized) do
-      {:ok, contact} ->
-        json(conn, %{
-          data: %{
-            token: Token.sign_contact_token(contact),
-            contact_id: contact.id,
-            name: DisplayName.resolve(contact),
-            phone: normalized
-          }
-        })
-
+    with {:ok, contact} <- ensure_contact(organization_id, normalized),
+         {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
+         {:ok, token} <- Token.generate(organization_id, contact.phone) do
+      json(conn, %{
+        data: %{
+          token: token,
+          contact_id: contact.id,
+          name: DisplayName.resolve(contact),
+          phone: normalized
+        }
+      })
+    else
       {:error, error} ->
         Glific.log_error(
           "Verified a web channel OTP but could not resolve the contact for #{normalized}: " <>
@@ -142,23 +145,20 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   end
 
-  # Not `organization.web_channel_enabled`: that virtual field is only stamped during
-  # `Partners.fill_cache/1`, which enabling a flag does not trigger, so it keeps reporting the
-  # value from whenever the 24h org cache was last filled. FunWithFlags busts its own cache on
-  # write, so this takes effect immediately.
   @doc """
   Exchange a still-valid token for a fresh one, so a one hour TTL does not end a conversation the
   beneficiary is still having.
 
-  Requires the current token to be valid: an expired one is refused rather than resurrected,
-  which is what keeps expiry meaningful. Renewal is also bounded in total — see
-  `GlificWeb.WebChannel.Token` — so refreshing indefinitely does not grant an indefinite session.
+  Requires the current token to be valid for this host's organization: an expired one is refused
+  rather than resurrected, which is what keeps expiry meaningful. Renewal is also bounded in
+  total — see `GlificWeb.WebChannel.Token` — so refreshing indefinitely does not grant an
+  indefinite session.
   """
   @spec renew_token(Conn.t(), map()) :: Conn.t()
   def renew_token(conn, %{"token" => token}) when is_binary(token) and token != "" do
     organization_id = conn.assigns[:organization_id]
 
-    if web_channel_enabled?(organization_id) do
+    if Flag.web_channel_enabled?(organization_id) do
       renew_token_for(conn, organization_id, token)
     else
       web_channel_disabled_error(conn)
@@ -170,55 +170,23 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec renew_token_for(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp renew_token_for(conn, organization_id, token) do
-    case Token.renew_contact_token(token) do
-      {:ok, renewed, payload} ->
-        build_context(organization_id)
-        respond_with_session(conn, renewed, payload, organization_id)
-
+    with {:ok, renewed, claims} <- Token.renew(organization_id, token),
+         {:ok, contact} <- Contacts.fetch_by_identity(:web, claims.sub) do
+      json(conn, %{
+        data: %{
+          token: renewed,
+          contact_id: contact.id,
+          name: DisplayName.resolve(contact),
+          phone: contact.phone
+        }
+      })
+    else
       # One answer for every cause, so a caller cannot probe which.
-      {:error, _reason} ->
+      _refused ->
         conn
         |> put_status(401)
         |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
     end
-  end
-
-  # The signing key is installation-wide until #5711, so this comparison is the only thing
-  # stopping another organization's token being renewed here.
-  @spec respond_with_session(Conn.t(), String.t(), map(), non_neg_integer()) :: Conn.t()
-  defp respond_with_session(conn, renewed, %{org_id: org_id} = payload, organization_id)
-       when org_id == organization_id do
-    case Repo.fetch_by(Contact, %{id: payload.contact_id, organization_id: organization_id}) do
-      {:ok, contact} ->
-        json(conn, %{
-          data: %{
-            token: renewed,
-            contact_id: contact.id,
-            name: DisplayName.resolve(contact),
-            phone: contact.phone
-          }
-        })
-
-      # Verified, but the contact is gone — nothing to renew into.
-      {:error, _} ->
-        conn
-        |> put_status(401)
-        |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
-    end
-  end
-
-  defp respond_with_session(conn, _renewed, _payload, _organization_id) do
-    Glific.log_error("Web channel token renewal attempted across organizations")
-
-    conn
-    |> put_status(401)
-    |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
-  end
-
-  @spec web_channel_enabled?(non_neg_integer()) :: boolean()
-  defp web_channel_enabled?(organization_id) do
-    organization = Partners.organization(organization_id)
-    Flags.get_flag_enabled(:web_channel_enabled, organization)
   end
 
   # Two buckets, because neither dimension is sufficient alone and they fail in opposite
@@ -235,12 +203,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp check_rate_limit(conn, phone) do
     with :ok <-
            check_bucket(
-             :web_channel_otp_rate_limit,
+             :rate_limit_web_channel_otp_phone,
              "web_channel_send_otp:#{phone}",
              @phone_throttled_message
            ) do
       check_bucket(
-        :web_channel_otp_ip_rate_limit,
+        :rate_limit_web_channel_otp_ip,
         "web_channel_send_otp_ip:#{GlificWeb.Tenants.remote_ip(conn)}",
         @ip_throttled_message
       )
@@ -249,13 +217,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec check_bucket(atom(), String.t(), String.t()) :: :ok | {:error, String.t()}
   defp check_bucket(config_key, key, message) do
-    config = Application.get_env(:glific, config_key, [])
-    scale_ms = Keyword.get(config, :scale_ms, 30_000)
-    count = Keyword.get(config, :count, 1)
-
-    case ExRated.check_rate(key, scale_ms, count) do
-      {:ok, _count} -> :ok
-      {:error, _limit} -> {:error, message}
+    case Glific.RateLimit.check(config_key, key) do
+      :ok -> :ok
+      {:error, :rate_limited} -> {:error, message}
     end
   end
 
@@ -277,7 +241,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     with {:ok, contact} <- ensure_contact(organization_id, phone),
          true <- can_send_message_to?(contact),
          code = mint_code(phone),
-         {:ok, _message} <- Messages.create_and_send_otp_verification_message(contact, code) do
+         {:ok, _message} <-
+           Messages.create_and_send_otp_verification_message(contact, code, @otp_exemption) do
       :ok
     else
       error ->
@@ -334,9 +299,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec can_send_message_to?(Contact.t()) :: boolean()
   defp can_send_message_to?(contact) do
-    hsm = Contacts.can_send_message_to?(contact, true)
-    session = Contacts.can_send_message_to?(contact, false)
-    elem(hsm, 0) == :ok || elem(session, 0) == :ok
+    elem(Contacts.can_send_message_to?(contact, true, @otp_exemption), 0) == :ok
   end
 
   @spec unprocessable_entity_error(Conn.t(), String.t()) :: Conn.t()

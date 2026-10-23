@@ -50,7 +50,7 @@ replica_ssl_opts =
 
 config :glific, Glific.RepoReplica,
   url: replica_url,
-  pool_size: env!("POOL_SIZE", :integer, 20),
+  pool_size: env!("REPLICA_POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
   ssl: replica_ssl_opts,
   prepare: :named,
@@ -75,7 +75,52 @@ config :glific,
   auth_username: env!("AUTH_USERNAME", :string!),
   auth_password: env!("AUTH_PASSWORD", :string!)
 
-config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
+# Every rate limit in the application, and the only place any of them is defined. They live here
+# rather than in config/config.exs because runtime.exs is evaluated last and would override it,
+# which makes a second copy of these numbers dead code that still looks authoritative.
+#
+# Under :test they are all raised out of the way: ExRated buckets are global and outlive a test,
+# so a real limit would make the suite start refusing partway through. A test that wants a limit
+# to fire sets it for its own duration with Application.put_env/3.
+rate_limit = fn variable, scale_ms, count ->
+  count = if config_env() == :test, do: 1_000_000, else: env!(variable, :integer, count)
+  [scale_ms: scale_ms, count: count]
+end
+
+config :glific,
+  # Requests that match no route at all, per address.
+  rate_limit_api_unrouted: rate_limit.("RATE_LIMIT_API_UNROUTED", 60_000, 60),
+  # Per signed-in user, across the whole API. Replaces MAX_RATE_LIMIT_REQUEST.
+  rate_limit_api_authenticated_per_sec:
+    rate_limit.("RATE_LIMIT_API_AUTHENTICATED_PER_SEC", 1_000, 80),
+  # Per address, across every unauthenticated endpoint. 300 rather than the old 50, because that
+  # 50 was per address *and path*, and offices sit behind one egress.
+  rate_limit_api_unauthenticated: rate_limit.("RATE_LIMIT_API_UNAUTHENTICATED", 60_000, 300),
+  # Staff registration OTP, per phone.
+  rate_limit_api_otp: rate_limit.("RATE_LIMIT_API_OTP", 30_000, 1),
+  # The web channel is embedded on public sites, where a school, office or carrier NAT fronts many
+  # unrelated beneficiaries on one address, so its per-address budgets are far looser.
+  rate_limit_web_channel_api: rate_limit.("RATE_LIMIT_WEB_CHANNEL_API", 60_000, 1200),
+  # Sign-in OTP per phone. This, not the address budget, is the anti-enumeration control.
+  rate_limit_web_channel_otp_phone: rate_limit.("RATE_LIMIT_WEB_CHANNEL_OTP_PHONE", 30_000, 1),
+  # Its per-address companion. A computer lab signing a class in at once must not be refused.
+  rate_limit_web_channel_otp_ip: rate_limit.("RATE_LIMIT_WEB_CHANNEL_OTP_IP", 60_000, 100),
+  # Inbound socket messages, per contact.
+  rate_limit_web_channel_message: rate_limit.("RATE_LIMIT_WEB_CHANNEL_MESSAGE", 10_000, 20),
+  # Socket connects, charged before the token is verified so a flood cannot make us do the work.
+  rate_limit_web_channel_connect_ip:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_CONNECT_IP", 60_000, 120),
+  # What the node will accept at all. Past this, connects are refused as server busy.
+  rate_limit_web_channel_connect_total:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_CONNECT_TOTAL", 60_000, 1000),
+  # Signed upload URLs. Each is a writable grant into the organization's bucket, so there is a
+  # total across everybody too: no per-contact or per-address budget bounds storage abuse when
+  # many contacts are driven at once.
+  rate_limit_web_channel_upload_contact:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_CONTACT", 60_000, 6),
+  rate_limit_web_channel_upload_ip: rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_IP", 60_000, 60),
+  rate_limit_web_channel_upload_total:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_UPLOAD_TOTAL", 60_000, 120)
 
 config :glific, :bigquery_dedup_timeout_ms, env!("BIGQUERY_DEDUP_TIMEOUT_MS", :integer, 120_000)
 
@@ -167,7 +212,11 @@ config :glific,
 
 config :glific, Glific.Erase,
   msg_delete_batch_size: env!("MSG_DELETE_BATCH_SIZE", :integer, 100_000),
-  max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000)
+  max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000),
+  version_retention_days: env!("VERSION_RETENTION_DAYS", :integer, 90),
+  version_delete_batch_size: env!("VERSION_DELETE_BATCH_SIZE", :integer, 50_000),
+  max_version_rows_to_delete: env!("MAX_VERSION_ROWS_TO_DELETE", :integer, 5_000_000),
+  versions_kept_per_entity: env!("VERSIONS_KEPT_PER_ENTITY", :integer, 10)
 
 # Percent of total job metrics to be sent to appsignal
 config :glific,
@@ -292,12 +341,21 @@ if config_env() == :prod do
   config :glific, :maytapi_webhook_ips, webhook_ips.("MAYTAPI_WEBHOOK_IPS")
 end
 
+# Configured in every environment so an address can be dropped locally too. Empty disables the plug.
+blocked_ips = webhook_ips.("BLOCKED_IPS")
+config :glific, :blocked_ips, blocked_ips
+
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 
 config :glific, Glific.Searches, repo_module: search_repo_module
 
 unless config_env() == :test do
+  config :glific, Glific.AI.Langfuse,
+    host: env!("LANGFUSE_BASE_URL", :string, nil),
+    public_key: env!("LANGFUSE_PUBLIC_KEY", :string, nil),
+    secret_key: env!("LANGFUSE_SECRET_KEY", :string, nil)
+
   config :glific, Glific.ThirdParty.Superset.ApiClient,
     base_url: env!("SUPERSET_URL", :string, "https://not-configured.invalid/api/v1"),
     dashboard_id: env!("SUPERSET_DASHBOARD_ID", :string, "this_is_not_a_dashboard_id"),

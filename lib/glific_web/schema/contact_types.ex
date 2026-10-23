@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
+  alias GlificWeb.WebChannel.Presence
 
   object :contact_result do
     field(:contact, :contact)
@@ -57,6 +58,26 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field(:status, :contact_status_enum)
     field(:bsp_status, :contact_provider_status_enum)
+
+    @desc """
+    Whether the contact currently has a web channel socket open. Resolved at query time from
+    ephemeral presence state, so it is as of the last fetch rather than live, and it is always
+    false for an organization that does not use the web channel.
+    """
+    field :is_web_online, :boolean do
+      resolve(fn contact, _, _ ->
+        {:ok, Presence.online?(contact.organization_id, contact.id)}
+      end)
+    end
+
+    @desc "The contact's identities on each channel; always empty for a staff user"
+    field :identities, list_of(:contact_identity) do
+      resolve(fn contact, args, %{context: %{current_user: user}} = resolution ->
+        if Enum.member?(user.roles, :staff),
+          do: {:ok, []},
+          else: dataloader(Repo).(contact, args, resolution)
+      end)
+    end
 
     field :active_profile, :profile do
       resolve(dataloader(Repo))
@@ -118,6 +139,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   object :contact_history do
     field(:id, :id)
+    field(:channel, :message_channel_enum)
     field(:event_type, :string)
     field(:event_label, :string)
     field(:event_meta, :json)
@@ -132,7 +154,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   @desc "Filtering options for contacts"
   input_object :contact_filter do
-    @desc "Match the name or phone"
+    @desc "Match the name or phone, or the start of a web username (never for a staff user)"
     field(:term, :string)
 
     @desc "Match the name"
@@ -190,6 +212,12 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:active_profile_id, :id)
     field(:fields, :json)
     field(:settings, :json)
+
+    @desc "The channel the contact is created on when creating a contact; defaults to WHATSAPP, which needs a phone"
+    field(:channel, :message_channel_enum)
+
+    @desc "The username to log in with, required when creating a WEB contact: letters, digits, _, @ and ., stored lowercase, 1 to 255 characters"
+    field(:identifier, :string)
   end
 
   @desc "Filtering options for contacts history"
@@ -202,6 +230,9 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Match the event label"
     field(:event_label, :string)
+
+    @desc "Match the channel the event came from"
+    field(:channel, :message_channel_enum)
 
     @desc "profile id"
     field(:profile_id, :id)

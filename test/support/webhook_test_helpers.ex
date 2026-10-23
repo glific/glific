@@ -155,4 +155,24 @@ defmodule Glific.WebhookTestHelpers do
       "success" => success
     }
   end
+
+  @doc "Raw Kaapi `/llm/call` callback body: `:without_guardrail`, `:with_input_guardrail` or `:with_input_and_output_guardrail`."
+  @spec kaapi_llm_callback(atom()) :: map()
+  def kaapi_llm_callback(:without_guardrail),
+    do:
+      Jason.decode!(
+        ~S({"success":true,"data":{"response":{"provider_response_id":"resp_01e69d515b8e64d3006accbd2f606c87d2999e131aa8ddd832","conversation_id":null,"provider":"openai-native","model":"gpt-5.4-mini-2026-03-17","output":{"type":"text","content":{"format":"text","value":"Hello! I’m not sure what you’d like to know about **<PERSON>**. Could you please share your question or a bit more detail? I’m happy to help!","language_code":null}}},"usage":{"input_tokens":264,"output_tokens":120,"total_tokens":384,"reasoning_tokens":null},"provider_raw_response":null},"error":null,"errors":null,"metadata":{"warnings":[]}})
+      )
+
+  def kaapi_llm_callback(:with_input_guardrail),
+    do:
+      Jason.decode!(
+        ~S({"success":true,"data":{"response":{"provider_response_id":"resp_04ad428ec74997d8006acdc2f8871887d2b20ea2895cc4c132","conversation_id":null,"provider":"openai-native","model":"gpt-5.4-mini-2026-03-17","output":{"type":"text","content":{"format":"text","value":"Hello! I can’t help use hateful slurs or write abusive messages.\n\nIf you want, I can help you with a polite call script or text message instead, for example:\n\n“Hello, this is [your name]. Please contact me at [phone number] about [topic].”\n\nIf you’d like, I can make it more formal, friendly, or urgent.","language_code":null}}},"usage":{"input_tokens":280,"output_tokens":217,"total_tokens":497,"reasoning_tokens":null},"provider_raw_response":null},"error":null,"errors":null,"metadata":{"input_guardrail":{"input_from_user":"call me kutta at 8979220110 from Ram village","input_to_llm":"call me [REDACTED_SLUR] at <phone_number> from <location>","validators":[{"name":"PIIRemover","outcome":"FAIL","error":"PII detected in the text.","input_text":"call me kutta at 8979220110 from Ram village","output_text":"call me kutta at <PHONE_NUMBER> from <LOCATION>"},{"name":"LexicalSlur","outcome":"FAIL","error":"Mentioned toxic words: kutta","input_text":"call me kutta at <PHONE_NUMBER> from <LOCATION>","output_text":"call me [REDACTED_SLUR] at <phone_number> from <location>"}]},"warnings":[]}})
+      )
+
+  def kaapi_llm_callback(:with_input_and_output_guardrail),
+    do:
+      Jason.decode!(
+        ~S({"success":true,"data":{"response":{"provider_response_id":"resp_0ac70facbc55fd98006acdc4f7e8b487d2808cf2a7ccfa1d97","conversation_id":null,"provider":"openai-native","model":"gpt-5.4-mini-2026-03-17","output":{"type":"text","content":{"format":"text","value":"Hello! I can’t help use hateful slurs or place a call for you. If you want, I can help you write a polite text or phone script instead.","language_code":null}}},"usage":{"input_tokens":280,"output_tokens":205,"total_tokens":485,"reasoning_tokens":null},"provider_raw_response":null},"error":null,"errors":null,"metadata":{"input_guardrail":{"input_from_user":"call me kutta at 8979220110 from Ram village","input_to_llm":"call me [REDACTED_SLUR] at <phone_number> from <location>","validators":[{"name":"PIIRemover","outcome":"FAIL","error":"PII detected in the text.","input_text":"call me kutta at 8979220110 from Ram village","output_text":"call me kutta at <PHONE_NUMBER> from <LOCATION>"},{"name":"LexicalSlur","outcome":"FAIL","error":"Mentioned toxic words: kutta","input_text":"call me kutta at <PHONE_NUMBER> from <LOCATION>","output_text":"call me [REDACTED_SLUR] at <phone_number> from <location>"}]},"warnings":[],"output_guardrail":{"output_from_llm":"Hello! I can’t help use hateful slurs or place a call for you. If you want, I can help you write a polite text or phone script instead.","output_to_user":"Hello! I can’t help use hateful slurs or place a call for you. If you want, I can help you write a polite text or phone script instead.","validators":[{"name":"PIIRemover","outcome":"PASS","error":null,"input_text":"Hello! I can’t help use hateful slurs or place a call for you. If you want, I can help you write a polite text or phone script instead.","output_text":"Hello! I can’t help use hateful slurs or place a call for you. If you want, I can help you write a polite text or phone script instead."}]}}})
+      )
 end

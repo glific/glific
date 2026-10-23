@@ -3,6 +3,7 @@ defmodule Glific.Migrations do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactIdentity,
     Flows.FlowResult,
     Messages.Message,
     Messages.MessageMedia,
@@ -27,6 +28,19 @@ defmodule Glific.Migrations do
     # mask phone number and reset fields
     from([c] in Contact,
       update: [set: [phone: c.id, fields: nil]]
+    )
+    |> Repo.update_all([], skip_organization_id: true)
+
+    # identities hold phones and usernames too; WhatsApp ones follow the masked contact phone
+    from([i] in ContactIdentity,
+      where: i.channel == :whatsapp,
+      update: [set: [identifier: fragment("CAST(? AS varchar)", i.contact_id)]]
+    )
+    |> Repo.update_all([], skip_organization_id: true)
+
+    from([i] in ContactIdentity,
+      where: i.channel != :whatsapp,
+      update: [set: [identifier: fragment("CAST(? AS varchar)", i.id)]]
     )
     |> Repo.update_all([], skip_organization_id: true)
 

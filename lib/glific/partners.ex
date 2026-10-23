@@ -35,6 +35,7 @@ defmodule Glific.Partners do
     Partners.Credential,
     Partners.Organization,
     Partners.OrganizationData,
+    Partners.OrganizationIndex,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.Gupshup.PartnerAPI,
@@ -43,7 +44,9 @@ defmodule Glific.Partners do
     RepoReplica,
     Settings.Language,
     Stats,
-    Users.User
+    Users.User,
+    WebChannel.JwtSecret,
+    WebChannel.Rooms
   }
 
   # We cache organization info under this id since when we want to retrieve
@@ -312,6 +315,15 @@ defmodule Glific.Partners do
     %Organization{}
     |> Organization.changeset(attrs)
     |> Repo.insert(skip_organization_id: true)
+    |> case do
+      {:ok, organization} ->
+        # Without this a newly onboarded organization's host resolves to nothing until the next tick.
+        OrganizationIndex.refresh_on_change()
+        {:ok, organization}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -333,6 +345,7 @@ defmodule Glific.Partners do
     with {:ok, phone} <- Contacts.parse_phone_number(phone),
          {:ok, %{organization: updated_org}} <-
            update_org_contact_and_user(organization, phone, attrs) do
+      OrganizationIndex.refresh_on_change()
       {:ok, updated_org}
     else
       {:error, _step, reason, _changes_so_far} ->
@@ -346,7 +359,14 @@ defmodule Glific.Partners do
   end
 
   def update_organization(%Organization{} = organization, attrs) do
-    do_update_org(organization, attrs)
+    case do_update_org(organization, attrs) do
+      {:ok, updated_org} ->
+        OrganizationIndex.refresh_on_change()
+        {:ok, updated_org}
+
+      error ->
+        error
+    end
   end
 
   @spec update_org_contact_and_user(Organization.t(), String.t(), map()) ::
@@ -420,9 +440,7 @@ defmodule Glific.Partners do
   defp update_org_contact(org, phone) do
     case Repo.fetch(Contact, org.contact_id) do
       {:ok, contact} ->
-        contact
-        |> Contact.changeset(%{phone: phone})
-        |> Repo.update()
+        Contacts.update_phone(contact, phone)
 
       _ ->
         {:error, "Organization contact not found"}
@@ -598,6 +616,9 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:is_template_library_enabled)
       |> Flags.set_flag_enabled(:glific_ai_enabled)
       |> Flags.set_flag_enabled(:web_channel_enabled)
+      |> Flags.set_flag_enabled(:bulk_contact_update_enabled)
+      |> Flags.set_flag_enabled(:bulk_flow_results_enabled)
+      |> Flags.set_flag_enabled(:is_ai_guardrail_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -936,6 +957,7 @@ defmodule Glific.Partners do
             %Credential{}
             |> Credential.changeset(attrs)
             |> Repo.insert()
+            |> ensure_web_channel_secret(attrs[:shortcode])
 
           {:error, reason} ->
             Glific.log_exception(
@@ -1007,15 +1029,12 @@ defmodule Glific.Partners do
 
     case validate_credential_permissions(credential.provider.shortcode, attrs) do
       :ok ->
-        {:ok, credential} =
-          credential
-          |> Credential.changeset(attrs)
-          |> Repo.update()
+        with {:ok, credential} <- credential |> Credential.changeset(attrs) |> Repo.update() do
+          credential = credential |> Repo.preload([:provider, :organization])
 
-        credential = credential |> Repo.preload([:provider, :organization])
-
-        credential.organization
-        |> credential_update_callback(credential, credential.provider.shortcode)
+          credential.organization
+          |> credential_update_callback(credential, credential.provider.shortcode)
+        end
 
       {:error, reason} ->
         Glific.log_exception(
@@ -1156,7 +1175,27 @@ defmodule Glific.Partners do
     end
   end
 
+  # Switching the web channel off has to reach the browsers already in a conversation; they hold
+  # a token that stays valid and a socket that would otherwise keep serving messages.
+  defp credential_update_callback(organization, credential, "web_channel") do
+    if !credential.is_active, do: Rooms.close_all(organization.id)
+
+    ensure_web_channel_secret({:ok, credential}, "web_channel")
+  end
+
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
+
+  @spec ensure_web_channel_secret({:ok, Credential.t()} | {:error, any()}, String.t() | nil) ::
+          {:ok, Credential.t()} | {:error, any()}
+  defp ensure_web_channel_secret({:ok, %Credential{is_active: true} = credential}, "web_channel") do
+    with {:ok, credential} <- JwtSecret.ensure(credential) do
+      organization = get_organization!(credential.organization_id)
+      remove_organization_cache(organization.id, organization.shortcode)
+      {:ok, credential}
+    end
+  end
+
+  defp ensure_web_channel_secret(result, _shortcode), do: result
 
   @doc """
   Verify BSP credentials and update the organization cache.
@@ -1215,6 +1254,8 @@ defmodule Glific.Partners do
       @global_organization_id,
       ["organization_services"]
     )
+
+    OrganizationIndex.refresh_on_change()
   end
 
   @spec config(map()) :: map() | :error
@@ -1502,7 +1543,12 @@ defmodule Glific.Partners do
       "template_library_enabled" =>
         Flags.get_flag_enabled(:is_template_library_enabled, organization),
       "glific_ai_enabled" => Flags.get_flag_enabled(:glific_ai_enabled, organization),
-      "web_channel_enabled" => Flags.get_flag_enabled(:web_channel_enabled, organization)
+      "web_channel_enabled" => Flags.get_flag_enabled(:web_channel_enabled, organization),
+      "bulk_contact_update_enabled" =>
+        Flags.get_flag_enabled(:bulk_contact_update_enabled, organization),
+      "bulk_flow_results_enabled" =>
+        Flags.get_flag_enabled(:bulk_flow_results_enabled, organization),
+      "ai_guardrail_enabled" => Flags.get_flag_enabled(:is_ai_guardrail_enabled, organization)
     }
   end
 

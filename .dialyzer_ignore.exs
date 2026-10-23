@@ -15,11 +15,14 @@
   {"lib/glific_web/misc/http_signature.ex"},
   {"lib/glific/flags/ecto.ex"},
   {"test/support/channel_case.ex"},
+  {"test/support/fixtures/web_channel_fixtures.ex"},
   {"test/support/conn_case.ex"},
   {"test/support/data_case.ex"},
   {"lib/glific/clients/stir.ex"},
   {"lib/glific_web/views"},
   {"lib/glific/accounts.ex"},
   {"lib/glific/accounts/user_token.ex"},
-  {"lib/glific_web/templates/layout/_user_menu.html.heex"}
+  {"lib/glific_web/templates/layout/_user_menu.html.heex"},
+  # Mix is not in the PLT, so a mix task's calls into it cannot be resolved.
+  {"lib/mix/tasks/glific.docs.index.ex"}
 ]

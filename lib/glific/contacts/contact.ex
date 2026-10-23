@@ -7,6 +7,7 @@ defmodule Glific.Contacts.Contact do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactIdentity,
     Enums.ContactProviderStatus,
     Enums.ContactStatus,
     Groups.Group,
@@ -19,11 +20,11 @@ defmodule Glific.Contacts.Contact do
   }
 
   @required_fields [
-    :phone,
     :language_id,
     :organization_id
   ]
   @optional_fields [
+    :phone,
     :name,
     :contact_type,
     :bsp_status,
@@ -53,12 +54,13 @@ defmodule Glific.Contacts.Contact do
           phone: String.t() | nil,
           masked_phone: String.t() | nil,
           contact_type: String.t() | nil,
-          status: ContactStatus | nil,
-          bsp_status: ContactProviderStatus | nil,
+          status: ContactStatus.t() | nil,
+          bsp_status: ContactProviderStatus.t() | nil,
           is_org_read: boolean,
           is_org_replied: boolean,
           is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          identities: [ContactIdentity.t()] | Ecto.Association.NotLoaded.t(),
           active_profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           active_profile_id: non_neg_integer | nil,
           language_id: non_neg_integer | nil,
@@ -116,6 +118,7 @@ defmodule Glific.Contacts.Contact do
     belongs_to(:organization, Organization)
 
     has_one(:user, User)
+    has_many(:identities, ContactIdentity)
     many_to_many(:tags, Tag, join_through: "contacts_tags", on_replace: :delete)
 
     many_to_many(:groups, Group, join_through: "contacts_groups", on_replace: :delete)
@@ -125,18 +128,27 @@ defmodule Glific.Contacts.Contact do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
+  Standard changeset pattern we use for all data types. A new WhatsApp contact must have a phone;
+  a new contact on the web channel needn't.
   """
-  @spec changeset(Contact.t(), map()) :: Ecto.Changeset.t()
-  def changeset(contact, attrs) do
+  @spec changeset(Contact.t(), map(), :whatsapp | :web) :: Ecto.Changeset.t()
+  def changeset(contact, attrs, channel \\ :whatsapp) do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_phone_on_insert(channel)
+    |> validate_phone_removal()
     |> validate_fields_map()
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
   end
+
+  @spec validate_phone_on_insert(Ecto.Changeset.t(), :whatsapp | :web) :: Ecto.Changeset.t()
+  defp validate_phone_on_insert(%{data: %{__meta__: %{state: :built}}} = changeset, :whatsapp),
+    do: validate_required(changeset, [:phone])
+
+  defp validate_phone_on_insert(changeset, _channel), do: changeset
 
   @doc false
   @spec to_minimal_map(Contact.t()) :: map()
@@ -148,12 +160,28 @@ defmodule Glific.Contacts.Contact do
   Populate virtual field of masked phone number
   """
   @spec populate_masked_phone(Contact.t()) :: Contact.t()
+  def populate_masked_phone(%Contact{phone: phone} = contact) when phone in [nil, ""],
+    do: %{contact | masked_phone: nil}
+
   def populate_masked_phone(%Contact{phone: phone} = contact) do
     masked_phone =
       "#{elem(String.split_at(phone, 4), 0)}******#{elem(String.split_at(phone, -2), 1)}"
 
     %{contact | masked_phone: masked_phone}
   end
+
+  @spec validate_phone_removal(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_phone_removal(%{data: %{phone: phone}} = changeset) when phone not in [nil, ""] do
+    case fetch_change(changeset, :phone) do
+      {:ok, new_phone} when new_phone in [nil, ""] ->
+        add_error(changeset, :phone, "can't be removed once set")
+
+      _no_removal ->
+        changeset
+    end
+  end
+
+  defp validate_phone_removal(changeset), do: changeset
 
   @spec validate_fields_map(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_fields_map(%{changes: %{fields: fields}} = changeset) do

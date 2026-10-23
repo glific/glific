@@ -109,6 +109,9 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "status of the message, this replaces the unread/not responded tags"
     field :status, :string
 
+    @desc "Only conversations that have a message on this channel"
+    field :channel, :message_channel_enum
+
     @desc "a static date range input field which will apply on updated at column."
     field :date_range, :date_input
 
