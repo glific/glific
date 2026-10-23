@@ -209,6 +209,29 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       assert contact.status == :invalid
     end
 
+    test "failed status with top-level code and reason marks the contact invalid",
+         %{conn: conn, message: message, gupshup_id: gupshup_id} do
+      payload =
+        meta_status_payload(%{
+          "gs_id" => gupshup_id,
+          "status" => "failed",
+          "code" => "1002",
+          "reason" => "Number does not exist on WhatsApp"
+        })
+
+      conn = post(conn, "/gupshup", payload)
+      assert response(conn, 200) == ""
+
+      message = Messages.get_message!(message.id)
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
+
+      assert get_in(message.errors, ["payload", "payload", "reason"]) ==
+               "Number does not exist on WhatsApp"
+
+      contact = Contacts.get_contact!(message.contact_id)
+      assert contact.status == :invalid
+    end
+
     test "unknown status leaves the message untouched",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
       payload = meta_status_payload(%{"gs_id" => gupshup_id, "status" => "deleted"})

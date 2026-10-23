@@ -92,7 +92,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
       # process_errors/3 reads the error code from the V2 payload.payload.code shape
       status_params =
         Map.put(status, "payload", %{
-          "payload" => %{"code" => error_code, "reason" => error["title"]}
+          "payload" => %{"code" => error_code, "reason" => error["reason"]}
         })
 
       Communications.Message.update_bsp_status(bsp_message_id, bsp_status, status_params)
@@ -107,9 +107,26 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
 
   defp update_meta_status(_conn, _status), do: :ok
 
+  # Meta's format nests the error in an errors array, while Gupshup's passthrough V3
+  # puts code and reason directly on the status
   @spec meta_error(map()) :: map()
-  defp meta_error(%{"errors" => [%{} = error | _]}), do: error
+  defp meta_error(%{"errors" => [%{} = error | _]}),
+    do: %{"code" => normalize_error_code(error["code"]), "reason" => error["title"]}
+
+  defp meta_error(%{"code" => code} = status),
+    do: %{"code" => normalize_error_code(code), "reason" => status["reason"]}
+
   defp meta_error(_status), do: %{}
+
+  @spec normalize_error_code(any()) :: any()
+  defp normalize_error_code(code) when is_binary(code) do
+    case Integer.parse(code) do
+      {integer_code, ""} -> integer_code
+      _ -> code
+    end
+  end
+
+  defp normalize_error_code(code), do: code
 
   # Updates the provider message status based on provider message id
   @spec update_status(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
