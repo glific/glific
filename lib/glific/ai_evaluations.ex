@@ -84,25 +84,8 @@ defmodule Glific.AIEvaluations do
     |> Repo.update()
   end
 
-  @doc """
-  Polls Kaapi for status of processing evaluations.
-  Called once per minute by the cron job for each organization.
-  """
-  @spec poll_and_update(non_neg_integer()) :: :ok
-  def poll_and_update(org_id) do
-    AIEvaluation
-    |> where([e], e.status == :processing)
-    |> Repo.all()
-    |> Enum.each(fn evaluation ->
-      poll_evaluation(evaluation, org_id)
-      Process.sleep(100)
-    end)
-
-    :ok
-  end
-
-  @spec poll_evaluation(AIEvaluation.t(), non_neg_integer()) :: :ok
-  defp poll_evaluation(%AIEvaluation{} = evaluation, org_id) do
+  @spec refresh_evaluation(AIEvaluation.t(), non_neg_integer()) :: :ok
+  defp refresh_evaluation(%AIEvaluation{} = evaluation, org_id) do
     evaluation.kaapi_evaluation_id
     |> Kaapi.get_evaluation_scores(org_id)
     |> handle_evaluation_status(evaluation, org_id)
@@ -190,7 +173,7 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:error, reason}, evaluation, org_id) do
     Glific.log_exception(%Glific.ThirdParty.Kaapi.Error{
       message:
-        "Failed to poll AI Evaluation: id=#{evaluation.id}, name=#{evaluation.name}, " <>
+        "Failed to fetch AI Evaluation status: id=#{evaluation.id}, name=#{evaluation.name}, " <>
           "org_id=#{org_id}",
       organization_id: org_id,
       reason: safe_inspect(reason)
@@ -443,7 +426,7 @@ defmodule Glific.AIEvaluations do
            organization_id: organization_id
          }) do
       {:ok, %{status: :processing} = evaluation} ->
-        poll_evaluation(evaluation, organization_id)
+        refresh_evaluation(evaluation, organization_id)
 
       {:ok, _already_resolved} ->
         :ok
