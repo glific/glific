@@ -4,9 +4,9 @@ defmodule GlificWeb.WebChannelSocket do
   `GlificWeb.UserSocket` (which authenticates staff for the Absinthe GraphQL subscription
   API) — connections here authenticate as a single `Contact`, never a staff `User`.
 
-  A connection presents either Glific's own token (phone and one-time code login) or a JWT signed
-  by an NGO's backend (`GlificWeb.WebChannel.JwtToken`), which is what authenticates the
-  socket directly when the NGO's own system manages its users.
+  A connection presents a `GlificWeb.WebChannel.Token`, either Glific's own (phone and one-time
+  code login) or one signed by an NGO's backend when its own system manages its users. Both are
+  verified the same way, against the secret of the organization the request host belongs to.
   """
 
   use Phoenix.Socket
@@ -15,7 +15,7 @@ defmodule GlificWeb.WebChannelSocket do
   alias Glific.RateLimit
   alias Glific.Repo
   alias GlificWeb.SubdomainPlug
-  alias GlificWeb.WebChannel.{Flag, JwtToken, Token}
+  alias GlificWeb.WebChannel.{Flag, Token}
 
   channel("web_channel:*", GlificWeb.WebChannel.RoomChannel)
 
@@ -33,7 +33,6 @@ defmodule GlificWeb.WebChannelSocket do
         |> assign(:token_exp, session.token_exp)
         |> assign(:session_id, session.session_id)
         |> assign(:session_started_at, session.session_started_at)
-        |> assign(:token_kind, session.token_kind)
 
       {:ok, socket}
     else
@@ -58,51 +57,31 @@ defmodule GlificWeb.WebChannelSocket do
 
   @spec authenticate(String.t(), map()) :: {:ok, map()} | :error
   defp authenticate(token, connect_info) do
-    case Token.verify_contact_token(token) do
-      {:ok, payload} -> glific_session(payload)
-      {:error, _reason} -> ngo_session(token, connect_info)
-    end
-  end
-
-  @spec glific_session(Token.payload()) :: {:ok, map()} | :error
-  defp glific_session(payload) do
-    with :ok <- enter_organization(payload.org_id),
-         %Contacts.Contact{} = contact <- Contacts.get_contact!(payload.contact_id) do
-      {:ok,
-       %{
-         contact: contact,
-         organization_id: payload.org_id,
-         token_exp: payload.exp,
-         session_id: payload.session_id,
-         session_started_at: payload.session_started_at,
-         token_kind: :glific
-       }}
-    else
-      _refused -> :error
-    end
-  end
-
-  # The organization comes from the request host, as for the REST endpoints, never from the token.
-  # Stable per username, so a future one-session-per-user rule can tell a reconnect from a new login.
-  @spec ngo_session(String.t(), map()) :: {:ok, map()} | :error
-  defp ngo_session(token, connect_info) do
     with {:ok, organization_id} <- organization_from_host(connect_info),
          :ok <- enter_organization(organization_id),
-         {:ok, claims} <- JwtToken.verify(organization_id, token),
-         {:ok, contact} <- Contacts.maybe_create_contact(claims, :web, claims.sub) do
+         {:ok, claims} <- Token.verify(organization_id, token),
+         {:ok, contact} <- resolve_contact(claims) do
       {:ok,
        %{
          contact: contact,
          organization_id: organization_id,
          token_exp: claims.exp,
-         session_id: "web:" <> claims.sub,
-         session_started_at: System.system_time(:second),
-         token_kind: :ngo
+         session_id: Map.get(claims, :session_id, "web:" <> claims.sub),
+         session_started_at: Map.get(claims, :session_started_at, System.system_time(:second))
        }}
     else
       _refused -> :error
     end
   end
+
+  # A Glific session names a contact that already signed in, so it never creates one: a session
+  # outliving its erased contact would otherwise mint a ghost holding that phone's web identity
+  # and block the phone's next sign-in.
+  @spec resolve_contact(Token.claims()) :: {:ok, Contacts.Contact.t()} | {:error, any()}
+  defp resolve_contact(%{session_id: _session_id} = claims),
+    do: Contacts.fetch_by_identity(:web, claims.sub)
+
+  defp resolve_contact(claims), do: Contacts.maybe_create_contact(claims, :web, claims.sub)
 
   @spec organization_from_host(map()) :: {:ok, non_neg_integer()} | :error
   defp organization_from_host(%{uri: %URI{host: host}}),

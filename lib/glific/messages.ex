@@ -865,22 +865,23 @@ defmodule Glific.Messages do
     if has_no_errors, do: do_create_message_media(changeset, attrs), else: {:error, changeset}
   end
 
-  # Dedup media by (url, caption, organization_id). Caption stays in the app
-  # lookup so that personalized captions on a shared media URL keep distinct
-  # rows — the caption sent to the contact is read from the media row
-  # (message.media.caption), so collapsing distinct captions would deliver the
-  # wrong one. Caption is only kept OUT of the btree index: indexing the full
-  # caption overflowed the 2704-byte row limit and crashed inbound media
-  # inserts on long captions (glific#5319).
+  # Dedup media by (url, caption, organization_id). Caption stays in the lookup
+  # so that personalized captions on a shared media URL keep distinct rows — the
+  # caption sent to the contact is read from the media row (message.media.caption),
+  # so collapsing distinct captions would deliver the wrong one. The index holds
+  # md5(caption) rather than the caption, since a full-caption btree key overflows
+  # the 2704-byte row limit on long captions (glific#5319).
   @spec do_create_message_media(Ecto.Changeset.t(), map()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_message_media(changeset, attrs) do
-    caption = Map.get(attrs, :caption, nil)
+    # read the cast value: cast stores a blank caption as nil, so matching on the raw
+    # "" never finds the stored row and every caption-less send inserts a new one
+    caption = Ecto.Changeset.get_field(changeset, :caption)
 
     message_media =
       MessageMedia
       |> where([mm], mm.url == ^attrs.url)
-      |> add_caption(caption)
+      |> where_caption(caption)
       |> where([mm], mm.organization_id == ^attrs.organization_id)
       |> limit(1)
       |> Repo.one()
@@ -891,9 +892,17 @@ defmodule Glific.Messages do
     end
   end
 
-  @spec add_caption(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Queryable.t()
-  defp add_caption(query, nil), do: query
-  defp add_caption(query, caption), do: where(query, [mm], mm.caption == ^caption)
+  @spec where_caption(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Queryable.t()
+  defp where_caption(query, nil),
+    do: where(query, [mm], is_nil(fragment("md5(?)", mm.caption)))
+
+  defp where_caption(query, caption) do
+    where(
+      query,
+      [mm],
+      fragment("md5(?)", mm.caption) == fragment("md5(?)", ^caption) and mm.caption == ^caption
+    )
+  end
 
   @doc """
   Updates a message media.

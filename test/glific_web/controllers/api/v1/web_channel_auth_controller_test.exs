@@ -91,11 +91,11 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         renewed = get_in(json, ["data", "token"])
 
         assert is_binary(renewed)
-        assert {:ok, payload} = Token.verify_contact_token(renewed)
-        assert payload.org_id == 1
+        assert {:ok, %{sub: ^phone}} = Token.verify(1, renewed)
+        assert {:ok, %Contact{id: contact_id}} = Contacts.fetch_by_identity(:web, phone)
 
         # Same response shape as verify-otp, so the widget can store it with the same code path.
-        assert get_in(json, ["data", "contact_id"]) == payload.contact_id
+        assert get_in(json, ["data", "contact_id"]) == contact_id
         assert get_in(json, ["data", "phone"]) == phone
         assert Map.has_key?(json["data"], "name")
       end)
@@ -104,7 +104,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     test "the renewed token belongs to the same session", %{conn: conn, phone: phone} do
       with_web_channel_enabled(fn ->
         token = sign_in(conn, phone)
-        {:ok, before} = Token.verify_contact_token(token)
+        {:ok, before} = Token.verify(1, token)
 
         renewed =
           conn
@@ -112,7 +112,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           |> json_response(200)
           |> get_in(["data", "token"])
 
-        {:ok, after_renewal} = Token.verify_contact_token(renewed)
+        {:ok, after_renewal} = Token.verify(1, renewed)
         assert after_renewal.session_id == before.session_id
         assert after_renewal.session_started_at == before.session_started_at
       end)
@@ -157,27 +157,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "refuses a token whose organization is not the one the request resolved to", %{
-      conn: conn,
-      phone: phone
-    } do
+    test "refuses a token signed for another organization", %{conn: conn, phone: phone} do
+      other = Fixtures.organization_fixture(%{shortcode: "otherrenew"})
+      WebChannelFlagHelpers.activate_web_channel(other.id)
+      {:ok, foreign} = Token.generate(other.id, phone)
+
       with_web_channel_enabled(fn ->
-        # A contact that exists in org 1 while claiming org 2; an arbitrary id would be caught
-        # by the org-scoped lookup instead and prove nothing.
-        existing = Repo.get_by!(Contact, phone: phone)
-
-        foreign =
-          Token.sign_contact_token(%Contact{
-            id: existing.id,
-            organization_id: 2,
-            phone: phone
-          })
-
-        assert {:ok, %{org_id: 2, contact_id: contact_id}} = Token.verify_contact_token(foreign)
-        assert contact_id == existing.id
-
-        # The signing key is installation-wide today (#5711 makes it per-org), so this token is
-        # cryptographically valid here. Only the explicit org comparison rejects it.
         renew_conn =
           post(
             conn,
@@ -186,6 +171,47 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         assert json = json_response(renew_conn, 401)
         assert get_in(json, ["error", "message"]) == "Invalid or expired session"
+      end)
+    end
+
+    test "refuses a session that is 24 hours old, however fresh its token", %{
+      conn: conn,
+      phone: phone
+    } do
+      with_web_channel_enabled(fn ->
+        {:ok, token} =
+          Token.sign(1, %{
+            sub: phone,
+            session_id: "old-session",
+            session_started_at: System.system_time(:second) - 86_400
+          })
+
+        renew_conn =
+          post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
+
+        assert json_response(renew_conn, 401)
+      end)
+    end
+
+    test "refuses to renew an NGO-signed token", %{conn: conn, phone: phone} do
+      with_web_channel_enabled(fn ->
+        {:ok, token} = Token.sign(1, %{sub: phone})
+
+        renew_conn =
+          post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
+
+        assert json_response(renew_conn, 401)
+      end)
+    end
+
+    test "refuses a token for a contact with no web identity", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        {:ok, token} = Token.generate(1, "never_signed_in")
+
+        renew_conn =
+          post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
+
+        assert json_response(renew_conn, 401)
       end)
     end
 
@@ -844,6 +870,27 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   end
 
   describe "verify_otp/2" do
+    test "fails closed when the organization has no secret to sign with", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        WebChannelFlagHelpers.remove_web_channel_secret(1)
+        code = OTP.generate_code(:web_channel, phone)
+
+        conn =
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+              "phone" => phone,
+              "otp" => code
+            })
+          )
+
+        assert json = json_response(conn, 500)
+        refute get_in(json, ["data", "token"])
+      end)
+    end
+
     test "a correct code returns a valid contact-scoped token and resolves the contact", %{
       conn: conn,
       organization_id: organization_id
@@ -867,8 +914,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         assert contact_id = get_in(json, ["data", "contact_id"])
         assert get_in(json, ["data", "phone"]) == phone
 
-        assert {:ok, %{contact_id: ^contact_id, org_id: ^organization_id}} =
-                 Token.verify_contact_token(token)
+        assert {:ok, %{sub: ^phone, session_id: session_id, session_started_at: started_at}} =
+                 Token.verify(organization_id, token)
+
+        assert is_binary(session_id)
+        assert_in_delta started_at, System.system_time(:second), 5
+        assert {:ok, %Contact{id: ^contact_id}} = Contacts.fetch_by_identity(:web, phone)
 
         assert {:ok, %Contact{phone: ^phone, organization_id: ^organization_id}} =
                  Repo.fetch_by(Contact, %{id: contact_id, organization_id: organization_id})
@@ -912,19 +963,28 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "a username equal to the phone is a different contact from the phone login", %{
+    test "a username already holding the phone's web identity refuses the phone login", %{
       conn: conn
     } do
       phone = unique_phone()
 
       with_web_channel_enabled(fn ->
         {:ok, username_contact} = Contacts.maybe_create_contact(%{}, :web, phone)
+        code = OTP.generate_code(:web_channel, phone)
 
-        phone_contact_id = verify_otp_login(conn, phone)
+        conn =
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+              "phone" => phone,
+              "otp" => code
+            })
+          )
 
-        refute phone_contact_id == username_contact.id
-        assert {:ok, found} = Contacts.fetch_by_identity(:web, phone)
-        assert found.id == username_contact.id
+        assert json = json_response(conn, 500)
+        refute get_in(json, ["data", "token"])
+        assert {:ok, %{id: id}} = Contacts.fetch_by_identity(:web, phone)
+        assert id == username_contact.id
       end)
     end
 
