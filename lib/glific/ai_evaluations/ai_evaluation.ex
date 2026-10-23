@@ -14,25 +14,6 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     Partners.Organization
   }
 
-  @type numeric_summary_score() :: %{
-          optional(:total_items) => non_neg_integer(),
-          optional(:unscoreable) => %{String.t() => non_neg_integer()},
-          name: String.t(),
-          avg: float(),
-          std: float(),
-          total_pairs: non_neg_integer(),
-          data_type: String.t()
-        }
-
-  @type categorical_summary_score() :: %{
-          name: String.t(),
-          distribution: %{String.t() => non_neg_integer()},
-          total_pairs: non_neg_integer(),
-          data_type: String.t()
-        }
-
-  @type summary_score() :: numeric_summary_score() | categorical_summary_score()
-
   @type latency_stage() :: %{avg_latency_ms: float(), call_count: non_neg_integer()}
 
   @type latency() :: %{
@@ -44,7 +25,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
         }
 
   @type results() :: %{
-          summary_scores: [summary_score()],
+          summary_scores: [map()],
           verdict: String.t() | nil,
           overall_score: float() | nil,
           latency: latency() | nil
