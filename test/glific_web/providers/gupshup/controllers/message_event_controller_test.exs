@@ -193,20 +193,24 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       assert [%{"code" => 131_049}] = message.errors["errors"]
     end
 
-    test "failed status with code 1002 marks the contact invalid",
+    test "failed status with a Meta error code is recorded without contact side effects",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
+      contact_status = Contacts.get_contact!(message.contact_id).status
+
       payload =
         meta_status_payload(%{
           "gs_id" => gupshup_id,
           "status" => "failed",
-          "errors" => [%{"code" => 1002, "title" => "Number does not exist on WhatsApp"}]
+          "errors" => [%{"code" => 131_026, "title" => "Message undeliverable"}]
         })
 
       conn = post(conn, "/gupshup", payload)
       assert response(conn, 200) == ""
 
-      contact = Contacts.get_contact!(message.contact_id)
-      assert contact.status == :invalid
+      message = Messages.get_message!(message.id)
+      assert message.bsp_status == :error
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 131_026
+      assert Contacts.get_contact!(message.contact_id).status == contact_status
     end
 
     test "failed status with top-level code and reason marks the contact invalid",
@@ -316,7 +320,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       statuses
       |> List.wrap()
       |> Enum.map(
-        &Map.merge(%{"recipient_id" => "917834811114", "timestamp" => 1_791_897_501_505}, &1)
+        &Map.merge(%{"recipient_id" => "919999999999", "timestamp" => "1791897501"}, &1)
       )
 
     %{
