@@ -50,12 +50,15 @@ defmodule Glific.Dialogflow do
 
       {:error, :timeout} ->
         {:error, "Timeout"}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   @spec do_request(atom(), String.t(), String.t(), list()) :: Tesla.Env.result()
   defp do_request(:post, url, body, header),
-    do: Tesla.post(url, body, headers: header, opts: [adapter: [recv_timeout: 30_000]])
+    do: Tesla.post(url, body, headers: header, opts: [adapter: [receive_timeout: 30_000]])
 
   defp do_request(_, url, _, _), do: Tesla.get(url)
 

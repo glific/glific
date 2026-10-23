@@ -56,7 +56,7 @@ config :glific, Glific.RepoReplica,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
-config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
+config :glific, :http_pool, size: env!("DEFAULT_FINCH_POOL_SIZE", :integer, 10)
 
 check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
@@ -226,8 +226,8 @@ upload_adapter =
   if config_env() == :test,
     do: nil,
     else:
-      {Tesla.Adapter.Hackney,
-       [recv_timeout: 60_000, connect_timeout: 15_000, pool: :kaapi_upload_pool]}
+      {Glific.Http.FinchAdapter,
+       [name: :kaapi_upload_pool, receive_timeout: 60_000, pool_timeout: 15_000]}
 
 config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),

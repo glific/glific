@@ -518,7 +518,7 @@ defmodule Glific.ThirdParty.Kaapi do
     do: %{
       success: false,
       error_type: "request_timeout",
-      reason: "Request timed out (recv_timeout exceeded)",
+      reason: "Request timed out (receive_timeout exceeded)",
       http_status: nil
     }
 

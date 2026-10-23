@@ -120,7 +120,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
     case Tesla.post(client(), url, "{}",
            headers: headers,
-           opts: [adapter: [recv_timeout: @api_timeout]]
+           opts: [adapter: [receive_timeout: @api_timeout]]
          ) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         case Jason.decode(response_body) do
@@ -162,7 +162,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
     case Tesla.post(client(), url, body,
            headers: auth_headers(token),
-           opts: [adapter: [recv_timeout: @api_timeout]]
+           opts: [adapter: [receive_timeout: @api_timeout]]
          ) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
@@ -183,7 +183,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
     case Tesla.get(client(), url,
            headers: auth_headers(token),
-           opts: [adapter: [recv_timeout: @api_timeout]]
+           opts: [adapter: [receive_timeout: @api_timeout]]
          ) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode(body)
@@ -213,7 +213,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
       case Tesla.patch(client(), delete_url, Jason.encode!(%{"trashed" => true}),
              headers: auth_headers(token),
-             opts: [adapter: [recv_timeout: @api_timeout]]
+             opts: [adapter: [receive_timeout: @api_timeout]]
            ) do
         {:ok, %Tesla.Env{status: status, body: _body}} when status >= 200 and status < 400 ->
           :ok

@@ -41,7 +41,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # Final URL: <@filemanager_url><app_id>/wa/media/<media_id>?download=true
   # Returns the raw media bytes directly (one-step, no decryption).
   @filemanager_url "https://filemanager.gupshup.io/wa/"
-  @library_templates_recv_timeout 30_000
+  @library_templates_receive_timeout 30_000
 
   @modes [
     "ENQUEUED",
@@ -372,7 +372,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec get_library_templates(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   def get_library_templates(org_id) do
     (app_url!(org_id) <> "/template/metalibrary")
-    |> get_request(org_id: org_id, adapter: [recv_timeout: @library_templates_recv_timeout])
+    |> get_request(org_id: org_id, adapter: [receive_timeout: @library_templates_receive_timeout])
   end
 
   @global_organization_id 0
