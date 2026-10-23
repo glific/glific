@@ -747,10 +747,9 @@ defmodule Glific.Contacts.BulkImportTest do
     end
 
     test "rejects a non-utf8 csv read from a file path" do
-      path =
-        Fixtures.tmp_file_fixture(
-          <<"name,phone,language\nCaf", 0xE9, ",+919876570004,english\n">>
-        )
+      path = Path.join(System.tmp_dir!(), "latin1_#{System.unique_integer([:positive])}.csv")
+      File.write!(path, <<"name,phone,language\nCaf", 0xE9, ",+919876570004,english\n">>)
+      on_exit(fn -> File.rm(path) end)
 
       assert {:error, %{message: message}} =
                Import.import_contacts(

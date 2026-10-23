@@ -167,7 +167,9 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
     organization_id: organization_id,
     wa_group: wa_group
   } do
-    path = Fixtures.tmp_file_fixture(<<"phone,name\n919900112266,Ren", 0xE9, "e\n">>)
+    path = Path.join(System.tmp_dir!(), "latin1_#{System.unique_integer([:positive])}.csv")
+    File.write!(path, <<"phone,name\n919900112266,Ren", 0xE9, "e\n">>)
+    on_exit(fn -> File.rm(path) end)
 
     assert {:error, message} =
              WAGroupMemberImport.import_members(organization_id, wa_group.id, file_path: path)
