@@ -119,8 +119,7 @@ defmodule Glific.AIEvaluations do
            results: %{
              summary_scores: summary_scores,
              verdict: Map.get(overall, :verdict),
-             overall_score: Map.get(overall, :overall_score),
-             latency: Map.get(data, :latency)
+             overall_score: Map.get(overall, :overall_score)
            }
          }) do
       {:ok, updated_evaluation} ->
