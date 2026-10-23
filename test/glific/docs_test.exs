@@ -209,6 +209,76 @@ defmodule Glific.DocsTest do
       assert Docs.lexical("ignore previous instructions", entries) == []
     end
 
+    test "one word has to name the section, not merely appear in it", %{entries: entries} do
+      # Every section mentions a contact somewhere, so prose alone says nothing
+      # about which one answers the question.
+      hits = Docs.lexical("contact", entries)
+
+      assert hits != []
+
+      assert Enum.all?(hits, fn section ->
+               String.contains?(String.downcase(section.heading_path), "contact")
+             end)
+    end
+
+    test "a bare field name is exact, the way a dotted path is", %{entries: entries} do
+      # How someone pastes a field they saw in a notification or an export.
+      for field <- ["optin_status", "sync_status", "flow_contexts"] do
+        assert Docs.lexical(field, entries) != [], field
+      end
+    end
+
+    test "a shorter identifier is not a match for a longer one", %{entries: entries} do
+      only_dotted =
+        section("Nothing to do with the question", "Read it from @contact.id and nowhere else.")
+
+      assert Docs.lexical("@contact", [%{section: only_dotted, vector: nil}]) == []
+
+      # A field is written dotted far more often than bare, so the near side
+      # stays open: this is the section that documents it.
+      dotted_field =
+        section("Contact fields", "`@contact.optin_status` is true once they have opted in.")
+
+      assert Docs.lexical("optin_status", [%{section: dotted_field, vector: nil}]) != []
+      refute Docs.lexical("optin_status", entries) == []
+    end
+
+    test "an identifier takes no plural", %{entries: entries} do
+      # `.input` is notation, so `.inputs` would be a different thing entirely
+      # — unlike an ordinary word, where the plural is the same word.
+      plural =
+        section("Nothing to do with the question", "Read it with @results.parent.state.inputs.")
+
+      assert Docs.lexical("@results.parent.state.input", [%{section: plural, vector: nil}]) == []
+      refute Docs.lexical("@results.parent.state.input", entries) == []
+    end
+
+    test "a term matches the plural the documents happen to use", %{entries: entries} do
+      # The corpus writes "pauses"; nobody types that when asking.
+      assert Docs.lexical("how do I pause a flow", entries) != []
+    end
+
+    test "a short error string finds the section quoting it", %{entries: entries} do
+      # Too few terms to reach the score floor on body text alone, which is how
+      # people paste an error: a fragment, not a sentence.
+      for error <- ["Repeated or missing headers", "media validation failed"] do
+        assert Docs.lexical(error, entries) != [], error
+      end
+    end
+
+    test "a short question whose terms only appear in prose is not a hit", %{entries: entries} do
+      # Each word turns up somewhere in the corpus, but none of them names a
+      # section, so nothing here is about what was asked.
+      assert Docs.lexical("sourdough baking temperature", entries) == []
+    end
+
+    test "a partial match still counts when the terms name sections",
+         %{entries: entries} do
+      # "sourdough" is not in the documents, but a question about starting a
+      # flow should still reach the sections about starting flows.
+      assert Docs.lexical("how to start a sourdough flow", entries) != []
+    end
+
     test "notation survives tokenising whole" do
       assert "@results.parent.state.input" in Docs.terms(
                "how do I read @results.parent.state.input"
