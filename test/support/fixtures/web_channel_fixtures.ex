@@ -3,46 +3,65 @@ defmodule Glific.WebChannelFixtures do
   Test helpers for an authenticated web channel socket, so a channel test doesn't have to
   repeat the JWT mint/connect/join dance in every file.
 
-  Mints a real token via `GlificWeb.WebChannel.Token.sign_contact_token/1` rather than stubbing
-  `verify_contact_token/1` — the whole point of the socket is that it rejects bad credentials,
-  and a stubbed verifier would test nothing about it.
+  Mints a real token via `GlificWeb.WebChannel.Token.generate/2` rather than stubbing
+  `verify/3` — the whole point of the socket is that it rejects bad credentials, and a stubbed
+  verifier would test nothing about it.
   """
 
   import Phoenix.ChannelTest
 
+  alias Glific.{Contacts, Fixtures}
   alias Glific.Contacts.Contact
+  alias Glific.WebChannelFlagHelpers
   alias GlificWeb.WebChannel.{RoomChannel, Token}
   alias GlificWeb.WebChannelSocket
   alias JOSE.{JWK, JWS, JWT}
-  alias Plug.Crypto.KeyGenerator
 
   @endpoint GlificWeb.Endpoint
 
-  # Matches GlificWeb.WebChannel.Token's own salt, so `sign_web_channel_claims/2` produces a
-  # token that verifies through the real signing path.
-  @key_salt "web_channel_contact_jwt"
+  @doc """
+  A contact with a normalized, digits-only phone, the shape OTP login stores as the web identity.
+  """
+  @spec web_contact_fixture(map()) :: Contact.t()
+  def web_contact_fixture(attrs \\ %{}) do
+    phone = "91" <> to_string(7_000_000_000 + System.unique_integer([:positive]))
+    Fixtures.contact_fixture(Map.put_new(attrs, :phone, phone))
+  end
 
   @doc """
-  Mints a token for `contact` (or uses `opts[:token]`, so forgery/expiry cases can be tested
-  through the same connect door) and returns a connected `WebChannelSocket`.
+  A Glific session token for `contact`, as the OTP login mints it: its `sub` is the contact's phone,
+  which is also its web identity. Needs the organization to have a secret, as the channel being
+  enabled gives it.
+  """
+  @spec web_channel_session_token(Contact.t()) :: String.t()
+  def web_channel_session_token(%Contact{} = contact) do
+    {:ok, _contact} = Contacts.add_identity(contact, :web, contact.phone)
+    {:ok, token} = Token.generate(contact.organization_id, contact.phone)
+    token
+  end
+
+  @doc """
+  Mints a session token for `contact` (or uses `opts[:token]`, so forgery/expiry cases can be
+  tested through the same connect door) and returns a connected `WebChannelSocket`.
   """
   @spec web_channel_socket_fixture(Contact.t(), keyword()) :: {:ok, Phoenix.Socket.t()} | :error
   def web_channel_socket_fixture(%Contact{} = contact, opts \\ []) do
-    token = Keyword.get(opts, :token, Token.sign_contact_token(contact))
-    connect(WebChannelSocket, %{"token" => token})
+    token = Keyword.get_lazy(opts, :token, fn -> web_channel_session_token(contact) end)
+    connect_with_token(token, opts)
   end
 
   @doc """
   Connects a `WebChannelSocket` with `token` the way a browser does, the organization coming from
-  `opts[:host]` (the default organization's host when omitted).
+  `opts[:host]` (the default organization's host when omitted) and any `opts[:connect_info]`.
   """
-  @spec ngo_socket_fixture(String.t(), keyword()) :: {:ok, Phoenix.Socket.t()} | :error
-  def ngo_socket_fixture(token, opts \\ []) do
+  @spec connect_with_token(String.t(), keyword()) :: {:ok, Phoenix.Socket.t()} | :error
+  def connect_with_token(token, opts \\ []) do
     host = Keyword.get(opts, :host, "localhost")
 
-    connect(WebChannelSocket, %{"token" => token},
-      connect_info: %{uri: %URI{scheme: "wss", host: host}}
-    )
+    connect_info =
+      opts |> Keyword.get(:connect_info, %{}) |> Map.put(:uri, %URI{scheme: "wss", host: host})
+
+    connect(WebChannelSocket, %{"token" => token}, connect_info: connect_info)
   end
 
   @doc """
@@ -54,19 +73,19 @@ defmodule Glific.WebChannelFixtures do
     do: subscribe_and_join(socket, RoomChannel, "web_channel:conversation")
 
   @doc """
-  Default valid web channel JWT claims for `contact`, letting a test override just the field it
-  cares about (an already-past `"exp"`, a foreign `"org_id"`, etc.) — the sweep and expiry tests
-  need claim shapes `Token.sign_contact_token/1` has no way to express.
+  Default valid session claims for `contact`, letting a test override just the field it cares
+  about (an already-past `"exp"`, an old `"sst"`, etc.) — the sweep and expiry tests need claim
+  shapes `Token.generate/2` has no way to express.
   """
   @spec web_channel_claims(Contact.t(), map()) :: map()
   def web_channel_claims(%Contact{} = contact, overrides \\ %{}) do
+    {:ok, _contact} = Contacts.add_identity(contact, :web, contact.phone)
     now = System.system_time(:second)
 
     Map.merge(
       %{
-        "sub" => to_string(contact.id),
+        "sub" => contact.phone,
         "channel" => "web",
-        "org_id" => contact.organization_id,
         "jti" => Ecto.UUID.generate(),
         "sst" => now,
         "iat" => now,
@@ -77,23 +96,17 @@ defmodule Glific.WebChannelFixtures do
   end
 
   @doc """
-  Signs a raw claims map through the web channel's own key (or `jwk`, for forgery cases), so a
-  test can mint a token carrying a claim shape the real signing helpers don't expose.
+  Signs a raw claims map with `secret`, by default the default organization's own, so a test can
+  mint a token carrying a claim shape the real signing helpers don't expose.
   """
-  @spec sign_web_channel_claims(map(), JWK.t() | nil) :: String.t()
-  def sign_web_channel_claims(claims, jwk \\ nil) do
+  @spec sign_web_channel_claims(map(), String.t() | nil) :: String.t()
+  def sign_web_channel_claims(claims, secret \\ nil) do
     {_jws, token} =
-      (jwk || signing_key())
+      (secret || WebChannelFlagHelpers.web_channel_secret())
+      |> JWK.from_oct()
       |> JWT.sign(%{"alg" => "HS256"}, claims)
       |> JWS.compact()
 
     token
-  end
-
-  @spec signing_key() :: JWK.t()
-  defp signing_key do
-    GlificWeb.Endpoint.config(:secret_key_base)
-    |> KeyGenerator.generate(@key_salt, length: 32)
-    |> JWK.from_oct()
   end
 end

@@ -119,19 +119,18 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # an unknown phone can genuinely race on the (phone, organization_id) unique index.
   @spec resolve_contact_and_sign_in(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
-    case ensure_contact(organization_id, normalized) do
-      {:ok, contact} ->
-        Contacts.add_identity(contact, :web, contact.phone)
-
-        json(conn, %{
-          data: %{
-            token: Token.sign_contact_token(contact),
-            contact_id: contact.id,
-            name: DisplayName.resolve(contact),
-            phone: normalized
-          }
-        })
-
+    with {:ok, contact} <- ensure_contact(organization_id, normalized),
+         {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
+         {:ok, token} <- Token.generate(organization_id, contact.phone) do
+      json(conn, %{
+        data: %{
+          token: token,
+          contact_id: contact.id,
+          name: DisplayName.resolve(contact),
+          phone: normalized
+        }
+      })
+    else
       {:error, error} ->
         Glific.log_error(
           "Verified a web channel OTP but could not resolve the contact for #{normalized}: " <>
@@ -150,9 +149,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   Exchange a still-valid token for a fresh one, so a one hour TTL does not end a conversation the
   beneficiary is still having.
 
-  Requires the current token to be valid: an expired one is refused rather than resurrected,
-  which is what keeps expiry meaningful. Renewal is also bounded in total — see
-  `GlificWeb.WebChannel.Token` — so refreshing indefinitely does not grant an indefinite session.
+  Requires the current token to be valid for this host's organization: an expired one is refused
+  rather than resurrected, which is what keeps expiry meaningful. Renewal is also bounded in
+  total — see `GlificWeb.WebChannel.Token` — so refreshing indefinitely does not grant an
+  indefinite session.
   """
   @spec renew_token(Conn.t(), map()) :: Conn.t()
   def renew_token(conn, %{"token" => token}) when is_binary(token) and token != "" do
@@ -170,49 +170,23 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec renew_token_for(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp renew_token_for(conn, organization_id, token) do
-    case Token.renew_contact_token(token) do
-      {:ok, renewed, payload} ->
-        build_context(organization_id)
-        respond_with_session(conn, renewed, payload, organization_id)
-
+    with {:ok, renewed, claims} <- Token.renew(organization_id, token),
+         {:ok, contact} <- Contacts.fetch_by_identity(:web, claims.sub) do
+      json(conn, %{
+        data: %{
+          token: renewed,
+          contact_id: contact.id,
+          name: DisplayName.resolve(contact),
+          phone: contact.phone
+        }
+      })
+    else
       # One answer for every cause, so a caller cannot probe which.
-      {:error, _reason} ->
+      _refused ->
         conn
         |> put_status(401)
         |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
     end
-  end
-
-  # The signing key is installation-wide until #5711, so this comparison is the only thing
-  # stopping another organization's token being renewed here.
-  @spec respond_with_session(Conn.t(), String.t(), map(), non_neg_integer()) :: Conn.t()
-  defp respond_with_session(conn, renewed, %{org_id: org_id} = payload, organization_id)
-       when org_id == organization_id do
-    case Repo.fetch_by(Contact, %{id: payload.contact_id, organization_id: organization_id}) do
-      {:ok, contact} ->
-        json(conn, %{
-          data: %{
-            token: renewed,
-            contact_id: contact.id,
-            name: DisplayName.resolve(contact),
-            phone: contact.phone
-          }
-        })
-
-      # Verified, but the contact is gone — nothing to renew into.
-      {:error, _} ->
-        conn
-        |> put_status(401)
-        |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
-    end
-  end
-
-  defp respond_with_session(conn, _renewed, _payload, _organization_id) do
-    Glific.log_error("Web channel token renewal attempted across organizations")
-
-    conn
-    |> put_status(401)
-    |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
   end
 
   # Two buckets, because neither dimension is sufficient alone and they fail in opposite
