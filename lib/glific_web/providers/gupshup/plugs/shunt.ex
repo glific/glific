@@ -26,13 +26,7 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   @doc false
   @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def call(%Conn{params: %{"type" => type, "payload" => %{"type" => payload_type}}} = conn, opts) do
-    organization = build_context(conn)
-
-    path =
-      ["gupshup"] ++
-        if Glific.safe_string_to_atom(organization.status) == :active,
-          do: [type, payload_type],
-          else: ["not_active_or_approved"]
+    path = active_path(conn, [type, payload_type])
 
     conn
     |> change_path_info(path)
@@ -44,13 +38,7 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
         %Conn{params: %{"type" => type, "payload" => %{"deductions" => _deductions}}} = conn,
         opts
       ) do
-    organization = build_context(conn)
-
-    path =
-      ["gupshup"] ++
-        if Glific.safe_string_to_atom(organization.status) == :active,
-          do: [type, "conversations"],
-          else: ["not_active_or_approved"]
+    path = active_path(conn, [type, "conversations"])
 
     conn
     |> change_path_info(path)
@@ -60,23 +48,15 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   @doc false
   def call(%Conn{params: %{"entry" => entries}} = conn, opts)
       when is_list(entries) do
-    if nfm_reply_message?(entries) do
-      organization = build_context(conn)
+    path =
+      case entry_route(entries) do
+        nil -> ["gupshup", "entry", "unknown"]
+        route -> active_path(conn, route)
+      end
 
-      path =
-        ["gupshup"] ++
-          if Glific.safe_string_to_atom(organization.status) == :active,
-            do: ["message", "whatsapp_form_response"],
-            else: ["not_active_or_approved"]
-
-      conn
-      |> change_path_info(path)
-      |> Router.call(opts)
-    else
-      conn
-      |> change_path_info(["gupshup", "entry", "unknown"])
-      |> Router.call(opts)
-    end
+    conn
+    |> change_path_info(path)
+    |> Router.call(opts)
   end
 
   @doc false
@@ -93,6 +73,26 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
     |> Router.call(opts)
   end
 
+  @spec active_path(Conn.t(), [String.t()]) :: [String.t()]
+  defp active_path(conn, route) do
+    organization = build_context(conn)
+
+    if Glific.safe_string_to_atom(organization.status) == :active,
+      do: ["gupshup" | route],
+      else: ["gupshup", "not_active_or_approved"]
+  end
+
+  @spec entry_route([map()]) :: [String.t()] | nil
+  defp entry_route(entries) do
+    # A payload is routed to a single handler; Meta sends inbound messages and statuses
+    # as separate notifications, so a form reply wins if both ever arrive together
+    cond do
+      nfm_reply_message?(entries) -> ["message", "whatsapp_form_response"]
+      status_update?(entries) -> ["message-event", "statuses"]
+      true -> nil
+    end
+  end
+
   @spec nfm_reply_message?(list()) :: boolean()
   defp nfm_reply_message?([%{"changes" => [change | _]} | _]) do
     case change do
@@ -105,6 +105,17 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   end
 
   defp nfm_reply_message?(_), do: false
+
+  @spec status_update?(list()) :: boolean()
+  defp status_update?(entries) do
+    Enum.any?(entries, fn
+      %{"changes" => changes} when is_list(changes) ->
+        Enum.any?(changes, &match?(%{"value" => %{"statuses" => [_ | _]}}, &1))
+
+      _ ->
+        false
+    end)
+  end
 
   @doc false
   @spec change_path_info(Plug.Conn.t(), list()) :: Plug.Conn.t()

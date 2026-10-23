@@ -9,6 +9,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
     Providers.Gupshup.Instrumentation
   }
 
+  @meta_statuses %{
+    "enqueued" => :enqueued,
+    "sent" => :sent,
+    "delivered" => :delivered,
+    "read" => :read,
+    "failed" => :error
+  }
+
   @doc """
   Default handle for all message event callbacks
   """
@@ -53,6 +61,55 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   @spec read(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def read(conn, params),
     do: update_status(conn, params, :read)
+
+  @doc """
+  Message statuses sent in the Gupshup V3 (Meta) callback format
+  """
+  @spec statuses(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def statuses(conn, %{"entry" => entries} = params) do
+    entries
+    |> meta_statuses()
+    |> Enum.each(&update_meta_status(conn, &1))
+
+    handler(conn, params, "Statuses updated")
+  end
+
+  @spec meta_statuses(list()) :: list()
+  defp meta_statuses(entries) do
+    for %{"changes" => changes} when is_list(changes) <- entries,
+        %{"value" => %{"statuses" => statuses}} when is_list(statuses) <- changes,
+        status <- statuses,
+        do: status
+  end
+
+  @spec update_meta_status(Plug.Conn.t(), map()) :: :ok
+  defp update_meta_status(conn, %{"status" => meta_status} = status) do
+    with {:ok, bsp_status} <- Map.fetch(@meta_statuses, meta_status),
+         bsp_message_id when is_binary(bsp_message_id) <- status["gs_id"] || status["id"] do
+      error = meta_error(status)
+      error_code = error["code"]
+
+      # process_errors/3 reads the error code from the V2 payload.payload.code shape
+      status_params =
+        Map.put(status, "payload", %{
+          "payload" => %{"code" => error_code, "reason" => error["title"]}
+        })
+
+      Communications.Message.update_bsp_status(bsp_message_id, bsp_status, status_params)
+
+      Instrumentation.track_status(bsp_status, conn.assigns[:organization_id],
+        error_code: error_code
+      )
+    else
+      _ -> :ok
+    end
+  end
+
+  defp update_meta_status(_conn, _status), do: :ok
+
+  @spec meta_error(map()) :: map()
+  defp meta_error(%{"errors" => [%{} = error | _]}), do: error
+  defp meta_error(_status), do: %{}
 
   # Updates the provider message status based on provider message id
   @spec update_status(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
