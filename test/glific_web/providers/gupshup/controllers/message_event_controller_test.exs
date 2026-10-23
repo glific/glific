@@ -232,6 +232,41 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       assert contact.status == :invalid
     end
 
+    test "failed status keeps a non-numeric error code as is",
+         %{conn: conn, message: message, gupshup_id: gupshup_id} do
+      payload =
+        meta_status_payload(%{
+          "gs_id" => gupshup_id,
+          "status" => "failed",
+          "code" => "E_UNKNOWN",
+          "reason" => "Unknown error"
+        })
+
+      conn = post(conn, "/gupshup", payload)
+      assert response(conn, 200) == ""
+
+      message = Messages.get_message!(message.id)
+      assert get_in(message.errors, ["payload", "payload", "code"]) == "E_UNKNOWN"
+    end
+
+    test "status without a status field leaves the message untouched",
+         %{conn: conn, message: message, gupshup_id: gupshup_id} do
+      payload = meta_status_payload(%{"gs_id" => gupshup_id})
+
+      conn = post(conn, "/gupshup", payload)
+      assert response(conn, 200) == ""
+      assert Messages.get_message!(message.id).bsp_status == message.bsp_status
+    end
+
+    test "entry without changes is routed to the unknown handler",
+         %{conn: conn, message: message} do
+      payload = %{"object" => "whatsapp_business_account", "entry" => [%{"id" => "1234567890"}]}
+
+      conn = post(conn, "/gupshup", payload)
+      assert response(conn, 200) == ""
+      assert Messages.get_message!(message.id).bsp_status == message.bsp_status
+    end
+
     test "unknown status leaves the message untouched",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
       payload = meta_status_payload(%{"gs_id" => gupshup_id, "status" => "deleted"})
