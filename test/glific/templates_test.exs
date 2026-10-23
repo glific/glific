@@ -1411,6 +1411,50 @@ defmodule Glific.TemplatesTest do
              ]
     end
 
+    test "update_hsms/1 skips a whatsapp form template in an unsupported language and notifies once",
+         attrs do
+      bsp_id = "5a0f6c21-0b1e-4b0a-9c55-0d6c9f8f1a10"
+
+      template =
+        bsp_template(%{
+          "id" => bsp_id,
+          "elementName" => "footy_v5",
+          "languageCode" => "en_US",
+          "buttonSupported" => "FLOW",
+          "containerMeta" =>
+            Jason.encode!(%{"buttons" => [%{"text" => "Fill", "type" => "FLOW"}]})
+        })
+
+      mock_bsp_templates([template])
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:error, _} = Repo.fetch_by(SessionTemplate, %{bsp_id: bsp_id})
+
+      assert [notification] =
+               Notification
+               |> Repo.all()
+               |> Enum.filter(&(&1.entity["bsp_id"] == bsp_id))
+
+      assert notification.category == "Templates"
+      assert notification.severity == Notifications.types().warning
+      assert notification.message =~ "footy_v5"
+      assert notification.message =~ "en_US"
+    end
+
+    test "update_hsms/1 still syncs a non-form template in an unsupported language", attrs do
+      bsp_id = "7c3d2b19-6f4e-4e2a-8d1b-2f9e0c4a5b66"
+
+      mock_bsp_templates([
+        bsp_template(%{"id" => bsp_id, "elementName" => "welcome_us", "languageCode" => "en_US"})
+      ])
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{}} = Repo.fetch_by(SessionTemplate, %{bsp_id: bsp_id})
+    end
+
     test "update_hsms/1 should handle whatsapp form responses when containerMeta is empty",
          attrs do
       Tesla.Mock.mock(fn
@@ -2142,6 +2186,30 @@ defmodule Glific.TemplatesTest do
       })
 
     Partners.update_credential(cred, updated_attrs)
+  end
+
+  defp mock_bsp_templates(templates) do
+    response_body = Jason.encode!(%{"status" => "success", "templates" => templates})
+
+    Tesla.Mock.mock(fn %{method: :get} -> %Tesla.Env{status: 200, body: response_body} end)
+  end
+
+  defp bsp_template(attrs) do
+    Map.merge(
+      %{
+        "category" => "ACCOUNT_UPDATE",
+        "createdOn" => 1_595_904_220_495,
+        "data" => "Your conference ticket no. {{1}}",
+        "languagePolicy" => "deterministic",
+        "master" => true,
+        "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
+        "modifiedOn" => 1_595_904_220_495,
+        "status" => "APPROVED",
+        "templateType" => "TEXT",
+        "vertical" => "ACTION_BUTTON"
+      },
+      attrs
+    )
   end
 
   test "create_session_template/1 for HSM button template should not accept improper input",
