@@ -704,7 +704,7 @@ defmodule Glific.Contacts.BulkImportTest do
                  data: windows_codepage
                )
 
-      assert message =~ "Line 2 of the file is not valid UTF-8"
+      assert message =~ "Line 2 is not valid UTF-8"
       assert details =~ "No contacts were imported"
       refute exists?("919876570001")
       assert 0 == Repo.aggregate(UserJob, :count, :id)
@@ -725,7 +725,7 @@ defmodule Glific.Contacts.BulkImportTest do
                  url: "http://www.bar.com/foo.csv"
                )
 
-      assert message =~ "Line 2 of the file is not valid UTF-8"
+      assert message =~ "Line 2 is not valid UTF-8"
       refute exists?("919876570003")
     end
 
@@ -757,7 +757,7 @@ defmodule Glific.Contacts.BulkImportTest do
                  file_path: path
                )
 
-      assert message =~ "Line 2 of the file is not valid UTF-8"
+      assert message =~ "Line 2 is not valid UTF-8"
       refute exists?("919876570004")
     end
 
@@ -768,6 +768,26 @@ defmodule Glific.Contacts.BulkImportTest do
                run(bom <> "name,phone,language,city\nBom,+919876570002,english,Pune\n")
 
       assert field(fetch("919876570002"), "city") == "Pune"
+    end
+  end
+
+  test "raises when more than one source is given" do
+    assert_raise RuntimeError, ~r/only one of keyword arguments/, fn ->
+      Import.import_contacts(
+        org_id(),
+        %{user: admin(), collection: "harness", type: :import_contact},
+        data: "name,phone\n",
+        url: "http://www.bar.com/foo.csv"
+      )
+    end
+
+    assert_raise RuntimeError, ~r/only one of keyword arguments/, fn ->
+      Import.import_contacts(
+        org_id(),
+        %{user: admin(), type: :import_contact},
+        data: "name,phone\n",
+        url: "http://www.bar.com/foo.csv"
+      )
     end
   end
 end

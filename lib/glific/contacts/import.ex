@@ -311,7 +311,7 @@ defmodule Glific.Contacts.Import do
         {:error,
          %{
            message: reason,
-           details: "No contacts were imported. The uploaded CSV is not valid UTF-8."
+           details: "No contacts were imported."
          }}
     end
   end

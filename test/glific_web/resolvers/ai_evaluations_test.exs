@@ -429,7 +429,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: message}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert message =~ "Line 2 of the file is not valid UTF-8"
+      assert message =~ "Line 2 is not valid UTF-8"
     end
 
     test "strips the excel bom from the uploaded file, not just from our own read", %{

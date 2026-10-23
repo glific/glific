@@ -10,13 +10,9 @@ defmodule Glific.CSV.Encoding do
 
   @bom <<0xEF, 0xBB, 0xBF>>
 
-  @resave_hint "Re-save the file as UTF-8: in Excel use File → Save As → " <>
-                 "\"CSV UTF-8 (Comma delimited)\", or in Google Sheets use File → Download → " <>
-                 "\"Comma-separated values (.csv)\"."
+  @resave_hint "Re-save it as UTF-8 (Excel: Save As → CSV UTF-8; Google Sheets: Download → CSV)."
 
-  @nul_byte_error "The file contains NUL bytes, so it is not plain text — it is most " <>
-                    "likely UTF-16 or UTF-32 (Excel's \"Unicode Text\" export writes this). " <>
-                    @resave_hint
+  @nul_byte_error "The file is UTF-16 or UTF-32, not UTF-8. " <> @resave_hint
 
   @doc """
   Check a CSV is valid UTF-8, given either its raw contents or a line stream.
@@ -81,7 +77,7 @@ defmodule Glific.CSV.Encoding do
 
   @spec invalid_byte_error(pos_integer()) :: String.t()
   defp invalid_byte_error(row) do
-    "Line #{row} of the file is not valid UTF-8. This usually means a smart quote, " <>
-      "apostrophe, dash or accented letter was saved in a Windows encoding. " <> @resave_hint
+    "Line #{row} is not valid UTF-8 (a smart quote, dash or accent saved in a Windows encoding). " <>
+      @resave_hint
   end
 end

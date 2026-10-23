@@ -53,7 +53,7 @@ defmodule GlificWeb.Schema.WaGroupTest do
                  }
                )
 
-      assert hd(query_data[:errors]).message =~ "Line 2 of the file is not valid UTF-8"
+      assert hd(query_data[:errors]).message =~ "Line 2 is not valid UTF-8"
       assert [] == Repo.all(WAGroup)
     end
 

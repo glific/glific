@@ -19,7 +19,7 @@ defmodule Glific.CSV.EncodingTest do
     cp1252 = <<"question,answer\nq1,fee is 10 ", 0x96, " 20\n">>
 
     assert {:error, message} = Encoding.validate(cp1252)
-    assert message =~ "Line 2 of the file is not valid UTF-8"
+    assert message =~ "Line 2 is not valid UTF-8"
     assert message =~ "CSV UTF-8"
   end
 
@@ -29,8 +29,7 @@ defmodule Glific.CSV.EncodingTest do
     # UTF-16 of ascii is valid UTF-8, so only the NUL bytes give it away
     assert String.valid?(utf16)
     assert {:error, message} = Encoding.validate(utf16)
-    assert message =~ "NUL bytes"
-    assert message =~ "UTF-16 or UTF-32"
+    assert message =~ "UTF-16 or UTF-32, not UTF-8"
   end
 
   test "strip_bom removes the BOM from the first line only" do

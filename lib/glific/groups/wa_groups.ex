@@ -827,7 +827,6 @@ defmodule Glific.Groups.WAGroups do
         name: name,
         import_data: import_data
       }) do
-    # Encoding is checked up front, else a CSV the import cannot read leaves an empty group behind.
     with :ok <- Encoding.validate(import_data),
          # Seed createGroup with the CSV's first phone (Maytapi rejects an empty list),
          # then a background job adds the rest and creates the contacts.
