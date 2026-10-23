@@ -5,13 +5,13 @@ defmodule Glific.CSV.Encoding do
 
   @bom <<0xEF, 0xBB, 0xBF>>
 
-  @resave_hint "Re-save it as UTF-8 (Excel: Save As → CSV UTF-8; Google Sheets: Download → CSV)."
+  @resave_hint "Re-save it as UTF-8 (Excel: Save As, CSV UTF-8; Google Sheets: Download, CSV)."
 
   @nul_byte_error "The file is UTF-16 or UTF-32, not UTF-8. " <> @resave_hint
 
   @doc "Check a CSV is valid UTF-8, given its raw contents or a stream of one line per element."
   @spec validate(binary() | Enumerable.t()) :: :ok | {:error, String.t()}
-  # splitter, not split: a 20MB upload split eagerly measured at >100MB of heap
+  # splitter, not split, so a large upload is never held in memory twice
   def validate(contents) when is_binary(contents),
     do: contents |> String.splitter("\n") |> validate()
 

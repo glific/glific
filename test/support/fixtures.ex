@@ -3,6 +3,8 @@ defmodule Glific.Fixtures do
   A module for defining fixtures that can be used in tests.
   """
 
+  import ExUnit.Callbacks, only: [on_exit: 1]
+
   import Ecto.Query, warn: false
 
   alias GlificWeb.Flows
@@ -1570,5 +1572,14 @@ defmodule Glific.Fixtures do
       |> Repo.insert()
 
     evaluation
+  end
+
+  @doc "Write `contents` to a temp file that is removed when the test exits; returns its path."
+  @spec tmp_file_fixture(binary(), String.t()) :: Path.t()
+  def tmp_file_fixture(contents, ext \\ "csv") do
+    path = Path.join(System.tmp_dir!(), "fixture_#{System.unique_integer([:positive])}.#{ext}")
+    File.write!(path, contents)
+    on_exit(fn -> File.rm(path) end)
+    path
   end
 end

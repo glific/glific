@@ -4,7 +4,7 @@ defmodule Glific.CSV.EncodingTest do
   """
   use ExUnit.Case, async: true
 
-  alias Glific.CSV.Encoding
+  alias Glific.{CSV.Encoding, Fixtures}
 
   @bom <<0xEF, 0xBB, 0xBF>>
   @body "question,answer\nq1,fee is 10 – 20 and he said “hi”\n"
@@ -40,21 +40,15 @@ defmodule Glific.CSV.EncodingTest do
   end
 
   describe "strip_bom_from_file/1" do
-    setup do
-      path = Path.join(System.tmp_dir!(), "encoding_#{System.unique_integer([:positive])}.csv")
-      on_exit(fn -> File.rm(path) end)
-      %{path: path}
-    end
-
-    test "rewrites the file without its BOM", %{path: path} do
-      File.write!(path, @bom <> @body)
+    test "rewrites the file without its BOM" do
+      path = Fixtures.tmp_file_fixture(@bom <> @body)
 
       assert :ok == Encoding.strip_bom_from_file(path)
       assert @body == File.read!(path)
     end
 
-    test "leaves a file without a BOM untouched", %{path: path} do
-      File.write!(path, @body)
+    test "leaves a file without a BOM untouched" do
+      path = Fixtures.tmp_file_fixture(@body)
 
       assert :ok == Encoding.strip_bom_from_file(path)
       assert @body == File.read!(path)

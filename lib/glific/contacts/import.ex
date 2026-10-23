@@ -47,19 +47,19 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  def import_contacts(organization_id, contact_attrs, opts) do
+  def import_contacts(organization_id, attrs, opts) do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
-    new_attrs = %{
+    contact_attrs = %{
       organization_id: organization_id,
-      user: contact_attrs.user,
-      type: contact_attrs.type
+      user: attrs.user,
+      type: attrs.type
     }
 
     with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
-      handle_csv_for_admins(new_attrs, contact_data_as_stream, opts)
+      handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
     end
   end
 

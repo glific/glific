@@ -1,4 +1,7 @@
 defmodule Glific.Groups.WAGroupMemberImportTest do
+  @moduledoc """
+  Covers the background WhatsApp group member import from a CSV string, url or file.
+  """
   use Glific.DataCase, async: false
 
   alias Glific.{
@@ -164,9 +167,7 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
     organization_id: organization_id,
     wa_group: wa_group
   } do
-    path = Path.join(System.tmp_dir!(), "members_#{System.unique_integer([:positive])}.csv")
-    File.write!(path, <<"phone,name\n919900112266,Ren", 0xE9, "e\n">>)
-    on_exit(fn -> File.rm(path) end)
+    path = Fixtures.tmp_file_fixture(<<"phone,name\n919900112266,Ren", 0xE9, "e\n">>)
 
     assert {:error, message} =
              WAGroupMemberImport.import_members(organization_id, wa_group.id, file_path: path)

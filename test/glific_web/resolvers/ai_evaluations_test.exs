@@ -2311,16 +2311,11 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
   end
 
   defp golden_qa_upload(contents) do
-    path =
-      Path.join(
-        System.tmp_dir!(),
-        "golden_qa_upload_#{System.unique_integer([:positive])}.csv"
-      )
-
-    File.write!(path, contents)
-    on_exit(fn -> File.rm(path) end)
-
-    %Plug.Upload{path: path, content_type: "text/csv", filename: "golden_qa.csv"}
+    %Plug.Upload{
+      path: Glific.Fixtures.tmp_file_fixture(contents),
+      content_type: "text/csv",
+      filename: "golden_qa.csv"
+    }
   end
 
   defp write_golden_qa_csv_with_long_answer(line_break_count) do

@@ -232,7 +232,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       Encoding.strip_bom_from_file(path)
     end
   rescue
-    _ -> {:error, "Unable to parse the uploaded CSV file"}
+    File.Error -> {:error, "Unable to parse the uploaded CSV file"}
   end
 
   @spec validate_csv_structure(struct()) :: {:ok, non_neg_integer()} | {:error, String.t()}
