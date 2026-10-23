@@ -763,6 +763,25 @@ defmodule Glific.Contacts.BulkImportTest do
       refute exists?("919876570004")
     end
 
+    test "adds existing contacts to a group from a csv and rejects a non-utf8 one" do
+      contact = Fixtures.contact_fixture(%{organization_id: org_id()})
+
+      assert {:ok, %{message: "1 contacts added to group encoded"}} =
+               Import.add_contacts_to_group(org_id(), "encoded",
+                 data: "Contact Number\n#{contact.phone}\n"
+               )
+
+      assert {:ok, %Group{id: group_id}} = Repo.fetch_by(Group, %{label: "encoded"})
+      assert Repo.exists?(from cg in ContactGroup, where: cg.group_id == ^group_id)
+
+      assert {:error, %{message: message}} =
+               Import.add_contacts_to_group(org_id(), "encoded",
+                 data: <<"Contact Number\nCaf", 0xE9, "\n">>
+               )
+
+      assert message =~ "not valid UTF-8"
+    end
+
     test "strips the excel bom so the first header still parses" do
       bom = <<0xEF, 0xBB, 0xBF>>
 
