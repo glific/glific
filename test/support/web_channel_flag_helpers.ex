@@ -8,7 +8,7 @@ defmodule Glific.WebChannelFlagHelpers do
   """
 
   alias FunWithFlags.Store.Cache
-  alias Glific.Partners
+  alias Glific.{Partners, Repo, WebChannel.JwtSecret}
 
   @shortcode "web_channel"
 
@@ -32,6 +32,7 @@ defmodule Glific.WebChannelFlagHelpers do
   def activate_web_channel(organization_id \\ 1, keys \\ %{}, secrets \\ %{}) do
     case Partners.get_credential(%{organization_id: organization_id, shortcode: @shortcode}) do
       {:ok, credential} ->
+        secrets = Map.merge(credential.secrets || %{}, secrets)
         Partners.update_credential(credential, %{keys: keys, secrets: secrets, is_active: true})
 
       _not_yet ->
@@ -81,6 +82,32 @@ defmodule Glific.WebChannelFlagHelpers do
     after
       reset_web_channel_flag(organization_id)
     end
+  end
+
+  @doc """
+  Empties the organization's `web_channel` credential secrets, bypassing the auto-creation that
+  saving an active credential does, to put it in the state of an organization with no secret.
+  """
+  @spec remove_web_channel_secret(non_neg_integer()) :: :ok
+  def remove_web_channel_secret(organization_id \\ 1) do
+    {:ok, credential} =
+      Partners.get_credential(%{organization_id: organization_id, shortcode: @shortcode})
+
+    # Past the changeset, which refuses to remove a saved secret.
+    {:ok, _credential} = credential |> Ecto.Changeset.change(%{secrets: %{}}) |> Repo.update()
+
+    organization = Partners.organization(organization_id)
+    Partners.remove_organization_cache(organization.id, organization.shortcode)
+    :ok
+  end
+
+  @doc """
+  The organization's current web channel signing secret.
+  """
+  @spec web_channel_secret(non_neg_integer()) :: String.t()
+  def web_channel_secret(organization_id \\ 1) do
+    {:ok, secret} = JwtSecret.fetch(organization_id)
+    secret
   end
 
   @doc """
