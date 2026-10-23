@@ -9,7 +9,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
     Providers.Gupshup.Instrumentation
   }
 
-  @bsp_status_by_meta_status %{
+  @bsp_statuses %{
     "enqueued" => :enqueued,
     "sent" => :sent,
     "delivered" => :delivered,
@@ -84,7 +84,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
 
   @spec update_meta_status(Plug.Conn.t(), map()) :: :ok
   defp update_meta_status(conn, %{"status" => meta_status} = status) do
-    with {:ok, bsp_status} <- Map.fetch(@bsp_status_by_meta_status, meta_status),
+    with {:ok, bsp_status} <- Map.fetch(@bsp_statuses, meta_status),
          bsp_message_id when is_binary(bsp_message_id) <- status["gs_id"] || status["id"] do
       {error_code, _error_reason} = error = meta_error(status)
       status_params = bsp_status_params(status, bsp_status, error)
