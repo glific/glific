@@ -14,13 +14,30 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     Partners.Organization
   }
 
+  @type latency_stage() :: %{avg_latency_ms: float(), call_count: non_neg_integer()}
+
+  @type latency() :: %{
+          optional(:response) => latency_stage(),
+          optional(:judge) => latency_stage(),
+          optional(:embedding) => latency_stage(),
+          avg_latency_ms: float(),
+          call_count: non_neg_integer()
+        }
+
+  @type results() :: %{
+          summary_scores: [map()],
+          verdict: String.t() | nil,
+          overall_score: float() | nil,
+          latency: latency() | nil
+        }
+
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer() | nil,
           name: String.t() | nil,
           status: AIEvaluationStatus.t(),
           failure_reason: String.t() | nil,
-          results: map(),
+          results: results() | %{},
           kaapi_evaluation_id: non_neg_integer() | nil,
           duplication_factor: non_neg_integer() | nil,
           golden_qa_id: non_neg_integer() | nil,
