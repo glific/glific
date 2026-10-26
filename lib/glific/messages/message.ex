@@ -205,20 +205,21 @@ defmodule Glific.Messages.Message do
   # a label within the limit in bytes is within it in codepoints, so only longer ones are walked
   @spec fit_flow_label(String.t() | nil) :: String.t() | nil
   defp fit_flow_label(label) when is_binary(label) and byte_size(label) > @flow_label_max_length,
-    do: binary_part(label, 0, fitting_prefix_size(label, @flow_label_max_length, 0))
+    do: binary_part(label, 0, fit_long_flow_labels(label, @flow_label_max_length, 0))
 
   defp fit_flow_label(label), do: label
 
   # varchar(255) counts codepoints; stop at the last whole grapheme that fits, so the walk is
   # bounded by the limit rather than by the length of the label
-  @spec fitting_prefix_size(String.t(), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
-  defp fitting_prefix_size(rest, budget, size) do
+  @spec fit_long_flow_labels(String.t(), non_neg_integer(), non_neg_integer()) ::
+          non_neg_integer()
+  defp fit_long_flow_labels(rest, budget, size) do
     case String.next_grapheme(rest) do
       {grapheme, rest} ->
         cost = length(String.codepoints(grapheme))
 
         if cost <= budget,
-          do: fitting_prefix_size(rest, budget - cost, size + byte_size(grapheme)),
+          do: fit_long_flow_labels(rest, budget - cost, size + byte_size(grapheme)),
           else: size
 
       nil ->
