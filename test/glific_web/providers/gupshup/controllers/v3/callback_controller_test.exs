@@ -108,6 +108,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
 
     test "failed status with a Meta error code is recorded without contact side effects",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
+      {:ok, message} = Messages.update_message(message, %{bsp_status: :sent})
+
       contact_status = Contacts.get_contact!(message.contact_id).status
 
       payload =
@@ -128,6 +130,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
 
     test "failed status with top-level code and reason marks the contact invalid",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
+      {:ok, message} = Messages.update_message(message, %{bsp_status: :sent})
+
       payload =
         meta_status_payload(%{
           "gs_id" => gupshup_id,
@@ -151,6 +155,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
 
     test "failed status keeps a non-numeric error code as is",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
+      {:ok, message} = Messages.update_message(message, %{bsp_status: :sent})
+
       payload =
         meta_status_payload(%{
           "gs_id" => gupshup_id,
@@ -546,6 +552,49 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
 
       assert [_job] =
                all_enqueued(worker: Glific.WhatsappForms.WhatsappFormWorker, prefix: "global")
+    end
+  end
+
+  describe "duplicate callbacks" do
+    test "a failure already received in V2 format is not processed again from V3",
+         %{conn: conn} do
+      gupshup_id = Ecto.UUID.generate()
+
+      {:ok, message} =
+        %{bsp_message_id: gupshup_id}
+        |> Fixtures.message_fixture()
+        |> Messages.update_message(%{bsp_status: :sent})
+
+      v2_payload = %{
+        "app" => "Glific App",
+        "type" => "message-event",
+        "version" => 2,
+        "payload" => %{
+          "type" => "failed",
+          "gsId" => gupshup_id,
+          "id" => "gBEGkZkXRDmUAgl5FpzpjNgI5Co",
+          "payload" => %{"ts" => "1592311836", "code" => 1002}
+        }
+      }
+
+      assert post(conn, "/gupshup", v2_payload).status == 200
+      contact = Contacts.get_contact!(message.contact_id)
+      assert contact.status == :invalid
+      {:ok, _contact} = Contacts.update_contact(contact, %{status: :valid})
+
+      v3_payload =
+        meta_status_payload(%{
+          "gs_id" => gupshup_id,
+          "status" => "failed",
+          "code" => "1002",
+          "reason" => "Number does not exist on WhatsApp"
+        })
+
+      assert post(conn, "/gupshup", v3_payload).status == 200
+
+      message = Messages.get_message!(message.id)
+      assert get_in(message.errors, ["payload", "type"]) == "failed"
+      assert Contacts.get_contact!(message.contact_id).status == :valid
     end
   end
 

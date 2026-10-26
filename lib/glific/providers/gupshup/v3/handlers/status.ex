@@ -28,8 +28,12 @@ defmodule Glific.Providers.Gupshup.V3.Handlers.Status do
       {error_code, _error_reason} = error = status_error(status)
       status_params = bsp_status_params(status, bsp_status, error)
 
-      Communications.Message.update_bsp_status(bsp_message_id, bsp_status, status_params)
-      Instrumentation.track_status(bsp_status, organization_id, error_code: error_code)
+      status_changed? =
+        Communications.Message.update_bsp_status(bsp_message_id, bsp_status, status_params)
+
+      if status_changed?,
+        do: Instrumentation.track_status(bsp_status, organization_id, error_code: error_code),
+        else: :ok
     else
       _ -> :ok
     end

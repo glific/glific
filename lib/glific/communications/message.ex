@@ -179,16 +179,52 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
-  Callback to update the provider status for a message
+  Callback to update the provider status for a message, returns whether the status changed
   """
-  @spec update_bsp_status(String.t(), atom(), map()) :: any()
+  @spec update_bsp_status(String.t(), atom() | nil, map() | nil) :: boolean()
   def update_bsp_status(bsp_message_id, :error, errors) do
-    # we are making an additional query to db to fetch message for sending message status subscription
-    from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
-    |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
+    {updated, _} =
+      bsp_message_id
+      |> status_change_query(:error)
+      |> Repo.update_all(
+        set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
+      )
 
-    Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
-    |> case do
+    if updated > 0, do: publish_and_process_errors(bsp_message_id, errors)
+    updated > 0
+  end
+
+  def update_bsp_status(bsp_message_id, bsp_status, _params) do
+    {updated, _} =
+      bsp_message_id
+      |> status_change_query(bsp_status)
+      |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+
+    # we are making an additional query to db to fetch message for sending message status subscription
+    if updated > 0, do: fetch_and_publish_message_status(bsp_message_id)
+    updated > 0
+  end
+
+  # Gupshup can send the same status more than once (retries, and both V2 and V3 callbacks
+  # for one message), so only a real change may run the status side effects
+  @spec status_change_query(String.t(), atom() | nil) :: Ecto.Query.t()
+  defp status_change_query(bsp_message_id, nil),
+    do:
+      from(m in Message,
+        where: m.bsp_message_id == ^bsp_message_id and not is_nil(m.bsp_status)
+      )
+
+  defp status_change_query(bsp_message_id, bsp_status),
+    do:
+      from(m in Message,
+        where:
+          m.bsp_message_id == ^bsp_message_id and
+            (is_nil(m.bsp_status) or m.bsp_status != ^bsp_status)
+      )
+
+  @spec publish_and_process_errors(String.t(), map()) :: any()
+  defp publish_and_process_errors(bsp_message_id, errors) do
+    case Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id}) do
       {:ok, message} ->
         publish_message_status(message)
         process_errors(message, errors, errors["payload"]["payload"]["code"])
@@ -196,14 +232,6 @@ defmodule Glific.Communications.Message do
       error ->
         Logger.error("Could not update message status: #{Glific.SafeLog.safe_inspect(error)}")
     end
-  end
-
-  def update_bsp_status(bsp_message_id, bsp_status, _params) do
-    # we are making an additional query to db to fetch message for sending message status subscription
-    from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
-    |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
-
-    fetch_and_publish_message_status(bsp_message_id)
   end
 
   @doc """

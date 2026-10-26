@@ -491,6 +491,56 @@ defmodule Glific.CommunicationsTest do
     )
   end
 
+  describe "update_bsp_status/3" do
+    setup do
+      bsp_message_id = Ecto.UUID.generate()
+      message = Fixtures.message_fixture(%{bsp_message_id: bsp_message_id})
+      %{message: message, bsp_message_id: bsp_message_id}
+    end
+
+    test "updates a changed status and skips a repeated one",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      assert Communications.Message.update_bsp_status(bsp_message_id, :delivered, nil)
+      assert Messages.get_message!(message.id).bsp_status == :delivered
+
+      refute Communications.Message.update_bsp_status(bsp_message_id, :delivered, nil)
+      assert Messages.get_message!(message.id).bsp_status == :delivered
+    end
+
+    test "updates a message that has no status yet",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      Repo.update_all(
+        from(m in Messages.Message, where: m.id == ^message.id),
+        set: [bsp_status: nil]
+      )
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :sent, nil)
+      assert Messages.get_message!(message.id).bsp_status == :sent
+    end
+
+    test "clears the status once when the new status is nil",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      assert Communications.Message.update_bsp_status(bsp_message_id, nil, nil)
+      assert Messages.get_message!(message.id).bsp_status == nil
+
+      refute Communications.Message.update_bsp_status(bsp_message_id, nil, nil)
+    end
+
+    test "a repeated failure does not run the error handling again",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, errors)
+      contact = Contacts.get_contact!(message.contact_id)
+      assert contact.status == :invalid
+
+      {:ok, _contact} = Contacts.update_contact(contact, %{status: :valid})
+
+      refute Communications.Message.update_bsp_status(bsp_message_id, :error, errors)
+      assert Contacts.get_contact!(message.contact_id).status == :valid
+    end
+  end
+
   describe "mailer" do
     alias Swoosh.Email
     import Swoosh.TestAssertions
