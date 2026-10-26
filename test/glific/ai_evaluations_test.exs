@@ -8,7 +8,6 @@ defmodule Glific.AIEvaluationsTest do
   alias Glific.{
     AIEvaluations,
     AIEvaluations.AIEvaluation,
-    AIEvaluations.OrganizationEvalRequest,
     Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
@@ -418,74 +417,6 @@ defmodule Glific.AIEvaluationsTest do
         attrs
       )
     )
-  end
-
-  describe "request_eval_access/1" do
-    test "creates a new request with status requested", %{organization_id: organization_id} do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
-      Tesla.Mock.mock(fn %{method: :post} -> %Tesla.Env{status: 200, body: ""} end)
-
-      assert {:ok, %OrganizationEvalRequest{status: "requested"}} =
-               AIEvaluations.request_eval_access(organization_id)
-    end
-
-    test "sends Discord notification on new request", %{organization_id: organization_id} do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
-      test_pid = self()
-
-      Tesla.Mock.mock(fn %{method: :post} = env ->
-        send(test_pid, {:discord_called, env.body})
-        %Tesla.Env{status: 200, body: ""}
-      end)
-
-      AIEvaluations.request_eval_access(organization_id)
-
-      assert_received {:discord_called, body}
-      decoded = Jason.decode!(body)
-      [embed] = decoded["embeds"]
-      assert embed["title"] =~ "AI Evaluations Access Request"
-    end
-
-    test "returns existing request and does not send Discord notification again", %{
-      organization_id: organization_id
-    } do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
-      test_pid = self()
-
-      Tesla.Mock.mock(fn %{method: :post} = env ->
-        send(test_pid, {:discord_called, env.body})
-        %Tesla.Env{status: 200, body: ""}
-      end)
-
-      {:ok, first} = AIEvaluations.request_eval_access(organization_id)
-      {:ok, second} = AIEvaluations.request_eval_access(organization_id)
-
-      assert first.id == second.id
-      assert_received {:discord_called, _}
-      refute_received {:discord_called, _}
-    end
-  end
-
-  describe "get_eval_access_request/1" do
-    test "returns error tuple when no request exists", %{organization_id: organization_id} do
-      assert {:error, _} = AIEvaluations.get_eval_access_request(organization_id)
-    end
-
-    test "returns the request when it exists", %{organization_id: organization_id} do
-      {:ok, created} = AIEvaluations.request_eval_access(organization_id)
-
-      assert {:ok, %OrganizationEvalRequest{} = fetched} =
-               AIEvaluations.get_eval_access_request(organization_id)
-
-      assert fetched.id == created.id
-      assert fetched.status == "requested"
-    end
   end
 
   defp enable_kaapi(organization_id) do

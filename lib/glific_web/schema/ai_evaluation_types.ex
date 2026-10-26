@@ -171,12 +171,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       resolve(&Resolvers.AIEvaluations.get_golden_qa/3)
     end
 
-    @desc "Get the organization's AI Evaluations access request status"
-    field :org_eval_access_request, :org_eval_access_request do
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.AIEvaluations.get_org_eval_access_request/3)
-    end
-
     @desc "List active Kaapi models (openai only, for now)"
     field :kaapi_models, list_of(:kaapi_model) do
       middleware(Authorize, :staff)
@@ -184,22 +178,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     end
   end
 
-  object :org_eval_access_request do
-    field :status, :string
-  end
-
-  object :request_eval_access_result do
-    field :status, :string
-    field :errors, list_of(:result_error)
-  end
-
   object :ai_evaluation_mutations do
-    @desc "Request access to the AI Evaluations feature"
-    field :request_ai_evaluation_access, :request_eval_access_result do
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.AIEvaluations.request_ai_evaluation_access/3)
-    end
-
     @desc "Create Golden QA"
     field :create_golden_qa, :golden_qa_result do
       arg(:input, non_null(:golden_qa_input))

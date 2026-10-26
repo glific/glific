@@ -12,7 +12,6 @@ defmodule Glific.AIEvaluations do
   alias Glific.{
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
-    AIEvaluations.OrganizationEvalRequest,
     Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
@@ -23,8 +22,6 @@ defmodule Glific.AIEvaluations do
     Repo,
     ThirdParty.Kaapi
   }
-
-  alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
   @tunable_settings_keys ~w(temperature effort)
 
@@ -273,41 +270,6 @@ defmodule Glific.AIEvaluations do
         where(query, [e], e.golden_qa_id == ^golden_qa_id)
     end)
   end
-
-  @doc """
-  Requests access to the AI Evaluations feature for an organization.
-  Idempotent: if a request already exists for the org, returns the existing one.
-  """
-  @spec request_eval_access(non_neg_integer()) ::
-          {:ok, OrganizationEvalRequest.t()} | {:error, Ecto.Changeset.t()}
-  def request_eval_access(organization_id) do
-    case Repo.fetch_by(OrganizationEvalRequest, %{organization_id: organization_id}) do
-      {:ok, existing} ->
-        {:ok, existing}
-
-      {:error, _} ->
-        result =
-          %OrganizationEvalRequest{}
-          |> OrganizationEvalRequest.changeset(%{organization_id: organization_id})
-          |> Repo.insert()
-
-        with {:ok, _} <- result do
-          organization_id
-          |> Partners.organization()
-          |> DiscordNotifications.send_eval_access_request()
-        end
-
-        result
-    end
-  end
-
-  @doc """
-  Returns the eval access request for an organization, or nil if none exists.
-  """
-  @spec get_eval_access_request(non_neg_integer()) ::
-          {:ok, OrganizationEvalRequest.t()} | {:error, any()}
-  def get_eval_access_request(organization_id),
-    do: Repo.fetch_by(OrganizationEvalRequest, %{organization_id: organization_id})
 
   @spec filter_golden_qas(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_golden_qas(query, filter) do
