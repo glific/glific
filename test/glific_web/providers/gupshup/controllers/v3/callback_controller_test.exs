@@ -611,7 +611,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
           assert post(conn, "/gupshup", payload).status == 200
         end)
 
-      assert log =~ "Unhandled Gupshup V3 callback change with keys: [\"messaging_product\"]"
+      assert log =~ "Unhandled Gupshup V3 callback change: field=messages, type=messages"
     end
   end
 
