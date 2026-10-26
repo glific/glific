@@ -82,13 +82,21 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
-  Makes the contact's WhatsApp identity its current phone, replacing stale rows for it. An existing identity
-  moves to the phone with its consent and session state; a new one takes the contact's.
+  Keeps the contact's WhatsApp identity in step with the contact after `changes`: one identity, on the
+  contact's current phone, holding its consent and session state. A changed phone moves the existing
+  identity, with its state, to the new number; a missing identity is created from the contact.
   """
-  @spec set_whatsapp_identity(Contact.t()) :: :ok
-  def set_whatsapp_identity(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
+  @spec sync_whatsapp_identity(Contact.t(), changes()) :: :ok
+  def sync_whatsapp_identity(%Contact{phone: phone}, _changes) when phone in [nil, ""], do: :ok
 
-  def set_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
+  def sync_whatsapp_identity(contact, changes) do
+    if Map.has_key?(changes, :phone), do: set_whatsapp_identity(contact)
+    update_whatsapp_identity(contact, changes)
+  end
+
+  # Rare and several queries, so it runs only for a changed phone or a missing identity.
+  @spec set_whatsapp_identity(Contact.t()) :: :ok
+  defp set_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
     delete_stale_whatsapp_identities(contact)
 
     case current_whatsapp_identity_id(contact) do
@@ -121,14 +129,8 @@ defmodule Glific.Contacts.ContactIdentities do
     |> Repo.one()
   end
 
-  @doc """
-  Writes the consent and session fields among `changes` to the contact's WhatsApp identity, creating the
-  identity when it is missing.
-  """
   @spec update_whatsapp_identity(Contact.t(), changes()) :: :ok
-  def update_whatsapp_identity(%Contact{phone: phone}, _changes) when phone in [nil, ""], do: :ok
-
-  def update_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact, changes) do
+  defp update_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact, changes) do
     set =
       changes
       |> Map.take(ContactIdentity.state_fields())

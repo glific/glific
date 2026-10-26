@@ -447,7 +447,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert whatsapp_identity("919876500003").contact_id == contact.id
     end
 
-    test "set_whatsapp_identity takes over a stale row for the same phone", %{
+    test "sync_whatsapp_identity takes over a stale row for the same phone", %{
       organization_id: organization_id
     } do
       stale = Fixtures.contact_fixture(%{organization_id: organization_id})
@@ -457,7 +457,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       {:ok, other} = Contacts.update_contact(other, %{phone: phone})
 
       assert whatsapp_identity(phone).contact_id == other.id
-      assert :ok = ContactIdentities.set_whatsapp_identity(other)
+      assert :ok = ContactIdentities.sync_whatsapp_identity(other, %{phone: phone})
       assert whatsapp_identity(phone).contact_id == other.id
     end
 

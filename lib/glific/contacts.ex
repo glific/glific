@@ -413,7 +413,7 @@ defmodule Glific.Contacts do
       Repo.transaction(fn ->
         case Repo.update(changeset) do
           {:ok, contact} ->
-            follow_identity(contact, changes)
+            ContactIdentities.sync_whatsapp_identity(contact, changes)
             contact
 
           {:error, changeset} ->
@@ -423,12 +423,6 @@ defmodule Glific.Contacts do
     else
       Repo.update(changeset)
     end
-  end
-
-  @spec follow_identity(Contact.t(), map()) :: :ok
-  defp follow_identity(contact, changes) do
-    if Map.has_key?(changes, :phone), do: ContactIdentities.set_whatsapp_identity(contact)
-    ContactIdentities.update_whatsapp_identity(contact, changes)
   end
 
   # We do not want to block the simulator
@@ -1356,7 +1350,7 @@ defmodule Glific.Contacts do
         {:ok, contact}
 
       {:ok, contact, false} ->
-        ContactIdentities.set_whatsapp_identity(contact)
+        ContactIdentities.sync_whatsapp_identity(contact, %{})
         {:ok, contact}
 
       {:error, :not_found} ->
