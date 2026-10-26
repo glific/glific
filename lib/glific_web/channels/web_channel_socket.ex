@@ -15,7 +15,7 @@ defmodule GlificWeb.WebChannelSocket do
   alias Glific.RateLimit
   alias Glific.Repo
   alias GlificWeb.SubdomainPlug
-  alias GlificWeb.WebChannel.{Flag, Token}
+  alias GlificWeb.WebChannel.{Flag, Optin, Token}
 
   channel("web_channel:*", GlificWeb.WebChannel.RoomChannel)
 
@@ -86,23 +86,8 @@ defmodule GlificWeb.WebChannelSocket do
   defp resolve_contact(claims), do: Contacts.maybe_create_contact(claims, :web, claims.sub)
 
   @spec record_optin(Token.claims(), non_neg_integer()) :: :ok
-  defp record_optin(%{optin: true, sub: sub}, organization_id) do
-    case Contacts.contact_opted_in(%{}, organization_id, DateTime.utc_now(),
-           channel: :web,
-           identifier: sub,
-           method: "NGO"
-         ) do
-      {:ok, _contact} ->
-        :ok
-
-      {:error, reason} ->
-        Glific.log_error(
-          "Web channel opt-in not recorded: #{Glific.SafeLog.safe_inspect(reason)}"
-        )
-
-        :ok
-    end
-  end
+  defp record_optin(%{optin: true, sub: sub}, organization_id),
+    do: Optin.record(sub, organization_id, "NGO")
 
   defp record_optin(_claims, _organization_id), do: :ok
 

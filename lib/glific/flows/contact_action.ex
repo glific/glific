@@ -474,6 +474,7 @@ defmodule Glific.Flows.ContactAction do
   def optout(context) do
     # We need to update the contact with optout_time and status
     Contacts.contact_opted_out(
+      :whatsapp,
       context.contact.phone,
       context.contact.organization_id,
       DateTime.utc_now(),

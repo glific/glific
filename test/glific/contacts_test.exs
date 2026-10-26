@@ -1437,7 +1437,8 @@ defmodule Glific.ContactsTest do
       optin_time = DateTime.utc_now()
       message_id = Ecto.UUID.generate()
 
-      Contacts.contact_opted_in(%{phone: contact.phone}, organization_id, optin_time,
+      Contacts.contact_opted_in(:whatsapp, contact.phone, %{organization_id: organization_id},
+        utc_time: optin_time,
         method: "Testing",
         message_id: message_id
       )
@@ -1462,7 +1463,7 @@ defmodule Glific.ContactsTest do
 
       # if the contact is blocked he want be able to optin again
       Contacts.update_contact(contact, %{status: :blocked})
-      Contacts.contact_opted_in(%{phone: contact.phone}, organization_id, DateTime.utc_now())
+      Contacts.contact_opted_in(:whatsapp, contact.phone, %{organization_id: organization_id})
 
       {:ok, contact} =
         Repo.fetch_by(
@@ -1478,6 +1479,7 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(%{organization_id: organization_id, status: :valid})
 
       Contacts.contact_opted_out(
+        :whatsapp,
         contact.phone,
         organization_id,
         DateTime.utc_now(),
@@ -1500,7 +1502,12 @@ defmodule Glific.ContactsTest do
 
       assert history.event_meta["method"] == "OptedoutTesting"
 
-      assert Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now()) ==
+      assert Contacts.contact_opted_out(
+               :whatsapp,
+               "8910928313",
+               organization_id,
+               DateTime.utc_now()
+             ) ==
                :error
     end
 
@@ -2006,14 +2013,16 @@ defmodule Glific.ContactsTest do
                Contacts.maybe_update_contact(%{phone: nil, name: "x"})
     end
 
-    test "contact_opted_in/4 and contact_opted_out/4 refuse a nil phone",
+    test "contact_opted_in/4 and contact_opted_out/5 refuse a nil phone",
          %{organization_id: organization_id} do
       now = DateTime.utc_now()
 
       assert {:error, %Ecto.Changeset{}} =
-               Contacts.contact_opted_in(%{phone: nil}, organization_id, now)
+               Contacts.contact_opted_in(:whatsapp, nil, %{organization_id: organization_id},
+                 utc_time: now
+               )
 
-      assert :error == Contacts.contact_opted_out(nil, organization_id, now)
+      assert :error == Contacts.contact_opted_out(:whatsapp, nil, organization_id, now)
     end
 
     test "optin_contact/1 refuses a contact without a phone", %{organization_id: organization_id} do

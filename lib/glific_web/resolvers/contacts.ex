@@ -8,6 +8,8 @@ defmodule GlificWeb.Resolvers.Contacts do
   alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Repo, State}
   alias GlificWeb.Resolvers.ContactIdentities
 
+  @optin_identifier_arg %{whatsapp: :phone, web: :identifier}
+
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -162,18 +164,11 @@ defmodule GlificWeb.Resolvers.Contacts do
           {:ok, any} | {:error, any}
   def optin_contact(_, params, _) do
     {channel, params} = Map.pop(params, :channel, :whatsapp)
-    {identifier, params} = Map.pop(params, :identifier)
+    identifier = params[Map.fetch!(@optin_identifier_arg, channel)]
+    attrs = Map.drop(params, [:identifier])
 
     with :ok <- ContactIdentities.check_channel_enabled(channel, params.organization_id),
-         {:ok, contact} <-
-           Contacts.contact_opted_in(
-             Map.put_new(params, :phone, nil),
-             params.organization_id,
-             DateTime.utc_now(),
-             channel: channel,
-             identifier: identifier,
-             method: optin_method(channel)
-           ) do
+         {:ok, contact} <- Contacts.contact_opted_in(channel, identifier, attrs) do
       {:ok, %{contact: contact}}
     else
       {:error, :no_identifier} ->
@@ -187,10 +182,6 @@ defmodule GlificWeb.Resolvers.Contacts do
         error
     end
   end
-
-  @spec optin_method(atom()) :: String.t()
-  defp optin_method(:whatsapp), do: "BSP"
-  defp optin_method(_channel), do: "API"
 
   @doc """
   Release a simulator contact or nil if possible for this user

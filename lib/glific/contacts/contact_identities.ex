@@ -151,9 +151,11 @@ defmodule Glific.Contacts.ContactIdentities do
   """
   @spec set_bsp_status([non_neg_integer()], boolean(), atom(), DateTime.t()) :: :ok
   def set_bsp_status(contact_ids, opted_in?, bsp_status, now) do
-    ContactIdentity
-    |> where([i], i.channel == :whatsapp and i.contact_id in ^contact_ids)
-    |> where(^optin_time_filter(opted_in?))
+    from(i in ContactIdentity,
+      join: c in assoc(i, :contact),
+      where: i.channel == :whatsapp and i.contact_id in ^contact_ids,
+      where: ^optin_time_filter(opted_in?)
+    )
     |> Repo.update_all([set: [bsp_status: bsp_status, updated_at: now]],
       skip_organization_id: true
     )
@@ -162,23 +164,30 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @spec optin_time_filter(boolean()) :: Ecto.Query.dynamic_expr()
-  defp optin_time_filter(true), do: dynamic([i], not is_nil(i.optin_time))
-  defp optin_time_filter(false), do: dynamic([i], is_nil(i.optin_time))
+  defp optin_time_filter(true), do: dynamic([i, c], not is_nil(c.optin_time))
+  defp optin_time_filter(false), do: dynamic([i, c], is_nil(c.optin_time))
 
   @doc """
-  Records opt-in on the contact's web identity unless it already holds one, which keeps its first
-  `optin_time`; returns whether anything was recorded.
+  Records opt-in on the contact's identity on `channel` and clears its opt-out. With `keep_first:
+  true` an identity already opted in is left as it is; returns whether anything was recorded.
   """
-  @spec record_web_optin(Contact.t(), String.t(), DateTime.t(), String.t()) ::
-          :recorded | :already_opted_in
-  def record_web_optin(%Contact{id: contact_id}, identifier, utc_time, method) do
-    identifier = lookup_key(:web, identifier)
+  @spec record_optin(
+          Contact.t(),
+          MessageChannel.t(),
+          String.t(),
+          DateTime.t(),
+          String.t(),
+          keyword()
+        ) :: :recorded | :already_opted_in
+  def record_optin(%Contact{id: contact_id}, channel, identifier, utc_time, method, opts \\ []) do
+    identifier = lookup_key(channel, identifier)
 
     {updated, _rows} =
       from(i in ContactIdentity,
-        where: i.contact_id == ^contact_id and i.channel == :web and i.identifier == ^identifier,
-        where: i.optin_status == false
+        where:
+          i.contact_id == ^contact_id and i.channel == ^channel and i.identifier == ^identifier
       )
+      |> keep_first_optin(Keyword.get(opts, :keep_first, false))
       |> Repo.update_all(
         set: [
           optin_time: DateTime.truncate(utc_time, :second),
@@ -191,6 +200,26 @@ defmodule Glific.Contacts.ContactIdentities do
       )
 
     if updated > 0, do: :recorded, else: :already_opted_in
+  end
+
+  # In the UPDATE itself rather than a read before it, so two concurrent sign-ins cannot both record.
+  @spec keep_first_optin(Ecto.Query.t(), boolean()) :: Ecto.Query.t()
+  defp keep_first_optin(query, true), do: where(query, [i], i.optin_status == false)
+  defp keep_first_optin(query, false), do: query
+
+  @doc """
+  Whether the contact's identity on `channel` holds an opt-in.
+  """
+  @spec opted_in?(Contact.t(), MessageChannel.t(), String.t()) :: boolean()
+  def opted_in?(%Contact{id: contact_id}, channel, identifier) do
+    identifier = lookup_key(channel, identifier)
+
+    from(i in ContactIdentity,
+      where:
+        i.contact_id == ^contact_id and i.channel == ^channel and i.identifier == ^identifier,
+      where: i.optin_status == true
+    )
+    |> Repo.exists?()
   end
 
   @doc """
