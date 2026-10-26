@@ -6,8 +6,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   from the Pow staff flow in `GlificWeb.API.V1.RegistrationController`. The code travels over
   WhatsApp because SMS is not enabled yet (#5659).
 
-  Signing in records no consent. `contacts.optin_*` keeps its existing meaning of WhatsApp
-  consent (#5713); web-channel consent is captured in the widget UI, not persisted here.
+  Signing in alone records no consent. A `verify-otp` carrying `"optin": true` (the widget's consent
+  checkbox) records opt-in on the user's web identity, never on `contacts.optin_*`, which keeps its
+  meaning of WhatsApp consent (#5713).
   """
 
   use GlificWeb, :controller
@@ -84,14 +85,23 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   returning a web channel socket token for their contact.
   """
   @spec verify_otp(Conn.t(), map()) :: Conn.t()
-  def verify_otp(conn, %{"phone" => phone, "otp" => otp})
+  def verify_otp(conn, %{"phone" => phone, "otp" => otp} = params)
       when is_binary(phone) and phone != "" and is_binary(otp) and otp != "" do
     organization_id = conn.assigns[:organization_id]
 
     if Flag.web_channel_enabled?(organization_id) do
       case Contacts.parse_phone_number(phone) do
-        {:ok, normalized} -> verify_otp_for(conn, organization_id, normalized, otp)
-        {:error, message} -> unprocessable_entity_error(conn, message)
+        {:ok, normalized} ->
+          verify_otp_for(
+            conn,
+            organization_id,
+            normalized,
+            otp,
+            params["optin"] in [true, "true"]
+          )
+
+        {:error, message} ->
+          unprocessable_entity_error(conn, message)
       end
     else
       web_channel_disabled_error(conn)
@@ -101,12 +111,13 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   def verify_otp(conn, _params),
     do: unprocessable_entity_error(conn, "Phone number and OTP are required")
 
-  @spec verify_otp_for(Conn.t(), non_neg_integer(), String.t(), String.t()) :: Conn.t()
-  defp verify_otp_for(conn, organization_id, normalized, otp) do
+  @spec verify_otp_for(Conn.t(), non_neg_integer(), String.t(), String.t(), boolean()) ::
+          Conn.t()
+  defp verify_otp_for(conn, organization_id, normalized, otp, optin?) do
     case OTP.verify_code(:web_channel, normalized, otp) do
       :ok ->
         build_context(organization_id)
-        resolve_contact_and_sign_in(conn, organization_id, normalized)
+        resolve_contact_and_sign_in(conn, organization_id, normalized, optin?)
 
       # Distinguishing these would tell an attacker whether a code was ever issued for a number.
       {:error, _reason} ->
@@ -117,11 +128,14 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   # The code is already spent by the time we get here, so a hard match on a changeset failure
   # would 500 and strand the caller behind the throttle with no code. Two concurrent verifies for
   # an unknown phone can genuinely race on the (phone, organization_id) unique index.
-  @spec resolve_contact_and_sign_in(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
-  defp resolve_contact_and_sign_in(conn, organization_id, normalized) do
+  @spec resolve_contact_and_sign_in(Conn.t(), non_neg_integer(), String.t(), boolean()) ::
+          Conn.t()
+  defp resolve_contact_and_sign_in(conn, organization_id, normalized, optin?) do
     with {:ok, contact} <- ensure_contact(organization_id, normalized),
          {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
          {:ok, token} <- Token.generate(organization_id, contact.phone) do
+      if optin?, do: record_optin(organization_id, contact.phone)
+
       json(conn, %{
         data: %{
           token: token,
@@ -142,6 +156,23 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         |> json(%{
           error: %{status: 500, message: "Could not complete sign in. Please request a new code."}
         })
+    end
+  end
+
+  # The user is already signed in; failing to record consent must not take that away.
+  @spec record_optin(non_neg_integer(), String.t()) :: :ok
+  defp record_optin(organization_id, phone) do
+    case Contacts.contact_opted_in(%{}, organization_id, DateTime.utc_now(),
+           channel: :web,
+           identifier: phone,
+           method: "OTP"
+         ) do
+      {:ok, _contact} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error("Web channel OTP opt-in not recorded: #{SafeLog.safe_inspect(reason)}")
+        :ok
     end
   end
 

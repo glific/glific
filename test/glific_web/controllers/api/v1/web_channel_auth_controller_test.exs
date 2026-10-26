@@ -926,6 +926,39 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
+    test "with optin records opt-in on the web identity only", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        conn =
+          post(conn, Routes.api_v1_web_channel_auth_path(conn, :verify_otp), %{
+            "phone" => phone,
+            "otp" => code,
+            "optin" => true
+          })
+
+        contact_id = conn |> json_response(200) |> get_in(["data", "contact_id"])
+
+        assert %{optin_status: true, optin_method: "OTP"} =
+                 Repo.get_by!(ContactIdentity, contact_id: contact_id, channel: :web)
+
+        assert %Contact{optin_time: nil, optin_status: false} = Repo.get!(Contact, contact_id)
+      end)
+    end
+
+    test "without optin records no consent", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        contact_id = verify_otp_login(conn, phone)
+
+        assert %{optin_status: false, optin_time: nil} =
+                 Repo.get_by!(ContactIdentity, contact_id: contact_id, channel: :web)
+      end)
+    end
+
     test "records the contact's WhatsApp identity", %{conn: conn} do
       phone = unique_phone()
 
