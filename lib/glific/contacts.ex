@@ -957,13 +957,19 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
   # The web channel has no BSP, so it has no 24 hour session window and no `bsp_status`: a
   # contact that has only ever existed in a browser sits at `:none`, which both clauses above
-  # refuse. A contact on the web channel is reachable over their open socket regardless, so the only thing left
-  # to check when staff reply is that the contact is not blocked.
+  # refuse. On the web the checks are the contact's own: not blocked, and opted in on the web channel.
   def can_send_message_to?(contact, _is_hsm, %{channel: channel} = _attrs)
       when channel in [:web, "web"] do
-    if contact.status == :blocked,
-      do: {:error, dgettext("errors", "Contact is blocked.")},
-      else: {:ok, nil}
+    cond do
+      contact.status == :blocked ->
+        {:error, dgettext("errors", "Contact is blocked.")}
+
+      not ContactIdentities.opted_in?(contact, :web) ->
+        {:error, dgettext("errors", "Contact has not opted in on the web channel.")}
+
+      true ->
+        {:ok, nil}
+    end
   end
 
   def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
@@ -1350,7 +1356,7 @@ defmodule Glific.Contacts do
         {:ok, contact}
 
       {:ok, contact, false} ->
-        ContactIdentities.sync_whatsapp_identity(contact, %{})
+        ContactIdentities.sync_whatsapp_identity(contact, %{phone: contact.phone})
         {:ok, contact}
 
       {:error, :not_found} ->

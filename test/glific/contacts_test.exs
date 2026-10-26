@@ -2030,7 +2030,7 @@ defmodule Glific.ContactsTest do
                Contacts.optin_contact(%{phone: nil, organization_id: organization_id})
     end
 
-    test "can_send_message_to? refuses WhatsApp sends but allows web sends",
+    test "can_send_message_to? refuses WhatsApp sends, and web sends until opted in on web",
          %{organization_id: organization_id} do
       contact = %Contact{
         phone: nil,
@@ -2051,7 +2051,15 @@ defmodule Glific.ContactsTest do
       assert no_number ==
                Contacts.can_send_message_to?(contact, true, %{is_web_channel_otp: true})
 
-      assert {:ok, nil} == Contacts.can_send_message_to?(contact, false, %{channel: :web})
+      assert {:error, "Contact has not opted in on the web channel."} ==
+               Contacts.can_send_message_to?(contact, false, %{channel: :web})
+
+      web_contact =
+        %{organization_id: organization_id}
+        |> Fixtures.contact_without_phone_fixture()
+        |> Fixtures.web_opted_in_fixture()
+
+      assert {:ok, nil} == Contacts.can_send_message_to?(web_contact, false, %{channel: :web})
     end
 
     test "contact_blocked?/1 does not consult client block rules without a phone" do

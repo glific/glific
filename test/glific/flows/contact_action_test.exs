@@ -4,6 +4,7 @@ defmodule Glific.Flows.ContactActionTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactIdentities,
     Fixtures,
     Flows.Action,
     Flows.ContactAction,
@@ -28,6 +29,9 @@ defmodule Glific.Flows.ContactActionTest do
   test "optout/optin", attrs do
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # The backfill gives an existing contact its WhatsApp identity; the dual-write keeps it in step.
+    ContactIdentities.sync_whatsapp_identity(contact, %{phone: contact.phone})
 
     # preload contact
     context =
@@ -93,6 +97,7 @@ defmodule Glific.Flows.ContactActionTest do
         channel: :web
       })
 
+    Fixtures.web_opted_in_fixture(contact)
     context = Repo.preload(context, [:contact, :flow])
 
     ContactAction.send_message(context, %Action{text: "web reply"}, [])

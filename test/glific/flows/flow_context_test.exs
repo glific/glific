@@ -252,7 +252,7 @@ defmodule Glific.Flows.FlowContextTest do
     # A sub-flow started from a web parent must run on web too: otherwise its replies reach the BSP
     # and, because the parent is looked up by channel, the :web parent is orphaned when it completes.
     test "start_sub_flow inherits the parent's channel", %{flow: flow} do
-      contact = Fixtures.contact_fixture()
+      contact = Fixtures.contact_fixture() |> Fixtures.web_opted_in_fixture()
 
       {:ok, parent, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
       parent = Repo.preload(parent, [:contact, :flow])

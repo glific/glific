@@ -82,9 +82,10 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
-  Keeps the contact's WhatsApp identity in step with the contact after `changes`: one identity, on the
-  contact's current phone, holding its consent and session state. A changed phone moves the existing
-  identity, with its state, to the new number; a missing identity is created from the contact.
+  Keeps the contact's WhatsApp identity in step with the contact after `changes`. A `phone` in `changes`
+  makes the identity follow it: the existing identity moves to the number with its state, or one is
+  created from the contact. Other changes only update an identity that exists; a missing one is left
+  to the backfill.
   """
   @spec sync_whatsapp_identity(Contact.t(), changes()) :: :ok
   def sync_whatsapp_identity(%Contact{phone: phone}, _changes) when phone in [nil, ""], do: :ok
@@ -94,7 +95,7 @@ defmodule Glific.Contacts.ContactIdentities do
     update_whatsapp_identity(contact, changes)
   end
 
-  # Rare and several queries, so it runs only for a changed phone or a missing identity.
+  # Rare and several queries, so it runs only when the phone changes.
   @spec set_whatsapp_identity(Contact.t()) :: :ok
   defp set_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact) do
     delete_stale_whatsapp_identities(contact)
@@ -130,19 +131,16 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @spec update_whatsapp_identity(Contact.t(), changes()) :: :ok
-  defp update_whatsapp_identity(%Contact{id: contact_id, phone: phone} = contact, changes) do
+  defp update_whatsapp_identity(%Contact{id: contact_id, phone: phone}, changes) do
     set =
       changes
       |> Map.take(ContactIdentity.state_fields())
       |> Map.put(:updated_at, DateTime.utc_now())
 
-    {updated, _rows} =
-      from(i in ContactIdentity,
-        where: i.contact_id == ^contact_id and i.channel == :whatsapp and i.identifier == ^phone
-      )
-      |> Repo.update_all(set: Map.to_list(set))
-
-    if updated == 0, do: set_whatsapp_identity(contact)
+    from(i in ContactIdentity,
+      where: i.contact_id == ^contact_id and i.channel == :whatsapp and i.identifier == ^phone
+    )
+    |> Repo.update_all(set: Map.to_list(set))
 
     :ok
   end
@@ -197,6 +195,19 @@ defmodule Glific.Contacts.ContactIdentities do
       )
 
     if updated > 0, do: :recorded, else: :already_opted_in
+  end
+
+  @doc """
+  Whether any of the contact's identities on `channel` holds an opt-in.
+  """
+  @spec opted_in?(Contact.t(), MessageChannel.t()) :: boolean()
+  def opted_in?(%Contact{id: nil}, _channel), do: false
+
+  def opted_in?(%Contact{id: contact_id}, channel) do
+    from(i in ContactIdentity,
+      where: i.contact_id == ^contact_id and i.channel == ^channel and i.optin_status == true
+    )
+    |> Repo.exists?()
   end
 
   @doc """

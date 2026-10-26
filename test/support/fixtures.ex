@@ -116,6 +116,22 @@ defmodule Glific.Fixtures do
     contact
   end
 
+  @doc """
+  Opts the contact in on the web channel under `identifier`, adding that web identity if needed.
+  """
+  @spec web_opted_in_fixture(Contact.t(), String.t() | nil) :: Contact.t()
+  def web_opted_in_fixture(contact, identifier \\ nil) do
+    identifier = identifier || "web_#{contact.id}"
+    {:ok, contact} = Contacts.add_identity(contact, :web, identifier)
+
+    {:ok, contact} =
+      Contacts.contact_opted_in(:web, identifier, %{organization_id: contact.organization_id},
+        method: "API"
+      )
+
+    contact
+  end
+
   @doc false
   @spec contact_without_phone_fixture(map()) :: Contact.t()
   def contact_without_phone_fixture(attrs \\ %{}) do
