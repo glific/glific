@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
   load_gql(:add, GlificWeb.Schema, "assets/gql/contact_identities/add.gql")
   load_gql(:create_contact, GlificWeb.Schema, "assets/gql/contact_identities/create_contact.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contact_identities/list.gql")
+  load_gql(:optin_contact, GlificWeb.Schema, "assets/gql/contacts/optin_contact.gql")
 
   setup do
     WebChannelFlagHelpers.reset_web_channel_flag(1)
@@ -365,6 +366,59 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
 
       assert_received :identities_query
       refute_received :identities_query
+    end
+  end
+
+  describe "optinContact on the web channel" do
+    defp web_optin(user, attrs),
+      do:
+        auth_query_gql_by(:optin_contact, user,
+          variables: Map.merge(%{"channel" => "WEB", "identifier" => "Ravi_12"}, attrs)
+        )
+
+    test "opts in the web identity, creating the contact, and leaves WhatsApp consent alone",
+         %{manager: user} do
+      with_web_channel(fn ->
+        {:ok, query_data} = web_optin(user, %{"name" => "Ravi"})
+
+        assert nil == get_in(query_data, [:data, "optinContact", "errors"])
+        contact = get_in(query_data, [:data, "optinContact", "contact"])
+        assert %{"name" => "Ravi", "optinTime" => nil} = contact
+
+        identity = Repo.get_by!(ContactIdentity, channel: :web, identifier: "ravi_12")
+        assert %{optin_status: true, optin_method: "API"} = identity
+        assert identity.contact_id == String.to_integer(contact["id"])
+      end)
+    end
+
+    test "keeps the first opt-in when repeated", %{manager: user} do
+      with_web_channel(fn ->
+        {:ok, _first} = web_optin(user, %{})
+        first = Repo.get_by!(ContactIdentity, channel: :web, identifier: "ravi_12")
+
+        {:ok, second} = web_optin(user, %{})
+        assert nil == get_in(second, [:data, "optinContact", "errors"])
+
+        assert first.optin_time ==
+                 Repo.get_by!(ContactIdentity, channel: :web, identifier: "ravi_12").optin_time
+      end)
+    end
+
+    test "requires an identifier", %{manager: user} do
+      with_web_channel(fn ->
+        {:ok, query_data} =
+          auth_query_gql_by(:optin_contact, user, variables: %{"channel" => "WEB"})
+
+        assert [%{"key" => "Identifier"}] = get_in(query_data, [:data, "optinContact", "errors"])
+      end)
+    end
+
+    test "is refused while the web channel is off", %{manager: user} do
+      {:ok, query_data} = web_optin(user, %{})
+
+      assert [%{"message" => message}] = get_in(query_data, [:data, "optinContact", "errors"])
+      assert message =~ "not enabled"
+      assert nil == Repo.get_by(ContactIdentity, channel: :web, identifier: "ravi_12")
     end
   end
 end

@@ -61,6 +61,8 @@ defmodule GlificWeb.WebChannelSocket do
          :ok <- enter_organization(organization_id),
          {:ok, claims} <- Token.verify(organization_id, token),
          {:ok, contact} <- resolve_contact(claims) do
+      record_optin(claims, organization_id)
+
       {:ok,
        %{
          contact: contact,
@@ -82,6 +84,27 @@ defmodule GlificWeb.WebChannelSocket do
     do: Contacts.fetch_by_identity(:web, claims.sub)
 
   defp resolve_contact(claims), do: Contacts.maybe_create_contact(claims, :web, claims.sub)
+
+  @spec record_optin(Token.claims(), non_neg_integer()) :: :ok
+  defp record_optin(%{optin: true, sub: sub}, organization_id) do
+    case Contacts.contact_opted_in(%{}, organization_id, DateTime.utc_now(),
+           channel: :web,
+           identifier: sub,
+           method: "NGO"
+         ) do
+      {:ok, _contact} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Web channel opt-in not recorded: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+
+        :ok
+    end
+  end
+
+  defp record_optin(_claims, _organization_id), do: :ok
 
   @spec organization_from_host(map()) :: {:ok, non_neg_integer()} | :error
   defp organization_from_host(%{uri: %URI{host: host}}),

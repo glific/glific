@@ -324,8 +324,15 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
 
     field :optin_contact, :contact_result do
-      arg(:phone, non_null(:string))
+      @desc "The WhatsApp number to opt in, required on WHATSAPP"
+      arg(:phone, :string)
       arg(:name, :string)
+
+      @desc "The channel to opt the contact in on; defaults to WHATSAPP"
+      arg(:channel, :message_channel_enum)
+
+      @desc "The web username to opt in, required on WEB"
+      arg(:identifier, :string)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.optin_contact/3)
     end

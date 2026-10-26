@@ -156,21 +156,41 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc """
-  Upload a contact phone as opted in
+  Opt a contact in on a channel: by phone on WhatsApp, by identifier on web
   """
   @spec optin_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def optin_contact(_, params, _) do
-    with {:ok, contact} <-
+    {channel, params} = Map.pop(params, :channel, :whatsapp)
+    {identifier, params} = Map.pop(params, :identifier)
+
+    with :ok <- ContactIdentities.check_channel_enabled(channel, params.organization_id),
+         {:ok, contact} <-
            Contacts.contact_opted_in(
-             params,
+             Map.put_new(params, :phone, nil),
              params.organization_id,
              DateTime.utc_now(),
-             method: "BSP"
+             channel: channel,
+             identifier: identifier,
+             method: optin_method(channel)
            ) do
       {:ok, %{contact: contact}}
+    else
+      {:error, :no_identifier} ->
+        {:error,
+         [
+           "Identifier",
+           dgettext("errors", "Identifier is required to opt in on the web channel.")
+         ]}
+
+      error ->
+        error
     end
   end
+
+  @spec optin_method(atom()) :: String.t()
+  defp optin_method(:whatsapp), do: "BSP"
+  defp optin_method(_channel), do: "API"
 
   @doc """
   Release a simulator contact or nil if possible for this user

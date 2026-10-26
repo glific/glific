@@ -711,11 +711,43 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Update DB fields when contact opted in and ignore if it's blocked
+  Records a contact's opt-in on a channel, creating the contact when unknown. On `:whatsapp` (the
+  default) the contact is found by `phone` and a blocked one is ignored. With `channel: :web` it is
+  found by the `identifier` in `opts`, and the consent is recorded on that web identity only, never on
+  the contact's WhatsApp consent, keeping the first opt-in when one exists.
   """
   @spec contact_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
+  def contact_opted_in(contact_attrs, organization_id, utc_time, opts \\ []) do
+    case Keyword.get(opts, :channel, :whatsapp) do
+      :whatsapp -> whatsapp_opted_in(contact_attrs, organization_id, utc_time, opts)
+      :web -> web_opted_in(contact_attrs, Keyword.get(opts, :identifier), utc_time, opts)
+    end
+  end
+
+  @spec web_opted_in(map(), String.t() | nil, DateTime.t(), Keyword.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
+  defp web_opted_in(_contact_attrs, identifier, _utc_time, _opts) when identifier in [nil, ""],
+    do: {:error, :no_identifier}
+
+  defp web_opted_in(contact_attrs, identifier, utc_time, opts) do
+    method = Keyword.get(opts, :method, "API")
+
+    with {:ok, contact} <- maybe_create_contact(%{name: contact_attrs[:name]}, :web, identifier) do
+      if ContactIdentities.record_web_optin(contact, identifier, utc_time, method) == :recorded do
+        capture_history(contact, :contact_opted_in, %{
+          event_label: "contact opted in on web, via #{method}",
+          event_meta: %{channel: "web", method: method, utc_time: utc_time}
+        })
+      end
+
+      {:ok, contact}
+    end
+  end
+
+  @spec whatsapp_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def contact_opted_in(%{phone: phone} = contact_attrs, organization_id, utc_time, opts \\ []) do
+  defp whatsapp_opted_in(%{phone: phone} = contact_attrs, organization_id, utc_time, opts) do
     attrs = %{
       phone: phone,
       optin_time: utc_time,

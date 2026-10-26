@@ -2,21 +2,40 @@ defmodule GlificWeb.WebChannelSocketTest do
   @moduledoc false
   use GlificWeb.ChannelCase
 
+  import Ecto.Query
+
   alias Glific.{
     Contacts,
+    Contacts.ContactIdentity,
     Fixtures,
     Partners,
+    Repo,
     WebChannelFixtures,
     WebChannelFlagHelpers,
     WebChannelLoginHelpers
   }
 
+  alias GlificWeb.WebChannel.Token
   alias GlificWeb.WebChannelSocket
   alias Plug.Crypto.KeyGenerator
 
   setup do
     %{contact: WebChannelFixtures.web_contact_fixture()}
   end
+
+  defp connect_ngo(claims) do
+    {:ok, token} = Token.sign(1, claims)
+    WebChannelFixtures.connect_with_token(token)
+  end
+
+  defp web_identity(identifier),
+    do: Repo.get_by!(ContactIdentity, %{channel: :web, identifier: identifier})
+
+  defp optin_history(contact),
+    do:
+      Contacts.list_contact_history(%{
+        filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+      })
 
   describe "connect/3" do
     test "authenticates a contact with a valid token", %{contact: contact} do
@@ -27,6 +46,62 @@ defmodule GlificWeb.WebChannelSocketTest do
         assert is_integer(socket.assigns.token_exp)
         assert is_binary(socket.assigns.session_id)
         assert is_integer(socket.assigns.session_started_at)
+      end)
+    end
+
+    test "an NGO token with optin true opts in the web identity only" do
+      with_web_channel_enabled(fn ->
+        assert {:ok, socket} = connect_ngo(%{sub: "ngo_user", optin: true})
+        contact = socket.assigns.current_contact
+
+        assert %{optin_status: true, optin_method: "NGO", optin_time: %DateTime{}} =
+                 web_identity("ngo_user")
+
+        assert %{optin_status: false, optin_time: nil} =
+                 Repo.get!(Contacts.Contact, contact.id)
+
+        assert [_event] = optin_history(contact)
+      end)
+    end
+
+    test "logging in again keeps the first opt-in time" do
+      with_web_channel_enabled(fn ->
+        {:ok, _socket} = connect_ngo(%{sub: "ngo_user", optin: true})
+        first = web_identity("ngo_user")
+
+        Repo.update_all(from(i in ContactIdentity, where: i.id == ^first.id),
+          set: [optin_time: ~U[2020-01-01 00:00:00Z]]
+        )
+
+        {:ok, socket} = connect_ngo(%{sub: "ngo_user", optin: true})
+
+        assert web_identity("ngo_user").optin_time == ~U[2020-01-01 00:00:00Z]
+        assert [_event] = optin_history(socket.assigns.current_contact)
+      end)
+    end
+
+    test "optin false or absent records nothing" do
+      with_web_channel_enabled(fn ->
+        {:ok, _socket} = connect_ngo(%{sub: "ngo_false", optin: false})
+        {:ok, _socket} = connect_ngo(%{sub: "ngo_absent"})
+
+        for sub <- ["ngo_false", "ngo_absent"] do
+          assert %{optin_status: false, optin_time: nil} = web_identity(sub)
+        end
+      end)
+    end
+
+    test "a non-boolean optin refuses the connection" do
+      with_web_channel_enabled(fn ->
+        token =
+          %{"sub" => "ngo_bad", "channel" => "web", "optin" => "true"}
+          |> Map.merge(%{
+            "iat" => System.system_time(:second),
+            "exp" => System.system_time(:second) + 600
+          })
+          |> WebChannelFixtures.sign_web_channel_claims()
+
+        assert :error = WebChannelFixtures.connect_with_token(token)
       end)
     end
 
@@ -376,7 +451,7 @@ defmodule GlificWeb.WebChannelSocketTest do
       end)
     end
 
-    test "a bad token is still refused opaquely, not as server_busy", %{contact: _contact} do
+    test "a bad token is still refused opaquely, not as server_busy" do
       with_web_channel_enabled(fn ->
         assert :error =
                  connect(

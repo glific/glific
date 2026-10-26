@@ -919,4 +919,105 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                Fixtures.whatsapp_state(contact)
     end
   end
+
+  describe "contact_opted_in/4 on the web channel" do
+    setup %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      {:ok, _contact} = Contacts.add_identity(contact, :web, "ravi_web")
+      %{contact: contact}
+    end
+
+    defp web_opt_in(organization_id, time, opts \\ []) do
+      Contacts.contact_opted_in(
+        %{},
+        organization_id,
+        time,
+        Keyword.merge([channel: :web, identifier: "Ravi_Web", method: "API"], opts)
+      )
+    end
+
+    defp web_identity(contact),
+      do:
+        Repo.get_by!(ContactIdentity, %{contact_id: contact.id, channel: :web},
+          skip_organization_id: true
+        )
+
+    test "records consent on the web identity and leaves the contact's WhatsApp consent alone", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      before_optin =
+        Map.take(Repo.get!(Contact, contact.id), [:optin_status, :optin_time, :optin_method])
+
+      assert {:ok, %Contact{id: id}} = web_opt_in(organization_id, @optin_time)
+      assert id == contact.id
+
+      assert %{optin_status: true, optin_method: "API", optin_time: @optin_time, optout_time: nil} =
+               web_identity(contact)
+
+      assert before_optin ==
+               Map.take(Repo.get!(Contact, contact.id), [
+                 :optin_status,
+                 :optin_time,
+                 :optin_method
+               ])
+
+      refute Fixtures.whatsapp_identity(contact).optin_time == @optin_time
+
+      assert [%{event_label: "contact opted in on web, via API"}] =
+               Contacts.list_contact_history(%{
+                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+               })
+    end
+
+    test "clears an earlier opt-out on the web identity", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      Repo.update_all(
+        from(i in ContactIdentity, where: i.contact_id == ^contact.id and i.channel == :web),
+        set: [optout_time: @optin_time, optout_method: "Test"]
+      )
+
+      {:ok, _contact} = web_opt_in(organization_id, @optin_time)
+
+      assert %{optout_time: nil, optout_method: nil} = web_identity(contact)
+    end
+
+    test "keeps the first opt-in on a repeat and records one history event", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, _contact} = web_opt_in(organization_id, @optin_time, method: "NGO")
+
+      {:ok, _contact} =
+        web_opt_in(organization_id, DateTime.add(@optin_time, 3_600), method: "API")
+
+      assert %{optin_method: "NGO", optin_time: @optin_time} = web_identity(contact)
+
+      assert [_one] =
+               Contacts.list_contact_history(%{
+                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+               })
+    end
+
+    test "an unknown identifier creates the contact and opts it in",
+         %{organization_id: organization_id} do
+      assert {:ok, contact} = web_opt_in(organization_id, @optin_time, identifier: "newcomer")
+      assert %{optin_status: true} = web_identity(contact)
+      assert {:error, :no_identifier} = web_opt_in(organization_id, @optin_time, identifier: "")
+    end
+
+    test "a web identity of another organization is not touched" do
+      other = Fixtures.organization_fixture()
+      foreign = Fixtures.contact_without_phone_fixture(%{organization_id: other.id})
+      {:ok, _contact} = Contacts.add_identity(foreign, :web, "foreign_web")
+      Repo.put_organization_id(1)
+
+      assert {:ok, contact} = web_opt_in(1, @optin_time, identifier: "foreign_web")
+      assert contact.id != foreign.id and contact.organization_id == 1
+
+      assert %{optin_status: false} = web_identity(foreign)
+    end
+  end
 end

@@ -166,6 +166,34 @@ defmodule Glific.Contacts.ContactIdentities do
   defp optin_time_filter(false), do: dynamic([i], is_nil(i.optin_time))
 
   @doc """
+  Records opt-in on the contact's web identity unless it already holds one, which keeps its first
+  `optin_time`; returns whether anything was recorded.
+  """
+  @spec record_web_optin(Contact.t(), String.t(), DateTime.t(), String.t()) ::
+          :recorded | :already_opted_in
+  def record_web_optin(%Contact{id: contact_id}, identifier, utc_time, method) do
+    identifier = lookup_key(:web, identifier)
+
+    {updated, _rows} =
+      from(i in ContactIdentity,
+        where: i.contact_id == ^contact_id and i.channel == :web and i.identifier == ^identifier,
+        where: i.optin_status == false
+      )
+      |> Repo.update_all(
+        set: [
+          optin_time: DateTime.truncate(utc_time, :second),
+          optin_status: true,
+          optin_method: method,
+          optout_time: nil,
+          optout_method: nil,
+          updated_at: DateTime.utc_now()
+        ]
+      )
+
+    if updated > 0, do: :recorded, else: :already_opted_in
+  end
+
+  @doc """
   Whether a contact changeset's changes touch what a WhatsApp identity holds: the phone or the state.
   """
   @spec whatsapp_changes?(changes()) :: boolean()
@@ -227,20 +255,19 @@ defmodule Glific.Contacts.ContactIdentities do
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def add_web_identity(contact, identifier) do
     case contact |> identity_changeset(:web, identifier) |> Repo.insert() do
-      {:ok, _identity} -> {:ok, contact}
-      {:error, changeset} -> ok_if_contact_has_identifier(contact, identifier, changeset)
+      {:ok, _identity} ->
+        {:ok, contact}
+
+      {:error, changeset} ->
+        if identifier_taken?(changeset) and holds_web_identifier?(contact, identifier),
+          do: {:ok, contact},
+          else: {:error, changeset}
     end
   end
 
-  @spec ok_if_contact_has_identifier(Contact.t(), String.t(), Ecto.Changeset.t()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp ok_if_contact_has_identifier(contact, identifier, changeset) do
-    with true <- identifier_taken?(changeset),
-         {:ok, %Contact{id: id}} when id == contact.id <- fetch_contact(:web, identifier) do
-      {:ok, contact}
-    else
-      _on_another_contact -> {:error, changeset}
-    end
+  @spec holds_web_identifier?(Contact.t(), String.t()) :: boolean()
+  defp holds_web_identifier?(%Contact{id: contact_id}, identifier) do
+    match?({:ok, %Contact{id: ^contact_id}}, fetch_contact(:web, identifier))
   end
 
   @doc """
