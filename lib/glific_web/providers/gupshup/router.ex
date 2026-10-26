@@ -50,7 +50,7 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/sent", MessageEventController, :sent)
       post("/delivered", MessageEventController, :delivered)
       post("/read", MessageEventController, :read)
-      post("/statuses", MessageEventController, :statuses)
+      post("/statuses", V3.MessageEventController, :statuses)
       post("/*unknown", DefaultController, :unknown)
     end
 
