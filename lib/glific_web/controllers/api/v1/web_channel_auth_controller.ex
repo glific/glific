@@ -159,7 +159,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   end
 
-  # The user is signed in by now; a consent write that fails must not take that away.
+  # The user is signed in by now; a consent write that fails or raises must not take that away.
   @spec record_optin(String.t(), non_neg_integer()) :: :ok
   defp record_optin(phone, organization_id) do
     case Contacts.contact_opted_in(:web, phone, %{organization_id: organization_id},
@@ -172,6 +172,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         Glific.log_error("Web channel opt-in not recorded: #{SafeLog.safe_inspect(reason)}")
         :ok
     end
+  rescue
+    error ->
+      Glific.log_exception(error)
+      :ok
   end
 
   @doc """

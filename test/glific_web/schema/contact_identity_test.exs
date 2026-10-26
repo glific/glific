@@ -419,6 +419,28 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       end)
     end
 
+    test "records the opt-in history event on the web channel", %{manager: user} do
+      with_web_channel(fn ->
+        {:ok, query_data} = web_optin(user, %{})
+        contact_id = get_in(query_data, [:data, "optinContact", "contact", "id"])
+
+        assert [%{channel: :web, event_label: "contact opted in on web, via API"}] =
+                 Glific.Contacts.list_contact_history(%{
+                   filter: %{contact_id: contact_id, event_type: "contact_opted_in"}
+                 })
+      end)
+    end
+
+    test "an explicit null channel opts in on WhatsApp", %{manager: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:optin_contact, user,
+          variables: %{"channel" => nil, "phone" => "919876500099"}
+        )
+
+      assert nil == get_in(query_data, [:data, "optinContact", "errors"])
+      assert get_in(query_data, [:data, "optinContact", "contact", "optinTime"])
+    end
+
     test "is refused while the web channel is off", %{manager: user} do
       {:ok, query_data} = web_optin(user, %{})
 

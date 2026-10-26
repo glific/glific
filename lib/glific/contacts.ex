@@ -717,6 +717,7 @@ defmodule Glific.Contacts do
       opts
       |> Keyword.put_new(:method, default_optin_method(channel))
       |> Keyword.put_new_lazy(:utc_time, &DateTime.utc_now/0)
+      |> Keyword.update!(:utc_time, &DateTime.truncate(&1, :second))
 
     with {:ok, contact} <- fetch_or_create_by_identity(channel, identifier, attrs),
          {:ok, contact} <- skip_blocked(contact),
@@ -746,8 +747,12 @@ defmodule Glific.Contacts do
 
   @spec create_by_identity(:whatsapp | :web, String.t(), map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp create_by_identity(:whatsapp, phone, attrs),
-    do: attrs |> Map.put(:phone, phone) |> create_contact(:whatsapp, phone)
+  defp create_by_identity(:whatsapp, phone, attrs) do
+    case attrs |> Map.put(:phone, phone) |> create_contact(:whatsapp, phone) do
+      {:error, changeset} -> handle_phone_error(%{phone: phone}, changeset)
+      created -> created
+    end
+  end
 
   defp create_by_identity(:web, username, attrs),
     do: attrs |> Map.take([:name]) |> maybe_create_contact(:web, username)
@@ -810,6 +815,7 @@ defmodule Glific.Contacts do
     meta = %{channel: Atom.to_string(channel), method: opts[:method], utc_time: opts[:utc_time]}
 
     capture_history(contact, :contact_opted_in, %{
+      channel: channel,
       event_label: optin_history_label(channel, opts[:method]),
       event_meta:
         if(opts[:message_id], do: Map.put(meta, :optin_message_id, opts[:message_id]), else: meta)

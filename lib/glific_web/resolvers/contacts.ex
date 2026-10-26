@@ -163,7 +163,8 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec optin_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def optin_contact(_, params, _) do
-    {channel, params} = Map.pop(params, :channel, :whatsapp)
+    {channel, params} = Map.pop(params, :channel)
+    channel = channel || :whatsapp
     identifier = params[Map.fetch!(@optin_identifier_arg, channel)]
     attrs = Map.drop(params, [:identifier])
 
