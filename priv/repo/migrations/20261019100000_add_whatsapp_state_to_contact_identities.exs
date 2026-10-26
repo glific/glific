@@ -5,10 +5,8 @@ defmodule Glific.Repo.Migrations.AddWhatsappStateToContactIdentities do
   status and the 24 hour session clock), now also held on the contact's `(whatsapp, phone)` identity.
 
   The `contacts` columns stay authoritative and are still written. `Glific.Contacts` writes every change to
-  both, and nothing reads the identity columns yet. Identity rows that do not exist yet, and rows that
-  were created before the dual-write, are filled by `Glific.Contacts.IdentityBackfill`, run by hand: it
-  creates missing rows and overwrites existing ones from `contacts`. This migration only adds the columns,
-  since copying every contact here would hold the boot-time migration for too long.
+  both, and nothing reads the identity columns yet. This migration only adds the columns, since copying
+  every contact here would hold the boot-time migration for too long.
   """
   use Ecto.Migration
 

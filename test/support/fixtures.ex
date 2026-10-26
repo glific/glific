@@ -146,7 +146,7 @@ defmodule Glific.Fixtures do
 
   @doc """
   A contact with no WhatsApp identity row, whose `contacts` columns hold the given consent and session state:
-  what `Glific.Contacts.IdentityBackfill` copies from.
+  as a contact created before identities held this state.
   """
   @spec contact_without_identity_fixture(map()) :: Contact.t()
   def contact_without_identity_fixture(attrs \\ %{}) do
