@@ -25,7 +25,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     SafeLog
   }
 
-  alias GlificWeb.WebChannel.{DisplayName, Flag, Optin, Token}
+  alias GlificWeb.WebChannel.{DisplayName, Flag, Token}
   alias Plug.Conn
 
   # Identical whether or not `phone` is a known contact and whether or not delivery succeeded, so
@@ -134,7 +134,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     with {:ok, contact} <- ensure_contact(organization_id, normalized),
          {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
          {:ok, token} <- Token.generate(organization_id, contact.phone) do
-      if optin?, do: Optin.record(contact.phone, organization_id, "OTP")
+      if optin?, do: record_optin(contact.phone, organization_id)
 
       json(conn, %{
         data: %{
@@ -156,6 +156,21 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         |> json(%{
           error: %{status: 500, message: "Could not complete sign in. Please request a new code."}
         })
+    end
+  end
+
+  # The user is signed in by now; a consent write that fails must not take that away.
+  @spec record_optin(String.t(), non_neg_integer()) :: :ok
+  defp record_optin(phone, organization_id) do
+    case Contacts.contact_opted_in(:web, phone, %{organization_id: organization_id},
+           method: "OTP"
+         ) do
+      {:ok, _contact} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error("Web channel opt-in not recorded: #{SafeLog.safe_inspect(reason)}")
+        :ok
     end
   end
 

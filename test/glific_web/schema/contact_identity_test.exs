@@ -391,16 +391,22 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       end)
     end
 
-    test "keeps the first opt-in when repeated", %{manager: user} do
+    test "a repeat succeeds on the same contact and identity", %{manager: user} do
       with_web_channel(fn ->
-        {:ok, _first} = web_optin(user, %{})
-        first = Repo.get_by!(ContactIdentity, channel: :web, identifier: "ravi_12")
-
+        {:ok, first} = web_optin(user, %{})
         {:ok, second} = web_optin(user, %{})
+
         assert nil == get_in(second, [:data, "optinContact", "errors"])
 
-        assert first.optin_time ==
-                 Repo.get_by!(ContactIdentity, channel: :web, identifier: "ravi_12").optin_time
+        assert get_in(first, [:data, "optinContact", "contact", "id"]) ==
+                 get_in(second, [:data, "optinContact", "contact", "id"])
+
+        assert [%{optin_status: true, optin_method: "API"}] =
+                 Repo.all(
+                   from(i in ContactIdentity,
+                     where: i.channel == :web and i.identifier == "ravi_12"
+                   )
+                 )
       end)
     end
 
