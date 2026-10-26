@@ -15,8 +15,8 @@ defmodule GlificWeb.WebChannel.Flag do
   rule allows — "real extra logic beyond the flag check itself" — and the extra logic is the
   reason it exists rather than convenience or testability:
 
-  1. **It resolves an untrusted organization id.** Every caller here takes the id from a JWT
-     claim, so it can name an organization that does not exist. `Partners.organization/1`
+  1. **It resolves an untrusted organization id.** Callers take the id from a request host, so it
+     can name an organization that does not exist. `Partners.organization/1`
      returns `{:error, _}` in that case and `Flags.get_flag_enabled/2` is not defensive against
      it, so the check has to handle it before asking about the flag.
   2. **It pins the live read.** Reading `organization.web_channel_enabled` instead is a bug that
@@ -34,7 +34,7 @@ defmodule GlificWeb.WebChannel.Flag do
   @doc """
   Whether the web channel is on for an organization, false for one that does not exist.
 
-  Takes the id — which every caller reads from a JWT claim and so cannot trust — or an
+  Takes the id — which callers read from a request host and so cannot trust — or an
   organization already loaded, for a caller that has one and should not resolve it twice.
   """
   @spec web_channel_enabled?(non_neg_integer() | Organization.t()) :: boolean()

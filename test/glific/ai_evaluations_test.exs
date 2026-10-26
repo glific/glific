@@ -133,6 +133,12 @@ defmodule Glific.AIEvaluationsTest do
                 summary_scores: summary_scores,
                 traces: [],
                 overall: %{verdict: "Needs Refinement", overall_score: 3.84}
+              },
+              latency: %{
+                avg_latency_ms: 1250.5,
+                call_count: 50,
+                response: %{avg_latency_ms: 1800.0, call_count: 25},
+                judge: %{avg_latency_ms: 701.0, call_count: 25}
               }
             }
           }
@@ -151,6 +157,8 @@ defmodule Glific.AIEvaluationsTest do
       assert hd(updated.results["summary_scores"])["avg"] == 0.74
       assert updated.results["verdict"] == "Needs Refinement"
       assert updated.results["overall_score"] == 3.84
+      assert updated.results["latency"]["avg_latency_ms"] == 1250.5
+      assert updated.results["latency"]["response"]["call_count"] == 25
 
       assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
                notification_count + 1
@@ -178,7 +186,8 @@ defmodule Glific.AIEvaluationsTest do
       assert updated.results == %{
                "summary_scores" => [],
                "verdict" => nil,
-               "overall_score" => nil
+               "overall_score" => nil,
+               "latency" => nil
              }
     end
 

@@ -23,7 +23,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     WebChannel.Rooms
   }
 
-  alias GlificWeb.WebChannel.{JwtToken, MessageSerializer, Presence, Token}
+  alias GlificWeb.WebChannel.{MessageSerializer, Presence, Token}
 
   @page_size 100
   @max_body_length 4_096
@@ -242,27 +242,11 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   def handle_in("renew_token", _params, socket),
     do: {:reply, {:error, %{reason: "invalid_token"}}, socket}
 
-  # A socket renews only with the kind of token it connected with, so an NGO token can never extend
-  # a one-time-code session past its cap.
   @spec renewed_expiry(String.t(), Phoenix.Socket.t()) :: {:ok, integer()} | :error
-  defp renewed_expiry(token, %{assigns: %{token_kind: :ngo}} = socket),
-    do: renewed_ngo_expiry(token, socket)
-
   defp renewed_expiry(token, socket) do
-    with {:ok, payload} <- Token.verify_contact_token(token),
-         true <- payload.contact_id == socket.assigns.current_contact.id,
-         true <- payload.org_id == socket.assigns.organization_id do
-      {:ok, payload.exp}
-    else
-      _refused -> :error
-    end
-  end
-
-  @spec renewed_ngo_expiry(String.t(), Phoenix.Socket.t()) :: {:ok, integer()} | :error
-  defp renewed_ngo_expiry(token, socket) do
     current = socket.assigns.current_contact
 
-    with {:ok, claims} <- JwtToken.verify(socket.assigns.organization_id, token),
+    with {:ok, claims} <- Token.verify(socket.assigns.organization_id, token),
          {:ok, %Contact{id: id}} when id == current.id <-
            Contacts.fetch_by_identity(:web, claims.sub) do
       {:ok, claims.exp}
