@@ -48,11 +48,7 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   @doc false
   def call(%Conn{params: %{"entry" => entries}} = conn, opts)
       when is_list(entries) do
-    path =
-      case entry_route(entries) do
-        nil -> ["gupshup", "entry", "unknown"]
-        route -> active_path(conn, route)
-      end
+    path = active_path(conn, ["v3", "callback"])
 
     conn
     |> change_path_info(path)
@@ -80,41 +76,6 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
     if Glific.safe_string_to_atom(organization.status) == :active,
       do: ["gupshup" | route],
       else: ["gupshup", "not_active_or_approved"]
-  end
-
-  @spec entry_route([map()]) :: [String.t()] | nil
-  defp entry_route(entries) do
-    # A payload is routed to a single handler; Meta sends inbound messages and statuses
-    # as separate notifications, so a form reply wins if both ever arrive together
-    cond do
-      nfm_reply_message?(entries) -> ["message", "whatsapp_form_response"]
-      status_update?(entries) -> ["message-event", "statuses"]
-      true -> nil
-    end
-  end
-
-  @spec nfm_reply_message?(list()) :: boolean()
-  defp nfm_reply_message?([%{"changes" => [change | _]} | _]) do
-    case change do
-      %{"value" => %{"messages" => [%{"interactive" => %{"type" => "nfm_reply"}} | _]}} ->
-        true
-
-      _ ->
-        false
-    end
-  end
-
-  defp nfm_reply_message?(_), do: false
-
-  @spec status_update?(list()) :: boolean()
-  defp status_update?(entries) do
-    Enum.any?(entries, fn
-      %{"changes" => changes} when is_list(changes) ->
-        Enum.any?(changes, &match?(%{"value" => %{"statuses" => [_ | _]}}, &1))
-
-      _ ->
-        false
-    end)
   end
 
   @doc false

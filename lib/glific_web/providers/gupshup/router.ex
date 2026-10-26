@@ -22,7 +22,6 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     sent
     delivered
     read
-    statuses      # V3 (Meta format) payload with entry[].changes[].value.statuses
   message
     # payload.type
     text
@@ -36,6 +35,8 @@ defmodule GlificWeb.Providers.Gupshup.Router do
   template-event  # type == template-event
     # payload.type
     status-update
+  v3              # V3 (Meta format) payload with entry[].changes[], see V3.CallbackController
+    callback
   """
   scope "/gupshup", Controllers do
     scope "/user-event" do
@@ -50,7 +51,6 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/sent", MessageEventController, :sent)
       post("/delivered", MessageEventController, :delivered)
       post("/read", MessageEventController, :read)
-      post("/statuses", V3.MessageEventController, :statuses)
       post("/*unknown", DefaultController, :unknown)
     end
 
@@ -65,7 +65,11 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/video", MessageController, :video)
       post("/sticker", MessageController, :sticker)
       post("/location", MessageController, :location)
-      post("/whatsapp_form_response", MessageController, :whatsapp_form_response)
+      post("/*unknown", DefaultController, :unknown)
+    end
+
+    scope "/v3" do
+      post("/callback", V3.CallbackController, :callback)
       post("/*unknown", DefaultController, :unknown)
     end
 
