@@ -8,8 +8,8 @@ defmodule Glific.Repo.Migrations.MoveLastMessageAtTriggerToWhatsappIdentity do
   Locks are always taken on the `contacts` row first and the identity row second, as in
   `Glific.Contacts.update_contact/2`.
 
-  A contact whose WhatsApp identity row has not been backfilled yet gets the row inserted from its current
-  `contacts` values, so the message never loses the session start.
+  Like `contacts`, the identity is only updated, never inserted here: a contact without a WhatsApp identity
+  row is filled in by the backfill, from `contacts.last_message_at`, which this trigger keeps current.
   """
   use Ecto.Migration
 
@@ -118,16 +118,6 @@ defmodule Glific.Repo.Migrations.MoveLastMessageAtTriggerToWhatsappIdentity do
               UPDATE contact_identities
                 SET last_message_at = now, updated_at = now
                 WHERE contact_id = NEW.contact_id AND channel = 'whatsapp' AND identifier = var_phone;
-
-              IF NOT FOUND THEN
-                INSERT INTO contact_identities (contact_id, organization_id, channel, identifier, optin_time,
-                  optin_status, optin_method, optout_time, optout_method, bsp_status, last_message_at,
-                  inserted_at, updated_at)
-                SELECT id, organization_id, 'whatsapp', phone, optin_time, COALESCE(optin_status, false),
-                  optin_method, optout_time, optout_method, bsp_status, now, now, now
-                FROM contacts WHERE id = NEW.contact_id
-                ON CONFLICT (organization_id, channel, identifier) DO NOTHING;
-              END IF;
             END IF;
     """
   end

@@ -1008,7 +1008,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert state.contact == state.identity
     end
 
-    test "creates the identity from the contact when it is missing", %{
+    test "leaves a missing identity to the backfill and still updates the contact", %{
       organization_id: organization_id
     } do
       contact =
@@ -1020,7 +1020,14 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       inbound(contact)
 
-      assert %{optin_status: true, last_message_at: %DateTime{}} = assert_state_in_step(contact)
+      assert %Contact{last_message_at: %DateTime{}} = Repo.get!(Contact, contact.id)
+
+      assert [] =
+               Repo.all(
+                 from(i in ContactIdentity,
+                   where: i.contact_id == ^contact.id and i.channel == :whatsapp
+                 )
+               )
     end
 
     test "an inbound web message leaves both alone", %{contact: contact} do
