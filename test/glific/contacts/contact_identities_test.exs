@@ -627,6 +627,13 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       contact: contact,
       organization_id: organization_id
     } do
+      {:ok, contact} =
+        Contacts.update_contact(contact, %{
+          optin_status: false,
+          optin_time: nil,
+          optin_method: nil
+        })
+
       assert {:ok, opted_in} =
                Contacts.contact_opted_in(
                  :whatsapp,
@@ -678,6 +685,13 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       contact: contact,
       organization_id: organization_id
     } do
+      {:ok, contact} =
+        Contacts.update_contact(contact, %{
+          optin_status: false,
+          optin_time: nil,
+          optin_method: nil
+        })
+
       assert {:ok, _} =
                Contacts.optin_contact(%{
                  phone: contact.phone,
@@ -776,7 +790,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                })
     end
 
-    test "a BSP repeat keeps the first WhatsApp opt-in, an explicit one records again", %{
+    test "a repeat keeps the first WhatsApp opt-in, whatever the source", %{
       contact: contact,
       organization_id: organization_id
     } do
@@ -796,15 +810,12 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       later = DateTime.add(@optin_time, 3_600)
       {:ok, _} = optin.("BSP", @optin_time)
-      {:ok, _} = optin.("BSP", later)
+
+      for method <- ["BSP", "API", "registration"], do: {:ok, _} = optin.(method, later)
 
       assert %{optin_time: @optin_time, optin_method: "BSP"} = assert_state_in_step(contact)
 
-      {:ok, _} = optin.("API", later)
-
-      assert %{optin_time: ^later, optin_method: "API"} = assert_state_in_step(contact)
-
-      assert [_, _] =
+      assert [_one] =
                Contacts.list_contact_history(%{
                  filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
                })
@@ -1092,13 +1103,13 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert %{optout_time: nil, optout_method: nil} = web_identity(contact)
     end
 
-    test "an automatic repeat keeps the first opt-in and records one history event", %{
+    test "a repeat keeps the first web opt-in, whatever the source", %{
       contact: contact,
       organization_id: organization_id
     } do
       {:ok, _contact} = web_opt_in(organization_id, @optin_time, method: "NGO")
 
-      for method <- ["NGO", "OTP"] do
+      for method <- ["NGO", "OTP", "API"] do
         {:ok, _contact} =
           web_opt_in(organization_id, DateTime.add(@optin_time, 3_600), method: method)
       end
@@ -1111,39 +1122,16 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                })
     end
 
-    test "record_optin with keep_first leaves an opted-in identity alone, so a concurrent repeat cannot record",
+    test "record_optin leaves an opted-in identity alone, so a concurrent repeat cannot record",
          %{contact: contact, organization_id: organization_id} do
       {:ok, _contact} = web_opt_in(organization_id, @optin_time, method: "NGO")
-      later = DateTime.add(@optin_time, 3_600)
       identifier = web_identity(contact).identifier
+      later = DateTime.add(@optin_time, 3_600)
 
       assert :already_opted_in =
-               ContactIdentities.record_optin(contact, :web, identifier, later, "OTP",
-                 keep_first: true
-               )
+               ContactIdentities.record_optin(contact, :web, identifier, later, "OTP")
 
       assert %{optin_method: "NGO", optin_time: @optin_time} = web_identity(contact)
-
-      assert :recorded =
-               ContactIdentities.record_optin(contact, :web, identifier, later, "API")
-
-      assert %{optin_method: "API", optin_time: ^later} = web_identity(contact)
-    end
-
-    test "an explicit repeat records again", %{
-      contact: contact,
-      organization_id: organization_id
-    } do
-      later = DateTime.add(@optin_time, 3_600)
-      {:ok, _contact} = web_opt_in(organization_id, @optin_time, method: "NGO")
-      {:ok, _contact} = web_opt_in(organization_id, later, method: "API")
-
-      assert %{optin_method: "API", optin_time: ^later} = web_identity(contact)
-
-      assert [_one, _two] =
-               Contacts.list_contact_history(%{
-                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
-               })
     end
 
     test "a blocked contact records nothing", %{

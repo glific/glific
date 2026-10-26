@@ -34,7 +34,6 @@ defmodule Glific.Contacts do
   }
 
   @delete_timeout 400_000
-  @automatic_optin_methods ["BSP", "NGO", "OTP"]
 
   @type web_claims :: %{
           optional(:sub) => String.t(),
@@ -707,8 +706,8 @@ defmodule Glific.Contacts do
 
   @doc """
   Records a contact's opt-in on a channel, creating the contact from `attrs` when `identifier` (the phone
-  on WhatsApp, the username on web) is unknown. A blocked contact is left untouched, and an automatic
-  source (`BSP`, `NGO`, `OTP`) keeps the first opt-in on that channel.
+  on WhatsApp, the username on web) is unknown. A blocked contact is left untouched, and a contact
+  already opted in on that channel keeps its first opt-in.
   """
   @spec contact_opted_in(:whatsapp | :web, String.t() | nil, map(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
@@ -761,12 +760,11 @@ defmodule Glific.Contacts do
   defp skip_blocked(%Contact{status: :blocked} = contact), do: {:blocked, contact}
   defp skip_blocked(contact), do: {:ok, contact}
 
-  # Each write applies the repeat rule itself: an automatic opt-in for someone already opted in on that
-  # channel keeps the first one.
+  # Each write keeps the first opt-in itself, so the check and the write cannot drift apart.
   @spec write_optin(:whatsapp | :web, Contact.t(), String.t(), map(), Keyword.t()) ::
           {:recorded | :already_opted_in, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp write_optin(:whatsapp, contact, phone, attrs, opts) do
-    if contact.optin_status and automatic_optin?(opts),
+    if contact.optin_status,
       do: {:already_opted_in, contact},
       else: update_whatsapp_optin(contact, phone, attrs, opts)
   end
@@ -777,8 +775,7 @@ defmodule Glific.Contacts do
            :web,
            username,
            opts[:utc_time],
-           opts[:method],
-           keep_first: automatic_optin?(opts)
+           opts[:method]
          ) do
       :recorded -> {:recorded, contact}
       :already_opted_in -> {:already_opted_in, contact}
@@ -805,9 +802,6 @@ defmodule Glific.Contacts do
       {:recorded, contact}
     end
   end
-
-  @spec automatic_optin?(Keyword.t()) :: boolean()
-  defp automatic_optin?(opts), do: opts[:method] in @automatic_optin_methods
 
   @spec capture_optin_history(:whatsapp | :web, Contact.t(), Keyword.t()) ::
           {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}

@@ -170,26 +170,21 @@ defmodule Glific.Contacts.ContactIdentities do
   defp optin_time_filter(false), do: dynamic([i, c], is_nil(c.optin_time))
 
   @doc """
-  Records opt-in on the contact's identity on `channel` and clears its opt-out. With `keep_first:
-  true` an identity already opted in is left as it is; returns whether anything was recorded.
+  Records opt-in on the contact's identity on `channel` and clears its opt-out, unless that identity is
+  already opted in; returns whether anything was recorded.
   """
-  @spec record_optin(
-          Contact.t(),
-          MessageChannel.t(),
-          String.t(),
-          DateTime.t(),
-          String.t(),
-          keyword()
-        ) :: :recorded | :already_opted_in
-  def record_optin(%Contact{id: contact_id}, channel, identifier, utc_time, method, opts \\ []) do
+  @spec record_optin(Contact.t(), MessageChannel.t(), String.t(), DateTime.t(), String.t()) ::
+          :recorded | :already_opted_in
+  def record_optin(%Contact{id: contact_id}, channel, identifier, utc_time, method) do
     identifier = lookup_key(channel, identifier)
 
+    # In the UPDATE itself rather than a read before it, so two concurrent sign-ins cannot both record.
     {updated, _rows} =
       from(i in ContactIdentity,
         where:
-          i.contact_id == ^contact_id and i.channel == ^channel and i.identifier == ^identifier
+          i.contact_id == ^contact_id and i.channel == ^channel and i.identifier == ^identifier,
+        where: i.optin_status == false
       )
-      |> keep_first_optin(Keyword.get(opts, :keep_first, false))
       |> Repo.update_all(
         set: [
           optin_time: DateTime.truncate(utc_time, :second),
@@ -203,11 +198,6 @@ defmodule Glific.Contacts.ContactIdentities do
 
     if updated > 0, do: :recorded, else: :already_opted_in
   end
-
-  # In the UPDATE itself rather than a read before it, so two concurrent sign-ins cannot both record.
-  @spec keep_first_optin(Ecto.Query.t(), boolean()) :: Ecto.Query.t()
-  defp keep_first_optin(query, true), do: where(query, [i], i.optin_status == false)
-  defp keep_first_optin(query, false), do: query
 
   @doc """
   Whether a contact changeset's changes touch what a WhatsApp identity holds: the phone or the state.
