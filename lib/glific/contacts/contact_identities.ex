@@ -208,21 +208,6 @@ defmodule Glific.Contacts.ContactIdentities do
   defp keep_first_optin(query, false), do: query
 
   @doc """
-  Whether the contact's identity on `channel` holds an opt-in.
-  """
-  @spec opted_in?(Contact.t(), MessageChannel.t(), String.t()) :: boolean()
-  def opted_in?(%Contact{id: contact_id}, channel, identifier) do
-    identifier = lookup_key(channel, identifier)
-
-    from(i in ContactIdentity,
-      where:
-        i.contact_id == ^contact_id and i.channel == ^channel and i.identifier == ^identifier,
-      where: i.optin_status == true
-    )
-    |> Repo.exists?()
-  end
-
-  @doc """
   Whether a contact changeset's changes touch what a WhatsApp identity holds: the phone or the state.
   """
   @spec whatsapp_changes?(changes()) :: boolean()

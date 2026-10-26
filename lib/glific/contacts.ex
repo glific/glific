@@ -719,27 +719,20 @@ defmodule Glific.Contacts do
   @spec contact_opted_in(:whatsapp | :web, String.t() | nil, map(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
   def contact_opted_in(channel, identifier, attrs, opts \\ []) do
-    method = Keyword.get(opts, :method, default_optin_method(channel))
+    opts =
+      opts
+      |> Keyword.put_new(:method, default_optin_method(channel))
+      |> Keyword.put_new_lazy(:utc_time, &DateTime.utc_now/0)
 
-    with {:ok, contact} <- find_or_create_for_optin(channel, identifier, attrs) do
-      if skip_optin?(contact, channel, identifier, method) do
-        {:ok, contact}
-      else
-        utc_time = Keyword.get(opts, :utc_time, DateTime.utc_now())
-        message_id = Keyword.get(opts, :message_id)
-
-        case write_optin(channel, contact, identifier, attrs, utc_time, method, message_id) do
-          {:ok, contact} ->
-            capture_optin_history(channel, contact, utc_time, method, message_id)
-            {:ok, contact}
-
-          {:already_opted_in, contact} ->
-            {:ok, contact}
-
-          error ->
-            error
-        end
-      end
+    with {:ok, contact} <- fetch_or_create_by_identity(channel, identifier, attrs),
+         {:ok, contact} <- skip_blocked(contact),
+         {:recorded, contact} <- write_optin(channel, contact, identifier, attrs, opts) do
+      capture_optin_history(channel, contact, opts)
+      {:ok, contact}
+    else
+      {:blocked, contact} -> {:ok, contact}
+      {:already_opted_in, contact} -> {:ok, contact}
+      error -> error
     end
   end
 
@@ -747,88 +740,85 @@ defmodule Glific.Contacts do
   defp default_optin_method(:whatsapp), do: "BSP"
   defp default_optin_method(:web), do: "API"
 
-  @spec find_or_create_for_optin(:whatsapp | :web, String.t() | nil, map()) ::
+  @spec fetch_or_create_by_identity(:whatsapp | :web, String.t() | nil, map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
-  defp find_or_create_for_optin(channel, identifier, attrs) do
+  defp fetch_or_create_by_identity(channel, identifier, attrs) do
     case fetch_by_identity(channel, identifier) do
-      {:error, :not_found} -> create_for_optin(channel, identifier, attrs)
+      {:error, :not_found} -> create_by_identity(channel, identifier, attrs)
       {:error, :no_identifier} when channel == :whatsapp -> missing_phone_error(attrs)
       result -> result
     end
   end
 
-  @spec create_for_optin(:whatsapp | :web, String.t(), map()) ::
+  @spec create_by_identity(:whatsapp | :web, String.t(), map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp create_for_optin(:whatsapp, phone, attrs),
+  defp create_by_identity(:whatsapp, phone, attrs),
     do: attrs |> Map.put(:phone, phone) |> create_contact(:whatsapp, phone)
 
-  defp create_for_optin(:web, username, attrs),
+  defp create_by_identity(:web, username, attrs),
     do: attrs |> Map.take([:name]) |> maybe_create_contact(:web, username)
 
-  @spec skip_optin?(Contact.t(), :whatsapp | :web, String.t(), String.t()) :: boolean()
-  defp skip_optin?(%Contact{status: :blocked}, _channel, _identifier, _method), do: true
+  @spec skip_blocked(Contact.t()) :: {:ok, Contact.t()} | {:blocked, Contact.t()}
+  defp skip_blocked(%Contact{status: :blocked} = contact), do: {:blocked, contact}
+  defp skip_blocked(contact), do: {:ok, contact}
 
-  defp skip_optin?(contact, channel, identifier, method),
-    do: method in @automatic_optin_methods and opted_in_on?(contact, channel, identifier)
+  # Each write applies the repeat rule itself: an automatic opt-in for someone already opted in on that
+  # channel keeps the first one.
+  @spec write_optin(:whatsapp | :web, Contact.t(), String.t(), map(), Keyword.t()) ::
+          {:recorded | :already_opted_in, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp write_optin(:whatsapp, contact, phone, attrs, opts) do
+    if contact.optin_status and automatic_optin?(opts),
+      do: {:already_opted_in, contact},
+      else: update_whatsapp_optin(contact, phone, attrs, opts)
+  end
 
-  @spec opted_in_on?(Contact.t(), :whatsapp | :web, String.t()) :: boolean()
-  defp opted_in_on?(contact, :whatsapp, _phone), do: contact.optin_status
+  defp write_optin(:web, contact, username, _attrs, opts) do
+    case ContactIdentities.record_optin(
+           contact,
+           :web,
+           username,
+           opts[:utc_time],
+           opts[:method],
+           keep_first: automatic_optin?(opts)
+         ) do
+      :recorded -> {:recorded, contact}
+      :already_opted_in -> {:already_opted_in, contact}
+    end
+  end
 
-  defp opted_in_on?(contact, :web, username),
-    do: ContactIdentities.opted_in?(contact, :web, username)
-
-  @spec write_optin(
-          :whatsapp | :web,
-          Contact.t(),
-          String.t(),
-          map(),
-          DateTime.t(),
-          String.t(),
-          String.t() | nil
-        ) ::
-          {:ok, Contact.t()} | {:already_opted_in, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp write_optin(:whatsapp, contact, phone, attrs, utc_time, method, message_id) do
+  @spec update_whatsapp_optin(Contact.t(), String.t(), map(), Keyword.t()) ::
+          {:recorded, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp update_whatsapp_optin(contact, phone, attrs, opts) do
     optin_attrs =
       Map.merge(attrs, %{
         phone: phone,
-        optin_time: utc_time,
+        optin_time: opts[:utc_time],
         optin_status: true,
-        optin_method: method,
-        optin_message_id: message_id,
+        optin_method: opts[:method],
+        optin_message_id: opts[:message_id],
         optout_time: nil,
         status: :valid,
         updated_at: DateTime.utc_now()
       })
 
-    with {:ok, contact} <- update_contact(contact, optin_attrs) do
-      set_session_status(contact, :hsm)
+    with {:ok, contact} <- update_contact(contact, optin_attrs),
+         {:ok, contact} <- set_session_status(contact, :hsm) do
+      {:recorded, contact}
     end
   end
 
-  defp write_optin(:web, contact, username, _attrs, utc_time, method, _message_id) do
-    keep_first = method in @automatic_optin_methods
+  @spec automatic_optin?(Keyword.t()) :: boolean()
+  defp automatic_optin?(opts), do: opts[:method] in @automatic_optin_methods
 
-    case ContactIdentities.record_optin(contact, :web, username, utc_time, method,
-           keep_first: keep_first
-         ) do
-      :recorded -> {:ok, contact}
-      :already_opted_in -> {:already_opted_in, contact}
-    end
-  end
-
-  @spec capture_optin_history(
-          :whatsapp | :web,
-          Contact.t(),
-          DateTime.t(),
-          String.t(),
-          String.t() | nil
-        ) :: {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
-  defp capture_optin_history(channel, contact, utc_time, method, message_id) do
-    meta = %{channel: Atom.to_string(channel), method: method, utc_time: utc_time}
+  @spec capture_optin_history(:whatsapp | :web, Contact.t(), Keyword.t()) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
+  defp capture_optin_history(channel, contact, opts) do
+    meta = %{channel: Atom.to_string(channel), method: opts[:method], utc_time: opts[:utc_time]}
 
     capture_history(contact, :contact_opted_in, %{
-      event_label: optin_history_label(channel, method),
-      event_meta: if(message_id, do: Map.put(meta, :optin_message_id, message_id), else: meta)
+      event_label: optin_history_label(channel, opts[:method]),
+      event_meta:
+        if(opts[:message_id], do: Map.put(meta, :optin_message_id, opts[:message_id]), else: meta)
     })
   end
 
