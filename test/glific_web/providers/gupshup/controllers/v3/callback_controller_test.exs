@@ -136,18 +136,17 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
         meta_status_payload(%{
           "gs_id" => gupshup_id,
           "status" => "failed",
-          "code" => "1002",
-          "reason" => "Number does not exist on WhatsApp"
+          "code" => "131026",
+          "reason" => "Message undeliverable"
         })
 
       conn = post(conn, "/gupshup", payload)
       assert response(conn, 200) == ""
 
       message = Messages.get_message!(message.id)
-      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 131_026
 
-      assert get_in(message.errors, ["payload", "payload", "reason"]) ==
-               "Number does not exist on WhatsApp"
+      assert get_in(message.errors, ["payload", "payload", "reason"]) == "Message undeliverable"
 
       assert message.errors["source"] == "meta"
       refute Contacts.get_contact!(message.contact_id).status == :invalid
@@ -590,7 +589,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
       assert post(conn, "/gupshup", v2_payload).status == 200
 
       message = Messages.get_message!(message.id)
-      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 131_026
       assert Contacts.get_contact!(message.contact_id).status == :invalid
     end
 
@@ -624,8 +623,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
         meta_status_payload(%{
           "gs_id" => gupshup_id,
           "status" => "failed",
-          "code" => "1002",
-          "reason" => "Number does not exist on WhatsApp"
+          "code" => "131026",
+          "reason" => "Message undeliverable"
         })
 
       assert post(conn, "/gupshup", v3_payload).status == 200
