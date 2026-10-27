@@ -644,7 +644,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["certificate_enabled"] == false
     assert services["template_v2_enabled"] == false
     assert services["template_library_enabled"] == false
-    assert services["ai_evaluation_v2_enabled"] == false
     assert services["glific_ai_enabled"] == false
     assert services["web_channel_enabled"] == false
     assert services["bulk_flow_results_enabled"] == false

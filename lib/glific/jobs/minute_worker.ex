@@ -12,7 +12,6 @@ defmodule Glific.Jobs.MinuteWorker do
   require Logger
 
   alias Glific.{
-    AIEvaluations,
     Assistants,
     BigQuery.BigQueryWorker,
     Contacts,
@@ -61,16 +60,12 @@ defmodule Glific.Jobs.MinuteWorker do
               "gcs",
               "triggers_and_broadcast",
               "check_user_job_status",
-              "poll_ai_evaluations",
               "stats"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
         Partners.perform_all(&Contacts.update_contact_status/2, args, [])
-
-      "poll_ai_evaluations" ->
-        Partners.perform_all(&AIEvaluations.poll_and_update/1, nil, [])
 
       "wakeup_flows" ->
         FlowContext.wakeup_flows()
