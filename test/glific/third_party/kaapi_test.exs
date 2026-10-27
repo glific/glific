@@ -12,48 +12,6 @@ defmodule Glific.ThirdParty.KaapiTest do
     request_metadata: %{request_id: "req-1", user_id: 9}
   }
 
-  describe "upload_evaluation_dataset/2" do
-    setup [:enable_kaapi_credential, :create_dataset_upload_params]
-
-    test "extracts name and dataset_id from a well-shaped v1 response", %{
-      organization_id: organization_id,
-      dataset_params: dataset_params
-    } do
-      mock(fn %Tesla.Env{method: :post, url: url} ->
-        assert url =~ "/api/v1/evaluations/datasets"
-
-        %Tesla.Env{
-          status: 200,
-          body: %{data: %{dataset_name: "valid_dataset", dataset_id: "88002"}}
-        }
-      end)
-
-      assert {:ok, %{name: "valid_dataset", dataset_id: "88002"}} =
-               Kaapi.upload_evaluation_dataset(dataset_params, organization_id)
-    end
-
-    test "returns a generic error and does not crash on an unexpected response shape", %{
-      organization_id: organization_id,
-      dataset_params: dataset_params
-    } do
-      mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{status: 200, body: %{data: %{unexpected: "shape"}}}
-      end)
-
-      assert {:error, "An unknown error occurred, please contact Glific support."} =
-               Kaapi.upload_evaluation_dataset(dataset_params, organization_id)
-    end
-
-    test "passes an upstream error through unchanged", %{
-      organization_id: organization_id,
-      dataset_params: dataset_params
-    } do
-      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
-
-      assert {:error, :timeout} = Kaapi.upload_evaluation_dataset(dataset_params, organization_id)
-    end
-  end
-
   describe "upload_evaluation_dataset_v2/2" do
     setup [:enable_kaapi_credential, :create_dataset_upload_params]
 
@@ -697,6 +655,35 @@ defmodule Glific.ThirdParty.KaapiTest do
 
       assert {:ok, %{success: true, data: %{id: "asst_5", version: %{version: 1}}}} =
                Kaapi.create_assistant_config(params, 1)
+    end
+
+    test "adds inline guardrails to the config blob" do
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded_body = Jason.decode!(body)
+
+        assert decoded_body["config_blob"]["input_guardrails"] == [
+                 %{"type" => "pii_remover"}
+               ]
+
+        assert decoded_body["config_blob"]["output_guardrails"] == []
+
+        %Tesla.Env{
+          status: 200,
+          body: %{success: true, data: %{id: "asst_1", version: %{version: 1}}, metadata: %{}}
+        }
+      end)
+
+      params = %{
+        name: "Guarded Assistant",
+        model: "gpt-4.1",
+        prompt: "You are a helpful assistant",
+        knowledge_base_ids: [],
+        settings: %{"temperature" => 1},
+        input_guardrails: [%{"type" => "pii_remover"}],
+        output_guardrails: []
+      }
+
+      assert {:ok, %{success: true}} = Kaapi.create_assistant_config(params, 1)
     end
   end
 

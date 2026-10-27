@@ -506,15 +506,14 @@ defmodule Glific.Flags do
       :is_ask_glific_enabled,
       :is_whatsapp_forms_enabled,
       :high_trigger_tps_enabled,
-      :ai_evaluations,
-      :is_ai_evaluation_enabled,
       :is_prompt_generator_enabled,
       :is_template_v2_enabled,
       :is_template_library_enabled,
       :glific_ai_enabled,
       :web_channel_enabled,
       :bulk_contact_update_enabled,
-      :bulk_flow_results_enabled
+      :bulk_flow_results_enabled,
+      :is_ai_guardrail_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

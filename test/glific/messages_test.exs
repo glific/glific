@@ -358,6 +358,38 @@ defmodule Glific.MessagesTest do
       assert message.body == ""
     end
 
+    test "create_message/1 truncates a flow label longer than the column allows", attrs do
+      assert {:ok, message} =
+               @valid_attrs
+               |> Map.put(:flow_label, String.duplicate("e\u0301", 200))
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_message()
+
+      assert message.flow_label == String.duplicate("e\u0301", 127)
+    end
+
+    test "create_message/1 keeps a multibyte flow label that fits the column", attrs do
+      flow_label = String.duplicate("\u0915", 255)
+
+      assert {:ok, message} =
+               @valid_attrs
+               |> Map.put(:flow_label, flow_label)
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_message()
+
+      assert Repo.get!(Message, message.id).flow_label == flow_label
+    end
+
+    test "update_message/2 clears a flow label set to nil", attrs do
+      message =
+        attrs
+        |> Map.put(:flow_label, "availability_confirmed")
+        |> message_fixture()
+
+      assert {:ok, %Message{flow_label: nil}} =
+               Messages.update_message(message, %{flow_label: nil})
+    end
+
     test "create_message/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end
@@ -1510,6 +1542,40 @@ defmodule Glific.MessagesTest do
     end
   end
 
+  describe "sending to a contact without a phone" do
+    setup %{organization_id: organization_id} do
+      %{contact: Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})}
+    end
+
+    test "a WhatsApp send is refused before reaching the provider", %{contact: contact} do
+      assert {:error, "Contact has no WhatsApp number."} ==
+               Messages.create_and_send_message(%{
+                 body: "hi",
+                 flow: :outbound,
+                 type: :text,
+                 sender_id: Partners.organization_contact_id(contact.organization_id),
+                 receiver_id: contact.id,
+                 organization_id: contact.organization_id
+               })
+    end
+
+    test "a web send is delivered", %{contact: contact} do
+      assert {:ok, %Message{} = message} =
+               Messages.create_and_send_message(%{
+                 body: "hi on the web",
+                 flow: :outbound,
+                 type: :text,
+                 channel: :web,
+                 sender_id: Partners.organization_contact_id(contact.organization_id),
+                 receiver_id: contact.id,
+                 organization_id: contact.organization_id
+               })
+
+      assert %{status: status} = Repo.reload!(message)
+      refute status == :error
+    end
+  end
+
   describe "message_media" do
     @valid_attrs %{
       caption: "some caption",
@@ -1601,6 +1667,31 @@ defmodule Glific.MessagesTest do
       assert other_media.id != first_media.id
       assert other_media.caption == "a different caption"
       assert Messages.count_messages_media() == 2
+    end
+
+    test "create_message_media/1 reuses the row for a blank caption", attrs do
+      attrs = Map.merge(@valid_attrs, %{organization_id: attrs.organization_id, caption: ""})
+
+      assert {:ok, %MessageMedia{caption: nil} = first_media} =
+               Messages.create_message_media(attrs)
+
+      assert {:ok, %MessageMedia{} = same_media} = Messages.create_message_media(attrs)
+      assert same_media.id == first_media.id
+      assert Messages.count_messages_media() == 1
+    end
+
+    test "create_message_media/1 without a caption does not reuse a captioned row", attrs do
+      assert {:ok, %MessageMedia{} = captioned} =
+               Messages.create_message_media(
+                 Map.merge(@valid_attrs, %{organization_id: attrs.organization_id})
+               )
+
+      assert {:ok, %MessageMedia{caption: nil} = uncaptioned} =
+               Messages.create_message_media(
+                 Map.merge(@valid_attrs, %{organization_id: attrs.organization_id, caption: nil})
+               )
+
+      assert uncaptioned.id != captioned.id
     end
 
     test "create_message_media/1 with invalid data returns error changeset", attrs do

@@ -212,7 +212,11 @@ config :glific,
 
 config :glific, Glific.Erase,
   msg_delete_batch_size: env!("MSG_DELETE_BATCH_SIZE", :integer, 100_000),
-  max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000)
+  max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000),
+  version_retention_days: env!("VERSION_RETENTION_DAYS", :integer, 90),
+  version_delete_batch_size: env!("VERSION_DELETE_BATCH_SIZE", :integer, 50_000),
+  max_version_rows_to_delete: env!("MAX_VERSION_ROWS_TO_DELETE", :integer, 5_000_000),
+  versions_kept_per_entity: env!("VERSIONS_KEPT_PER_ENTITY", :integer, 10)
 
 # Percent of total job metrics to be sent to appsignal
 config :glific,
@@ -241,8 +245,7 @@ config :glific, Glific.ThirdParty.Gemini.ApiClient,
 
 config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
-  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
-  discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
+  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil)
 
 # The BSP webhooks are unauthenticated, so callers are filtered on the source IPs the
 # provider publishes; anything else gets a 403.
@@ -347,6 +350,11 @@ search_repo_module =
 config :glific, Glific.Searches, repo_module: search_repo_module
 
 unless config_env() == :test do
+  config :glific, Glific.AI.Langfuse,
+    host: env!("LANGFUSE_BASE_URL", :string, nil),
+    public_key: env!("LANGFUSE_PUBLIC_KEY", :string, nil),
+    secret_key: env!("LANGFUSE_SECRET_KEY", :string, nil)
+
   config :glific, Glific.ThirdParty.Superset.ApiClient,
     base_url: env!("SUPERSET_URL", :string, "https://not-configured.invalid/api/v1"),
     dashboard_id: env!("SUPERSET_DASHBOARD_ID", :string, "this_is_not_a_dashboard_id"),

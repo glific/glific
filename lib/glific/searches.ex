@@ -10,7 +10,9 @@ defmodule Glific.Searches do
   Conversations.WAConversation
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
+    Contacts.TermSearch,
     Conversations,
     Conversations.Conversation,
     Conversations.WAConversation,
@@ -176,11 +178,24 @@ defmodule Glific.Searches do
 
     query
     |> where([c], c.status != :blocked)
-    |> where([c], c.contact_type in ["WABA", "WABA+WA"])
+    |> where_in_inbox()
     |> select([c], %{id: c.id, last_communication_at: c.last_communication_at})
     |> distinct(true)
     |> add_contact_opts(opts)
     |> Repo.add_permission(&Searches.add_permission/2)
+  end
+
+  @spec where_in_inbox(Ecto.Query.t()) :: Ecto.Query.t()
+  defp where_in_inbox(query) do
+    # An uncorrelated, organization-scoped subquery: a correlated EXISTS made Postgres scan every
+    # organization's web identities on each inbox query.
+    web_contact_ids = Contacts.web_identity_contact_ids_query(repo().get_organization_id())
+
+    where(
+      query,
+      [c: c],
+      c.contact_type in ["WABA", "WABA+WA"] or c.id in subquery(web_contact_ids)
+    )
   end
 
   @spec add_contact_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
@@ -256,7 +271,7 @@ defmodule Glific.Searches do
     |> add_message_clause(args)
     |> order_by([c: c], desc: c.last_communication_at, desc: c.id)
     |> where([c: c], c.status != :blocked)
-    |> where([c: c], c.contact_type in ["WABA", "WABA+WA"])
+    |> where_in_inbox()
     |> group_by([c: c], c.id)
     |> repo().add_permission(&Searches.add_permission/2)
   end
@@ -282,7 +297,7 @@ defmodule Glific.Searches do
     basic_query(args)
     |> add_contact_opts(args.contact_opts)
     |> select([c: c], c.id)
-    |> Full.run(term, args)
+    |> Full.run(term, args, Repo.get_current_user())
   end
 
   @spec do_save_search(map()) :: SavedSearch.t() | nil
@@ -444,7 +459,7 @@ defmodule Glific.Searches do
           query = from(wa_grp in WAGroup, as: :wa_grp)
 
           wa_search_query(query, args)
-          |> Full.run(args.filter[:term], args)
+          |> Full.run(args.filter[:term], args, Repo.get_current_user())
       end
       |> Repo.all(timeout: @search_timeout)
 
@@ -468,10 +483,12 @@ defmodule Glific.Searches do
   @doc """
   Search across multiple tables, and return a multiple context
   result back to the frontend. First step in emulating a whatsapp
-  search
+  search. `user` is the requesting user, who decides whether usernames are matched (never for
+  staff); it is read here because the searches run in tasks whose process user is the
+  organization's root user.
   """
-  @spec search_multi(String.t(), map()) :: Search.t()
-  def search_multi(term, args) do
+  @spec search_multi(String.t(), map(), User.t() | nil) :: Search.t()
+  def search_multi(term, args, user \\ Repo.get_current_user()) do
     Logger.info("Search Multi: term: '#{term}'")
     org_id = Repo.get_organization_id()
 
@@ -484,7 +501,7 @@ defmodule Glific.Searches do
     search_item_tasks = [
       Task.async(fn ->
         repo().put_process_state(org_id)
-        get_filtered_contacts(term, args)
+        get_filtered_contacts(term, args, user)
       end),
       Task.async(fn ->
         repo().put_process_state(org_id)
@@ -543,14 +560,14 @@ defmodule Glific.Searches do
   end
 
   # codebeat:disable[ABC]
-  @spec get_filtered_contacts(String.t(), map()) :: list()
-  defp get_filtered_contacts(term, args) do
+  @spec get_filtered_contacts(String.t(), map(), User.t() | nil) :: list()
+  defp get_filtered_contacts(term, args, user) do
     {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
 
     # since this revolves around contacts
     args
     |> basic_query()
-    |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
+    |> where(^TermSearch.match(term, user))
     |> limit(^limit)
     |> offset(^offset)
     |> order_by([c: c], desc: c.last_message_at)

@@ -340,7 +340,9 @@ defmodule Glific.ThirdParty.Kaapi do
         type: "text",
         provider: params[:provider] || "openai",
         params: completion_params
-      }
+      },
+      input_guardrails: params[:input_guardrails] || [],
+      output_guardrails: params[:output_guardrails] || []
     }
   end
 
@@ -694,27 +696,6 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Create an evaluation on Kaapi.
-  """
-  @spec create_evaluation(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  def create_evaluation(params, organization_id) do
-    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <- ApiClient.create_evaluation(params, secrets["api_key"]) do
-      {:ok, result}
-    else
-      {:error, reason} ->
-        Glific.log_exception(%Error{
-          message:
-            "Kaapi evaluation creation failed: evaluation_name=#{params[:experiment_name]}",
-          organization_id: organization_id,
-          reason: safe_inspect(reason)
-        })
-
-        {:error, reason}
-    end
-  end
-
-  @doc """
   Create an evaluation on Kaapi via the v2 endpoint.
   """
   @spec create_evaluation_v2(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
@@ -736,7 +717,7 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
+  Get full scores for a completed evaluation from Kaapi (v2 scores come from Kaapi's cached traces).
   """
   @spec get_evaluation_scores(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, any()}
@@ -886,39 +867,20 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
+  List the guardrail validator types supported by Kaapi along with their config JSON schemas.
   """
-  @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
-          {:ok, map()} | {:error, map() | binary()} | {:error, :timeout}
-  def upload_evaluation_dataset(params, organization_id) do
+  @spec list_guardrail_validators(non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def list_guardrail_validators(organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <- ApiClient.upload_evaluation_dataset(params, secrets["api_key"]) do
-      case result do
-        %{data: %{dataset_name: dataset_name, dataset_id: dataset_id}} ->
-          {:ok, %{name: dataset_name, dataset_id: dataset_id}}
-
-        error ->
-          Appsignal.send_error(
-            %Error{
-              message: "Got unexpected response from Kaapi while uploading evaluation dataset",
-              organization_id: organization_id,
-              reason: safe_inspect(error)
-            },
-            []
-          )
-
-          {:error, "An unknown error occurred, please contact Glific support."}
-      end
+         {:ok, result} <- ApiClient.list_guardrail_validators(secrets["api_key"]) do
+      {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to upload evaluation dataset to Kaapi",
-            organization_id: organization_id,
-            reason: safe_inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi guardrail validators fetch failed",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -1058,7 +1020,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec handle_evaluation_dataset_v2_response(
           {:ok, map()} | {:error, map() | binary() | :timeout},
           non_neg_integer()
-        ) :: {:ok, map()} | {:error, map() | binary()}
+        ) :: {:ok, map()} | {:error, map() | binary() | :timeout}
   defp handle_evaluation_dataset_v2_response(
          {:ok, %{data: %{dataset_id: dataset_id, original_items: original_items}}},
          _organization_id

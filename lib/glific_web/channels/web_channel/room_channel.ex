@@ -3,16 +3,19 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   The Phoenix channel a browser contact joins to hold its own web channel conversation:
   fetching recent history, sending messages, and being swept for token expiry.
 
-  Topic shape: `"web_channel:<contact_id>"` — a contact may only join its own topic (enforced
-  in `join/3` against `socket.assigns.current_contact`, set during `GlificWeb.WebChannelSocket`
-  authentication). That is the only place topic ownership is checked; `renew_token` below must
-  never be allowed to change which contact a joined socket speaks for.
+  The only topic a client may join is `"web_channel:conversation"`, which always means the socket's own
+  contact (set during `GlificWeb.WebChannelSocket` authentication); any other `web_channel:*`
+  topic is refused. `"web_channel:<contact_id>"` is only the internal PubSub topic Glific
+  broadcasts to, which this channel subscribes to and relays. `renew_token` below must never be
+  allowed to change which contact a joined socket speaks for.
   """
 
   use GlificWeb, :channel
 
   alias Glific.{
     Communications.WebMessage,
+    Contacts,
+    Contacts.Contact,
     GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
@@ -35,13 +38,20 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   @impl true
   @spec join(String.t(), map(), Phoenix.Socket.t()) ::
           {:ok, map(), Phoenix.Socket.t()} | {:error, map()}
-  def join("web_channel:" <> contact_id, _params, socket) do
+  def join("web_channel:conversation", _params, socket) do
     # `connect/3` verified the token once, and the sweep only starts here — so re-check expiry.
-    # Both refusals answer identically, so neither can be told from the other.
-    if contact_id == to_string(socket.assigns.current_contact.id) and not token_expired?(socket) do
+    if token_expired?(socket) do
+      {:error, %{reason: "unauthorized"}}
+    else
+      contact_id = socket.assigns.current_contact.id
+
       # Its own process, so org context has to be re-established, as in an Oban worker.
       Repo.put_process_state(socket.assigns.organization_id)
       schedule_sweep()
+
+      # Nothing broadcasts to "web_channel:conversation" (it would reach every client); the per-contact
+      # topic Glific broadcasts to is relayed in handle_info/2 instead.
+      Phoenix.PubSub.subscribe(Glific.PubSub, "web_channel:#{contact_id}")
 
       # Rooms.close_all/1 broadcasts here when an admin switches the channel off. A per-organization
       # topic rather than Presence, which degrades to an empty list when its tracker is not running.
@@ -49,29 +59,23 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
       # The channel process, not the socket: presence lives under a per-organization topic, and
       # untracks when this process dies.
-      Presence.track_contact(
-        self(),
-        socket.assigns.organization_id,
-        socket.assigns.current_contact.id
-      )
+      Presence.track_contact(self(), socket.assigns.organization_id, contact_id)
 
       messages =
         contact_id
-        |> String.to_integer()
         |> Messages.list_conversation_messages(:web, %{limit: @page_size, offset: 0})
         |> Enum.reverse()
         |> Enum.map(&MessageSerializer.serialize/1)
 
-      socket = assign(socket, :token_expiring_warned?, false)
-
-      {:ok, %{messages: messages}, socket}
-    else
-      {:error, %{reason: "unauthorized"}}
+      {:ok, %{contact_id: contact_id, messages: messages},
+       assign(socket, :token_expiring_warned?, false)}
     end
   end
 
+  def join(_topic, _params, _socket), do: {:error, %{reason: "unauthorized"}}
+
   @impl true
-  @spec handle_info(:sweep_token | :web_channel_disabled | atom(), Phoenix.Socket.t()) ::
+  @spec handle_info(:sweep_token | :web_channel_disabled | atom() | struct(), Phoenix.Socket.t()) ::
           {:noreply, Phoenix.Socket.t()} | {:stop, :normal, Phoenix.Socket.t()}
   def handle_info(:sweep_token, socket) do
     now = System.system_time(:second)
@@ -104,6 +108,11 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   # ConsumerWorkerMock (test env) notifies its caller; swallow rather than crash the channel.
   def handle_info(:received_message_to_process, socket), do: {:noreply, socket}
 
+  def handle_info(%Phoenix.Socket.Broadcast{event: event, payload: payload}, socket) do
+    push(socket, event, payload)
+    {:noreply, socket}
+  end
+
   @impl true
   @spec handle_in(String.t(), map(), Phoenix.Socket.t()) ::
           {:reply, :ok | {:ok, map()} | {:error, map()}, Phoenix.Socket.t()}
@@ -133,17 +142,15 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     do: {:reply, {:error, %{reason: "invalid_offset"}}, socket}
 
   def handle_in("new_message", %{"body" => body}, socket) do
-    contact = socket.assigns.current_contact
-
     # No bsp_message_id: a client-supplied one could collide with a real BSP id under the
     # unique index and suppress another contact's message.
-    with :ok <- check_message_rate_limit(contact.id),
+    with :ok <- check_message_rate_limit(socket.assigns.current_contact.id),
+         {:ok, contact} <- fetch_unblocked_contact(socket),
          {:ok, trimmed} <- validate_body(body),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                body: trimmed
              },
              :text
@@ -160,18 +167,17 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   # The file went straight to GCS via a pre-signed URL; no bytes travel over the socket.
   def handle_in("new_media_message", %{"type" => type, "url" => url} = params, socket)
       when type in ~w(image audio video document) do
-    contact = socket.assigns.current_contact
     caption = params["caption"]
     content_type = params["content_type"]
 
-    with :ok <- check_message_rate_limit(contact.id),
+    with :ok <- check_message_rate_limit(socket.assigns.current_contact.id),
+         {:ok, contact} <- fetch_unblocked_contact(socket),
          true <- Upload.issued_url?(contact.organization_id, url),
          :ok <- verify_uploaded_media(contact.organization_id, type, url, content_type),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                url: url,
                source_url: url,
                caption: caption,
@@ -193,16 +199,14 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     do: {:reply, {:error, %{reason: "unsupported media type"}}, socket}
 
   def handle_in("new_location_message", %{"latitude" => lat, "longitude" => lng}, socket) do
-    contact = socket.assigns.current_contact
-
-    with :ok <- check_message_rate_limit(contact.id),
+    with :ok <- check_message_rate_limit(socket.assigns.current_contact.id),
+         {:ok, contact} <- fetch_unblocked_contact(socket),
          true <- valid_coordinate?(lat, -90, 90),
          true <- valid_coordinate?(lng, -180, 180),
          {:ok, _message} <-
            WebMessage.receive_message(
+             contact,
              %{
-               sender: %{phone: contact.phone},
-               organization_id: contact.organization_id,
                longitude: lng,
                latitude: lat,
                body: "https://www.google.com/maps?q=#{lat},#{lng}"
@@ -220,23 +224,36 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     do: {:reply, {:error, %{reason: "invalid_location"}}, socket}
 
   def handle_in("renew_token", %{"token" => token}, socket) do
-    with {:ok, payload} <- Token.verify_contact_token(token),
-         true <- payload.contact_id == socket.assigns.current_contact.id,
-         true <- payload.org_id == socket.assigns.organization_id do
-      socket =
-        socket
-        |> assign(:token_exp, payload.exp)
-        |> assign(:token_expiring_warned?, false)
+    case renewed_expiry(token, socket) do
+      {:ok, exp} ->
+        socket =
+          socket
+          |> assign(:token_exp, exp)
+          |> assign(:token_expiring_warned?, false)
 
-      {:reply, :ok, socket}
-    else
+        {:reply, :ok, socket}
+
       # One reason for every cause, so a renewal cannot be used to probe which.
-      _ -> {:reply, {:error, %{reason: "invalid_token"}}, socket}
+      :error ->
+        {:reply, {:error, %{reason: "invalid_token"}}, socket}
     end
   end
 
   def handle_in("renew_token", _params, socket),
     do: {:reply, {:error, %{reason: "invalid_token"}}, socket}
+
+  @spec renewed_expiry(String.t(), Phoenix.Socket.t()) :: {:ok, integer()} | :error
+  defp renewed_expiry(token, socket) do
+    current = socket.assigns.current_contact
+
+    with {:ok, claims} <- Token.verify(socket.assigns.organization_id, token),
+         {:ok, %Contact{id: id}} when id == current.id <-
+           Contacts.fetch_by_identity(:web, claims.sub) do
+      {:ok, claims.exp}
+    else
+      _refused -> :error
+    end
+  end
 
   @spec schedule_sweep() :: reference()
   defp schedule_sweep, do: Process.send_after(self(), :sweep_token, @sweep_interval_ms)
@@ -278,6 +295,21 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       is_nil(limit_kb) -> {:error, :invalid_media_url}
       size_bytes / 1024 > limit_kb -> {:error, :media_too_large}
       true -> :ok
+    end
+  end
+
+  # Reloaded, not the struct `connect/3` assigned: a contact blocked since the socket opened must
+  # stop at once, not when its token expires.
+  @spec fetch_unblocked_contact(Phoenix.Socket.t()) :: {:ok, Contact.t()} | {:error, String.t()}
+  defp fetch_unblocked_contact(socket) do
+    current = socket.assigns.current_contact
+
+    with %Contact{} = contact <-
+           Repo.get_by(Contact, %{id: current.id, organization_id: current.organization_id}),
+         false <- Contacts.contact_blocked?(contact) do
+      {:ok, contact}
+    else
+      _blocked_or_gone -> {:error, "contact_blocked"}
     end
   end
 

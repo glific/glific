@@ -39,7 +39,8 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, String.t()}
+  @spec send_message(Message.t(), map()) ::
+          {:ok, Message.t()} | {:error, String.t() | Ecto.Changeset.t()}
   def send_message(message, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
@@ -47,25 +48,27 @@ defmodule Glific.Communications.Message do
       "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{message.id}'"
     )
 
-    with {:ok, _} <-
-           apply(
-             message_handler(message),
-             @type_to_token[message.type],
-             [message, attrs]
-           ) do
-      :telemetry.execute(
-        [:glific, :message, :sent],
-        # currently we are not measuring latency
-        %{duration: 1},
-        %{
-          type: message.type,
-          sender_id: message.sender_id,
-          receiver_id: message.receiver_id,
-          organization_id: message.organization_id
-        }
-      )
+    case apply(message_handler(message), @type_to_token[message.type], [message, attrs]) do
+      {:ok, _} ->
+        :telemetry.execute(
+          [:glific, :message, :sent],
+          # currently we are not measuring latency
+          %{duration: 1},
+          %{
+            type: message.type,
+            sender_id: message.sender_id,
+            receiver_id: message.receiver_id,
+            organization_id: message.organization_id
+          }
+        )
 
-      publish_message(message)
+        publish_message(message)
+
+      {:error, :no_phone} ->
+        log_error(message, "Contact has no WhatsApp number.")
+
+      error ->
+        error
     end
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
@@ -112,16 +115,15 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when message send successfully.
   """
-  @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Message.t()}
+  @spec handle_success_response(Tesla.Env.t() | Req.Response.t(), Message.t()) ::
+          {:ok, Message.t()}
   def handle_success_response(response, message) do
-    body = response.body |> Jason.decode!()
-
     {:ok, message} =
       message
       |> Poison.encode!()
       |> Poison.decode!(as: %Message{})
       |> Messages.update_message(%{
-        bsp_message_id: body["messageId"],
+        bsp_message_id: sent_message_id(response),
         bsp_status: :enqueued,
         status: :sent,
         flow: :outbound,
@@ -131,6 +133,14 @@ defmodule Glific.Communications.Message do
     publish_message_status(message)
     {:ok, message}
   end
+
+  @spec sent_message_id(Tesla.Env.t() | Req.Response.t()) :: String.t() | nil
+  # Gupshup V3 message API, whose body Req has already decoded.
+  defp sent_message_id(%Req.Response{body: body}),
+    do: get_in(body, ["messages", Access.at(0), "id"])
+
+  # Gupshup V2 and Gupshup Enterprise, where Tesla returns the body as a raw JSON string.
+  defp sent_message_id(%{body: body}), do: Jason.decode!(body)["messageId"]
 
   @spec build_error(any()) :: map()
   defp build_error(body) do
@@ -334,40 +344,57 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
+  # The form response and its message are inserted in one transaction so a duplicate
+  # bsp_message_id (Gupshup retries) rolls back the form response and its sheet-write job too.
   @spec receive_whatsapp_form_response(map()) :: :ok | {:error, any()}
   defp receive_whatsapp_form_response(%{organization_id: organization_id} = message_params) do
-    case WhatsappFormsResponses.create_whatsapp_form_response(message_params) do
-      {:ok, form_response} ->
-        Glific.Metrics.increment("WhatsApp Form Response Received", organization_id)
-
-        message_attrs = %{
-          flow: :inbound,
-          type: :whatsapp_form_response,
-          organization_id: message_params.organization_id,
-          sender_id: form_response.contact_id,
-          receiver_id: Partners.organization_contact_id(message_params.organization_id),
-          contact_id: form_response.contact_id,
-          body: "",
-          whatsapp_form_response_id: form_response.id,
-          bsp_message_id: message_params.bsp_message_id,
-          bsp_status: :delivered,
-          status: :received,
-          context_id: message_params.context_id
-        }
-
-        {:ok, message} = Messages.create_message(message_attrs)
-
+    Repo.transaction(fn ->
+      with {:ok, form_response} <-
+             WhatsappFormsResponses.create_whatsapp_form_response(message_params),
+           {:ok, message} <-
+             create_whatsapp_form_response_message(message_params, form_response) do
         message
-        |> publish_data(:received_message)
-        |> process_message()
-
-      {:error, reason} ->
+      else
+        {:error, %Ecto.Changeset{data: %Message{}} = changeset} -> Repo.rollback(changeset)
+        {:error, reason} -> Repo.rollback({:form_response, reason})
+      end
+    end)
+    |> case do
+      {:error, {:form_response, reason}} ->
         Logger.error(
-          "Failed to create WhatsApp form response: #{Glific.SafeLog.safe_inspect(reason)}"
+          "Failed to create WhatsApp form response: bsp_message_id=#{message_params.bsp_message_id}, reason=#{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
+
+      {:ok, _message} = result ->
+        Glific.Metrics.increment("WhatsApp Form Response Received", organization_id)
+        handle_inbound_create_result(result, message_params)
+
+      result ->
+        handle_inbound_create_result(result, message_params)
     end
+  end
+
+  @spec create_whatsapp_form_response_message(map(), map()) ::
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  defp create_whatsapp_form_response_message(message_params, form_response) do
+    attrs = %{
+      flow: :inbound,
+      type: :whatsapp_form_response,
+      organization_id: message_params.organization_id,
+      sender_id: form_response.contact_id,
+      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      contact_id: form_response.contact_id,
+      body: "",
+      whatsapp_form_response_id: form_response.id,
+      bsp_message_id: message_params.bsp_message_id,
+      bsp_status: :delivered,
+      status: :received,
+      context_id: message_params.context_id
+    }
+
+    Messages.create_message(attrs)
   end
 
   # preload the context message if it exists, so frontend can do the right thing

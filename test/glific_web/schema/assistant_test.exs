@@ -137,6 +137,91 @@ defmodule GlificWeb.Schema.AssistantTest do
     assert get_in(new_config_version.settings, ["effort"]) == "high"
   end
 
+  test "update assistant with inline guardrails", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
+    {unified_assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "guarded assistant",
+        kaapi_uuid: "asst_abc_guard"
+      })
+
+    Tesla.Mock.mock(fn
+      %{
+        method: :post,
+        url: "This is not a secret/api/v1/configs/asst_abc_guard/versions",
+        body: body
+      } ->
+        decoded_body = Jason.decode!(body)
+
+        assert decoded_body["config_blob"]["input_guardrails"] == [%{"type" => "pii_remover"}]
+
+        assert decoded_body["config_blob"]["output_guardrails"] == [
+                 %{"type" => "topic_relevance_llm", "on_fail" => "rephrase"}
+               ]
+
+        %Tesla.Env{status: 200, body: %{data: %{id: "config-version-id-2", version: 2}}}
+    end)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{
+            "input_guardrails" => Jason.encode!([%{"type" => "pii_remover"}]),
+            "output_guardrails" =>
+              Jason.encode!([%{"type" => "topic_relevance_llm", "on_fail" => "rephrase"}])
+          },
+          "id" => unified_assistant.id
+        }
+      )
+
+    assert query_data.data["updateAssistant"]["errors"] == nil
+
+    new_config_version =
+      AssistantConfigVersion
+      |> where([acv], acv.assistant_id == ^unified_assistant.id)
+      |> order_by([acv], desc: acv.major_version, desc: acv.minor_version)
+      |> limit(1)
+      |> Repo.one()
+
+    assert new_config_version.input_guardrails == [%{"type" => "pii_remover"}]
+
+    {:ok, _} = Assistants.set_live_version(unified_assistant.id, new_config_version.id)
+
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user, variables: %{"id" => unified_assistant.id})
+
+    assistant = query_data.data["assistant"]["assistant"]
+    assert Jason.decode!(assistant["input_guardrails"]) == [%{"type" => "pii_remover"}]
+
+    assert Jason.decode!(assistant["output_guardrails"]) == [
+             %{"type" => "topic_relevance_llm", "on_fail" => "rephrase"}
+           ]
+  end
+
+  test "update assistant rejects a guardrail without a type", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
+    {unified_assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "guarded assistant",
+        kaapi_uuid: "asst_abc_badguard"
+      })
+
+    {:ok, query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{"input_guardrails" => Jason.encode!([%{"on_fail" => "fix"}])},
+          "id" => unified_assistant.id
+        }
+      )
+
+    assert [%{"message" => message} | _] = query_data.data["updateAssistant"]["errors"]
+    assert message =~ "non-empty"
+  end
+
   test "get assistant", attrs do
     {assistant, _} =
       create_unified_assistant(%{
@@ -434,14 +519,14 @@ defmodule GlificWeb.Schema.AssistantTest do
   defp create_unified_assistant(attrs) do
     defaults = %{
       name: "Test Assistant",
-      kaapi_uuid: "asst_test_#{:rand.uniform(10000)}",
+      kaapi_uuid: "asst_test_#{System.unique_integer([:positive])}",
       model: "gpt-4o",
       instructions: "You are a helpful assistant",
       temperature: 1.0,
       status: :ready,
       kb_name: "Default KB",
-      knowledge_base_version_id: "vs_default_#{:rand.uniform(10000)}",
-      llm_service_id: "vs_default_#{:rand.uniform(10000)}",
+      knowledge_base_version_id: "vs_default_#{System.unique_integer([:positive])}",
+      llm_service_id: "vs_default_#{System.unique_integer([:positive])}",
       files: %{},
       kb_status: :completed,
       size: 0

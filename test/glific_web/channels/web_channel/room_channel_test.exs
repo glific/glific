@@ -3,6 +3,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   use GlificWeb.ChannelCase
 
   alias Glific.{
+    Contacts,
     Contacts.Location,
     Fixtures,
     GcsFixtures,
@@ -16,8 +17,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   alias GlificWeb.WebChannel.{Presence, RoomChannel, Token}
 
   setup do
-    contact = Fixtures.contact_fixture()
-    other_contact = Fixtures.contact_fixture()
+    contact = WebChannelFixtures.web_contact_fixture()
+    other_contact = WebChannelFixtures.web_contact_fixture()
     %{contact: contact, other_contact: other_contact}
   end
 
@@ -36,7 +37,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
 
         assert {:ok, %{messages: messages}, _socket} =
-                 WebChannelFixtures.join_web_channel(ws_socket, contact)
+                 WebChannelFixtures.join_web_channel(ws_socket)
 
         assert Enum.any?(messages, &(&1.body == "earlier message"))
       end)
@@ -47,7 +48,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         refute Presence.online?(contact.organization_id, contact.id)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         assert Presence.online?(contact.organization_id, contact.id)
         assert contact.id in Presence.online_contact_ids(contact.organization_id)
@@ -71,7 +72,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
           {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
 
           assert {:ok, %{messages: _messages}, _socket} =
-                   WebChannelFixtures.join_web_channel(ws_socket, contact)
+                   WebChannelFixtures.join_web_channel(ws_socket)
 
           # And the two read paths degrade to their empty answer rather than raising: `online?/2`
           # is resolved from a GraphQL field, where a raise would 500 the contact query.
@@ -87,22 +88,24 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     } do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, _socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, _socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         assert Presence.online?(contact.organization_id, contact.id)
         refute Presence.online?(other_contact.organization_id, other_contact.id)
       end)
     end
 
-    test "a contact cannot join another contact's topic", %{
+    test "a numeric contact topic is refused, whoever's it is", %{
       contact: contact,
       other_contact: other_contact
     } do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
 
-        assert {:error, %{reason: "unauthorized"}} =
-                 subscribe_and_join(ws_socket, RoomChannel, "web_channel:#{other_contact.id}")
+        for id <- [contact.id, other_contact.id] do
+          assert {:error, %{reason: "unauthorized"}} =
+                   subscribe_and_join(ws_socket, RoomChannel, "web_channel:#{id}")
+        end
       end)
     end
 
@@ -116,7 +119,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
           Phoenix.Socket.assign(ws_socket, :token_exp, System.system_time(:second) - 3_600)
 
         assert {:error, %{reason: "unauthorized"}} =
-                 WebChannelFixtures.join_web_channel(expired_socket, contact)
+                 WebChannelFixtures.join_web_channel(expired_socket)
       end)
     end
   end
@@ -125,7 +128,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "closes an open room and tells the browser why", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
         monitor = Process.monitor(socket.channel_pid)
 
         {:ok, credential} =
@@ -148,7 +151,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     } do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, _socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, _socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         Rooms.close_all(contact.organization_id + 1)
 
@@ -161,7 +164,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "returns an older page of the same contact's messages", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "load_more", %{"offset" => 0})
         assert_reply ref, :ok, %{messages: []}
@@ -173,7 +176,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects an invalid offset instead of crashing the channel", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         for bad_offset <- [-1, "abc", 1.5, nil] do
           ref = push(socket, "load_more", %{"offset" => bad_offset})
@@ -187,7 +190,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "persists a text message and replies :ok", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "new_message", %{"body" => "hello there"})
         assert_reply ref, :ok
@@ -205,7 +208,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects a blank body without persisting anything", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "new_message", %{"body" => "   "})
         assert_reply ref, :error, %{reason: "blank_body"}
@@ -216,11 +219,27 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects a body over the length cap", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         too_long = String.duplicate("a", 4_097)
         ref = push(socket, "new_message", %{"body" => too_long})
         assert_reply ref, :error, %{reason: "body_too_long"}
+      end)
+    end
+
+    test "refuses a contact blocked after the socket opened", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
+
+        {:ok, _blocked} = Contacts.update_contact(contact, %{status: :blocked})
+
+        ref = push(socket, "new_message", %{"body" => "let me in"})
+        assert_reply ref, :error, %{reason: "contact_blocked"}
+        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
+
+        ref = push(socket, "new_location_message", %{"latitude" => 1.0, "longitude" => 2.0})
+        assert_reply ref, :error, %{reason: "contact_blocked"}
       end)
     end
 
@@ -233,7 +252,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
         try do
           {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-          {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+          {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
           ref = push(socket, "new_message", %{"body" => "first"})
           assert_reply ref, :ok
@@ -252,7 +271,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "accepts a URL this server itself issued", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         url = "#{GlificWeb.Endpoint.url()}/uploads/#{contact.organization_id}/test.png"
 
@@ -275,7 +294,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects a URL this server did not issue", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref =
           push(socket, "new_media_message", %{
@@ -293,7 +312,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     } do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         # Same host the server itself serves local uploads from, but under a directory that
         # belongs to a different organisation than this contact's.
@@ -311,7 +330,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects an unsupported media type", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "new_media_message", %{"type" => "sticker", "url" => "whatever"})
         assert_reply ref, :error, %{reason: "unsupported media type"}
@@ -349,7 +368,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         end)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref =
           push(socket, "new_media_message", %{
@@ -376,7 +395,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         end)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref =
           push(socket, "new_media_message", %{
@@ -406,7 +425,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         end)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref =
           push(socket, "new_media_message", %{
@@ -425,7 +444,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         Tesla.Mock.mock_global(fn %{method: :head} -> %Tesla.Env{status: 404, headers: []} end)
 
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref =
           push(socket, "new_media_message", %{
@@ -444,7 +463,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "persists a location message and the locations row", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "new_location_message", %{"latitude" => 12.34, "longitude" => 56.78})
         assert_reply ref, :ok
@@ -460,7 +479,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects a string latitude rather than reaching the database", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "new_location_message", %{"latitude" => "12.34", "longitude" => 56.78})
         assert_reply ref, :error, %{reason: "invalid_location"}
@@ -471,7 +490,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects an out-of-range latitude", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "new_location_message", %{"latitude" => 200, "longitude" => 56.78})
         assert_reply ref, :error, %{reason: "invalid_location"}
@@ -481,7 +500,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "rejects an out-of-range longitude", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "new_location_message", %{"latitude" => 12.34, "longitude" => -200})
         assert_reply ref, :error, %{reason: "invalid_location"}
@@ -494,10 +513,10 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "extends the session and keeps speaking for the same contact", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        {:ok, renewed, _payload} =
-          contact |> Token.sign_contact_token() |> Token.renew_contact_token()
+        {:ok, renewed, _claims} =
+          contact |> WebChannelFixtures.web_channel_session_token() |> then(&Token.renew(1, &1))
 
         ref = push(socket, "renew_token", %{"token" => renewed})
         assert_reply ref, :ok
@@ -508,9 +527,9 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
          %{contact: contact, other_contact: other_contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        foreign_token = Token.sign_contact_token(other_contact)
+        foreign_token = WebChannelFixtures.web_channel_session_token(other_contact)
 
         ref = push(socket, "renew_token", %{"token" => foreign_token})
         assert_reply ref, :error, %{reason: "invalid_token"}
@@ -522,27 +541,23 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     test "a garbage token is rejected", %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = push(socket, "renew_token", %{"token" => "not-a-token"})
         assert_reply ref, :error, %{reason: "invalid_token"}
       end)
     end
 
-    test "a valid token naming the right contact but a different org is rejected, org unchanged",
+    test "a token signed with another organization's secret is rejected, org unchanged",
          %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        # Same contact id as the real one, but claiming a different org — proves the org
-        # comparison itself rejects a swap, independent of the contact_id comparison above.
         foreign_org_token =
-          Token.sign_contact_token(%Glific.Contacts.Contact{
-            id: contact.id,
-            organization_id: contact.organization_id + 1,
-            phone: contact.phone
-          })
+          contact
+          |> WebChannelFixtures.web_channel_claims()
+          |> WebChannelFixtures.sign_web_channel_claims("another-org-secret-another-org-secret")
 
         ref = push(socket, "renew_token", %{"token" => foreign_org_token})
         assert_reply ref, :error, %{reason: "invalid_token"}
@@ -554,12 +569,101 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     end
   end
 
+  describe "renew_token with an NGO token" do
+    @secret "ngo-login-secret-ngo-login-secret"
+
+    defp ngo_token(overrides),
+      do:
+        overrides
+        |> Glific.WebChannelLoginHelpers.claims()
+        |> Glific.WebChannelLoginHelpers.sign(@secret)
+
+    defp with_ngo_socket(overrides, fun) do
+      Glific.WebChannelFlagHelpers.with_web_channel_secrets(
+        1,
+        Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
+        fn ->
+          {:ok, ws_socket} = overrides |> ngo_token() |> WebChannelFixtures.connect_with_token()
+          contact = ws_socket.assigns.current_contact
+          {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
+          fun.(socket, contact)
+        end
+      )
+    end
+
+    test "the same contact's fresh token updates the expiry and clears the warning" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        now = System.system_time(:second)
+        before_exp = :sys.get_state(socket.channel_pid).assigns.token_exp
+        fresh = ngo_token(%{"iat" => now, "exp" => now + 7_200})
+
+        ref = push(socket, "renew_token", %{"token" => fresh})
+        assert_reply ref, :ok
+
+        assigns = :sys.get_state(socket.channel_pid).assigns
+        assert assigns.token_exp == now + 7_200
+        assert assigns.token_exp > before_exp
+        assert assigns.token_expiring_warned? == false
+      end)
+    end
+
+    test "a valid token for a different username is refused and the contact unchanged" do
+      with_ngo_socket(%{}, fn socket, contact ->
+        {:ok, other} = Contacts.maybe_create_contact(%{}, :web, "someone_else")
+        ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => "someone_else"})})
+        assert_reply ref, :error, %{reason: "invalid_token"}
+
+        assert :sys.get_state(socket.channel_pid).assigns.current_contact.id == contact.id
+        refute other.id == contact.id
+      end)
+    end
+
+    test "a valid token for an unknown username creates nothing and is refused" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => "never_seen"})})
+        assert_reply ref, :error, %{reason: "invalid_token"}
+
+        assert {:error, :not_found} =
+                 Contacts.fetch_by_identity(:web, "never_seen")
+      end)
+    end
+
+    test "a garbage or wrongly signed token is refused" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        wrong =
+          Glific.WebChannelLoginHelpers.sign(
+            Glific.WebChannelLoginHelpers.claims(),
+            "wrong-secret-wrong-secret-wrong"
+          )
+
+        for token <- ["garbage", wrong] do
+          ref = push(socket, "renew_token", %{"token" => token})
+          assert_reply ref, :error, %{reason: "invalid_token"}
+        end
+      end)
+    end
+
+    test "the sweep closes the socket once the NGO token has expired" do
+      with_ngo_socket(%{}, fn socket, _contact ->
+        :sys.replace_state(socket.channel_pid, fn state ->
+          %{state | assigns: %{state.assigns | token_exp: System.system_time(:second) - 120}}
+        end)
+
+        ref = Process.monitor(socket.channel_pid)
+        send(socket.channel_pid, :sweep_token)
+
+        assert_push "session_expired", %{}
+        assert_receive {:DOWN, ^ref, :process, _pid, _reason}
+      end)
+    end
+  end
+
   describe "the mid-session sweep" do
     test "pushes token_expiring once within the warning window, then session_expired past grace",
          %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         now = System.system_time(:second)
 
@@ -593,7 +697,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} =
           WebChannelFixtures.web_channel_socket_fixture(contact, token: near_expiry)
 
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         send(socket.channel_pid, :sweep_token)
         assert_push "token_expiring", %{}
@@ -614,7 +718,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} =
           WebChannelFixtures.web_channel_socket_fixture(contact, token: near_expiry)
 
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         send(socket.channel_pid, :sweep_token)
         assert_push "token_expiring", %{}
@@ -647,9 +751,9 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} =
           WebChannelFixtures.web_channel_socket_fixture(contact, token: about_to_grace_out)
 
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        fresh_token = Token.sign_contact_token(contact)
+        fresh_token = WebChannelFixtures.web_channel_session_token(contact)
         ref = push(socket, "renew_token", %{"token" => fresh_token})
         assert_reply ref, :ok
 
@@ -681,7 +785,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} =
           WebChannelFixtures.web_channel_socket_fixture(contact, token: about_to_grace_out)
 
-        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket, contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
         ref = Process.monitor(socket.channel_pid)
         Process.sleep(7_000)
@@ -694,6 +798,178 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   end
 
   # Put back whatever happens: leaving it down breaks every later test in this file.
+  describe "the web_channel:conversation topic" do
+    @secret "ngo-login-secret-ngo-login-secret"
+
+    defp join_conversation(ws_socket),
+      do: subscribe_and_join(ws_socket, RoomChannel, "web_channel:conversation")
+
+    defp outbound_message(contact) do
+      Fixtures.message_fixture(%{
+        sender_id: Glific.Partners.organization_contact_id(contact.organization_id),
+        receiver_id: contact.id,
+        contact_id: contact.id,
+        flow: :outbound,
+        channel: :web,
+        body: "reply for #{contact.id}"
+      })
+    end
+
+    test "returns the contact id and history to a Glific token socket", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          contact_id: contact.id,
+          receiver_id: Glific.Partners.organization_contact_id(contact.organization_id),
+          flow: :inbound,
+          channel: :web,
+          body: "earlier message"
+        })
+
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        contact_id = contact.id
+
+        assert {:ok, %{contact_id: ^contact_id, messages: messages}, _socket} =
+                 join_conversation(ws_socket)
+
+        assert Enum.any?(messages, &(&1.body == "earlier message"))
+        assert Presence.online?(contact.organization_id, contact.id)
+      end)
+    end
+
+    test "returns the contact id to an NGO token socket" do
+      Glific.WebChannelFlagHelpers.with_web_channel_secrets(
+        1,
+        Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
+        fn ->
+          token =
+            %{}
+            |> Glific.WebChannelLoginHelpers.claims()
+            |> Glific.WebChannelLoginHelpers.sign(@secret)
+
+          {:ok, ws_socket} = WebChannelFixtures.connect_with_token(token)
+          contact_id = ws_socket.assigns.current_contact.id
+
+          assert {:ok, %{contact_id: ^contact_id, messages: []}, _socket} =
+                   join_conversation(ws_socket)
+        end
+      )
+    end
+
+    test "pushes an outbound message for the contact exactly once", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, _socket} = join_conversation(ws_socket)
+
+        {:ok, _sent} = contact |> outbound_message() |> Glific.Providers.Web.Message.send_text()
+
+        expected = "reply for #{contact.id}"
+        assert_push "new_message", %{body: ^expected}
+        refute_push "new_message", _payload
+      end)
+    end
+
+    test "a message for one contact reaches only that contact", %{
+      contact: contact,
+      other_contact: other_contact
+    } do
+      with_web_channel_enabled(fn ->
+        {:ok, a_ws} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, b_ws} = WebChannelFixtures.web_channel_socket_fixture(other_contact)
+        {:ok, _reply, a_socket} = join_conversation(a_ws)
+        {:ok, _reply, b_socket} = join_conversation(b_ws)
+
+        # Each channel process listens to its own contact's topic and to nobody else's.
+        assert "web_channel:#{contact.id}" in subscribed_topics(a_socket)
+        refute "web_channel:#{other_contact.id}" in subscribed_topics(a_socket)
+        assert "web_channel:#{other_contact.id}" in subscribed_topics(b_socket)
+        refute "web_channel:#{contact.id}" in subscribed_topics(b_socket)
+
+        GlificWeb.Endpoint.broadcast("web_channel:#{contact.id}", "new_message", %{body: "to A"})
+
+        assert_push "new_message", %{body: "to A"}
+        refute_push "new_message", _payload
+      end)
+    end
+
+    test "new_message is stored for the socket's own contact", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
+
+        ref = push(socket, "new_message", %{"body" => "hello via the conversation topic"})
+        assert_reply ref, :ok
+
+        assert message = Repo.get_by(Message, contact_id: contact.id, channel: :web)
+        assert message.body == "hello via the conversation topic"
+        assert message.flow == :inbound
+        assert message.sender_id == contact.id
+      end)
+    end
+
+    test "renew_token works", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
+
+        now = System.system_time(:second)
+
+        fresh =
+          contact
+          |> WebChannelFixtures.web_channel_claims(%{"exp" => now + 7_200})
+          |> WebChannelFixtures.sign_web_channel_claims()
+
+        ref = push(socket, "renew_token", %{"token" => fresh})
+        assert_reply ref, :ok
+        assert :sys.get_state(socket.channel_pid).assigns.token_exp == now + 7_200
+      end)
+    end
+
+    test "the sweep closes the channel once the token has expired", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
+
+        :sys.replace_state(socket.channel_pid, fn state ->
+          %{state | assigns: %{state.assigns | token_exp: System.system_time(:second) - 120}}
+        end)
+
+        ref = Process.monitor(socket.channel_pid)
+        send(socket.channel_pid, :sweep_token)
+
+        assert_push "session_expired", %{}
+        assert_receive {:DOWN, ^ref, :process, _pid, _reason}
+      end)
+    end
+
+    test "a token that has expired cannot join", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+
+        expired_socket =
+          Phoenix.Socket.assign(ws_socket, :token_exp, System.system_time(:second) - 3_600)
+
+        assert {:error, %{reason: "unauthorized"}} = join_conversation(expired_socket)
+      end)
+    end
+
+    test "switching the channel off closes a conversation room", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = join_conversation(ws_socket)
+        monitor = Process.monitor(socket.channel_pid)
+
+        Rooms.close_all(contact.organization_id)
+
+        assert_push "web_channel_disabled", %{}
+        assert_receive {:DOWN, ^monitor, :process, _pid, :normal}
+      end)
+    end
+
+    defp subscribed_topics(socket),
+      do: Registry.keys(Glific.PubSub, socket.channel_pid)
+  end
+
   @spec without_presence((-> any())) :: any()
   defp without_presence(fun) do
     :ok = Supervisor.terminate_child(Glific.Supervisor, Presence)

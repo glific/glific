@@ -1,12 +1,13 @@
 defmodule GlificWeb.Plugs.WebChannelAuth do
   @moduledoc """
-  Authenticates a web channel media request by its `Authorization: Bearer <token>` header and
+  Authenticates a web channel media request by its `Authorization: Bearer <token>` header,
+  verified against the secret of the organization the request host belongs to, and
   gates it on the feature flag — the two checks every other web channel surface makes, behind
   one plug so a route added to this pipeline inherits both rather than re-implementing them.
   """
   use GlificWeb, :controller
 
-  alias Glific.Repo
+  alias Glific.{Contacts, Repo}
   alias GlificWeb.WebChannel.{Flag, Token}
   alias Plug.Conn
 
@@ -18,21 +19,28 @@ defmodule GlificWeb.Plugs.WebChannelAuth do
   @spec call(Conn.t(), Plug.opts()) :: Conn.t()
   def call(conn, _opts) do
     with ["Bearer " <> token] <- Conn.get_req_header(conn, "authorization"),
-         {:ok, payload} <- Token.verify_contact_token(token) do
-      authorize_flag(conn, payload)
+         organization_id when is_integer(organization_id) <- conn.assigns[:organization_id],
+         {:ok, claims} <- Token.verify(organization_id, token) do
+      authorize_flag(conn, organization_id, claims)
     else
       _ -> unauthorized(conn)
     end
   end
 
-  @spec authorize_flag(Conn.t(), Token.payload()) :: Conn.t()
-  defp authorize_flag(conn, payload) do
-    if Flag.web_channel_enabled?(payload.org_id) do
-      Repo.put_process_state(payload.org_id)
+  @spec authorize_flag(Conn.t(), non_neg_integer(), Token.claims()) :: Conn.t()
+  defp authorize_flag(conn, organization_id, claims) do
+    if Flag.web_channel_enabled?(organization_id) do
+      Repo.put_process_state(organization_id)
 
-      conn
-      |> assign(:web_channel_contact_id, payload.contact_id)
-      |> assign(:web_channel_organization_id, payload.org_id)
+      case Contacts.fetch_by_identity(:web, claims.sub) do
+        {:ok, contact} ->
+          conn
+          |> assign(:web_channel_contact_id, contact.id)
+          |> assign(:web_channel_organization_id, organization_id)
+
+        {:error, _reason} ->
+          unauthorized(conn)
+      end
     else
       # Matches the auth controller's response for a disabled org. Carries `code` like the
       # upload controller's errors do, since the widget keys its copy on that and not on prose.

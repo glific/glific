@@ -29,8 +29,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:ask_glific_enabled, :boolean)
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
-    field(:ai_evaluations_enabled, :boolean)
-    field(:ai_evaluation_v2_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
     field(:superset_enabled, :boolean)
     field(:prompt_generator_enabled, :boolean)
@@ -40,6 +38,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:web_channel_enabled, :boolean)
     field(:bulk_contact_update_enabled, :boolean)
     field(:bulk_flow_results_enabled, :boolean)
+    field(:ai_guardrail_enabled, :boolean)
   end
 
   object :organization_export_result do

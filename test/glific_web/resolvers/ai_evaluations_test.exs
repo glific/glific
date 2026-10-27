@@ -125,8 +125,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
             status: 200,
             body: %{
               data: %{
-                dataset_name: "valid_dataset",
-                dataset_id: "12345"
+                dataset_id: "12345",
+                original_items: 5
               }
             }
           }
@@ -178,8 +178,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
             status: 200,
             body: %{
               data: %{
-                dataset_name: name,
-                dataset_id: "54321"
+                dataset_id: "54321",
+                original_items: 5
               }
             }
           }
@@ -247,8 +247,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
             status: 200,
             body: %{
               data: %{
-                dataset_name: name,
-                dataset_id: "54322"
+                dataset_id: "54322",
+                original_items: 5
               }
             }
           }
@@ -589,7 +589,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "valid_name", dataset_id: "99001"}}
+            body: %{data: %{dataset_id: "99001", original_items: 5}}
           }
       end)
 
@@ -623,7 +623,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "valid_name", dataset_id: "99002"}}
+            body: %{data: %{dataset_id: "99002", original_items: 5}}
           }
       end)
 
@@ -664,7 +664,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "valid_name", dataset_id: "99003"}}
+            body: %{data: %{dataset_id: "99003", original_items: 5}}
           }
       end)
 
@@ -793,7 +793,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "valid_name", dataset_id: "12345"}}
+            body: %{data: %{dataset_id: "12345", original_items: 5}}
           }
       end)
 
@@ -882,7 +882,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "dataset_2024_v1", dataset_id: "12345"}}
+            body: %{data: %{dataset_id: "12345", original_items: 5}}
           }
       end)
 
@@ -901,63 +901,13 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert golden_qa.name == "dataset_2024_v1"
     end
-
-    test "v1 path: falls back to the CSV row count, since the v1 wrapper drops the item counts",
-         %{staff: user} do
-      csv_path = create_csv_with_rows(7)
-      on_exit(fn -> File.rm(csv_path) end)
-
-      upload = %Plug.Upload{
-        path: csv_path,
-        content_type: "text/csv",
-        filename: "golden_qa.csv"
-      }
-
-      Tesla.Mock.mock(fn
-        %{method: :post, url: url} ->
-          assert url =~ "/api/v1/evaluations/datasets"
-
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              data: %{
-                dataset_name: "v1_regression_dataset",
-                dataset_id: "88003",
-                total_items: 129,
-                original_items: 43
-              }
-            }
-          }
-      end)
-
-      args = %{
-        input: %{
-          name: "v1_regression_dataset",
-          file: upload,
-          duplication_factor: 1
-        }
-      }
-
-      resolution = %{context: %{current_user: user}}
-
-      assert {:ok, %{golden_qa: golden_qa}} =
-               AIEvaluations.create_golden_qa(nil, args, resolution)
-
-      assert golden_qa.name == "v1_regression_dataset"
-      assert golden_qa.dataset_id == 88_003
-      assert golden_qa.total_items == 7
-    end
   end
 
-  describe "create_golden_qa/3 v2 (is_ai_evaluation_enabled)" do
+  describe "create_golden_qa/3 v2 response handling" do
     setup [:enable_kaapi, :create_upload_file]
 
     test "v2 path: stores Kaapi's original_items, not the post-duplication total_items",
          %{staff: user} do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       csv_path = create_csv_with_rows(7)
       on_exit(fn -> File.rm(csv_path) end)
 
@@ -1009,20 +959,12 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                  )
                )
       end
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "v2 path: returns a generic error when the Kaapi response is missing original_items", %{
       staff: user,
       upload: upload
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{status: 200, body: %{data: %{dataset_id: "88005"}}}
@@ -1051,20 +993,12 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                  )
                )
       end
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "v2 path: returns the Kaapi error message when dataset name already exists (409)", %{
       staff: user,
       upload: upload
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
           assert url =~ "/api/v2/evaluations/datasets"
@@ -1106,10 +1040,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                  )
                )
       end
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
   end
 
@@ -1865,7 +1795,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     end
   end
 
-  describe "create_evaluation/3 v2 (is_ai_evaluation_enabled)" do
+  describe "create_evaluation/3 v2 request shape" do
     setup [:enable_kaapi, :create_config_version, :create_golden_qa_fixture]
 
     test "v2 path: hits the v2 endpoint and persists the returned status", %{
@@ -1873,10 +1803,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
           assert url =~ "/api/v2/evaluations"
@@ -1902,10 +1828,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert evaluation.status == :processing
       assert evaluation.kaapi_evaluation_id == 777
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "v2 path: defaults duplication_factor to 1 when not passed", %{
@@ -1913,10 +1835,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn
         %{method: :post, url: url, body: body} ->
           assert url =~ "/api/v2/evaluations"
@@ -1942,10 +1860,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:ok, %{evaluation: _evaluation}} =
                AIEvaluations.create_evaluation(nil, args, resolution)
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "v2 path: forwards duplication_factor to the Kaapi request body", %{
@@ -1953,10 +1867,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn
         %{method: :post, url: url, body: body} ->
           assert url =~ "/api/v2/evaluations"
@@ -1983,10 +1893,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_evaluation(nil, args, resolution)
 
       assert evaluation.duplication_factor == 3
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "v2 path: returns error when duplication_factor is out of range", %{
@@ -1994,10 +1900,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       args = %{
         input: %{
           golden_qa_id: golden_qa.id,
@@ -2011,10 +1913,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:error, "Duplication factor must be between 1 and 5"} =
                AIEvaluations.create_evaluation(nil, args, resolution)
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "returns an error instead of crashing on an unrecognized status", %{
@@ -2022,10 +1920,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{status: 200, body: %{data: %{id: 778, status: "queued"}}}
@@ -2043,10 +1937,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
       assert reason == "Unexpected evaluation status received from Kaapi: queued"
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "returns a controlled error when Kaapi response is missing data", %{
@@ -2054,10 +1944,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn %{method: :post} ->
         %Tesla.Env{status: 200, body: %{}}
       end)
@@ -2078,10 +1964,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_evaluation(nil, args, resolution)
 
       assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "returns a controlled error when Kaapi response is missing status", %{
@@ -2089,10 +1971,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn %{method: :post} ->
         %Tesla.Env{status: 200, body: %{data: %{id: 779}}}
       end)
@@ -2113,10 +1991,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_evaluation(nil, args, resolution)
 
       assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
 
     test "returns a controlled error when Kaapi response is missing id", %{
@@ -2124,10 +1998,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assistant_config_version: assistant_config_version,
       golden_qa: golden_qa
     } do
-      FunWithFlags.enable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
       Tesla.Mock.mock(fn %{method: :post} ->
         %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
       end)
@@ -2148,10 +2018,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_evaluation(nil, args, resolution)
 
       assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
-
-      FunWithFlags.disable(:is_ai_evaluation_enabled,
-        for_actor: %{organization_id: user.organization_id}
-      )
     end
   end
 
@@ -2444,40 +2310,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                   %{message: "An unknown error occurred, please contact Glific support."}
                 ]
               }} = AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
-    end
-  end
-
-  describe "request_ai_evaluation_access/3" do
-    test "creates an eval access request and returns status requested", %{staff: user} do
-      resolution = %{context: %{current_user: user}}
-
-      assert {:ok, %{status: "requested"}} =
-               AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
-    end
-
-    test "returns existing request status if one already exists", %{staff: user} do
-      resolution = %{context: %{current_user: user}}
-      AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
-
-      assert {:ok, %{status: "requested"}} =
-               AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
-    end
-  end
-
-  describe "get_org_eval_access_request/3" do
-    test "returns nil when no request exists", %{staff: user} do
-      resolution = %{context: %{current_user: user}}
-
-      assert {:ok, nil} =
-               AIEvaluations.get_org_eval_access_request(nil, %{}, resolution)
-    end
-
-    test "returns status after a request has been made", %{staff: user} do
-      resolution = %{context: %{current_user: user}}
-      AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
-
-      assert {:ok, %{status: "requested"}} =
-               AIEvaluations.get_org_eval_access_request(nil, %{}, resolution)
     end
   end
 end
