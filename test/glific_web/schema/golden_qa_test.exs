@@ -20,11 +20,6 @@ defmodule GlificWeb.Schema.GoldenQATest do
     "assets/gql/ai_evaluations/get_golden_qa_dataset.gql"
   )
 
-  setup %{organization_id: org_id} do
-    FunWithFlags.enable(:ai_evaluations, for_actor: %{organization_id: org_id})
-    :ok
-  end
-
   test "goldenQas returns totalItems for each dataset", %{
     staff: user,
     organization_id: organization_id

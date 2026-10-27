@@ -1,5 +1,0 @@
-query getOrgEvalAccessRequest {
-  orgEvalAccessRequest {
-    status
-  }
-}

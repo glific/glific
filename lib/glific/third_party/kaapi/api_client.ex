@@ -223,19 +223,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Upload an evaluation dataset to Kaapi
-  """
-  @spec upload_evaluation_dataset(map(), String.t()) :: {:ok, map()} | {:error, any()}
-  def upload_evaluation_dataset(params, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.post("/api/v1/evaluations/datasets", evaluation_dataset_multipart(params),
-      opts: [adapter: [recv_timeout: 60_000]]
-    )
-    |> parse_kaapi_response()
-  end
-
-  @doc """
   Upload an evaluation dataset to Kaapi (v2)
   """
   @spec upload_evaluation_dataset_v2(map(), String.t()) :: {:ok, map()} | {:error, any()}
@@ -245,17 +232,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> Tesla.post("/api/v2/evaluations/datasets", evaluation_dataset_multipart(params),
       opts: [adapter: [recv_timeout: 60_000]]
     )
-    |> parse_kaapi_response()
-  end
-
-  @doc """
-  Create an evaluation in Kaapi
-  """
-  @spec create_evaluation(map(), String.t()) :: {:ok, map()} | {:error, any()}
-  def create_evaluation(params, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.post("/api/v1/evaluations", params)
     |> parse_kaapi_response()
   end
 
@@ -271,7 +247,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
+  Get full scores for a completed evaluation from Kaapi (v2 scores come from Kaapi's cached traces).
   """
   @spec get_evaluation_scores(non_neg_integer(), String.t(), String.t()) ::
           {:ok, map()} | {:error, any()}
