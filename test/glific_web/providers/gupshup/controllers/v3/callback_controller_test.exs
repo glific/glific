@@ -589,7 +589,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
       assert post(conn, "/gupshup", v2_payload).status == 200
 
       message = Messages.get_message!(message.id)
-      assert get_in(message.errors, ["payload", "payload", "code"]) == 131_026
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
       assert Contacts.get_contact!(message.contact_id).status == :invalid
     end
 
