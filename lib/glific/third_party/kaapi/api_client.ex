@@ -150,7 +150,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def create_collection(params, org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.post("/api/v1/collections/", params)
+    |> Tesla.post("/api/v1/collections/", params, opts: [adapter: [recv_timeout: 30_000]])
     |> parse_kaapi_response()
   end
 
