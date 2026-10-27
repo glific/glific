@@ -705,9 +705,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Records a contact's opt-in on a channel, creating the contact from `attrs` when `identifier` (the phone
-  on WhatsApp, the username on web) is unknown. A blocked contact is left untouched, and a contact
-  already opted in on that channel keeps its first opt-in.
+  Records a contact's opt-in on a channel, creating the contact by identity if unknown and keeping a first opt-in.
   """
   @spec contact_opted_in(:whatsapp | :web, String.t() | nil, map(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}

@@ -461,6 +461,42 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert whatsapp_identity(phone).contact_id == other.id
     end
 
+    test "a nil optin_status, which contacts allows, is stored on the identity as not opted in",
+         %{
+           organization_id: organization_id
+         } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:ok, _} = Contacts.update_contact(contact, %{optin_status: nil})
+      assert %{optin_status: false} = whatsapp_identity(contact.phone)
+    end
+
+    test "a bulk insert leaves the state of a row another contact holds", %{
+      organization_id: organization_id
+    } do
+      holder = Fixtures.contact_fixture(%{organization_id: organization_id})
+      before = whatsapp_identity(holder.phone)
+
+      ContactIdentities.insert_whatsapp_identities(
+        [
+          %{
+            id: Fixtures.contact_without_phone_fixture(%{organization_id: organization_id}).id,
+            phone: holder.phone,
+            optin_time: nil,
+            optin_status: false,
+            optin_method: nil,
+            optout_time: @optin_time,
+            optout_method: "Import",
+            bsp_status: :none,
+            last_message_at: nil
+          }
+        ],
+        organization_id
+      )
+
+      assert whatsapp_identity(holder.phone) == before
+    end
+
     test "an update that leaves the phone alone does not touch identities", %{
       organization_id: organization_id
     } do

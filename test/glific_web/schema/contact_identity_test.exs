@@ -431,6 +431,13 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       end)
     end
 
+    test "WhatsApp without a phone is refused", %{manager: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:optin_contact, user, variables: %{"name" => "No phone"})
+
+      assert [%{"key" => "phone"}] = get_in(query_data, [:data, "optinContact", "errors"])
+    end
+
     test "an explicit null channel opts in on WhatsApp", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:optin_contact, user,
