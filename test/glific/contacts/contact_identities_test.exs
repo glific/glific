@@ -485,7 +485,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
             optin_time: nil,
             optin_status: false,
             optin_method: nil,
-            optout_time: @optin_time,
+            optout_time: ~U[2026-03-04 05:06:07Z],
             optout_method: "Import",
             bsp_status: :none,
             last_message_at: nil
