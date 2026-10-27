@@ -1,6 +1,7 @@
 defmodule Glific.Contacts.ContactIdentities do
   @moduledoc """
-  Internal to `Glific.Contacts`, which is the only module that calls it. Reads and writes
+  Internal to `Glific.Contacts`, which is the only module that calls it (and, beneath it,
+  `Glific.Contacts.IdentityStateBackfill`). Reads and writes
   `Glific.Contacts.ContactIdentity` rows: a contact's identities on each channel.
 
   It never calls back into `Glific.Contacts`.
@@ -266,6 +267,44 @@ defmodule Glific.Contacts.ContactIdentities do
         on_conflict: replace_identity_attrs_of_same_contact(),
         conflict_target: conflict_target(),
         skip_organization_id: true
+      )
+    )
+  end
+
+  @doc """
+  Inserts a WhatsApp identity for each row of `source` (a query selecting identity columns stamped with `now`),
+  and rewrites the state of one the same contact holds that differs. Counts the rows inserted and updated.
+  """
+  @spec upsert_whatsapp_state_from(Ecto.Query.t(), DateTime.t(), timeout()) ::
+          %{inserted: non_neg_integer(), updated: non_neg_integer()}
+  def upsert_whatsapp_state_from(source, now, timeout) do
+    {count, rows} =
+      Repo.insert_all(ContactIdentity, source,
+        on_conflict: only_if_state_differs(replace_state_of_same_contact()),
+        conflict_target: conflict_target(),
+        returning: [:inserted_at],
+        timeout: timeout,
+        skip_organization_id: true
+      )
+
+    inserted = Enum.count(rows, &(&1.inserted_at == now))
+    %{inserted: inserted, updated: count - inserted}
+  end
+
+  @spec only_if_state_differs(Ecto.Query.t()) :: Ecto.Query.t()
+  defp only_if_state_differs(query) do
+    where(
+      query,
+      [i],
+      fragment(
+        "(?, ?, ?, ?, ?, ?, ?) IS DISTINCT FROM (EXCLUDED.optin_time, EXCLUDED.optin_status, EXCLUDED.optin_method, EXCLUDED.optout_time, EXCLUDED.optout_method, EXCLUDED.bsp_status, EXCLUDED.last_message_at)",
+        i.optin_time,
+        i.optin_status,
+        i.optin_method,
+        i.optout_time,
+        i.optout_method,
+        i.bsp_status,
+        i.last_message_at
       )
     )
   end
