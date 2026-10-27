@@ -5,7 +5,7 @@ defmodule Glific.Jobs.Instrumentation do
   AppSignal's built-in Oban instrumentation (`instrument_oban: true`) covers
   per-worker performance for *queued* jobs, but not a status-tagged
   success / error / discard run count, nor the inline periodic sweeps
-  (`perform_periodic`, `poll_and_update`, `process_timeouts`) that run inside
+  (`perform_periodic`, `process_timeouts`) that run inside
   `MinuteWorker` rather than as their own Oban jobs. Periodic workers opt in to
   those by wrapping their work in `track/3`, which emits a `job_run_count` counter
   tagged `job` / `status` / `organization_id` — turning a subsystem's success/error

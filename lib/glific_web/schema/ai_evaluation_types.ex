@@ -5,7 +5,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.{Authorize, RequireFeatureFlag}
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :result_error do
     field :message, non_null(:string)
@@ -130,7 +130,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       arg(:filter, :ai_evaluation_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.list_ai_evaluations/3)
     end
 
@@ -138,7 +137,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :count_ai_evaluations, :integer do
       arg(:filter, :ai_evaluation_filter)
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.count_ai_evaluations/3)
     end
 
@@ -147,7 +145,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       arg(:filter, :golden_qa_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.list_golden_qas/3)
     end
 
@@ -155,7 +152,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :count_golden_qas, :integer do
       arg(:filter, :golden_qa_filter)
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.count_golden_qas/3)
     end
 
@@ -164,7 +160,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       arg(:id, non_null(:id))
       arg(:export_format, :string)
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_evaluation_scores/3)
     end
 
@@ -173,47 +168,21 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       arg(:id, non_null(:id))
       arg(:include_signed_url, :boolean, default_value: false)
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_golden_qa/3)
-    end
-
-    @desc "Get the organization's AI Evaluations access request status"
-    field :org_eval_access_request, :org_eval_access_request do
-      middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
-      resolve(&Resolvers.AIEvaluations.get_org_eval_access_request/3)
     end
 
     @desc "List active Kaapi models (openai only, for now)"
     field :kaapi_models, list_of(:kaapi_model) do
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.list_kaapi_models/3)
     end
   end
 
-  object :org_eval_access_request do
-    field :status, :string
-  end
-
-  object :request_eval_access_result do
-    field :status, :string
-    field :errors, list_of(:result_error)
-  end
-
   object :ai_evaluation_mutations do
-    @desc "Request access to the AI Evaluations feature"
-    field :request_ai_evaluation_access, :request_eval_access_result do
-      middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
-      resolve(&Resolvers.AIEvaluations.request_ai_evaluation_access/3)
-    end
-
     @desc "Create Golden QA"
     field :create_golden_qa, :golden_qa_result do
       arg(:input, non_null(:golden_qa_input))
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.create_golden_qa/3)
     end
 
@@ -221,7 +190,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :create_evaluation, :evaluation_result do
       arg(:input, non_null(:evaluation_input))
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.create_evaluation/3)
     end
 
@@ -229,8 +197,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :improve_evaluation_prompt, :improve_prompt_result do
       arg(:evaluation_id, non_null(:id))
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
-      middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
       resolve(&Resolvers.AIEvaluations.improve_evaluation_prompt/3)
     end
   end
@@ -239,8 +205,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     @desc "Delivers the result of a v2 prompt-improvement request once Kaapi's callback arrives."
     field :improve_prompt_updated, :improve_prompt_update do
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
-      middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
 
       config(fn _args, %{context: %{current_user: user}} ->
         {:ok, topic: "#{user.organization_id}"}
@@ -252,7 +216,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     @desc "Delivers an AI evaluation's status as it changes (e.g. once Kaapi's run completes)."
     field :ai_evaluation_updated, :ai_evaluation do
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
 
       config(fn _args, %{context: %{current_user: user}} ->
         {:ok, topic: "#{user.organization_id}"}

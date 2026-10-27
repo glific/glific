@@ -245,8 +245,7 @@ config :glific, Glific.ThirdParty.Gemini.ApiClient,
 
 config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
-  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
-  discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
+  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil)
 
 # The BSP webhooks are unauthenticated, so callers are filtered on the source IPs the
 # provider publishes; anything else gets a 403.
