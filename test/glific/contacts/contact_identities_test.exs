@@ -826,10 +826,8 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                })
     end
 
-    test "a repeat keeps the first WhatsApp opt-in, whatever the source", %{
-      contact: contact,
-      organization_id: organization_id
-    } do
+    test "a BSP repeat keeps the first WhatsApp opt-in and refreshes the session; any other records again",
+         %{contact: contact, organization_id: organization_id} do
       optin = fn method, time ->
         Contacts.contact_opted_in(:whatsapp, contact.phone, %{organization_id: organization_id},
           utc_time: time,
@@ -846,15 +844,41 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       later = DateTime.add(@optin_time, 3_600)
       {:ok, _} = optin.("BSP", @optin_time)
+      {:ok, contact} = Contacts.update_contact(contact, %{bsp_status: :none})
+      {:ok, _} = optin.("BSP", later)
 
-      for method <- ["BSP", "API", "registration"], do: {:ok, _} = optin.(method, later)
+      assert %{optin_time: @optin_time, optin_method: "BSP", bsp_status: bsp_status} =
+               assert_state_in_step(contact)
 
-      assert %{optin_time: @optin_time, optin_method: "BSP"} = assert_state_in_step(contact)
+      assert bsp_status in [:hsm, :session_and_hsm]
 
-      assert [_one] =
+      {:ok, contact} = Contacts.update_contact(contact, %{status: :invalid})
+      {:ok, _} = optin.("WA", later)
+
+      assert %{optin_time: ^later, optin_method: "WA"} = assert_state_in_step(contact)
+      assert %Contact{status: :valid} = Repo.get!(Contact, contact.id)
+
+      assert [_, _] =
                Contacts.list_contact_history(%{
                  filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
                })
+    end
+
+    test "creating a contact whose phone another contact's identity holds does not raise", %{
+      organization_id: organization_id
+    } do
+      holder = Fixtures.contact_fixture(%{organization_id: organization_id})
+      phone = holder.phone
+      Repo.update_all(from(c in Contact, where: c.id == ^holder.id), set: [phone: "919876500011"])
+
+      assert {:ok, %Contact{}} =
+               Contacts.create_contact(%{
+                 phone: phone,
+                 name: "New sender",
+                 organization_id: organization_id
+               })
+
+      assert whatsapp_identity(phone).contact_id == holder.id
     end
 
     test "update_contact_status/2 expires old sessions on both", %{

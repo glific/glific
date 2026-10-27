@@ -339,8 +339,13 @@ defmodule Glific.Contacts.ContactIdentities do
   defp identity_insert_opts(_channel), do: []
 
   @spec whatsapp_insert_opts() :: keyword()
+  # allow_stale: a conflicting row another contact holds updates nothing, which Ecto would raise as stale.
   defp whatsapp_insert_opts,
-    do: [on_conflict: replace_state_of_same_contact(), conflict_target: conflict_target()]
+    do: [
+      on_conflict: replace_state_of_same_contact(),
+      conflict_target: conflict_target(),
+      allow_stale: true
+    ]
 
   # A row another contact still holds keeps its state: only its owner's insert may overwrite it.
   @spec replace_state_of_same_contact() :: Ecto.Query.t()

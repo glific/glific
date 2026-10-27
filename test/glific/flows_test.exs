@@ -1215,6 +1215,7 @@ defmodule Glific.FLowsTest do
     test "a flow started on the web channel runs and replies on the web",
          %{contact: contact, organization_id: organization_id} do
       flow = active_flow(organization_id)
+      contact = Fixtures.web_opted_in_fixture(contact)
 
       {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, :web)
 

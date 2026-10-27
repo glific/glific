@@ -705,11 +705,12 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Records a contact's opt-in on a channel, creating the contact by identity if unknown and keeping a first opt-in.
+  Records a contact's opt-in on a channel, creating the contact by identity if unknown.
   """
   @spec contact_opted_in(:whatsapp | :web, String.t() | nil, map(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
-  def contact_opted_in(channel, identifier, attrs, opts \\ []) do
+  def contact_opted_in(channel, identifier, attrs, opts \\ [])
+      when channel in [:whatsapp, :web] do
     opts =
       opts
       |> Keyword.put_new(:method, default_optin_method(channel))
@@ -758,13 +759,17 @@ defmodule Glific.Contacts do
   defp skip_blocked(%Contact{status: :blocked} = contact), do: {:blocked, contact}
   defp skip_blocked(contact), do: {:ok, contact}
 
-  # Each write keeps the first opt-in itself, so the check and the write cannot drift apart.
+  # WhatsApp keeps master's rule: a BSP re-send for an opted-in contact only refreshes its session
+  # status, while any other opt-in records again, which is how an NGO repairs a contact's status. Web
+  # keeps the first opt-in, checked inside the write so concurrent sign-ins cannot both record.
   @spec write_optin(:whatsapp | :web, Contact.t(), String.t(), map(), Keyword.t()) ::
           {:recorded | :already_opted_in, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp write_optin(:whatsapp, contact, phone, attrs, opts) do
-    if contact.optin_status,
-      do: {:already_opted_in, contact},
-      else: update_whatsapp_optin(contact, phone, attrs, opts)
+    if contact.optin_status and opts[:method] == "BSP" do
+      with {:ok, contact} <- set_session_status(contact, :hsm), do: {:already_opted_in, contact}
+    else
+      update_whatsapp_optin(contact, phone, attrs, opts)
+    end
   end
 
   defp write_optin(:web, contact, username, _attrs, opts) do
