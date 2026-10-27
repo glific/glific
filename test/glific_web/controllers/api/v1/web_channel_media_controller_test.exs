@@ -5,12 +5,18 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
   # `web_channel_auth_controller_test.exs`.
   use GlificWeb.ConnCase
 
-  alias Glific.{Contacts.Contact, Fixtures, GcsFixtures, WebChannelFlagHelpers}
-  alias GlificWeb.WebChannel.Token
+  alias Glific.{
+    Contacts,
+    Fixtures,
+    GcsFixtures,
+    WebChannelFixtures,
+    WebChannelFlagHelpers,
+    WebChannelLoginHelpers
+  }
 
   setup do
     WebChannelFlagHelpers.reset_web_channel_flag(1)
-    %{contact: Fixtures.contact_fixture()}
+    %{contact: WebChannelFixtures.web_contact_fixture()}
   end
 
   @spec with_web_channel_enabled((-> any())) :: any()
@@ -63,19 +69,15 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       end)
     end
 
-    test "rejects a token for a different organisation", %{conn: conn, contact: contact} do
+    test "rejects a token signed for another organisation", %{conn: conn, contact: contact} do
+      other = Fixtures.organization_fixture(%{shortcode: "otheruploads"})
+      WebChannelFlagHelpers.activate_web_channel(other.id)
+      other_contact = WebChannelFixtures.web_contact_fixture(%{organization_id: other.id})
+
+      foreign_token = WebChannelFixtures.web_channel_session_token(other_contact)
+      Glific.Repo.put_organization_id(contact.organization_id)
+
       with_web_channel_enabled(fn ->
-        # The flag is on for org 1 only; a token naming another org verifies fine today, since
-        # the signing key is installation-wide.
-        other_organization_id = contact.organization_id + 1
-
-        foreign_token =
-          Token.sign_contact_token(%Contact{
-            id: contact.id,
-            organization_id: other_organization_id,
-            phone: contact.phone
-          })
-
         conn =
           conn
           |> put_req_header("authorization", "Bearer #{foreign_token}")
@@ -85,12 +87,55 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
             "size" => 1024
           })
 
-        assert json_response(conn, 404)
+        assert json_response(conn, 401)
+      end)
+    end
+
+    test "accepts an NGO-signed token for an existing username", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        configure_gcs(1)
+        {:ok, _ngo_contact} = Contacts.maybe_create_contact(%{}, :web, "ravi_12")
+
+        token =
+          WebChannelLoginHelpers.sign(
+            WebChannelLoginHelpers.claims(),
+            WebChannelFlagHelpers.web_channel_secret(1)
+          )
+
+        assert json_response(sign_with_token(conn, token), 200)
+      end)
+    end
+
+    test "refuses an NGO-signed token for a username with no contact, creating none", %{
+      conn: conn
+    } do
+      with_web_channel_enabled(fn ->
+        token =
+          WebChannelLoginHelpers.sign(
+            WebChannelLoginHelpers.claims(%{"sub" => "never_seen"}),
+            WebChannelFlagHelpers.web_channel_secret(1)
+          )
+
+        assert json_response(sign_with_token(conn, token), 401)
+        assert {:error, :not_found} = Contacts.fetch_by_identity(:web, "never_seen")
+      end)
+    end
+
+    test "refuses every token once the organization has no secret", %{
+      conn: conn,
+      contact: contact
+    } do
+      with_web_channel_enabled(fn ->
+        token = WebChannelFixtures.web_channel_session_token(contact)
+        WebChannelFlagHelpers.remove_web_channel_secret(1)
+
+        assert json_response(sign_with_token(conn, token), 401)
       end)
     end
 
     test "returns 404 when the feature flag is off", %{conn: conn, contact: contact} do
-      token = Token.sign_contact_token(contact)
+      token =
+        with_web_channel_enabled(fn -> WebChannelFixtures.web_channel_session_token(contact) end)
 
       conn =
         conn
@@ -107,7 +152,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
     test "signs an upload URL for a valid request", %{conn: conn, contact: contact} do
       with_web_channel_enabled(fn ->
         configure_gcs(contact.organization_id)
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn
@@ -141,9 +186,12 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       end)
     end
 
-    defp sign_upload(conn, contact) do
+    defp sign_upload(conn, contact),
+      do: sign_with_token(conn, WebChannelFixtures.web_channel_session_token(contact))
+
+    defp sign_with_token(conn, token) do
       conn
-      |> put_req_header("authorization", "Bearer #{Token.sign_contact_token(contact)}")
+      |> put_req_header("authorization", "Bearer #{token}")
       |> post(Routes.api_v1_web_channel_media_path(conn, :upload_url), %{
         "type" => "image",
         "content_type" => "image/png",
@@ -187,7 +235,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
     } do
       with_web_channel_enabled(fn ->
         configure_gcs(contact.organization_id)
-        other_contact = Fixtures.contact_fixture()
+        other_contact = WebChannelFixtures.web_contact_fixture()
 
         with_upload_limit(:rate_limit_web_channel_upload_total, 1, fn ->
           assert json_response(sign_upload(conn, contact), 200)
@@ -201,7 +249,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
          %{conn: conn, contact: contact} do
       with_web_channel_enabled(fn ->
         configure_gcs(contact.organization_id)
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn
@@ -226,7 +274,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
     } do
       with_web_channel_enabled(fn ->
         configure_gcs(contact.organization_id)
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn
@@ -247,7 +295,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       contact: contact
     } do
       with_web_channel_enabled(fn ->
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn
@@ -265,7 +313,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
 
     test "rejects an oversized declared size with a typed 413", %{conn: conn, contact: contact} do
       with_web_channel_enabled(fn ->
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn
@@ -284,7 +332,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
 
     test "rejects a non-positive-integer size with a typed 422", %{conn: conn, contact: contact} do
       with_web_channel_enabled(fn ->
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn
@@ -302,7 +350,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
 
     test "rejects an unsupported message type with a typed 415", %{conn: conn, contact: contact} do
       with_web_channel_enabled(fn ->
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn
@@ -323,7 +371,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       contact: contact
     } do
       with_web_channel_enabled(fn ->
-        token = Token.sign_contact_token(contact)
+        token = WebChannelFixtures.web_channel_session_token(contact)
 
         conn =
           conn

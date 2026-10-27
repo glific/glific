@@ -683,6 +683,27 @@ defmodule Glific.Flows.ActionTest do
     assert message.flow_label == "Age Group 11 to 14"
   end
 
+  test "execute an action when type is add_input_labels with a label expanding past the column",
+       attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    message = Fixtures.message_fixture(Map.put(attrs, :contact_id, contact.id))
+
+    context =
+      %FlowContext{
+        contact_id: contact.id,
+        flow_id: 1,
+        organization_id: attrs.organization_id,
+        last_message: message,
+        results: %{"answer" => %{"input" => String.duplicate("a", 300)}}
+      }
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{type: "add_input_labels", labels: [%{"name" => "@results.answer.input"}]}
+
+    assert {:ok, _context, []} = Action.execute(action, context, [])
+    assert Repo.get!(Glific.Messages.Message, message.id).flow_label == String.duplicate("a", 255)
+  end
+
   test "Invalid template expression will process the action as empty template", attrs do
     Partners.organization(attrs.organization_id)
 

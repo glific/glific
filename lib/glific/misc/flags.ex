@@ -506,8 +506,6 @@ defmodule Glific.Flags do
       :is_ask_glific_enabled,
       :is_whatsapp_forms_enabled,
       :high_trigger_tps_enabled,
-      :ai_evaluations,
-      :is_ai_evaluation_enabled,
       :is_prompt_generator_enabled,
       :is_template_v2_enabled,
       :is_template_library_enabled,

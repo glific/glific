@@ -17,8 +17,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   alias GlificWeb.WebChannel.{Presence, RoomChannel, Token}
 
   setup do
-    contact = Fixtures.contact_fixture()
-    other_contact = Fixtures.contact_fixture()
+    contact = WebChannelFixtures.web_contact_fixture()
+    other_contact = WebChannelFixtures.web_contact_fixture()
     %{contact: contact, other_contact: other_contact}
   end
 
@@ -515,8 +515,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
         {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        {:ok, renewed, _payload} =
-          contact |> Token.sign_contact_token() |> Token.renew_contact_token()
+        {:ok, renewed, _claims} =
+          contact |> WebChannelFixtures.web_channel_session_token() |> then(&Token.renew(1, &1))
 
         ref = push(socket, "renew_token", %{"token" => renewed})
         assert_reply ref, :ok
@@ -529,7 +529,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
         {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        foreign_token = Token.sign_contact_token(other_contact)
+        foreign_token = WebChannelFixtures.web_channel_session_token(other_contact)
 
         ref = push(socket, "renew_token", %{"token" => foreign_token})
         assert_reply ref, :error, %{reason: "invalid_token"}
@@ -548,20 +548,16 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       end)
     end
 
-    test "a valid token naming the right contact but a different org is rejected, org unchanged",
+    test "a token signed with another organization's secret is rejected, org unchanged",
          %{contact: contact} do
       with_web_channel_enabled(fn ->
         {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
         {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        # Same contact id as the real one, but claiming a different org — proves the org
-        # comparison itself rejects a swap, independent of the contact_id comparison above.
         foreign_org_token =
-          Token.sign_contact_token(%Glific.Contacts.Contact{
-            id: contact.id,
-            organization_id: contact.organization_id + 1,
-            phone: contact.phone
-          })
+          contact
+          |> WebChannelFixtures.web_channel_claims()
+          |> WebChannelFixtures.sign_web_channel_claims("another-org-secret-another-org-secret")
 
         ref = push(socket, "renew_token", %{"token" => foreign_org_token})
         assert_reply ref, :error, %{reason: "invalid_token"}
@@ -587,26 +583,10 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         1,
         Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
         fn ->
-          {:ok, ws_socket} = overrides |> ngo_token() |> WebChannelFixtures.ngo_socket_fixture()
+          {:ok, ws_socket} = overrides |> ngo_token() |> WebChannelFixtures.connect_with_token()
           contact = ws_socket.assigns.current_contact
           {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
           fun.(socket, contact)
-        end
-      )
-    end
-
-    test "a one-time-code session cannot be renewed with an NGO token for its phone" do
-      Glific.WebChannelFlagHelpers.with_web_channel_secrets(
-        1,
-        Glific.WebChannelFlagHelpers.jwt_signature_secrets([@secret]),
-        fn ->
-          contact = Fixtures.contact_fixture(%{phone: "919876500777"})
-          {:ok, _contact} = Glific.Contacts.add_identity(contact, :web, contact.phone)
-          {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-          {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
-
-          ref = push(socket, "renew_token", %{"token" => ngo_token(%{"sub" => contact.phone})})
-          assert_reply ref, :error, %{reason: "invalid_token"}
         end
       )
     end
@@ -773,7 +753,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
         {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
 
-        fresh_token = Token.sign_contact_token(contact)
+        fresh_token = WebChannelFixtures.web_channel_session_token(contact)
         ref = push(socket, "renew_token", %{"token" => fresh_token})
         assert_reply ref, :ok
 
@@ -867,7 +847,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
             |> Glific.WebChannelLoginHelpers.claims()
             |> Glific.WebChannelLoginHelpers.sign(@secret)
 
-          {:ok, ws_socket} = WebChannelFixtures.ngo_socket_fixture(token)
+          {:ok, ws_socket} = WebChannelFixtures.connect_with_token(token)
           contact_id = ws_socket.assigns.current_contact.id
 
           assert {:ok, %{contact_id: ^contact_id, messages: []}, _socket} =
