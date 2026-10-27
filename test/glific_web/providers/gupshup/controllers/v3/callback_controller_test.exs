@@ -54,13 +54,13 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
       end
     end
 
-    test "falls back to id when gs_id is missing",
+    test "status with only the WhatsApp id leaves the message untouched",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
       payload = meta_status_payload(%{"id" => gupshup_id, "status" => "delivered"})
 
       conn = post(conn, "/gupshup", payload)
       assert response(conn, 200) == ""
-      assert Messages.get_message!(message.id).bsp_status == :delivered
+      assert Messages.get_message!(message.id).bsp_status == message.bsp_status
     end
 
     test "updates every status in a batched callback",
@@ -556,6 +556,44 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
   end
 
   describe "duplicate callbacks" do
+    test "a V2 failure arriving after the V3 one still runs the Gupshup error handling",
+         %{conn: conn} do
+      gupshup_id = Ecto.UUID.generate()
+
+      {:ok, message} =
+        %{bsp_message_id: gupshup_id}
+        |> Fixtures.message_fixture()
+        |> Messages.update_message(%{bsp_status: :sent})
+
+      v3_payload =
+        meta_status_payload(%{
+          "gs_id" => gupshup_id,
+          "status" => "failed",
+          "errors" => [%{"code" => 131_026, "title" => "Message undeliverable"}]
+        })
+
+      assert post(conn, "/gupshup", v3_payload).status == 200
+      assert Contacts.get_contact!(message.contact_id).status != :invalid
+
+      v2_payload = %{
+        "app" => "Glific App",
+        "type" => "message-event",
+        "version" => 2,
+        "payload" => %{
+          "type" => "failed",
+          "gsId" => gupshup_id,
+          "id" => "gBEGkZkXRDmUAgl5FpzpjNgI5Co",
+          "payload" => %{"ts" => "1592311836", "code" => 1002}
+        }
+      }
+
+      assert post(conn, "/gupshup", v2_payload).status == 200
+
+      message = Messages.get_message!(message.id)
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
+      assert Contacts.get_contact!(message.contact_id).status == :invalid
+    end
+
     test "a failure already received in V2 format is not processed again from V3",
          %{conn: conn} do
       gupshup_id = Ecto.UUID.generate()
@@ -641,7 +679,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
                "Failed to create WhatsApp form response: bsp_message_id=#{form_bsp_message_id}"
     end
 
-    test "logs a change it has no handler for", %{conn: conn} do
+    test "acknowledges a change it has no handler for", %{conn: conn} do
       payload = %{
         "object" => "whatsapp_business_account",
         "entry" => [
@@ -653,14 +691,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
         ]
       }
 
-      Logger.configure(level: :info)
-
-      log =
-        capture_log(fn ->
-          assert post(conn, "/gupshup", payload).status == 200
-        end)
-
-      assert log =~ "Unhandled Gupshup V3 callback change: field=messages, type=messages"
+      assert post(conn, "/gupshup", payload).status == 200
     end
   end
 

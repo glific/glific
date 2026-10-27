@@ -539,6 +539,18 @@ defmodule Glific.CommunicationsTest do
       refute Communications.Message.update_bsp_status(bsp_message_id, :error, errors)
       assert Contacts.get_contact!(message.contact_id).status == :valid
     end
+
+    test "a failure with a different error code runs the error handling",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
+      gupshup_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors)
+      refute Contacts.get_contact!(message.contact_id).status == :invalid
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
+      assert Contacts.get_contact!(message.contact_id).status == :invalid
+    end
   end
 
   describe "mailer" do

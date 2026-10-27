@@ -43,7 +43,7 @@ defmodule Glific.Providers.Gupshup.V3.Dispatcher do
         handler.handle(value, organization_id)
 
       :error ->
-        Logger.info("Unhandled Gupshup V3 callback change: field=#{field}, type=#{type}")
+        Logger.debug("Unhandled Gupshup V3 callback change: field=#{field}, type=#{type}")
     end
   end
 

@@ -24,7 +24,7 @@ defmodule Glific.Providers.Gupshup.V3.Handlers.Status do
   @spec update_status(map(), non_neg_integer()) :: :ok
   defp update_status(%{"status" => meta_status} = status, organization_id) do
     with {:ok, bsp_status} <- Map.fetch(@bsp_statuses, meta_status),
-         bsp_message_id when is_binary(bsp_message_id) <- status["gs_id"] || status["id"] do
+         bsp_message_id when is_binary(bsp_message_id) <- status["gs_id"] do
       {error_code, _error_reason} = error = status_error(status)
       status_params = bsp_status_params(status, bsp_status, error)
 

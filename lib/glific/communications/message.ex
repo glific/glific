@@ -183,9 +183,11 @@ defmodule Glific.Communications.Message do
   """
   @spec update_bsp_status(String.t(), atom() | nil, map() | nil) :: boolean()
   def update_bsp_status(bsp_message_id, :error, errors) do
+    error_code = get_in(errors, ["payload", "payload", "code"])
+
     {updated, _} =
       bsp_message_id
-      |> status_change_query(:error)
+      |> error_change_query(error_code)
       |> Repo.update_all(
         set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
       )
@@ -221,6 +223,29 @@ defmodule Glific.Communications.Message do
           m.bsp_message_id == ^bsp_message_id and
             (is_nil(m.bsp_status) or m.bsp_status != ^bsp_status)
       )
+
+  # One failure arrives as a V2 callback with Gupshup's error code and a V3 callback with
+  # Meta's, in either order, and process_errors/3 only acts on Gupshup's codes. So a
+  # failure is new when its code differs from the stored one, not only when the status does.
+  @spec error_change_query(String.t(), term()) :: Ecto.Query.t()
+  defp error_change_query(bsp_message_id, error_code) do
+    error_code_text = error_code_text(error_code)
+
+    from(m in Message,
+      where:
+        m.bsp_message_id == ^bsp_message_id and
+          (is_nil(m.bsp_status) or m.bsp_status != ^:error or
+             fragment(
+               "(?->'payload'->'payload'->>'code') IS DISTINCT FROM ?",
+               m.errors,
+               ^error_code_text
+             ))
+    )
+  end
+
+  @spec error_code_text(term()) :: String.t() | nil
+  defp error_code_text(nil), do: nil
+  defp error_code_text(error_code), do: to_string(error_code)
 
   @spec publish_and_process_errors(String.t(), map()) :: any()
   defp publish_and_process_errors(bsp_message_id, errors) do
