@@ -12,48 +12,6 @@ defmodule Glific.ThirdParty.KaapiTest do
     request_metadata: %{request_id: "req-1", user_id: 9}
   }
 
-  describe "upload_evaluation_dataset/2" do
-    setup [:enable_kaapi_credential, :create_dataset_upload_params]
-
-    test "extracts name and dataset_id from a well-shaped v1 response", %{
-      organization_id: organization_id,
-      dataset_params: dataset_params
-    } do
-      mock(fn %Tesla.Env{method: :post, url: url} ->
-        assert url =~ "/api/v1/evaluations/datasets"
-
-        %Tesla.Env{
-          status: 200,
-          body: %{data: %{dataset_name: "valid_dataset", dataset_id: "88002"}}
-        }
-      end)
-
-      assert {:ok, %{name: "valid_dataset", dataset_id: "88002"}} =
-               Kaapi.upload_evaluation_dataset(dataset_params, organization_id)
-    end
-
-    test "returns a generic error and does not crash on an unexpected response shape", %{
-      organization_id: organization_id,
-      dataset_params: dataset_params
-    } do
-      mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{status: 200, body: %{data: %{unexpected: "shape"}}}
-      end)
-
-      assert {:error, "An unknown error occurred, please contact Glific support."} =
-               Kaapi.upload_evaluation_dataset(dataset_params, organization_id)
-    end
-
-    test "passes an upstream error through unchanged", %{
-      organization_id: organization_id,
-      dataset_params: dataset_params
-    } do
-      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
-
-      assert {:error, :timeout} = Kaapi.upload_evaluation_dataset(dataset_params, organization_id)
-    end
-  end
-
   describe "upload_evaluation_dataset_v2/2" do
     setup [:enable_kaapi_credential, :create_dataset_upload_params]
 

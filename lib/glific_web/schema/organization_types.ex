@@ -29,8 +29,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:ask_glific_enabled, :boolean)
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
-    field(:ai_evaluations_enabled, :boolean)
-    field(:ai_evaluation_v2_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
     field(:superset_enabled, :boolean)
     field(:prompt_generator_enabled, :boolean)
