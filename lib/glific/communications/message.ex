@@ -36,6 +36,22 @@ defmodule Glific.Communications.Message do
     location_request_message: :send_interactive
   }
 
+  # One failure can arrive from several callback sources (Gupshup V2 and Meta-format V3).
+  # A source earlier in this list replaces a stored failure from a later one, never the
+  # reverse. Move "meta" first once every callback is V3.
+  @error_source_priority ["gupshup", "meta"]
+
+  # Error codes that need handling, by the source that sent them. Meta codes are only
+  # recorded for now; map them here when moving to V3.
+  @error_actions %{
+    "gupshup" => %{
+      1002 => :number_does_not_exist,
+      471 => :rate_limit_exceeded,
+      1003 => :insufficient_balance
+    },
+    "meta" => %{}
+  }
+
   @doc """
   Send message to receiver using define provider.
   """
@@ -179,15 +195,18 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
-  Callback to update the provider status for a message, returns whether the status changed
+  Callback to update the provider status for a message, returns whether the status changed.
+  `error_source` names the callback a failure came from, see `@error_source_priority`.
   """
-  @spec update_bsp_status(String.t(), atom() | nil, map() | nil) :: boolean()
-  def update_bsp_status(bsp_message_id, :error, errors) do
-    error_code = get_in(errors, ["payload", "payload", "code"])
+  @spec update_bsp_status(String.t(), atom() | nil, map() | nil, String.t()) :: boolean()
+  def update_bsp_status(bsp_message_id, bsp_status, params, error_source \\ "gupshup")
+
+  def update_bsp_status(bsp_message_id, :error, errors, error_source) do
+    errors = Map.put(errors, "source", error_source)
 
     {updated, _} =
       bsp_message_id
-      |> error_change_query(error_code)
+      |> error_change_query(error_source)
       |> Repo.update_all(
         set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
       )
@@ -196,7 +215,7 @@ defmodule Glific.Communications.Message do
     updated > 0
   end
 
-  def update_bsp_status(bsp_message_id, bsp_status, _params) do
+  def update_bsp_status(bsp_message_id, bsp_status, _params, _error_source) do
     {updated, _} =
       bsp_message_id
       |> status_change_query(bsp_status)
@@ -224,35 +243,35 @@ defmodule Glific.Communications.Message do
             (is_nil(m.bsp_status) or m.bsp_status != ^bsp_status)
       )
 
-  # One failure arrives as a V2 callback with Gupshup's error code and a V3 callback with
-  # Meta's, in either order, and process_errors/3 only acts on Gupshup's codes. So a
-  # failure is new when its code differs from the stored one, not only when the status does.
-  @spec error_change_query(String.t(), term()) :: Ecto.Query.t()
-  defp error_change_query(bsp_message_id, error_code) do
-    error_code_text = error_code_text(error_code)
+  # A stored failure is replaced only by one from a higher priority source, so the same
+  # failure from another callback, or a retry, doesn't run the error handling again
+  @spec error_change_query(String.t(), String.t()) :: Ecto.Query.t()
+  defp error_change_query(bsp_message_id, error_source) do
+    lower_sources = lower_priority_sources(error_source)
 
     from(m in Message,
       where:
         m.bsp_message_id == ^bsp_message_id and
           (is_nil(m.bsp_status) or m.bsp_status != ^:error or
-             fragment(
-               "(?->'payload'->'payload'->>'code') IS DISTINCT FROM ?",
-               m.errors,
-               ^error_code_text
-             ))
+             is_nil(fragment("?->>'source'", m.errors)) or
+             fragment("?->>'source' = ANY(?)", m.errors, ^lower_sources))
     )
   end
 
-  @spec error_code_text(term()) :: String.t() | nil
-  defp error_code_text(nil), do: nil
-  defp error_code_text(error_code), do: to_string(error_code)
+  @spec lower_priority_sources(String.t()) :: [String.t()]
+  defp lower_priority_sources(error_source) do
+    @error_source_priority
+    |> Enum.drop_while(&(&1 != error_source))
+    |> Enum.drop(1)
+  end
 
   @spec publish_and_process_errors(String.t(), map()) :: any()
   defp publish_and_process_errors(bsp_message_id, errors) do
     case Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id}) do
       {:ok, message} ->
+        error_code = get_in(errors, ["payload", "payload", "code"])
         publish_message_status(message)
-        process_errors(message, errors, errors["payload"]["payload"]["code"])
+        process_errors(message, errors["source"], error_code)
 
       error ->
         Logger.error("Could not update message status: #{Glific.SafeLog.safe_inspect(error)}")
@@ -502,15 +521,22 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  @spec process_errors(Message.t(), map(), integer | nil) :: any
-  defp process_errors(message, _errors, 1002) do
+  @spec process_errors(Message.t(), String.t() | nil, term()) :: any()
+  defp process_errors(message, error_source, error_code) do
+    @error_actions
+    |> get_in([error_source, error_code])
+    |> run_error_action(message)
+  end
+
+  @spec run_error_action(atom() | nil, Message.t()) :: any()
+  defp run_error_action(:number_does_not_exist, message) do
     # Issue #2047 - Number does not exist in WhatsApp
     # Lets disable this contact and make it inactive
     # This is relatively common, so we don't send an email or log this error
     Contacts.number_does_not_exist(message.contact_id)
   end
 
-  defp process_errors(message, _errors, 471) do
+  defp run_error_action(:rate_limit_exceeded, message) do
     # Issue #2049 - Organization has hit rate limit and
     # WABA is now rejecting messages
     organization = Partners.organization(message.organization_id)
@@ -527,7 +553,7 @@ defmodule Glific.Communications.Message do
     BalanceAlertMail.rate_exceeded(organization, body)
   end
 
-  defp process_errors(message, _errors, 1003) do
+  defp run_error_action(:insufficient_balance, message) do
     # Issue #2049 - Organization has insufficient balance
     # Gupshup is now rejecting messages
     # We should send a message to ops and also email the org and glific support
@@ -545,7 +571,7 @@ defmodule Glific.Communications.Message do
     BalanceAlertMail.no_balance(organization, body)
   end
 
-  defp process_errors(_message, _errors, _code), do: nil
+  defp run_error_action(nil, _message), do: nil
 
   @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
   defp create_message_metadata(contact, message_params, type) do

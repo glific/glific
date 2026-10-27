@@ -128,7 +128,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
       assert Contacts.get_contact!(message.contact_id).status == contact_status
     end
 
-    test "failed status with top-level code and reason marks the contact invalid",
+    test "failed status with top-level code and reason is recorded as a meta failure",
          %{conn: conn, message: message, gupshup_id: gupshup_id} do
       {:ok, message} = Messages.update_message(message, %{bsp_status: :sent})
 
@@ -149,8 +149,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
       assert get_in(message.errors, ["payload", "payload", "reason"]) ==
                "Number does not exist on WhatsApp"
 
-      contact = Contacts.get_contact!(message.contact_id)
-      assert contact.status == :invalid
+      assert message.errors["source"] == "meta"
+      refute Contacts.get_contact!(message.contact_id).status == :invalid
     end
 
     test "failed status keeps a non-numeric error code as is",

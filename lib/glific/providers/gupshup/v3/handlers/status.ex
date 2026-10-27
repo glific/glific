@@ -29,7 +29,12 @@ defmodule Glific.Providers.Gupshup.V3.Handlers.Status do
       status_params = bsp_status_params(status, bsp_status, error)
 
       status_changed? =
-        Communications.Message.update_bsp_status(bsp_message_id, bsp_status, status_params)
+        Communications.Message.update_bsp_status(
+          bsp_message_id,
+          bsp_status,
+          status_params,
+          "meta"
+        )
 
       if status_changed?,
         do: Instrumentation.track_status(bsp_status, organization_id, error_code: error_code),
@@ -41,7 +46,7 @@ defmodule Glific.Providers.Gupshup.V3.Handlers.Status do
 
   defp update_status(_status, _organization_id), do: :ok
 
-  # process_errors/3 reads the error code from the V2 payload.payload.code shape
+  # Communications.Message reads a failure's error code from the V2 payload.payload.code shape
   @spec bsp_status_params(map(), atom(), {term(), String.t() | nil}) :: map()
   defp bsp_status_params(status, :error, {error_code, error_reason}),
     do:

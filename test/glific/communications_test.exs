@@ -540,16 +540,56 @@ defmodule Glific.CommunicationsTest do
       assert Contacts.get_contact!(message.contact_id).status == :valid
     end
 
-    test "a failure with a different error code runs the error handling",
+    test "a gupshup failure replaces a meta one and runs the error handling",
          %{message: message, bsp_message_id: bsp_message_id} do
       meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
       gupshup_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
 
-      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors)
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
       refute Contacts.get_contact!(message.contact_id).status == :invalid
 
       assert Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
+
+      message = Messages.get_message!(message.id)
+      assert message.errors["source"] == "gupshup"
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
       assert Contacts.get_contact!(message.contact_id).status == :invalid
+    end
+
+    test "a meta failure does not replace a gupshup one",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      gupshup_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
+      refute Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
+
+      message = Messages.get_message!(message.id)
+      assert message.errors["source"] == "gupshup"
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
+    end
+
+    test "a meta error code is recorded without error handling",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
+
+      assert Messages.get_message!(message.id).errors["source"] == "meta"
+      refute Contacts.get_contact!(message.contact_id).status == :invalid
+    end
+
+    test "a callback failure replaces a failure stored without a source",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      Repo.update_all(
+        from(m in Messages.Message, where: m.id == ^message.id),
+        set: [bsp_status: :error, errors: %{"message" => "send failed"}]
+      )
+
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
+      assert Messages.get_message!(message.id).errors["source"] == "meta"
     end
   end
 
