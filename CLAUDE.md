@@ -100,7 +100,7 @@ paths. **Oban workers and resolver by-id lookups have extra rules** — see
 
 - **Location**: `lib/glific/scripts/` — IEx console helpers, not web-facing or Oban workers
 - **Pattern**: self-contained module with `@moduledoc` showing the exact IEx invocation
-- **Naming**: `Glific.Scripts.<Domain>` (e.g., `Glific.Scripts.Evals`)
+- **Naming**: `Glific.Scripts.<Domain>` (e.g., `Glific.Scripts.BackfillWAGroupPrimary`)
 - Always call `Repo.put_organization_id/1` at the top of any function that touches org-scoped data
 
 ## Claude Code Project Configuration

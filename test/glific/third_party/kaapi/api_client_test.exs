@@ -630,40 +630,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
-  describe "upload_evaluation_dataset/2" do
-    setup [:create_dataset_upload_params]
-
-    test "successfully uploads the dataset to the v1 endpoint", %{dataset_params: dataset_params} do
-      mock(fn %Tesla.Env{method: :post, url: url} ->
-        assert url =~ "/api/v1/evaluations/datasets"
-
-        %Tesla.Env{
-          status: 200,
-          body: %{data: %{dataset_name: "valid_dataset", dataset_id: "88001"}}
-        }
-      end)
-
-      assert {:ok, %{data: %{dataset_id: "88001"}}} =
-               ApiClient.upload_evaluation_dataset(dataset_params, @org_kaapi_api_key)
-    end
-
-    test "returns error when kaapi returns error status", %{dataset_params: dataset_params} do
-      mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{status: 422, body: %{error: "Invalid dataset format"}}
-      end)
-
-      assert {:error, %{status: 422, body: %{error: "Invalid dataset format"}}} =
-               ApiClient.upload_evaluation_dataset(dataset_params, @org_kaapi_api_key)
-    end
-
-    test "returns error on transport failure/timeout", %{dataset_params: dataset_params} do
-      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
-
-      assert {:error, :timeout} =
-               ApiClient.upload_evaluation_dataset(dataset_params, @org_kaapi_api_key)
-    end
-  end
-
   describe "upload_evaluation_dataset_v2/2" do
     setup [:create_dataset_upload_params]
 

@@ -870,7 +870,6 @@ defmodule Glific.Erase do
       messages_tags
       notifications
       organization_data
-      organization_eval_requests
       profiles
       prompt_generation_requests
       role_permissions

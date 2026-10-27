@@ -7,7 +7,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
     test "returns resolution unchanged when feature flag is enabled for the organization" do
       organization_id = 1
 
-      FunWithFlags.enable(:ai_evaluations,
+      FunWithFlags.enable(:is_ai_guardrail_enabled,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -15,7 +15,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
       resolution = %Absinthe.Resolution{context: %{current_user: user}}
 
       result =
-        RequireFeatureFlag.call(resolution, {:ai_evaluations, "Feature not enabled."})
+        RequireFeatureFlag.call(resolution, {:is_ai_guardrail_enabled, "Feature not enabled."})
 
       assert result == resolution
       assert result.state != :resolved
@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
     test "returns error when feature flag is disabled for the organization" do
       organization_id = 1
 
-      FunWithFlags.disable(:ai_evaluations,
+      FunWithFlags.disable(:is_ai_guardrail_enabled,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -34,12 +34,12 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
       result =
         RequireFeatureFlag.call(
           resolution,
-          {:ai_evaluations, "AI Evaluations feature is not enabled for the organization."}
+          {:is_ai_guardrail_enabled, "AI Guardrails feature is not enabled for the organization."}
         )
 
       assert result.state == :resolved
       assert [error_msg | _] = result.errors
-      assert error_msg =~ "AI Evaluations feature is not enabled for the organization"
+      assert error_msg =~ "AI Guardrails feature is not enabled for the organization"
       assert result.context[:feature_flag_forbidden] == true
     end
 
@@ -47,7 +47,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
       resolution = %Absinthe.Resolution{context: %{}}
 
       result =
-        RequireFeatureFlag.call(resolution, {:ai_evaluations, "Feature not enabled."})
+        RequireFeatureFlag.call(resolution, {:is_ai_guardrail_enabled, "Feature not enabled."})
 
       assert result.state == :resolved
       assert [error_msg | _] = result.errors
