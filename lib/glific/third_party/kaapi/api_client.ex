@@ -247,7 +247,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
+  Get full scores for a completed evaluation from Kaapi (v2 scores come from Kaapi's cached traces).
   """
   @spec get_evaluation_scores(non_neg_integer(), String.t(), String.t()) ::
           {:ok, map()} | {:error, any()}
