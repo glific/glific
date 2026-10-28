@@ -462,7 +462,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       assert other.phone == phone
       assert whatsapp_identity(phone).contact_id == stale.id
-      assert :ok = ContactIdentities.sync_whatsapp_identity(other, %{phone: phone})
+      assert :ok = ContactIdentities.move_whatsapp_identity_to_phone(other)
       assert whatsapp_identity(phone).contact_id == stale.id
     end
 
@@ -1201,7 +1201,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       later = DateTime.add(@optin_time, 3_600)
 
       assert :already_opted_in =
-               ContactIdentities.record_optin(contact, :web, identifier, later, "OTP")
+               ContactIdentities.record_optin(contact.id, :web, identifier, later, "OTP")
 
       assert %{optin_method: "NGO", optin_time: @optin_time} = web_identity(contact)
     end

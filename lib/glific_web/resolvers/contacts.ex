@@ -8,8 +8,6 @@ defmodule GlificWeb.Resolvers.Contacts do
   alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Repo, State}
   alias GlificWeb.Resolvers.ContactIdentities
 
-  @optin_identifier_arg %{whatsapp: :phone, web: :identifier}
-
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -163,10 +161,9 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec optin_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def optin_contact(_, params, _) do
-    {channel, params} = Map.pop(params, :channel)
-    channel = channel || :whatsapp
-    identifier = params[Map.fetch!(@optin_identifier_arg, channel)]
-    attrs = Map.drop(params, [:identifier])
+    channel = params[:channel] || :whatsapp
+    identifier = if channel == :web, do: params[:identifier], else: params[:phone]
+    attrs = Map.drop(params, [:channel, :identifier])
 
     with :ok <- ContactIdentities.check_channel_enabled(channel, params.organization_id),
          {:ok, contact} <- Contacts.contact_opted_in(channel, identifier, attrs) do

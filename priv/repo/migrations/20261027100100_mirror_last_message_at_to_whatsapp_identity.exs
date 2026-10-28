@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.MoveLastMessageAtTriggerToWhatsappIdentity do
+defmodule Glific.Repo.Migrations.MirrorLastMessageAtToWhatsappIdentity do
   @moduledoc """
   An inbound WhatsApp message restarts the 24 hour session, recorded as `last_message_at`. That clock is also
   held on the contact's `(whatsapp, phone)` identity, so `message_before_insert_callback` updates it there too,

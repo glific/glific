@@ -31,7 +31,7 @@ defmodule Glific.Flows.ContactActionTest do
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # The backfill gives an existing contact its WhatsApp identity; the dual-write keeps it in step.
-    ContactIdentities.sync_whatsapp_identity(contact, %{phone: contact.phone})
+    ContactIdentities.move_whatsapp_identity_to_phone(contact)
 
     # preload contact
     context =

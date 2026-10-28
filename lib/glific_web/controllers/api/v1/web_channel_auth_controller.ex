@@ -97,7 +97,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
             organization_id,
             normalized,
             otp,
-            params["optin"] in [true, "true"]
+            params["optin"] == true
           )
 
         {:error, message} ->
