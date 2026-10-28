@@ -470,17 +470,7 @@ defmodule Glific.Flows.ContactAction do
   @doc """
   Contact opts out
   """
-  # There is no web opt-out yet, and a web flow must not withdraw the contact's WhatsApp consent instead.
   @spec optout(FlowContext.t()) :: FlowContext.t()
-  def optout(%FlowContext{channel: :web} = context) do
-    Appsignal.Logger.info(
-      "flows",
-      "Skipped an opt-out node in a web flow for contact #{context.contact_id}: no web opt-out yet"
-    )
-
-    context
-  end
-
   def optout(context) do
     # We need to update the contact with optout_time and status
     Contacts.contact_opted_out(
