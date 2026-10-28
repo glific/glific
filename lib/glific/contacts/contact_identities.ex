@@ -111,7 +111,9 @@ defmodule Glific.Contacts.ContactIdentities do
     |> Repo.one()
   end
 
-  # A number another identity already holds is left alone rather than raising on the unique index.
+  # Contact phones are unique, but an identity moves only after its contact does: when two contacts swap
+  # or hand over a number, the other contact's identity can still hold it. This identity then keeps its
+  # old number instead of failing the contact's update on the unique index.
   @spec rename_whatsapp_identity(non_neg_integer(), Contact.t()) :: {non_neg_integer(), nil}
   defp rename_whatsapp_identity(identity_id, %Contact{
          organization_id: organization_id,
@@ -138,7 +140,7 @@ defmodule Glific.Contacts.ContactIdentities do
   def copy_state_to_whatsapp_identity(%Contact{id: contact_id, phone: phone}, changes) do
     set =
       changes
-      |> identity_state()
+      |> identity_fields()
       |> Map.put(:updated_at, DateTime.utc_now())
 
     from(i in ContactIdentity,
@@ -251,7 +253,7 @@ defmodule Glific.Contacts.ContactIdentities do
     |> Stream.chunk_every(@insert_chunk_size)
     |> Enum.each(
       &Repo.insert_all(ContactIdentity, &1,
-        on_conflict: replace_state_of_same_contact(),
+        on_conflict: replace_identity_attrs_of_same_contact(),
         conflict_target: conflict_target(),
         skip_organization_id: true
       )
@@ -319,13 +321,13 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @spec contact_identity_attrs(Contact.t() | map(), MessageChannel.t()) :: map()
-  defp contact_identity_attrs(contact, :whatsapp), do: identity_state(contact)
+  defp contact_identity_attrs(contact, :whatsapp), do: identity_fields(contact)
   defp contact_identity_attrs(_contact, _channel), do: %{}
 
   # The identity's optin_status and bsp_status are NOT NULL. contacts.optin_status allows nil, and a
   # contact inserted without bsp_status holds nil in its struct, since Ecto does not read back the default.
-  @spec identity_state(map()) :: map()
-  defp identity_state(contact_or_changes) do
+  @spec identity_fields(map()) :: map()
+  defp identity_fields(contact_or_changes) do
     contact_or_changes
     |> Map.take(ContactIdentity.consent_and_session_fields())
     |> Map.replace_lazy(:optin_status, &(&1 == true))
@@ -336,14 +338,14 @@ defmodule Glific.Contacts.ContactIdentities do
   @spec whatsapp_insert_opts() :: keyword()
   defp whatsapp_insert_opts,
     do: [
-      on_conflict: replace_state_of_same_contact(),
+      on_conflict: replace_identity_attrs_of_same_contact(),
       conflict_target: conflict_target(),
       allow_stale: true
     ]
 
   # A row another contact still holds keeps its state: only its owner's insert may overwrite it.
-  @spec replace_state_of_same_contact() :: Ecto.Query.t()
-  defp replace_state_of_same_contact do
+  @spec replace_identity_attrs_of_same_contact() :: Ecto.Query.t()
+  defp replace_identity_attrs_of_same_contact do
     from(i in ContactIdentity,
       where: i.contact_id == fragment("EXCLUDED.contact_id"),
       update: [

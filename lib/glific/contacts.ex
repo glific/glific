@@ -567,15 +567,15 @@ defmodule Glific.Contacts do
       (has_identity? or contact.last_message_at != nil) and
         contact.id != Partners.organization_contact_id(contact.organization_id)
 
-  @spec add_or_create_web_contact(
+  @spec link_or_create_web_contact(
           {:link, Contact.t()} | {:create, String.t() | nil},
           web_claims(),
           String.t()
         ) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp add_or_create_web_contact({:link, contact}, _claims, identifier),
+  defp link_or_create_web_contact({:link, contact}, _claims, identifier),
     do: add_identity(contact, :web, identifier)
 
-  defp add_or_create_web_contact({:create, phone}, claims, identifier),
+  defp link_or_create_web_contact({:create, phone}, claims, identifier),
     do: claims |> web_contact_attrs(identifier, phone) |> create_contact(:web, identifier)
 
   @spec web_contact_attrs(web_claims(), String.t(), String.t() | nil) :: map()
@@ -653,7 +653,7 @@ defmodule Glific.Contacts do
     with {:error, :not_found} <- ContactIdentities.fetch_contact(:web, identifier) do
       claims[:phone]
       |> resolve_phone_claim()
-      |> add_or_create_web_contact(claims, identifier)
+      |> link_or_create_web_contact(claims, identifier)
       |> retry_web_login_race(claims, identifier)
     end
   end

@@ -329,7 +329,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp describe_send_failure(exception), do: SafeLog.safe_inspect(exception)
 
   # Writes no `optin_*`: typing a number into a public login box is not consent to anything.
-  # A verified code proves the phone is the person's, so the contact is the one holding that phone.
+  # The code is sent as a WhatsApp template, so the person is the WhatsApp contact holding this phone;
+  # a verified code proves the phone is theirs.
   @spec ensure_contact(non_neg_integer(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp ensure_contact(organization_id, phone),
