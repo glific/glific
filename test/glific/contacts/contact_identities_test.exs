@@ -408,7 +408,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert whatsapp_identity("919876500002").contact_id == contact.id
     end
 
-    test "a contact holding two WhatsApp rows can still change its phone", %{
+    test "a contact holding two WhatsApp rows can still change its phone; the extra row stays", %{
       organization_id: organization_id
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
@@ -422,11 +422,14 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       assert {:ok, _updated} = Contacts.update_contact(contact, %{phone: "919876500005"})
 
-      assert [%{identifier: "919876500005"}] =
-               from(i in ContactIdentity,
-                 where: i.contact_id == ^contact.id and i.channel == :whatsapp
+      assert whatsapp_identity("919876500005").contact_id == contact.id
+
+      assert [_, _] =
+               Repo.all(
+                 from(i in ContactIdentity,
+                   where: i.contact_id == ^contact.id and i.channel == :whatsapp
+                 )
                )
-               |> Repo.all()
     end
 
     test "a failed phone change leaves the identity alone", %{organization_id: organization_id} do
@@ -447,18 +450,20 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert whatsapp_identity("919876500003").contact_id == contact.id
     end
 
-    test "sync_whatsapp_identity takes over a stale row for the same phone", %{
-      organization_id: organization_id
-    } do
+    test "a phone another contact's identity still holds is left to that row, without an error",
+         %{
+           organization_id: organization_id
+         } do
       stale = Fixtures.contact_fixture(%{organization_id: organization_id})
       other = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
       phone = stale.phone
       Repo.update_all(from(c in Contact, where: c.id == ^stale.id), set: [phone: "919876500010"])
-      {:ok, other} = Contacts.update_contact(other, %{phone: phone})
+      assert {:ok, other} = Contacts.update_contact(other, %{phone: phone})
 
-      assert whatsapp_identity(phone).contact_id == other.id
+      assert other.phone == phone
+      assert whatsapp_identity(phone).contact_id == stale.id
       assert :ok = ContactIdentities.sync_whatsapp_identity(other, %{phone: phone})
-      assert whatsapp_identity(phone).contact_id == other.id
+      assert whatsapp_identity(phone).contact_id == stale.id
     end
 
     test "a nil optin_status, which contacts allows, is stored on the identity as not opted in",
@@ -509,7 +514,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
   end
 
   describe "fetch_by_identity/2" do
-    test "whatsapp ignores a stale identity and finds the real owner, who takes over the row when it messages",
+    test "whatsapp ignores a stale identity and finds the real owner, also when it messages",
          %{
            organization_id: organization_id
          } do
@@ -539,7 +544,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  organization_id: organization_id
                })
 
-      assert whatsapp_identity(phone).contact_id == owner.id
+      assert whatsapp_identity(phone).contact_id == stale_owner.id
     end
 
     test "whatsapp falls back to the phone column without writing an identity", %{

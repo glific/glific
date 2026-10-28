@@ -312,6 +312,7 @@ defmodule Glific.Contacts do
     end
   end
 
+  # The flow is one-way: callers go through Contacts, which calls ContactIdentities; that never calls back.
   @doc """
   Adds a web username to a contact; one it already has is accepted, one another contact holds is refused.
   """
@@ -1347,8 +1348,8 @@ defmodule Glific.Contacts do
     end
   end
 
-  # An inbound WhatsApp message confirms the number, so a contact found only by its phone gets its
-  # WhatsApp identity here rather than in any lookup.
+  # A web login can store a phone without a WhatsApp identity, since WhatsApp has not confirmed it. The
+  # first inbound WhatsApp message from that number confirms it, so the identity is created here.
   @spec fetch_whatsapp_sender(String.t() | nil) ::
           {:ok, Contact.t()} | {:error, :not_found | :no_identifier}
   defp fetch_whatsapp_sender(phone) when phone in [nil, ""], do: {:error, :no_identifier}
