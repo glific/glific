@@ -256,6 +256,7 @@ defmodule Glific.Flows.Webhook do
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
   def perform(
         %Oban.Job{
+          attempt: attempt,
           args:
             %{
               "method" => method,
@@ -283,32 +284,55 @@ defmodule Glific.Flows.Webhook do
     }
 
     result =
-      case do_action(method, url, action_input(method, body, enrichment), headers) do
-        # Propagate a rate-limit snooze to Oban without logging or routing the flow.
-        {:ok, :function, {:snooze, _seconds} = snooze} ->
-          snooze
+      with true <- attempt > 1,
+           {:ok, webhook_log} <- Repo.fetch(WebhookLog, webhook_log_id),
+           true <- webhook_already_succeeded?(webhook_log) do
+        {:ok, webhook_log.response_json}
+      else
+        _ ->
+          input = action_input(method, body, enrichment)
 
-        {:ok, :function, function_result} ->
-          log_function_result(webhook_log_id, function_result)
-          function_result
-
-        {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
-          decode_success_response(message, webhook_log_id)
-
-        {:ok, %Tesla.Env{} = message} ->
-          update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
-          {:error, :unknown, "Webhook did not return a 200..299 status code"}
-
-        {:error, error_message} ->
-          reason = SafeLog.safe_inspect(error_message)
-          update_log(webhook_log_id, reason)
-          {:error, :unknown, reason}
+          method
+          |> do_action(url, input, headers)
+          |> handle_action_response(webhook_log_id)
       end
 
     case result do
       {:snooze, seconds} -> {:snooze, seconds}
       _ -> handle_webhook_result(result, context, result_name, url, organization_id)
     end
+  end
+
+  # A retry only runs after something raised. Once the call's success is logged, its side effect
+  # (a sent message, an external POST) already happened, so resume on the logged result instead
+  # of repeating the call.
+  @spec webhook_already_succeeded?(WebhookLog.t()) :: boolean()
+  defp webhook_already_succeeded?(%WebhookLog{status_code: status, response_json: response}),
+    do: status in 200..299 and is_map(response)
+
+  @spec handle_action_response(any(), non_neg_integer()) :: any()
+  # Propagate a rate-limit snooze to Oban without logging or routing the flow.
+  defp handle_action_response({:ok, :function, {:snooze, _seconds} = snooze}, _webhook_log_id),
+    do: snooze
+
+  defp handle_action_response({:ok, :function, function_result}, webhook_log_id) do
+    log_function_result(webhook_log_id, function_result)
+    function_result
+  end
+
+  defp handle_action_response({:ok, %Tesla.Env{status: status} = message}, webhook_log_id)
+       when status in 200..299,
+       do: decode_success_response(message, webhook_log_id)
+
+  defp handle_action_response({:ok, %Tesla.Env{} = message}, webhook_log_id) do
+    update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
+    {:error, :unknown, "Webhook did not return a 200..299 status code"}
+  end
+
+  defp handle_action_response({:error, error_message}, webhook_log_id) do
+    reason = SafeLog.safe_inspect(error_message)
+    update_log(webhook_log_id, reason)
+    {:error, :unknown, reason}
   end
 
   # Logs the unwrapped value of a function webhook's typed result (registered node or wrapped
