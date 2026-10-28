@@ -58,7 +58,14 @@ config :glific, Glific.RepoReplica,
 
 config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
-check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
+default_origins = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
+
+check_origin =
+  if Application.get_env(:glific, :environment) == :dev do
+    default_origins ++ ["http://localhost:4000"]
+  else
+    default_origins
+  end
 
 # Glific endpoint configs
 config :glific, GlificWeb.Endpoint,
