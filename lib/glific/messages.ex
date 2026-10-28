@@ -351,33 +351,35 @@ defmodule Glific.Messages do
   @doc false
   @spec do_send_message({:ok | :error, any()}, map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp do_send_message({:ok, _} = is_valid_contact, attrs) when not is_map_key(attrs, :type),
+    do: do_send_message(is_valid_contact, Map.put(attrs, :type, :text))
+
+  defp do_send_message({:ok, _}, %{type: :text} = attrs)
+       when not is_map_key(attrs, :body) or attrs.body in ["", nil] do
+    reason = "Could not send message with empty body"
+    notify(attrs, reason)
+    {:error, reason}
+  end
+
   defp do_send_message(
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
-    attrs = Map.put_new(attrs, :type, :text)
+    {:ok, message} =
+      attrs
+      |> Map.merge(%{
+        sender_id: Partners.organization_contact_id(organization_id),
+        flow: :outbound
+      })
+      |> create_message()
 
-    if attrs.type == :text && attrs[:body] in ["", nil] do
-      reason = "Could not send message with empty body"
-      notify(attrs, reason)
-      {:error, reason}
-    else
-      {:ok, message} =
-        attrs
-        |> Map.merge(%{
-          sender_id: Partners.organization_contact_id(organization_id),
-          flow: :outbound
-        })
-        |> create_message()
+    result = Communications.Message.send_message(message, attrs)
 
-      result = Communications.Message.send_message(message, attrs)
-
-      if attrs[:is_hsm] && attrs[:button_type] == :whatsapp_form do
-        Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
-      end
-
-      result
+    if attrs[:is_hsm] && attrs[:button_type] == :whatsapp_form do
+      Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
     end
+
+    result
   end
 
   defp do_send_message({:error, reason}, attrs) do
