@@ -232,7 +232,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
           assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
-                   "gemini-3.1-flash-tts-preview"
+                   "gemini-3.8-flash-tts"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
 

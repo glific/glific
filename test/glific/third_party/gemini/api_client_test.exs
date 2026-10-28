@@ -114,7 +114,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
 
       mock(fn
         %{method: :post, url: url} ->
-          assert String.contains?(url, "/gemini-2.5-pro-preview-tts:generateContent")
+          assert String.contains?(url, "/gemini-3.8-flash-tts:generateContent")
 
           %Tesla.Env{
             status: 200,
