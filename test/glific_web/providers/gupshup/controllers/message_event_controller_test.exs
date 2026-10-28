@@ -92,7 +92,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       assert message.errors != nil
       assert message.errors != %{}
 
-      # when message failed with code 1002 (bad phone number)
+      # when message failed with code 1002 (bad phone number); a repeated failed
+      # status is skipped, so move the message on first
+      {:ok, _message} = Messages.update_message(message, %{bsp_status: :sent})
+
       message_params =
         setup_config.message_params
         |> put_in(["payload", "type"], "failed")

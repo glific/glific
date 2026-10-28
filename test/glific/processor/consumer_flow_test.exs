@@ -636,7 +636,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
       ]
     }
 
-    conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
+    conn2 = post(conn, "/gupshup", payload)
     assert conn2.halted
 
     # Fetch the contact by phone
