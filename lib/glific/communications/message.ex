@@ -203,33 +203,50 @@ defmodule Glific.Communications.Message do
 
   @doc """
   Callback to update the provider status for a message, returns whether the status changed.
-  `error_source` names the callback a failure came from, see `@error_source_priority`.
+  A failure from a higher priority source replaces a stored one and runs the error handling,
+  but isn't a status change. `error_source` names the callback a failure came from, see
+  `@error_source_priority`.
   """
   @spec update_bsp_status(String.t(), atom() | nil, map() | nil, String.t()) :: boolean()
   def update_bsp_status(bsp_message_id, bsp_status, params, error_source \\ "gupshup")
 
   def update_bsp_status(bsp_message_id, :error, errors, error_source) do
     errors = Map.put(errors, "source", error_source)
+    changes = [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
 
-    {updated, _} =
+    status_changed? =
       bsp_message_id
-      |> error_change_query(error_source)
-      |> Repo.update_all(
-        set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
-      )
+      |> status_change_query(:error)
+      |> update_rows(changes)
 
-    if updated > 0, do: publish_and_process_errors(bsp_message_id, errors)
-    updated > 0
+    error_replaced? =
+      not status_changed? and
+        bsp_message_id
+        |> error_replacement_query(error_source)
+        |> update_rows(changes)
+
+    if status_changed? or error_replaced?,
+      do: publish_and_process_errors(bsp_message_id, errors)
+
+    status_changed?
   end
 
   def update_bsp_status(bsp_message_id, bsp_status, _params, _error_source) do
-    {updated, _} =
+    changes = [bsp_status: bsp_status, updated_at: DateTime.utc_now()]
+
+    status_changed? =
       bsp_message_id
       |> status_change_query(bsp_status)
-      |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+      |> update_rows(changes)
 
     # we are making an additional query to db to fetch message for sending message status subscription
-    if updated > 0, do: fetch_and_publish_message_status(bsp_message_id)
+    if status_changed?, do: fetch_and_publish_message_status(bsp_message_id)
+    status_changed?
+  end
+
+  @spec update_rows(Ecto.Query.t(), keyword()) :: boolean()
+  defp update_rows(query, changes) do
+    {updated, _} = Repo.update_all(query, set: changes)
     updated > 0
   end
 
@@ -252,15 +269,14 @@ defmodule Glific.Communications.Message do
 
   # A stored failure is replaced only by one from a higher priority source, so the same
   # failure from another callback, or a retry, doesn't run the error handling again
-  @spec error_change_query(String.t(), String.t()) :: Ecto.Query.t()
-  defp error_change_query(bsp_message_id, error_source) do
+  @spec error_replacement_query(String.t(), String.t()) :: Ecto.Query.t()
+  defp error_replacement_query(bsp_message_id, error_source) do
     lower_sources = lower_priority_sources(error_source)
 
     from(m in Message,
       where:
-        m.bsp_message_id == ^bsp_message_id and
-          (is_nil(m.bsp_status) or m.bsp_status != ^:error or
-             is_nil(fragment("?->>'source'", m.errors)) or
+        m.bsp_message_id == ^bsp_message_id and m.bsp_status == ^:error and
+          (is_nil(fragment("?->>'source'", m.errors)) or
              fragment("?->>'source' = ANY(?)", m.errors, ^lower_sources))
     )
   end

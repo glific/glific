@@ -501,9 +501,11 @@ defmodule Glific.CommunicationsTest do
     test "updates a changed status and skips a repeated one",
          %{message: message, bsp_message_id: bsp_message_id} do
       assert Communications.Message.update_bsp_status(bsp_message_id, :delivered, nil)
+
       assert Messages.get_message!(message.id).bsp_status == :delivered
 
       refute Communications.Message.update_bsp_status(bsp_message_id, :delivered, nil)
+
       assert Messages.get_message!(message.id).bsp_status == :delivered
     end
 
@@ -515,6 +517,7 @@ defmodule Glific.CommunicationsTest do
       )
 
       assert Communications.Message.update_bsp_status(bsp_message_id, :sent, nil)
+
       assert Messages.get_message!(message.id).bsp_status == :sent
     end
 
@@ -531,12 +534,14 @@ defmodule Glific.CommunicationsTest do
       errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
 
       assert Communications.Message.update_bsp_status(bsp_message_id, :error, errors)
+
       contact = Contacts.get_contact!(message.contact_id)
       assert contact.status == :invalid
 
       {:ok, _contact} = Contacts.update_contact(contact, %{status: :valid})
 
       refute Communications.Message.update_bsp_status(bsp_message_id, :error, errors)
+
       assert Contacts.get_contact!(message.contact_id).status == :valid
     end
 
@@ -545,10 +550,16 @@ defmodule Glific.CommunicationsTest do
       meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
       gupshup_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
 
-      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
+      assert Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
+
       refute Contacts.get_contact!(message.contact_id).status == :invalid
 
-      assert Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
+      refute Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
 
       message = Messages.get_message!(message.id)
       assert message.errors["source"] == "gupshup"
@@ -562,7 +573,13 @@ defmodule Glific.CommunicationsTest do
       meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
 
       assert Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
-      refute Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
+
+      refute Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
 
       message = Messages.get_message!(message.id)
       assert message.errors["source"] == "gupshup"
@@ -573,7 +590,12 @@ defmodule Glific.CommunicationsTest do
          %{message: message, bsp_message_id: bsp_message_id} do
       meta_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
 
-      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
+      assert Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
 
       assert Messages.get_message!(message.id).errors["source"] == "meta"
       refute Contacts.get_contact!(message.contact_id).status == :invalid
@@ -588,7 +610,13 @@ defmodule Glific.CommunicationsTest do
 
       meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
 
-      assert Communications.Message.update_bsp_status(bsp_message_id, :error, meta_errors, "meta")
+      refute Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
+
       assert Messages.get_message!(message.id).errors["source"] == "meta"
     end
   end

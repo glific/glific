@@ -12,6 +12,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
   alias Glific.Messages.Message
   alias Glific.Partners
   alias Glific.Processor.MessageWorker
+  alias Glific.Providers.Gupshup.Instrumentation
   alias Glific.Repo
   alias Glific.Seeds.SeedsDev
   alias Glific.Templates
@@ -555,6 +556,43 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
   end
 
   describe "duplicate callbacks" do
+    test "a failure arriving as V3 then V2 is counted once in the status metric",
+         %{conn: conn} do
+      gupshup_id = Ecto.UUID.generate()
+
+      {:ok, _message} =
+        %{bsp_message_id: gupshup_id}
+        |> Fixtures.message_fixture()
+        |> Messages.update_message(%{bsp_status: :sent})
+
+      v3_payload =
+        meta_status_payload(%{
+          "gs_id" => gupshup_id,
+          "status" => "failed",
+          "errors" => [%{"code" => 131_026, "title" => "Message undeliverable"}]
+        })
+
+      v2_payload = %{
+        "app" => "Glific App",
+        "type" => "message-event",
+        "version" => 2,
+        "payload" => %{
+          "type" => "failed",
+          "gsId" => gupshup_id,
+          "id" => "gBEGkZkXRDmUAgl5FpzpjNgI5Co",
+          "payload" => %{"ts" => "1592311836", "code" => 1002}
+        }
+      }
+
+      with_mock Instrumentation, [:passthrough],
+        track_status: fn _status, _organization_id, _opts -> :ok end do
+        assert post(conn, "/gupshup", v3_payload).status == 200
+        assert post(conn, "/gupshup", v2_payload).status == 200
+
+        assert_called_exactly(Instrumentation.track_status(:error, :_, :_), 1)
+      end
+    end
+
     test "a V2 failure arriving after the V3 one still runs the Gupshup error handling",
          %{conn: conn} do
       gupshup_id = Ecto.UUID.generate()
