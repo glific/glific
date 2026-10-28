@@ -163,10 +163,9 @@ defmodule GlificWeb.Resolvers.Contacts do
   def optin_contact(_, params, _) do
     channel = params[:channel] || :whatsapp
     identifier = if channel == :web, do: params[:identifier], else: params[:phone]
-    attrs = Map.drop(params, [:channel, :identifier])
 
     with :ok <- ContactIdentities.check_channel_enabled(channel, params.organization_id),
-         {:ok, contact} <- Contacts.contact_opted_in(channel, identifier, attrs) do
+         {:ok, contact} <- Contacts.contact_opted_in(channel, identifier, params) do
       {:ok, %{contact: contact}}
     else
       {:error, :no_identifier} ->
