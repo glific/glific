@@ -722,7 +722,7 @@ defmodule Glific.Contacts do
       when channel in [:whatsapp, :web] do
     opts = optin_opts(channel, opts)
 
-    with {:ok, contact} <- fetch_or_create_by_identity(channel, identifier, attrs),
+    with {:ok, contact} <- find_or_create_contact(channel, identifier, attrs),
          {:ok, contact, recorded?} <- write_optin(channel, contact, identifier, attrs, opts) do
       if recorded?, do: capture_optin_history(channel, contact, opts)
       {:ok, contact}
@@ -738,27 +738,16 @@ defmodule Glific.Contacts do
     |> Keyword.put(:utc_time, DateTime.truncate(utc_time, :second))
   end
 
-  @spec fetch_or_create_by_identity(:whatsapp | :web, String.t() | nil, map()) ::
+  @spec find_or_create_contact(:whatsapp | :web, String.t() | nil, map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
-  defp fetch_or_create_by_identity(channel, identifier, attrs) do
-    case fetch_by_identity(channel, identifier) do
-      {:error, :not_found} -> create_by_identity(channel, identifier, attrs)
-      {:error, :no_identifier} when channel == :whatsapp -> missing_phone_error(attrs)
-      result -> result
-    end
-  end
+  defp find_or_create_contact(:web, username, _attrs) when username in [nil, ""],
+    do: {:error, :no_identifier}
 
-  @spec create_by_identity(:whatsapp | :web, String.t(), map()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp create_by_identity(:whatsapp, phone, attrs) do
-    case attrs |> Map.put(:phone, phone) |> create_contact(:whatsapp, phone) do
-      {:error, changeset} -> handle_phone_error(%{phone: phone}, changeset)
-      created -> created
-    end
-  end
-
-  defp create_by_identity(:web, username, attrs),
+  defp find_or_create_contact(:web, username, attrs),
     do: attrs |> Map.take([:name]) |> maybe_create_contact(:web, username)
+
+  defp find_or_create_contact(:whatsapp, phone, attrs),
+    do: attrs |> Map.put(:phone, phone) |> maybe_create_contact(:whatsapp)
 
   # A blocked contact records nothing. WhatsApp keeps master's rule: a BSP re-send for an opted-in
   # contact only refreshes its session status; any other opt-in records again, which is how an NGO
