@@ -212,41 +212,26 @@ defmodule Glific.Communications.Message do
 
   def update_bsp_status(bsp_message_id, :error, errors, error_source) do
     errors = Map.put(errors, "source", error_source)
-    changes = [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
 
-    status_changed? =
+    {updated, previous_statuses} =
       bsp_message_id
-      |> status_change_query(:error)
-      |> update_rows(changes)
+      |> failure_query(error_source)
+      |> Repo.update_all(
+        set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
+      )
 
-    error_replaced? =
-      not status_changed? and
-        bsp_message_id
-        |> error_replacement_query(error_source)
-        |> update_rows(changes)
-
-    if status_changed? or error_replaced?,
-      do: publish_and_process_errors(bsp_message_id, errors)
-
-    status_changed?
+    if updated > 0, do: publish_and_process_errors(bsp_message_id, errors)
+    Enum.any?(previous_statuses, &(&1 != :error))
   end
 
   def update_bsp_status(bsp_message_id, bsp_status, _params, _error_source) do
-    changes = [bsp_status: bsp_status, updated_at: DateTime.utc_now()]
-
-    status_changed? =
+    {updated, _} =
       bsp_message_id
       |> status_change_query(bsp_status)
-      |> update_rows(changes)
+      |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
 
     # we are making an additional query to db to fetch message for sending message status subscription
-    if status_changed?, do: fetch_and_publish_message_status(bsp_message_id)
-    status_changed?
-  end
-
-  @spec update_rows(Ecto.Query.t(), keyword()) :: boolean()
-  defp update_rows(query, changes) do
-    {updated, _} = Repo.update_all(query, set: changes)
+    if updated > 0, do: fetch_and_publish_message_status(bsp_message_id)
     updated > 0
   end
 
@@ -267,17 +252,28 @@ defmodule Glific.Communications.Message do
             (is_nil(m.bsp_status) or m.bsp_status != ^bsp_status)
       )
 
-  # A stored failure is replaced only by one from a higher priority source, so the same
-  # failure from another callback, or a retry, doesn't run the error handling again
-  @spec error_replacement_query(String.t(), String.t()) :: Ecto.Query.t()
-  defp error_replacement_query(bsp_message_id, error_source) do
+  # A failure applies when it changes the status, or replaces a stored failure from a lower
+  # priority source; the same failure from another callback, or a retry, is skipped. The
+  # joined subquery reads the row before the update, so the previous status is returned and
+  # a replacement can be told apart from a status change.
+  @spec failure_query(String.t(), String.t()) :: Ecto.Query.t()
+  defp failure_query(bsp_message_id, error_source) do
     lower_sources = lower_priority_sources(error_source)
 
+    previous =
+      from(p in Message,
+        where: p.bsp_message_id == ^bsp_message_id,
+        select: %{id: p.id, bsp_status: p.bsp_status}
+      )
+
     from(m in Message,
+      join: p in subquery(previous),
+      on: p.id == m.id,
       where:
-        m.bsp_message_id == ^bsp_message_id and m.bsp_status == ^:error and
-          (is_nil(fragment("?->>'source'", m.errors)) or
-             fragment("?->>'source' = ANY(?)", m.errors, ^lower_sources))
+        is_nil(m.bsp_status) or m.bsp_status != ^:error or
+          is_nil(fragment("?->>'source'", m.errors)) or
+          fragment("?->>'source' = ANY(?)", m.errors, ^lower_sources),
+      select: p.bsp_status
     )
   end
 
