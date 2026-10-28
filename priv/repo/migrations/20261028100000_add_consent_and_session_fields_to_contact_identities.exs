@@ -1,6 +1,6 @@
-defmodule Glific.Repo.Migrations.AddWhatsappStateToContactIdentities do
+defmodule Glific.Repo.Migrations.AddConsentAndSessionFieldsToContactIdentities do
   @moduledoc """
-  Per-channel consent and session state belongs to the identity a contact uses on that channel, not to the
+  Per-channel consent and session fields belong to the identity a contact uses on that channel, not to the
   contact. These are the columns of `contacts` that describe WhatsApp (opt-in, opt-out, the BSP session
   status and the 24 hour session clock), now also held on the contact's `(whatsapp, phone)` identity.
 

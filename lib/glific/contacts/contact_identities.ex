@@ -6,9 +6,9 @@ defmodule Glific.Contacts.ContactIdentities do
   It never calls back into `Glific.Contacts`.
 
   A `:whatsapp` identity mirrors `contacts.phone` and is kept in step with it by the contact write
-  paths. It also holds a copy of the contact's consent and session state, written alongside the
-  `contacts` columns, which stay the source of truth. A `:web` identity is a username issued by an NGO's own system, or the phone of a contact
-  that verified it with a one-time code.
+  paths. It also holds a copy of the contact's consent and session fields, written alongside the
+  `contacts` columns, which stay the source of truth. A `:web` identity is a username issued by an
+  NGO's own system, or the phone of a contact that verified it with a one-time code.
   """
 
   import Ecto.Query
@@ -67,7 +67,7 @@ defmodule Glific.Contacts.ContactIdentities do
 
   @doc """
   Adds to `multi` the insert of the identity for the contact its `:contact` step inserted; a WhatsApp
-  one also holds the contact's consent and session state.
+  one also holds the contact's consent and session fields.
   """
   @spec insert_identity(Multi.t(), MessageChannel.t(), String.t() | nil) :: Multi.t()
   def insert_identity(multi, channel, identifier) do
@@ -133,11 +133,11 @@ defmodule Glific.Contacts.ContactIdentities do
   @doc """
   Copies the consent and session fields among `changes` onto the contact's WhatsApp identity, if it has one.
   """
-  @spec copy_state_to_whatsapp_identity(Contact.t(), changes()) :: :ok
-  def copy_state_to_whatsapp_identity(%Contact{phone: phone}, _changes) when phone in [nil, ""],
+  @spec copy_fields_to_whatsapp_identity(Contact.t(), changes()) :: :ok
+  def copy_fields_to_whatsapp_identity(%Contact{phone: phone}, _changes) when phone in [nil, ""],
     do: :ok
 
-  def copy_state_to_whatsapp_identity(%Contact{id: contact_id, phone: phone}, changes) do
+  def copy_fields_to_whatsapp_identity(%Contact{id: contact_id, phone: phone}, changes) do
     set =
       changes
       |> identity_fields()
@@ -219,7 +219,7 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
-  Whether a contact changeset's changes touch what a WhatsApp identity holds: the phone or the state.
+  Whether a contact changeset's changes touch what a WhatsApp identity holds: the phone or the consent and session fields.
   """
   @spec whatsapp_changes?(changes()) :: boolean()
   def whatsapp_changes?(changes),
@@ -230,7 +230,7 @@ defmodule Glific.Contacts.ContactIdentities do
       )
 
   @doc """
-  Bulk-inserts the WhatsApp identity, with its consent and session state, of each saved contact row.
+  Bulk-inserts the WhatsApp identity, with its consent and session fields, of each saved contact row.
   """
   @spec insert_whatsapp_identities([map()], non_neg_integer()) :: :ok
   def insert_whatsapp_identities(rows, organization_id) do
@@ -308,10 +308,10 @@ defmodule Glific.Contacts.ContactIdentities do
 
   @spec identity_changeset(Contact.t(), MessageChannel.t(), String.t(), map()) ::
           Ecto.Changeset.t()
-  defp identity_changeset(contact, channel, identifier, state \\ %{}) do
+  defp identity_changeset(contact, channel, identifier, identity_attrs \\ %{}) do
     ContactIdentity.changeset(
       %ContactIdentity{},
-      Map.merge(state, %{
+      Map.merge(identity_attrs, %{
         contact_id: contact.id,
         organization_id: contact.organization_id,
         channel: channel,
@@ -343,7 +343,7 @@ defmodule Glific.Contacts.ContactIdentities do
       allow_stale: true
     ]
 
-  # A row another contact still holds keeps its state: only its owner's insert may overwrite it.
+  # A row another contact still holds keeps its fields: only its owner's insert may overwrite it.
   @spec replace_identity_attrs_of_same_contact() :: Ecto.Query.t()
   defp replace_identity_attrs_of_same_contact do
     from(i in ContactIdentity,

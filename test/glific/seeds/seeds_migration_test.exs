@@ -3,7 +3,7 @@ defmodule Glific.Seeds.SeedsMigrationTest do
 
   alias Glific.{Contacts.Contact, Fixtures, Repo, Seeds.SeedsMigration}
 
-  test "migrate_data(:simulator) gives the seeded contacts a WhatsApp identity with their state" do
+  test "migrate_data(:simulator) gives the seeded contacts a WhatsApp identity with their fields" do
     organization = Fixtures.organization_fixture(%{name: "Seeded org", shortcode: "seeded"})
 
     assert :ok = SeedsMigration.migrate_data(:simulator, organization)
@@ -21,8 +21,8 @@ defmodule Glific.Seeds.SeedsMigrationTest do
     assert length(seeded) == 6
 
     for contact <- seeded do
-      assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
-      assert state.bsp_status == :session_and_hsm
+      assert %{contact: fields, identity: fields} = Fixtures.whatsapp_optin_fields(contact)
+      assert fields.bsp_status == :session_and_hsm
     end
   end
 end

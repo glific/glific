@@ -476,7 +476,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert %{optin_status: false} = whatsapp_identity(contact.phone)
     end
 
-    test "a bulk insert leaves the state of a row another contact holds", %{
+    test "a bulk insert leaves the fields of a row another contact holds", %{
       organization_id: organization_id
     } do
       holder = Fixtures.contact_fixture(%{organization_id: organization_id})
@@ -628,22 +628,22 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
     end
   end
 
-  describe "WhatsApp state follows the contact" do
+  describe "WhatsApp consent and session fields follow the contact" do
     @optin_time ~U[2026-03-04 05:06:07Z]
 
     defp assert_contact_identity(contact) do
-      assert %{contact: contact_state, identity: identity_state} =
+      assert %{contact: contact_fields, identity: identity_fields} =
                Fixtures.whatsapp_optin_fields(contact)
 
-      assert contact_state == identity_state
-      identity_state
+      assert contact_fields == identity_fields
+      identity_fields
     end
 
     setup %{organization_id: organization_id} do
       %{contact: Fixtures.contact_fixture(%{organization_id: organization_id})}
     end
 
-    test "create_contact/1 gives the new identity the contact's state", %{
+    test "create_contact/1 gives the new identity the contact's fields", %{
       organization_id: organization_id
     } do
       attrs = %{
@@ -928,7 +928,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                Fixtures.whatsapp_identity(contact)
     end
 
-    test "update_contact/2 on a new phone gives the identity the contact's state", %{
+    test "update_contact/2 on a new phone gives the identity the contact's fields", %{
       contact: contact
     } do
       {:ok, _} = Contacts.update_contact(contact, %{optin_time: @optin_time, optin_status: true})
@@ -966,7 +966,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert %{optin_status: true, bsp_status: :hsm} = assert_contact_identity(contact)
     end
 
-    test "upsert/1 gives a new contact's identity its state", %{organization_id: organization_id} do
+    test "upsert/1 gives a new contact's identity its fields", %{organization_id: organization_id} do
       assert {:ok, contact} =
                Contacts.upsert(%{
                  phone: "919876500904",
@@ -978,7 +978,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert %{optin_status: true} = assert_contact_identity(contact)
     end
 
-    test "insert_contacts/2 copies the state of new and updated contacts", %{
+    test "insert_contacts/2 copies the fields of new and updated contacts", %{
       contact: contact,
       organization_id: organization_id
     } do
@@ -1022,7 +1022,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       end
     end
 
-    test "a contact found by phone without an identity gets one with its state", %{
+    test "a contact found by phone without an identity gets one with its fields", %{
       organization_id: organization_id
     } do
       contact =
@@ -1068,9 +1068,9 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                contact: %{last_message_at: %DateTime{}},
                identity: %{last_message_at: %DateTime{}}
              } =
-               state = Fixtures.whatsapp_optin_fields(contact)
+               fields = Fixtures.whatsapp_optin_fields(contact)
 
-      assert state.contact == state.identity
+      assert fields.contact == fields.identity
     end
 
     test "leaves a missing identity to the backfill and still updates the contact", %{

@@ -430,7 +430,7 @@ defmodule Glific.Contacts do
     if Map.has_key?(changes, :phone),
       do: ContactIdentities.move_whatsapp_identity_to_phone(contact)
 
-    ContactIdentities.copy_state_to_whatsapp_identity(contact, changes)
+    ContactIdentities.copy_fields_to_whatsapp_identity(contact, changes)
   end
 
   # We do not want to block the simulator
@@ -767,14 +767,24 @@ defmodule Glific.Contacts do
     end
   end
 
-  defp write_optin(:web, contact, username, _attrs, opts) do
-    username = if is_struct(username, Contact), do: nil, else: username
-
+  defp write_optin(:web, contact, contact_or_username, _attrs, opts) do
     recorded =
-      ContactIdentities.record_optin(contact.id, :web, username, opts[:utc_time], opts[:method])
+      ContactIdentities.record_optin(
+        contact.id,
+        :web,
+        web_optin_identifier(contact_or_username),
+        opts[:utc_time],
+        opts[:method]
+      )
 
     {:ok, contact, recorded == :recorded}
   end
+
+  # A flow's opt-in node knows the contact but not which login it came from, so it opts in every web
+  # identity of the contact; a login opts in only its own username.
+  @spec web_optin_identifier(Contact.t() | String.t()) :: String.t() | nil
+  defp web_optin_identifier(%Contact{}), do: nil
+  defp web_optin_identifier(username), do: username
 
   @spec record_whatsapp_optin(Contact.t(), String.t(), map(), Keyword.t()) ::
           {:ok, Contact.t(), true} | {:error, Ecto.Changeset.t()}

@@ -1,15 +1,14 @@
 defmodule Glific.Contacts.ContactIdentity do
   @moduledoc """
   A contact's identity on a channel. A contact is the person; it can have several identities (a
-  WhatsApp phone, a username issued by its NGO, later a Telegram chat id). Identities only:
-  per-channel state lives elsewhere.
+  WhatsApp phone, a username issued by its NGO, later a Telegram chat id).
 
   A web identifier (an NGO username) may contain letters, digits, `_`, `@` and `.`, and is
   case-insensitive: it is stored lowercase, so `Ravi_Web` and `ravi_web` are the same identity. A
   WhatsApp identifier is the contact's phone, kept as stored. Identifiers are unique within an
   organization and channel.
 
-  A WhatsApp identity also holds a copy of the contact's consent and session state (opt-in, opt-out,
+  A WhatsApp identity also holds a copy of the contact's consent and session fields (opt-in, opt-out,
   BSP status, last inbound message). `contacts` is still the source of truth: `Glific.Contacts`
   keeps the copy in step on every write, and nothing reads it yet.
 

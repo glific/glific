@@ -150,23 +150,13 @@ defmodule Glific.Fixtures do
     |> Repo.insert!()
   end
 
-  @consent_and_session_fields [
-    :optin_time,
-    :optin_status,
-    :optin_method,
-    :optout_time,
-    :optout_method,
-    :bsp_status,
-    :last_message_at
-  ]
-
   @doc """
-  A contact with no WhatsApp identity row, whose `contacts` columns hold the given consent and session state:
-  as a contact created before identities held this state.
+  A contact with no WhatsApp identity row, whose `contacts` columns hold the given consent and session
+  fields: as a contact created before identities held them.
   """
   @spec contact_without_identity_fixture(map()) :: Contact.t()
   def contact_without_identity_fixture(attrs \\ %{}) do
-    {state, attrs} = Map.split(attrs, @consent_and_session_fields)
+    {fields, attrs} = Map.split(attrs, ContactIdentity.consent_and_session_fields())
     contact = contact_fixture(attrs)
 
     Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
@@ -174,7 +164,7 @@ defmodule Glific.Fixtures do
     )
 
     columns =
-      for {field, value} <- Map.put_new(state, :bsp_status, :none),
+      for {field, value} <- Map.put_new(fields, :bsp_status, :none),
           do: {field, column_value(value)}
 
     Repo.update_all(from(c in "contacts", where: c.id == ^contact.id), [set: columns],
@@ -203,8 +193,8 @@ defmodule Glific.Fixtures do
       )
 
   @doc """
-  The consent and session state the stored contact holds, and the state its WhatsApp identity holds, as maps
-  that are equal when the two agree.
+  The consent and session fields of the stored contact and of its WhatsApp identity, as maps that are
+  equal when the two agree.
   """
   @spec whatsapp_optin_fields(Contact.t()) :: %{contact: map(), identity: map() | nil}
   def whatsapp_optin_fields(%Contact{id: contact_id} = contact) do
@@ -214,9 +204,9 @@ defmodule Glific.Fixtures do
     %{
       contact:
         stored
-        |> Map.take(@consent_and_session_fields)
+        |> Map.take(ContactIdentity.consent_and_session_fields())
         |> Map.update!(:optin_status, &(&1 == true)),
-      identity: identity && Map.take(identity, @consent_and_session_fields)
+      identity: identity && Map.take(identity, ContactIdentity.consent_and_session_fields())
     }
   end
 
