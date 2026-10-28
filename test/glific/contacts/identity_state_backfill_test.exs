@@ -56,7 +56,7 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
 
       assert [%{identifier: identifier, channel: :whatsapp}] = identities(contact)
       assert identifier == contact.phone
-      assert %{contact: state, identity: state} = Fixtures.whatsapp_state(contact)
+      assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
       assert %{optin_status: true, bsp_status: :session_and_hsm} = state
     end
 
@@ -79,7 +79,7 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
 
       assert %{updated: 1, inserted: 0} = copy_from(contact)
 
-      assert %{contact: state, identity: state} = Fixtures.whatsapp_state(contact)
+      assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
       assert state.optin_status
       assert %{updated: 0, inserted: 0} = copy_from(contact)
     end
@@ -94,7 +94,7 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
 
       assert %{updated: 1, inserted: 0} = copy_from(contact)
 
-      assert %{contact: state, identity: state} = Fixtures.whatsapp_state(contact)
+      assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
       assert %{optin_status: true, optin_time: @optin_time, bsp_status: :hsm} = state
     end
 
@@ -296,8 +296,8 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
       assert %{fixed: fixed} = IdentityStateBackfill.fix_mismatches(after_id: missing.id - 1)
       assert fixed >= 2
 
-      assert %{contact: state, identity: state} = Fixtures.whatsapp_state(differing)
-      assert %{contact: state, identity: state} = Fixtures.whatsapp_state(later)
+      assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(differing)
+      assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(later)
 
       assert %{mismatched: 0, sample_ids: []} =
                IdentityStateBackfill.find_mismatches(after_id: missing.id - 1)
