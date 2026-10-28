@@ -429,13 +429,16 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       |> Keyword.merge(max_delay: @retry_max_delay, jitter_factor: 0.2)
       |> Keyword.put(:should_retry, should_retry(retry_mode, standard_retry?))
 
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, @maytapi_url},
-      Tesla.Middleware.KeepRequest,
-      Tesla.Middleware.PathParams,
-      {Tesla.Middleware.Retry, opts},
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "maytapi", sampling_scale: 10}}
-    ])
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, @maytapi_url},
+        Tesla.Middleware.KeepRequest,
+        Tesla.Middleware.PathParams,
+        {Tesla.Middleware.Retry, opts},
+        {Tesla.Middleware.Telemetry, metadata: %{provider: "maytapi", sampling_scale: 10}}
+      ],
+      Glific.get_tesla_adapter(__MODULE__)
+    )
   end
 
   @spec should_retry(:read | :write, function()) :: function()

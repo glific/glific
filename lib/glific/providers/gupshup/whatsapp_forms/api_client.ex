@@ -22,7 +22,8 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         Tesla.Middleware.PathParams,
         {Tesla.Middleware.Telemetry,
          metadata: %{provider: "gupshup_whatsapp_forms", sampling_scale: 10}}
-      ] ++ Glific.get_tesla_retry_middleware()
+      ] ++ Glific.get_tesla_retry_middleware(),
+      Glific.get_tesla_adapter(__MODULE__)
     )
   end
 

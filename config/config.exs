@@ -151,6 +151,20 @@ config :glific, Oban,
 # Pools (TLS and connect timeout) are configured where Glific.Finch is started in Glific.Application
 config :tesla, adapter: {Glific.Http.FinchAdapter, name: Glific.Finch, receive_timeout: 5_000}
 
+# Gupshup and Maytapi run on their own Finch instances so a failing integration elsewhere cannot
+# restart the pools that deliver WhatsApp messages. Clients built with Tesla.client/2 read these
+# through Glific.get_tesla_adapter/1.
+gupshup_http_adapter =
+  {Glific.Http.FinchAdapter, name: Glific.GupshupFinch, receive_timeout: 5_000}
+
+maytapi_http_adapter =
+  {Glific.Http.FinchAdapter, name: Glific.MaytapiFinch, receive_timeout: 5_000}
+
+config :tesla, Glific.Providers.Gupshup.ApiClient, adapter: gupshup_http_adapter
+config :tesla, Glific.Providers.Gupshup.PartnerAPI, adapter: gupshup_http_adapter
+config :tesla, Glific.Providers.Gupshup.WhatsappForms.ApiClient, adapter: gupshup_http_adapter
+config :tesla, Glific.Providers.Maytapi.ApiClient, adapter: maytapi_http_adapter
+
 config :glific, :pow,
   user: Glific.Users.User,
   repo: Glific.Repo,

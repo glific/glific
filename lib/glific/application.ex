@@ -22,6 +22,10 @@ defmodule Glific.Application do
       GlificWeb.Telemetry,
 
       # HTTP connection pools used by Tesla
+      # HTTP connection pools used by Tesla. Gupshup and Maytapi each get their own Finch
+      # instance so failures in other integrations cannot restart their pools.
+      {Finch, name: Glific.GupshupFinch, pools: %{default: http_pool_options(50, 5_000)}},
+      {Finch, name: Glific.MaytapiFinch, pools: %{default: http_pool_options(20, 5_000)}},
       {Finch, name: Glific.Finch, pools: http_pools()},
 
       # Dedicated pools for Kaapi document uploads
@@ -111,8 +115,6 @@ defmodule Glific.Application do
       # accumulating one per host for the life of the node
       :default =>
         Keyword.put(http_pool_options(default_size, 5_000), :pool_max_idle_time, 60_000),
-      "https://api.gupshup.io" => http_pool_options(50, 5_000),
-      "https://api.maytapi.com" => http_pool_options(20, 5_000),
       "https://generativelanguage.googleapis.com" => http_pool_options(20, 5_000)
     }
     |> put_kaapi_pool()

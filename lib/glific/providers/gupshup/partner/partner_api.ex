@@ -99,7 +99,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
           {:ok, binary()} | {:error, String.t()}
   def download_flow_media(org_id, media_id) do
     with {:ok, app_id} <- app_id(org_id) do
-      Tesla.client([])
+      Tesla.client([], Glific.get_tesla_adapter(__MODULE__))
       |> Tesla.get("#{@filemanager_url}#{app_id}/wa/media/#{media_id}?download=true",
         headers: headers(:app_token, org_id: org_id)
       )
