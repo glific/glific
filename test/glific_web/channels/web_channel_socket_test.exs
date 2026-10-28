@@ -23,7 +23,7 @@ defmodule GlificWeb.WebChannelSocketTest do
     %{contact: WebChannelFixtures.web_contact_fixture()}
   end
 
-  defp connect_ngo(claims) do
+  defp connect_user(claims) do
     {:ok, token} = Token.sign(1, claims)
     WebChannelFixtures.connect_with_token(token)
   end
@@ -51,7 +51,7 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "an NGO token with optin true opts in the web identity only" do
       with_web_channel_enabled(fn ->
-        assert {:ok, socket} = connect_ngo(%{sub: "ngo_user", optin: true})
+        assert {:ok, socket} = connect_user(%{sub: "ngo_user", optin: true})
         contact = socket.assigns.current_contact
 
         assert %{optin_status: true, optin_method: "NGO", optin_time: %DateTime{}} =
@@ -66,14 +66,14 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "logging in again keeps the first opt-in time" do
       with_web_channel_enabled(fn ->
-        {:ok, _socket} = connect_ngo(%{sub: "ngo_user", optin: true})
+        {:ok, _socket} = connect_user(%{sub: "ngo_user", optin: true})
         first = web_identity("ngo_user")
 
         Repo.update_all(from(i in ContactIdentity, where: i.id == ^first.id),
           set: [optin_time: ~U[2020-01-01 00:00:00Z]]
         )
 
-        {:ok, socket} = connect_ngo(%{sub: "ngo_user", optin: true})
+        {:ok, socket} = connect_user(%{sub: "ngo_user", optin: true})
 
         assert web_identity("ngo_user").optin_time == ~U[2020-01-01 00:00:00Z]
         assert [_event] = optin_history(socket.assigns.current_contact)
@@ -82,8 +82,8 @@ defmodule GlificWeb.WebChannelSocketTest do
 
     test "optin false or absent records nothing" do
       with_web_channel_enabled(fn ->
-        {:ok, _socket} = connect_ngo(%{sub: "ngo_false", optin: false})
-        {:ok, _socket} = connect_ngo(%{sub: "ngo_absent"})
+        {:ok, _socket} = connect_user(%{sub: "ngo_false", optin: false})
+        {:ok, _socket} = connect_user(%{sub: "ngo_absent"})
 
         for sub <- ["ngo_false", "ngo_absent"] do
           assert %{optin_status: false, optin_time: nil} = web_identity(sub)

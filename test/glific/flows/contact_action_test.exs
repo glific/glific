@@ -43,13 +43,13 @@ defmodule Glific.Flows.ContactActionTest do
     contact = Contacts.get_contact!(contact.id)
     assert contact.optout_time != nil
     assert contact.optin_time == nil
-    assert %{contact: state, identity: state} = Fixtures.whatsapp_state(contact)
+    assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
 
     ContactAction.optin(context)
     contact = Contacts.get_contact!(contact.id)
     assert contact.optout_time == nil
     assert contact.optin_time != nil
-    assert %{contact: state, identity: state} = Fixtures.whatsapp_state(contact)
+    assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
     assert state.optin_status
   end
 
@@ -113,7 +113,7 @@ defmodule Glific.Flows.ContactActionTest do
         channel: :web
       })
 
-    Fixtures.web_opted_in_fixture(contact)
+    Fixtures.opt_in_to_web(contact)
     context = Repo.preload(context, [:contact, :flow])
 
     ContactAction.send_message(context, %Action{text: "web reply"}, [])

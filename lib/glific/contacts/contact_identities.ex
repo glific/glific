@@ -75,7 +75,7 @@ defmodule Glific.Contacts.ContactIdentities do
       multi,
       :identity,
       fn %{contact: contact} ->
-        identity_changeset(contact, channel, identifier, identity_attrs(contact, channel))
+        identity_changeset(contact, channel, identifier, contact_identity_attrs(contact, channel))
       end,
       if(channel == :whatsapp, do: whatsapp_insert_opts(), else: [])
     )
@@ -91,7 +91,7 @@ defmodule Glific.Contacts.ContactIdentities do
     case whatsapp_identity_id(contact) do
       nil ->
         contact
-        |> identity_changeset(:whatsapp, phone, identity_attrs(contact, :whatsapp))
+        |> identity_changeset(:whatsapp, phone, contact_identity_attrs(contact, :whatsapp))
         |> Repo.insert(whatsapp_insert_opts())
 
       identity_id ->
@@ -234,7 +234,7 @@ defmodule Glific.Contacts.ContactIdentities do
     |> Stream.filter(&(is_binary(&1.phone) and &1.phone != ""))
     |> Stream.map(fn row ->
       row
-      |> identity_attrs(:whatsapp)
+      |> contact_identity_attrs(:whatsapp)
       |> Map.merge(%{
         contact_id: row.id,
         organization_id: organization_id,
@@ -308,9 +308,9 @@ defmodule Glific.Contacts.ContactIdentities do
     )
   end
 
-  @spec identity_attrs(Contact.t() | map(), MessageChannel.t()) :: map()
-  defp identity_attrs(contact, :whatsapp), do: identity_state(contact)
-  defp identity_attrs(_contact, _channel), do: %{}
+  @spec contact_identity_attrs(Contact.t() | map(), MessageChannel.t()) :: map()
+  defp contact_identity_attrs(contact, :whatsapp), do: identity_state(contact)
+  defp contact_identity_attrs(_contact, _channel), do: %{}
 
   # The identity's optin_status and bsp_status are NOT NULL. contacts.optin_status allows nil, and a
   # contact inserted without bsp_status holds nil in its struct, since Ecto does not read back the default.

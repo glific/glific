@@ -810,7 +810,7 @@ defmodule Glific.MessagesTest do
         %{body: "test message", flow: :outbound, type: :text, channel: :web}
         |> Map.merge(foreign_key_constraint(attrs))
 
-      message_attrs.receiver_id |> Contacts.get_contact!() |> Fixtures.web_opted_in_fixture()
+      message_attrs.receiver_id |> Contacts.get_contact!() |> Fixtures.opt_in_to_web()
       GlificWeb.Endpoint.subscribe("web_channel:#{message_attrs.receiver_id}")
 
       assert {:ok, message} = Messages.create_and_send_message(message_attrs)
@@ -877,7 +877,7 @@ defmodule Glific.MessagesTest do
           last_message_at: nil
         })
 
-      message_attrs.receiver_id |> Contacts.get_contact!() |> Fixtures.web_opted_in_fixture()
+      message_attrs.receiver_id |> Contacts.get_contact!() |> Fixtures.opt_in_to_web()
 
       assert {:ok, _message} = Messages.create_and_send_message(message_attrs)
     end
@@ -1552,7 +1552,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "a web send is delivered", %{contact: contact} do
-      Fixtures.web_opted_in_fixture(contact)
+      Fixtures.opt_in_to_web(contact)
 
       assert {:ok, %Message{} = message} =
                Messages.create_and_send_message(%{

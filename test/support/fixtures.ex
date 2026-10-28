@@ -119,8 +119,8 @@ defmodule Glific.Fixtures do
   @doc """
   Opts the contact in on the web channel under `identifier`, adding that web identity if needed.
   """
-  @spec web_opted_in_fixture(Contact.t(), String.t() | nil) :: Contact.t()
-  def web_opted_in_fixture(contact, identifier \\ nil) do
+  @spec opt_in_to_web(Contact.t(), String.t() | nil) :: Contact.t()
+  def opt_in_to_web(contact, identifier \\ nil) do
     identifier = identifier || "web_#{contact.id}"
     {:ok, contact} = Contacts.add_identity(contact, :web, identifier)
 
@@ -206,8 +206,8 @@ defmodule Glific.Fixtures do
   The consent and session state the stored contact holds, and the state its WhatsApp identity holds, as maps
   that are equal when the two agree.
   """
-  @spec whatsapp_state(Contact.t()) :: %{contact: map(), identity: map() | nil}
-  def whatsapp_state(%Contact{id: contact_id} = contact) do
+  @spec whatsapp_optin_fields(Contact.t()) :: %{contact: map(), identity: map() | nil}
+  def whatsapp_optin_fields(%Contact{id: contact_id} = contact) do
     stored = Repo.get!(Contact, contact_id, skip_organization_id: true)
     identity = whatsapp_identity(contact)
 

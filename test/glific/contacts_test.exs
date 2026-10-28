@@ -2057,7 +2057,7 @@ defmodule Glific.ContactsTest do
       web_contact =
         %{organization_id: organization_id}
         |> Fixtures.contact_without_phone_fixture()
-        |> Fixtures.web_opted_in_fixture()
+        |> Fixtures.opt_in_to_web()
 
       assert {:ok, nil} == Contacts.can_send_message_to?(web_contact, false, %{channel: :web})
     end

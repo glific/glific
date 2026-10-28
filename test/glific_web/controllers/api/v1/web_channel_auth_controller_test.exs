@@ -948,6 +948,24 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
+    test "a non-boolean optin is rejected", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        conn =
+          post(conn, Routes.api_v1_web_channel_auth_path(conn, :verify_otp), %{
+            "phone" => phone,
+            "otp" => code,
+            "optin" => "yes"
+          })
+
+        assert %{"error" => %{"message" => "optin must be true or false"}} =
+                 json_response(conn, 422)
+      end)
+    end
+
     test "without optin records no consent", %{conn: conn} do
       phone = unique_phone()
 

@@ -784,13 +784,11 @@ defmodule Glific.Contacts do
         optin_message_id: opts[:message_id],
         optout_time: nil,
         status: :valid,
+        bsp_status: hsm_bsp_status(contact),
         updated_at: DateTime.utc_now()
       })
 
-    with {:ok, contact} <- update_contact(contact, optin_attrs),
-         {:ok, contact} <- set_session_status(contact, :hsm) do
-      {:ok, contact, true}
-    end
+    with {:ok, contact} <- update_contact(contact, optin_attrs), do: {:ok, contact, true}
   end
 
   @spec capture_optin_history(:whatsapp | :web, Contact.t(), Keyword.t()) ::
@@ -1076,14 +1074,8 @@ defmodule Glific.Contacts do
       else: update_contact(contact, %{bsp_status: :hsm})
   end
 
-  def set_session_status(%Contact{} = contact, :hsm = _status) do
-    last_message_at = contact.last_message_at
-    t = Glific.go_back_time(24)
-
-    if !is_nil(last_message_at) && Timex.compare(last_message_at, t) > 0,
-      do: update_contact(contact, %{bsp_status: :session_and_hsm}),
-      else: update_contact(contact, %{bsp_status: :hsm})
-  end
+  def set_session_status(%Contact{} = contact, :hsm = _status),
+    do: update_contact(contact, %{bsp_status: hsm_bsp_status(contact)})
 
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
     now = DateTime.utc_now()
@@ -1111,6 +1103,14 @@ defmodule Glific.Contacts do
   end
 
   def set_session_status(_, _), do: :ok
+
+  # An opted-in contact can get templates; a message in the last 24 hours also opens the session.
+  @spec hsm_bsp_status(Contact.t()) :: :hsm | :session_and_hsm
+  defp hsm_bsp_status(%Contact{last_message_at: last_message_at}) do
+    if !is_nil(last_message_at) && Timex.compare(last_message_at, Glific.go_back_time(24)) > 0,
+      do: :session_and_hsm,
+      else: :hsm
+  end
 
   @doc """
   check if contact is blocked or not

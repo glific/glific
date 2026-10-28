@@ -60,9 +60,8 @@ defmodule GlificWeb.WebChannelSocket do
     with {:ok, organization_id} <- organization_from_host(connect_info),
          :ok <- enter_organization(organization_id),
          {:ok, claims} <- Token.verify(organization_id, token),
-         {:ok, contact} <- resolve_contact(claims) do
-      record_optin(claims, organization_id)
-
+         {:ok, contact} <- resolve_contact(claims),
+         :ok <- record_optin(claims, organization_id) do
       {:ok,
        %{
          contact: contact,

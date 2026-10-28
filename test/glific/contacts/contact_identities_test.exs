@@ -631,9 +631,9 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
   describe "WhatsApp state follows the contact" do
     @optin_time ~U[2026-03-04 05:06:07Z]
 
-    defp assert_state_in_step(contact) do
+    defp assert_contact_identity(contact) do
       assert %{contact: contact_state, identity: identity_state} =
-               Fixtures.whatsapp_state(contact)
+               Fixtures.whatsapp_optin_fields(contact)
 
       assert contact_state == identity_state
       identity_state
@@ -661,7 +661,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert {:ok, contact} = Contacts.create_contact(attrs)
 
       assert %{optin_status: true, optin_method: "WA", bsp_status: :hsm} =
-               assert_state_in_step(contact)
+               assert_contact_identity(contact)
     end
 
     test "contact_opted_in/4 for an existing contact", %{
@@ -685,7 +685,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                )
 
       assert %{optin_status: true, optin_method: "WA", optin_time: @optin_time} =
-               assert_state_in_step(opted_in)
+               assert_contact_identity(opted_in)
     end
 
     test "contact_opted_in/4 for a new contact", %{organization_id: organization_id} do
@@ -697,7 +697,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  utc_time: @optin_time
                )
 
-      assert %{optin_status: true} = assert_state_in_step(contact)
+      assert %{optin_status: true} = assert_contact_identity(contact)
     end
 
     test "contact_opted_out/4 clears the opt-in on both", %{
@@ -719,7 +719,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                )
 
       assert %{optin_status: false, optin_time: nil, optout_method: "Test", bsp_status: :none} =
-               assert_state_in_step(contact)
+               assert_contact_identity(contact)
     end
 
     test "optin_contact/1 opts the contact in on both", %{
@@ -740,19 +740,19 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  method: "Import"
                })
 
-      assert %{optin_status: true, optin_method: "Import"} = assert_state_in_step(contact)
+      assert %{optin_status: true, optin_method: "Import"} = assert_contact_identity(contact)
     end
 
     test "number_does_not_exist/2 opts the contact out on both", %{contact: contact} do
       Contacts.number_does_not_exist(contact.id)
 
-      assert %{optout_method: "Number does not exist"} = assert_state_in_step(contact)
+      assert %{optout_method: "Number does not exist"} = assert_contact_identity(contact)
     end
 
     test "set_session_status/2 for one contact", %{contact: contact} do
       for status <- [:none, :hsm, :session] do
         {:ok, updated} = Contacts.set_session_status(contact, status)
-        assert_state_in_step(updated)
+        assert_contact_identity(updated)
       end
     end
 
@@ -766,8 +766,8 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       assert :ok = Contacts.set_session_status([opted_in.id, other.id], :none)
 
-      assert %{bsp_status: :hsm} = assert_state_in_step(opted_in)
-      assert %{bsp_status: :none} = assert_state_in_step(other)
+      assert %{bsp_status: :hsm} = assert_contact_identity(opted_in)
+      assert %{bsp_status: :none} = assert_contact_identity(other)
     end
 
     test "set_bsp_status/4 selects identities by their contact's opt-in", %{
@@ -823,7 +823,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  organization_id: organization_id
                })
 
-      assert %{optin_status: false, bsp_status: :none} = assert_state_in_step(blocked)
+      assert %{optin_status: false, bsp_status: :none} = assert_contact_identity(blocked)
 
       assert [] =
                Contacts.list_contact_history(%{
@@ -853,14 +853,14 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       {:ok, _} = optin.("BSP", later)
 
       assert %{optin_time: @optin_time, optin_method: "BSP", bsp_status: bsp_status} =
-               assert_state_in_step(contact)
+               assert_contact_identity(contact)
 
       assert bsp_status in [:hsm, :session_and_hsm]
 
       {:ok, contact} = Contacts.update_contact(contact, %{status: :invalid})
       {:ok, _} = optin.("WA", later)
 
-      assert %{optin_time: ^later, optin_method: "WA"} = assert_state_in_step(contact)
+      assert %{optin_time: ^later, optin_method: "WA"} = assert_contact_identity(contact)
       assert %Contact{status: :valid} = Repo.get!(Contact, contact.id)
 
       assert [_, _] =
@@ -899,7 +899,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       Contacts.update_contact_status(organization_id, %{})
 
-      assert %{bsp_status: :hsm, last_message_at: ^expired} = assert_state_in_step(contact)
+      assert %{bsp_status: :hsm, last_message_at: ^expired} = assert_contact_identity(contact)
     end
 
     test "update_contact/2 on a field the identity does not hold leaves it alone", %{
@@ -936,7 +936,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert {:ok, moved} = Contacts.update_contact(contact, %{phone: "919876500903"})
 
       assert %{identifier: "919876500903"} = Fixtures.whatsapp_identity(moved)
-      assert %{optin_status: true} = assert_state_in_step(moved)
+      assert %{optin_status: true} = assert_contact_identity(moved)
     end
 
     test "update_contact/2 on a contact with no phone writes no identity", %{
@@ -963,7 +963,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  bsp_status: :hsm
                })
 
-      assert %{optin_status: true, bsp_status: :hsm} = assert_state_in_step(contact)
+      assert %{optin_status: true, bsp_status: :hsm} = assert_contact_identity(contact)
     end
 
     test "upsert/1 gives a new contact's identity its state", %{organization_id: organization_id} do
@@ -975,7 +975,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  optin_time: @optin_time
                })
 
-      assert %{optin_status: true} = assert_state_in_step(contact)
+      assert %{optin_status: true} = assert_contact_identity(contact)
     end
 
     test "insert_contacts/2 copies the state of new and updated contacts", %{
@@ -1018,7 +1018,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       for %{id: id} <- saved do
         assert %{optin_method: "Import", bsp_status: :hsm} =
-                 assert_state_in_step(Contacts.get_contact!(id))
+                 assert_contact_identity(Contacts.get_contact!(id))
       end
     end
 
@@ -1039,7 +1039,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  organization_id: organization_id
                })
 
-      assert %{optin_status: true, bsp_status: :hsm} = assert_state_in_step(contact)
+      assert %{optin_status: true, bsp_status: :hsm} = assert_contact_identity(contact)
     end
   end
 
@@ -1068,7 +1068,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                contact: %{last_message_at: %DateTime{}},
                identity: %{last_message_at: %DateTime{}}
              } =
-               state = Fixtures.whatsapp_state(contact)
+               state = Fixtures.whatsapp_optin_fields(contact)
 
       assert state.contact == state.identity
     end
@@ -1099,14 +1099,14 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       inbound(contact, %{channel: :web})
 
       assert %{contact: %{last_message_at: nil}, identity: %{last_message_at: nil}} =
-               Fixtures.whatsapp_state(contact)
+               Fixtures.whatsapp_optin_fields(contact)
     end
 
     test "an outbound message leaves both alone", %{contact: contact} do
       inbound(contact, %{flow: :outbound})
 
       assert %{contact: %{last_message_at: nil}, identity: %{last_message_at: nil}} =
-               Fixtures.whatsapp_state(contact)
+               Fixtures.whatsapp_optin_fields(contact)
     end
   end
 

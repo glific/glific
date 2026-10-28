@@ -85,6 +85,9 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   returning a web channel socket token for their contact.
   """
   @spec verify_otp(Conn.t(), map()) :: Conn.t()
+  def verify_otp(conn, %{"optin" => optin}) when not is_nil(optin) and not is_boolean(optin),
+    do: unprocessable_entity_error(conn, "optin must be true or false")
+
   def verify_otp(conn, %{"phone" => phone, "otp" => otp} = params)
       when is_binary(phone) and phone != "" and is_binary(otp) and otp != "" do
     organization_id = conn.assigns[:organization_id]
@@ -133,9 +136,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp resolve_contact_and_sign_in(conn, organization_id, normalized, optin?) do
     with {:ok, contact} <- ensure_contact(organization_id, normalized),
          {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
-         {:ok, token} <- Token.generate(organization_id, contact.phone) do
-      if optin?, do: record_optin(contact.phone, organization_id)
-
+         {:ok, token} <- Token.generate(organization_id, contact.phone),
+         :ok <- record_optin(optin?, contact.phone, organization_id) do
       json(conn, %{
         data: %{
           token: token,
@@ -160,8 +162,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   end
 
   # The user is signed in by now; a consent write that fails or raises must not take that away.
-  @spec record_optin(String.t(), non_neg_integer()) :: :ok
-  defp record_optin(phone, organization_id) do
+  @spec record_optin(boolean(), String.t(), non_neg_integer()) :: :ok
+  defp record_optin(false, _phone, _organization_id), do: :ok
+
+  defp record_optin(true, phone, organization_id) do
     case Contacts.contact_opted_in(:web, phone, %{organization_id: organization_id},
            method: "OTP"
          ) do
@@ -325,10 +329,12 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp describe_send_failure(exception), do: SafeLog.safe_inspect(exception)
 
   # Writes no `optin_*`: typing a number into a public login box is not consent to anything.
+  # A verified code proves the phone is the person's, so the contact is the one holding that phone.
   @spec ensure_contact(non_neg_integer(), String.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp ensure_contact(organization_id, phone),
-    do: Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id})
+    do:
+      Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id}, :whatsapp)
 
   @spec can_send_message_to?(Contact.t()) :: boolean()
   defp can_send_message_to?(contact) do
