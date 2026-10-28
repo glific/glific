@@ -155,20 +155,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   @spec cleanup_orphaned_kaapi_dataset(non_neg_integer() | String.t(), non_neg_integer()) :: :ok
   defp cleanup_orphaned_kaapi_dataset(dataset_id, organization_id) do
-    case Kaapi.delete_evaluation_dataset(dataset_id, organization_id) do
-      {:ok, _} ->
-        :ok
-
-      {:error, reason} ->
-        Glific.log_exception(%Kaapi.Error{
-          message: "Failed to delete orphaned Kaapi dataset",
-          organization_id: organization_id,
-          reason: safe_inspect(reason)
-        })
-
-        # Returning ok as we don't want to block the main flow
-        :ok
-    end
+    # A failed cleanup must not block the main flow.
+    Kaapi.delete_evaluation_dataset(dataset_id, organization_id)
+    :ok
   end
 
   @spec format_changeset_errors(Ecto.Changeset.t()) :: [%{message: String.t()}]

@@ -533,12 +533,6 @@ defmodule Glific.Assistants do
       {:error, error} ->
         update_config_version_status(config_version, %{status: :failed})
 
-        Glific.log_exception(%Error{
-          message:
-            "Kaapi config creation failed for assistant. Reason: #{Glific.SafeLog.safe_inspect(error)}",
-          reason: Glific.SafeLog.safe_inspect(error)
-        })
-
         {:error,
          "Kaapi config creation failed for assistant, Reason: #{Glific.SafeLog.safe_inspect(error)}"}
     end
@@ -1172,12 +1166,7 @@ defmodule Glific.Assistants do
       {:error, %Ecto.Changeset{} = error} ->
         {:error, error}
 
-      {:error, error} ->
-        Glific.log_exception(%Error{
-          message: "Create knowledge base failed. Reason: #{Glific.SafeLog.safe_inspect(error)}",
-          reason: Glific.SafeLog.safe_inspect(error)
-        })
-
+      {:error, _error} ->
         {:error, "Failed to create knowledge base"}
     end
   end
