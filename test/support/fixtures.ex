@@ -150,7 +150,7 @@ defmodule Glific.Fixtures do
     |> Repo.insert!()
   end
 
-  @whatsapp_state_fields [
+  @consent_and_session_fields [
     :optin_time,
     :optin_status,
     :optin_method,
@@ -166,7 +166,7 @@ defmodule Glific.Fixtures do
   """
   @spec contact_without_identity_fixture(map()) :: Contact.t()
   def contact_without_identity_fixture(attrs \\ %{}) do
-    {state, attrs} = Map.split(attrs, @whatsapp_state_fields)
+    {state, attrs} = Map.split(attrs, @consent_and_session_fields)
     contact = contact_fixture(attrs)
 
     Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
@@ -213,8 +213,10 @@ defmodule Glific.Fixtures do
 
     %{
       contact:
-        stored |> Map.take(@whatsapp_state_fields) |> Map.update!(:optin_status, &(&1 == true)),
-      identity: identity && Map.take(identity, @whatsapp_state_fields)
+        stored
+        |> Map.take(@consent_and_session_fields)
+        |> Map.update!(:optin_status, &(&1 == true)),
+      identity: identity && Map.take(identity, @consent_and_session_fields)
     }
   end
 

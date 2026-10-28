@@ -341,7 +341,7 @@ defmodule Glific.Contacts do
         entries,
         Keyword.merge(opts,
           conflict_target: [:phone, :organization_id],
-          returning: [:id, :phone, :fields | ContactIdentity.state_fields()]
+          returning: [:id, :phone, :fields | ContactIdentity.consent_and_session_fields()]
         )
       )
 

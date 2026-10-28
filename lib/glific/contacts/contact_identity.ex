@@ -28,7 +28,7 @@ defmodule Glific.Contacts.ContactIdentity do
   }
 
   @required_fields [:contact_id, :organization_id, :channel, :identifier]
-  @state_fields [
+  @consent_and_session_fields [
     :optin_time,
     :optin_status,
     :optin_method,
@@ -37,7 +37,7 @@ defmodule Glific.Contacts.ContactIdentity do
     :bsp_status,
     :last_message_at
   ]
-  @optional_fields @state_fields
+  @optional_fields @consent_and_session_fields
   @identifier_format ~r/^[a-z0-9_@.]+$/
 
   @type t() :: %__MODULE__{
@@ -79,10 +79,10 @@ defmodule Glific.Contacts.ContactIdentity do
   end
 
   @doc """
-  The columns of a WhatsApp identity that copy a contact's consent and session state.
+  The consent and session columns an identity shares with a contact.
   """
-  @spec state_fields() :: [atom()]
-  def state_fields, do: @state_fields
+  @spec consent_and_session_fields() :: [atom()]
+  def consent_and_session_fields, do: @consent_and_session_fields
 
   @doc """
   Standard changeset pattern we use for all data types.

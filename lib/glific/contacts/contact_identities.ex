@@ -217,7 +217,11 @@ defmodule Glific.Contacts.ContactIdentities do
   """
   @spec whatsapp_changes?(changes()) :: boolean()
   def whatsapp_changes?(changes),
-    do: Enum.any?(Map.keys(changes), &(&1 == :phone or &1 in ContactIdentity.state_fields()))
+    do:
+      Enum.any?(
+        Map.keys(changes),
+        &(&1 == :phone or &1 in ContactIdentity.consent_and_session_fields())
+      )
 
   @doc """
   Bulk-inserts the WhatsApp identity, with its consent and session state, of each saved contact row.
@@ -313,7 +317,7 @@ defmodule Glific.Contacts.ContactIdentities do
   @spec identity_state(map()) :: map()
   defp identity_state(contact_or_changes) do
     contact_or_changes
-    |> Map.take(ContactIdentity.state_fields())
+    |> Map.take(ContactIdentity.consent_and_session_fields())
     |> Map.replace_lazy(:optin_status, &(&1 == true))
     |> Map.replace_lazy(:bsp_status, &(&1 || :none))
   end
