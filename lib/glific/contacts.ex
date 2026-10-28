@@ -413,7 +413,7 @@ defmodule Glific.Contacts do
       Repo.transaction(fn ->
         case Repo.update(changeset) do
           {:ok, contact} ->
-            follow_whatsapp_identity(contact, changes)
+            update_whatsapp_identity(contact, changes)
             contact
 
           {:error, changeset} ->
@@ -425,8 +425,8 @@ defmodule Glific.Contacts do
     end
   end
 
-  @spec follow_whatsapp_identity(Contact.t(), map()) :: :ok
-  defp follow_whatsapp_identity(contact, changes) do
+  @spec update_whatsapp_identity(Contact.t(), map()) :: :ok
+  defp update_whatsapp_identity(contact, changes) do
     if Map.has_key?(changes, :phone),
       do: ContactIdentities.move_whatsapp_identity_to_phone(contact)
 
