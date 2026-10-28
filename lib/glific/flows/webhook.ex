@@ -284,12 +284,17 @@ defmodule Glific.Flows.Webhook do
     }
 
     result =
-      with nil <- logged_result(attempt, webhook_log_id) do
-        input = action_input(method, body, enrichment)
+      with true <- attempt > 1,
+           {:ok, webhook_log} <- Repo.fetch(WebhookLog, webhook_log_id),
+           true <- webhook_already_succeeded?(webhook_log) do
+        {:ok, webhook_log.response_json}
+      else
+        _ ->
+          input = action_input(method, body, enrichment)
 
-        method
-        |> do_action(url, input, headers)
-        |> handle_action_response(webhook_log_id)
+          method
+          |> do_action(url, input, headers)
+          |> handle_action_response(webhook_log_id)
       end
 
     case result do
@@ -301,19 +306,9 @@ defmodule Glific.Flows.Webhook do
   # A retry only runs after something raised. Once the call's success is logged, its side effect
   # (a sent message, an external POST) already happened, so resume on the logged result instead
   # of repeating the call.
-  @spec logged_result(pos_integer(), non_neg_integer()) :: {:ok, map()} | nil
-  defp logged_result(1, _webhook_log_id), do: nil
-
-  defp logged_result(_attempt, webhook_log_id) do
-    case Repo.get(WebhookLog, webhook_log_id) do
-      %WebhookLog{status_code: status, response_json: response}
-      when status in 200..299 and is_map(response) ->
-        {:ok, response}
-
-      _ ->
-        nil
-    end
-  end
+  @spec webhook_already_succeeded?(WebhookLog.t()) :: boolean()
+  defp webhook_already_succeeded?(%WebhookLog{status_code: status, response_json: response}),
+    do: status in 200..299 and is_map(response)
 
   @spec handle_action_response(any(), non_neg_integer()) :: any()
   # Propagate a rate-limit snooze to Oban without logging or routing the flow.
