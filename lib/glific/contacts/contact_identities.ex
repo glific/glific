@@ -171,18 +171,22 @@ defmodule Glific.Contacts.ContactIdentities do
   defp optin_time_filter(false), do: dynamic([i, c], is_nil(c.optin_time))
 
   @doc """
-  Records opt-in on the contact's identity on `channel` unless it is already opted in.
+  Records opt-in on the contact's identity on `channel`, or on all of them when `identifier` is nil,
+  unless already opted in.
   """
-  @spec record_optin(non_neg_integer(), MessageChannel.t(), String.t(), DateTime.t(), String.t()) ::
-          :recorded | :already_opted_in
+  @spec record_optin(
+          non_neg_integer(),
+          MessageChannel.t(),
+          String.t() | nil,
+          DateTime.t(),
+          String.t()
+        ) :: :recorded | :already_opted_in
   def record_optin(contact_id, channel, identifier, utc_time, method) do
-    identifier = lookup_key(channel, identifier)
-
     # In the UPDATE itself rather than a read before it, so two concurrent sign-ins cannot both record.
     {updated, _rows} =
       from(i in ContactIdentity,
-        where:
-          i.contact_id == ^contact_id and i.channel == ^channel and i.identifier == ^identifier,
+        where: i.contact_id == ^contact_id and i.channel == ^channel,
+        where: ^identifier_filter(channel, identifier),
         where: i.optin_status == false
       )
       |> Repo.update_all(
@@ -289,6 +293,12 @@ defmodule Glific.Contacts.ContactIdentities do
   @spec identifier_matches_phone(MessageChannel.t()) :: Ecto.Query.dynamic_expr()
   defp identifier_matches_phone(:whatsapp), do: dynamic([i, c], c.phone == i.identifier)
   defp identifier_matches_phone(_channel), do: dynamic(true)
+
+  @spec identifier_filter(MessageChannel.t(), String.t() | nil) :: Ecto.Query.dynamic_expr()
+  defp identifier_filter(_channel, nil), do: dynamic(true)
+
+  defp identifier_filter(channel, identifier),
+    do: dynamic([i], i.identifier == ^lookup_key(channel, identifier))
 
   @spec lookup_key(MessageChannel.t(), String.t()) :: String.t()
   defp lookup_key(:web, identifier), do: String.downcase(identifier)

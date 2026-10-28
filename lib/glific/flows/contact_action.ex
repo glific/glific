@@ -457,7 +457,19 @@ defmodule Glific.Flows.ContactAction do
   Contact opts in via a flow
   """
   @spec optin(FlowContext.t(), Keyword.t()) :: FlowContext.t()
-  def optin(context, opts \\ []) do
+  def optin(context, opts \\ [])
+
+  def optin(%FlowContext{channel: :web} = context, _opts) do
+    contact = context.contact
+
+    Contacts.contact_opted_in(:web, contact, %{organization_id: contact.organization_id},
+      method: "flow"
+    )
+
+    context
+  end
+
+  def optin(context, opts) do
     # We need to update the contact with optout_time and status
     context.contact
     |> Map.from_struct()

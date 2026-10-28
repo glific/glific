@@ -714,9 +714,9 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Records a contact's opt-in on a channel, creating the contact by identity if unknown.
+  Records a contact's opt-in on a channel, finding or creating the contact by identity, or given the contact.
   """
-  @spec contact_opted_in(:whatsapp | :web, String.t() | nil, map(), Keyword.t()) ::
+  @spec contact_opted_in(:whatsapp | :web, String.t() | Contact.t() | nil, map(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
   def contact_opted_in(channel, identifier, attrs, opts \\ [])
       when channel in [:whatsapp, :web] do
@@ -738,8 +738,10 @@ defmodule Glific.Contacts do
     |> Keyword.put(:utc_time, DateTime.truncate(utc_time, :second))
   end
 
-  @spec find_or_create_contact(:whatsapp | :web, String.t() | nil, map()) ::
+  @spec find_or_create_contact(:whatsapp | :web, String.t() | Contact.t() | nil, map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t() | :no_identifier}
+  defp find_or_create_contact(_channel, %Contact{} = contact, _attrs), do: {:ok, contact}
+
   defp find_or_create_contact(:web, username, _attrs) when username in [nil, ""],
     do: {:error, :no_identifier}
 
@@ -752,7 +754,7 @@ defmodule Glific.Contacts do
   # A blocked contact records nothing. WhatsApp keeps master's rule: a BSP re-send for an opted-in
   # contact only refreshes its session status; any other opt-in records again, which is how an NGO
   # repairs a contact. Web keeps the first opt-in, checked inside its UPDATE.
-  @spec write_optin(:whatsapp | :web, Contact.t(), String.t(), map(), Keyword.t()) ::
+  @spec write_optin(:whatsapp | :web, Contact.t(), String.t() | Contact.t(), map(), Keyword.t()) ::
           {:ok, Contact.t(), boolean()} | {:error, Ecto.Changeset.t()}
   defp write_optin(_channel, %Contact{status: :blocked} = contact, _identifier, _attrs, _opts),
     do: {:ok, contact, false}
@@ -766,6 +768,8 @@ defmodule Glific.Contacts do
   end
 
   defp write_optin(:web, contact, username, _attrs, opts) do
+    username = if is_struct(username, Contact), do: nil, else: username
+
     recorded =
       ContactIdentities.record_optin(contact.id, :web, username, opts[:utc_time], opts[:method])
 

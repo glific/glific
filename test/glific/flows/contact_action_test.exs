@@ -5,6 +5,7 @@ defmodule Glific.Flows.ContactActionTest do
     Contacts,
     Contacts.Contact,
     Contacts.ContactIdentities,
+    Contacts.ContactIdentity,
     Fixtures,
     Flows.Action,
     Flows.ContactAction,
@@ -51,6 +52,28 @@ defmodule Glific.Flows.ContactActionTest do
     assert contact.optin_time != nil
     assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
     assert state.optin_status
+  end
+
+  test "an opt-in in a web flow is recorded on the contact's web identities, not on WhatsApp",
+       attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    {:ok, contact} =
+      Contacts.update_contact(contact, %{optin_status: false, optin_time: nil, optin_method: nil})
+
+    {:ok, contact} = Contacts.add_identity(contact, :web, "web_flow_user")
+
+    context =
+      %FlowContext{contact_id: contact.id, channel: :web}
+      |> Repo.preload(:contact)
+
+    ContactAction.optin(context, method: "WA")
+
+    assert %{optin_status: true, optin_method: "flow"} =
+             Repo.get_by!(ContactIdentity, contact_id: contact.id, channel: :web)
+
+    assert %Contact{optin_status: false, optin_time: nil} = Contacts.get_contact!(contact.id)
   end
 
   test "send message text", attrs do
