@@ -1,5 +1,6 @@
 defmodule Glific.ThirdParty.KaapiTest do
   use GlificWeb.ConnCase
+  import Mock
   import Tesla.Mock
   alias Glific.Fixtures
   alias Glific.Partners
@@ -73,6 +74,34 @@ defmodule Glific.ThirdParty.KaapiTest do
       mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
 
       assert {:error, :timeout} = Kaapi.create_evaluation_v2(@evaluation_params, organization_id)
+    end
+
+    test "does not report a user-input rejection to AppSignal", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 422, body: %{success: false, error: "dataset is pre-duplicated"}}
+      end)
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:error, %{status: 422}} =
+                 Kaapi.create_evaluation_v2(@evaluation_params, organization_id)
+
+        refute called(Appsignal.send_error(:_, :_, :_))
+      end
+    end
+
+    test "reports a server error to AppSignal", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 500, body: %{success: false, error: "internal error"}}
+      end)
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:error, %{status: 500}} =
+                 Kaapi.create_evaluation_v2(@evaluation_params, organization_id)
+
+        assert called(Appsignal.send_error(:_, :_, :_))
+      end
     end
   end
 
