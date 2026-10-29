@@ -256,11 +256,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
          %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
-      Contacts.contact_opted_in(
-        %{phone: receiver.phone},
-        receiver.organization_id,
-        DateTime.utc_now()
-      )
+      Contacts.contact_opted_in(:whatsapp, receiver.phone, %{
+        organization_id: receiver.organization_id
+      })
 
       {:ok, receiver} = Contacts.update_contact(receiver, %{status: :invalid})
       Fixtures.user_fixture(%{phone: receiver.phone})
@@ -282,7 +280,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "send otp to optout contact will optin the contact again", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
-      Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
+      Contacts.contact_opted_out(
+        :whatsapp,
+        receiver.phone,
+        receiver.organization_id,
+        DateTime.utc_now()
+      )
 
       valid_params = %{
         "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
@@ -354,11 +357,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       # create a user for a contact
       receiver = Fixtures.contact_fixture(%{organization_id: org.id, phone: "918456732452"})
 
-      Contacts.contact_opted_in(
-        %{phone: receiver.phone},
-        receiver.organization_id,
-        DateTime.utc_now()
-      )
+      Contacts.contact_opted_in(:whatsapp, receiver.phone, %{
+        organization_id: receiver.organization_id
+      })
 
       {:ok, _user} =
         %{
@@ -494,11 +495,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       # create a user for a contact
       receiver = Fixtures.contact_fixture()
 
-      Contacts.contact_opted_in(
-        %{phone: receiver.phone},
-        receiver.organization_id,
-        DateTime.utc_now()
-      )
+      Contacts.contact_opted_in(:whatsapp, receiver.phone, %{
+        organization_id: receiver.organization_id
+      })
 
       {:ok, user} =
         %{
