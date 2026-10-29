@@ -21,19 +21,20 @@ defmodule Glific.Contacts.IdentityStateBackfill do
 
   ## Run from IEx (`gigalixir remote_console`)
 
-      # start the chain; options: :after_id (0), :batch_size (25_000), :pause seconds between chunks (1)
+      # start the chain; options: :after_id (0), :batch_size (5_000), :pause whole seconds between chunks (1)
       iex> Glific.Contacts.IdentityStateBackfill.start()
       {:ok, %Oban.Job{}}
 
-      # a second start while a link is queued or running is refused
+      # a second start while any link is queued, running or retrying is refused
       iex> Glific.Contacts.IdentityStateBackfill.start()
       {:error, :already_running}
 
-      # progress: the queued link's after_id is the last contact id copied
+      # progress: the queued link's after_id is the last contact id copied; a link that gave up shows
+      # as "discarded"
       iex> Glific.Contacts.IdentityStateBackfill.status()
       [%{id: 12, state: "scheduled", after_id: 3_000_000, attempt: 0, scheduled_at: ~U[...]}]
 
-      # stop: cancels the queued link and the running one will not enqueue another
+      # stop: cancels the queued link and kills a running one, whose chunk rolls back
       iex> Glific.Contacts.IdentityStateBackfill.stop()
       {:ok, 1}
 
@@ -45,16 +46,24 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       %{scanned: 6_000_000, mismatched: 12, last_id: 7_123_456, sample_ids: [101, 205]}
       iex> Glific.Contacts.IdentityStateBackfill.find_mismatches(organization_id: 1)
 
+      # an organization filter can be slow on a large table; scan a big one in segments
+      iex> Glific.Contacts.IdentityStateBackfill.find_mismatches(organization_id: 1, after_id: 3_000_000)
+
       # copy the mismatched contacts again
       iex> Glific.Contacts.IdentityStateBackfill.fix_mismatches()
       %{scanned: 6_000_000, mismatched: 12, fixed: 11, unfixable: 1, last_id: 7_123_456}
 
   Every chunk is one statement with a two minute timeout; a timeout rolls that chunk back and the job
-  retries it. A chunk that fails every attempt is logged as an error and ends the chain, so an empty
-  `status/0` means finished or given up: the log tells which, and the id to resume from.
+  retries it. A chunk that fails every attempt is logged as an error, shows in `status/0` as
+  "discarded", and ends the chain. The chain is done only when the log says "Finished copying contact
+  state".
 
   ## While it runs, and after
 
+    * Run it off-peak, and not on Friday from 21:00 to 22:00 UTC, when the weekly purge uses the same
+      `:purge` queue. A chunk locks the identity rows it writes, so inbound messages for contacts in
+      that chunk wait for it. Start with the default batch, check the first chunk times in AppSignal,
+      and only then raise `:batch_size`.
     * Watch replication lag and WAL volume. Every chunk writes its rows and four index entries, so a
       billion contacts write hundreds of GB of WAL. Raise `:pause` or lower `:batch_size` to slow it down.
     * After the chain, run `VACUUM (ANALYZE) contact_identities` from `psql`; it cannot run in a transaction.
@@ -71,12 +80,13 @@ defmodule Glific.Contacts.IdentityStateBackfill do
     Repo
   }
 
-  @default_batch_size 25_000
+  @default_batch_size 5_000
   @default_pause 1
   @sample_size 20
   @chunk_timeout :timer.minutes(2)
   @analyze_timeout :timer.minutes(10)
   @incomplete_states ["available", "scheduled", "executing", "retryable"]
+  @status_states @incomplete_states ++ ["discarded"]
 
   @typedoc "What one chunk copied, and the id to continue from."
   @type chunk_result :: %{
@@ -113,9 +123,10 @@ defmodule Glific.Contacts.IdentityStateBackfill do
         }
 
   @doc """
-  Starts the chain of copy jobs; takes `:after_id`, `:batch_size` and `:pause` (seconds between chunks).
+  Starts the chain of copy jobs; takes `:after_id`, `:batch_size` and `:pause` (whole seconds between chunks).
   """
-  @spec start(Keyword.t()) :: {:ok, Oban.Job.t()} | {:error, :already_running | any()}
+  @spec start(Keyword.t()) ::
+          {:ok, Oban.Job.t()} | {:error, :already_running | :invalid_pause | any()}
   def start(opts \\ []) do
     args =
       Map.merge(
@@ -123,6 +134,17 @@ defmodule Glific.Contacts.IdentityStateBackfill do
         Map.new(Keyword.take(opts, [:after_id, :batch_size, :pause]))
       )
 
+    cond do
+      not (is_integer(args.pause) and args.pause >= 0) -> {:error, :invalid_pause}
+      another_link?(nil) -> {:error, :already_running}
+      true -> insert_first_link(args)
+    end
+  end
+
+  # Oban's unique check alone is not enough: the links after the first are inserted without a
+  # uniqueness key, so it would let a second chain start once the first link has handed off.
+  @spec insert_first_link(map()) :: {:ok, Oban.Job.t()} | {:error, :already_running | any()}
+  defp insert_first_link(args) do
     case args |> IdentityStateWorker.new() |> Oban.insert() do
       {:ok, %Oban.Job{conflict?: true}} -> {:error, :already_running}
       other -> other
@@ -130,11 +152,23 @@ defmodule Glific.Contacts.IdentityStateBackfill do
   end
 
   @doc """
-  The links of the chain that are queued, running or waiting to retry.
+  Whether a link of the chain other than the job `job_id` is queued, running or waiting to retry.
+  """
+  @spec another_link?(non_neg_integer() | nil) :: boolean()
+  def another_link?(job_id) do
+    incomplete_links()
+    |> then(fn query -> if job_id, do: where(query, [j], j.id != ^job_id), else: query end)
+    |> then(&Oban.Repo.exists?(Oban.config(), &1))
+  end
+
+  @doc """
+  The links of the chain that are queued, running or waiting to retry, and any that gave up.
   """
   @spec status() :: [link()]
   def status do
-    incomplete_links()
+    worker = Oban.Worker.to_string(IdentityStateWorker)
+
+    from(j in Oban.Job, where: j.worker == ^worker and j.state in ^@status_states)
     |> select([j], %{
       id: j.id,
       state: j.state,
@@ -147,7 +181,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
   end
 
   @doc """
-  Cancels the chain; a chunk already running finishes but enqueues no other. Returns the jobs cancelled.
+  Cancels the chain; Oban kills a running chunk, which rolls back and is copied again on resume.
   """
   @spec stop() :: {:ok, non_neg_integer()}
   def stop, do: Oban.cancel_all_jobs(incomplete_links())
