@@ -11,7 +11,8 @@ defmodule Glific.Contacts.IdentityStateBackfill do
   and are skipped.
 
   The copy runs as a chain of `Glific.Contacts.IdentityStateWorker` jobs, one chunk each, on the `:purge`
-  queue. A rerun is safe, and the chain ends with `ANALYZE contact_identities`.
+  queue, so a chain outlives a crash or a deploy: Oban retries the chunk and carries on. A rerun is safe,
+  and the chain ends with `ANALYZE contact_identities`.
 
   A chunk can race a write the application makes while it runs and leave one row a write behind.
   `find_mismatches/1` finds those rows and `fix_mismatches/1` copies them again. Check until it reports
@@ -20,7 +21,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
 
   ## Run from IEx (`gigalixir remote_console`)
 
-      # start the chain; options: :after_id (0), :batch_size (10_000), :pause seconds between chunks (1)
+      # start the chain; options: :after_id (0), :batch_size (25_000), :pause seconds between chunks (1)
       iex> Glific.Contacts.IdentityStateBackfill.start()
       {:ok, %Oban.Job{}}
 
@@ -46,26 +47,32 @@ defmodule Glific.Contacts.IdentityStateBackfill do
 
       # copy the mismatched contacts again
       iex> Glific.Contacts.IdentityStateBackfill.fix_mismatches()
-      %{scanned: 6_000_000, mismatched: 12, fixed: 12, last_id: 7_123_456}
+      %{scanned: 6_000_000, mismatched: 12, fixed: 11, unfixable: 1, last_id: 7_123_456}
 
   Every chunk is one statement with a two minute timeout; a timeout rolls that chunk back and the job
-  retries it.
-  """
+  retries it. A chunk that fails every attempt is logged as an error and ends the chain, so an empty
+  `status/0` means finished or given up: the log tells which, and the id to resume from.
 
-  require Logger
+  ## While it runs, and after
+
+    * Watch replication lag and WAL volume. Every chunk writes its rows and four index entries, so a
+      billion contacts write hundreds of GB of WAL. Raise `:pause` or lower `:batch_size` to slow it down.
+    * After the chain, run `VACUUM (ANALYZE) contact_identities` from `psql`; it cannot run in a transaction.
+    * Before deleting this module, run `stop/0`, so no queued link is left for a worker that no longer exists.
+  """
 
   import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,
-    Contacts.ContactIdentities,
     Contacts.ContactIdentity,
     Contacts.IdentityStateWorker,
     Enums.MessageChannel,
     Repo
   }
 
-  @default_batch_size 10_000
+  @default_batch_size 25_000
+  @default_pause 1
   @sample_size 20
   @chunk_timeout :timer.minutes(2)
   @analyze_timeout :timer.minutes(10)
@@ -92,6 +99,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
           scanned: non_neg_integer(),
           mismatched: non_neg_integer(),
           fixed: non_neg_integer(),
+          unfixable: non_neg_integer(),
           last_id: non_neg_integer()
         }
 
@@ -105,19 +113,13 @@ defmodule Glific.Contacts.IdentityStateBackfill do
         }
 
   @doc """
-  The batch size a chain uses unless told otherwise.
-  """
-  @spec default_batch_size() :: pos_integer()
-  def default_batch_size, do: @default_batch_size
-
-  @doc """
   Starts the chain of copy jobs; takes `:after_id`, `:batch_size` and `:pause` (seconds between chunks).
   """
   @spec start(Keyword.t()) :: {:ok, Oban.Job.t()} | {:error, :already_running | any()}
   def start(opts \\ []) do
     args =
       Map.merge(
-        IdentityStateWorker.default_args(),
+        %{after_id: 0, batch_size: @default_batch_size, pause: @default_pause},
         Map.new(Keyword.take(opts, [:after_id, :batch_size, :pause]))
       )
 
@@ -190,58 +192,71 @@ defmodule Glific.Contacts.IdentityStateBackfill do
   """
   @spec find_mismatches(Keyword.t()) :: find_result()
   def find_mismatches(opts \\ []) do
-    scan_mismatches(opts, false)
-    |> Map.take([:scanned, :mismatched, :last_id, :sample_ids])
+    opts
+    |> scan_mismatches(fn _ids -> 0 end)
+    |> Map.delete(:fixed)
   end
 
   @doc """
-  Copies again the contacts whose WhatsApp identity is missing or differs from their `contacts` state.
-  Takes the same options as `find_mismatches/1`.
+  Copies again the contacts whose WhatsApp identity is missing or differs; one held by another contact is
+  counted as unfixable. Takes the same options as `find_mismatches/1`.
   """
   @spec fix_mismatches(Keyword.t()) :: fix_result()
   def fix_mismatches(opts \\ []) do
-    scan_mismatches(opts, true)
-    |> Map.take([:scanned, :mismatched, :fixed, :last_id])
+    %{mismatched: mismatched, fixed: fixed} = totals = scan_mismatches(opts, &copy_again/1)
+
+    totals
+    |> Map.delete(:sample_ids)
+    |> Map.put(:unfixable, mismatched - fixed)
   end
 
-  @spec scan_mismatches(Keyword.t(), boolean()) :: map()
-  defp scan_mismatches(opts, fix?) do
-    organization_id = Keyword.get(opts, :organization_id)
+  @spec copy_again([non_neg_integer()]) :: non_neg_integer()
+  defp copy_again([]), do: 0
+
+  defp copy_again(ids) do
+    %{inserted: inserted, updated: updated} = copy(dynamic([c], c.id in ^ids))
+    inserted + updated
+  end
+
+  @spec scan_mismatches(Keyword.t(), ([non_neg_integer()] -> non_neg_integer())) :: map()
+  defp scan_mismatches(opts, on_mismatches) do
     after_id = Keyword.get(opts, :after_id, 0)
-    batch_size = Keyword.get(opts, :batch_size, @default_batch_size)
-    totals = %{scanned: 0, mismatched: 0, fixed: 0, last_id: after_id, sample_ids: []}
 
-    scan_from(after_id, batch_size, organization_id, fix?, totals)
+    scan_from(after_id, %{
+      organization_id: Keyword.get(opts, :organization_id),
+      batch_size: Keyword.get(opts, :batch_size, @default_batch_size),
+      on_mismatches: on_mismatches,
+      totals: %{scanned: 0, mismatched: 0, fixed: 0, last_id: after_id, sample_ids: []}
+    })
   end
 
-  @spec scan_from(non_neg_integer(), pos_integer(), non_neg_integer() | nil, boolean(), map()) ::
-          map()
-  defp scan_from(after_id, batch_size, organization_id, fix?, totals) do
-    case chunk_bounds(after_id, batch_size, organization_id) do
+  @spec scan_from(non_neg_integer(), map()) :: map()
+  defp scan_from(after_id, %{totals: totals} = scan) do
+    case chunk_bounds(after_id, scan.batch_size, scan.organization_id) do
       nil ->
         totals
 
       {upto, scanned} ->
-        ids = mismatched_contact_ids(after_id, upto, organization_id)
-        if fix? and ids != [], do: copy(dynamic([c], c.id in ^ids))
+        ids = mismatched_contact_ids(after_id, upto, scan.organization_id)
 
         totals = %{
           totals
           | scanned: totals.scanned + scanned,
             mismatched: totals.mismatched + length(ids),
-            fixed: totals.fixed + if(fix?, do: length(ids), else: 0),
+            fixed: totals.fixed + scan.on_mismatches.(ids),
             last_id: upto,
             sample_ids: Enum.take(totals.sample_ids ++ ids, @sample_size)
         }
 
-        Logger.info(
-          "Contact identity mismatch scan reached contact #{upto}: scanned #{totals.scanned}, " <>
+        Appsignal.Logger.info(
+          "contact_identity_state",
+          "Mismatch scan reached contact #{upto}: scanned #{totals.scanned}, " <>
             "mismatched #{totals.mismatched}, fixed #{totals.fixed}"
         )
 
-        if scanned < batch_size,
+        if scanned < scan.batch_size,
           do: totals,
-          else: scan_from(upto, batch_size, organization_id, fix?, totals)
+          else: scan_from(upto, %{scan | totals: totals})
     end
   end
 
@@ -263,6 +278,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
     Contact
     |> with_phone()
     |> where(^condition)
+    |> order_by([c], c.id)
     |> select([c], %{
       contact_id: c.id,
       organization_id: c.organization_id,
@@ -278,7 +294,50 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       inserted_at: type(^now, :utc_datetime_usec),
       updated_at: type(^now, :utc_datetime_usec)
     })
-    |> ContactIdentities.upsert_whatsapp_state_from(now, @chunk_timeout)
+    |> then(
+      &Repo.insert_all(ContactIdentity, &1,
+        on_conflict: replace_differing_state_of_same_contact(),
+        conflict_target: [:organization_id, :channel, :identifier],
+        returning: [:inserted_at],
+        timeout: @chunk_timeout,
+        skip_organization_id: true
+      )
+    )
+    |> then(fn {count, rows} ->
+      inserted = Enum.count(rows, &(&1.inserted_at == now))
+      %{inserted: inserted, updated: count - inserted}
+    end)
+  end
+
+  # A copy of ContactIdentities' conflict rule, so this module deletes on its own; keep the two in step.
+  @spec replace_differing_state_of_same_contact() :: Ecto.Query.t()
+  defp replace_differing_state_of_same_contact do
+    from(i in ContactIdentity,
+      where: i.contact_id == fragment("EXCLUDED.contact_id"),
+      where:
+        fragment(
+          "(?, ?, ?, ?, ?, ?, ?) IS DISTINCT FROM (EXCLUDED.optin_time, EXCLUDED.optin_status, EXCLUDED.optin_method, EXCLUDED.optout_time, EXCLUDED.optout_method, EXCLUDED.bsp_status, EXCLUDED.last_message_at)",
+          i.optin_time,
+          i.optin_status,
+          i.optin_method,
+          i.optout_time,
+          i.optout_method,
+          i.bsp_status,
+          i.last_message_at
+        ),
+      update: [
+        set: [
+          optin_time: fragment("EXCLUDED.optin_time"),
+          optin_status: fragment("EXCLUDED.optin_status"),
+          optin_method: fragment("EXCLUDED.optin_method"),
+          optout_time: fragment("EXCLUDED.optout_time"),
+          optout_method: fragment("EXCLUDED.optout_method"),
+          bsp_status: fragment("EXCLUDED.bsp_status"),
+          last_message_at: fragment("EXCLUDED.last_message_at"),
+          updated_at: fragment("EXCLUDED.updated_at")
+        ]
+      ]
+    )
   end
 
   @spec mismatched_contact_ids(non_neg_integer(), non_neg_integer(), non_neg_integer() | nil) ::
