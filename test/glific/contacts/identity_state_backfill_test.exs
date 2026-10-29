@@ -2,7 +2,10 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  require Logger
+
   import Ecto.Query
+  import ExUnit.CaptureLog
 
   alias Glific.{
     Contacts,
@@ -136,6 +139,9 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
                IdentityStateBackfill.find_mismatches(after_id: contact.id - 1)
 
       assert mismatched_id == contact.id
+
+      assert %{mismatched: 1, fixed: 0, unfixable: 1} =
+               IdentityStateBackfill.fix_mismatches(after_id: contact.id - 1)
     end
 
     test "creates identities under each contact's own organization" do
@@ -246,6 +252,31 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
       assert %{updated: 0, inserted: 0} = copy_from(first)
     end
 
+    test "a link that fails its last attempt logs the id to resume from" do
+      level = Logger.level()
+      Logger.configure(level: :error)
+      on_exit(fn -> Logger.configure(level: level) end)
+      args = %{"after_id" => 0, "batch_size" => -1, "pause" => 0}
+
+      log =
+        capture_log(fn ->
+          assert_raise Postgrex.Error, fn ->
+            perform_job(IdentityStateWorker, args, attempt: 1)
+          end
+        end)
+
+      refute log =~ "gave up"
+
+      log =
+        capture_log(fn ->
+          assert_raise Postgrex.Error, fn ->
+            perform_job(IdentityStateWorker, args, attempt: 5)
+          end
+        end)
+
+      assert log =~ "gave up after 5 attempts; resume with start(after_id: 0)"
+    end
+
     test "stop/0 cancels the queued link and a cancelled running link does not chain" do
       assert {:ok, job} = IdentityStateBackfill.start(batch_size: 1, pause: 0)
       contact_with_state()
@@ -293,8 +324,8 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
       set_identity!(differing, optin_status: false, last_message_at: nil)
       later = contact_with_state()
 
-      assert %{fixed: fixed} = IdentityStateBackfill.fix_mismatches(after_id: missing.id - 1)
-      assert fixed >= 2
+      assert %{mismatched: 2, fixed: 2, unfixable: 0} =
+               IdentityStateBackfill.fix_mismatches(after_id: missing.id - 1)
 
       assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(differing)
       assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(later)

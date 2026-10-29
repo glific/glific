@@ -7,7 +7,8 @@ defmodule Glific.Contacts.IdentityStateWorker do
 
   It runs on `:purge`, which has a limit of one, and is unique while any link is queued or running, so
   there is never more than one chain. It deliberately covers every organization, so it never restores
-  an organization context. A link that fails is retried on its own chunk, which is safe to repeat.
+  an organization context. A link that fails is retried on its own chunk, which is safe to repeat; one
+  that fails its last attempt is logged as an error with the id to resume from.
   """
 
   use Oban.Worker,
@@ -21,24 +22,27 @@ defmodule Glific.Contacts.IdentityStateWorker do
 
   import Ecto.Query
 
-  alias Glific.Contacts.IdentityStateBackfill
-
-  @default_pause 1
-
-  @doc """
-  The defaults of a chain, as the job args `IdentityStateBackfill.start/1` merges its options into.
-  """
-  @spec default_args() :: map()
-  def default_args,
-    do: %{
-      after_id: 0,
-      batch_size: IdentityStateBackfill.default_batch_size(),
-      pause: @default_pause
-    }
+  alias Glific.{Contacts.IdentityStateBackfill, SafeLog}
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, any()}
-  def perform(%Oban.Job{args: args} = job) do
+  def perform(%Oban.Job{} = job) do
+    case copy_and_chain(job) do
+      {:error, reason} = error ->
+        log_if_last_attempt(job, SafeLog.safe_inspect(reason))
+        error
+
+      :ok ->
+        :ok
+    end
+  rescue
+    exception ->
+      log_if_last_attempt(job, Exception.message(exception))
+      reraise exception, __STACKTRACE__
+  end
+
+  @spec copy_and_chain(Oban.Job.t()) :: :ok | {:error, any()}
+  defp copy_and_chain(%Oban.Job{args: args} = job) do
     after_id = Map.fetch!(args, "after_id")
     batch_size = Map.fetch!(args, "batch_size")
 
@@ -68,7 +72,7 @@ defmodule Glific.Contacts.IdentityStateWorker do
     # The running job still holds the uniqueness slot, so the next link must opt out of it.
     args
     |> Map.put("after_id", last_id)
-    |> new(schedule_in: Map.get(args, "pause", @default_pause), unique: false)
+    |> new(schedule_in: Map.fetch!(args, "pause"), unique: false)
     |> Oban.insert()
     |> case do
       {:ok, _job} -> :ok
@@ -76,7 +80,7 @@ defmodule Glific.Contacts.IdentityStateWorker do
     end
   end
 
-  # Cancelling a running job does not stop it, so a stop is only seen by reading the job back.
+  # A stop that lands just as the chunk finishes misses Oban's kill, so the job is read back before chaining.
   @spec cancelled?(Oban.Job.t()) :: boolean()
   defp cancelled?(%Oban.Job{id: nil}), do: false
 
@@ -84,4 +88,17 @@ defmodule Glific.Contacts.IdentityStateWorker do
     query = from(j in Oban.Job, where: j.id == ^id and j.state == "cancelled")
     Oban.Repo.exists?(Oban.config(), query)
   end
+
+  @spec log_if_last_attempt(Oban.Job.t(), String.t()) :: :ok
+  defp log_if_last_attempt(%Oban.Job{attempt: attempt, max_attempts: max} = job, reason)
+       when attempt >= max do
+    Glific.log_error(
+      "Contact identity state copy gave up after #{attempt} attempts; " <>
+        "resume with start(after_id: #{job.args["after_id"]}): #{reason}"
+    )
+
+    :ok
+  end
+
+  defp log_if_last_attempt(_job, _reason), do: :ok
 end
