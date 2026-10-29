@@ -116,6 +116,22 @@ defmodule Glific.Fixtures do
     contact
   end
 
+  @doc """
+  Opts the contact in on the web channel under `identifier`, adding that web identity if needed.
+  """
+  @spec opt_in_to_web(Contact.t(), String.t() | nil) :: Contact.t()
+  def opt_in_to_web(contact, identifier \\ nil) do
+    identifier = identifier || "web_#{contact.id}"
+    {:ok, contact} = Contacts.add_identity(contact, :web, identifier)
+
+    {:ok, contact} =
+      Contacts.contact_opted_in(:web, identifier, %{organization_id: contact.organization_id},
+        method: "API"
+      )
+
+    contact
+  end
+
   @doc false
   @spec contact_without_phone_fixture(map()) :: Contact.t()
   def contact_without_phone_fixture(attrs \\ %{}) do
@@ -132,6 +148,66 @@ defmodule Glific.Fixtures do
     |> Enum.into(valid_attrs)
     |> Contacts.new_contact_changeset(:web)
     |> Repo.insert!()
+  end
+
+  @doc """
+  A contact with no WhatsApp identity row, whose `contacts` columns hold the given consent and session
+  fields: as a contact created before identities held them.
+  """
+  @spec contact_without_identity_fixture(map()) :: Contact.t()
+  def contact_without_identity_fixture(attrs \\ %{}) do
+    {fields, attrs} = Map.split(attrs, ContactIdentity.consent_and_session_fields())
+    contact = contact_fixture(attrs)
+
+    Repo.delete_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
+      skip_organization_id: true
+    )
+
+    columns =
+      for {field, value} <- Map.put_new(fields, :bsp_status, :none),
+          do: {field, column_value(value)}
+
+    Repo.update_all(from(c in "contacts", where: c.id == ^contact.id), [set: columns],
+      skip_organization_id: true
+    )
+
+    Repo.get!(Contact, contact.id, skip_organization_id: true)
+  end
+
+  defp column_value(%Elixir.DateTime{} = time), do: Elixir.DateTime.truncate(time, :second)
+
+  defp column_value(value) when is_atom(value) and not is_boolean(value) and value != nil,
+    do: Atom.to_string(value)
+
+  defp column_value(value), do: value
+
+  @doc """
+  The WhatsApp identity of a contact, as stored.
+  """
+  @spec whatsapp_identity(Contact.t()) :: ContactIdentity.t() | nil
+  def whatsapp_identity(%Contact{id: contact_id}),
+    do:
+      Repo.one(
+        from(i in ContactIdentity, where: i.contact_id == ^contact_id and i.channel == :whatsapp),
+        skip_organization_id: true
+      )
+
+  @doc """
+  The consent and session fields of the stored contact and of its WhatsApp identity, as maps that are
+  equal when the two agree.
+  """
+  @spec whatsapp_optin_fields(Contact.t()) :: %{contact: map(), identity: map() | nil}
+  def whatsapp_optin_fields(%Contact{id: contact_id} = contact) do
+    stored = Repo.get!(Contact, contact_id, skip_organization_id: true)
+    identity = whatsapp_identity(contact)
+
+    %{
+      contact:
+        stored
+        |> Map.take(ContactIdentity.consent_and_session_fields())
+        |> Map.update!(:optin_status, &(&1 == true)),
+      identity: identity && Map.take(identity, ContactIdentity.consent_and_session_fields())
+    }
   end
 
   @doc false
