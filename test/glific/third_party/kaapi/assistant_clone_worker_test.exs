@@ -96,7 +96,10 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
   end
 
   describe "perform/1" do
-    test "successfully clones assistant end-to-end", %{assistant: assistant} do
+    test "successfully clones assistant end-to-end", %{
+      assistant: assistant,
+      knowledge_base_version: knowledge_base_version
+    } do
       with_mock Req,
         get: fn url, _opts ->
           cond do
@@ -123,7 +126,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         end do
         Tesla.Mock.mock(fn
           # upload document to kaapi
-          %{method: :post, url: url} ->
+          %{method: :post, url: url, body: body} ->
             cond do
               String.contains?(url, "documents") ->
                 %Tesla.Env{
@@ -138,6 +141,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                 }
 
               String.contains?(url, "collections") ->
+                send(self(), {:collection_request, Jason.decode!(body)})
+
                 %Tesla.Env{
                   status: 200,
                   body: %{data: %{job_id: "clone_job_123"}}
@@ -174,6 +179,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    organization_id: @org_id,
                    is_legacy: true
                  })
+
+        assert_received {:collection_request, collection_request}
+
+        assert collection_request["name"] ==
+                 "clone_#{assistant.id}_kbv_#{knowledge_base_version.id}"
 
         cloned =
           Assistant
