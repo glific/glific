@@ -96,7 +96,10 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
   end
 
   describe "perform/1" do
-    test "successfully clones assistant end-to-end", %{assistant: assistant} do
+    test "successfully clones assistant end-to-end", %{
+      assistant: assistant,
+      knowledge_base_version: knowledge_base_version
+    } do
       with_mock Req,
         get: fn url, _opts ->
           cond do
@@ -180,7 +183,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert_received {:collection_request, collection_request}
 
         assert collection_request["name"] ==
-                 "clone_#{assistant.id}_v#{assistant.active_config_version_id}"
+                 "clone_#{assistant.id}_kbv_#{knowledge_base_version.id}"
 
         cloned =
           Assistant
