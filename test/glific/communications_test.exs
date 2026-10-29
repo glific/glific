@@ -491,6 +491,136 @@ defmodule Glific.CommunicationsTest do
     )
   end
 
+  describe "update_bsp_status/3" do
+    setup do
+      bsp_message_id = Ecto.UUID.generate()
+      message = Fixtures.message_fixture(%{bsp_message_id: bsp_message_id})
+      %{message: message, bsp_message_id: bsp_message_id}
+    end
+
+    test "updates a changed status and skips a repeated one",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      assert Communications.Message.update_bsp_status(bsp_message_id, :delivered, nil)
+
+      assert Messages.get_message!(message.id).bsp_status == :delivered
+
+      refute Communications.Message.update_bsp_status(bsp_message_id, :delivered, nil)
+
+      assert Messages.get_message!(message.id).bsp_status == :delivered
+    end
+
+    test "updates a message that has no status yet",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      Repo.update_all(
+        from(m in Messages.Message, where: m.id == ^message.id),
+        set: [bsp_status: nil]
+      )
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :sent, nil)
+
+      assert Messages.get_message!(message.id).bsp_status == :sent
+    end
+
+    test "clears the status once when the new status is nil",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      assert Communications.Message.update_bsp_status(bsp_message_id, nil, nil)
+      assert Messages.get_message!(message.id).bsp_status == nil
+
+      refute Communications.Message.update_bsp_status(bsp_message_id, nil, nil)
+    end
+
+    test "a repeated failure does not run the error handling again",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, errors)
+
+      contact = Contacts.get_contact!(message.contact_id)
+      assert contact.status == :invalid
+
+      {:ok, _contact} = Contacts.update_contact(contact, %{status: :valid})
+
+      refute Communications.Message.update_bsp_status(bsp_message_id, :error, errors)
+
+      assert Contacts.get_contact!(message.contact_id).status == :valid
+    end
+
+    test "a gupshup failure replaces a meta one and runs the error handling",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
+      gupshup_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+
+      assert Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
+
+      refute Contacts.get_contact!(message.contact_id).status == :invalid
+
+      refute Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
+
+      message = Messages.get_message!(message.id)
+      assert message.errors["source"] == "gupshup"
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
+      assert Contacts.get_contact!(message.contact_id).status == :invalid
+    end
+
+    test "a meta failure does not replace a gupshup one",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      gupshup_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
+
+      assert Communications.Message.update_bsp_status(bsp_message_id, :error, gupshup_errors)
+
+      refute Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
+
+      message = Messages.get_message!(message.id)
+      assert message.errors["source"] == "gupshup"
+      assert get_in(message.errors, ["payload", "payload", "code"]) == 1002
+    end
+
+    test "a meta error code is recorded without error handling",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 1002}}}
+
+      assert Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
+
+      assert Messages.get_message!(message.id).errors["source"] == "meta"
+      refute Contacts.get_contact!(message.contact_id).status == :invalid
+    end
+
+    test "a callback failure replaces a failure stored without a source",
+         %{message: message, bsp_message_id: bsp_message_id} do
+      Repo.update_all(
+        from(m in Messages.Message, where: m.id == ^message.id),
+        set: [bsp_status: :error, errors: %{"message" => "send failed"}]
+      )
+
+      meta_errors = %{"payload" => %{"payload" => %{"code" => 131_026}}}
+
+      refute Communications.Message.update_bsp_status(
+               bsp_message_id,
+               :error,
+               meta_errors,
+               "meta"
+             )
+
+      assert Messages.get_message!(message.id).errors["source"] == "meta"
+    end
+  end
+
   describe "mailer" do
     alias Swoosh.Email
     import Swoosh.TestAssertions
