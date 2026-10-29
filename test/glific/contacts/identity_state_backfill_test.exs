@@ -261,9 +261,16 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
       assert {:error, :already_running} = IdentityStateBackfill.start()
     end
 
-    test "start/1 refuses a pause that is not whole seconds" do
-      assert {:error, :invalid_pause} = IdentityStateBackfill.start(pause: 0.5)
-      assert {:error, :invalid_pause} = IdentityStateBackfill.start(pause: -1)
+    test "start/1 refuses options that would break the chain" do
+      assert {:error, {:invalid_option, :batch_size}} = IdentityStateBackfill.start(batch_size: 0)
+
+      assert {:error, {:invalid_option, :batch_size}} =
+               IdentityStateBackfill.start(batch_size: "10")
+
+      assert {:error, {:invalid_option, :after_id}} = IdentityStateBackfill.start(after_id: -1)
+      assert {:error, {:invalid_option, :after_id}} = IdentityStateBackfill.start(after_id: 1.5)
+      assert {:error, {:invalid_option, :pause}} = IdentityStateBackfill.start(pause: 0.5)
+      assert {:error, {:invalid_option, :pause}} = IdentityStateBackfill.start(pause: -1)
       refute_enqueued(worker: IdentityStateWorker, prefix: "global")
     end
 

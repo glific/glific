@@ -17,7 +17,8 @@ defmodule Glific.Contacts.IdentityStateBackfill do
   A chunk can race a write the application makes while it runs and leave one row a write behind.
   `find_mismatches/1` finds those rows and `fix_mismatches/1` copies them again. Check until it reports
   none, and before reading identities. A contact whose phone is another contact's WhatsApp identity is
-  reported on every check and cannot be fixed by a copy.
+  reported on every check and cannot be fixed by a copy. `unfixable` can also count a contact an app write
+  fixed during the scan; only the ones reported again on the next check are real.
 
   ## Run from IEx (`gigalixir remote_console`)
 
@@ -29,8 +30,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       iex> Glific.Contacts.IdentityStateBackfill.start()
       {:error, :already_running}
 
-      # progress: the queued link's after_id is the last contact id copied; a link that gave up shows
-      # as "discarded"
+      # progress: the queued link's after_id is the last contact id copied
       iex> Glific.Contacts.IdentityStateBackfill.status()
       [%{id: 12, state: "scheduled", after_id: 3_000_000, attempt: 0, scheduled_at: ~U[...]}]
 
@@ -54,9 +54,10 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       %{scanned: 6_000_000, mismatched: 12, fixed: 11, unfixable: 1, last_id: 7_123_456}
 
   Every chunk is one statement with a two minute timeout; a timeout rolls that chunk back and the job
-  retries it. A chunk that fails every attempt is logged as an error, shows in `status/0` as
-  "discarded", and ends the chain. The chain is done only when the log says "Finished copying contact
-  state".
+  retries it. A chunk that fails every attempt ends the chain and is logged as an error with the id to
+  resume from; `status/0` shows it as "discarded" only until Oban prunes it, minutes later. A node that
+  dies during a last attempt discards the job with no log, so an empty `status/0` never means done: the
+  chain is done only when the log says "Finished copying contact state".
 
   ## While it runs, and after
 
@@ -65,7 +66,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       that chunk wait for it. Start with the default batch, check the first chunk times in AppSignal,
       and only then raise `:batch_size`.
     * Watch replication lag and WAL volume. Every chunk writes its rows and four index entries, so a
-      billion contacts write hundreds of GB of WAL. Raise `:pause` or lower `:batch_size` to slow it down.
+      few million contacts write a few GB of WAL. Raise `:pause` or lower `:batch_size` to slow it down.
     * After the chain, run `VACUUM (ANALYZE) contact_identities` from `psql`; it cannot run in a transaction.
     * Before deleting this module, run `stop/0`, so no queued link is left for a worker that no longer exists.
   """
@@ -126,7 +127,8 @@ defmodule Glific.Contacts.IdentityStateBackfill do
   Starts the chain of copy jobs; takes `:after_id`, `:batch_size` and `:pause` (whole seconds between chunks).
   """
   @spec start(Keyword.t()) ::
-          {:ok, Oban.Job.t()} | {:error, :already_running | :invalid_pause | any()}
+          {:ok, Oban.Job.t()}
+          | {:error, :already_running | {:invalid_option, atom()} | any()}
   def start(opts \\ []) do
     args =
       Map.merge(
@@ -135,11 +137,20 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       )
 
     cond do
-      not (is_integer(args.pause) and args.pause >= 0) -> {:error, :invalid_pause}
+      invalid = invalid_option(args) -> {:error, {:invalid_option, invalid}}
       another_link?(nil) -> {:error, :already_running}
       true -> insert_first_link(args)
     end
   end
+
+  # A batch_size of 0 scans nothing yet never ends the chain, and a fractional pause cannot be scheduled.
+  @spec invalid_option(map()) :: atom() | nil
+  defp invalid_option(%{after_id: after_id}) when not is_integer(after_id) or after_id < 0,
+    do: :after_id
+
+  defp invalid_option(%{batch_size: size}) when not is_integer(size) or size < 1, do: :batch_size
+  defp invalid_option(%{pause: pause}) when not is_integer(pause) or pause < 0, do: :pause
+  defp invalid_option(_args), do: nil
 
   # Oban's unique check alone is not enough: the links after the first are inserted without a
   # uniqueness key, so it would let a second chain start once the first link has handed off.
