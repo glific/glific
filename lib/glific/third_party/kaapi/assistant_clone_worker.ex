@@ -94,7 +94,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         %Oban.Job{
           args: %{
             "assistant_id" => assistant_id,
-            "version_id" => _version_id,
+            "version_id" => version_id,
             "organization_id" => organization_id,
             "is_legacy" => true
           },
@@ -120,7 +120,10 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
            upload_files_to_kaapi(assistant.name, organization_id),
          {:ok, file_ids} <- validate_uploaded_files(file_data),
          {:ok, %{data: %{job_id: job_id}}} <-
-           Kaapi.create_collection(%{documents: file_ids}, organization_id),
+           Kaapi.create_collection(
+             %{name: "clone_#{assistant_id}_v#{version_id}", documents: file_ids},
+             organization_id
+           ),
          {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
          legacy_name <-
            resolve_clone_name(assistant, assistant.active_config_version),
