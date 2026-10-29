@@ -57,7 +57,7 @@ defmodule Glific.Contacts.IdentityStateWorker do
     cond do
       scanned < batch_size -> finish()
       cancelled?(job) -> :ok
-      true -> enqueue_next(args, last_id)
+      true -> enqueue_next(job, last_id)
     end
   end
 
@@ -67,8 +67,16 @@ defmodule Glific.Contacts.IdentityStateWorker do
     Appsignal.Logger.info("contact_identity_state", "Finished copying contact state")
   end
 
-  @spec enqueue_next(map(), non_neg_integer()) :: :ok | {:error, any()}
-  defp enqueue_next(args, last_id) do
+  # A link retried after its node died may already have enqueued its next one; a second would fork the chain.
+  @spec enqueue_next(Oban.Job.t(), non_neg_integer()) :: :ok | {:error, any()}
+  defp enqueue_next(%Oban.Job{id: id, args: args}, last_id) do
+    if IdentityStateBackfill.another_link?(id),
+      do: :ok,
+      else: insert_next(args, last_id)
+  end
+
+  @spec insert_next(map(), non_neg_integer()) :: :ok | {:error, any()}
+  defp insert_next(args, last_id) do
     # The running job still holds the uniqueness slot, so the next link must opt out of it.
     args
     |> Map.put("after_id", last_id)

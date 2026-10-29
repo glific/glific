@@ -252,6 +252,50 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
       assert %{updated: 0, inserted: 0} = copy_from(first)
     end
 
+    test "start/1 refuses a second chain once the first link has handed off" do
+      {:ok, _link} =
+        %{"after_id" => 5, "batch_size" => 7, "pause" => 0}
+        |> IdentityStateWorker.new(unique: false)
+        |> Oban.insert()
+
+      assert {:error, :already_running} = IdentityStateBackfill.start()
+    end
+
+    test "start/1 refuses a pause that is not whole seconds" do
+      assert {:error, :invalid_pause} = IdentityStateBackfill.start(pause: 0.5)
+      assert {:error, :invalid_pause} = IdentityStateBackfill.start(pause: -1)
+      refute_enqueued(worker: IdentityStateWorker, prefix: "global")
+    end
+
+    test "a link does not enqueue the next one when another link is already queued" do
+      first = contact_with_state()
+      second = contact_with_state()
+      _third = contact_with_state()
+
+      {:ok, _link} =
+        %{"after_id" => 999_999_999, "batch_size" => 2, "pause" => 0}
+        |> IdentityStateWorker.new(unique: false)
+        |> Oban.insert()
+
+      args = %{"after_id" => first.id - 1, "batch_size" => 2, "pause" => 0}
+      assert :ok = perform_job(IdentityStateWorker, args)
+
+      refute_enqueued(worker: IdentityStateWorker, args: %{after_id: second.id}, prefix: "global")
+    end
+
+    test "status/0 lists a link that gave up" do
+      {:ok, link} =
+        %{"after_id" => 42, "batch_size" => 2, "pause" => 0}
+        |> IdentityStateWorker.new()
+        |> Oban.insert()
+
+      Oban.Repo.update_all(Oban.config(), from(j in Oban.Job, where: j.id == ^link.id),
+        set: [state: "discarded"]
+      )
+
+      assert [%{state: "discarded", after_id: 42}] = IdentityStateBackfill.status()
+    end
+
     test "a link that fails its last attempt logs the id to resume from" do
       level = Logger.level()
       Logger.configure(level: :error)
