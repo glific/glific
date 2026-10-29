@@ -50,6 +50,12 @@ config :goth, disabled: true
 
 config :tesla, adapter: Tesla.Mock
 
+# Per-module adapters take precedence over the global one, so they are mocked explicitly
+config :tesla, Glific.Providers.Gupshup.ApiClient, adapter: Tesla.Mock
+config :tesla, Glific.Providers.Gupshup.PartnerAPI, adapter: Tesla.Mock
+config :tesla, Glific.Providers.Gupshup.WhatsappForms.ApiClient, adapter: Tesla.Mock
+config :tesla, Glific.Providers.Maytapi.ApiClient, adapter: Tesla.Mock
+
 config :phoenix, :json_library, Jason
 
 config :pow, Pow.Ecto.Schema.Password, iterations: 1

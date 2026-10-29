@@ -1120,12 +1120,12 @@ defmodule Glific.BigQuery do
         ## it to the actual request (its own `opts` param only reaches response decoding),
         ## so we call the connection's Tesla `request/2` directly here - the same connection
         ## and middleware `bigquery_jobs_query/4` uses internally - to set an explicit
-        ## `recv_timeout`.
+        ## `receive_timeout`.
         Connection.request(conn,
           url: "/bigquery/v2/projects/#{URI.encode(project_id, &URI.char_unreserved?/1)}/queries",
           method: :post,
           body: %{query: sql, useLegacySql: false, timeoutMs: bigquery_dedup_query_timeout_ms()},
-          opts: [adapter: [recv_timeout: bigquery_dedup_recv_timeout_ms()]]
+          opts: [adapter: [receive_timeout: bigquery_dedup_recv_timeout_ms()]]
         )
         |> Response.decode(struct: %GoogleApi.BigQuery.V2.Model.QueryResponse{})
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)

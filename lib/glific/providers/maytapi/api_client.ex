@@ -18,9 +18,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     ]
 
   # getGroups on a phone in many/large groups routinely takes longer than the
-  # Hackney default 5s recv_timeout, so the GET would time out before Maytapi
+  # default 5s receive timeout, so the GET would time out before Maytapi
   # responded. Bump the read timeout to match the write path's intent.
-  @get_recv_timeout 30_000
+  @get_receive_timeout 30_000
 
   @doc """
   Making Tesla get call and adding api key in header. `path` is a
@@ -35,15 +35,15 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       |> client()
       |> Tesla.get(path,
         headers: headers(token),
-        opts: [adapter: [recv_timeout: @get_recv_timeout], path_params: path_params]
+        opts: [adapter: [receive_timeout: @get_receive_timeout], path_params: path_params]
       )
       |> log_on_failure(path, path_params)
 
   # Group operations (createGroup, group/add, group/remove)
   # trigger real WhatsApp actions on the device and can take well over the
-  # Hackney default 5s recv_timeout. Bump the read timeout so these don't
+  # default 5s receive timeout. Bump the read timeout so these don't
   # time out before Maytapi responds.
-  @post_recv_timeout 60_000
+  @post_receive_timeout 60_000
 
   # Maytapi's code for "the WhatsApp instance's lib isn't loaded yet" — a
   # transient state for a few seconds after a restart/reconnect. Maytapi returns
@@ -67,7 +67,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     client(:write)
     |> Tesla.post(path, payload,
       headers: headers(token),
-      opts: [adapter: [recv_timeout: @post_recv_timeout], path_params: path_params]
+      opts: [adapter: [receive_timeout: @post_receive_timeout], path_params: path_params]
     )
     |> log_on_failure(path, path_params)
   end
@@ -429,13 +429,16 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       |> Keyword.merge(max_delay: @retry_max_delay, jitter_factor: 0.2)
       |> Keyword.put(:should_retry, should_retry(retry_mode, standard_retry?))
 
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, @maytapi_url},
-      Tesla.Middleware.KeepRequest,
-      Tesla.Middleware.PathParams,
-      {Tesla.Middleware.Retry, opts},
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "maytapi", sampling_scale: 10}}
-    ])
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, @maytapi_url},
+        Tesla.Middleware.KeepRequest,
+        Tesla.Middleware.PathParams,
+        {Tesla.Middleware.Retry, opts},
+        {Tesla.Middleware.Telemetry, metadata: %{provider: "maytapi", sampling_scale: 10}}
+      ],
+      Glific.get_tesla_adapter(__MODULE__)
+    )
   end
 
   @spec should_retry(:read | :write, function()) :: function()

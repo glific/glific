@@ -1361,7 +1361,7 @@ defmodule Glific.Messages do
     # once decoded we encode the string
     url = url |> URI.decode() |> URI.encode()
 
-    case Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]]) do
+    case Tesla.get(url, opts: [adapter: [receive_timeout: 10_000]]) do
       {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
         headers
         |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)

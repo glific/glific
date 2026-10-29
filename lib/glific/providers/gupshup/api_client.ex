@@ -83,7 +83,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
         [
           {Tesla.Middleware.Logger, debug: false},
           {Tesla.Middleware.FormUrlencoded, encode: &Query.encode/1}
-        ] ++ Glific.get_tesla_retry_middleware()
+        ] ++ Glific.get_tesla_retry_middleware(),
+        Glific.get_tesla_adapter(__MODULE__)
       )
 
     client
