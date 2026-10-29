@@ -285,7 +285,10 @@ defmodule Glific.Seeds.SeedsMigration do
           )
         end
 
-      Repo.insert_all(Contact, simulators)
+      Contacts.insert_contacts(simulators,
+        on_conflict: :nothing,
+        organization_id: organization.id
+      )
     end
 
     :ok
@@ -334,9 +337,8 @@ defmodule Glific.Seeds.SeedsMigration do
         }
       )
 
-    Contact
-    |> struct(attrs)
-    |> Repo.insert!()
+    {:ok, contact} = Contacts.create_contact(attrs)
+    contact
   end
 
   @spec create_saas_user(Contact.t()) :: User.t()
