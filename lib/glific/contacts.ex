@@ -1094,18 +1094,21 @@ defmodule Glific.Contacts do
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
     now = DateTime.utc_now()
 
-    Contact
-    |> where([c], is_nil(c.optin_time))
-    |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all([set: [bsp_status: :none, updated_at: now]], skip_organization_id: true)
+    # One transaction: the contact rows stay locked until the identities copy them, so an inbound
+    # message cannot update a contact and its identity in between and be overwritten on the identity.
+    Repo.transaction(fn ->
+      Contact
+      |> where([c], is_nil(c.optin_time))
+      |> where([c], c.id in ^contact_ids)
+      |> Repo.update_all([set: [bsp_status: :none, updated_at: now]], skip_organization_id: true)
 
-    Contact
-    |> where([c], not is_nil(c.optin_time))
-    |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all([set: [bsp_status: :hsm, updated_at: now]], skip_organization_id: true)
+      Contact
+      |> where([c], not is_nil(c.optin_time))
+      |> where([c], c.id in ^contact_ids)
+      |> Repo.update_all([set: [bsp_status: :hsm, updated_at: now]], skip_organization_id: true)
 
-    ContactIdentities.set_bsp_status(contact_ids, false, :none, now)
-    ContactIdentities.set_bsp_status(contact_ids, true, :hsm, now)
+      ContactIdentities.copy_bsp_status(contact_ids, now)
+    end)
 
     :ok
   end

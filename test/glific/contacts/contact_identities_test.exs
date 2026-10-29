@@ -770,38 +770,65 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert %{bsp_status: :none} = assert_contact_identity(other)
     end
 
-    test "set_bsp_status/4 selects identities by their contact's opt-in", %{
-      contact: contact,
-      organization_id: organization_id
-    } do
-      other = Fixtures.contact_fixture(%{organization_id: organization_id})
+    test "copy_bsp_status/2 copies the contact's bsp_status and skips an identity that matches",
+         %{
+           contact: contact,
+           organization_id: organization_id
+         } do
+      matching = Fixtures.contact_fixture(%{organization_id: organization_id})
+      long_ago = ~U[2020-01-01 00:00:00.000000Z]
 
-      Repo.update_all(from(c in Contact, where: c.id == ^contact.id),
-        set: [optin_time: @optin_time]
+      Repo.update_all(from(c in Contact, where: c.id in ^[contact.id, matching.id]),
+        set: [bsp_status: :session_and_hsm]
       )
 
       Repo.update_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
-        set: [optin_time: nil]
+        set: [bsp_status: :none]
       )
 
-      Repo.update_all(from(c in Contact, where: c.id == ^other.id), set: [optin_time: nil])
-
-      Repo.update_all(from(i in ContactIdentity, where: i.contact_id == ^other.id),
-        set: [optin_time: nil, bsp_status: :none]
+      Repo.update_all(from(i in ContactIdentity, where: i.contact_id == ^matching.id),
+        set: [bsp_status: :session_and_hsm, updated_at: long_ago]
       )
-
-      assert %{optin_time: nil} = Fixtures.whatsapp_identity(contact)
 
       assert :ok =
-               ContactIdentities.set_bsp_status(
-                 [contact.id, other.id],
-                 true,
-                 :hsm,
-                 DateTime.utc_now()
-               )
+               ContactIdentities.copy_bsp_status([contact.id, matching.id], DateTime.utc_now())
 
-      assert %{bsp_status: :hsm} = Fixtures.whatsapp_identity(contact)
-      assert %{bsp_status: :none} = Fixtures.whatsapp_identity(other)
+      assert %{bsp_status: :session_and_hsm} = Fixtures.whatsapp_identity(contact)
+
+      assert %{bsp_status: :session_and_hsm, updated_at: ^long_ago} =
+               Fixtures.whatsapp_identity(matching)
+    end
+
+    test "copy_fields_to_whatsapp_identity/2 writes nothing for changes without its fields", %{
+      contact: contact
+    } do
+      long_ago = ~U[2020-01-01 00:00:00.000000Z]
+
+      Repo.update_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
+        set: [updated_at: long_ago]
+      )
+
+      assert :ok =
+               ContactIdentities.copy_fields_to_whatsapp_identity(contact, %{name: "Renamed"})
+
+      assert %{updated_at: ^long_ago} = Fixtures.whatsapp_identity(contact)
+    end
+
+    test "move_whatsapp_identity_to_phone/1 creates the identity from the stored contact, not a stale struct",
+         %{organization_id: organization_id} do
+      stale = Fixtures.contact_without_identity_fixture(%{organization_id: organization_id})
+
+      {:ok, _contact} =
+        Contacts.update_contact(stale, %{
+          optin_status: true,
+          optin_time: @optin_time,
+          optin_method: "WA"
+        })
+
+      assert :ok = ContactIdentities.move_whatsapp_identity_to_phone(stale)
+
+      assert %{optin_status: true, optin_method: "WA", optin_time: @optin_time} =
+               assert_contact_identity(stale)
     end
 
     test "a WhatsApp opt-in of a blocked contact records nothing", %{

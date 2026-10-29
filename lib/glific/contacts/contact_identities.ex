@@ -85,9 +85,25 @@ defmodule Glific.Contacts.ContactIdentities do
   Moves the contact's WhatsApp identity to its current phone, creating one when it has none.
   """
   @spec move_whatsapp_identity_to_phone(Contact.t()) :: :ok
-  def move_whatsapp_identity_to_phone(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
+  def move_whatsapp_identity_to_phone(%Contact{id: contact_id}) do
+    # Locks and rereads the contact: an opt-in or opt-out committing meanwhile either lands before
+    # the read and is copied here, or waits and then finds the identity to copy itself into.
+    Repo.transaction(fn -> contact_id |> lock_contact() |> move_to_phone() end)
+    :ok
+  end
 
-  def move_whatsapp_identity_to_phone(%Contact{phone: phone} = contact) do
+  @spec lock_contact(non_neg_integer()) :: Contact.t() | nil
+  defp lock_contact(contact_id),
+    do:
+      Repo.one(from(c in Contact, where: c.id == ^contact_id, lock: "FOR UPDATE"),
+        skip_organization_id: true
+      )
+
+  @spec move_to_phone(Contact.t() | nil) :: :ok
+  defp move_to_phone(nil), do: :ok
+  defp move_to_phone(%Contact{phone: phone}) when phone in [nil, ""], do: :ok
+
+  defp move_to_phone(%Contact{phone: phone} = contact) do
     case whatsapp_identity_id(contact) do
       nil ->
         contact
@@ -138,39 +154,33 @@ defmodule Glific.Contacts.ContactIdentities do
     do: :ok
 
   def copy_fields_to_whatsapp_identity(%Contact{id: contact_id, phone: phone}, changes) do
-    set =
-      changes
-      |> identity_fields()
-      |> Map.put(:updated_at, DateTime.utc_now())
+    fields = identity_fields(changes)
 
-    from(i in ContactIdentity,
-      where: i.contact_id == ^contact_id and i.channel == :whatsapp and i.identifier == ^phone
-    )
-    |> Repo.update_all(set: Map.to_list(set))
+    if fields != %{} do
+      from(i in ContactIdentity,
+        where: i.contact_id == ^contact_id and i.channel == :whatsapp and i.identifier == ^phone
+      )
+      |> Repo.update_all(set: Map.to_list(Map.put(fields, :updated_at, DateTime.utc_now())))
+    end
 
     :ok
   end
 
   @doc """
-  Sets `bsp_status` on the WhatsApp identities of the contacts `Contacts.set_session_status/2` updates.
+  Copies each contact's `bsp_status` onto its WhatsApp identity, where the two differ.
   """
-  @spec set_bsp_status([non_neg_integer()], boolean(), atom(), DateTime.t()) :: :ok
-  def set_bsp_status(contact_ids, opted_in?, bsp_status, now) do
+  @spec copy_bsp_status([non_neg_integer()], DateTime.t()) :: :ok
+  def copy_bsp_status(contact_ids, now) do
     from(i in ContactIdentity,
       join: c in assoc(i, :contact),
       where: i.channel == :whatsapp and i.contact_id in ^contact_ids,
-      where: ^optin_time_filter(opted_in?)
+      where: i.bsp_status != c.bsp_status,
+      update: [set: [bsp_status: c.bsp_status, updated_at: ^now]]
     )
-    |> Repo.update_all([set: [bsp_status: bsp_status, updated_at: now]],
-      skip_organization_id: true
-    )
+    |> Repo.update_all([], skip_organization_id: true)
 
     :ok
   end
-
-  @spec optin_time_filter(boolean()) :: Ecto.Query.dynamic_expr()
-  defp optin_time_filter(true), do: dynamic([i, c], not is_nil(c.optin_time))
-  defp optin_time_filter(false), do: dynamic([i, c], is_nil(c.optin_time))
 
   @doc """
   Records opt-in on the contact's identity on `channel`, or on all of them when `identifier` is nil,
