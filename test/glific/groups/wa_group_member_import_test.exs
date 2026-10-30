@@ -1,4 +1,7 @@
 defmodule Glific.Groups.WAGroupMemberImportTest do
+  @moduledoc """
+  Covers the background WhatsApp group member import from a CSV string, url or file.
+  """
   use Glific.DataCase, async: false
 
   alias Glific.{
@@ -113,5 +116,65 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
     # mapped from the Maytapi error
     user_job = Repo.get_by(UserJob, type: "wa_group_member_import")
     assert user_job.errors["errors"]["919900112233"] == "This number isn't on WhatsApp."
+  end
+
+  test "rejects a member csv that is not valid utf-8, without creating a user job", %{
+    organization_id: organization_id,
+    wa_group: wa_group
+  } do
+    windows_codepage = <<"phone,name\n919900112233,Ren", 0xE9, "e\n">>
+
+    assert {:error, message} =
+             WAGroupMemberImport.import_members(organization_id, wa_group.id,
+               data: windows_codepage
+             )
+
+    assert message =~ "Line 2 is not valid UTF-8"
+    refute Repo.get_by(UserJob, type: "wa_group_member_import")
+  end
+
+  test "imports members from a url", %{organization_id: organization_id, wa_group: wa_group} do
+    Tesla.Mock.mock(fn
+      %{method: :get} -> %Tesla.Env{status: 200, body: "phone,name\n919900112255,Carol\n"}
+      %{method: :post} -> %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}
+    end)
+
+    assert {:ok, _} =
+             WAGroupMemberImport.import_members(organization_id, wa_group.id,
+               url: "http://www.bar.com/members.csv"
+             )
+
+    assert %{success: 1} = Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+    assert {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919900112255"})
+    assert contact.id in member_ids(wa_group.id)
+  end
+
+  test "reports a failed download without creating a user job", %{
+    organization_id: organization_id,
+    wa_group: wa_group
+  } do
+    Tesla.Mock.mock(fn %{method: :get} -> %Tesla.Env{status: 404, body: "Not Found"} end)
+
+    assert {:error, "Could not download the member CSV from the given URL."} =
+             WAGroupMemberImport.import_members(organization_id, wa_group.id,
+               url: "http://www.bar.com/missing.csv"
+             )
+
+    refute Repo.get_by(UserJob, type: "wa_group_member_import")
+  end
+
+  test "rejects a non-utf8 csv read from a file path", %{
+    organization_id: organization_id,
+    wa_group: wa_group
+  } do
+    path = Path.join(System.tmp_dir!(), "latin1_#{System.unique_integer([:positive])}.csv")
+    File.write!(path, <<"phone,name\n919900112266,Ren", 0xE9, "e\n">>)
+    on_exit(fn -> File.rm(path) end)
+
+    assert {:error, message} =
+             WAGroupMemberImport.import_members(organization_id, wa_group.id, file_path: path)
+
+    assert message =~ "Line 2 is not valid UTF-8"
+    refute Repo.get_by(UserJob, type: "wa_group_member_import")
   end
 end

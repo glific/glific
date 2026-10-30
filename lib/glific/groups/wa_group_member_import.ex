@@ -9,6 +9,7 @@ defmodule Glific.Groups.WAGroupMemberImport do
   """
 
   alias Glific.{
+    CSV.Encoding,
     Groups.WAGroup,
     Groups.WAGroupMemberImportWorker,
     Jobs.UserJob,
@@ -48,8 +49,8 @@ defmodule Glific.Groups.WAGroupMemberImport do
           {:ok, map()} | {:error, String.t()}
   def import_members(org_id, wa_group_id, opts) do
     case Keyword.take(opts, [:file_path, :url, :data]) do
-      [{_source, value}] when value not in [nil, ""] ->
-        run_import(org_id, wa_group_id, opts)
+      [{_source, value}] = source when value not in [nil, ""] ->
+        run_import(org_id, wa_group_id, source)
 
       _ ->
         {:error, "Please specify exactly one of: file_path, url or data"}
@@ -105,36 +106,27 @@ defmodule Glific.Groups.WAGroupMemberImport do
   # Decode a CSV (raw string or line stream) into a stream of `{:ok, row}` /
   # `{:error, _}` tuples.
   @spec decode_csv(String.t() | Enumerable.t()) :: Enumerable.t()
-  defp decode_csv(data) when is_binary(data) do
-    {:ok, stream} = StringIO.open(data)
+  defp decode_csv(data) when is_binary(data), do: data |> string_stream() |> decode_csv()
 
+  defp decode_csv(stream) do
     stream
-    |> IO.binstream(:line)
-    |> decode_csv()
+    |> Encoding.strip_bom()
+    |> CSV.decode(headers: true, field_transform: &String.trim/1)
   end
-
-  defp decode_csv(stream),
-    do: CSV.decode(stream, headers: true, field_transform: &String.trim/1)
 
   @spec fetch_data_as_string(Keyword.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
-  defp fetch_data_as_string(opts) do
-    file_path = Keyword.get(opts, :file_path)
-    url = Keyword.get(opts, :url)
-    data = Keyword.get(opts, :data)
-
-    cond do
-      file_path != nil -> {:ok, file_path |> Path.expand() |> File.stream!()}
-      url != nil -> fetch_url(url)
-      data != nil -> {:ok, string_stream(data)}
-    end
+  defp fetch_data_as_string(file_path: path) do
+    stream = path |> Path.expand() |> File.stream!()
+    with :ok <- Encoding.validate(stream), do: {:ok, stream}
   end
 
-  # Download the CSV, handling failures instead of raising — this runs
-  # synchronously from the resolver, so a flaky URL must not become a 500.
-  @spec fetch_url(String.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
-  defp fetch_url(url) do
+  defp fetch_data_as_string(data: data) do
+    with :ok <- Encoding.validate(data), do: {:ok, string_stream(data)}
+  end
+
+  defp fetch_data_as_string(url: url) do
     case Tesla.get(url) do
-      {:ok, %Tesla.Env{status: 200, body: body}} -> {:ok, string_stream(body)}
+      {:ok, %Tesla.Env{status: 200, body: body}} -> fetch_data_as_string(data: body)
       _ -> {:error, "Could not download the member CSV from the given URL."}
     end
   end
