@@ -38,10 +38,10 @@ defmodule Glific.ThirdParty.Kaapi do
     "pa" => "pa-IN",
     "urdu" => "ur-IN",
     "ur" => "ur-IN",
-    "odia" => "or-IN",
-    "oriya" => "or-IN",
-    "or" => "or-IN",
-    "od" => "or-IN"
+    "odia" => "od-IN",
+    "oriya" => "od-IN",
+    "or" => "od-IN",
+    "od" => "od-IN"
   }
 
   # Update all Error struct data in this format
@@ -661,8 +661,6 @@ defmodule Glific.ThirdParty.Kaapi do
     }
   end
 
-  # "google-native" skips Kaapi's language normalization and forwards raw values like
-  # "Hindi" (from @contact.language) to Gemini, which rejects them.
   @spec tts_provider(String.t() | nil) :: String.t()
   defp tts_provider(provider) when provider in [nil, "", "google-native"], do: "google"
   defp tts_provider(provider), do: provider
