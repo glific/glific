@@ -275,6 +275,18 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  def create_and_send_message(%{type: :text} = attrs)
+      when not is_map_key(attrs, :body) or attrs.body in ["", nil] do
+    reason = "Could not send message with empty body"
+    notify(attrs, reason)
+    {:error, reason}
+  end
+
+  def create_and_send_message(attrs)
+      when not is_map_key(attrs, :type) and not is_map_key(attrs, :template_id) and
+             not is_map_key(attrs, :interactive_template_id),
+      do: attrs |> Map.put(:type, :text) |> create_and_send_message()
+
   def create_and_send_message(%{receiver_id: receiver_id} = attrs) do
     contact = Contacts.get_contact(receiver_id)
 
@@ -351,22 +363,13 @@ defmodule Glific.Messages do
   @doc false
   @spec do_send_message({:ok | :error, any()}, map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp do_send_message({:ok, _} = is_valid_contact, attrs) when not is_map_key(attrs, :type),
-    do: do_send_message(is_valid_contact, Map.put(attrs, :type, :text))
-
-  defp do_send_message({:ok, _}, %{type: :text} = attrs)
-       when not is_map_key(attrs, :body) or attrs.body in ["", nil] do
-    reason = "Could not send message with empty body"
-    notify(attrs, reason)
-    {:error, reason}
-  end
-
   defp do_send_message(
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
     {:ok, message} =
       attrs
+      |> Map.put_new(:type, :text)
       |> Map.merge(%{
         sender_id: Partners.organization_contact_id(organization_id),
         flow: :outbound
