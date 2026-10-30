@@ -71,8 +71,7 @@ defmodule Glific.Flows.ContactField do
     # update profile fields if active profile is set for a contact
     maybe_update_profile_field(contact, fields)
 
-    # create contact fields if not already created
-    maybe_create_contact_field(%{
+    insert_contacts_field_if_missing(%{
       shortcode: field,
       name: label,
       organization_id: contact.organization_id,
@@ -284,21 +283,15 @@ defmodule Glific.Flows.ContactField do
     end
   end
 
-  @doc """
-  Create or update contact field
-  """
-  @spec maybe_create_contact_field(map()) ::
-          {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_create_contact_field(attrs) do
-    case Repo.get_by(ContactsField, %{shortcode: attrs.shortcode, scope: attrs.scope},
-           organization_id: attrs.organization_id
-         ) do
-      nil ->
-        create_contact_field(attrs)
+  # Flow runs only register a missing field. A label change on an existing field is an
+  # admin rename (update_contacts_field/2), which rewrites the label on every record.
+  @spec insert_contacts_field_if_missing(map()) :: :ok
+  defp insert_contacts_field_if_missing(attrs) do
+    %ContactsField{}
+    |> ContactsField.changeset(attrs)
+    |> Repo.insert(on_conflict: :nothing)
 
-      contact_field ->
-        update_contacts_field(contact_field, attrs)
-    end
+    :ok
   end
 
   @doc """
@@ -578,8 +571,7 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
-    # create wa_group field if not already created
-    maybe_create_contact_field(%{
+    insert_contacts_field_if_missing(%{
       shortcode: field,
       name: label,
       organization_id: wa_group.organization_id,
