@@ -38,10 +38,10 @@ defmodule Glific.ThirdParty.Kaapi do
     "pa" => "pa-IN",
     "urdu" => "ur-IN",
     "ur" => "ur-IN",
-    "odia" => "od-IN",
-    "oriya" => "od-IN",
-    "or" => "od-IN",
-    "od" => "od-IN"
+    "odia" => "or-IN",
+    "oriya" => "or-IN",
+    "or" => "or-IN",
+    "od" => "or-IN"
   }
 
   # Update all Error struct data in this format

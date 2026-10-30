@@ -255,7 +255,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
     test "sends google-native as google with a BCP-47 language", %{fields: fields} do
       for {language, expected_language} <- [
             {"Hindi", "hi-IN"},
-            {" ODIA ", "od-IN"},
+            {" ODIA ", "or-IN"},
             {"mr", "mr-IN"},
             {"hi-IN", "hi-IN"},
             {"klingon", "klingon"}
