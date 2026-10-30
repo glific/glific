@@ -47,6 +47,43 @@ defmodule Glific.Flows.WebhookTimeoutTest do
     assert log.response_json == timed_out_log.response_json
   end
 
+  test "a late callback does not resume the flow parked on a newer async webhook call", %{
+    organization_id: organization_id
+  } do
+    {contact, flow, timed_out_log} = time_out_async_webhook(organization_id)
+
+    # the contact moves on and the same flow parks again on a fresh async call
+    {:ok, context} =
+      FlowContext
+      |> Repo.get!(timed_out_log.flow_context_id)
+      |> FlowContext.update_flow_context(%{
+        is_await_result: true,
+        completed_at: nil,
+        wakeup_at: DateTime.add(DateTime.utc_now(), 60)
+      })
+
+    current_log =
+      Fixtures.webhook_log_fixture(%{
+        organization_id: organization_id,
+        flow_context_id: context.id
+      })
+
+    Webhook.resume(organization_id, %{"success" => true}, %{
+      "contact_id" => contact.id,
+      "flow_id" => flow.id,
+      "webhook_log_id" => timed_out_log.id,
+      "result_name" => "stale_answer",
+      "success" => true,
+      "message" => "answer to the earlier question"
+    })
+
+    context = Repo.get!(FlowContext, context.id)
+    assert context.is_await_result
+    assert context.completed_at == nil
+    refute Map.has_key?(context.results, "stale_answer")
+    assert Repo.get!(WebhookLog, current_log.id).updated_at == current_log.updated_at
+  end
+
   defp time_out_async_webhook(organization_id) do
     contact = Fixtures.contact_fixture(%{organization_id: organization_id})
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})

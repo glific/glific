@@ -77,22 +77,9 @@ defmodule Glific.Flows.Webhook do
   def mark_timeout(webhook_log_id), do: update_log(webhook_log_id, @timeout_error)
 
   # Async callbacks without a webhook_log_id (e.g. non-Kaapi resumes) skip the log write.
-  # A callback landing after the timeout is dropped: the flow already took the Failure branch,
-  # and overwriting the log would hide that.
   @spec maybe_update_log(non_neg_integer() | nil, map() | binary()) :: any()
   defp maybe_update_log(nil, _message), do: :ok
-
-  defp maybe_update_log(webhook_log_id, message) do
-    case Repo.get!(WebhookLog, webhook_log_id) do
-      %WebhookLog{error: @timeout_error} ->
-        Logger.info(
-          "Dropping async webhook callback after timeout: webhook_log_id=#{webhook_log_id}"
-        )
-
-      webhook_log ->
-        update_log(webhook_log, message)
-    end
-  end
+  defp maybe_update_log(webhook_log_id, message), do: update_log(webhook_log_id, message)
 
   @doc """
   Update a webhook log with the given message.
@@ -547,8 +534,32 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
+  # A callback for a timed-out call is dropped whole: its flow already took the Failure branch,
+  # and await_context/2 matches on contact + flow only, so resuming would hand this stale result
+  # to whichever async node the contact is parked at now.
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume(organization_id, result, response, contact) do
+    webhook_log_id = response["webhook_log_id"]
+
+    if timed_out?(webhook_log_id) do
+      Logger.info(
+        "Dropping async webhook callback after timeout: webhook_log_id=#{webhook_log_id}"
+      )
+    else
+      resume_flow(organization_id, result, response, contact)
+    end
+
+    :ok
+  end
+
+  @spec timed_out?(non_neg_integer() | nil) :: boolean()
+  defp timed_out?(nil), do: false
+
+  defp timed_out?(webhook_log_id),
+    do: Repo.get_by(WebhookLog, id: webhook_log_id, error: @timeout_error) != nil
+
+  @spec resume_flow(non_neg_integer(), map(), map(), Contact.t()) :: :ok
+  defp resume_flow(organization_id, result, response, contact) do
     maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
 
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
