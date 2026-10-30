@@ -8,7 +8,6 @@ defmodule Glific.AIEvaluationsTest do
   alias Glific.{
     AIEvaluations,
     AIEvaluations.AIEvaluation,
-    AIEvaluations.OrganizationEvalRequest,
     Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
@@ -107,7 +106,7 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  describe "poll_and_update/1 - polling logic" do
+  describe "handle_evaluation_run_callback/2 - applies Kaapi evaluation status" do
     setup %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       config_version = create_config_version(organization_id)
@@ -148,7 +147,7 @@ defmodule Glific.AIEvaluationsTest do
       notification_count =
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :completed
@@ -178,7 +177,7 @@ defmodule Glific.AIEvaluationsTest do
         %Tesla.Env{status: 200, body: %{data: %{status: "completed"}}}
       end)
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :completed
@@ -205,7 +204,7 @@ defmodule Glific.AIEvaluationsTest do
       notification_count =
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :failed
@@ -229,7 +228,7 @@ defmodule Glific.AIEvaluationsTest do
         %Tesla.Env{status: 200, body: %{data: %{status: "failed"}}}
       end)
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :failed
@@ -244,7 +243,7 @@ defmodule Glific.AIEvaluationsTest do
         %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
       end)
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert unchanged.status == :processing
@@ -258,13 +257,13 @@ defmodule Glific.AIEvaluationsTest do
         %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
       end)
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert unchanged.status == :processing
     end
 
-    test "concurrent polls only complete the evaluation and notify once", %{
+    test "concurrent callbacks only complete the evaluation and notify once", %{
       organization_id: organization_id,
       evaluation: evaluation
     } do
@@ -288,7 +287,7 @@ defmodule Glific.AIEvaluationsTest do
         Enum.map(1..2, fn _ ->
           Task.async(fn ->
             Repo.put_organization_id(organization_id)
-            AIEvaluations.poll_and_update(organization_id)
+            send_evaluation_run_callback(organization_id, evaluation)
           end)
         end)
 
@@ -303,7 +302,7 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  describe "poll_and_update/1 - updates assistant's last_evaluation_run_id" do
+  describe "handle_evaluation_run_callback/2 - updates assistant's last_evaluation_run_id" do
     setup %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       config_version = create_config_version(organization_id)
@@ -338,7 +337,7 @@ defmodule Glific.AIEvaluationsTest do
         }
       end)
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, updated_assistant} = Repo.fetch_by(Assistant, %{id: assistant.id})
       assert updated_assistant.last_evaluation_run_id == evaluation.id
@@ -359,7 +358,7 @@ defmodule Glific.AIEvaluationsTest do
         %Tesla.Env{status: 200, body: %{data: %{status: "completed"}}}
       end)
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, unchanged_assistant} = Repo.fetch_by(Assistant, %{id: config_version.assistant_id})
       assert unchanged_assistant.active_config_version_id != config_version.id
@@ -380,7 +379,7 @@ defmodule Glific.AIEvaluationsTest do
         })
         |> Repo.update()
 
-      create_evaluation(organization_id, config_version.id, %{status: :processing})
+      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
 
       Tesla.Mock.mock(fn %{method: :get} ->
         %Tesla.Env{
@@ -389,7 +388,7 @@ defmodule Glific.AIEvaluationsTest do
         }
       end)
 
-      AIEvaluations.poll_and_update(organization_id)
+      send_evaluation_run_callback(organization_id, evaluation)
 
       {:ok, unchanged_assistant} = Repo.fetch_by(Assistant, %{id: assistant.id})
       assert unchanged_assistant.last_evaluation_run_id == nil
@@ -405,6 +404,12 @@ defmodule Glific.AIEvaluationsTest do
     })
   end
 
+  defp send_evaluation_run_callback(organization_id, evaluation) do
+    AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+      "data" => %{"id" => evaluation.kaapi_evaluation_id, "status" => "completed"}
+    })
+  end
+
   defp create_evaluation(organization_id, config_version_id, attrs \\ %{}) do
     Fixtures.ai_evaluation_fixture(
       Map.merge(
@@ -412,74 +417,6 @@ defmodule Glific.AIEvaluationsTest do
         attrs
       )
     )
-  end
-
-  describe "request_eval_access/1" do
-    test "creates a new request with status requested", %{organization_id: organization_id} do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
-      Tesla.Mock.mock(fn %{method: :post} -> %Tesla.Env{status: 200, body: ""} end)
-
-      assert {:ok, %OrganizationEvalRequest{status: "requested"}} =
-               AIEvaluations.request_eval_access(organization_id)
-    end
-
-    test "sends Discord notification on new request", %{organization_id: organization_id} do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
-      test_pid = self()
-
-      Tesla.Mock.mock(fn %{method: :post} = env ->
-        send(test_pid, {:discord_called, env.body})
-        %Tesla.Env{status: 200, body: ""}
-      end)
-
-      AIEvaluations.request_eval_access(organization_id)
-
-      assert_received {:discord_called, body}
-      decoded = Jason.decode!(body)
-      [embed] = decoded["embeds"]
-      assert embed["title"] =~ "AI Evaluations Access Request"
-    end
-
-    test "returns existing request and does not send Discord notification again", %{
-      organization_id: organization_id
-    } do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
-      test_pid = self()
-
-      Tesla.Mock.mock(fn %{method: :post} = env ->
-        send(test_pid, {:discord_called, env.body})
-        %Tesla.Env{status: 200, body: ""}
-      end)
-
-      {:ok, first} = AIEvaluations.request_eval_access(organization_id)
-      {:ok, second} = AIEvaluations.request_eval_access(organization_id)
-
-      assert first.id == second.id
-      assert_received {:discord_called, _}
-      refute_received {:discord_called, _}
-    end
-  end
-
-  describe "get_eval_access_request/1" do
-    test "returns error tuple when no request exists", %{organization_id: organization_id} do
-      assert {:error, _} = AIEvaluations.get_eval_access_request(organization_id)
-    end
-
-    test "returns the request when it exists", %{organization_id: organization_id} do
-      {:ok, created} = AIEvaluations.request_eval_access(organization_id)
-
-      assert {:ok, %OrganizationEvalRequest{} = fetched} =
-               AIEvaluations.get_eval_access_request(organization_id)
-
-      assert fetched.id == created.id
-      assert fetched.status == "requested"
-    end
   end
 
   defp enable_kaapi(organization_id) do
@@ -913,52 +850,6 @@ defmodule Glific.AIEvaluationsTest do
       %{evaluation: evaluation}
     end
 
-    test "completed status re-fetches full scores from Kaapi and updates the evaluation",
-         %{organization_id: organization_id, evaluation: evaluation} do
-      summary_scores = [
-        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
-      ]
-
-      Tesla.Mock.mock(fn %{method: :get} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
-          }
-        }
-      end)
-
-      assert :ok =
-               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
-                 "data" => %{"id" => 767, "status" => "completed"}
-               })
-
-      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-      assert updated.status == :completed
-      assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
-    end
-
-    test "failed status re-fetches from Kaapi and updates the evaluation to failed", %{
-      organization_id: organization_id,
-      evaluation: evaluation
-    } do
-      Tesla.Mock.mock(fn %{method: :get} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{data: %{status: "failed", error_message: "Model inference error"}}
-        }
-      end)
-
-      assert :ok =
-               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
-                 "data" => %{"id" => 767, "status" => "failed"}
-               })
-
-      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-      assert updated.status == :failed
-      assert updated.failure_reason == "Model inference error"
-    end
-
     test "non-terminal status is acknowledged without contacting Kaapi", %{
       organization_id: organization_id,
       evaluation: evaluation
@@ -994,9 +885,9 @@ defmodule Glific.AIEvaluationsTest do
                })
     end
 
-    test "is a no-op when the evaluation already left :processing (race with the cron poller)",
+    test "is a no-op when the evaluation already left :processing (race with a duplicate callback)",
          %{organization_id: organization_id, evaluation: evaluation} do
-      {:ok, _already_completed_by_cron} =
+      {:ok, _already_completed} =
         AIEvaluations.update_ai_evaluation(evaluation, %{
           status: :completed,
           results: %{summary_scores: []}

@@ -358,6 +358,38 @@ defmodule Glific.MessagesTest do
       assert message.body == ""
     end
 
+    test "create_message/1 truncates a flow label longer than the column allows", attrs do
+      assert {:ok, message} =
+               @valid_attrs
+               |> Map.put(:flow_label, String.duplicate("e\u0301", 200))
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_message()
+
+      assert message.flow_label == String.duplicate("e\u0301", 127)
+    end
+
+    test "create_message/1 keeps a multibyte flow label that fits the column", attrs do
+      flow_label = String.duplicate("\u0915", 255)
+
+      assert {:ok, message} =
+               @valid_attrs
+               |> Map.put(:flow_label, flow_label)
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_message()
+
+      assert Repo.get!(Message, message.id).flow_label == flow_label
+    end
+
+    test "update_message/2 clears a flow label set to nil", attrs do
+      message =
+        attrs
+        |> Map.put(:flow_label, "availability_confirmed")
+        |> message_fixture()
+
+      assert {:ok, %Message{flow_label: nil}} =
+               Messages.update_message(message, %{flow_label: nil})
+    end
+
     test "create_message/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end
@@ -778,6 +810,7 @@ defmodule Glific.MessagesTest do
         %{body: "test message", flow: :outbound, type: :text, channel: :web}
         |> Map.merge(foreign_key_constraint(attrs))
 
+      message_attrs.receiver_id |> Contacts.get_contact!() |> Fixtures.opt_in_to_web()
       GlificWeb.Endpoint.subscribe("web_channel:#{message_attrs.receiver_id}")
 
       assert {:ok, message} = Messages.create_and_send_message(message_attrs)
@@ -827,7 +860,7 @@ defmodule Glific.MessagesTest do
                Messages.create_and_send_message(Map.put(message_attrs, :channel, "web"))
     end
 
-    test "a web channel send reaches a contact that has never opted in to WhatsApp", attrs do
+    test "a web channel send reaches a contact opted in on web but never on WhatsApp", attrs do
       message_attrs =
         %{body: "hello", flow: :outbound, type: :text, channel: :web}
         |> Map.merge(foreign_key_constraint(attrs))
@@ -844,7 +877,18 @@ defmodule Glific.MessagesTest do
           last_message_at: nil
         })
 
+      message_attrs.receiver_id |> Contacts.get_contact!() |> Fixtures.opt_in_to_web()
+
       assert {:ok, _message} = Messages.create_and_send_message(message_attrs)
+    end
+
+    test "a web channel send is refused for a contact not opted in on web", attrs do
+      message_attrs =
+        %{body: "hello", flow: :outbound, type: :text, channel: :web}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, "Contact has not opted in on the web channel."} =
+               Messages.create_and_send_message(message_attrs)
     end
 
     test "a web channel send is refused for a blocked contact", attrs do
@@ -1508,6 +1552,8 @@ defmodule Glific.MessagesTest do
     end
 
     test "a web send is delivered", %{contact: contact} do
+      Fixtures.opt_in_to_web(contact)
+
       assert {:ok, %Message{} = message} =
                Messages.create_and_send_message(%{
                  body: "hi on the web",

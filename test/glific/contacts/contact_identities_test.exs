@@ -408,7 +408,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert whatsapp_identity("919876500002").contact_id == contact.id
     end
 
-    test "a contact holding two WhatsApp rows can still change its phone", %{
+    test "a contact holding two WhatsApp rows can still change its phone; the extra row stays", %{
       organization_id: organization_id
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
@@ -422,11 +422,14 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
 
       assert {:ok, _updated} = Contacts.update_contact(contact, %{phone: "919876500005"})
 
-      assert [%{identifier: "919876500005"}] =
-               from(i in ContactIdentity,
-                 where: i.contact_id == ^contact.id and i.channel == :whatsapp
+      assert whatsapp_identity("919876500005").contact_id == contact.id
+
+      assert [_, _] =
+               Repo.all(
+                 from(i in ContactIdentity,
+                   where: i.contact_id == ^contact.id and i.channel == :whatsapp
+                 )
                )
-               |> Repo.all()
     end
 
     test "a failed phone change leaves the identity alone", %{organization_id: organization_id} do
@@ -447,18 +450,56 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       assert whatsapp_identity("919876500003").contact_id == contact.id
     end
 
-    test "set_whatsapp_identity takes over a stale row for the same phone", %{
-      organization_id: organization_id
-    } do
+    test "a phone another contact's identity still holds is left to that row, without an error",
+         %{
+           organization_id: organization_id
+         } do
       stale = Fixtures.contact_fixture(%{organization_id: organization_id})
       other = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
       phone = stale.phone
       Repo.update_all(from(c in Contact, where: c.id == ^stale.id), set: [phone: "919876500010"])
-      {:ok, other} = Contacts.update_contact(other, %{phone: phone})
+      assert {:ok, other} = Contacts.update_contact(other, %{phone: phone})
 
-      assert whatsapp_identity(phone).contact_id == other.id
-      assert :ok = ContactIdentities.set_whatsapp_identity(other)
-      assert whatsapp_identity(phone).contact_id == other.id
+      assert other.phone == phone
+      assert whatsapp_identity(phone).contact_id == stale.id
+      assert :ok = ContactIdentities.move_whatsapp_identity_to_phone(other)
+      assert whatsapp_identity(phone).contact_id == stale.id
+    end
+
+    test "a nil optin_status, which contacts allows, is stored on the identity as not opted in",
+         %{
+           organization_id: organization_id
+         } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:ok, _} = Contacts.update_contact(contact, %{optin_status: nil})
+      assert %{optin_status: false} = whatsapp_identity(contact.phone)
+    end
+
+    test "a bulk insert leaves the fields of a row another contact holds", %{
+      organization_id: organization_id
+    } do
+      holder = Fixtures.contact_fixture(%{organization_id: organization_id})
+      before = whatsapp_identity(holder.phone)
+
+      ContactIdentities.insert_whatsapp_identities(
+        [
+          %{
+            id: Fixtures.contact_without_phone_fixture(%{organization_id: organization_id}).id,
+            phone: holder.phone,
+            optin_time: nil,
+            optin_status: false,
+            optin_method: nil,
+            optout_time: ~U[2026-03-04 05:06:07Z],
+            optout_method: "Import",
+            bsp_status: :none,
+            last_message_at: nil
+          }
+        ],
+        organization_id
+      )
+
+      assert whatsapp_identity(holder.phone) == before
     end
 
     test "an update that leaves the phone alone does not touch identities", %{
@@ -473,7 +514,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
   end
 
   describe "fetch_by_identity/2" do
-    test "whatsapp ignores a stale identity and finds the real owner, who takes over the row when it messages",
+    test "whatsapp ignores a stale identity and finds the real owner, also when it messages",
          %{
            organization_id: organization_id
          } do
@@ -503,7 +544,7 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
                  organization_id: organization_id
                })
 
-      assert whatsapp_identity(phone).contact_id == owner.id
+      assert whatsapp_identity(phone).contact_id == stale_owner.id
     end
 
     test "whatsapp falls back to the phone column without writing an identity", %{
@@ -584,6 +625,647 @@ defmodule Glific.Contacts.ContactIdentitiesTest do
       ids = %{filter: %{term: "wa_only_key"}} |> Contacts.list_contacts() |> Enum.map(& &1.id)
 
       refute contact.id in ids
+    end
+  end
+
+  describe "WhatsApp consent and session fields follow the contact" do
+    @optin_time ~U[2026-03-04 05:06:07Z]
+
+    defp assert_contact_identity(contact) do
+      assert %{contact: contact_fields, identity: identity_fields} =
+               Fixtures.whatsapp_optin_fields(contact)
+
+      assert contact_fields == identity_fields
+      identity_fields
+    end
+
+    setup %{organization_id: organization_id} do
+      %{contact: Fixtures.contact_fixture(%{organization_id: organization_id})}
+    end
+
+    test "create_contact/1 gives the new identity the contact's fields", %{
+      organization_id: organization_id
+    } do
+      attrs = %{
+        name: "Opted in",
+        phone: "919876500901",
+        language_id: 1,
+        organization_id: organization_id,
+        optin_time: @optin_time,
+        optin_status: true,
+        optin_method: "WA",
+        bsp_status: :hsm,
+        last_message_at: @optin_time
+      }
+
+      assert {:ok, contact} = Contacts.create_contact(attrs)
+
+      assert %{optin_status: true, optin_method: "WA", bsp_status: :hsm} =
+               assert_contact_identity(contact)
+    end
+
+    test "contact_opted_in/4 for an existing contact", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, contact} =
+        Contacts.update_contact(contact, %{
+          optin_status: false,
+          optin_time: nil,
+          optin_method: nil
+        })
+
+      assert {:ok, opted_in} =
+               Contacts.contact_opted_in(
+                 :whatsapp,
+                 contact.phone,
+                 %{organization_id: organization_id},
+                 utc_time: @optin_time,
+                 method: "WA"
+               )
+
+      assert %{optin_status: true, optin_method: "WA", optin_time: @optin_time} =
+               assert_contact_identity(opted_in)
+    end
+
+    test "contact_opted_in/4 for a new contact", %{organization_id: organization_id} do
+      assert {:ok, contact} =
+               Contacts.contact_opted_in(
+                 :whatsapp,
+                 "919876500902",
+                 %{language_id: 1, organization_id: organization_id},
+                 utc_time: @optin_time
+               )
+
+      assert %{optin_status: true} = assert_contact_identity(contact)
+    end
+
+    test "contact_opted_out/4 clears the opt-in on both", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, _} =
+        Contacts.contact_opted_in(:whatsapp, contact.phone, %{organization_id: organization_id},
+          utc_time: @optin_time
+        )
+
+      assert :ok =
+               Contacts.contact_opted_out(
+                 :whatsapp,
+                 contact.phone,
+                 organization_id,
+                 @optin_time,
+                 "Test"
+               )
+
+      assert %{optin_status: false, optin_time: nil, optout_method: "Test", bsp_status: :none} =
+               assert_contact_identity(contact)
+    end
+
+    test "optin_contact/1 opts the contact in on both", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, contact} =
+        Contacts.update_contact(contact, %{
+          optin_status: false,
+          optin_time: nil,
+          optin_method: nil
+        })
+
+      assert {:ok, _} =
+               Contacts.optin_contact(%{
+                 phone: contact.phone,
+                 organization_id: organization_id,
+                 method: "Import"
+               })
+
+      assert %{optin_status: true, optin_method: "Import"} = assert_contact_identity(contact)
+    end
+
+    test "number_does_not_exist/2 opts the contact out on both", %{contact: contact} do
+      Contacts.number_does_not_exist(contact.id)
+
+      assert %{optout_method: "Number does not exist"} = assert_contact_identity(contact)
+    end
+
+    test "set_session_status/2 for one contact", %{contact: contact} do
+      for status <- [:none, :hsm, :session] do
+        {:ok, updated} = Contacts.set_session_status(contact, status)
+        assert_contact_identity(updated)
+      end
+    end
+
+    test "set_session_status/2 for a list of ids", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, opted_in} = Contacts.update_contact(contact, %{optin_time: @optin_time})
+      other = Fixtures.contact_fixture(%{organization_id: organization_id})
+      {:ok, other} = Contacts.update_contact(other, %{optin_time: nil})
+
+      assert :ok = Contacts.set_session_status([opted_in.id, other.id], :none)
+
+      assert %{bsp_status: :hsm} = assert_contact_identity(opted_in)
+      assert %{bsp_status: :none} = assert_contact_identity(other)
+    end
+
+    test "copy_bsp_status/2 copies the contact's bsp_status and skips an identity that matches",
+         %{
+           contact: contact,
+           organization_id: organization_id
+         } do
+      matching = Fixtures.contact_fixture(%{organization_id: organization_id})
+      long_ago = ~U[2020-01-01 00:00:00.000000Z]
+
+      Repo.update_all(from(c in Contact, where: c.id in ^[contact.id, matching.id]),
+        set: [bsp_status: :session_and_hsm]
+      )
+
+      Repo.update_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
+        set: [bsp_status: :none]
+      )
+
+      Repo.update_all(from(i in ContactIdentity, where: i.contact_id == ^matching.id),
+        set: [bsp_status: :session_and_hsm, updated_at: long_ago]
+      )
+
+      assert :ok =
+               ContactIdentities.copy_bsp_status([contact.id, matching.id], DateTime.utc_now())
+
+      assert %{bsp_status: :session_and_hsm} = Fixtures.whatsapp_identity(contact)
+
+      assert %{bsp_status: :session_and_hsm, updated_at: ^long_ago} =
+               Fixtures.whatsapp_identity(matching)
+    end
+
+    test "copy_fields_to_whatsapp_identity/2 writes nothing for changes without its fields", %{
+      contact: contact
+    } do
+      long_ago = ~U[2020-01-01 00:00:00.000000Z]
+
+      Repo.update_all(from(i in ContactIdentity, where: i.contact_id == ^contact.id),
+        set: [updated_at: long_ago]
+      )
+
+      assert :ok =
+               ContactIdentities.copy_fields_to_whatsapp_identity(contact, %{name: "Renamed"})
+
+      assert %{updated_at: ^long_ago} = Fixtures.whatsapp_identity(contact)
+    end
+
+    test "move_whatsapp_identity_to_phone/1 creates the identity from the stored contact, not a stale struct",
+         %{organization_id: organization_id} do
+      stale = Fixtures.contact_without_identity_fixture(%{organization_id: organization_id})
+
+      {:ok, _contact} =
+        Contacts.update_contact(stale, %{
+          optin_status: true,
+          optin_time: @optin_time,
+          optin_method: "WA"
+        })
+
+      assert :ok = ContactIdentities.move_whatsapp_identity_to_phone(stale)
+
+      assert %{optin_status: true, optin_method: "WA", optin_time: @optin_time} =
+               assert_contact_identity(stale)
+    end
+
+    test "a WhatsApp opt-in of a blocked contact records nothing", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, contact} =
+        Contacts.update_contact(contact, %{
+          optin_status: false,
+          optin_time: nil,
+          optin_method: nil,
+          bsp_status: :none
+        })
+
+      {:ok, blocked} = Contacts.update_contact(contact, %{status: :blocked})
+
+      assert {:ok, %Contact{status: :blocked}} =
+               Contacts.contact_opted_in(:whatsapp, blocked.phone, %{
+                 organization_id: organization_id
+               })
+
+      assert %{optin_status: false, bsp_status: :none} = assert_contact_identity(blocked)
+
+      assert [] =
+               Contacts.list_contact_history(%{
+                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+               })
+    end
+
+    test "a BSP repeat keeps the first WhatsApp opt-in and refreshes the session; any other records again",
+         %{contact: contact, organization_id: organization_id} do
+      optin = fn method, time ->
+        Contacts.contact_opted_in(:whatsapp, contact.phone, %{organization_id: organization_id},
+          utc_time: time,
+          method: method
+        )
+      end
+
+      {:ok, contact} =
+        Contacts.update_contact(contact, %{
+          optin_status: false,
+          optin_time: nil,
+          optin_method: nil
+        })
+
+      later = DateTime.add(@optin_time, 3_600)
+      {:ok, _} = optin.("BSP", @optin_time)
+      {:ok, contact} = Contacts.update_contact(contact, %{bsp_status: :none})
+      {:ok, _} = optin.("BSP", later)
+
+      assert %{optin_time: @optin_time, optin_method: "BSP", bsp_status: bsp_status} =
+               assert_contact_identity(contact)
+
+      assert bsp_status in [:hsm, :session_and_hsm]
+
+      {:ok, contact} = Contacts.update_contact(contact, %{status: :invalid})
+      {:ok, _} = optin.("WA", later)
+
+      assert %{optin_time: ^later, optin_method: "WA"} = assert_contact_identity(contact)
+      assert %Contact{status: :valid} = Repo.get!(Contact, contact.id)
+
+      assert [_, _] =
+               Contacts.list_contact_history(%{
+                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+               })
+    end
+
+    test "creating a contact whose phone another contact's identity holds does not raise", %{
+      organization_id: organization_id
+    } do
+      holder = Fixtures.contact_fixture(%{organization_id: organization_id})
+      phone = holder.phone
+      Repo.update_all(from(c in Contact, where: c.id == ^holder.id), set: [phone: "919876500011"])
+
+      assert {:ok, %Contact{}} =
+               Contacts.create_contact(%{
+                 phone: phone,
+                 name: "New sender",
+                 organization_id: organization_id
+               })
+
+      assert whatsapp_identity(phone).contact_id == holder.id
+    end
+
+    test "update_contact_status/2 expires old sessions on both", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      expired = Glific.go_back_time(48) |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        Contacts.update_contact(contact, %{last_message_at: expired, optin_time: @optin_time})
+
+      {:ok, _} = Contacts.update_contact(contact, %{bsp_status: :session_and_hsm})
+
+      Contacts.update_contact_status(organization_id, %{})
+
+      assert %{bsp_status: :hsm, last_message_at: ^expired} = assert_contact_identity(contact)
+    end
+
+    test "update_contact/2 on a field the identity does not hold leaves it alone", %{
+      contact: contact
+    } do
+      identity = Fixtures.whatsapp_identity(contact)
+
+      Repo.update_all(from(i in ContactIdentity, where: i.id == ^identity.id),
+        set: [optin_method: "Marker"]
+      )
+
+      assert {:ok, _} = Contacts.update_contact(contact, %{name: "Renamed"})
+
+      assert %{optin_method: "Marker"} = Fixtures.whatsapp_identity(contact)
+    end
+
+    test "update_contact/2 with a stale struct writes only the changed fields to the identity", %{
+      contact: contact
+    } do
+      stale = contact
+      {:ok, _} = Contacts.update_contact(contact, %{optin_time: @optin_time, optin_status: true})
+
+      assert {:ok, _} = Contacts.update_contact(stale, %{optout_method: "Manual"})
+
+      assert %{optin_status: true, optin_time: @optin_time, optout_method: "Manual"} =
+               Fixtures.whatsapp_identity(contact)
+    end
+
+    test "update_contact/2 on a new phone gives the identity the contact's fields", %{
+      contact: contact
+    } do
+      {:ok, _} = Contacts.update_contact(contact, %{optin_time: @optin_time, optin_status: true})
+
+      assert {:ok, moved} = Contacts.update_contact(contact, %{phone: "919876500903"})
+
+      assert %{identifier: "919876500903"} = Fixtures.whatsapp_identity(moved)
+      assert %{optin_status: true} = assert_contact_identity(moved)
+    end
+
+    test "update_contact/2 on a contact with no phone writes no identity", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:ok, _} =
+               Contacts.update_contact(contact, %{optin_status: true, optin_time: @optin_time})
+
+      assert nil == Fixtures.whatsapp_identity(contact)
+    end
+
+    test "upsert/1 writes the attributes it sets onto the identity of an existing contact", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      assert {:ok, _} =
+               Contacts.upsert(%{
+                 phone: contact.phone,
+                 organization_id: organization_id,
+                 optin_status: true,
+                 optin_time: @optin_time,
+                 bsp_status: :hsm
+               })
+
+      assert %{optin_status: true, bsp_status: :hsm} = assert_contact_identity(contact)
+    end
+
+    test "upsert/1 gives a new contact's identity its fields", %{organization_id: organization_id} do
+      assert {:ok, contact} =
+               Contacts.upsert(%{
+                 phone: "919876500904",
+                 organization_id: organization_id,
+                 optin_status: true,
+                 optin_time: @optin_time
+               })
+
+      assert %{optin_status: true} = assert_contact_identity(contact)
+    end
+
+    test "insert_contacts/2 copies the fields of new and updated contacts", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      now = DateTime.utc_now()
+
+      entry = fn phone ->
+        %{
+          phone: phone,
+          name: "Bulk",
+          language_id: 1,
+          organization_id: organization_id,
+          optin_time: DateTime.truncate(now, :second),
+          optin_status: true,
+          optin_method: "Import",
+          bsp_status: :hsm,
+          inserted_at: now,
+          updated_at: now
+        }
+      end
+
+      on_conflict = [
+        set: [
+          optin_status: true,
+          optin_time: DateTime.truncate(now, :second),
+          optin_method: "Import",
+          bsp_status: :hsm
+        ]
+      ]
+
+      saved =
+        Contacts.insert_contacts([entry.("919876500905"), entry.(contact.phone)],
+          on_conflict: on_conflict,
+          organization_id: contact.organization_id
+        )
+
+      assert [_new, _existing] = saved
+
+      for %{id: id} <- saved do
+        assert %{optin_method: "Import", bsp_status: :hsm} =
+                 assert_contact_identity(Contacts.get_contact!(id))
+      end
+    end
+
+    test "a contact found by phone without an identity gets one with its fields", %{
+      organization_id: organization_id
+    } do
+      contact =
+        Fixtures.contact_without_identity_fixture(%{
+          organization_id: organization_id,
+          optin_status: true,
+          optin_time: @optin_time,
+          bsp_status: :hsm
+        })
+
+      assert {:ok, _} =
+               Contacts.maybe_create_contact(%{
+                 phone: contact.phone,
+                 organization_id: organization_id
+               })
+
+      assert %{optin_status: true, bsp_status: :hsm} = assert_contact_identity(contact)
+    end
+  end
+
+  describe "the message trigger" do
+    setup %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: nil})
+      %{contact: contact}
+    end
+
+    defp inbound(contact, attrs \\ %{}) do
+      Fixtures.message_fixture(
+        Map.merge(
+          %{sender_id: contact.id, receiver_id: contact.id, contact_id: contact.id},
+          attrs
+        )
+      )
+    end
+
+    test "an inbound WhatsApp message sets last_message_at on the contact and its identity", %{
+      contact: contact
+    } do
+      inbound(contact)
+
+      assert %{
+               contact: %{last_message_at: %DateTime{}},
+               identity: %{last_message_at: %DateTime{}}
+             } =
+               fields = Fixtures.whatsapp_optin_fields(contact)
+
+      assert fields.contact == fields.identity
+    end
+
+    test "leaves a missing identity to the backfill and still updates the contact", %{
+      organization_id: organization_id
+    } do
+      contact =
+        Fixtures.contact_without_identity_fixture(%{
+          organization_id: organization_id,
+          optin_status: true,
+          optin_time: @optin_time
+        })
+
+      inbound(contact)
+
+      assert %Contact{last_message_at: %DateTime{}} = Repo.get!(Contact, contact.id)
+
+      assert [] =
+               Repo.all(
+                 from(i in ContactIdentity,
+                   where: i.contact_id == ^contact.id and i.channel == :whatsapp
+                 )
+               )
+    end
+
+    test "an inbound web message leaves both alone", %{contact: contact} do
+      inbound(contact, %{channel: :web})
+
+      assert %{contact: %{last_message_at: nil}, identity: %{last_message_at: nil}} =
+               Fixtures.whatsapp_optin_fields(contact)
+    end
+
+    test "an outbound message leaves both alone", %{contact: contact} do
+      inbound(contact, %{flow: :outbound})
+
+      assert %{contact: %{last_message_at: nil}, identity: %{last_message_at: nil}} =
+               Fixtures.whatsapp_optin_fields(contact)
+    end
+  end
+
+  describe "contact_opted_in/4 on the web channel" do
+    setup %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      {:ok, _contact} = Contacts.add_identity(contact, :web, "ravi_web")
+      %{contact: contact}
+    end
+
+    defp web_opt_in(organization_id, time, opts \\ []) do
+      Contacts.contact_opted_in(
+        :web,
+        Keyword.get(opts, :identifier, "Ravi_Web"),
+        %{organization_id: organization_id},
+        utc_time: time,
+        method: Keyword.get(opts, :method, "API")
+      )
+    end
+
+    defp web_identity(contact),
+      do:
+        Repo.get_by!(ContactIdentity, %{contact_id: contact.id, channel: :web},
+          skip_organization_id: true
+        )
+
+    test "records consent on the web identity and leaves the contact's WhatsApp consent alone", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      before_optin =
+        Map.take(Repo.get!(Contact, contact.id), [:optin_status, :optin_time, :optin_method])
+
+      assert {:ok, %Contact{id: id}} = web_opt_in(organization_id, @optin_time)
+      assert id == contact.id
+
+      assert %{optin_status: true, optin_method: "API", optin_time: @optin_time, optout_time: nil} =
+               web_identity(contact)
+
+      assert before_optin ==
+               Map.take(Repo.get!(Contact, contact.id), [
+                 :optin_status,
+                 :optin_time,
+                 :optin_method
+               ])
+
+      refute Fixtures.whatsapp_identity(contact).optin_time == @optin_time
+
+      assert [%{event_label: "contact opted in on web, via API"}] =
+               Contacts.list_contact_history(%{
+                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+               })
+    end
+
+    test "clears an earlier opt-out on the web identity", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      Repo.update_all(
+        from(i in ContactIdentity, where: i.contact_id == ^contact.id and i.channel == :web),
+        set: [optout_time: @optin_time, optout_method: "Test"]
+      )
+
+      {:ok, _contact} = web_opt_in(organization_id, @optin_time)
+
+      assert %{optout_time: nil, optout_method: nil} = web_identity(contact)
+    end
+
+    test "a repeat keeps the first web opt-in, whatever the source", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, _contact} = web_opt_in(organization_id, @optin_time, method: "NGO")
+
+      for method <- ["NGO", "OTP", "API"] do
+        {:ok, _contact} =
+          web_opt_in(organization_id, DateTime.add(@optin_time, 3_600), method: method)
+      end
+
+      assert %{optin_method: "NGO", optin_time: @optin_time} = web_identity(contact)
+
+      assert [_one] =
+               Contacts.list_contact_history(%{
+                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+               })
+    end
+
+    test "record_optin leaves an opted-in identity alone, so a concurrent repeat cannot record",
+         %{contact: contact, organization_id: organization_id} do
+      {:ok, _contact} = web_opt_in(organization_id, @optin_time, method: "NGO")
+      identifier = web_identity(contact).identifier
+      later = DateTime.add(@optin_time, 3_600)
+
+      assert :already_opted_in =
+               ContactIdentities.record_optin(contact.id, :web, identifier, later, "OTP")
+
+      assert %{optin_method: "NGO", optin_time: @optin_time} = web_identity(contact)
+    end
+
+    test "a blocked contact records nothing", %{
+      contact: contact,
+      organization_id: organization_id
+    } do
+      {:ok, _contact} = Contacts.update_contact(contact, %{status: :blocked})
+
+      assert {:ok, %Contact{status: :blocked}} = web_opt_in(organization_id, @optin_time)
+
+      assert %{optin_status: false, optin_time: nil} = web_identity(contact)
+
+      assert [] =
+               Contacts.list_contact_history(%{
+                 filter: %{contact_id: contact.id, event_type: "contact_opted_in"}
+               })
+    end
+
+    test "an unknown identifier creates the contact and opts it in",
+         %{organization_id: organization_id} do
+      assert {:ok, contact} = web_opt_in(organization_id, @optin_time, identifier: "newcomer")
+      assert %{optin_status: true} = web_identity(contact)
+      assert {:error, :no_identifier} = web_opt_in(organization_id, @optin_time, identifier: "")
+    end
+
+    test "a web identity of another organization is not touched" do
+      other = Fixtures.organization_fixture()
+      foreign = Fixtures.contact_without_phone_fixture(%{organization_id: other.id})
+      {:ok, _contact} = Contacts.add_identity(foreign, :web, "foreign_web")
+      Repo.put_organization_id(1)
+
+      assert {:ok, contact} = web_opt_in(1, @optin_time, identifier: "foreign_web")
+      assert contact.id != foreign.id and contact.organization_id == 1
+
+      assert %{optin_status: false} = web_identity(foreign)
     end
   end
 end

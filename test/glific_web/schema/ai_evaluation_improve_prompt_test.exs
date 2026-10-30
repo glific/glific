@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
     "assets/gql/ai_evaluations/improve_prompt.gql"
   )
 
-  defp enable_kaapi_and_v2(%{organization_id: org_id}) do
+  defp enable_kaapi(%{organization_id: org_id}) do
     {:ok, credential} =
       Partners.create_credential(%{
         organization_id: org_id,
@@ -41,9 +41,6 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
         organization_id: org_id,
         shortcode: "kaapi"
       })
-
-    FunWithFlags.enable(:ai_evaluations, for_actor: %{organization_id: org_id})
-    FunWithFlags.enable(:is_ai_evaluation_enabled, for_actor: %{organization_id: org_id})
 
     :ok
   end
@@ -103,7 +100,7 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
   end
 
   describe "improveEvaluationPrompt mutation" do
-    setup [:enable_kaapi_and_v2, :create_completed_evaluation]
+    setup [:enable_kaapi, :create_completed_evaluation]
 
     test "staff user can request a prompt recommendation and receives :pending", %{
       staff: user,
@@ -127,21 +124,6 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
       assert get_in(query_data, [:data, "improveEvaluationPrompt", "errors"]) in [nil, []]
     end
 
-    test "is rejected when the :is_ai_evaluation_enabled flag is off for the org", %{
-      staff: user,
-      organization_id: org_id,
-      evaluation: evaluation
-    } do
-      FunWithFlags.disable(:is_ai_evaluation_enabled, for_actor: %{organization_id: org_id})
-
-      result =
-        auth_query_gql_by(:improve, user, variables: %{"evaluationId" => evaluation.id})
-
-      assert {:ok, query_data} = result
-      message = get_in(query_data, [:errors, Access.at(0), :message])
-      assert message =~ "not enabled"
-    end
-
     test "returns an error when the evaluation does not exist", %{staff: user} do
       result =
         auth_query_gql_by(:improve, user, variables: %{"evaluationId" => 999_999_999})
@@ -162,7 +144,7 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
   end
 
   describe "full async loop" do
-    setup [:enable_kaapi_and_v2, :create_completed_evaluation]
+    setup [:enable_kaapi, :create_completed_evaluation]
 
     test "improve -> callback creates a new :ready config version", %{
       staff: user,

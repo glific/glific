@@ -23,10 +23,8 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
     ApiClient.optin_contact(organization_id, %{"phone_number" => attrs.phone})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
-        Contacts.contact_opted_in(
-          attrs,
-          organization_id,
-          attrs[:optin_time] || DateTime.utc_now(),
+        Contacts.contact_opted_in(:whatsapp, attrs.phone, attrs,
+          utc_time: attrs[:optin_time] || DateTime.utc_now(),
           method: attrs[:method] || "BSP"
         )
 

@@ -35,6 +35,29 @@ defmodule GlificWeb.WebChannel.TokenTest do
     assert Enum.sort(Map.keys(claims)) == [:exp, :sub]
   end
 
+  describe "optin claim" do
+    test "is kept when a boolean", %{organization_id: organization_id} do
+      assert {:ok, %{optin: true}} = verify(organization_id, %{"optin" => true})
+      assert {:ok, %{optin: false}} = verify(organization_id, %{"optin" => false})
+    end
+
+    test "is absent when not sent", %{organization_id: organization_id} do
+      assert {:ok, claims} = verify(organization_id, %{})
+      refute Map.has_key?(claims, :optin)
+    end
+
+    test "makes the token invalid when not a boolean", %{organization_id: organization_id} do
+      for value <- ["true", 1, "yes", %{}] do
+        assert {:error, :invalid} = verify(organization_id, %{"optin" => value})
+      end
+    end
+
+    test "round-trips through sign/2", %{organization_id: organization_id} do
+      {:ok, token} = Token.sign(organization_id, %{sub: "ravi_12", optin: true})
+      assert {:ok, %{optin: true}} = Token.verify(organization_id, token)
+    end
+  end
+
   test "a secret of 31 characters never verifies, one of 32 does", %{
     organization_id: organization_id
   } do
