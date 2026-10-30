@@ -3,6 +3,8 @@ defmodule Glific.RepoTest do
   use ExUnit.Case
 
   alias Glific.{
+    Contacts.Contact,
+    Fixtures,
     Partners,
     Partners.Organization,
     Repo,
@@ -101,6 +103,68 @@ defmodule Glific.RepoTest do
                  Repo.fetch_by(Language, %{locale: "does not exist"}),
                  0
                )
+    end
+  end
+
+  describe "audit versions" do
+    defp update_contact_name(contact, name) do
+      contact
+      |> Contact.changeset(%{name: name})
+      |> Repo.update(skip_organization_id: true)
+    end
+
+    defp updated_version(contact) do
+      contact
+      |> Repo.history(skip_organization_id: true)
+      |> Enum.find(&(&1.action == :updated))
+    end
+
+    test "background write without ExAudit.track stamps the process organization",
+         %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture()
+
+      Task.async(fn ->
+        Repo.put_organization_id(organization_id)
+        {:ok, _} = update_contact_name(contact, "Background update")
+      end)
+      |> Task.await()
+
+      version = updated_version(contact)
+      assert version.organization_id == organization_id
+      assert is_nil(version.user_id)
+    end
+
+    test "tracked write keeps both user_id and organization_id",
+         %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture()
+      user = Fixtures.user_fixture()
+
+      Task.async(fn ->
+        Repo.put_organization_id(organization_id)
+        ExAudit.track(user_id: user.id, organization_id: user.organization_id)
+        {:ok, _} = update_contact_name(contact, "Tracked update")
+      end)
+      |> Task.await()
+
+      version = updated_version(contact)
+      assert version.organization_id == organization_id
+      assert version.user_id == user.id
+    end
+
+    test "process without an organization does not override ExAudit.track data",
+         %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture()
+      user = Fixtures.user_fixture()
+
+      Task.async(fn ->
+        ExAudit.track(user_id: user.id, organization_id: organization_id)
+        {:ok, _} = update_contact_name(contact, "No process organization")
+      end)
+      |> Task.await()
+
+      version = updated_version(contact)
+      assert version.organization_id == organization_id
+      assert version.user_id == user.id
     end
   end
 end
