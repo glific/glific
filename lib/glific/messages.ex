@@ -275,8 +275,17 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
-  def create_and_send_message(%{body: body, type: :text} = _attrs) when body in ["", nil],
-    do: {:error, "Could not send message with empty body"}
+  def create_and_send_message(%{type: :text} = attrs)
+      when not is_map_key(attrs, :body) or attrs.body in ["", nil] do
+    reason = "Could not send message with empty body"
+    notify(attrs, reason)
+    {:error, reason}
+  end
+
+  def create_and_send_message(attrs)
+      when not is_map_key(attrs, :type) and not is_map_key(attrs, :template_id) and
+             not is_map_key(attrs, :interactive_template_id),
+      do: attrs |> Map.put(:type, :text) |> create_and_send_message()
 
   def create_and_send_message(%{receiver_id: receiver_id} = attrs) do
     contact = Contacts.get_contact(receiver_id)
