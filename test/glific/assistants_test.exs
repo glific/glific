@@ -1,6 +1,7 @@
 defmodule Glific.AssistantsTest do
   use Glific.DataCase
   import Glific.WebhookTestHelpers
+  import Mock
   import Tesla.Mock
 
   import Ecto.Query
@@ -299,6 +300,26 @@ defmodule Glific.AssistantsTest do
 
       assert {:error, "Failed to create knowledge base"} =
                Assistants.create_knowledge_base_with_version(params)
+    end
+
+    test "a collection rejected by Kaapi for its input is not reported to AppSignal",
+         %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 422, body: %{success: false, error: "Invalid collection"}}
+      end)
+
+      params = %{
+        media_info: [%{file_id: "file_abc", filename: "doc.pdf", uploaded_at: DateTime.utc_now()}],
+        organization_id: organization_id
+      }
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:error, "Failed to create knowledge base"} =
+                 Assistants.create_knowledge_base_with_version(params)
+
+        refute called(Appsignal.send_error(:_, :_, :_))
+      end
     end
 
     test "cleans up newly created KnowledgeBase and KnowledgeBaseVersion when Kaapi fails",
@@ -1422,6 +1443,61 @@ defmodule Glific.AssistantsTest do
 
       assert assistant.name == "No KB Assistant"
       assert config_version.status == :ready
+    end
+
+    test "a duplicate config name rejected by Kaapi fails the config but is not reported to AppSignal",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 409,
+            body: %{
+              success: false,
+              error: "Config with name 'Untitled assistant' already exists in this project"
+            }
+          }
+      end)
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:error, reason} =
+                 Assistants.create_assistant(%{
+                   name: "Untitled assistant",
+                   organization_id: organization_id
+                 })
+
+        assert reason =~ "Kaapi config creation failed"
+        refute called(Appsignal.send_error(:_, :_, :_))
+      end
+
+      assert [%AssistantConfigVersion{status: :failed}] =
+               Repo.all(
+                 from(cv in AssistantConfigVersion,
+                   join: a in assoc(cv, :assistant),
+                   where: a.name == "Untitled assistant"
+                 )
+               )
+    end
+
+    test "a Kaapi server error on config creation is still reported to AppSignal",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{success: false, error: "Internal server error"}}
+      end)
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:error, _reason} =
+                 Assistants.create_assistant(%{
+                   name: "Server Error Assistant",
+                   organization_id: organization_id
+                 })
+
+        assert called(Appsignal.send_error(:_, :_, :_))
+      end
     end
 
     test "uses default values when optional params are missing",

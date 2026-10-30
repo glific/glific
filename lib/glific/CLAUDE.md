@@ -108,6 +108,12 @@ end
   AppSignal, so do **not** add a separate `Logger.warning/error` next to them for the same event —
   it's redundant. Put any extra context into the AppSignal tags instead. A standalone `Logger`
   call is only for events you are _not_ also reporting to AppSignal.
+- **Don't report a Kaapi failure from its caller.** `Glific.ThirdParty.Kaapi` reports every failed
+  call itself, and it alone decides what reaches AppSignal: a rejection of the user's input (409,
+  422, e.g. a duplicate config name) is only logged. A caller that `log_exception`s the
+  `{:error, reason}` it gets back reports it twice and bypasses that filter. Handle the error
+  (update state, return a message) without reporting it. Credo check `KaapiErrorReporting`
+  (`.credo/checks/`) enforces this.
 - Bang functions raise; non-bang return tagged tuples. Don't mix the two contracts in one fn.
 
 - **Never `inspect/1` a `%Tesla.Env{}` (or any value that may hold one) into a log/error
