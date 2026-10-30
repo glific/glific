@@ -48,6 +48,9 @@ defmodule Glific.Application do
         start: {Cachex, :start_link, [:glific_cache, []]}
       },
 
+      # Copies cache writes to the other nodes of the cluster
+      Glific.Caches.Replicator,
+
       # After Cachex, which it publishes the shortcode index into
       Glific.Partners.OrganizationIndex,
 

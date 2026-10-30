@@ -72,8 +72,9 @@ Oban.check_queue(queue: :default)
 
 ## 4. Known gaps
 
-- **Cachex is per node.** Org cache refreshes on the web node do not reach the worker until TTL.
-  Fix: broadcast cache invalidations over PubSub.
+- **Cachex is per node.** `Glific.Caches.Replicator` copies `set`/`remove` to the other nodes over
+  PubSub, so a flow published on web reaches the worker. `put_global` (org index, media
+  validation, Kaapi models) stays per node; the org index refreshes itself every minute.
 - **Pow sessions (Mnesia) and `Glific.State`** stay on the web node. Fine while only web requests
   use them; #5822 moves sessions to the DB.
 - **DB connections.** `POOL_SIZE` is per app; both apps together must fit Cloud SQL
