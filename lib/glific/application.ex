@@ -21,6 +21,9 @@ defmodule Glific.Application do
       # Start the Telemetry supervisor
       GlificWeb.Telemetry,
 
+      # Connect to the other nodes of the cluster, :ignore when no query is configured
+      {DNSCluster, query: Application.get_env(:glific, :dns_cluster_query, :ignore)},
+
       # Start the PubSub system
       {Phoenix.PubSub, name: Glific.PubSub},
 

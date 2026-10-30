@@ -58,6 +58,25 @@ config :glific, Glific.RepoReplica,
 
 config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
+# A web node only inserts jobs. peer: false keeps it out of Oban leader election, since the
+# leader runs the plugins (Cron, pruner, lifeline) and a web node starts none of them.
+if env!("NODE_ROLE", :string, nil) == "web" do
+  config :glific, Oban, queues: false, plugins: false, peer: false
+end
+
+# Comma separated "basename=hostname" pairs, one per app in the cluster. Gigalixir's own
+# DNS_CLUSTER_QUERY is not used because it only resolves the replicas of the current app.
+cluster_queries =
+  "CLUSTER_QUERIES"
+  |> env!(:string, "")
+  |> String.split(",", trim: true)
+  |> Enum.map(fn pair ->
+    [basename, hostname] = pair |> String.trim() |> String.split("=", parts: 2)
+    {basename, hostname}
+  end)
+
+config :glific, :dns_cluster_query, if(cluster_queries == [], do: :ignore, else: cluster_queries)
+
 default_origins = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
 check_origin =
