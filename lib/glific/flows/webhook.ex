@@ -53,6 +53,8 @@ defmodule Glific.Flows.Webhook do
     "text_to_speech"
   ]
 
+  @timeout_error "Timeout: taking long to process response"
+
   @doc """
   Execute a webhook action, could be either get or post for now
   """
@@ -69,10 +71,28 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
+  @doc "Record that the flow stopped waiting for this async webhook's callback."
+  @spec mark_timeout(non_neg_integer()) ::
+          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
+  def mark_timeout(webhook_log_id), do: update_log(webhook_log_id, @timeout_error)
+
   # Async callbacks without a webhook_log_id (e.g. non-Kaapi resumes) skip the log write.
+  # A callback landing after the timeout is dropped: the flow already took the Failure branch,
+  # and overwriting the log would hide that.
   @spec maybe_update_log(non_neg_integer() | nil, map() | binary()) :: any()
   defp maybe_update_log(nil, _message), do: :ok
-  defp maybe_update_log(webhook_log_id, message), do: update_log(webhook_log_id, message)
+
+  defp maybe_update_log(webhook_log_id, message) do
+    case Repo.get!(WebhookLog, webhook_log_id) do
+      %WebhookLog{error: @timeout_error} ->
+        Logger.info(
+          "Dropping async webhook callback after timeout: webhook_log_id=#{webhook_log_id}"
+        )
+
+      webhook_log ->
+        update_log(webhook_log, message)
+    end
+  end
 
   @doc """
   Update a webhook log with the given message.
