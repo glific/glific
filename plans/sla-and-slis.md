@@ -7,7 +7,7 @@ Thresholds marked
 
 | # | SLA | Target | Good event | Measured from |
 |---|---|---|---|---|
-| 1 | API uptime | 99.9% / month | Request answered with a non-5xx status, and an external probe of `/health` succeeds | Every HTTP request + external probe every minute |
+| 1 | API uptime | 99.9% / month | Request answered with a non-5xx status, and the external login probe succeeds | Every HTTP request + external probe every minute |
 | 2 | API response time | 99.9% of requests < **X** s | Request completes in under X seconds | Every HTTP request (server-side duration) |
 | 3 | Flow processing latency | 99.9% of inbound messages < **X** s | Inbound message tagged and its flow step run within X seconds | `message.inserted_at` → `Processor.MessageWorker` completes |
 | 4 | Gupshup outbound latency | 99.9% of session messages < **X** s | Message accepted by Gupshup within X seconds of creation | `message.inserted_at` → `sent_at` set in `Communications.Message.handle_success_response/2` |
@@ -29,22 +29,26 @@ Definitions:
   tracked as a metric, not an SLA. Timing starts at `inserted_at`, not the Oban job, because
   rate-limited jobs snooze and Oban's queue time resets on each snooze.
 
-External probes (Grafana Synthetic Monitoring or Instatus, every minute):
+External probe (Grafana Synthetic Monitoring or Instatus, every minute), feeding uptime SLA (1):
 
-| Probe | Steps | Feeds |
-|---|---|---|
-| Health | `GET /health` → expect `200` within **X** s | Uptime SLA (1) |
-| Login journey | `POST /api/v1/session` with a dedicated test user → simple authenticated GraphQL query → `DELETE /api/v1/session` | Functional alert; counted in the SLA only if agreed |
+1. `POST /api/v1/session` with a dedicated test user → expect `200` within **X** s.
+2. Simple authenticated GraphQL query with the returned token → expect `200` and no `errors`.
+3. `DELETE /api/v1/session` → log out.
 
-Login journey constraints:
+A failure in any step marks the minute as down. This exercises the web server, database,
+authentication and GraphQL in one check, with no new endpoint.
+
+Probe constraints:
 
 - The logout step is required. Each login writes `last_login_at` and stores an access token
   (30 min) plus a renewal token in the Pow cache (`GlificWeb.APIAuthPlug`); without logout a
   per-minute probe accumulates tens of thousands of renewal tokens per month.
 - The test user lives in a dedicated organization with minimal permissions; its password is held
   only in the probe tool.
-- A single-request probe (POST login only) cannot log out, so the journey needs multi-step
+- A single-request probe (POST login only) cannot log out, so the probe needs multi-step
   support (Grafana scripted/k6 checks); check whether Instatus supports chained steps.
+- Problems with the test account itself (expired password, deleted organization) show up as
+  downtime, so the account is excluded from password rotation and its organization from cleanup.
 
 Exclusions (apply to every SLA):
 
@@ -80,7 +84,7 @@ Every API and websocket metric carries:
 
 | Dimension | Values |
 |---|---|
-| `client` | `glific_frontend`, `web_channel`, `external`, `bsp_webhook` |
+| `client` | `glific_frontend`, `web_channel`, `external`, `bsp_webhook`, `synthetic` |
 | `route` / `entrypoint` | Router pattern for REST; GraphQL entrypoint for `/api` |
 | `status_class` | `2xx`, `3xx`, `4xx`, `5xx` (HTTP only) |
 | `organization_id` | For drill-down; not used in platform-wide SLA figures |
@@ -97,7 +101,8 @@ How `client` is determined, in order:
 
 ## What the codebase needs
 
-- `GET /health` — DB check, `200`/`503`, for the external probe.
+- Probe requests (identified by the test user) tagged `client: synthetic` so they are excluded
+  from usage metrics.
 - One structured record per HTTP request (method, route, entrypoint, status, duration, client,
   organization) from `[:phoenix, :endpoint, :stop]`, replacing Phoenix's default two-line request
   log.
