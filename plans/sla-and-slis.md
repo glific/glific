@@ -29,6 +29,23 @@ Definitions:
   tracked as a metric, not an SLA. Timing starts at `inserted_at`, not the Oban job, because
   rate-limited jobs snooze and Oban's queue time resets on each snooze.
 
+External probes (Grafana Synthetic Monitoring or Instatus, every minute):
+
+| Probe | Steps | Feeds |
+|---|---|---|
+| Health | `GET /health` → expect `200` within **X** s | Uptime SLA (1) |
+| Login journey | `POST /api/v1/session` with a dedicated test user → simple authenticated GraphQL query → `DELETE /api/v1/session` | Functional alert; counted in the SLA only if agreed |
+
+Login journey constraints:
+
+- The logout step is required. Each login writes `last_login_at` and stores an access token
+  (30 min) plus a renewal token in the Pow cache (`GlificWeb.APIAuthPlug`); without logout a
+  per-minute probe accumulates tens of thousands of renewal tokens per month.
+- The test user lives in a dedicated organization with minimal permissions; its password is held
+  only in the probe tool.
+- A single-request probe (POST login only) cannot log out, so the journey needs multi-step
+  support (Grafana scripted/k6 checks); check whether Instatus supports chained steps.
+
 Exclusions (apply to every SLA):
 
 - Outages of Meta/WhatsApp and Gupshup.
