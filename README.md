@@ -24,7 +24,7 @@
 * [Install Frontend](#6-install-frontend)
 * [Unit Testing](#8-unit-testing)
 * [Optional - Setup HSM Messaging](#optional---setup-hsm-messaging)
-* [Optional - Using a Cloudflare tunnel](#optional---using-a-cloudflare-tunnel)
+* [Optional - Using NGROK](#optional---using-ngrok)
 * [Updating Your Instance](#updating-your-instance)
 * [Documentation](#documentation)
 * [Learn More](#learn-more)
@@ -443,17 +443,18 @@ SSL (Secure Sockets Layer) provides encrypted connections between Glific and you
  Glific.Templates.sync_hsms_from_bsp(1)
  ```
 
-## Optional - Using a Cloudflare tunnel
+## Optional - Using NGROK
 
- * Install: [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) (`brew install cloudflared` on macOS)
- * Run (no Cloudflare account needed; prints a random `https://<name>.trycloudflare.com` URL):
+ * Download: [ngrok](https://ngrok.com/download)
+ * Run:
 
  ```bash
- cloudflared tunnel --url http://localhost:4000 --http-host-header glific.test:4000
+ ngrok http 4000 --host-header=glific.test:4000
   ```
 
- * Set `GLIFIC_API_HOST_OVERRIDE=https://<tunnel-url>` in `config/.env.dev` before starting the server
- * Set webhook in Gupshup app settings to `https://<tunnel-url>/gupshup`
+ * Set webhook in Gupshup app settings to `https://<ngrok-url>/gupshup`
+
+ > **Note:** ngrok is for local development only. CI (`.github/workflows/cypress-tests.yml`) does not use ngrok; it exposes the backend through a Cloudflare Quick Tunnel via `.github/scripts/cloudflare-tunnel.sh`, which needs no account or secrets.
 
 ### Updating Your Instance
  Run the following commands to update your codebase from the Glific repository.
