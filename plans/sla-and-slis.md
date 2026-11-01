@@ -1,6 +1,6 @@
 # Platform SLAs and usage metrics
 
-What Glific measures and commits to, independent of the monitoring tool. Thresholds marked
+Thresholds marked
 **X** are set after two weeks of baseline data.
 
 ## SLAs
