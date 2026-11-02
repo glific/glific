@@ -59,7 +59,7 @@ defmodule Glific.Processor.ConsumerFlow do
     # then send control to the flow directly
     # context is not nil
 
-    if start_optin_flow?(message.contact, context, body),
+    if whatsapp?(message) and start_optin_flow?(message.contact, context, body),
       do: start_optin_flow(message, state),
       else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
@@ -100,12 +100,12 @@ defmodule Glific.Processor.ConsumerFlow do
         flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, flow_params: flow_params)
 
-      start_new_contact_flow?(state) ->
+      start_new_contact_flow?(state, message) ->
         flow_id = state.flow_keywords["org_default_new_contact"]
         flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-      flow_keyword?(state, body) ->
+      flow_keyword?(state, body, message.channel) ->
         flow_params = {:flow_keyword, body, @final_phrase}
         start_new_flow(message, body, state, flow_params: flow_params)
 
@@ -124,8 +124,13 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
+  # The org's default flows (regex, out of office, periodic) are WhatsApp's; on the web an
+  # unmatched message waits for staff.
   @spec handle_nil_context(map(), Message.t(), String.t()) ::
           {Message.t(), map()}
+  defp handle_nil_context(state, %{channel: channel} = message, _body) when channel != :whatsapp,
+    do: {message, state}
+
   defp handle_nil_context(state, message, body) do
     if match_with_regex?(state.regx_flow, message.body) do
       flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
@@ -278,15 +283,20 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  @spec start_new_contact_flow?(map()) :: boolean()
-  defp start_new_contact_flow?(state) do
-    Map.get(state, :newcontact, false) && !is_nil(state.flow_keywords["org_default_new_contact"])
+  @spec start_new_contact_flow?(map(), Message.t()) :: boolean()
+  defp start_new_contact_flow?(state, message) do
+    whatsapp?(message) && Map.get(state, :newcontact, false) &&
+      !is_nil(state.flow_keywords["org_default_new_contact"])
   end
 
-  @spec flow_keyword?(map(), String.t()) :: boolean()
-  defp flow_keyword?(state, body) do
-    Map.has_key?(state.flow_keywords["published"], body)
-  end
+  @spec flow_keyword?(map(), String.t(), atom()) :: boolean()
+  defp flow_keyword?(state, body, channel),
+    do: !is_nil(Flows.published_keyword_flow_id(state.flow_keywords, body, channel))
+
+  # Opt-in, new contact and the other org default flows are WhatsApp's alone: on the web the
+  # contact opened the chat themselves, and the defaults are configured for WhatsApp.
+  @spec whatsapp?(Message.t()) :: boolean()
+  defp whatsapp?(message), do: message.channel == :whatsapp
 
   @spec match_with_regex?(map(), String.t()) :: boolean()
   defp match_with_regex?(regx_flow, body) when nil in [regx_flow, body], do: false

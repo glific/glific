@@ -907,6 +907,38 @@ defmodule Glific.FLowsTest do
                  keyword != Glific.string_clean(keyword)
                end)
     end
+
+    test "flow keyword map records each flow's channel", attrs do
+      flow = flow_fixture(%{name: "Web channel flow", keywords: ["webchannel"], channel: :web})
+      Glific.Caches.remove(attrs.organization_id, ["flow_keywords_map"])
+
+      assert Flows.flow_keywords_map(attrs.organization_id)["channels"][flow.id] == :web
+    end
+  end
+
+  describe "published_keyword_flow_id/3" do
+    @keyword_map %{
+      "published" => %{"adopt" => 1, "help" => 2, "outofoffice" => 3},
+      "channels" => %{1 => :web, 2 => :whatsapp}
+    }
+
+    test "finds a keyword's flow only on the flow's own channel" do
+      assert Flows.published_keyword_flow_id(@keyword_map, "adopt", :web) == 1
+      assert Flows.published_keyword_flow_id(@keyword_map, "adopt", :whatsapp) == nil
+      assert Flows.published_keyword_flow_id(@keyword_map, "help", :whatsapp) == 2
+      assert Flows.published_keyword_flow_id(@keyword_map, "help", :web) == nil
+    end
+
+    # Out of office and the default flow are added as keywords without a row of their own.
+    test "treats a flow with no recorded channel as WhatsApp's" do
+      assert Flows.published_keyword_flow_id(@keyword_map, "outofoffice", :whatsapp) == 3
+      assert Flows.published_keyword_flow_id(@keyword_map, "outofoffice", :web) == nil
+    end
+
+    test "is nil for a word that is no flow's keyword" do
+      assert Flows.published_keyword_flow_id(@keyword_map, "hello", :web) == nil
+      assert Flows.published_keyword_flow_id(@keyword_map, nil, :whatsapp) == nil
+    end
   end
 
   defp clear_flow_cache(flow) do
