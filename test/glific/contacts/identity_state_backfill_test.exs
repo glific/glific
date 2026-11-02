@@ -9,6 +9,7 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Contacts.ContactIdentity,
     Contacts.IdentityStateBackfill,
     Contacts.IdentityStateWorker,
@@ -400,6 +401,30 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
 
       assert theirs.id in sample_ids
       refute mine.id in sample_ids
+    end
+
+    test "find_stale_identities/1 reports an identity left on a contact's old number" do
+      organization = Fixtures.organization_fixture(%{name: "Stale org", shortcode: "staleorg"})
+      contact = contact_with_state(%{organization_id: organization.id})
+      copy_from(contact)
+
+      Repo.update_all(from(c in Contact, where: c.id == ^contact.id),
+        set: [phone: "91987650#{System.unique_integer([:positive])}"]
+      )
+
+      copy_from(contact)
+
+      assert length(identities(contact)) == 2
+
+      assert %{sample_ids: sample_ids} =
+               IdentityStateBackfill.find_mismatches(after_id: contact.id - 1)
+
+      refute contact.id in sample_ids
+
+      assert %{count: 1, sample_contact_ids: [stale_contact_id]} =
+               IdentityStateBackfill.find_stale_identities(organization_id: organization.id)
+
+      assert stale_contact_id == contact.id
     end
 
     test "do not count a contact with no phone" do

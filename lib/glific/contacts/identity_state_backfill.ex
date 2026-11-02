@@ -49,6 +49,11 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       # an organization filter can be slow on a large table; scan a big one in segments
       iex> Glific.Contacts.IdentityStateBackfill.find_mismatches(organization_id: 1, after_id: 3_000_000)
 
+      # WhatsApp identities left on a contact's old number, which find_mismatches cannot see; review
+      # them by hand before reads move to identities
+      iex> Glific.Contacts.IdentityStateBackfill.find_stale_identities()
+      %{count: 3, sample_contact_ids: [101, 205, 309]}
+
       # copy the mismatched contacts again
       iex> Glific.Contacts.IdentityStateBackfill.fix_mismatches()
       %{scanned: 6_000_000, mismatched: 12, fixed: 11, unfixable: 1, last_id: 7_123_456}
@@ -63,11 +68,17 @@ defmodule Glific.Contacts.IdentityStateBackfill do
 
     * Run it off-peak, and not on Friday from 21:00 to 22:00 UTC, when the weekly purge uses the same
       `:purge` queue. A chunk locks the identity rows it writes, so inbound messages for contacts in
-      that chunk wait for it. Start with the default batch, check the first chunk times in AppSignal,
-      and only then raise `:batch_size`.
+      that chunk wait for it. Start with the default batch, check the first chunk times and inbound
+      message latency in AppSignal, and only then raise `:batch_size`.
+    * Expect an occasional deadlock error in AppSignal: a chunk and the every-minute contact status job
+      can lock the same identity rows in different orders. Postgres aborts one of them; the job reruns
+      a minute later and the chunk retries, using one of its five attempts.
     * Watch replication lag and WAL volume. Every chunk writes its rows and four index entries, so a
       few million contacts write a few GB of WAL. Raise `:pause` or lower `:batch_size` to slow it down.
     * After the chain, run `VACUUM (ANALYZE) contact_identities` from `psql`; it cannot run in a transaction.
+    * Before reads move to identities, `find_stale_identities/1` must be reviewed: a contact whose
+      phone changed while its new number was another contact's identity keeps a row on its old number,
+      no longer kept in step, beside the one the copy made for its current phone.
     * Before deleting this module, run `stop/0`, so no queued link is left for a worker that no longer exists.
   """
 
@@ -257,6 +268,39 @@ defmodule Glific.Contacts.IdentityStateBackfill do
     |> Map.put(:unfixable, mismatched - fixed)
   end
 
+  @doc """
+  Counts the WhatsApp identities whose identifier is not their contact's current phone, with a sample of
+  their contacts. Takes `:organization_id`.
+  """
+  @spec find_stale_identities(Keyword.t()) :: %{
+          count: non_neg_integer(),
+          sample_contact_ids: [non_neg_integer()]
+        }
+  def find_stale_identities(opts \\ []) do
+    stale =
+      ContactIdentity
+      |> join(:inner, [i], c in Contact, on: c.id == i.contact_id)
+      |> where([i, c], i.channel == :whatsapp)
+      |> where([i, c], is_nil(c.phone) or i.identifier != c.phone)
+      |> where(^identity_in_organization(Keyword.get(opts, :organization_id)))
+
+    %{
+      count: Repo.aggregate(stale, :count, timeout: @analyze_timeout, skip_organization_id: true),
+      sample_contact_ids:
+        stale
+        |> order_by([i], i.contact_id)
+        |> limit(@sample_size)
+        |> select([i], i.contact_id)
+        |> Repo.all(timeout: @analyze_timeout, skip_organization_id: true)
+    }
+  end
+
+  @spec identity_in_organization(non_neg_integer() | nil) :: Ecto.Query.dynamic_expr()
+  defp identity_in_organization(nil), do: dynamic(true)
+
+  defp identity_in_organization(organization_id),
+    do: dynamic([i], i.organization_id == ^organization_id)
+
   @spec copy_again([non_neg_integer()]) :: non_neg_integer()
   defp copy_again([]), do: 0
 
@@ -322,9 +366,17 @@ defmodule Glific.Contacts.IdentityStateBackfill do
     now = DateTime.utc_now()
 
     # Deliberately across organizations: each contact's identity takes its own organization_id.
+    # Only contacts whose identity is missing or differs are sent: ON CONFLICT locks every row it
+    # conflicts with, even one it then leaves alone, and an inbound message waits on that lock.
     Contact
     |> with_phone()
+    |> join(:left, [c], i in ContactIdentity,
+      on:
+        i.organization_id == c.organization_id and i.channel == :whatsapp and
+          i.identifier == c.phone
+    )
     |> where(^condition)
+    |> where(^dynamic([c, i], is_nil(i.id) or (i.contact_id == c.id and ^identity_differs())))
     |> order_by([c], c.id)
     |> select([c], %{
       contact_id: c.id,
@@ -399,30 +451,34 @@ defmodule Glific.Contacts.IdentityStateBackfill do
     )
     |> where([c], c.id > ^after_id and c.id <= ^upto)
     |> where(^in_organization(organization_id))
-    |> where(
-      [c, i],
-      is_nil(i.id) or
-        fragment(
-          "(?, ?, ?, ?, ?, ?, ?) IS DISTINCT FROM (?, COALESCE(?, false), ?, ?, ?, COALESCE(?, 'none'), ?)",
-          i.optin_time,
-          i.optin_status,
-          i.optin_method,
-          i.optout_time,
-          i.optout_method,
-          i.bsp_status,
-          i.last_message_at,
-          c.optin_time,
-          c.optin_status,
-          c.optin_method,
-          c.optout_time,
-          c.optout_method,
-          c.bsp_status,
-          c.last_message_at
-        )
-    )
+    |> where(^dynamic([c, i], is_nil(i.id) or ^identity_differs()))
     |> order_by([c], c.id)
     |> select([c], c.id)
     |> Repo.all(timeout: @chunk_timeout, skip_organization_id: true)
+  end
+
+  @spec identity_differs() :: Ecto.Query.dynamic_expr()
+  defp identity_differs do
+    dynamic(
+      [c, i],
+      fragment(
+        "(?, ?, ?, ?, ?, ?, ?) IS DISTINCT FROM (?, COALESCE(?, false), ?, ?, ?, COALESCE(?, 'none'), ?)",
+        i.optin_time,
+        i.optin_status,
+        i.optin_method,
+        i.optout_time,
+        i.optout_method,
+        i.bsp_status,
+        i.last_message_at,
+        c.optin_time,
+        c.optin_status,
+        c.optin_method,
+        c.optout_time,
+        c.optout_method,
+        c.bsp_status,
+        c.last_message_at
+      )
+    )
   end
 
   @spec chunk_bounds(non_neg_integer(), pos_integer(), non_neg_integer() | nil) ::
