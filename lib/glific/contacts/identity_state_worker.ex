@@ -22,6 +22,7 @@ defmodule Glific.Contacts.IdentityStateWorker do
 
   import Ecto.Query
 
+  alias Appsignal.Logger
   alias Glific.{Contacts.IdentityStateBackfill, SafeLog}
 
   @impl Oban.Worker
@@ -49,7 +50,7 @@ defmodule Glific.Contacts.IdentityStateWorker do
     %{scanned: scanned, last_id: last_id} =
       chunk = IdentityStateBackfill.copy_chunk(after_id, batch_size)
 
-    Appsignal.Logger.info(
+    Logger.info(
       "contact_identity_state",
       "Reached contact #{last_id}: scanned #{scanned}, inserted #{chunk.inserted}, updated #{chunk.updated}"
     )
@@ -64,7 +65,7 @@ defmodule Glific.Contacts.IdentityStateWorker do
   @spec finish() :: :ok
   defp finish do
     IdentityStateBackfill.analyze()
-    Appsignal.Logger.info("contact_identity_state", "Finished copying contact state")
+    Logger.info("contact_identity_state", "Finished copying contact state")
   end
 
   # A link retried after its node died may already have enqueued its next one; a second would fork the chain.

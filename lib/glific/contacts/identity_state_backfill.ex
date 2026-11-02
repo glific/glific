@@ -73,6 +73,8 @@ defmodule Glific.Contacts.IdentityStateBackfill do
 
   import Ecto.Query
 
+  alias Appsignal.Logger
+
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactIdentity,
@@ -293,7 +295,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
             sample_ids: Enum.take(totals.sample_ids ++ ids, @sample_size)
         }
 
-        Appsignal.Logger.info(
+        Logger.info(
           "contact_identity_state",
           "Mismatch scan reached contact #{upto}: scanned #{totals.scanned}, " <>
             "mismatched #{totals.mismatched}, fixed #{totals.fixed}"
