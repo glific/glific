@@ -288,6 +288,7 @@ defmodule Glific.Contacts.IdentityStateBackfill do
       count: Repo.aggregate(stale, :count, timeout: @analyze_timeout, skip_organization_id: true),
       sample_contact_ids:
         stale
+        |> distinct(true)
         |> order_by([i], i.contact_id)
         |> limit(@sample_size)
         |> select([i], i.contact_id)

@@ -92,10 +92,12 @@ defmodule Glific.Contacts.ContactIdentities do
     :ok
   end
 
+  # NO KEY UPDATE, not UPDATE: FOR UPDATE also blocks the FOR KEY SHARE that another transaction's
+  # identity insert takes on this contact for its foreign key, and the two deadlock.
   @spec lock_contact(non_neg_integer()) :: Contact.t() | nil
   defp lock_contact(contact_id),
     do:
-      Repo.one(from(c in Contact, where: c.id == ^contact_id, lock: "FOR UPDATE"),
+      Repo.one(from(c in Contact, where: c.id == ^contact_id, lock: "FOR NO KEY UPDATE"),
         skip_organization_id: true
       )
 

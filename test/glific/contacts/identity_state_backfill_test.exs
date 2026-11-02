@@ -427,6 +427,26 @@ defmodule Glific.Contacts.IdentityStateBackfillTest do
       assert stale_contact_id == contact.id
     end
 
+    test "find_stale_identities/1 samples each contact once" do
+      organization = Fixtures.organization_fixture(%{name: "Holder org", shortcode: "holderorg"})
+      holder = contact_with_state(%{organization_id: organization.id})
+      copy_from(holder)
+
+      for n <- 1..3 do
+        Fixtures.contact_identity_fixture(%{
+          contact_id: holder.id,
+          organization_id: organization.id,
+          channel: :whatsapp,
+          identifier: "9198760#{n}#{System.unique_integer([:positive])}"
+        })
+      end
+
+      assert %{count: 3, sample_contact_ids: [sample_id]} =
+               IdentityStateBackfill.find_stale_identities(organization_id: organization.id)
+
+      assert sample_id == holder.id
+    end
+
     test "do not count a contact with no phone" do
       {:ok, contact} =
         Contacts.create_contact(
