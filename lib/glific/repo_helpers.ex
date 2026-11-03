@@ -376,6 +376,8 @@ defmodule Glific.RepoHelpers do
 
       # ExAudit merges :ex_audit_custom over ExAudit.track/1 data, so a nil here would
       # wipe the org set by the HTTP plug; only stamp it when the process has one.
+      # The org is the process org, not the audited record's, and a caller passing its own
+      # :ex_audit_custom replaces this keyword list wholesale (Ecto merges opts per key).
       @spec add_audit_organization_id(Keyword.t(), non_neg_integer() | nil) :: Keyword.t()
       defp add_audit_organization_id(opts, nil), do: opts
 
