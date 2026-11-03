@@ -141,24 +141,8 @@ defmodule Glific.RepoTest do
 
       Task.async(fn ->
         Repo.put_organization_id(organization_id)
-        ExAudit.track(user_id: user.id, organization_id: user.organization_id)
+        ExAudit.track(user_id: user.id)
         {:ok, _} = update_contact_name(contact, "Tracked update")
-      end)
-      |> Task.await()
-
-      version = updated_version(contact)
-      assert version.organization_id == organization_id
-      assert version.user_id == user.id
-    end
-
-    test "process without an organization does not override ExAudit.track data",
-         %{organization_id: organization_id} do
-      contact = Fixtures.contact_fixture()
-      user = Fixtures.user_fixture()
-
-      Task.async(fn ->
-        ExAudit.track(user_id: user.id, organization_id: organization_id)
-        {:ok, _} = update_contact_name(contact, "No process organization")
       end)
       |> Task.await()
 

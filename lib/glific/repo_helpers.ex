@@ -370,19 +370,10 @@ defmodule Glific.RepoHelpers do
       def default_options(_operation) do
         organization_id = get_organization_id()
 
-        [organization_id: organization_id]
-        |> add_audit_organization_id(organization_id)
+        # The audit org is the process org, not the audited record's, and a caller passing its
+        # own :ex_audit_custom replaces this keyword list wholesale (Ecto merges opts per key).
+        [organization_id: organization_id, ex_audit_custom: [organization_id: organization_id]]
       end
-
-      # ExAudit merges :ex_audit_custom over ExAudit.track/1 data, so a nil here would
-      # wipe the org set by the HTTP plug; only stamp it when the process has one.
-      # The org is the process org, not the audited record's, and a caller passing its own
-      # :ex_audit_custom replaces this keyword list wholesale (Ecto merges opts per key).
-      @spec add_audit_organization_id(Keyword.t(), non_neg_integer() | nil) :: Keyword.t()
-      defp add_audit_organization_id(opts, nil), do: opts
-
-      defp add_audit_organization_id(opts, organization_id),
-        do: Keyword.put(opts, :ex_audit_custom, organization_id: organization_id)
 
       @doc false
       @impl true
