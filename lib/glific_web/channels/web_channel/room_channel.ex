@@ -17,6 +17,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     Contacts,
     Contacts.Contact,
     Flows,
+    Flows.FlowContext,
     GCS.ObjectMetadata,
     Messages,
     Providers.Web.Upload,
@@ -169,9 +170,11 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   # A web chat link (`?start=keyword`) asks for its flow without the contact typing. The keyword is
   # recorded as their message only when it starts a published web flow, so a link can't make
   # someone send words they didn't choose; the flow engine then starts it as if it were typed.
-  def handle_in("start_flow", %{"keyword" => keyword}, socket) when is_binary(keyword) do
+  def handle_in("start_flow", %{"keyword" => keyword}, socket)
+      when is_binary(keyword) and byte_size(keyword) <= @max_body_length do
     with :ok <- check_message_rate_limit(socket.assigns.current_contact.id),
          {:ok, contact} <- fetch_unblocked_contact(socket),
+         :ok <- outside_keyword_ignoring_flow(contact),
          :ok <- web_flow_keyword(contact.organization_id, keyword),
          {:ok, _message} <- WebMessage.receive_message(contact, %{body: keyword}, :text) do
       {:reply, :ok, socket}
@@ -285,6 +288,16 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   @spec failure_reason(any()) :: String.t()
   defp failure_reason({:error, reason}) when is_binary(reason), do: reason
   defp failure_reason(_error), do: "send_failed"
+
+  # A flow that ignores keywords takes any message as the answer to what it is waiting on, so the
+  # link's keyword would be read as the contact's reply.
+  @spec outside_keyword_ignoring_flow(Contact.t()) :: :ok | {:error, String.t()}
+  defp outside_keyword_ignoring_flow(contact) do
+    case FlowContext.active_context(contact.id, channel: :web) do
+      %FlowContext{flow: %{ignore_keywords: true}} -> {:error, "in_flow"}
+      _context -> :ok
+    end
+  end
 
   @spec web_flow_keyword(non_neg_integer(), String.t()) :: :ok | {:error, String.t()}
   defp web_flow_keyword(organization_id, keyword) do

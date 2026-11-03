@@ -951,7 +951,8 @@ defmodule Glific.Flows do
   def published_keyword_flow_id(keyword_map, keyword, channel) do
     flow_id = get_in(keyword_map, ["published", keyword])
 
-    # Flows predating the channel column, and the out-of-office pseudo keywords, are WhatsApp's.
+    # A keyword whose flow is not in the map, such as an out-of-office keyword pointing at an
+    # inactive flow, is WhatsApp's.
     if flow_id && Map.get(keyword_map["channels"], flow_id, :whatsapp) == channel,
       do: flow_id
   end

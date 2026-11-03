@@ -10,6 +10,7 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
     Contacts.Location,
     Fixtures,
     Flows.Flow,
+    Flows.FlowContext,
     Flows.FlowRevision,
     GcsFixtures,
     Messages.Message,
@@ -314,6 +315,49 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
         socket = joined(contact)
 
         ref = push(socket, "start_flow", %{"keyword" => "hello"})
+        assert_reply ref, :error, %{reason: "not_a_web_flow_keyword"}
+        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
+      end)
+    end
+
+    # The waiting flow would take the keyword as the contact's answer to its question.
+    test "refuses while the contact is in a web flow that ignores keywords, and records nothing",
+         %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        published_flow(contact.organization_id, "adopt", :web)
+
+        survey =
+          Fixtures.flow_fixture(%{
+            name: "Survey",
+            keywords: ["survey"],
+            ignore_keywords: true,
+            channel: :web
+          })
+
+        {:ok, _context} =
+          FlowContext.create_flow_context(%{
+            contact_id: contact.id,
+            organization_id: contact.organization_id,
+            flow_id: survey.id,
+            flow_uuid: survey.uuid,
+            uuid_map: %{},
+            node_uuid: Ecto.UUID.generate(),
+            channel: :web
+          })
+
+        socket = joined(contact)
+
+        ref = push(socket, "start_flow", %{"keyword" => "adopt"})
+        assert_reply ref, :error, %{reason: "in_flow"}
+        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
+      end)
+    end
+
+    test "refuses a keyword longer than a message may be", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        socket = joined(contact)
+
+        ref = push(socket, "start_flow", %{"keyword" => String.duplicate("a", 4_097)})
         assert_reply ref, :error, %{reason: "not_a_web_flow_keyword"}
         refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
       end)
