@@ -122,6 +122,42 @@ defmodule Glific.SearchesTest do
       assert message_count > new_message_count
     end
 
+    test "search_multi/2 finds a contact once, without joining its messages", attrs do
+      contact = Fixtures.contact_fixture(Map.put(attrs, :name, "Searchable Learner"))
+
+      for _n <- 1..3,
+          do: Fixtures.message_fixture(Map.merge(attrs, %{sender_id: contact.id, body: "hello"}))
+
+      test_pid = self()
+      handler = "search-contacts-sql-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler,
+        [:glific, :repo, :query],
+        fn _event, _measurements, %{query: sql, source: source}, _config ->
+          if source == "contacts", do: send(test_pid, {:contacts_sql, sql})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      # Two filter keys used to add a messages join to the contact search.
+      args = %{
+        filter: %{term: "Searchable", include_groups: []},
+        contact_opts: %{limit: 25, offset: 0},
+        message_opts: %{limit: 20, offset: 0}
+      }
+
+      search = Searches.search_multi("Searchable", args)
+
+      assert [found] = Enum.filter(search.contacts, &(&1.id == contact.id))
+      assert found.name == "Searchable Learner"
+
+      assert_received {:contacts_sql, sql}
+      refute sql =~ ~s(JOIN "messages")
+    end
+
     test "wa_search_multi/2 returns the search result", attrs do
       Fixtures.wa_managed_phone_fixture(attrs)
       wa_message = Fixtures.wa_message_fixture(attrs)
