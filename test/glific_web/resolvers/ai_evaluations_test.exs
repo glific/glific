@@ -441,7 +441,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       Tesla.Mock.mock(fn %{method: :post} ->
         %Tesla.Env{
           status: 200,
-          body: %{data: %{dataset_name: "bom_dataset", dataset_id: "77001"}}
+          body: %{data: %{dataset_id: "77001", original_items: 1}}
         }
       end)
 
