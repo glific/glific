@@ -12,6 +12,8 @@ defmodule Glific.ThirdParty.Kaapi do
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Kaapi.ApiClient
 
+  @supported_tts_models ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]
+
   # Update all Error struct data in this format
   defmodule Error do
     @moduledoc """
@@ -390,6 +392,7 @@ defmodule Glific.ThirdParty.Kaapi do
   echoed back so the flow can be resumed. Returns `%{success: true}` on initiation.
 
   Optional `opts` map keys: `provider`, `model`, `language`, `voice` — override defaults when provided.
+  A `model` outside the supported Gemini 3.8 TTS models falls back to the default.
   """
   @spec text_to_speech(non_neg_integer(), String.t(), String.t(), map(), map()) :: map()
   def text_to_speech(organization_id, text, callback_url, request_metadata, opts \\ %{}) do
@@ -604,6 +607,10 @@ defmodule Glific.ThirdParty.Kaapi do
     }
   end
 
+  @spec tts_model(String.t() | nil) :: String.t()
+  defp tts_model(model) when model in @supported_tts_models, do: model
+  defp tts_model(_model), do: model_config(:tts_model)
+
   @spec tts_payload(String.t(), String.t(), map(), map()) :: map()
   defp tts_payload(text, callback_url, request_metadata, opts) do
     %{
@@ -614,7 +621,7 @@ defmodule Glific.ThirdParty.Kaapi do
             provider: opts[:provider] || "google",
             type: "tts",
             params: %{
-              model: opts[:model] || model_config(:tts_model),
+              model: tts_model(opts[:model]),
               voice: opts[:voice] || "Kore",
               language: opts[:language] || "hindi",
               response_format: "mp3"

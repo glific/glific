@@ -210,7 +210,7 @@ defmodule Glific.Scripts.TtsStressTest do
 
   defp count_tmp_audio_files(tmp) do
     File.ls!(tmp)
-    |> Enum.count(&(String.ends_with?(&1, ".pcm") or String.ends_with?(&1, ".mp3")))
+    |> Enum.count(&(String.ends_with?(&1, ".wav") or String.ends_with?(&1, ".mp3")))
   end
 
   defp avg([]), do: 0

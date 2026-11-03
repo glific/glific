@@ -113,8 +113,15 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
       mock(fn
-        %{method: :post, url: url} ->
-          assert String.contains?(url, "/gemini-3.8-flash-tts:generateContent")
+        %{method: :post, url: url, body: body} ->
+          assert String.contains?(url, "/gemini-3.8-flash-lite-tts:generateContent")
+
+          assert %{"text" => "Hello World", "speechMetadata" => %{"style" => style}} =
+                   body
+                   |> Jason.decode!()
+                   |> get_in(["contents", Access.at(0), "parts", Access.at(0)])
+
+          assert style =~ "Warm and friendly tone"
 
           %Tesla.Env{
             status: 200,
