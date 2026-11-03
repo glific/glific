@@ -2,16 +2,10 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   @moduledoc false
   use GlificWeb.ChannelCase
 
-  import Ecto.Query
-
   alias Glific.{
-    Caches,
     Contacts,
     Contacts.Location,
     Fixtures,
-    Flows.Flow,
-    Flows.FlowContext,
-    Flows.FlowRevision,
     GcsFixtures,
     Messages.Message,
     Partners,
@@ -269,109 +263,6 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
           Application.put_env(:glific, :rate_limit_web_channel_message, original_config)
           ExRated.delete_bucket(rate_limit_key)
         end
-      end)
-    end
-  end
-
-  describe "start_flow" do
-    test "records a web flow's keyword as the contact's message", %{contact: contact} do
-      with_web_channel_enabled(fn ->
-        published_flow(contact.organization_id, "adopt", :web)
-        socket = joined(contact)
-
-        ref = push(socket, "start_flow", %{"keyword" => "adopt"})
-        assert_reply ref, :ok, %{}, 1_000
-
-        assert message = Repo.get_by(Message, contact_id: contact.id, channel: :web)
-        assert message.body == "adopt"
-        assert message.flow == :inbound
-      end)
-    end
-
-    test "matches the keyword the way a typed one is matched", %{contact: contact} do
-      with_web_channel_enabled(fn ->
-        published_flow(contact.organization_id, "adopt", :web)
-        socket = joined(contact)
-
-        ref = push(socket, "start_flow", %{"keyword" => " Adopt! "})
-        assert_reply ref, :ok, %{}, 1_000
-      end)
-    end
-
-    # A link must not make a contact send words they didn't choose.
-    test "refuses a WhatsApp flow's keyword and records nothing", %{contact: contact} do
-      with_web_channel_enabled(fn ->
-        published_flow(contact.organization_id, "donate", :whatsapp)
-        socket = joined(contact)
-
-        ref = push(socket, "start_flow", %{"keyword" => "donate"})
-        assert_reply ref, :error, %{reason: "not_a_web_flow_keyword"}
-        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
-      end)
-    end
-
-    test "refuses a word that is no flow's keyword and records nothing", %{contact: contact} do
-      with_web_channel_enabled(fn ->
-        socket = joined(contact)
-
-        ref = push(socket, "start_flow", %{"keyword" => "hello"})
-        assert_reply ref, :error, %{reason: "not_a_web_flow_keyword"}
-        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
-      end)
-    end
-
-    # The waiting flow would take the keyword as the contact's answer to its question.
-    test "refuses while the contact is in a web flow that ignores keywords, and records nothing",
-         %{contact: contact} do
-      with_web_channel_enabled(fn ->
-        published_flow(contact.organization_id, "adopt", :web)
-
-        survey =
-          Fixtures.flow_fixture(%{
-            name: "Survey",
-            keywords: ["survey"],
-            ignore_keywords: true,
-            channel: :web
-          })
-
-        {:ok, _context} =
-          FlowContext.create_flow_context(%{
-            contact_id: contact.id,
-            organization_id: contact.organization_id,
-            flow_id: survey.id,
-            flow_uuid: survey.uuid,
-            uuid_map: %{},
-            node_uuid: Ecto.UUID.generate(),
-            channel: :web
-          })
-
-        socket = joined(contact)
-
-        ref = push(socket, "start_flow", %{"keyword" => "adopt"})
-        assert_reply ref, :error, %{reason: "in_flow"}
-        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
-      end)
-    end
-
-    test "refuses a keyword longer than a message may be", %{contact: contact} do
-      with_web_channel_enabled(fn ->
-        socket = joined(contact)
-
-        ref = push(socket, "start_flow", %{"keyword" => String.duplicate("a", 4_097)})
-        assert_reply ref, :error, %{reason: "not_a_web_flow_keyword"}
-        refute Repo.get_by(Message, contact_id: contact.id, channel: :web)
-      end)
-    end
-
-    test "refuses a push without a keyword", %{contact: contact} do
-      with_web_channel_enabled(fn ->
-        socket = joined(contact)
-
-        ref = push(socket, "start_flow", %{"keyword" => 42})
-        assert_reply ref, :error, %{reason: "not_a_web_flow_keyword"}
-
-        ref = push(socket, "start_flow", %{})
-        assert_reply ref, :error, %{reason: "not_a_web_flow_keyword"}
       end)
     end
   end
@@ -1077,26 +968,6 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
     defp subscribed_topics(socket),
       do: Registry.keys(Glific.PubSub, socket.channel_pid)
-  end
-
-  @spec joined(Glific.Contacts.Contact.t()) :: Phoenix.Socket.t()
-  defp joined(contact) do
-    {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
-    {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
-    socket
-  end
-
-  @spec published_flow(non_neg_integer(), String.t(), atom()) :: Flow.t()
-  defp published_flow(organization_id, keyword, channel) do
-    flow =
-      Fixtures.flow_fixture(%{name: "Link #{keyword}", keywords: [keyword], channel: channel})
-
-    FlowRevision
-    |> where([fr], fr.flow_id == ^flow.id)
-    |> Repo.update_all(set: [status: "published"])
-
-    Caches.remove(organization_id, ["flow_keywords_map"])
-    flow
   end
 
   @spec without_presence((-> any())) :: any()

@@ -59,7 +59,7 @@ defmodule Glific.Processor.ConsumerFlow do
     # then send control to the flow directly
     # context is not nil
 
-    if whatsapp?(message) and start_optin_flow?(message.contact, context, body),
+    if start_optin_flow?(message, context, body),
       do: start_optin_flow(message, state),
       else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
@@ -239,16 +239,20 @@ defmodule Glific.Processor.ConsumerFlow do
       Map.get(state, :simulator, true)
   end
 
+  @spec start_optin_flow?(Message.t(), FlowContext.t() | nil, String.t()) :: boolean()
+  defp start_optin_flow?(message, context, body),
+    do: whatsapp?(message) && opted_out_outside_optin_flow?(message.contact, context, body)
+
   ## check if contact is not in the optin flow and has optout time
-  @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
-  defp start_optin_flow?(contact, nil, _body),
+  @spec opted_out_outside_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
+  defp opted_out_outside_optin_flow?(contact, nil, _body),
     do: !is_nil(contact.optout_time)
 
-  defp start_optin_flow?(contact, active_context, body),
+  defp opted_out_outside_optin_flow?(contact, active_context, body),
     do:
       if(Flows.optin_flow?(active_context.flow),
         do: false,
-        else: start_optin_flow?(contact, nil, body)
+        else: opted_out_outside_optin_flow?(contact, nil, body)
       )
 
   @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
