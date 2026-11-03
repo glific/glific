@@ -32,34 +32,10 @@ defmodule Glific.CSV.EncodingTest do
     assert message =~ "UTF-16 or UTF-32, not UTF-8"
   end
 
-  test "strip_bom removes the BOM from the first line only" do
+  test "strip_bom removes a leading BOM and leaves the rest of the line" do
     assert ["question,answer", "q1," <> @bom <> "a1"] ==
              [@bom <> "question,answer", "q1," <> @bom <> "a1"]
              |> Encoding.strip_bom()
              |> Enum.to_list()
-  end
-
-  describe "strip_bom_from_file/1" do
-    test "rewrites the file without its BOM" do
-      path = Path.join(System.tmp_dir!(), "bom_#{System.unique_integer([:positive])}.csv")
-      File.write!(path, @bom <> @body)
-      on_exit(fn -> File.rm(path) end)
-
-      assert :ok == Encoding.strip_bom_from_file(path)
-      assert @body == File.read!(path)
-    end
-
-    test "leaves a file without a BOM untouched" do
-      path = Path.join(System.tmp_dir!(), "no_bom_#{System.unique_integer([:positive])}.csv")
-      File.write!(path, @body)
-      on_exit(fn -> File.rm(path) end)
-
-      assert :ok == Encoding.strip_bom_from_file(path)
-      assert @body == File.read!(path)
-    end
-
-    test "reports an unreadable path instead of raising" do
-      assert {:error, :enoent} == Encoding.strip_bom_from_file("/nonexistent/file.csv")
-    end
   end
 end

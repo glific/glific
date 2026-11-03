@@ -155,7 +155,7 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
   } do
     Tesla.Mock.mock(fn %{method: :get} -> %Tesla.Env{status: 404, body: "Not Found"} end)
 
-    assert {:error, "Could not download the member CSV from the given URL."} =
+    assert {:error, "Could not download the CSV from the given URL."} =
              WAGroupMemberImport.import_members(organization_id, wa_group.id,
                url: "http://www.bar.com/missing.csv"
              )
@@ -175,6 +175,29 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
              WAGroupMemberImport.import_members(organization_id, wa_group.id, file_path: path)
 
     assert message =~ "Line 2 is not valid UTF-8"
+    refute Repo.get_by(UserJob, type: "wa_group_member_import")
+  end
+
+  test "ignores options other than the source", %{
+    organization_id: organization_id,
+    wa_group: wa_group
+  } do
+    assert {:ok, _} =
+             WAGroupMemberImport.import_members(organization_id, wa_group.id,
+               data: "phone,name\n919900112277,Extra\n",
+               unrelated: true
+             )
+  end
+
+  test "returns an error when the file path cannot be read", %{
+    organization_id: organization_id,
+    wa_group: wa_group
+  } do
+    path = Path.join(System.tmp_dir!(), "missing_#{System.unique_integer([:positive])}.csv")
+
+    assert {:error, "Could not read the CSV file."} =
+             WAGroupMemberImport.import_members(organization_id, wa_group.id, file_path: path)
+
     refute Repo.get_by(UserJob, type: "wa_group_member_import")
   end
 end

@@ -742,7 +742,7 @@ defmodule Glific.Contacts.BulkImportTest do
                  url: "http://www.bar.com/missing.csv"
                )
 
-      assert message =~ "Could not download the contacts CSV"
+      assert message =~ "Could not download the CSV"
       assert 0 == Repo.aggregate(UserJob, :count, :id)
     end
 
@@ -789,6 +789,34 @@ defmodule Glific.Contacts.BulkImportTest do
 
       assert field(fetch("919876570002"), "city") == "Pune"
     end
+  end
+
+  test "accepts a date_format alongside a single source" do
+    assert {:ok, _} =
+             Import.import_contacts(
+               org_id(),
+               %{user: admin(), collection: "harness", type: :import_contact},
+               data: "name,phone,language\nDated,+919876570005,english\n",
+               date_format: "{D}-{M}-{YYYY}"
+             )
+  end
+
+  test "returns an error when no source is given" do
+    assert {:error, %{message: message}} = Import.add_contacts_to_group(org_id(), "no-source")
+    assert message =~ "Please specify exactly one of"
+  end
+
+  test "returns an error when the file path cannot be read" do
+    path = Path.join(System.tmp_dir!(), "missing_#{System.unique_integer([:positive])}.csv")
+
+    assert {:error, %{message: "Could not read the CSV file."}} =
+             Import.import_contacts(
+               org_id(),
+               %{user: admin(), collection: "harness", type: :import_contact},
+               file_path: path
+             )
+
+    assert 0 == Repo.aggregate(UserJob, :count, :id)
   end
 
   test "raises when more than one source is given" do

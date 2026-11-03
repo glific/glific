@@ -61,7 +61,7 @@ defmodule Glific.Groups.WAGroupMemberImport do
           {:ok, map()} | {:error, String.t()}
   defp run_import(org_id, wa_group_id, opts) do
     # Resolve the source first so a failed download doesn't leave an orphan job.
-    with {:ok, stream} <- fetch_data_as_string(opts) do
+    with {:ok, stream} <- Encoding.stream(opts) do
       group_label = Repo.get!(WAGroup, wa_group_id).label
 
       user_job =
@@ -106,36 +106,17 @@ defmodule Glific.Groups.WAGroupMemberImport do
   # Decode a CSV (raw string or line stream) into a stream of `{:ok, row}` /
   # `{:error, _}` tuples.
   @spec decode_csv(String.t() | Enumerable.t()) :: Enumerable.t()
-  defp decode_csv(data) when is_binary(data), do: data |> string_stream() |> decode_csv()
-
-  defp decode_csv(stream) do
-    stream
-    |> Encoding.strip_bom()
-    |> CSV.decode(headers: true, field_transform: &String.trim/1)
-  end
-
-  @spec fetch_data_as_string(Keyword.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
-  defp fetch_data_as_string(file_path: path) do
-    stream = path |> Path.expand() |> File.stream!()
-    with :ok <- Encoding.validate(stream), do: {:ok, stream}
-  end
-
-  defp fetch_data_as_string(data: data) do
-    with :ok <- Encoding.validate(data), do: {:ok, string_stream(data)}
-  end
-
-  defp fetch_data_as_string(url: url) do
-    case Tesla.get(url) do
-      {:ok, %Tesla.Env{status: 200, body: body}} -> fetch_data_as_string(data: body)
-      _ -> {:error, "Could not download the member CSV from the given URL."}
-    end
-  end
-
-  @spec string_stream(String.t()) :: Enumerable.t()
-  defp string_stream(data) do
+  defp decode_csv(data) when is_binary(data) do
     {:ok, stream} = StringIO.open(data)
-    IO.binstream(stream, :line)
+
+    stream
+    |> IO.binstream(:line)
+    |> Encoding.strip_bom()
+    |> decode_csv()
   end
+
+  defp decode_csv(stream),
+    do: CSV.decode(stream, headers: true, field_transform: &String.trim/1)
 
   @spec create_notification(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
