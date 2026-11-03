@@ -705,7 +705,7 @@ defmodule Glific.BigQuery do
         {:error,
          "Service account does not have permission to #{operation}. " <>
            "Please ensure the service account has the BigQuery Data Editor and BigQuery Job User roles. " <>
-           "See: https://glific.github.io/docs/docs/Product%20Features/Others/Bigquery/"}
+           "See: https://glific.github.io/docs/docs/Product%20Features/Reporting%20&%20Dashboard/BigQuery%20Setup%20and%20link%20with%20Glific/"}
 
       {:ok, %{"error" => %{"code" => code, "status" => status}}} ->
         {:error, "BigQuery validation failed at #{operation} with error #{code}: #{status}"}
