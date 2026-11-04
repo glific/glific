@@ -26,33 +26,13 @@ defmodule Glific.Contacts.Import do
   and group.
   """
   @spec import_contacts(non_neg_integer(), map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(
-        organization_id,
-        %{user: user, collection: collection, type: type} = _contact_attrs,
-        opts
-      ) do
-    ensure_single_source!(opts)
-
-    contact_attrs = %{
-      organization_id: organization_id,
-      user: user,
-      collection: collection,
-      type: type
-    }
-
-    with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
-      handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-    end
-  end
-
   def import_contacts(organization_id, attrs, opts) do
     ensure_single_source!(opts)
 
-    contact_attrs = %{
-      organization_id: organization_id,
-      user: attrs.user,
-      type: attrs.type
-    }
+    contact_attrs =
+      attrs
+      |> Map.take([:user, :type, :collection])
+      |> Map.put(:organization_id, organization_id)
 
     with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
       handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
