@@ -413,7 +413,7 @@ defmodule Glific.BigQueryTest do
     assert job_table2.table_id > job_table1.table_id
 
     # Incident #274: insertErrors used to raise and crash-loop the Oban job. It is now
-    # logged (see Glific.log_error/2) and returns without moving the cursor.
+    # logged (see Glific.log_exception/2) and returns without moving the cursor.
     assert :ok ==
              BigQuery.handle_insert_response(
                {:ok, %{insertErrors: %{error: "Some errors"}}},

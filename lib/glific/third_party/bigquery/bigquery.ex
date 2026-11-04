@@ -31,6 +31,7 @@ defmodule Glific.BigQuery do
     BigQuery.BigQueryJob,
     BigQuery.Instrumentation,
     BigQuery.Schema,
+    BigQuery.SyncError,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
     Contacts.Contact,
@@ -492,8 +493,12 @@ defmodule Glific.BigQuery do
   defp log_schema_update_error({:error, error}, organization_id, target) do
     {_status, _message, summary} = parse_bigquery_error(error)
 
-    Glific.log_error(
-      "BigQuery schema update failed for org_id: #{organization_id}, #{target}, #{summary}"
+    Glific.log_exception(
+      %SyncError{
+        message:
+          "BigQuery schema update failed for org_id: #{organization_id}, #{target}, #{summary}"
+      },
+      tags: %{organization_id: organization_id}
     )
   end
 
@@ -973,8 +978,11 @@ defmodule Glific.BigQuery do
 
     cond do
       res.insertErrors != nil ->
-        Glific.log_error(
-          "BigQuery partial insert error for table #{table} - #{safe_inspect(res)}"
+        Glific.log_exception(
+          %SyncError{
+            message: "BigQuery partial insert error for table #{table} - #{safe_inspect(res)}"
+          },
+          tags: %{table: table, organization_id: organization_id}
         )
 
         Instrumentation.record(table, {:failed, :row_errors}, action, organization_id)

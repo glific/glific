@@ -15,7 +15,10 @@ defmodule Glific.BigQuery.InstrumentationTest do
         send(parent, {:counter, name, value, tags})
         :ok
       end,
-      send_error: fn _kind, _error, _stacktrace -> :ok end do
+      send_error: fn error, _stacktrace, _fun ->
+        send(parent, {:error_sent, error})
+        :ok
+      end do
       fun.()
     end
 
@@ -145,6 +148,9 @@ defmodule Glific.BigQuery.InstrumentationTest do
 
       assert [{"bigquery_sync_count", 1, %{status: "failed", reason: "row_errors"}}] =
                Enum.filter(counters, fn {name, _v, _t} -> name == "bigquery_sync_count" end)
+
+      assert_received {:error_sent, %Glific.BigQuery.SyncError{message: message}}
+      assert message =~ "BigQuery partial insert error for table contacts"
     end
 
     test "counts a successful insert" do
