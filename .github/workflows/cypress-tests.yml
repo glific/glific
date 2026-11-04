@@ -41,7 +41,7 @@ jobs:
       # The checked-out repo IS the backend (glific). It is used directly as
       # the backend under test; the frontend is cloned into ./glific-frontend.
       - name: Checkout backend
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -97,50 +97,15 @@ jobs:
           cat /proc/sys/fs/inotify/max_user_watches
           yarn setup
 
-      - name: Download ngrok
+      - name: Install cloudflared
         run: |
-          wget -q -O ngrok.tgz https://bin.ngrok.com/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
-          tar -xzvf ngrok.tgz
-          chmod +x ngrok
-          sudo mv ngrok /usr/local/bin/
+          wget -q -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
+          cloudflared --version
 
-      - name: Start ngrok tunnel
-        run: |
-          ngrok config add-authtoken "${{ secrets.NGROK_AUTHTOKEN }}"
-          nohup ngrok http 4000 --pooling-enabled --host-header=glific.test:4000 --log=stdout > ngrok.log 2>&1 &
-          # Wait for ngrok to initialize and fetch tunnel URL
-          sleep 5
-          tail ngrok.log
-
-      - name: Set GLIFIC_API_HOST_OVERRIDE env
-        run: |
-          # Get public URL from ngrok API
-          NGROK_API_URL="http://127.0.0.1:4040/api/tunnels"
-          count=0
-          until curl -s "${NGROK_API_URL}" | grep -q '"public_url"' || [ $count -eq 10 ]; do
-            echo "ngrok public_url not ready"
-            sleep 2
-            count=$((count+1))
-          done
-          API_URL=$(curl -s ${NGROK_API_URL} | jq -r '.tunnels[] | select(.proto=="https") | .public_url')
-          # Fall back to http if https not available
-          if [ -z "$API_URL" ]; then
-            API_URL=$(curl -s ${NGROK_API_URL} | jq -r '.tunnels[] | select(.proto=="http") | .public_url')
-          fi
-
-          if [ -z "$API_URL" ]; then
-            echo "ERROR: Failed to resolve ngrok API_URL from ${NGROK_API_URL}" >&2
-            exit 1
-          fi
-
-          if ! printf '%s' "$API_URL" | grep -Eq '^https?://[^[:space:]]+$'; then
-            echo "ERROR: Resolved API_URL is not a valid URL: ${API_URL}" >&2
-            exit 1
-          fi
-
-          if [ -n "$API_URL" ]; then
-            echo "GLIFIC_API_HOST_OVERRIDE=${API_URL}" >> $GITHUB_ENV
-          fi
+      - name: Start Cloudflare tunnel (quick tunnel, sets GLIFIC_API_HOST_OVERRIDE)
+        run: .github/scripts/cloudflare-tunnel.sh
 
       - name: Cache Elixir deps and build
         uses: actions/cache@v4
@@ -198,13 +163,13 @@ jobs:
           SPLIT: 3
           SPLIT_INDEX: ${{ matrix.shard }}
 
-      - name: Upload Phoenix server & ngrok logs (shard ${{ matrix.shard }})
+      - name: Upload Phoenix server & cloudflared logs (shard ${{ matrix.shard }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phoenix-server-log-shard-${{ matrix.shard }}
           path: |
             phoenix-server.log
-            ngrok.log
+            cloudflared.log
           if-no-files-found: warn
           retention-days: 7
