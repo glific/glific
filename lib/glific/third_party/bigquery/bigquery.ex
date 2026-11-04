@@ -1011,9 +1011,8 @@ defmodule Glific.BigQuery do
           "Schema not found while inserting the data to table #{table}, syncing schema - #{summary}"
         )
 
-        result = sync_schema_with_bigquery(organization_id)
+        sync_schema_with_bigquery(organization_id)
         Instrumentation.record(table, {:failed, :schema_not_found}, action, organization_id)
-        result
 
         {:error, :schema_not_found}
 
@@ -1022,9 +1021,8 @@ defmodule Glific.BigQuery do
           "Permission denied while inserting the data to table #{table}, disabling credentials - #{summary}"
         )
 
-        result = Partners.disable_credential(organization_id, "bigquery", message)
+        Partners.disable_credential(organization_id, "bigquery", message)
         Instrumentation.record(table, {:failed, :permission_denied}, action, organization_id)
-        result
 
         {:error, :permission_denied}
 
