@@ -35,4 +35,19 @@ defmodule Glific.Contacts.TermSearchTest do
     for term <- ["0000012345", "00000", "12345"],
         do: refute(contact.id in found_ids(organization_id, term), term)
   end
+
+  # A phone saved through the API is stored as sent.
+  test "matches a stored phone that is not a number exactly as typed, but not part of it",
+       %{organization_id: organization_id} do
+    coded =
+      Fixtures.contact_fixture(%{
+        organization_id: organization_id,
+        name: "Coded learner",
+        phone: "SCH-S49G4048"
+      })
+
+    assert coded.id in found_ids(organization_id, "SCH-S49G4048")
+    assert coded.id in found_ids(organization_id, " SCH-S49G4048 ")
+    refute coded.id in found_ids(organization_id, "S49G")
+  end
 end
