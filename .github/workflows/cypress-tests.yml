@@ -41,7 +41,7 @@ jobs:
       # The checked-out repo IS the backend (glific). It is used directly as
       # the backend under test; the frontend is cloned into ./glific-frontend.
       - name: Checkout backend
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
