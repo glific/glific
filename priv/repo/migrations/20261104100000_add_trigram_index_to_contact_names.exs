@@ -1,0 +1,29 @@
+defmodule Glific.Repo.Migrations.AddTrigramIndexToContactNames do
+  use Ecto.Migration
+
+  # Concurrent index builds cannot run inside a transaction or hold the Ecto
+  # migration advisory lock — required on the large production contacts table.
+  @disable_ddl_transaction true
+  @disable_migration_lock true
+
+  def up do
+    execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+
+    # Contact search matches a name anywhere (`name ILIKE '%term%'`), which a B-tree index cannot
+    # serve, so every search read every contact in the organization. A trigram index serves it
+    # for terms of three or more characters.
+    create_if_not_exists index(:contacts, ["name gin_trgm_ops"],
+                           name: :contacts_name_trgm_index,
+                           using: "GIN",
+                           concurrently: true,
+                           comment: "Backs contact search matching a name anywhere"
+                         )
+  end
+
+  def down do
+    drop_if_exists index(:contacts, ["name gin_trgm_ops"],
+                     name: :contacts_name_trgm_index,
+                     concurrently: true
+                   )
+  end
+end

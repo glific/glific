@@ -1,7 +1,8 @@
 defmodule Glific.Contacts.TermSearch do
   @moduledoc """
-  The condition a free-text term must satisfy to match a contact: its name or phone contains the
-  term, or, for a user allowed to see them, one of its web usernames starts with it.
+  The condition a free-text term must satisfy to match a contact: its name contains the term, its
+  phone is the whole number the term spells, or, for a user allowed to see them, one of its web
+  usernames starts with it.
 
   Contact lists, the inbox search and the multi search all build their term filter here, so the
   escaping of the term and the username rule live in one place.
@@ -18,12 +19,25 @@ defmodule Glific.Contacts.TermSearch do
   """
   @spec match(String.t(), User.t() | nil) :: Ecto.Query.dynamic_expr()
   def match(term, user) do
-    pattern = "%#{escape_like(term)}%"
-    name_or_phone = dynamic([c], ilike(c.name, ^pattern) or ilike(c.phone, ^pattern))
+    name = dynamic([c], ilike(c.name, ^"%#{escape_like(term)}%"))
+
+    name_or_phone =
+      case phone_digits(term) do
+        nil -> name
+        digits -> dynamic([c], ^name or c.phone == ^digits)
+      end
 
     if include_usernames?(user),
       do: dynamic([c], ^name_or_phone or ^username_match(term, user.organization_id)),
       else: name_or_phone
+  end
+
+  # A phone matches only as a whole number, an index lookup on (phone, organization_id): a substring
+  # match on phone read and checked every contact in the organization.
+  @spec phone_digits(String.t()) :: String.t() | nil
+  defp phone_digits(term) do
+    digits = String.replace(term, ~r/\D/, "")
+    if digits != "" and term =~ ~r/^[\d\s()+-]+$/, do: digits
   end
 
   @spec include_usernames?(User.t() | nil) :: boolean()
