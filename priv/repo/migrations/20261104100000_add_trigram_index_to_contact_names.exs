@@ -7,11 +7,10 @@ defmodule Glific.Repo.Migrations.AddTrigramIndexToContactNames do
   @disable_migration_lock true
 
   def up do
-    execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-
     # Contact search matches a name anywhere (`name ILIKE '%term%'`), which a B-tree index cannot
     # serve, so every search read every contact in the organization. A trigram index serves it
-    # for terms of three or more characters.
+    # for terms of three or more characters. pg_trgm is already enabled (structure.sql), and
+    # messages already has trigram indexes on body and flow_label.
     #
     # `create`, not `create_if_not_exists`: an interrupted concurrent build leaves an invalid index
     # with this name, which IF NOT EXISTS would skip. Drop it (DROP INDEX CONCURRENTLY
