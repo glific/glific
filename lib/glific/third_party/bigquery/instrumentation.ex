@@ -19,13 +19,14 @@ defmodule Glific.BigQuery.Instrumentation do
 
   ## Why the outcome is recorded inside the response handler
 
-  `BigQuery.handle_insert_response/3` swallows these failures — it reacts to them and
-  returns normally rather than raising:
+  `BigQuery.handle_insert_response/3` returns every insert failure to the caller rather
+  than raising:
 
     * `insertErrors` — BigQuery rejected individual rows, logged only
     * `NOT_FOUND` — triggers a schema re-sync
     * `PERMISSION_DENIED` — **disables the org's BigQuery credential**
     * `TIMEOUT` — logged only
+    * anything else — logged and sent to AppSignal as an error
 
   So wrapping `perform/1` alone would count all of them as success and report green while
   syncing is broken — including the case where credentials have just been switched off.
@@ -40,6 +41,7 @@ defmodule Glific.BigQuery.Instrumentation do
     | `schema_not_found`        | table/dataset missing, schema re-sync triggered |
     | `permission_denied`       | credential rejected and now disabled            |
     | `timeout`                 | request timed out                               |
+    | `request_failed`          | any other failed insert request                 |
     | `exception`               | anything that raised out of the job             |
 
   Anything that raises out of a job is not recorded where it raises — it propagates to
@@ -56,6 +58,7 @@ defmodule Glific.BigQuery.Instrumentation do
           | :schema_not_found
           | :permission_denied
           | :timeout
+          | :request_failed
           | :exception
 
   @typedoc "Outcome recorded on `bigquery_sync_count`."

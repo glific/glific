@@ -308,15 +308,14 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  test "handle_insert_response/3 should raise error", attrs do
-    assert_raise RuntimeError, fn ->
-      BigQuery.handle_insert_response(
-        {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
-        attrs.organization_id,
-        table: "messages",
-        max_id: 10
-      )
-    end
+  test "handle_insert_response/3 returns request_failed for an unhandled error", attrs do
+    assert {:error, :request_failed} ==
+             BigQuery.handle_insert_response(
+               {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
+               attrs.organization_id,
+               table: "messages",
+               action: :insert
+             )
   end
 
   @delete_query """
@@ -399,31 +398,130 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  test "handle_insert_response/3 should update table", attrs do
-    job_table1 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
+  test "handle_insert_response/3 reports the chunk outcome without moving the cursor",
+       attrs do
+    job_before = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
 
-    BigQuery.handle_insert_response(
-      {:ok, %{insertErrors: nil}},
-      attrs.organization_id,
-      table: "messages",
-      max_id: 10
-    )
-
-    job_table2 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
-    assert job_table2.table_id > job_table1.table_id
-
-    # Incident #274: insertErrors used to raise and crash-loop the Oban job. It is now
-    # logged (see Glific.log_exception/2) and returns without moving the cursor.
     assert :ok ==
+             BigQuery.handle_insert_response(
+               {:ok, %{insertErrors: nil}},
+               attrs.organization_id,
+               table: "messages",
+               action: :insert
+             )
+
+    assert {:error, :row_errors} ==
              BigQuery.handle_insert_response(
                {:ok, %{insertErrors: %{error: "Some errors"}}},
                attrs.organization_id,
                table: "messages",
-               max_id: 20
+               action: :insert
              )
 
-    assert Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages").table_id ==
-             job_table2.table_id
+    job_after = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
+    assert job_after.table_id == job_before.table_id
+  end
+
+  describe "insert_chunks/4" do
+    @insert_all_url "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/messages/insertAll"
+
+    defp with_insert_all(responses, fun) do
+      parent = self()
+      {:ok, agent} = Agent.start_link(fn -> responses end)
+
+      with_mocks([
+        {Goth.Token, [:passthrough],
+         [
+           fetch: fn _ ->
+             {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+           end
+         ]}
+      ]) do
+        Tesla.Mock.mock(fn %Tesla.Env{method: :post, url: @insert_all_url} ->
+          send(parent, :insert_all)
+          insert_errors = Agent.get_and_update(agent, fn [next | rest] -> {next, rest} end)
+
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: insert_errors
+              })
+          }
+        end)
+
+        fun.()
+      end
+    end
+
+    @row_error [
+      %GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponseInsertErrors{
+        index: 0,
+        errors: [%GoogleApi.BigQuery.V2.Model.ErrorProto{reason: "invalid"}]
+      }
+    ]
+
+    test "moves the cursor to the batch max once every chunk is inserted", attrs do
+      Glific.Jobs.update_bigquery_job(attrs.organization_id, "messages", %{table_id: 0})
+
+      with_insert_all([nil, nil], fn ->
+        BigQueryWorker.insert_chunks(
+          [[%{json: %{id: 1}}], [%{json: %{id: 2}}]],
+          :messages,
+          attrs.organization_id,
+          %{action: :insert, max_id: 42, last_updated_at: DateTime.utc_now()}
+        )
+      end)
+
+      assert_received :insert_all
+      assert_received :insert_all
+      assert Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages").table_id == 42
+    end
+
+    test "stops at the first failed chunk and leaves the cursor where it was", attrs do
+      Glific.Jobs.update_bigquery_job(attrs.organization_id, "messages", %{table_id: 7})
+
+      with_insert_all([@row_error, nil], fn ->
+        BigQueryWorker.insert_chunks(
+          [[%{json: %{id: 1}}], [%{json: %{id: 2}}]],
+          :messages,
+          attrs.organization_id,
+          %{action: :insert, max_id: 42, last_updated_at: DateTime.utc_now()}
+        )
+      end)
+
+      assert_received :insert_all
+      refute_received :insert_all
+      assert Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages").table_id == 7
+    end
+
+    test "moves the cursor when there is nothing to insert", attrs do
+      Glific.Jobs.update_bigquery_job(attrs.organization_id, "messages", %{table_id: 0})
+
+      BigQueryWorker.insert_chunks([], :messages, attrs.organization_id, %{
+        action: :insert,
+        max_id: 42,
+        last_updated_at: DateTime.utc_now()
+      })
+
+      assert Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages").table_id == 42
+    end
+
+    test "moves last_updated_at for an update batch", attrs do
+      updated_at = ~U[2026-01-02 03:04:05Z]
+
+      with_insert_all([nil], fn ->
+        BigQueryWorker.insert_chunks([[%{json: %{id: 1}}]], :messages, attrs.organization_id, %{
+          action: :update,
+          max_id: nil,
+          last_updated_at: updated_at
+        })
+      end)
+
+      job = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
+      assert DateTime.compare(job.last_updated_at, updated_at) == :eq
+    end
   end
 
   test "alter_tables/4 logs a dataset or table schema update that BigQuery refuses", %{
@@ -515,14 +613,13 @@ defmodule Glific.BigQueryTest do
 
       # Previously (pre-incident-274-fix) this call raised a RuntimeError from inside
       # handle_insert_response/3 and never returned, crash-looping the Oban job
-      # that called it. Now it should complete normally and return :ok.
-      assert :ok ==
+      # that called it. Now it returns the failure so the caller can stop the batch.
+      assert {:error, :row_errors} ==
                BigQuery.insert_rows(
                  [%{json: %{id: 1, name: "test"}}],
                  "messages",
                  org_id,
-                 max_id: 10,
-                 last_updated_at: nil
+                 action: :insert
                )
     end
   end

@@ -48,7 +48,6 @@ defmodule Glific.BigQuery do
     Groups.WAGroup,
     Groups.WAGroupPhone,
     Groups.WAGroupsCollection,
-    Jobs,
     Messages.Message,
     Messages.MessageConversation,
     Messages.MessageMedia,
@@ -920,7 +919,8 @@ defmodule Glific.BigQuery do
   @doc """
     Insert rows in the bigquery
   """
-  @spec insert_rows(map() | list, String.t(), non_neg_integer, Keyword.t()) :: :ok
+  @spec insert_rows(map() | list, String.t(), non_neg_integer, Keyword.t()) ::
+          :ok | {:error, atom()}
   def insert_rows(%{json: data}, _table, _organization_id, _opts)
       when data in [[], nil, %{}],
       do: :ok
@@ -934,12 +934,7 @@ defmodule Glific.BigQuery do
       {:ok, %{conn: _conn, project_id: _project_id, dataset_id: _dataset_id}} = credentials ->
         credentials
         |> insert_all(data, table: table)
-        |> handle_insert_response(organization_id,
-          table: table,
-          max_id: Keyword.get(opts, :max_id),
-          last_updated_at: Keyword.get(opts, :last_updated_at),
-          action: action
-        )
+        |> handle_insert_response(organization_id, table: table, action: action)
 
       {:error, _reason} ->
         Instrumentation.record(
@@ -949,11 +944,13 @@ defmodule Glific.BigQuery do
           organization_id
         )
 
+        {:error, :credentials_unavailable}
+
       {:ok, message} ->
         Logger.info("Skipping bigquery insert for table #{table} - #{message}")
-    end
 
-    :ok
+        {:error, :not_active}
+    end
   end
 
   @spec insert_all(tuple(), list(), Keyword.t()) :: {:ok, any()} | {:error, any()}
@@ -976,46 +973,28 @@ defmodule Glific.BigQuery do
     )
   end
 
-  @spec handle_insert_response(tuple(), non_neg_integer, Keyword.t()) :: any()
+  ## Reports the chunk's outcome to the caller and never moves the sync cursor: the worker does
+  ## that once every chunk of the batch has succeeded, so a failed chunk is retried, not skipped.
+  @spec handle_insert_response(tuple(), non_neg_integer, Keyword.t()) ::
+          :ok | {:error, atom()}
   defp handle_insert_response({:ok, res}, organization_id, opts) do
     table = Keyword.get(opts, :table)
-    max_id = Keyword.get(opts, :max_id)
-    last_updated_at = Keyword.get(opts, :last_updated_at)
     action = Keyword.get(opts, :action)
 
-    cond do
-      res.insertErrors != nil ->
-        Glific.log_exception(
-          %SyncError{
-            message: "BigQuery partial insert error for table #{table} - #{safe_inspect(res)}"
-          },
-          tags: %{table: table, organization_id: organization_id}
-        )
+    if res.insertErrors != nil do
+      Glific.log_exception(
+        %SyncError{
+          message: "BigQuery partial insert error for table #{table} - #{safe_inspect(res)}"
+        },
+        tags: %{table: table, organization_id: organization_id}
+      )
 
-        Instrumentation.record(table, {:failed, :row_errors}, action, organization_id)
-
-      ## Max id will be nil or 0 in case of update statement.
-      max_id not in [nil, 0] ->
-        Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
-
-        Logger.info(
-          "Data inserted to bigquery successfully for table #{table}, max_id: #{max_id}"
-        )
-
-        Instrumentation.record(table, :success, action, organization_id)
-
-      last_updated_at not in [nil, 0] ->
-        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
-
-        Logger.info(
-          "Data updated to bigquery successfully for table #{table}, last_updated_at: #{last_updated_at}"
-        )
-
-        Instrumentation.record(table, :success, action, organization_id)
-
-      true ->
-        Logger.info("Count not found the operation for bigquery insert and update")
-        Instrumentation.record(table, :success, action, organization_id)
+      Instrumentation.record(table, {:failed, :row_errors}, action, organization_id)
+      {:error, :row_errors}
+    else
+      Logger.info("Data inserted to bigquery successfully for table #{table}")
+      Instrumentation.record(table, :success, action, organization_id)
+      :ok
     end
   end
 
@@ -1034,6 +1013,8 @@ defmodule Glific.BigQuery do
         Instrumentation.record(table, {:failed, :schema_not_found}, action, organization_id)
         sync_schema_with_bigquery(organization_id)
 
+        {:error, :schema_not_found}
+
       "PERMISSION_DENIED" ->
         Logger.error(
           "Permission denied while inserting the data to table #{table}, disabling credentials - #{summary}"
@@ -1042,12 +1023,24 @@ defmodule Glific.BigQuery do
         Instrumentation.record(table, {:failed, :permission_denied}, action, organization_id)
         Partners.disable_credential(organization_id, "bigquery", message)
 
+        {:error, :permission_denied}
+
       "TIMEOUT" ->
         Logger.error("Timeout while inserting the data to table #{table} - #{summary}")
         Instrumentation.record(table, {:failed, :timeout}, action, organization_id)
+        {:error, :timeout}
 
       _ ->
-        raise("Error while inserting the data to table #{table} on bigquery - #{summary}")
+        # Nothing else surfaces an unhandled failure now that the insert no longer raises.
+        Glific.log_exception(
+          %SyncError{
+            message: "Error while inserting the data to table #{table} on bigquery - #{summary}"
+          },
+          tags: %{table: table, organization_id: organization_id}
+        )
+
+        Instrumentation.record(table, {:failed, :request_failed}, action, organization_id)
+        {:error, :request_failed}
     end
   end
 
