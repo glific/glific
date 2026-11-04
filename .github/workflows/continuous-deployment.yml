@@ -1,5 +1,8 @@
 name: Continuous Deployment
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     types: [labeled, opened, synchronize, reopened]
@@ -15,6 +18,7 @@ jobs:
     if: |
       (
         github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
         contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
       ) || (
         github.event_name == 'push' &&
@@ -33,7 +37,7 @@ jobs:
           python-version: "3.10"
 
       # configure the gigalixir-actions with our credentials and app name
-      - uses: mhanberg/gigalixir-action@v0.6.2
+      - uses: mhanberg/gigalixir-action@f58690cbb4cf1d9a5962cf993819db6a5ae129bd # v0.6.2
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
@@ -84,6 +88,7 @@ jobs:
       vars.GIGALIXIR_WORKER_APPNAME != '' && (
         (
           github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
           contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
         ) || (
           github.event_name == 'push' &&
@@ -101,7 +106,7 @@ jobs:
         with:
           python-version: "3.10"
 
-      - uses: mhanberg/gigalixir-action@v0.6.2
+      - uses: mhanberg/gigalixir-action@f58690cbb4cf1d9a5962cf993819db6a5ae129bd # v0.6.2
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
