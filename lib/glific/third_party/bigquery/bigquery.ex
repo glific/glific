@@ -1058,9 +1058,7 @@ defmodule Glific.BigQuery do
   ## summary. BigQuery pretty-prints its JSON; re-encoding it compactly keeps the entry on one
   ## line with no `\n` escapes, which the log pipeline into AppSignal splits on.
   @spec parse_bigquery_error(any()) :: {String.t() | atom() | nil, String.t() | nil, String.t()}
-  defp parse_bigquery_error(%{body: body} = response) when is_binary(body) do
-    http_status = Map.get(response, :status)
-
+  defp parse_bigquery_error(%Tesla.Env{status: http_status, body: body}) when is_binary(body) do
     case Jason.decode(body) do
       {:ok, decoded} ->
         {error_status(decoded), first_error_message(decoded),
@@ -1071,10 +1069,8 @@ defmodule Glific.BigQuery do
     end
   end
 
-  defp parse_bigquery_error(%{body: body} = response),
-    do:
-      {:unknown, "UNKNOWN ERROR",
-       "http_status=#{Map.get(response, :status)} body=#{safe_inspect(body)}"}
+  defp parse_bigquery_error(%Tesla.Env{status: http_status, body: body}),
+    do: {:unknown, "UNKNOWN ERROR", "http_status=#{http_status} body=#{safe_inspect(body)}"}
 
   defp parse_bigquery_error(reason) when reason in [:timeout, :connect_timeout],
     do: {"TIMEOUT", "TIMEOUT", safe_inspect(reason)}
