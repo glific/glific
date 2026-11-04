@@ -88,6 +88,7 @@ defmodule Glific.BigQuery.InstrumentationTest do
             :schema_not_found,
             :permission_denied,
             :timeout,
+            :request_failed,
             :exception
           ] do
         counters =
@@ -152,6 +153,23 @@ defmodule Glific.BigQuery.InstrumentationTest do
 
       assert_received {:error_sent, %Glific.BigQuery.SyncError{message: message}}
       assert message =~ "BigQuery partial insert error for table contacts"
+    end
+
+    test "counts an unhandled insert error as request_failed and does not raise" do
+      counters =
+        capture_counters(fn ->
+          assert {:error, :request_failed} ==
+                   Glific.BigQuery.handle_insert_response(
+                     {:error,
+                      %Tesla.Env{status: 400, body: ~s({"error":{"status":"INVALID_ARGUMENT"}})}},
+                     1,
+                     table: "contacts",
+                     action: :insert
+                   )
+        end)
+
+      assert [{"bigquery_sync_count", 1, %{status: "failed", reason: "request_failed"}}] =
+               Enum.filter(counters, fn {name, _v, _t} -> name == "bigquery_sync_count" end)
     end
 
     test "counts a successful insert" do
