@@ -1003,6 +1003,7 @@ defmodule Glific.BigQuery do
     action = Keyword.get(opts, :action)
     {error, message, summary} = parse_bigquery_error(response)
 
+    # Each failure is recorded after its follow-up call, so a raise there is counted once, as `exception`.
     error
     |> case do
       "NOT_FOUND" ->
@@ -1010,8 +1011,9 @@ defmodule Glific.BigQuery do
           "Schema not found while inserting the data to table #{table}, syncing schema - #{summary}"
         )
 
+        result = sync_schema_with_bigquery(organization_id)
         Instrumentation.record(table, {:failed, :schema_not_found}, action, organization_id)
-        sync_schema_with_bigquery(organization_id)
+        result
 
         {:error, :schema_not_found}
 
@@ -1020,8 +1022,9 @@ defmodule Glific.BigQuery do
           "Permission denied while inserting the data to table #{table}, disabling credentials - #{summary}"
         )
 
+        result = Partners.disable_credential(organization_id, "bigquery", message)
         Instrumentation.record(table, {:failed, :permission_denied}, action, organization_id)
-        Partners.disable_credential(organization_id, "bigquery", message)
+        result
 
         {:error, :permission_denied}
 
