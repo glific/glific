@@ -26,17 +26,10 @@ cluster with the default adapter, so a job on the worker pushes updates to socke
 `peer: false` on the web app matters: the Oban leader runs the plugins, so a web node winning
 leadership would stop Cron everywhere.
 
-Gigalixir setup, from support (ticket 6488):
-
-```
-gigalixir create -n glific-oban --cloud gcp --region us-central1
-gigalixir config:set -a glific      ERLANG_COOKIE=<same> NODE_ROLE=web    CLUSTER_QUERIES=<below>
-gigalixir config:set -a glific-oban ERLANG_COOKIE=<same> NODE_ROLE=worker CLUSTER_QUERIES=<below>
-
-CLUSTER_QUERIES=glific=epmd-1fpmc0c-55504fm.glific.svc.cluster.local,glific-oban=<GIGALIXIR__EPMD_SERVICE of glific-oban>.glific-oban.svc.cluster.local
-```
-
 Gigalixir's own `DNS_CLUSTER_QUERY` only resolves the current app's replicas, so it is not used.
+Each app's internal DNS name is `<GIGALIXIR__EPMD_SERVICE>.<app>.svc.cluster.local`, and the
+replicas are named `<app>@<pod IP>` (Gigalixir support, ticket 6488). Production `glific`'s
+service is `epmd-1fpmc0c-55504fm`.
 
 ## 3. Running locally
 
@@ -70,7 +63,76 @@ Oban.config().peer            # false
 Oban.check_queue(queue: :default)
 ```
 
-## 4. Known gaps
+## 4. Rollout
+
+Both apps run the same release from the same commit. The releases buildpack starts whatever
+release it builds (ours is `prod`), so the worker app needs no Procfile or release changes.
+Do staging first (`glific-staging` + `glific-staging-oban`), then production (`glific` +
+`glific-oban`). Every step can be undone on its own, and the web app keeps working throughout.
+
+1. **Ship the code with nothing set.** Merge to master. With `NODE_ROLE` and `CLUSTER_QUERIES`
+   unset, the app behaves as before.
+
+2. **Create the worker app with the web app's config.** It must be in the same cloud and region
+   for the two apps to reach each other.
+
+   ```bash
+   gigalixir create -n glific-staging-oban --cloud gcp --region us-central1
+   gigalixir config:copy -s glific-staging -d glific-staging-oban
+   gigalixir config:set -a glific-staging-oban NODE_ROLE=worker APPSIGNAL_HOSTNAME=glific-staging-oban
+   ```
+
+   Keep the copied `GIGALIXIR_APP_NAME`: the `custom_certificate` queue now runs on the worker and
+   adds custom domains through the Gigalixir API, and those domains belong to the web app.
+
+3. **Share the cookie and deploy the worker.** Add the repository variable (not a secret, so the
+   job's `if` can read it) `GIGALIXIR_WORKER_APPNAME=glific-staging-oban`; from then on the
+   `deploy-worker` job in `continuous-deployment.yml` deploys the same commit to the worker with
+   the deploy action and verifies it, in parallel with the web app. Deploy once by hand, or re-run CI.
+
+   ```bash
+   gigalixir config:set -a glific-staging      ERLANG_COOKIE=<long-random-value>
+   gigalixir config:set -a glific-staging-oban ERLANG_COOKIE=<long-random-value>
+   ```
+
+   Both apps now run jobs, which Oban handles, and they are not clustered yet.
+
+4. **Cluster them.** Read each app's service name from a remote console
+   (`gigalixir ps:remote_console -a <app>`, then `System.get_env("GIGALIXIR__EPMD_SERVICE")`) and
+   set the same value on both apps:
+
+   ```bash
+   CLUSTER_QUERIES=glific-staging=<web service>.glific-staging.svc.cluster.local,glific-staging-oban=<worker service>.glific-staging-oban.svc.cluster.local
+   ```
+
+   Check `Node.list()` on each app shows the other.
+
+5. **Stop jobs on the web app.**
+
+   ```bash
+   gigalixir config:set -a glific-staging NODE_ROLE=web
+   ```
+
+   Check: jobs show `attempted_by` worker nodes, Cron runs once a minute, bot replies appear in the
+   chat screen, a republished flow takes effect. Rollback is `gigalixir config:unset -a
+   glific-staging NODE_ROLE`.
+
+6. **Size each app.** Scale the worker for job throughput (`gigalixir ps:scale -a
+   glific-staging-oban --size … --replicas …`) and the web app for requests. Set `POOL_SIZE` and
+   `REPLICA_POOL_SIZE` per app so that, across all replicas of both apps, connections stay under
+   Cloud SQL `max_connections`.
+
+Migrations keep running from the web app only, as today.
+
+Before production:
+
+- Add the worker apps to `TARGETS` in `bin/gigalixir-release.sh` and
+  `bin/gigalixir-verify-deploy.sh` (they must stay in sync), so a production release pushes and
+  verifies both apps from the same commit.
+- Trim the worker's router to a health check route (see Known gaps).
+- If Cloud SQL restricts client IPs, confirm the worker app's egress IP is allowed.
+
+## 5. Known gaps
 
 - **Cachex is per node.** `Glific.Caches.Replicator` copies `set`/`remove` to the other nodes over
   PubSub, so a flow published on web reaches the worker. `put_global` (org index, media
@@ -81,5 +143,6 @@ Oban.check_queue(queue: :default)
   `max_connections`.
 - **Dev mailbox.** `Swoosh.Adapters.Local` registers its storage globally, so two clustered dev
   nodes log a `global: Name conflict` for it on connect. Dev only; prod uses a different adapter.
-- **Worker still serves the full router.** Nothing routes traffic to it, but it could be trimmed to
-  a health check route.
+- **Worker still serves the full router.** Every Gigalixir app gets a public `*.gigalixirapp.com`
+  domain, so the whole API is reachable on the worker's domain (same auth). Trim it to a health
+  check route before production; Gigalixir only needs port 4000 to answer.
