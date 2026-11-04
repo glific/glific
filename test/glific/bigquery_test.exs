@@ -102,7 +102,11 @@ defmodule Glific.BigQueryTest do
 
   test "handle_insert_response/3 should deactivate bigquery credentials", attrs do
     BigQuery.handle_insert_response(
-      {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
+      {:error,
+       %Tesla.Env{
+         status: 404,
+         body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"
+       }},
       attrs.organization_id,
       table: "messages",
       max_id: 10
@@ -311,7 +315,11 @@ defmodule Glific.BigQueryTest do
   test "handle_insert_response/3 returns request_failed for an unhandled error", attrs do
     assert {:error, :request_failed} ==
              BigQuery.handle_insert_response(
-               {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
+               {:error,
+                %Tesla.Env{
+                  status: 404,
+                  body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"
+                }},
                attrs.organization_id,
                table: "messages",
                action: :insert

@@ -117,7 +117,8 @@ defmodule Glific.BigQuery.InstrumentationTest do
         capture_counters(fn ->
           Glific.BigQuery.handle_insert_response(
             {:error,
-             %{
+             %Tesla.Env{
+               status: 403,
                body:
                  ~s({"error":{"code":403,"status":"PERMISSION_DENIED","errors":[{"message":"denied"}]}})
              }},
@@ -159,7 +160,8 @@ defmodule Glific.BigQuery.InstrumentationTest do
         capture_counters(fn ->
           assert {:error, :request_failed} ==
                    Glific.BigQuery.handle_insert_response(
-                     {:error, %{status: 400, body: ~s({"error":{"status":"INVALID_ARGUMENT"}})}},
+                     {:error,
+                      %Tesla.Env{status: 400, body: ~s({"error":{"status":"INVALID_ARGUMENT"}})}},
                      1,
                      table: "contacts",
                      action: :insert
