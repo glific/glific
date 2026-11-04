@@ -31,7 +31,6 @@ defmodule Glific.BigQuery do
     BigQuery.BigQueryJob,
     BigQuery.Instrumentation,
     BigQuery.Schema,
-    BigQuery.SyncError,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
     Contacts.Contact,
@@ -81,6 +80,14 @@ defmodule Glific.BigQuery do
   }
 
   alias GoogleApi.Gax.Response
+
+  defmodule SyncError do
+    @moduledoc """
+    Reported when syncing data to BigQuery fails, so AppSignal groups every sync failure
+    under one exception class instead of a generic `ErlangError`.
+    """
+    defexception [:message]
+  end
 
   @bigquery_tables %{
     "contacts" => :contact_schema,
