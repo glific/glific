@@ -19,8 +19,8 @@ defmodule Glific.Contacts.TermSearch do
   """
   @spec match(String.t(), User.t() | nil) :: Ecto.Query.dynamic_expr()
   def match(term, user) do
-    name = dynamic([c], ilike(c.name, ^"%#{escape_like(term)}%"))
-    name_or_phone = dynamic([c], ^name or c.phone in ^phones(term))
+    name_or_phone =
+      dynamic([c], ilike(c.name, ^"%#{escape_like(term)}%") or c.phone in ^phones(term))
 
     if include_usernames?(user),
       do: dynamic([c], ^name_or_phone or ^username_match(term, user.organization_id)),
