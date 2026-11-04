@@ -195,7 +195,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Logger.debug("removing duplicates for org_id: #{organization_id} table: #{table}")
 
     Instrumentation.track(table, :remove_duplicates, organization_id, fn ->
-      BigQuery.make_job_to_remove_duplicate(table, organization_id)
+      BigQuery.remove_duplicates(table, organization_id)
     end)
 
     :ok
@@ -210,7 +210,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     RepoReplica.put_process_state(organization_id)
 
     # Only wraps the raising failure paths. Outcomes BigQuery reports without raising are
-    # recorded inside BigQuery.handle_insert_query_response/3, where they are visible.
+    # recorded inside BigQuery.handle_insert_response/3, where they are visible.
     Instrumentation.track(table, action, organization_id, fn ->
       Jobs.get_bigquery_job(organization_id, table)
       |> insert_for_table(organization_id, action)
@@ -356,7 +356,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       ]
     end)
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :messages, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :messages, organization_id, attrs))
 
     :ok
   end
@@ -387,7 +387,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :contacts_wa_groups, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :contacts_wa_groups, organization_id, attrs))
 
     :ok
   end
@@ -416,7 +416,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :flow_labels, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :flow_labels, organization_id, attrs))
 
     :ok
   end
@@ -446,7 +446,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :contacts_fields, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :contacts_fields, organization_id, attrs))
 
     :ok
   end
@@ -479,7 +479,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :groups, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :groups, organization_id, attrs))
 
     :ok
   end
@@ -510,7 +510,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :tags, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :tags, organization_id, attrs))
 
     :ok
   end
@@ -542,7 +542,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :trial_users, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :trial_users, organization_id, attrs))
 
     :ok
   end
@@ -573,7 +573,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :saved_searches, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :saved_searches, organization_id, attrs))
 
     :ok
   end
@@ -609,7 +609,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :speed_sends, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :speed_sends, organization_id, attrs))
 
     :ok
   end
@@ -641,7 +641,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :wa_groups, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :wa_groups, organization_id, attrs))
 
     :ok
   end
@@ -672,7 +672,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :wa_groups_phones, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :wa_groups_phones, organization_id, attrs))
 
     :ok
   end
@@ -706,7 +706,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :interactive_templates, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :interactive_templates, organization_id, attrs))
 
     :ok
   end
@@ -737,7 +737,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :wa_groups_collections, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :wa_groups_collections, organization_id, attrs))
 
     :ok
   end
@@ -768,7 +768,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :wa_reactions, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :wa_reactions, organization_id, attrs))
 
     :ok
   end
@@ -800,7 +800,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :whatsapp_forms, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :whatsapp_forms, organization_id, attrs))
 
     :ok
   end
@@ -834,7 +834,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :whatsapp_forms_responses, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :whatsapp_forms_responses, organization_id, attrs))
 
     :ok
   end
@@ -865,7 +865,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :certificate_templates, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :certificate_templates, organization_id, attrs))
 
     :ok
   end
@@ -897,7 +897,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :issued_certificates, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :issued_certificates, organization_id, attrs))
 
     :ok
   end
@@ -928,7 +928,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :message_broadcast_contacts, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :message_broadcast_contacts, organization_id, attrs))
 
     :ok
   end
@@ -965,7 +965,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :message_broadcasts, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :message_broadcasts, organization_id, attrs))
 
     :ok
   end
@@ -1051,7 +1051,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :contacts_groups, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :contacts_groups, organization_id, attrs))
 
     :ok
   end
@@ -1086,7 +1086,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :profiles, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :profiles, organization_id, attrs))
 
     :ok
   end
@@ -1118,7 +1118,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :contact_histories, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :contact_histories, organization_id, attrs))
 
     :ok
   end
@@ -1156,7 +1156,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :organizations, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :organizations, organization_id, attrs))
 
     :ok
   end
@@ -1189,7 +1189,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :message_conversations, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :message_conversations, organization_id, attrs))
 
     :ok
   end
@@ -1222,7 +1222,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :flows, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :flows, organization_id, attrs))
 
     :ok
   end
@@ -1292,7 +1292,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :flow_counts, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :flow_counts, organization_id, attrs))
 
     :ok
   end
@@ -1353,7 +1353,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :flow_contexts, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :flow_contexts, organization_id, attrs))
 
     :ok
   end
@@ -1392,7 +1392,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :tickets, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :tickets, organization_id, attrs))
 
     :ok
   end
@@ -1436,7 +1436,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :wa_messages, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :wa_messages, organization_id, attrs))
 
     :ok
   end
@@ -1493,7 +1493,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, stat_atom, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, stat_atom, organization_id, attrs))
 
     :ok
   end
@@ -1538,7 +1538,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, tracker_atom, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, tracker_atom, organization_id, attrs))
 
     :ok
   end
@@ -1588,7 +1588,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
+    |> Enum.each(&insert_chunk(&1, :messages_media, organization_id, attrs))
   end
 
   @spec get_message_row(atom | map(), non_neg_integer) :: map()
@@ -1652,8 +1652,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
       context_message_id: row.context_message_id
     }
 
-  @spec make_job(list(), atom(), non_neg_integer, map()) :: any
-  defp make_job(data, table, organization_id, %{action: :insert} = attrs)
+  @spec insert_chunk(list(), atom(), non_neg_integer, map()) :: any
+  defp insert_chunk(data, table, organization_id, %{action: :insert} = attrs)
        when data in [%{}, nil, []] do
     table = Atom.to_string(table)
 
@@ -1661,7 +1661,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       do: Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
   end
 
-  defp make_job(data, table, organization_id, %{action: :update} = attrs)
+  defp insert_chunk(data, table, organization_id, %{action: :update} = attrs)
        when data in [%{}, nil, []] do
     table = Atom.to_string(table)
 
@@ -1672,9 +1672,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
         })
   end
 
-  defp make_job(data, table, organization_id, attrs) do
+  defp insert_chunk(data, table, organization_id, attrs) do
     Logger.debug(
-      "making a new job for org_id: #{organization_id} table: #{table} to send on bigquery with max id: #{SafeLog.safe_inspect(attrs)}"
+      "inserting chunk to bigquery for org_id: #{organization_id} table: #{table} with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     table = Atom.to_string(table)
@@ -1693,7 +1693,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         attrs[:last_updated_at]
       end
 
-    BigQuery.make_insert_query(data, table, organization_id,
+    BigQuery.insert_rows(data, table, organization_id,
       max_id: max_id,
       last_updated_at: last_updated_at,
       action: attrs[:action]
@@ -2094,9 +2094,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec enqueue_chunks(list(), atom(), non_neg_integer(), map()) :: :ok
   defp enqueue_chunks(chunks, job_type, organization_id, attrs) do
     if chunks == [] do
-      make_job([], job_type, organization_id, attrs)
+      insert_chunk([], job_type, organization_id, attrs)
     else
-      Enum.each(chunks, &make_job(&1, job_type, organization_id, attrs))
+      Enum.each(chunks, &insert_chunk(&1, job_type, organization_id, attrs))
     end
   end
 

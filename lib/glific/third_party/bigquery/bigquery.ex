@@ -490,8 +490,10 @@ defmodule Glific.BigQuery do
 
   @spec log_schema_update_error(tuple(), non_neg_integer(), String.t()) :: any()
   defp log_schema_update_error({:error, error}, organization_id, target) do
+    {_status, _message, summary} = parse_bigquery_error(error)
+
     Glific.log_error(
-      "BigQuery schema update failed for org_id: #{organization_id}, #{target}, #{bigquery_error_summary(error)}"
+      "BigQuery schema update failed for org_id: #{organization_id}, #{target}, #{summary}"
     )
   end
 
@@ -906,59 +908,51 @@ defmodule Glific.BigQuery do
   @doc """
     Insert rows in the bigquery
   """
-  @spec make_insert_query(map() | list, String.t(), non_neg_integer, Keyword.t()) :: :ok
-  def make_insert_query(%{json: data}, _table, _organization_id, _max_id)
+  @spec insert_rows(map() | list, String.t(), non_neg_integer, Keyword.t()) :: :ok
+  def insert_rows(%{json: data}, _table, _organization_id, _opts)
       when data in [[], nil, %{}],
       do: :ok
 
-  def make_insert_query(data, table, organization_id, attrs) do
-    max_id = Keyword.get(attrs, :max_id)
-    last_updated_at = Keyword.get(attrs, :last_updated_at)
+  def insert_rows(data, table, organization_id, opts) do
+    action = Keyword.get(opts, :action)
 
-    Logger.info(
-      "Insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
-    )
+    Logger.info("Insert data to bigquery for table #{table} - rows_count: #{Enum.count(data)}")
 
     case fetch_bigquery_credentials(organization_id) do
       {:ok, %{conn: _conn, project_id: _project_id, dataset_id: _dataset_id}} = credentials ->
         credentials
-        |> do_make_insert_query(organization_id, data,
+        |> insert_all(data, table: table)
+        |> handle_insert_response(organization_id,
           table: table,
-          max_id: max_id,
-          last_updated_at: last_updated_at
-        )
-        |> handle_insert_query_response(organization_id,
-          table: table,
-          max_id: max_id,
-          last_updated_at: last_updated_at,
-          action: Keyword.get(attrs, :action)
+          max_id: Keyword.get(opts, :max_id),
+          last_updated_at: Keyword.get(opts, :last_updated_at),
+          action: action
         )
 
       {:error, _reason} ->
-        Instrumentation.record(table, :error, Keyword.get(attrs, :action), organization_id)
+        Instrumentation.record(
+          table,
+          {:failed, :credentials_unavailable},
+          action,
+          organization_id
+        )
 
       {:ok, message} ->
-        Logger.info(
-          "Skipping bigquery insert for org_id: #{organization_id}, table: #{table}: #{message}"
-        )
+        Logger.info("Skipping bigquery insert for table #{table} - #{message}")
     end
 
     :ok
   end
 
-  @spec do_make_insert_query(tuple(), non_neg_integer, list(), Keyword.t()) ::
-          {:ok, any()} | {:error, any()}
-  defp do_make_insert_query(
+  @spec insert_all(tuple(), list(), Keyword.t()) :: {:ok, any()} | {:error, any()}
+  defp insert_all(
          {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}},
-         organization_id,
          data,
          opts
        ) do
     table = Keyword.get(opts, :table)
 
-    Logger.info(
-      "Inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
-    )
+    Logger.info("Inserting data to bigquery for table #{table} - rows_count: #{Enum.count(data)}")
 
     Tabledata.bigquery_tabledata_insert_all(
       conn,
@@ -970,143 +964,120 @@ defmodule Glific.BigQuery do
     )
   end
 
-  @spec handle_insert_query_response(tuple(), non_neg_integer, Keyword.t()) :: :ok
-  defp handle_insert_query_response({:ok, res}, organization_id, opts) do
+  @spec handle_insert_response(tuple(), non_neg_integer, Keyword.t()) :: any()
+  defp handle_insert_response({:ok, res}, organization_id, opts) do
     table = Keyword.get(opts, :table)
     max_id = Keyword.get(opts, :max_id)
     last_updated_at = Keyword.get(opts, :last_updated_at)
+    action = Keyword.get(opts, :action)
 
     cond do
       res.insertErrors != nil ->
         Glific.log_error(
-          "BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}"
+          "BigQuery partial insert error for table #{table} - #{safe_inspect(res)}"
         )
+
+        Instrumentation.record(table, {:failed, :row_errors}, action, organization_id)
 
       ## Max id will be nil or 0 in case of update statement.
       max_id not in [nil, 0] ->
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{safe_inspect(res)}"
+          "Data inserted to bigquery successfully for table #{table}, max_id: #{max_id}"
         )
+
+        Instrumentation.record(table, :success, action, organization_id)
 
       last_updated_at not in [nil, 0] ->
         Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
 
         Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{safe_inspect(res)}"
+          "Data updated to bigquery successfully for table #{table}, last_updated_at: #{last_updated_at}"
         )
+
+        Instrumentation.record(table, :success, action, organization_id)
 
       true ->
         Logger.info("Count not found the operation for bigquery insert and update")
+        Instrumentation.record(table, :success, action, organization_id)
     end
-
-    # The insertErrors branch above raises rather than reaching here, so it is counted as
-    # `exception` by BigQueryWorker.perform/1 instead — exactly one increment per job.
-    Instrumentation.record(table, :success, Keyword.get(opts, :action), organization_id)
-
-    :ok
   end
 
-  defp handle_insert_query_response({:error, response}, organization_id, opts) do
+  defp handle_insert_response({:error, response}, organization_id, opts) do
     table = Keyword.get(opts, :table)
-
-    Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, " <>
-        "table: #{table}, #{bigquery_error_summary(response)}"
-    )
-
-    {error, message} = bigquery_error_status(response)
-
     action = Keyword.get(opts, :action)
+    {error, message, summary} = parse_bigquery_error(response)
 
     error
     |> case do
       "NOT_FOUND" ->
-        # Counted even though nothing raises: otherwise the sync reports green.
-        Instrumentation.record(table, :schema_not_found, action, organization_id)
+        Logger.error(
+          "Schema not found while inserting the data to table #{table}, syncing schema - #{summary}"
+        )
+
+        Instrumentation.record(table, {:failed, :schema_not_found}, action, organization_id)
         sync_schema_with_bigquery(organization_id)
 
       "PERMISSION_DENIED" ->
-        Instrumentation.record(table, :permission_denied, action, organization_id)
-
-        Partners.disable_credential(
-          organization_id,
-          "bigquery",
-          message
+        Logger.error(
+          "Permission denied while inserting the data to table #{table}, disabling credentials - #{summary}"
         )
 
+        Instrumentation.record(table, {:failed, :permission_denied}, action, organization_id)
+        Partners.disable_credential(organization_id, "bigquery", message)
+
       "TIMEOUT" ->
-        Instrumentation.record(table, :timeout, action, organization_id)
-        Logger.info("Timeout while inserting the data. #{safe_inspect(response)}")
+        Logger.error("Timeout while inserting the data to table #{table} - #{summary}")
+        Instrumentation.record(table, {:failed, :timeout}, action, organization_id)
 
       _ ->
-        raise("BigQuery Insert Error for table #{table} #{safe_inspect(response)}")
+        raise("Error while inserting the data to table #{table} on bigquery - #{summary}")
     end
   end
 
-  ## Two constraints shape this. The body is inspected rather than interpolated, because
-  ## BigQuery's JSON is pretty-printed and a raw newline ends the log entry (the Logger format
-  ## ends with `$message`). And the two fields that name the failure are lifted to the front,
-  ## because they sit behind a long `message` in the response and would otherwise be lost to
-  ## `inspect/1`'s 4096-char `:printable_limit`. The body still follows in full.
-  @spec bigquery_error_summary(any()) :: String.t()
-  defp bigquery_error_summary(%Tesla.Env{status: status, body: body}),
-    do: "http_status=#{status} #{bigquery_error_fields(body)}body=#{safe_inspect(body)}"
+  ## One decode yields the status the caller branches on, the first error message, and the log
+  ## summary. BigQuery pretty-prints its JSON; re-encoding it compactly keeps the entry on one
+  ## line with no `\n` escapes, which the log pipeline into AppSignal splits on.
+  @spec parse_bigquery_error(any()) :: {String.t() | atom() | nil, String.t() | nil, String.t()}
+  defp parse_bigquery_error(%{body: body} = response) when is_binary(body) do
+    http_status = Map.get(response, :status)
 
-  defp bigquery_error_summary(error), do: safe_inspect(error)
-
-  @spec bigquery_error_fields(any()) :: String.t()
-  defp bigquery_error_fields(body) when is_binary(body) do
     case Jason.decode(body) do
-      {:ok, %{"error" => %{} = error}} ->
-        "bq_status=#{error["status"]} reason=#{error_reasons(error["errors"])} "
+      {:ok, decoded} ->
+        {error_status(decoded), first_error_message(decoded),
+         "http_status=#{http_status} body=#{Jason.encode!(decoded)}"}
 
-      {:ok, %{"errors" => [_ | _] = errors}} ->
-        "reason=#{error_reasons(errors)} "
-
-      _ ->
-        ""
+      {:error, _} ->
+        {:unknown, "UNKNOWN ERROR", "http_status=#{http_status} body=#{safe_inspect(body)}"}
     end
   end
 
-  defp bigquery_error_fields(_body), do: ""
+  defp parse_bigquery_error(%{body: body} = response),
+    do:
+      {:unknown, "UNKNOWN ERROR",
+       "http_status=#{Map.get(response, :status)} body=#{safe_inspect(body)}"}
 
-  @spec error_reasons(any()) :: String.t()
-  defp error_reasons(errors) when is_list(errors) do
-    errors
-    |> Enum.flat_map(fn
-      %{"reason" => reason} when is_binary(reason) -> [String.replace(reason, ~r/\s+/, " ")]
-      _ -> []
-    end)
-    |> Enum.join(",")
-  end
+  defp parse_bigquery_error(reason) when reason in [:timeout, :connect_timeout],
+    do: {"TIMEOUT", "TIMEOUT", safe_inspect(reason)}
 
-  defp error_reasons(_errors), do: ""
+  defp parse_bigquery_error(response), do: {:unknown, "UNKNOWN ERROR", safe_inspect(response)}
 
-  @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}
-  defp bigquery_error_status(response) do
-    with true <- is_map(response),
-         true <- Map.has_key?(response, :body),
-         {:ok, error} <- Jason.decode(response.body) do
-      [bq_error] = [error["error"]["errors"]]
-      {error["error"]["status"], get_in(bq_error, [Access.at(0), "message"])}
-    else
-      _ ->
-        if is_atom(response) do
-          {"TIMEOUT", "TIMEOUT"}
-        else
-          Logger.info("Bigquery status error #{safe_inspect(response)}")
-          {:unknown, "UNKNOWN ERROR"}
-        end
-    end
-  end
+  @spec error_status(any()) :: String.t() | nil
+  defp error_status(%{"error" => %{"status" => status}}), do: status
+  defp error_status(_decoded), do: nil
+
+  @spec first_error_message(any()) :: String.t() | nil
+  defp first_error_message(%{"error" => %{"errors" => [%{"message" => message} | _]}}),
+    do: message
+
+  defp first_error_message(_decoded), do: nil
 
   @doc """
     Merge delta and main tables.
   """
-  @spec make_job_to_remove_duplicate(String.t(), non_neg_integer) :: :ok
-  def make_job_to_remove_duplicate(table, organization_id) do
+  @spec remove_duplicates(String.t(), non_neg_integer) :: :ok
+  def remove_duplicates(table, organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
@@ -1131,8 +1102,13 @@ defmodule Glific.BigQuery do
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
-        # No usable credentials means the dedup did not run.
-        Instrumentation.record(table, :error, :remove_duplicates, organization_id)
+        Instrumentation.record(
+          table,
+          {:failed, :credentials_unavailable},
+          :remove_duplicates,
+          organization_id
+        )
+
         :ok
     end
   end
@@ -1186,11 +1162,12 @@ defmodule Glific.BigQuery do
   ## The delete result is deliberately not raised on — a failed dedup should not fail the job.
   ## It is counted though: without this the caller records success for a dedup that did not run.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, organization_id) do
-    Instrumentation.record(table, :error, :remove_duplicates, organization_id)
+    Instrumentation.record(table, {:failed, :query_failed}, :remove_duplicates, organization_id)
+    {_status, _message, summary} = parse_bigquery_error(error)
 
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. " <>
-        "org_id: #{organization_id} #{bigquery_error_summary(error)}"
+        "org_id: #{organization_id} #{summary}"
     )
 
     :ok

@@ -100,8 +100,8 @@ defmodule Glific.BigQueryTest do
     Oban.drain_queue(queue: :bigquery)
   end
 
-  test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
-    BigQuery.handle_insert_query_response(
+  test "handle_insert_response/3 should deactivate bigquery credentials", attrs do
+    BigQuery.handle_insert_response(
       {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
       attrs.organization_id,
       table: "messages",
@@ -112,7 +112,7 @@ defmodule Glific.BigQueryTest do
     assert false == credential.is_active
   end
 
-  test "make_job_to_remove_duplicate/2 should delete duplicate messages", attrs do
+  test "remove_duplicates/2 should delete duplicate messages", attrs do
     with_mocks([
       {
         Goth.Token,
@@ -131,11 +131,11 @@ defmodule Glific.BigQueryTest do
           }
       end)
 
-      assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+      assert :ok == BigQuery.remove_duplicates("messages", attrs.organization_id)
     end
   end
 
-  test "make_job_to_remove_duplicate/2 should raise info log", attrs do
+  test "remove_duplicates/2 should raise info log", attrs do
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
@@ -156,11 +156,11 @@ defmodule Glific.BigQueryTest do
     ]) do
       # we'll need to figure out how to check if this did the right thing
       # making sure the log message is printed is quite useless
-      BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+      BigQuery.remove_duplicates("messages", attrs.organization_id)
     end
   end
 
-  test "make_job_to_remove_duplicate/2 should override Hackney's default recv_timeout",
+  test "remove_duplicates/2 should override Hackney's default recv_timeout",
        attrs do
     with_mocks([
       {
@@ -181,11 +181,60 @@ defmodule Glific.BigQueryTest do
         %Tesla.Env{status: 200}
       end)
 
-      assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+      assert :ok == BigQuery.remove_duplicates("messages", attrs.organization_id)
     end
   end
 
-  describe "bigquery_error_summary/1" do
+  describe "parse_bigquery_error/1" do
+    test "returns status, first message and compact summary from one response" do
+      body = """
+      {
+        "error": {
+          "code": 403,
+          "message": "Access Denied",
+          "errors": [{"message": "Access Denied: dataset", "reason": "accessDenied"}],
+          "status": "PERMISSION_DENIED"
+        }
+      }
+      """
+
+      assert {"PERMISSION_DENIED", "Access Denied: dataset", summary} =
+               BigQuery.parse_bigquery_error(%Tesla.Env{status: 403, body: body})
+
+      assert String.starts_with?(summary, ~s(http_status=403 body={"error":))
+      refute summary =~ "\n"
+    end
+
+    test "returns nil status and message for JSON without an error envelope" do
+      assert {nil, nil, ~s(http_status=400 body={"kind":"x"})} =
+               BigQuery.parse_bigquery_error(%Tesla.Env{status: 400, body: ~s({"kind": "x"})})
+    end
+
+    test "returns unknown for a body that is not JSON" do
+      assert {:unknown, "UNKNOWN ERROR", ~s(http_status=502 body="bad gateway")} =
+               BigQuery.parse_bigquery_error(%Tesla.Env{status: 502, body: "bad gateway"})
+    end
+
+    test "treats only timeout reasons as a timeout" do
+      assert {"TIMEOUT", "TIMEOUT", ":timeout"} = BigQuery.parse_bigquery_error(:timeout)
+
+      assert {"TIMEOUT", "TIMEOUT", ":connect_timeout"} =
+               BigQuery.parse_bigquery_error(:connect_timeout)
+    end
+
+    test "returns unknown for a transport error that is not a timeout" do
+      for reason <- [:econnrefused, :nxdomain, :closed] do
+        assert {:unknown, "UNKNOWN ERROR", _} = BigQuery.parse_bigquery_error(reason)
+      end
+    end
+
+    test "returns unknown for any other term" do
+      assert {:unknown, "UNKNOWN ERROR", ~s({:closed, "socket"})} =
+               BigQuery.parse_bigquery_error({:closed, "socket"})
+    end
+  end
+
+  describe "parse_bigquery_error/1 summary" do
     @envelope_body """
     {
       "error": {
@@ -210,149 +259,27 @@ defmodule Glific.BigQueryTest do
     }
     """
 
-    test "keeps the status, every reason and the whole body on a single line" do
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: @envelope_body})
+    test "logs the status and the whole body compacted onto one line" do
+      {_, _, summary} =
+        BigQuery.parse_bigquery_error(%Tesla.Env{status: 400, body: @envelope_body})
 
-      assert String.starts_with?(
-               summary,
-               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,stopped body="
-             )
-
+      assert String.starts_with?(summary, ~s(http_status=400 body={"error":))
       assert summary =~ "TIMESTAMP_SUB does not support the MONTH date part"
-      assert summary =~ "Query was stopped"
+      assert summary =~ ~s("reason":"stopped")
       refute summary =~ "\n"
+      refute summary =~ "\\n"
     end
 
-    test "keeps the status and reason ahead of the clip on a long response" do
-      body =
-        ~s({"error":{"code":400,"message":"Syntax error: ) <>
-          String.duplicate("very long query text ", 300) <>
-          ~s(","errors":[{"domain":"global","reason":"invalidQuery"}],"status":"INVALID_ARGUMENT"}})
+    test "falls back to inspect for a body that is not JSON" do
+      {_, _, summary} =
+        BigQuery.parse_bigquery_error(%Tesla.Env{status: 503, body: "upstream\nunavailable"})
 
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
-
-      assert byte_size(body) > 4096
-
-      assert String.starts_with?(
-               summary,
-               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
-             )
-
-      assert String.ends_with?(summary, "<> ...")
-      tail = summary |> String.split("body=") |> List.last()
-      refute tail =~ "invalidQuery"
-      refute tail =~ "INVALID_ARGUMENT"
-
-      refute summary =~ "\n"
-    end
-
-    test "lifts the reason out of a top-level errors array" do
-      body =
-        ~s({"kind":"bigquery#queryResponse","jobComplete":true,"errors":) <>
-          ~s([{"reason":"invalidQuery","location":"query","message":"UPDATE or DELETE ) <>
-          ~s(statement over table would affect rows in the streaming buffer"}]})
-
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
-
-      assert String.starts_with?(summary, "http_status=400 reason=invalidQuery body=")
-      assert summary =~ "would affect rows in the streaming buffer"
-      refute summary =~ "\n"
-    end
-
-    test "prints the reason from every record in the errors array" do
-      body =
-        ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","errors":[) <>
-          ~s({"domain":"global","reason":"invalidQuery","message":"first"},) <>
-          ~s({"domain":"global","reason":"accessDenied","message":"second"},) <>
-          ~s({"domain":"global","reason":"rateLimitExceeded","message":"third"}]}})
-
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
-
-      assert String.starts_with?(
-               summary,
-               "http_status=400 bq_status=INVALID_ARGUMENT " <>
-                 "reason=invalidQuery,accessDenied,rateLimitExceeded body="
-             )
-    end
-
-    test "prints every reason from a top-level errors array too" do
-      body = ~s({"errors":[{"reason":"invalidQuery"},{"reason":"accessDenied"}]})
-
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
-
-      assert String.starts_with?(
-               summary,
-               "http_status=400 reason=invalidQuery,accessDenied body="
-             )
-    end
-
-    test "skips records whose reason is missing or not a string" do
-      body =
-        ~s({"error":{"status":"INVALID_ARGUMENT","errors":[) <>
-          ~s({"reason":"invalidQuery"},{"domain":"global"},{"reason":{"a":1}},) <>
-          ~s("not-a-map",{"reason":"accessDenied"}]}})
-
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
-
-      assert String.starts_with?(
-               summary,
-               "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery,accessDenied body="
-             )
-    end
-
-    test "renders a blank reason when the errors value is not a populated list" do
-      for errors <- [~s({}), ~s([]), ~s("accessDenied"), ~s([{"domain":"global"}]), "null"] do
-        body = ~s({"error":{"code":403,"errors":#{errors},"status":"PERMISSION_DENIED"}})
-
-        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
-
-        assert String.starts_with?(
-                 summary,
-                 "http_status=403 bq_status=PERMISSION_DENIED reason= body="
-               )
-      end
-    end
-
-    test "renders a blank reason when the reason is not a string" do
-      for reason <- [~s({"a":1}), ~s([{"a":1}]), "42", "true", "null"] do
-        body = ~s({"error":{"errors":[{"reason":#{reason}}],"status":"INVALID_ARGUMENT"}})
-
-        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
-
-        assert String.starts_with?(
-                 summary,
-                 "http_status=400 bq_status=INVALID_ARGUMENT reason= body="
-               )
-      end
-    end
-
-    test "collapses whitespace in every reason so the entry stays on one line" do
-      body =
-        ~s({"error":{"errors":[{"reason":"access\\n  denied\\tnow"},) <>
-          ~s({"reason":"quota\\nexceeded"}]}})
-
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 403, body: body})
-
-      assert String.starts_with?(
-               summary,
-               "http_status=403 bq_status= reason=access denied now,quota exceeded "
-             )
-
-      refute summary =~ "\n"
-      refute summary =~ "\t"
-    end
-
-    test "renders no fields when the body is neither known shape" do
-      for body <- [~s({"error":"invalid_grant"}), ~s({"errors":[]}), "upstream unavailable", ""] do
-        summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: body})
-
-        assert String.starts_with?(summary, "http_status=503 body=")
-      end
+      assert summary == ~s(http_status=503 body="upstream\\nunavailable")
     end
 
     test "never leaks the Tesla client middleware" do
-      summary =
-        BigQuery.bigquery_error_summary(%Tesla.Env{
+      {_, _, summary} =
+        BigQuery.parse_bigquery_error(%Tesla.Env{
           status: 400,
           body: @envelope_body,
           __client__: %Tesla.Client{}
@@ -363,29 +290,27 @@ defmodule Glific.BigQueryTest do
     end
 
     test "handles a non-response error term" do
-      assert BigQuery.bigquery_error_summary(:timeout) == ":timeout"
+      assert {_, _, ":timeout"} = BigQuery.parse_bigquery_error(:timeout)
     end
 
-    test "bounds an oversized body instead of flooding the log" do
+    test "logs an oversized body in full" do
       body =
         ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Syntax error: ) <>
-          String.duplicate("very long query text ", 500) <> ~s("}})
+          String.duplicate("very long query text ", 500) <> ~s(","errors":[{"reason":"tail"}]}})
 
-      summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
+      {_, _, summary} = BigQuery.parse_bigquery_error(%Tesla.Env{status: 400, body: body})
 
       assert byte_size(body) > 8192
-      assert summary =~ "http_status=400"
-      assert summary =~ "bq_status=INVALID_ARGUMENT"
-      assert summary =~ "Syntax error:"
-      assert String.ends_with?(summary, "<> ...")
-      assert byte_size(summary) < 4500
+      assert summary =~ ~s("errors":[{"reason":"tail"}])
+      assert summary =~ String.duplicate("very long query text ", 500)
+      refute summary =~ "<> ..."
       refute summary =~ "\n"
     end
   end
 
-  test "handle_insert_query_response/3 should raise error", attrs do
+  test "handle_insert_response/3 should raise error", attrs do
     assert_raise RuntimeError, fn ->
-      BigQuery.handle_insert_query_response(
+      BigQuery.handle_insert_response(
         {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
         attrs.organization_id,
         table: "messages",
@@ -474,10 +399,10 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  test "handle_insert_query_response/3 should update table", attrs do
+  test "handle_insert_response/3 should update table", attrs do
     job_table1 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
 
-    BigQuery.handle_insert_query_response(
+    BigQuery.handle_insert_response(
       {:ok, %{insertErrors: nil}},
       attrs.organization_id,
       table: "messages",
@@ -488,22 +413,17 @@ defmodule Glific.BigQueryTest do
     assert job_table2.table_id > job_table1.table_id
 
     # Incident #274: insertErrors used to raise and crash-loop the Oban job. It is now
-    # logged (see Glific.log_error/2) and the function falls through to its :ok return.
+    # logged (see Glific.log_error/2) and returns without moving the cursor.
     assert :ok ==
-             BigQuery.handle_insert_query_response(
+             BigQuery.handle_insert_response(
                {:ok, %{insertErrors: %{error: "Some errors"}}},
                attrs.organization_id,
                table: "messages",
-               max_id: 10
+               max_id: 20
              )
 
-    assert :ok ==
-             BigQuery.handle_insert_query_response(
-               {:ok, %{insertErrors: nil}},
-               attrs.organization_id,
-               table: "messages",
-               max_id: nil
-             )
+    assert Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages").table_id ==
+             job_table2.table_id
   end
 
   test "alter_tables/4 logs a dataset or table schema update that BigQuery refuses", %{
@@ -555,7 +475,7 @@ defmodule Glific.BigQueryTest do
     refute log =~ "BigQuery schema update failed for org_id: #{org_id}, messages"
   end
 
-  test "make_insert_query/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
+  test "insert_rows/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
        %{organization_id: org_id} do
     with_mocks([
       {
@@ -594,10 +514,10 @@ defmodule Glific.BigQueryTest do
       end)
 
       # Previously (pre-incident-274-fix) this call raised a RuntimeError from inside
-      # handle_insert_query_response/3 and never returned, crash-looping the Oban job
+      # handle_insert_response/3 and never returned, crash-looping the Oban job
       # that called it. Now it should complete normally and return :ok.
       assert :ok ==
-               BigQuery.make_insert_query(
+               BigQuery.insert_rows(
                  [%{json: %{id: 1, name: "test"}}],
                  "messages",
                  org_id,
@@ -869,9 +789,9 @@ defmodule Glific.BigQueryTest do
              BigQuery.format_date(DateTime.to_date(datetime) |> to_string, attrs.organization_id)
   end
 
-  test "make_job/4 forwards the real action, not \"unknown\"" do
-    # Drives make_job -> make_insert_query -> handle_insert_query_response -> record so a
-    # regression in forwarding :action is caught. Asserting on handle_insert_query_response
+  test "insert_chunk/4 forwards the real action, not \"unknown\"" do
+    # Drives insert_chunk -> insert_rows -> handle_insert_response -> record so a
+    # regression in forwarding :action is caught. Asserting on handle_insert_response
     # alone cannot see this — the action is dropped upstream of it.
     #
     # Mocks our own Instrumentation module rather than Appsignal: Appsignal is called from
@@ -904,7 +824,7 @@ defmodule Glific.BigQueryTest do
         }
       end)
 
-      BigQueryWorker.make_job([%{json: %{id: 1}}], :contacts, 1, %{
+      BigQueryWorker.insert_chunk([%{json: %{id: 1}}], :contacts, 1, %{
         action: :update,
         max_id: nil,
         last_updated_at: DateTime.utc_now()
