@@ -55,6 +55,8 @@ defmodule Glific.Sheets.GoogleSheets do
 
       params = [
         valueInputOption: "USER_ENTERED",
+        # The default, OVERWRITE, lets concurrent appends land on the same row and replace each other.
+        insertDataOption: "INSERT_ROWS",
         body: %{majorDimension: "ROWS", values: data}
       ]
 
