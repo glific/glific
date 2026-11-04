@@ -76,6 +76,8 @@ defmodule Glific.Application do
       :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
     ]
 
+    children = children ++ health_check_listener()
+
     # Add this :telemetry.attach/4 for oban success/failure call:
     attach_oban_telemetry_event()
 
@@ -108,6 +110,20 @@ defmodule Glific.Application do
 
   defp oban_config do
     Application.get_env(:glific, Oban)
+  end
+
+  # Last in the tree, so a worker only reports healthy once everything else has started.
+  defp health_check_listener do
+    case Application.get_env(:glific, :health_check_port) do
+      nil ->
+        []
+
+      port ->
+        [
+          {Plug.Cowboy,
+           scheme: :http, plug: GlificWeb.Plugs.HealthCheck, options: [port: port, net: :inet6]}
+        ]
+    end
   end
 
   defp attach_oban_telemetry_event do

@@ -60,7 +60,9 @@ config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integ
 
 # A web node only inserts jobs. peer: false keeps it out of Oban leader election, since the
 # leader runs the plugins (Cron, pruner, lifeline) and a web node starts none of them.
-if env!("NODE_ROLE", :string, nil) == "web" do
+node_role = env!("NODE_ROLE", :string, nil)
+
+if node_role == "web" do
   config :glific, Oban, queues: false, plugins: false, peer: false
 end
 
@@ -86,9 +88,13 @@ check_origin =
     default_origins
   end
 
+# A worker keeps the endpoint running for PubSub and subscription publishing but does not serve
+# it; it listens on the HTTP port with GlificWeb.Plugs.HealthCheck alone.
+config :glific, :health_check_port, if(node_role == "worker", do: http_port)
+
 # Glific endpoint configs
 config :glific, GlificWeb.Endpoint,
-  server: true,
+  server: node_role != "worker",
   http: [:inet6, port: http_port],
   check_origin: check_origin,
   secret_key_base: env!("SECRET_KEY_BASE", :string!),

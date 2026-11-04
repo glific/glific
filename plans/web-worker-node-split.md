@@ -8,8 +8,10 @@ Two Gigalixir apps built from the same release, clustered over Erlang distributi
 
 - **`glific`** (web) — serves HTTP and websockets, inserts Oban jobs, executes none.
 - **`glific-oban`** (worker) — executes every Oban queue and runs the plugins (Cron, pruner,
-  lifeline). Its endpoint keeps serving on port 4000 because Gigalixir only adds replicas that pass
-  the port 4000 health check to the cluster DNS name.
+  lifeline). `GlificWeb.Endpoint` runs with `server: false` (it is still needed for PubSub and
+  subscription publishing), and port 4000 is served by `GlificWeb.Plugs.HealthCheck` alone,
+  because Gigalixir only adds replicas that answer on port 4000 to the cluster DNS name. Neither
+  the API nor its websockets are reachable on the worker's public `*.gigalixirapp.com` domain.
 
 Phoenix.PubSub (and so Absinthe subscriptions, web channel rooms and Presence) works across the
 cluster with the default adapter, so a job on the worker pushes updates to sockets on the web app.
@@ -19,7 +21,8 @@ cluster with the default adapter, so a job on the worker pushes updates to socke
 | Env var | Where | Effect |
 |---|---|---|
 | `NODE_ROLE=web` | web app | Oban starts with `queues: false, plugins: false, peer: false` |
-| `NODE_ROLE` unset or `worker` | worker app, dev, test | Oban runs as today |
+| `NODE_ROLE=worker` | worker app | Oban runs as today; endpoint not served; `HTTP_PORT` answers `GET /health` only |
+| `NODE_ROLE` unset | dev, test, single-app deploys | everything as today |
 | `CLUSTER_QUERIES` | both apps | `basename=hostname` pairs for `DNSCluster`; unset disables clustering |
 | `ERLANG_COOKIE` | both apps | must be identical |
 
@@ -46,11 +49,13 @@ NODE_ROLE=web CLUSTER_QUERIES=web=localtest.me,worker=localtest.me \
 ```
 
 ```bash
-NODE_ROLE=worker CLUSTER_QUERIES=web=localtest.me,worker=localtest.me HTTP_PORT=4100 HTTPS_PORT=4101 \
+NODE_ROLE=worker CLUSTER_QUERIES=web=localtest.me,worker=localtest.me HTTP_PORT=4100 \
   elixir --name worker@127.0.0.1 --cookie glific -S mix phx.server
 ```
 
-The frontend keeps pointing at the web node (`https://glific.test:4001`).
+The frontend keeps pointing at the web node (`https://glific.test:4001`). The worker only answers
+`http://localhost:4100/health`; it starts no HTTPS listener and no asset watchers. Two nodes use
+two DB pools, so lower `POOL_SIZE` / `REPLICA_POOL_SIZE` if Postgres runs out of connections.
 
 Checks, from either node's IEx:
 
@@ -129,7 +134,8 @@ Before production:
 - Add the worker apps to `TARGETS` in `bin/gigalixir-release.sh` and
   `bin/gigalixir-verify-deploy.sh` (they must stay in sync), so a production release pushes and
   verifies both apps from the same commit.
-- Trim the worker's router to a health check route (see Known gaps).
+- Confirm with Gigalixir whether their health check is a TCP connect or an HTTP request, and if
+  HTTP, which path. The worker answers `200` on `/` and `/health` either way.
 - If Cloud SQL restricts client IPs, confirm the worker app's egress IP is allowed.
 
 ## 5. Known gaps
@@ -143,6 +149,3 @@ Before production:
   `max_connections`.
 - **Dev mailbox.** `Swoosh.Adapters.Local` registers its storage globally, so two clustered dev
   nodes log a `global: Name conflict` for it on connect. Dev only; prod uses a different adapter.
-- **Worker still serves the full router.** Every Gigalixir app gets a public `*.gigalixirapp.com`
-  domain, so the whole API is reachable on the worker's domain (same auth). Trim it to a health
-  check route before production; Gigalixir only needs port 4000 to answer.
