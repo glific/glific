@@ -9,6 +9,7 @@ defmodule Glific.Groups.WAGroupMemberImport do
   """
 
   alias Glific.{
+    CSV.Encoding,
     Groups.WAGroup,
     Groups.WAGroupMemberImportWorker,
     Jobs.UserJob,
@@ -48,8 +49,8 @@ defmodule Glific.Groups.WAGroupMemberImport do
           {:ok, map()} | {:error, String.t()}
   def import_members(org_id, wa_group_id, opts) do
     case Keyword.take(opts, [:file_path, :url, :data]) do
-      [{_source, value}] when value not in [nil, ""] ->
-        run_import(org_id, wa_group_id, opts)
+      [{_source, value}] = source when value not in [nil, ""] ->
+        run_import(org_id, wa_group_id, source)
 
       _ ->
         {:error, "Please specify exactly one of: file_path, url or data"}
@@ -60,7 +61,7 @@ defmodule Glific.Groups.WAGroupMemberImport do
           {:ok, map()} | {:error, String.t()}
   defp run_import(org_id, wa_group_id, opts) do
     # Resolve the source first so a failed download doesn't leave an orphan job.
-    with {:ok, stream} <- fetch_data_as_string(opts) do
+    with {:ok, stream} <- Encoding.stream(opts) do
       group_label = Repo.get!(WAGroup, wa_group_id).label
 
       user_job =
@@ -110,40 +111,12 @@ defmodule Glific.Groups.WAGroupMemberImport do
 
     stream
     |> IO.binstream(:line)
+    |> Encoding.strip_bom()
     |> decode_csv()
   end
 
   defp decode_csv(stream),
     do: CSV.decode(stream, headers: true, field_transform: &String.trim/1)
-
-  @spec fetch_data_as_string(Keyword.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
-  defp fetch_data_as_string(opts) do
-    file_path = Keyword.get(opts, :file_path)
-    url = Keyword.get(opts, :url)
-    data = Keyword.get(opts, :data)
-
-    cond do
-      file_path != nil -> {:ok, file_path |> Path.expand() |> File.stream!()}
-      url != nil -> fetch_url(url)
-      data != nil -> {:ok, string_stream(data)}
-    end
-  end
-
-  # Download the CSV, handling failures instead of raising — this runs
-  # synchronously from the resolver, so a flaky URL must not become a 500.
-  @spec fetch_url(String.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
-  defp fetch_url(url) do
-    case Tesla.get(url) do
-      {:ok, %Tesla.Env{status: 200, body: body}} -> {:ok, string_stream(body)}
-      _ -> {:error, "Could not download the member CSV from the given URL."}
-    end
-  end
-
-  @spec string_stream(String.t()) :: Enumerable.t()
-  defp string_stream(data) do
-    {:ok, stream} = StringIO.open(data)
-    IO.binstream(stream, :line)
-  end
 
   @spec create_notification(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}

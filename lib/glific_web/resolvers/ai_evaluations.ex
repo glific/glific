@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     Assistants.AssistantConfigVersion,
+    CSV.Encoding,
     Metrics,
     Partners,
     Repo,
@@ -88,6 +89,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
+         :ok <- normalize_csv_encoding(file),
          {:ok, row_count} <- validate_csv_structure(file),
          :ok <- validate_golden_qa_question_limit(row_count),
          {:ok, kaapi_dataset} <- upload_dataset(dataset, user.organization_id) do
@@ -184,6 +186,20 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   end
 
   @golden_qa_csv_escape_max_lines 1000
+
+  # Kaapi is handed these bytes straight off disk, so the BOM has to go from the
+  # file itself and not just from the stream we validate.
+  @spec normalize_csv_encoding(struct()) :: :ok | {:error, String.t()}
+  defp normalize_csv_encoding(%{path: path}) do
+    with {:ok, contents} <- File.read(path),
+         :ok <- Encoding.validate(contents),
+         :ok <- File.write(path, String.replace_prefix(contents, "\uFEFF", "")) do
+      :ok
+    else
+      {:error, posix} when is_atom(posix) -> {:error, "Unable to parse the uploaded CSV file"}
+      error -> error
+    end
+  end
 
   @spec validate_csv_structure(struct()) :: {:ok, non_neg_integer()} | {:error, String.t()}
   defp validate_csv_structure(%{path: path}) do
