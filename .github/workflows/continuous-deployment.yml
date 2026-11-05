@@ -10,7 +10,71 @@ on:
     branches: [master]
 
 jobs:
-  deploy:
+  # The Oban worker app (see plans/web-worker-node-split.md), deployed before the web app from
+  # the same commit.
+  # A job of its own because the deploy action always names its git remote "gigalixir", and
+  # a second run in the same checkout is refused. Skipped until the repository variable is set.
+  deploy-worker:
+    if: |
+      vars.GIGALIXIR_WORKER_APPNAME != '' && (
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
+        ) || (
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/master'
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'push' && 'master' || github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - uses: mhanberg/gigalixir-action@f58690cbb4cf1d9a5962cf993819db6a5ae129bd # v0.6.2
+        with:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+          GIGALIXIR_APP: ${{ vars.GIGALIXIR_WORKER_APPNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          MIGRATIONS: false
+
+      - name: remove unattended-upgrades
+        run: sudo apt-get -y remove unattended-upgrades
+
+      - name: Resolve deployed sha
+        id: deployed
+        run: echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+
+      - name: Ensure gigalixir CLI is authenticated
+        env:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+        run: |
+          command -v gigalixir >/dev/null 2>&1 || pip install gigalixir
+          if ! gigalixir account >/dev/null 2>&1; then
+            gigalixir login -e "$GIGALIXIR_USERNAME" -p "$GIGALIXIR_PASSWORD" -y
+          fi
+          gigalixir account >/dev/null
+
+      - name: Verify deploy stayed healthy
+        timeout-minutes: 20
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          chmod +x bin/gigalixir-verify-deploy.sh
+          bin/gigalixir-verify-deploy.sh \
+            --ci \
+            --app "${{ vars.GIGALIXIR_WORKER_APPNAME }}" \
+            --sha "${{ steps.deployed.outputs.sha }}"
+
+  deploy-web:
     # only run this job if the verify job succeeds
 
     # only run this job if the workflow is running on the feature/master branch or
@@ -84,67 +148,4 @@ jobs:
           bin/gigalixir-verify-deploy.sh \
             --ci \
             --app "${{ secrets.GIGALIXIR_APPNAME }}" \
-            --sha "${{ steps.deployed.outputs.sha }}"
-
-  # The Oban worker app (see plans/web-worker-node-split.md), deployed from the same commit.
-  # A job of its own because the deploy action always names its git remote "gigalixir", and
-  # a second run in the same checkout is refused. Skipped until the repository variable is set.
-  deploy-worker:
-    if: |
-      vars.GIGALIXIR_WORKER_APPNAME != '' && (
-        (
-          github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name == github.repository &&
-          contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
-        ) || (
-          github.event_name == 'push' &&
-          github.ref == 'refs/heads/master'
-        )
-      )
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event_name == 'push' && 'master' || github.event.pull_request.head.ref }}
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.10"
-
-      - uses: mhanberg/gigalixir-action@f58690cbb4cf1d9a5962cf993819db6a5ae129bd # v0.6.2
-        with:
-          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
-          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
-          GIGALIXIR_APP: ${{ vars.GIGALIXIR_WORKER_APPNAME }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          MIGRATIONS: false
-
-      - name: remove unattended-upgrades
-        run: sudo apt-get -y remove unattended-upgrades
-
-      - name: Resolve deployed sha
-        id: deployed
-        run: echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
-
-      - name: Ensure gigalixir CLI is authenticated
-        env:
-          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
-          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
-        run: |
-          command -v gigalixir >/dev/null 2>&1 || pip install gigalixir
-          if ! gigalixir account >/dev/null 2>&1; then
-            gigalixir login -e "$GIGALIXIR_USERNAME" -p "$GIGALIXIR_PASSWORD" -y
-          fi
-          gigalixir account >/dev/null
-
-      - name: Verify deploy stayed healthy
-        timeout-minutes: 20
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          chmod +x bin/gigalixir-verify-deploy.sh
-          bin/gigalixir-verify-deploy.sh \
-            --ci \
-            --app "${{ vars.GIGALIXIR_WORKER_APPNAME }}" \
             --sha "${{ steps.deployed.outputs.sha }}"
