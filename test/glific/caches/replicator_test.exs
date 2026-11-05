@@ -50,6 +50,32 @@ defmodule Glific.Caches.ReplicatorTest do
     assert {:ok, false} == Caches.get(organization_id, "local key")
   end
 
+  test "a single replicator runs per node, started with the application" do
+    assert {:error, {:already_started, pid}} = Replicator.start_link([])
+    assert pid == Process.whereis(Replicator)
+  end
+
+  test "init/1 subscribes the replicator to the cache topic" do
+    assert :subscribed ==
+             fn -> init_and_receive() end
+             |> Task.async()
+             |> Task.await()
+  end
+
+  # an own-node message, which the running replicator ignores
+  @probe {Replicator, node(), {:delete, []}}
+
+  defp init_and_receive do
+    {:ok, nil} = Replicator.init(nil)
+    Phoenix.PubSub.broadcast(Glific.PubSub, @topic, @probe)
+
+    receive do
+      @probe -> :subscribed
+    after
+      1_000 -> :not_subscribed
+    end
+  end
+
   defp broadcast_from(origin, operation) do
     Phoenix.PubSub.broadcast(Glific.PubSub, @topic, {Replicator, origin, operation})
     # the broadcast is already in the replicator's mailbox, so this returns once it is applied
