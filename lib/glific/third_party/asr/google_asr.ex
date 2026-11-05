@@ -2,7 +2,6 @@ defmodule Glific.ASR.GoogleASR do
   @moduledoc """
   This is a module to convert speech to text
   """
-  @hackney Tesla.Adapter.Hackney
   use Tesla
 
   require Logger
@@ -52,7 +51,8 @@ defmodule Glific.ASR.GoogleASR do
       }
     }
 
-    {:ok, result} = post(new_client(org_id), url, body, opts: [adapter: [recv_timeout: 50_000]])
+    {:ok, result} =
+      post(new_client(org_id), url, body, opts: [adapter: [receive_timeout: 50_000]])
 
     case result.body["error"] do
       nil ->
@@ -88,6 +88,6 @@ defmodule Glific.ASR.GoogleASR do
        ]}
     ]
 
-    Tesla.client(middleware, @hackney)
+    Tesla.client(middleware)
   end
 end

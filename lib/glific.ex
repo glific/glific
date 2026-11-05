@@ -760,6 +760,12 @@ defmodule Glific do
   def handle_tarams_result(result), do: result
 
   @doc """
+  Returns the Tesla adapter configured for `module` with `config :tesla, module, adapter: ...`.
+  """
+  @spec get_tesla_adapter(module()) :: module() | {module(), keyword()} | nil
+  def get_tesla_adapter(module), do: Application.get_env(:tesla, module, [])[:adapter]
+
+  @doc """
   Returns a reusable, configurable Tesla retry middleware
   """
   @spec get_tesla_retry_middleware(%{
