@@ -7,7 +7,7 @@ Issue #6082 · Epic #5803
 Two Gigalixir apps built from the same release, clustered over Erlang distribution:
 
 - **`glific`** (web) — serves HTTP and websockets, inserts Oban jobs, executes none.
-- **`glific-oban`** (worker) — executes every Oban queue and runs the plugins (Cron, pruner,
+- **`glific-worker`** (worker) — executes every Oban queue and runs the plugins (Cron, pruner,
   lifeline). `GlificWeb.Endpoint` runs with `server: false` (it is still needed for PubSub and
   subscription publishing), and port 4000 is served by `GlificWeb.Plugs.HealthCheck` alone,
   because Gigalixir only adds replicas that answer on port 4000 to the cluster DNS name. Neither
@@ -72,8 +72,8 @@ Oban.check_queue(queue: :default)
 
 Both apps run the same release from the same commit. The releases buildpack starts whatever
 release it builds (ours is `prod`), so the worker app needs no Procfile or release changes.
-Do staging first (`glific-staging` + `glific-staging-oban`), then production (`glific` +
-`glific-oban`). Every step can be undone on its own, and the web app keeps working throughout.
+Do staging first (`glific-staging` + `glific-staging-worker`), then production (`glific` +
+`glific-worker`). Every step can be undone on its own, and the web app keeps working throughout.
 
 1. **Ship the code with nothing set.** Merge to master. With `NODE_ROLE` and `CLUSTER_QUERIES`
    unset, the app behaves as before.
@@ -82,22 +82,23 @@ Do staging first (`glific-staging` + `glific-staging-oban`), then production (`g
    for the two apps to reach each other.
 
    ```bash
-   gigalixir create -n glific-staging-oban --cloud gcp --region us-central1
-   gigalixir config:copy -s glific-staging -d glific-staging-oban
-   gigalixir config:set -a glific-staging-oban NODE_ROLE=worker APPSIGNAL_HOSTNAME=glific-staging-oban
+   gigalixir create -n glific-staging-worker --cloud gcp --region us-central1
+   gigalixir config:copy -s glific-staging -d glific-staging-worker
+   gigalixir config:set -a glific-staging-worker NODE_ROLE=worker APPSIGNAL_HOSTNAME=glific-staging-worker
    ```
 
    Keep the copied `GIGALIXIR_APP_NAME`: the `custom_certificate` queue now runs on the worker and
    adds custom domains through the Gigalixir API, and those domains belong to the web app.
 
 3. **Share the cookie and deploy the worker.** Add the repository variable (not a secret, so the
-   job's `if` can read it) `GIGALIXIR_WORKER_APPNAME=glific-staging-oban`; from then on the
+   job's `if` can read it) `GIGALIXIR_WORKER_APPNAME=glific-staging-worker`; from then on the
    `deploy-worker` job in `continuous-deployment.yml` deploys the same commit to the worker with
-   the deploy action and verifies it, in parallel with the web app. Deploy once by hand, or re-run CI.
+   the deploy action and verifies it, and `deploy-web` runs only once that succeeded. Deploy once by
+   hand, or re-run CI.
 
    ```bash
-   gigalixir config:set -a glific-staging      ERLANG_COOKIE=<long-random-value>
-   gigalixir config:set -a glific-staging-oban ERLANG_COOKIE=<long-random-value>
+   gigalixir config:set -a glific-staging        ERLANG_COOKIE=<long-random-value>
+   gigalixir config:set -a glific-staging-worker ERLANG_COOKIE=<long-random-value>
    ```
 
    Both apps now run jobs, which Oban handles, and they are not clustered yet.
@@ -107,7 +108,7 @@ Do staging first (`glific-staging` + `glific-staging-oban`), then production (`g
    set the same value on both apps:
 
    ```bash
-   CLUSTER_QUERIES=glific-staging=<web service>.glific-staging.svc.cluster.local,glific-staging-oban=<worker service>.glific-staging-oban.svc.cluster.local
+   CLUSTER_QUERIES=glific-staging=<web service>.glific-staging.svc.cluster.local,glific-staging-worker=<worker service>.glific-staging-worker.svc.cluster.local
    ```
 
    Check `Node.list()` on each app shows the other.
@@ -123,7 +124,7 @@ Do staging first (`glific-staging` + `glific-staging-oban`), then production (`g
    glific-staging NODE_ROLE`.
 
 6. **Size each app.** Scale the worker for job throughput (`gigalixir ps:scale -a
-   glific-staging-oban --size … --replicas …`) and the web app for requests. Set `POOL_SIZE` and
+   glific-staging-worker --size … --replicas …`) and the web app for requests. Set `POOL_SIZE` and
    `REPLICA_POOL_SIZE` per app so that, across all replicas of both apps, connections stay under
    Cloud SQL `max_connections`.
 
