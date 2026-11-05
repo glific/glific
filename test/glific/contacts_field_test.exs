@@ -269,4 +269,99 @@ defmodule Glific.ContactsFieldTest do
     # checking if the old field is removed
     assert WAGroups.get_wa_group!(wa_group.id).fields["old"] == nil
   end
+
+  test "do_add_contact_field/6 registers a field that does not exist yet", %{
+    organization_id: organization_id
+  } do
+    Fixtures.contact_fixture()
+    |> ContactField.do_add_contact_field("district", "District", "Pune")
+
+    assert %ContactsField{name: "District"} =
+             Repo.get_by(ContactsField, %{
+               shortcode: "district",
+               scope: :contact,
+               organization_id: organization_id
+             })
+  end
+
+  test "do_add_contact_field/6 with a different label only updates the current contact", %{
+    organization_id: organization_id
+  } do
+    other_contact =
+      Fixtures.contact_fixture()
+      |> ContactField.do_add_contact_field("age", "Age", "25")
+
+    contact =
+      Fixtures.contact_fixture()
+      |> ContactField.do_add_contact_field("age", "Age (years)", "30")
+
+    assert %ContactsField{name: "Age"} =
+             Repo.get_by(ContactsField, %{
+               shortcode: "age",
+               scope: :contact,
+               organization_id: organization_id
+             })
+
+    assert %Contact{fields: %{"age" => %{"label" => "Age", "value" => "25"}}} =
+             Contacts.get_contact(other_contact.id)
+
+    assert %Contact{fields: %{"age" => %{"label" => "Age (years)", "value" => "30"}}} =
+             Contacts.get_contact(contact.id)
+  end
+
+  test "do_add_wa_group_field/5 with a different label only updates the current group", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    other_wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: organization_id,
+        wa_managed_phone_id: wa_managed_phone.id,
+        bsp_id: "120363238105@g.us"
+      })
+      |> ContactField.do_add_wa_group_field("cohort", "Cohort", "A")
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: organization_id,
+        wa_managed_phone_id: wa_managed_phone.id,
+        bsp_id: "120363238106@g.us"
+      })
+      |> ContactField.do_add_wa_group_field("cohort", "Cohort Name", "B")
+
+    assert %ContactsField{name: "Cohort"} =
+             Repo.get_by(ContactsField, %{
+               shortcode: "cohort",
+               scope: :wa_group,
+               organization_id: organization_id
+             })
+
+    assert %WAGroup{fields: %{"cohort" => %{"label" => "Cohort", "value" => "A"}}} =
+             WAGroups.get_wa_group!(other_wa_group.id)
+
+    assert %WAGroup{fields: %{"cohort" => %{"label" => "Cohort Name", "value" => "B"}}} =
+             WAGroups.get_wa_group!(wa_group.id)
+  end
+
+  test "do_add_wa_group_field/5 registers a group field when a contact field has the same shortcode",
+       %{organization_id: organization_id} do
+    Fixtures.contact_fixture()
+    |> ContactField.do_add_contact_field("region", "Region", "North")
+
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    Fixtures.wa_group_fixture(%{
+      organization_id: organization_id,
+      wa_managed_phone_id: wa_managed_phone.id
+    })
+    |> ContactField.do_add_wa_group_field("region", "Region", "South")
+
+    assert %ContactsField{name: "Region"} =
+             Repo.get_by(ContactsField, %{
+               shortcode: "region",
+               scope: :wa_group,
+               organization_id: organization_id
+             })
+  end
 end
