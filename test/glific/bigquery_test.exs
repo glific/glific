@@ -221,9 +221,10 @@ defmodule Glific.BigQueryTest do
       assert summary =~ "TIMESTAMP_SUB does not support the MONTH date part"
       assert summary =~ "Query was stopped"
       refute summary =~ "\n"
+      refute summary =~ "\\n"
     end
 
-    test "keeps the status and reason ahead of the clip on a long response" do
+    test "logs a long response in full after the status and reason" do
       body =
         ~s({"error":{"code":400,"message":"Syntax error: ) <>
           String.duplicate("very long query text ", 300) <>
@@ -238,12 +239,16 @@ defmodule Glific.BigQueryTest do
                "http_status=400 bq_status=INVALID_ARGUMENT reason=invalidQuery body="
              )
 
-      assert String.ends_with?(summary, "<> ...")
-      tail = summary |> String.split("body=") |> List.last()
-      refute tail =~ "invalidQuery"
-      refute tail =~ "INVALID_ARGUMENT"
-
+      assert String.ends_with?(summary, ~s("status":"INVALID_ARGUMENT"}}))
+      refute summary =~ "<> ..."
       refute summary =~ "\n"
+    end
+
+    test "falls back to inspect for a body that is not JSON" do
+      summary =
+        BigQuery.bigquery_error_summary(%Tesla.Env{status: 503, body: "upstream\nunavailable"})
+
+      assert summary == ~s(http_status=503 body="upstream\\nunavailable")
     end
 
     test "lifts the reason out of a top-level errors array" do
@@ -366,7 +371,7 @@ defmodule Glific.BigQueryTest do
       assert BigQuery.bigquery_error_summary(:timeout) == ":timeout"
     end
 
-    test "bounds an oversized body instead of flooding the log" do
+    test "logs an oversized body in full" do
       body =
         ~s({"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Syntax error: ) <>
           String.duplicate("very long query text ", 500) <> ~s("}})
@@ -374,11 +379,9 @@ defmodule Glific.BigQueryTest do
       summary = BigQuery.bigquery_error_summary(%Tesla.Env{status: 400, body: body})
 
       assert byte_size(body) > 8192
-      assert summary =~ "http_status=400"
       assert summary =~ "bq_status=INVALID_ARGUMENT"
-      assert summary =~ "Syntax error:"
-      assert String.ends_with?(summary, "<> ...")
-      assert byte_size(summary) < 4500
+      assert summary =~ String.duplicate("very long query text ", 500)
+      refute summary =~ "<> ..."
       refute summary =~ "\n"
     end
   end
