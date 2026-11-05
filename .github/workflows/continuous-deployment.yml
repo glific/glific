@@ -15,14 +15,20 @@ jobs:
 
     # only run this job if the workflow is running on the feature/master branch or
     # a branch which has staging has label
+    # The web app goes out only after the worker app deployed, or when the worker job is skipped
+    # because no worker app is configured. always() keeps a skipped worker job from skipping this.
+    needs: deploy-worker
     if: |
-      (
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
-      ) || (
-        github.event_name == 'push' &&
-        github.ref == 'refs/heads/master'
+      always() &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-worker.result) && (
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
+        ) || (
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/master'
+        )
       )
     runs-on: ubuntu-latest
     steps:

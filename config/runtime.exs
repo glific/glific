@@ -58,14 +58,6 @@ config :glific, Glific.RepoReplica,
 
 config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
-# A web node only inserts jobs. peer: false keeps it out of Oban leader election, since the
-# leader runs the plugins (Cron, pruner, lifeline) and a web node starts none of them.
-node_role = env!("NODE_ROLE", :string, nil)
-
-if node_role == "web" do
-  config :glific, Oban, queues: false, plugins: false, peer: false
-end
-
 # Comma separated "basename=hostname" pairs, one per app in the cluster. Gigalixir's own
 # DNS_CLUSTER_QUERY is not used because it only resolves the replicas of the current app.
 cluster_queries =
@@ -88,13 +80,9 @@ check_origin =
     default_origins
   end
 
-# A worker keeps the endpoint running for PubSub and subscription publishing but does not serve
-# it; it listens on the HTTP port with GlificWeb.Plugs.HealthCheck alone.
-config :glific, :health_check_port, if(node_role == "worker", do: http_port)
-
 # Glific endpoint configs
 config :glific, GlificWeb.Endpoint,
-  server: node_role != "worker",
+  server: true,
   http: [:inet6, port: http_port],
   check_origin: check_origin,
   secret_key_base: env!("SECRET_KEY_BASE", :string!),
@@ -102,6 +90,26 @@ config :glific, GlificWeb.Endpoint,
   render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Glific.PubSub,
   live_view: [signing_salt: env!("SIGNING_SALT", :string!)]
+
+# Splits the app into a web and a worker app, see plans/web-worker-node-split.md. Unset runs both.
+case env!("NODE_ROLE", :string, nil) do
+  unset when unset in [nil, ""] ->
+    :ok
+
+  "web" ->
+    # peer: false keeps a web node out of Oban leader election, since the leader runs the plugins
+    # (Cron, pruner, lifeline) and a web node starts none of them.
+    config :glific, Oban, queues: false, plugins: false, peer: false
+
+  "worker" ->
+    # The endpoint keeps running for PubSub and subscription publishing but is not served; the
+    # HTTP port answers GlificWeb.Plugs.HealthCheck alone.
+    config :glific, GlificWeb.Endpoint, server: false
+    config :glific, :health_check_port, http_port
+
+  other ->
+    raise "NODE_ROLE must be web, worker or unset, got \"#{other}\""
+end
 
 config :glific,
   auth_username: env!("AUTH_USERNAME", :string!),

@@ -29,6 +29,9 @@ defmodule Glific.Flows do
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
 
+  # Bounds how long a node keeps serving an old flow if a cross-node cache update is lost.
+  @flow_cache_ttl :timer.hours(1)
+
   @doc """
   Returns the list of flows.
 
@@ -558,7 +561,7 @@ defmodule Glific.Flows do
 
     flow = Flow.get_loaded_flow(organization_id, status, args)
 
-    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow, ttl: @flow_cache_ttl)
     # We are setting the cache in the above statement with multiple keys
     # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
