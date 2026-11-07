@@ -12,6 +12,38 @@ defmodule Glific.ThirdParty.Kaapi do
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Kaapi.ApiClient
 
+  @bcp47_languages %{
+    "english" => "en-IN",
+    "en" => "en-IN",
+    "hindi" => "hi-IN",
+    "hi" => "hi-IN",
+    "bengali" => "bn-IN",
+    "bangla" => "bn-IN",
+    "bn" => "bn-IN",
+    "assamese" => "as-IN",
+    "as" => "as-IN",
+    "marathi" => "mr-IN",
+    "mr" => "mr-IN",
+    "tamil" => "ta-IN",
+    "ta" => "ta-IN",
+    "telugu" => "te-IN",
+    "te" => "te-IN",
+    "kannada" => "kn-IN",
+    "kn" => "kn-IN",
+    "malayalam" => "ml-IN",
+    "ml" => "ml-IN",
+    "gujarati" => "gu-IN",
+    "gu" => "gu-IN",
+    "punjabi" => "pa-IN",
+    "pa" => "pa-IN",
+    "urdu" => "ur-IN",
+    "ur" => "ur-IN",
+    "odia" => "od-IN",
+    "oriya" => "od-IN",
+    "or" => "od-IN",
+    "od" => "od-IN"
+  }
+
   # Update all Error struct data in this format
   defmodule Error do
     @moduledoc """
@@ -606,17 +638,19 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec tts_payload(String.t(), String.t(), map(), map()) :: map()
   defp tts_payload(text, callback_url, request_metadata, opts) do
+    provider = tts_provider(opts[:provider])
+
     %{
       query: %{input: text},
       config: %{
         blob: %{
           completion: %{
-            provider: opts[:provider] || "google",
+            provider: provider,
             type: "tts",
             params: %{
               model: opts[:model] || model_config(:tts_model),
               voice: opts[:voice] || "Kore",
-              language: opts[:language] || "hindi",
+              language: tts_language(provider, opts[:language] || "hindi"),
               response_format: "mp3"
             }
           }
@@ -626,6 +660,18 @@ defmodule Glific.ThirdParty.Kaapi do
       request_metadata: request_metadata
     }
   end
+
+  @spec tts_provider(String.t() | nil) :: String.t()
+  defp tts_provider(provider) when provider in [nil, "", "google-native"], do: "google"
+  defp tts_provider(provider), do: provider
+
+  @spec tts_language(String.t(), String.t()) :: String.t()
+  defp tts_language("google", language) do
+    normalized = language |> String.trim() |> String.downcase()
+    Map.get(@bcp47_languages, normalized, language)
+  end
+
+  defp tts_language(_provider, language), do: language
 
   @doc """
   Upload a document to Kaapi documents API, send error to Appsignal if failed.

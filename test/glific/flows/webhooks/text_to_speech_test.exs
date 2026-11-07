@@ -237,7 +237,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
           assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
-                   "hindi"
+                   "hi-IN"
 
           metadata = decoded["request_metadata"]
           assert metadata["organization_id"] == 1
@@ -250,6 +250,40 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
       end)
 
       assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "sends google-native as google with a BCP-47 language", %{fields: fields} do
+      for {language, expected_language} <- [
+            {"Hindi", "hi-IN"},
+            {" ODIA ", "od-IN"},
+            {"mr", "mr-IN"},
+            {"hi-IN", "hi-IN"},
+            {"klingon", "klingon"}
+          ] do
+        Tesla.Mock.mock(fn
+          %{method: :post, body: body} ->
+            completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+            assert completion["provider"] == "google"
+            assert completion["params"]["language"] == expected_language
+            %Tesla.Env{status: 200, body: %{"job_id" => "tts-789"}}
+        end)
+
+        tts_request = Map.merge(fields, %{"provider" => "google-native", "language" => language})
+        assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+      end
+    end
+
+    test "leaves the language untouched for non-google providers", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "openai"
+          assert completion["params"]["language"] == "Hindi"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-790"}}
+      end)
+
+      tts_request = Map.merge(fields, %{"provider" => "openai", "language" => "Hindi"})
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
     end
 
     test "tags malformed flow metadata as :invalid_input (config)", %{fields: fields} do
