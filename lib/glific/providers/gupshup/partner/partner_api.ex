@@ -350,6 +350,41 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
         :ok
     end
+
+    # Outside the try above, so a failed earlier step (e.g. an OTP template that already exists on a
+    # credential re-save) doesn't skip it.
+    set_whatsapp_forms_subscription(org_id)
+    :ok
+  end
+
+  @doc """
+  Subscribes the organization's app to WhatsApp Form replies, which Gupshup sends only on this V3 webhook.
+  """
+  @spec set_whatsapp_forms_subscription(non_neg_integer()) :: :ok | {:error, String.t()}
+  def set_whatsapp_forms_subscription(org_id) do
+    case set_subscription(org_id, nil, ["FLOW_MESSAGE"], 3, "whatsapp_forms_webhook") do
+      {:ok, _response} ->
+        :ok
+
+      {:error, %Tesla.Env{status: 400, body: body}} when is_binary(body) ->
+        if String.contains?(body, "Duplicate component tag"),
+          do: :ok,
+          else: report_whatsapp_forms_subscription_failure(org_id, body)
+
+      {:error, error} ->
+        report_whatsapp_forms_subscription_failure(org_id, error)
+    end
+  rescue
+    error -> report_whatsapp_forms_subscription_failure(org_id, error)
+  end
+
+  @spec report_whatsapp_forms_subscription_failure(non_neg_integer(), any()) ::
+          {:error, String.t()}
+  defp report_whatsapp_forms_subscription_failure(org_id, reason) do
+    Glific.log_error(
+      "Failed to set the WhatsApp Forms webhook subscription for org #{org_id}: " <>
+        Glific.SafeLog.safe_inspect(reason)
+    )
   end
 
   @doc """
