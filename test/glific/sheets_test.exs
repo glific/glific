@@ -640,6 +640,11 @@ defmodule Glific.SheetsTest do
   end
 
   describe "execute/2 WRITE action error handling" do
+    setup %{organization_id: organization_id} do
+      setup_google_sheets_credential(organization_id)
+      :ok
+    end
+
     test "creates a notification with the API error message when Google Sheets returns 403",
          %{organization_id: organization_id} do
       with_mock(Goth.Token, [],
@@ -647,21 +652,6 @@ defmodule Glific.SheetsTest do
           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
         end
       ) do
-        Partners.create_credential(%{
-          shortcode: "google_sheets",
-          secrets: %{
-            "service_account" =>
-              Jason.encode!(%{
-                project_id: "DEFAULT PROJECT ID",
-                private_key_id: "DEFAULT API KEY",
-                client_email: "DEFAULT CLIENT EMAIL",
-                private_key: "DEFAULT PRIVATE KEY"
-              })
-          },
-          is_active: true,
-          organization_id: organization_id
-        })
-
         Tesla.Mock.mock(fn
           %{method: :post} ->
             %Tesla.Env{
@@ -698,6 +688,45 @@ defmodule Glific.SheetsTest do
       end
     end
 
+    test "appends with INSERT_ROWS so concurrent writes can't overwrite each other",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        test_process = self()
+
+        Tesla.Mock.mock(fn
+          %{method: :post, query: query} ->
+            send(test_process, {:append_query, query})
+            %Tesla.Env{status: 200, body: "{}"}
+        end)
+
+        action = %{
+          action_type: "WRITE",
+          url:
+            "https://docs.google.com/spreadsheets/d/1ZYiMW1PunIT6euVhkxQRXeebFzszGFecGzfzpAoVlFg/edit#gid=0",
+          range: "Sheet1!A:A",
+          row_data: ["Test data"]
+        }
+
+        context = %{
+          organization_id: organization_id,
+          contact_id: 1,
+          flow_id: 1,
+          results: %{},
+          flow: %{id: 1, uuid: "test-uuid", name: "Test Flow"}
+        }
+
+        {_context, result} = Sheets.execute(action, context)
+        assert result.body == "Success"
+
+        assert_received {:append_query, query}
+        assert query[:insertDataOption] == "INSERT_ROWS"
+      end
+    end
+
     test "creates a notification with a generic 5xx error message when Google Sheets returns 500 without body",
          %{organization_id: organization_id} do
       with_mock(Goth.Token, [],
@@ -705,21 +734,6 @@ defmodule Glific.SheetsTest do
           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
         end
       ) do
-        Partners.create_credential(%{
-          shortcode: "google_sheets",
-          secrets: %{
-            "service_account" =>
-              Jason.encode!(%{
-                project_id: "DEFAULT PROJECT ID",
-                private_key_id: "DEFAULT API KEY",
-                client_email: "DEFAULT CLIENT EMAIL",
-                private_key: "DEFAULT PRIVATE KEY"
-              })
-          },
-          is_active: true,
-          organization_id: organization_id
-        })
-
         Tesla.Mock.mock(fn
           %{method: :post} ->
             %Tesla.Env{
@@ -766,21 +780,6 @@ defmodule Glific.SheetsTest do
           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
         end
       ) do
-        Partners.create_credential(%{
-          shortcode: "google_sheets",
-          secrets: %{
-            "service_account" =>
-              Jason.encode!(%{
-                project_id: "DEFAULT PROJECT ID",
-                private_key_id: "DEFAULT API KEY",
-                client_email: "DEFAULT CLIENT EMAIL",
-                private_key: "DEFAULT PRIVATE KEY"
-              })
-          },
-          is_active: true,
-          organization_id: organization_id
-        })
-
         random_error = %RandomWriteError{reason: "some random failure"}
 
         Tesla.Mock.mock(fn
