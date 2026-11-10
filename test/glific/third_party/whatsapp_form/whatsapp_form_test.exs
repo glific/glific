@@ -615,7 +615,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     assert whatsapp_form.name == "Test Form"
   end
 
-  test "does not create whatsapp form if subscription API fails with other error", %{user: user} do
+  test "creates the whatsapp form and reports it when the subscription API fails", %{user: user} do
     valid_attrs = %{
       name: "Test Form",
       description: "A test WhatsApp form",
@@ -638,8 +638,10 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     end)
 
     with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
-      result = WhatsappForms.create_whatsapp_form(valid_attrs, user)
-      assert {:error, %Tesla.Env{status: 500, body: "Internal server error"}} = result
+      assert {:ok, %{whatsapp_form: whatsapp_form}} =
+               WhatsappForms.create_whatsapp_form(valid_attrs, user)
+
+      assert whatsapp_form.name == "Test Form"
       assert called(Appsignal.send_error(:error, :_, :_))
     end
   end
@@ -667,7 +669,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     end)
 
     with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
-      assert {:error, "Invalid mode"} = WhatsappForms.create_whatsapp_form(valid_attrs, user)
+      assert {:ok, _} = WhatsappForms.create_whatsapp_form(valid_attrs, user)
 
       assert called(
                Appsignal.send_error(
@@ -707,7 +709,32 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     end
   end
 
-  test "should create the second form without calling subscription api", %{user: user} do
+  test "syncing forms from Meta sets the subscription", %{organization_id: organization_id} do
+    test_pid = self()
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} ->
+        if String.contains?(url, "/flows"),
+          do: %Tesla.Env{status: 200, body: []},
+          else: %Tesla.Env{status: 404, body: "not mocked"}
+
+      %{method: :post, url: url} ->
+        if String.contains?(url, "/subscription") do
+          send(test_pid, :subscription_set)
+          %Tesla.Env{status: 400, body: "Duplicate component tag"}
+        else
+          %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+      assert {:ok, _} = WhatsappForms.sync_whatsapp_form(organization_id)
+      assert_received :subscription_set
+      refute called(Appsignal.send_error(:_, :_, :_))
+    end
+  end
+
+  test "sets the subscription again when a later form is created", %{user: user} do
     valid_attrs1 = %{
       name: "Test Form",
       description: "A test WhatsApp form",
@@ -722,6 +749,8 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
       organization_id: user.organization_id
     }
 
+    test_pid = self()
+
     Tesla.Mock.mock(fn
       %{method: :post, url: url} ->
         cond do
@@ -732,6 +761,8 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
             }
 
           String.contains?(url, "subscription") ->
+            send(test_pid, :subscription_set)
+
             %Tesla.Env{
               status: 200,
               body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
@@ -742,11 +773,12 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     result = WhatsappForms.create_whatsapp_form(valid_attrs1, user)
     assert {:ok, %{whatsapp_form: whatsapp_form}} = result
     assert whatsapp_form.name == "Test Form"
+    assert_received :subscription_set
 
     result2 = WhatsappForms.create_whatsapp_form(valid_attrs2, user)
-    # Should still succeed and create the form
     assert {:ok, %{whatsapp_form: whatsapp_form2}} = result2
     assert whatsapp_form2.name == "Test Form 2"
+    assert_received :subscription_set
   end
 
   test "returns correct headers extracted from real form structure", %{

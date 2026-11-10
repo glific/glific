@@ -50,8 +50,8 @@ defmodule Glific.WhatsappForms do
          {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
          {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          {:ok, revision} <- create_whatsapp_form_revision(whatsapp_form, user),
-         {:ok, _} <- update_revision_id(whatsapp_form.id, revision.id),
-         :ok <- maybe_set_subscription(attrs.organization_id) do
+         {:ok, _} <- update_revision_id(whatsapp_form.id, revision.id) do
+      ensure_form_reply_subscription(attrs.organization_id)
       # Track metric for WhatsApp form creation
       Glific.Metrics.increment("WhatsApp Form Created", attrs.organization_id)
       {:ok, %{whatsapp_form: whatsapp_form}}
@@ -84,6 +84,7 @@ defmodule Glific.WhatsappForms do
   def sync_whatsapp_form(organization_id) do
     with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
          {:ok, _} <- sync_all_forms_for_org(forms, organization_id) do
+      ensure_form_reply_subscription(organization_id)
       {:ok, %{message: "Syncing of WhatsApp forms has started in the background."}}
     end
   end
@@ -342,40 +343,30 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  @spec maybe_set_subscription(non_neg_integer()) :: :ok | {:error, any()}
-  defp maybe_set_subscription(organization_id) do
-    # Check if this is the first form for the organization
-    with 1 <- count_whatsapp_forms(%{organization_id: organization_id}),
-         {:ok, _response} <-
-           PartnerAPI.set_subscription(
-             organization_id,
-             nil,
-             ["FLOW_MESSAGE"],
-             3,
-             "whatsapp_forms_webhook"
-           ) do
-      :ok
-    else
-      {:error, %Tesla.Env{body: body, status: 400}} ->
-        if String.contains?(body, "Duplicate component tag") do
-          :ok
-        else
-          report_subscription_failure(organization_id, body)
-          {:error, body}
-        end
+  # Gupshup sends form replies only through this subscription, so it is set on every create and sync:
+  # a form synced from Meta or one earlier failure would otherwise leave the org without it for good.
+  @spec ensure_form_reply_subscription(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp ensure_form_reply_subscription(organization_id) do
+    case PartnerAPI.set_subscription(
+           organization_id,
+           nil,
+           ["FLOW_MESSAGE"],
+           3,
+           "whatsapp_forms_webhook"
+         ) do
+      {:ok, _response} ->
+        :ok
+
+      {:error, %Tesla.Env{status: 400, body: body}} when is_binary(body) ->
+        if String.contains?(body, "Duplicate component tag"),
+          do: :ok,
+          else: report_subscription_failure(organization_id, body)
 
       {:error, error} ->
         report_subscription_failure(organization_id, error)
-        {:error, error}
-
-      # Any other count (not 1) means it's not the first form
-      _count ->
-        :ok
     end
   end
 
-  # Without this subscription Gupshup never delivers form replies, and nothing else notices: flows
-  # wait on a reply that never arrives. It is only attempted for the first form, so report it.
   @spec report_subscription_failure(non_neg_integer(), any()) :: {:error, String.t()}
   defp report_subscription_failure(organization_id, reason) do
     Glific.log_error(
