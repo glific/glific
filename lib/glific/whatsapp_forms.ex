@@ -360,24 +360,28 @@ defmodule Glific.WhatsappForms do
         if String.contains?(body, "Duplicate component tag") do
           :ok
         else
-          Logger.error(
-            "Failed to set subscription for org #{organization_id}: #{Glific.SafeLog.safe_inspect(body)}"
-          )
-
+          report_subscription_failure(organization_id, body)
           {:error, body}
         end
 
       {:error, error} ->
-        Logger.error(
-          "Failed to set subscription for org #{organization_id}: #{Glific.SafeLog.safe_inspect(error)}"
-        )
-
+        report_subscription_failure(organization_id, error)
         {:error, error}
 
       # Any other count (not 1) means it's not the first form
       _count ->
         :ok
     end
+  end
+
+  # Without this subscription Gupshup never delivers form replies, and nothing else notices: flows
+  # wait on a reply that never arrives. It is only attempted for the first form, so report it.
+  @spec report_subscription_failure(non_neg_integer(), any()) :: {:error, String.t()}
+  defp report_subscription_failure(organization_id, reason) do
+    Glific.log_error(
+      "Failed to set the WhatsApp Forms webhook subscription for org #{organization_id}: " <>
+        Glific.SafeLog.safe_inspect(reason)
+    )
   end
 
   @spec maybe_create_google_sheet(map()) ::

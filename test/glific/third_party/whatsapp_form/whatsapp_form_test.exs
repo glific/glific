@@ -637,8 +637,74 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
         end
     end)
 
-    result = WhatsappForms.create_whatsapp_form(valid_attrs, user)
-    assert {:error, %Tesla.Env{status: 500, body: "Internal server error"}} = result
+    with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+      result = WhatsappForms.create_whatsapp_form(valid_attrs, user)
+      assert {:error, %Tesla.Env{status: 500, body: "Internal server error"}} = result
+      assert called(Appsignal.send_error(:error, :_, :_))
+    end
+  end
+
+  test "reports a rejected subscription to AppSignal", %{user: user} do
+    valid_attrs = %{
+      name: "Test Form",
+      description: "A test WhatsApp form",
+      categories: ["other"],
+      organization_id: user.organization_id
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "form123", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "/subscription") ->
+            %Tesla.Env{status: 400, body: "Invalid mode"}
+        end
+    end)
+
+    with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+      assert {:error, "Invalid mode"} = WhatsappForms.create_whatsapp_form(valid_attrs, user)
+
+      assert called(
+               Appsignal.send_error(
+                 :error,
+                 "Failed to set the WhatsApp Forms webhook subscription for org #{user.organization_id}: \"Invalid mode\"",
+                 :_
+               )
+             )
+    end
+  end
+
+  test "does not report a duplicate subscription tag", %{user: user} do
+    valid_attrs = %{
+      name: "Test Form",
+      description: "A test WhatsApp form",
+      categories: ["other"],
+      organization_id: user.organization_id
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "form123", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "/subscription") ->
+            %Tesla.Env{status: 400, body: "Duplicate component tag"}
+        end
+    end)
+
+    with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+      assert {:ok, _} = WhatsappForms.create_whatsapp_form(valid_attrs, user)
+      refute called(Appsignal.send_error(:_, :_, :_))
+    end
   end
 
   test "should create the second form without calling subscription api", %{user: user} do
