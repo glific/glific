@@ -230,8 +230,8 @@ defmodule Glific.ThirdParty.Gemini do
     uuid = Ecto.UUID.generate()
     remote_name = "Gemini/outbound/#{uuid}.mp3"
 
-    audio_file = System.tmp_dir!() <> "#{uuid}.audio"
-    mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
+    audio_file = Path.join(System.tmp_dir!(), "#{uuid}.audio")
+    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
     File.write!(audio_file, decoded_audio)
 
     case System.cmd("ffmpeg", ffmpeg_input_args(decoded_audio) ++ [audio_file, mp3_file],

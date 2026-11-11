@@ -38,14 +38,29 @@ defmodule Glific.Scripts.TtsStressTestTest do
       }
     end)
 
-    with_mock Glific.GCS.GcsWorker,
-      upload_media: fn mp3_file, _remote_name, _organization_id ->
-        send(test_pid, {:uploaded, File.exists?(mp3_file)})
-        {:ok, %{url: "https://storage.googleapis.com/bucket/test.mp3"}}
-      end do
+    # CI has no ffmpeg; stand in for it by writing the MP3 it would produce.
+    with_mocks([
+      {System, [:passthrough],
+       cmd: fn "ffmpeg", args, _opts ->
+         [audio_file, mp3_file] = Enum.take(args, -2)
+         send(test_pid, {:converted, audio_file, mp3_file})
+         File.write!(mp3_file, "mp3")
+         {"", 0}
+       end},
+      {Glific.GCS.GcsWorker, [],
+       upload_media: fn _mp3_file, _remote_name, _organization_id ->
+         {:ok, %{url: "https://storage.googleapis.com/bucket/test.mp3"}}
+       end}
+    ]) do
       output = capture_io(fn -> TtsStressTest.run(organization_id, :temp_cleanup) end)
 
-      for _ <- 1..5, do: assert_received({:uploaded, true})
+      for _ <- 1..5 do
+        assert_received {:converted, audio_file, mp3_file}
+        assert Path.dirname(audio_file) == System.tmp_dir!() |> Path.expand()
+        refute File.exists?(audio_file)
+        refute File.exists?(mp3_file)
+      end
+
       assert output =~ "Run 5: ✓ clean"
       assert output =~ "Net temp files: 0"
     end
