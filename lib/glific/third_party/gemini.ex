@@ -217,22 +217,32 @@ defmodule Glific.ThirdParty.Gemini do
   defp choose_engine_and_do_tts(_speech_engine, organization_id, translated_text),
     do: do_text_to_speech(organization_id, translated_text)
 
+  @doc """
+  FFmpeg input flags for Gemini TTS audio: WAV (3.8 models) carries its own format, while
+  older models return headerless 24 kHz mono 16-bit PCM.
+  """
+  @spec ffmpeg_input_args(binary()) :: [String.t()]
+  def ffmpeg_input_args(<<"RIFF", _size::binary-size(4), "WAVE", _rest::binary>>), do: ["-i"]
+  def ffmpeg_input_args(_raw_pcm), do: ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i"]
+
   @spec download_encoded_file(binary()) :: {:ok, String.t(), String.t()} | String.t()
   defp download_encoded_file(decoded_audio) do
     uuid = Ecto.UUID.generate()
     remote_name = "Gemini/outbound/#{uuid}.mp3"
 
-    wav_file = System.tmp_dir!() <> "#{uuid}.wav"
+    audio_file = System.tmp_dir!() <> "#{uuid}.audio"
     mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    File.write!(wav_file, decoded_audio)
+    File.write!(audio_file, decoded_audio)
 
-    case System.cmd("ffmpeg", ["-i", wav_file, mp3_file], stderr_to_stdout: true) do
+    case System.cmd("ffmpeg", ffmpeg_input_args(decoded_audio) ++ [audio_file, mp3_file],
+           stderr_to_stdout: true
+         ) do
       {_output, 0} ->
-        File.rm(wav_file)
+        File.rm(audio_file)
         {:ok, mp3_file, remote_name}
 
       {output, exit_code} ->
-        File.rm(wav_file)
+        File.rm(audio_file)
         Logger.error("Gemini TTS FFmpeg failed with exit code #{exit_code}: #{output}")
         "Error while converting file"
     end

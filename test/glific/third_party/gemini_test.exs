@@ -227,6 +227,17 @@ defmodule Glific.ThirdParty.GeminiTest do
     end
   end
 
+  describe "ffmpeg_input_args/1" do
+    test "lets ffmpeg read the header of WAV audio" do
+      assert Gemini.ffmpeg_input_args(sample_wav_audio()) == ["-i"]
+    end
+
+    test "declares the format of headerless PCM audio" do
+      assert Gemini.ffmpeg_input_args(:binary.copy(<<0::16>>, 2400)) ==
+               ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i"]
+    end
+  end
+
   describe "nmt_text_to_speech/5" do
     @tag :skip
     test "successfully translates and converts to speech with Gemini engine", %{
