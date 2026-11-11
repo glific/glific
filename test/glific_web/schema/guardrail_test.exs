@@ -29,7 +29,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
   @doc_links %{
     "gender_assumption_bias" =>
       "https://projecttech4devai.github.io/kaapi-docs/guardrails/gender-neutrality",
-    "uli_slur_match" =>
+    "content_safety" =>
       "https://projecttech4devai.github.io/kaapi-docs/guardrails/content-safety",
     "pii_remover" =>
       "https://projecttech4devai.github.io/kaapi-docs/guardrails/privacy-protection",
@@ -47,7 +47,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
     end)
   end
 
-  test "guardrailValidators returns each validator type with its schema and doc link",
+  test "guardrailValidators returns only the supported validator types with their schema and doc link",
        %{manager: user} do
     Tesla.Mock.mock(fn %{method: :get, url: url, headers: headers} ->
       assert String.ends_with?(url, "/api/v1/guardrails")
@@ -56,6 +56,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
       validators =
         for type <- [
               "gender_assumption_bias",
+              "content_safety",
               "uli_slur_match",
               "pii_remover",
               "topic_relevance_llm"
@@ -73,7 +74,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
     validators = get_in(query_data, [:data, "guardrailValidators", "validators"])
 
     assert Enum.map(validators, & &1["type"]) ==
-             ["gender_assumption_bias", "uli_slur_match", "pii_remover", "topic_relevance_llm"]
+             ["gender_assumption_bias", "content_safety", "pii_remover", "topic_relevance_llm"]
 
     for validator <- validators do
       assert validator["link"] == @doc_links[validator["type"]]
