@@ -31,6 +31,7 @@ defmodule Glific.Providers.InstrumentationTest do
       assert :ok = StubAdapter.track_status(:error, organization_id, error_code: 131_049)
       assert :ok = StubAdapter.track_action("some_action", :success, organization_id)
       assert :ok = StubAdapter.track_action("some_action", :failure, organization_id)
+      assert :ok = StubAdapter.track_platform_event("connectivity-check", organization_id)
     end
   end
 
