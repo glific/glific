@@ -148,7 +148,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       mock(fn %{method: :post} ->
         %Tesla.Env{
           status: 400,
-          body: %{error: "Invalid request"}
+          body: %{error: %{message: "Invalid request"}}
         }
       end)
 
@@ -157,18 +157,8 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.success == false
       refute result.media_url
       assert result.translated_text == "Hello World"
-    end
-
-    test "handles Tesla error with body", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        {:error, %Tesla.Env{body: "Service unavailable"}}
-      end)
-
-      result = Gemini.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
+      assert result.http_status == 400
+      assert result.reason == "Gemini TTS failed (400): Invalid request"
     end
 
     test "handles Tesla timeout error", %{organization_id: organization_id} do
@@ -459,7 +449,7 @@ defmodule Glific.ThirdParty.GeminiTest do
         else
           %Tesla.Env{
             status: 400,
-            body: %{error: "Invalid request"}
+            body: %{error: %{message: "Invalid request"}}
           }
         end
       end)
@@ -470,6 +460,8 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.success == false
       assert result.media_url == nil
       assert result.translated_text == "Hello"
+      assert result.http_status == 400
+      assert result.reason == "Gemini TTS failed (400): Invalid request"
     end
 
     test "handles OpenAI TTS failure after successful translation", %{

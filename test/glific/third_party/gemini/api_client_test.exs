@@ -152,23 +152,24 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
                ApiClient.text_to_speech("Hello World", organization_id)
     end
 
-    test "handles API error with status code", %{organization_id: organization_id} do
+    test "returns the status and message from a Gemini error body",
+         %{organization_id: organization_id} do
       mock(fn %{method: :post} ->
         %Tesla.Env{
           status: 400,
-          body: %{error: "Invalid request"}
+          body: %{error: %{code: 400, message: "API key not valid", status: "INVALID_ARGUMENT"}}
         }
       end)
 
-      assert {:error, 400} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, {400, "API key not valid"}} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
     end
 
-    test "handles Tesla error with body", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        {:error, %Tesla.Env{body: "Service unavailable"}}
-      end)
+    test "inspects an error body without a message", %{organization_id: organization_id} do
+      mock(fn %{method: :post} -> %Tesla.Env{status: 503, body: "Service unavailable"} end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, {503, ~s("Service unavailable")}} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
     end
 
     test "handles Tesla timeout error", %{organization_id: organization_id} do

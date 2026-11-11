@@ -144,9 +144,13 @@ defmodule Glific.ThirdParty.Gemini do
            choose_engine_and_do_tts(speech_engine, organization_id, translated_text) do
       response
     else
-      %{success: false} ->
+      %{success: false} = failure ->
         Metrics.increment("Gemini TTS Failure", organization_id)
-        %{success: false, media_url: nil, translated_text: text}
+
+        Map.merge(
+          %{success: false, media_url: nil, translated_text: text},
+          Map.take(failure, [:reason, :http_status])
+        )
 
       error ->
         Metrics.increment("Gemini NMT TTS Failure", organization_id)
@@ -177,14 +181,15 @@ defmodule Glific.ThirdParty.Gemini do
       |> Map.put(:media_url, media_meta.url)
       |> Map.put(:translated_text, text)
     else
-      {:error, status} when is_integer(status) ->
+      {:error, {status, message}} ->
         Metrics.increment("Gemini TTS Failure", organization_id)
 
         %{
           success: false,
           media_url: nil,
           translated_text: text,
-          http_status: status
+          http_status: status,
+          reason: "Gemini TTS failed (#{status}): #{message}"
         }
 
       {:error, reason} ->
