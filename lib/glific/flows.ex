@@ -29,7 +29,8 @@ defmodule Glific.Flows do
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
 
-  # Bounds how long a node keeps serving an old flow if a cross-node cache update is lost.
+  # Bounds how long a node keeps serving an old flow or keyword map if a cross-node cache update
+  # is lost.
   @flow_cache_ttl :timer.hours(1)
 
   @doc """
@@ -942,6 +943,9 @@ defmodule Glific.Flows do
             "Failed to retrieve flow_keywords_map, #{Glific.SafeLog.safe_inspect(organization_id)}, #{error}"
         )
 
+      {:commit, value, _opts} ->
+        value
+
       {_, value} ->
         value
     end
@@ -1049,7 +1053,7 @@ defmodule Glific.Flows do
       |> Map.put("org_default_new_contact", organization.newcontact_flow_id)
       |> Map.put("org_default_optin", organization.optin_flow_id)
 
-    {:commit, keyword_map}
+    {:commit, keyword_map, ttl: @flow_cache_ttl}
   end
 
   @spec add_default_flows(map(), map()) :: map()
