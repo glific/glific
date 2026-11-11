@@ -32,6 +32,8 @@ defmodule Glific.Providers.Instrumentation do
       (final, after classification).
     * `provider_action_count` — provider-specific named actions (e.g. Gupshup's
       `hsm_sync`), tagged `action` and `status` (`success` | `failure`).
+    * `provider_platform_event_count` — BSP platform events that carry no app
+      or message data (e.g. Gupshup's `connectivity-check` probe), tagged `type`.
 
   ## Inbound liveness
 
@@ -126,6 +128,11 @@ defmodule Glific.Providers.Instrumentation do
               :ok
       def track_action(action, status, organization_id),
         do: Instrumentation.track_action(__MODULE__, action, status, organization_id)
+
+      @doc "See `Glific.Providers.Instrumentation.track_platform_event/3`."
+      @spec track_platform_event(any(), non_neg_integer() | nil) :: :ok
+      def track_platform_event(type, organization_id),
+        do: Instrumentation.track_platform_event(__MODULE__, type, organization_id)
     end
   end
 
@@ -197,6 +204,21 @@ defmodule Glific.Providers.Instrumentation do
       provider: adapter.provider(),
       action: action,
       status: Atom.to_string(status),
+      organization_id: org_tag(organization_id)
+    })
+
+    :ok
+  end
+
+  @doc """
+  Record a BSP platform event, such as a connectivity check. `type` is the
+  event's sub-type (e.g. `"connectivity-check"`).
+  """
+  @spec track_platform_event(module(), any(), non_neg_integer() | nil) :: :ok
+  def track_platform_event(adapter, type, organization_id) do
+    Appsignal.increment_counter("provider_platform_event_count", 1, %{
+      provider: adapter.provider(),
+      type: to_string(type),
       organization_id: org_tag(organization_id)
     })
 
