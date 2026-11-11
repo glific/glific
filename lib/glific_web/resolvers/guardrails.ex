@@ -11,7 +11,7 @@ defmodule GlificWeb.Resolvers.Guardrails do
   @validator_doc_links %{
     "gender_assumption_bias" => "#{@docs_url}/gender-neutrality",
     "pii_remover" => "#{@docs_url}/privacy-protection",
-    "uli_slur_match" => "#{@docs_url}/content-safety",
+    "content_safety" => "#{@docs_url}/content-safety",
     "topic_relevance_llm" => "#{@docs_url}/scope-control"
   }
 

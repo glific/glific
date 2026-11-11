@@ -5,6 +5,7 @@ defmodule Glific.Providers.Gupshup.V3.DispatcherTest do
 
   alias Glific.Providers.Gupshup.V3.Dispatcher
   alias Glific.Providers.Gupshup.V3.Handlers.FormResponse
+  alias Glific.Providers.Gupshup.V3.Handlers.PlatformEvent
   alias Glific.Providers.Gupshup.V3.Handlers.Status
 
   @status_value %{"statuses" => [%{"gs_id" => "gupshup-id", "status" => "read"}]}
@@ -58,6 +59,23 @@ defmodule Glific.Providers.Gupshup.V3.DispatcherTest do
 
       assert_called(Status.handle(@status_value, organization_id))
       assert_called(FormResponse.handle(@form_response_value, organization_id))
+    end
+  end
+
+  test "passes a platform-event change to the platform event handler",
+       %{organization_id: organization_id} do
+    value = %{"type" => "connectivity-check", "initiator" => "gupshup"}
+
+    with_mocks([
+      {PlatformEvent, [], handle: fn _value, _organization_id -> :ok end},
+      {Status, [], handle: fn _value, _organization_id -> :ok end},
+      {FormResponse, [], handle: fn _value, _organization_id -> :ok end}
+    ]) do
+      assert :ok = "platform-event" |> entries(value) |> Dispatcher.dispatch(organization_id)
+
+      assert_called(PlatformEvent.handle(value, organization_id))
+      assert_not_called(Status.handle(:_, :_))
+      assert_not_called(FormResponse.handle(:_, :_))
     end
   end
 
