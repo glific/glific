@@ -7,6 +7,8 @@ end
 defmodule Glific.Providers.InstrumentationTest do
   use Glific.DataCase
 
+  import Mock
+
   alias Glific.{Fixtures, Providers.Instrumentation}
   alias Glific.Providers.InstrumentationTest.StubAdapter
 
@@ -32,6 +34,32 @@ defmodule Glific.Providers.InstrumentationTest do
       assert :ok = StubAdapter.track_action("some_action", :success, organization_id)
       assert :ok = StubAdapter.track_action("some_action", :failure, organization_id)
       assert :ok = StubAdapter.track_platform_event("connectivity-check", organization_id)
+    end
+  end
+
+  describe "track_platform_event/3" do
+    test "increments the platform event counter with provider, type and organization tags",
+         %{organization_id: organization_id} do
+      with_mock Elixir.Appsignal, [:passthrough], increment_counter: fn _, _, _ -> :ok end do
+        assert :ok = StubAdapter.track_platform_event("connectivity-check", organization_id)
+        assert :ok = StubAdapter.track_platform_event("connectivity-check", nil)
+
+        assert_called(
+          Elixir.Appsignal.increment_counter("provider_platform_event_count", 1, %{
+            provider: "stub",
+            type: "connectivity-check",
+            organization_id: to_string(organization_id)
+          })
+        )
+
+        assert_called(
+          Elixir.Appsignal.increment_counter("provider_platform_event_count", 1, %{
+            provider: "stub",
+            type: "connectivity-check",
+            organization_id: "unknown"
+          })
+        )
+      end
     end
   end
 
