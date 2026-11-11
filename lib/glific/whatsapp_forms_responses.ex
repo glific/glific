@@ -70,7 +70,9 @@ defmodule Glific.WhatsappFormsResponses do
 
   @spec decode_flow_token(String.t() | nil) :: {:ok, non_neg_integer()} | :error
   defp decode_flow_token(flow_token) when is_binary(flow_token) do
-    with {:ok, ciphertext} <- Base.url_decode64(flow_token, padding: false),
+    # Cloak raises, rather than returning an error, on ciphertext shorter than its 2-byte tag header.
+    with {:ok, ciphertext} when byte_size(ciphertext) >= 2 <-
+           Base.url_decode64(flow_token, padding: false),
          {:ok, plaintext} <- Vault.decrypt(ciphertext) do
       {:ok, String.to_integer(plaintext)}
     else
