@@ -263,7 +263,19 @@ defmodule Glific.Reports do
       select: %{date: s.date, count: s.conversations}
   end
 
-  defp get_kpi_query(presets, table, org_id) do
+  defp get_kpi_query(presets, "contacts", org_id) do
+    presets
+    |> daily_count_query("contacts", org_id)
+    |> where(
+      [c],
+      is_nil(c.phone) or not like(c.phone, ^"#{Contacts.simulator_phone_prefix()}%")
+    )
+  end
+
+  defp get_kpi_query(presets, table, org_id), do: daily_count_query(presets, table, org_id)
+
+  @spec daily_count_query(map(), String.t(), non_neg_integer()) :: Ecto.Query.t()
+  defp daily_count_query(presets, table, org_id) do
     from(
       t in table,
       where:
