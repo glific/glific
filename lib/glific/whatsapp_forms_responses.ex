@@ -76,6 +76,9 @@ defmodule Glific.WhatsappFormsResponses do
     else
       _ -> :error
     end
+  rescue
+    # Cloak raises instead of returning an error on ciphertext too short to carry its tag.
+    MatchError -> :error
   end
 
   defp decode_flow_token(_flow_token), do: :error
