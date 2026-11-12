@@ -127,7 +127,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
       assert message == "Gupshup partner API request timed out, please try again"
     end
 
-    test "sets a 30s receive timeout on the metalibrary request instead of Hackney's 5s default",
+    test "sets a 30s receive timeout on the metalibrary request instead of the 5s default",
          attrs do
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
@@ -141,7 +141,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
           url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary",
           opts: opts
         } ->
-          assert opts[:adapter] == [recv_timeout: 30_000]
+          assert opts[:adapter] == [receive_timeout: 30_000]
 
           %Tesla.Env{status: 200, body: Jason.encode!(%{"templates" => []})}
       end)

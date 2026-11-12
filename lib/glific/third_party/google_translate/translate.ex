@@ -52,7 +52,7 @@ defmodule Glific.GoogleTranslate.Translate do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(@endpoint, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(@endpoint, data, opts: [adapter: [receive_timeout: 120_000]])
     |> handle_response(non_translatable_string, all_string_map)
   end
 

@@ -72,7 +72,7 @@ defmodule Glific.Appsignal do
       cond do
         # Errors like timeout from tesla etc, status will be nil
         is_nil(status) && meta[:error] == :checkout_timeout ->
-          Appsignal.increment_counter("hackney_pool_checkout_error", 1, %{
+          Appsignal.increment_counter("http_pool_checkout_error", 1, %{
             provider: meta[:provider],
             url: url,
             method: meta.env.method

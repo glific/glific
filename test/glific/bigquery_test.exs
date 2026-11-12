@@ -160,7 +160,7 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  test "make_job_to_remove_duplicate/2 should override Hackney's default recv_timeout",
+  test "make_job_to_remove_duplicate/2 should override the default receive_timeout",
        attrs do
     with_mocks([
       {
@@ -174,7 +174,7 @@ defmodule Glific.BigQueryTest do
       }
     ]) do
       Tesla.Mock.mock(fn %{method: :post} = env ->
-        assert env.opts[:adapter][:recv_timeout] == 150_000
+        assert env.opts[:adapter][:receive_timeout] == 150_000
         assert Jason.decode!(env.body)["timeoutMs"] == 120_000
         assert env.url =~ "/queries"
 
