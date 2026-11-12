@@ -1540,7 +1540,7 @@ defmodule Glific.Flows do
         [action["field"]["key"]]
 
       "set_contact_fields" ->
-        Enum.map(action["fields"] || [], & &1["field"]["key"])
+        for entry <- action["fields"] || [], is_nil(entry["type"]), do: entry["field"]["key"]
 
       _ ->
         []

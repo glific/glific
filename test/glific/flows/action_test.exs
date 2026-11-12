@@ -1376,6 +1376,61 @@ defmodule Glific.Flows.ActionTest do
     refute Map.has_key?(context.contact.fields, "language")
   end
 
+  test "execute set_contact_fields sets the contact name from a name row", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, results: %{"full_name" => "Asha Rao"}}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "set_contact_fields",
+      contact_fields: [
+        %{name: "District", key: "district", value: "Pune", property: nil},
+        %{name: "Name", key: "name", value: "@results.full_name", property: "name"}
+      ]
+    }
+
+    assert {:ok, context, []} = Action.execute(action, context, [])
+    assert context.contact.name == "Asha Rao"
+    assert context.contact.fields["district"].value == "Pune"
+    refute Map.has_key?(context.contact.fields, "name")
+
+    assert [_] =
+             Contacts.list_contact_history(%{
+               filter: %{contact_id: contact.id, event_type: "contact_name_updated"}
+             })
+
+    blank = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: "Name", key: "name", value: "", property: "name"}]
+    }
+
+    assert {:ok, context, []} = Action.execute(blank, context, [])
+    assert context.contact.name == "Asha Rao"
+  end
+
+  test "validate set_contact_fields flags a name row that is empty or repeated" do
+    empty = [%{name: "Name", key: "name", value: "", property: "name"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: empty}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "Name is a required field" and severity == "Warning"
+           end)
+
+    filled = [%{name: "Name", key: "name", value: "Asha", property: "name"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: filled}, [], nil) ==
+             []
+
+    twice = filled ++ [%{name: "Name", key: "name", value: "Ravi", property: "name"}]
+
+    assert Action.validate(%Action{type: "set_contact_fields", contact_fields: twice}, [], nil)
+           |> Enum.any?(fn {_, message, severity} ->
+             message =~ "sets name more than once" and severity == "Critical"
+           end)
+  end
+
   test "validate set_contact_fields flags a language row that has no value" do
     empty = [%{name: "Language", key: "language", value: "", property: "language"}]
 

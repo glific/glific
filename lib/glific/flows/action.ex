@@ -76,7 +76,7 @@ defmodule Glific.Flows.Action do
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
   @required_fields_set_contact_fields [:fields | @required_field_common]
   @required_fields_set_run_results [:results | @required_field_common]
-  @bulk_contact_properties ["language"]
+  @bulk_contact_properties ["name", "language"]
 
   # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
   # dropdown). Flows still referencing them must migrate to the new
@@ -996,6 +996,7 @@ defmodule Glific.Flows.Action do
     context =
       context
       |> ContactField.add_contact_fields(entries)
+      |> maybe_set_name(action)
       |> maybe_set_language(action)
       |> maybe_set_consent(action)
 
@@ -1303,6 +1304,18 @@ defmodule Glific.Flows.Action do
   @spec property_rows(Action.t(), String.t()) :: [map()]
   defp property_rows(action, property),
     do: Enum.filter(action.contact_fields || [], &(Map.get(&1, :property) == property))
+
+  @spec maybe_set_name(FlowContext.t(), Action.t()) :: FlowContext.t()
+  defp maybe_set_name(context, action) do
+    case property_rows(action, "name") do
+      [%{value: value} | _rest] when value not in ["", nil] ->
+        name = ContactField.parse_contact_field_value(context, value)
+        ContactSetting.set_contact_name(context, name)
+
+      _ ->
+        context
+    end
+  end
 
   @spec maybe_set_language(FlowContext.t(), Action.t()) :: FlowContext.t()
   defp maybe_set_language(context, action) do

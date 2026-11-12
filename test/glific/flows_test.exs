@@ -853,6 +853,43 @@ defmodule Glific.FLowsTest do
       assert imported.channel == :web
     end
 
+    test "export_flow/1 lists set_contact_fields keys but not contact property rows" do
+      user = Repo.get_current_user()
+      flow = flow_fixture() |> Repo.preload(:revisions)
+      [revision] = flow.revisions
+
+      node = %{
+        "uuid" => Ecto.UUID.generate(),
+        "exits" => [],
+        "actions" => [
+          %{
+            "uuid" => Ecto.UUID.generate(),
+            "type" => "set_contact_fields",
+            "fields" => [
+              %{"field" => %{"key" => "district", "name" => "District"}, "value" => "Pune"},
+              %{
+                "field" => %{"key" => "name", "name" => "Name"},
+                "value" => "Asha",
+                "type" => "name"
+              },
+              %{
+                "field" => %{"key" => "language", "name" => "Language"},
+                "value" => "hi",
+                "type" => "language"
+              }
+            ]
+          }
+        ]
+      }
+
+      revision.definition
+      |> Map.update("nodes", [node], &(&1 ++ [node]))
+      |> Map.put("revision", 2)
+      |> Flows.create_flow_revision(user.id)
+
+      assert Flows.export_flow(flow.id)["contact_field"] == ["district"]
+    end
+
     test "import_flow/2 defaults a channel-less export to whatsapp" do
       user = Repo.get_current_user()
       flow = flow_fixture()
