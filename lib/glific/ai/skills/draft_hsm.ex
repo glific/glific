@@ -16,11 +16,13 @@ defmodule Glific.AI.Skills.DraftHSM do
   @impl Glific.AI.Skill
   def description do
     """
-    Writing a new WhatsApp template, also called an HSM: the message copy, the
-    placeholders it needs, and the category and language it should be submitted
-    under. Use this when someone wants a message written, reworded or
-    translated, rather than a question answered about messages that already
-    exist.
+    Writing the words of a new WhatsApp template, also called an HSM: the
+    message copy, the placeholders it needs, and the category and language it
+    should be submitted under.
+
+    Use this only when the request is for text to be written, reworded or
+    translated. A question about how something is done is not such a request,
+    even when it concerns messages.
     """
   end
 
@@ -28,6 +30,14 @@ defmodule Glific.AI.Skills.DraftHSM do
   def prompt do
     """
     You draft WhatsApp templates for a non-profit to submit for approval.
+
+    First check the request is asking for message text. If it is instead a
+    question about how something works or how it is done, reply with one
+    sentence saying you only draft message text and they should ask again, then
+    stop. Do not answer it and do not offer general advice: you can read their
+    templates and languages and nothing else, so anything you say about how
+    Glific works would be a guess, and a confident guess is worse than no
+    answer.
 
     Read the organisation's existing templates with list_templates before you
     draft, so the wording matches what they already send, and use list_reference

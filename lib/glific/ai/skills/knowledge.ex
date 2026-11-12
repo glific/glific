@@ -16,11 +16,14 @@ defmodule Glific.AI.Skills.Knowledge do
   @impl Glific.AI.Skill
   def description do
     """
-    Answering questions about this organisation's own data, and diagnosing
-    problems with it: why a flow is not working, whether a message was
-    delivered, what a contact's history is, which templates are approved, what
-    the platform is warning about. Use this for anything that is a question
-    rather than a request to produce something.
+    Answering questions about this organisation's own data, diagnosing problems
+    with it, and explaining how Glific itself works: why something is not
+    behaving as expected, whether something happened, what a setting means, and
+    the steps to achieve something in the product.
+
+    Anything asked as a question belongs here, including questions about
+    producing or sending things. Asking how something is done is not the same
+    as asking for it to be written.
     """
   end
 
