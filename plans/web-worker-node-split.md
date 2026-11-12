@@ -144,6 +144,11 @@ Before production:
 - **Cachex is per node.** `Glific.Caches.Replicator` copies `set`/`remove` to the other nodes over
   PubSub, so a flow published on web reaches the worker. `put_global` (org index, media
   validation, Kaapi models) stays per node; the org index refreshes itself every minute.
+- **Cache copies are not ordered.** A copy replaces the entry without comparing versions, so two
+  nodes writing the same key at nearly the same time can each end up with the other's value. For
+  example, a worker filling a flow from the DB just before web publishes a new version can
+  overwrite web's copy with the old one. Flows and the keyword map expire after an hour, which
+  bounds how long a stale entry lasts; per-key versioning would close it.
 - **Pow sessions (Mnesia) and `Glific.State`** stay on the web node. Fine while only web requests
   use them; #5822 moves sessions to the DB.
 - **DB connections.** `POOL_SIZE` is per app; both apps together must fit Cloud SQL
