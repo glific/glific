@@ -61,7 +61,7 @@ defmodule Glific.Caches do
   """
   @impl Glific.Caches.CacheBehaviour
   @spec fetch(non_neg_integer, any(), (any() -> any())) ::
-          {:ok | :error | :commit | :ignore, any()}
+          {:ok | :error | :commit | :ignore, any()} | {:commit, any(), Keyword.t()}
   def fetch(organization_id, key, fallback_fn) do
     Cachex.fetch(@cache_bucket, {organization_id, key}, &safe_fallback(fallback_fn, &1))
   end
