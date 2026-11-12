@@ -659,6 +659,7 @@ defmodule Glific.Flows.Action do
       {templating_expression(action), "Message template expression"}
     ]
     |> Enum.concat(run_result_expressions(action))
+    |> Enum.concat(contact_field_expressions(action))
     |> Enum.reduce(errors, fn {expression, label}, errors ->
       case Glific.validate_flow_expression(expression, flow.organization_id) do
         :ok ->
@@ -679,6 +680,13 @@ defmodule Glific.Flows.Action do
     do: Enum.map(run_results, &{&1.value, "Result value for #{&1.name}"})
 
   defp run_result_expressions(_action), do: []
+
+  @spec contact_field_expressions(Action.t()) :: [{String.t() | nil, String.t()}]
+  defp contact_field_expressions(%{contact_fields: contact_fields})
+       when is_list(contact_fields),
+       do: Enum.map(contact_fields, &{&1.value, "Value for #{&1.name}"})
+
+  defp contact_field_expressions(_action), do: []
 
   @spec check_missing_interactive_template(list(), Action.t(), map()) :: list()
   defp check_missing_interactive_template(errors, action, flow) do

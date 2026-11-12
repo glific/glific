@@ -2667,5 +2667,18 @@ defmodule Glific.Flows.ActionTest do
       assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
       assert message =~ "Result value for video_code has an unsupported expression"
     end
+
+    test "flags disallowed code in a set_contact_fields row value", %{flow: flow} do
+      action = %Action{
+        type: "set_contact_fields",
+        contact_fields: [
+          %{name: "District", key: "district", value: "<%= 5 * 60 %>", property: nil},
+          %{name: "Name", key: "name", value: ~s|<%= System.cmd("id", []) %>|, property: "name"}
+        ]
+      }
+
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Value for Name has an unsupported expression"
+    end
   end
 end
