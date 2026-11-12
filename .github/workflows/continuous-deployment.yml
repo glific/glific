@@ -1,5 +1,8 @@
 name: Continuous Deployment
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     types: [labeled, opened, synchronize, reopened]
@@ -7,24 +10,97 @@ on:
     branches: [master]
 
 jobs:
-  deploy:
-    # only run this job if the verify job succeeds
-
-    # only run this job if the workflow is running on the feature/master branch or
-    # a branch which has staging has label
+  # The Oban worker app (see plans/web-worker-node-split.md), deployed before the web app from
+  # the same commit.
+  # A job of its own because the deploy action always names its git remote "gigalixir", and
+  # a second run in the same checkout is refused. Skipped until the repository variable is set.
+  deploy-worker:
     if: |
-      (
-        github.event_name == 'pull_request' &&
-        contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
-      ) || (
-        github.event_name == 'push' &&
-        github.ref == 'refs/heads/master'
+      vars.GIGALIXIR_WORKER_APPNAME != '' && (
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
+        ) || (
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/master'
+        )
       )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'push' && 'master' || github.event.pull_request.head.ref }} # Checkout out master or the PR commit
+          # The event's commit rather than a branch name, so both apps get the same commit even if
+          # the branch moves between the two jobs.
+          ref: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - uses: mhanberg/gigalixir-action@f58690cbb4cf1d9a5962cf993819db6a5ae129bd # v0.6.2
+        with:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+          GIGALIXIR_APP: ${{ vars.GIGALIXIR_WORKER_APPNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          MIGRATIONS: false
+
+      - name: remove unattended-upgrades
+        run: sudo apt-get -y remove unattended-upgrades
+
+      - name: Resolve deployed sha
+        id: deployed
+        run: echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+
+      - name: Ensure gigalixir CLI is authenticated
+        env:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+        run: |
+          command -v gigalixir >/dev/null 2>&1 || pip install gigalixir
+          if ! gigalixir account >/dev/null 2>&1; then
+            gigalixir login -e "$GIGALIXIR_USERNAME" -p "$GIGALIXIR_PASSWORD" -y
+          fi
+          gigalixir account >/dev/null
+
+      - name: Verify deploy stayed healthy
+        timeout-minutes: 20
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          chmod +x bin/gigalixir-verify-deploy.sh
+          bin/gigalixir-verify-deploy.sh \
+            --ci \
+            --app "${{ vars.GIGALIXIR_WORKER_APPNAME }}" \
+            --sha "${{ steps.deployed.outputs.sha }}"
+
+  deploy-web:
+    # only run this job if the verify job succeeds
+
+    # only run this job if the workflow is running on the feature/master branch or
+    # a branch which has staging has label
+    # The web app goes out only after the worker app deployed, or when the worker job is skipped
+    # because no worker app is configured. always() keeps a skipped worker job from skipping this.
+    needs: deploy-worker
+    if: |
+      always() &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-worker.result) && (
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          contains(join(github.event.pull_request.labels.*.name, ','), 'staging')
+        ) || (
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/master'
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
           fetch-depth: 0 # Checkout the whole branch
 
       # setup  python
@@ -33,7 +109,7 @@ jobs:
           python-version: "3.10"
 
       # configure the gigalixir-actions with our credentials and app name
-      - uses: mhanberg/gigalixir-action@v0.6.2
+      - uses: mhanberg/gigalixir-action@f58690cbb4cf1d9a5962cf993819db6a5ae129bd # v0.6.2
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
@@ -75,4 +151,3 @@ jobs:
             --ci \
             --app "${{ secrets.GIGALIXIR_APPNAME }}" \
             --sha "${{ steps.deployed.outputs.sha }}"
-

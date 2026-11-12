@@ -280,6 +280,9 @@ defmodule GlificWeb.Schema do
       else: middleware ++ [Middleware.QueryErrors]
   end
 
+  def middleware(middleware, _field, %{identifier: :subscription}),
+    do: [Middleware.PutSubscriberOrganization | middleware]
+
   def middleware(middleware, _field, _object),
     do: middleware
 

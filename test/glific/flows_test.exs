@@ -927,6 +927,14 @@ defmodule Glific.FLowsTest do
 
       assert Flows.flow_keywords_map(attrs.organization_id)["channels"][flow.id] == :web
     end
+
+    test "flow keyword map is cached with a finite ttl", attrs do
+      Glific.Caches.remove(attrs.organization_id, ["flow_keywords_map"])
+      Flows.flow_keywords_map(attrs.organization_id)
+
+      {:ok, ttl} = Cachex.ttl(:glific_cache, {attrs.organization_id, "flow_keywords_map"})
+      assert ttl > 0 and ttl <= :timer.hours(1)
+    end
   end
 
   describe "published_keyword_flow_id/3" do
