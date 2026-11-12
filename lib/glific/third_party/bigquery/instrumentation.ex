@@ -10,59 +10,71 @@ defmodule Glific.BigQuery.Instrumentation do
   Emits one metric:
 
     * `bigquery_sync_count` — one increment per sync job, tagged `table`, `action`,
-      `status` and `organization_id`.
+      `status` (`success` or `failed`) and `organization_id`. A `failed` also carries a
+      `reason` tag naming the failure.
 
-  A single counter tagged with `status` rather than separate `.success` / `.failure`
-  metrics matches every other counter in the codebase (`job_run_count`,
-  `provider_send_count`, `provider_action_count`) and lets an alert express a
-  failure *ratio*, not just an absolute count.
+  Two statuses keep the failure ratio a single query (`status:failed` over all), while
+  `reason` breaks the failures down without multiplying the status values an alert has
+  to know about.
 
   ## Why the outcome is recorded inside the response handler
 
-  `BigQuery.handle_insert_query_response/3` swallows three classes of failure — it
-  reacts to them and returns normally rather than raising:
+  `BigQuery.handle_insert_response/3` swallows these failures — it reacts to them and
+  returns normally rather than raising:
 
+    * `insertErrors` — BigQuery rejected individual rows, logged only
     * `NOT_FOUND` — triggers a schema re-sync
     * `PERMISSION_DENIED` — **disables the org's BigQuery credential**
     * `TIMEOUT` — logged only
 
-  So wrapping `perform/1` alone would count all three as success and report green while
+  So wrapping `perform/1` alone would count all of them as success and report green while
   syncing is broken — including the case where credentials have just been switched off.
   `record/4` is therefore called from the response handler, where the outcome is actually
-  known, with these statuses:
+  known. The reasons are:
 
-    | status              | meaning                                          |
-    | ------------------- | ------------------------------------------------ |
-    | `success`           | BigQuery accepted the rows, or the dedup ran     |
-    | `error`             | dedup failed, or its credentials were unusable   |
-    | `schema_not_found`  | table/dataset missing, schema re-sync triggered   |
-    | `permission_denied` | credential rejected and now disabled             |
-    | `timeout`           | request timed out                                |
-    | `exception`         | anything that raised out of the job              |
+    | reason                    | meaning                                         |
+    | ------------------------- | ----------------------------------------------- |
+    | `credentials_unavailable` | no usable BigQuery credentials, nothing was sent |
+    | `query_failed`            | the dedup query returned an error               |
+    | `row_errors`              | BigQuery rejected rows in the insert response   |
+    | `schema_not_found`        | table/dataset missing, schema re-sync triggered |
+    | `permission_denied`       | credential rejected and now disabled            |
+    | `timeout`                 | request timed out                               |
+    | `exception`               | anything that raised out of the job             |
 
-  The raising branches deliberately do **not** record here — they propagate to
-  `BigQueryWorker.perform/1`, whose rescue records `exception`. That keeps it to exactly
-  one increment per job, so a "> N consecutive failures" alert is not skewed by
+  Anything that raises out of a job is not recorded where it raises — it propagates to
+  `BigQueryWorker.perform/1`, whose rescue records `{:failed, :exception}`. That keeps it
+  to one increment per failure, so a "> N consecutive failures" alert is not skewed by
   double counting.
-
-  Anything other than `success` is a failure for alerting purposes.
   """
 
+  @typedoc "Why a sync job failed, recorded as the `reason` tag."
+  @type reason ::
+          :credentials_unavailable
+          | :query_failed
+          | :row_errors
+          | :schema_not_found
+          | :permission_denied
+          | :timeout
+          | :exception
+
   @typedoc "Outcome recorded on `bigquery_sync_count`."
-  @type status ::
-          :success | :error | :schema_not_found | :permission_denied | :timeout | :exception
+  @type outcome :: :success | {:failed, reason()}
 
   @doc """
   Records one sync outcome for a table.
   """
-  @spec record(String.t(), status(), String.t() | atom(), non_neg_integer()) :: :ok
-  def record(table, status, action, organization_id) do
-    Appsignal.increment_counter("bigquery_sync_count", 1, %{
-      table: to_string(table),
-      action: to_string(action),
-      status: to_string(status),
-      organization_id: to_string(organization_id)
-    })
+  @spec record(String.t(), outcome(), String.t() | atom(), non_neg_integer()) :: :ok
+  def record(table, outcome, action, organization_id) do
+    tags =
+      %{
+        table: to_string(table),
+        action: to_string(action),
+        organization_id: to_string(organization_id)
+      }
+      |> Map.merge(outcome_tags(outcome))
+
+    Appsignal.increment_counter("bigquery_sync_count", 1, tags)
 
     :ok
   rescue
@@ -71,8 +83,12 @@ defmodule Glific.BigQuery.Instrumentation do
     _exception -> :ok
   end
 
+  @spec outcome_tags(outcome()) :: map()
+  defp outcome_tags(:success), do: %{status: "success"}
+  defp outcome_tags({:failed, reason}), do: %{status: "failed", reason: to_string(reason)}
+
   @doc """
-  Runs `fun`, recording `exception` for `table` if it raises, then re-raising.
+  Runs `fun`, recording `{:failed, :exception}` for `table` if it raises, then re-raising.
   """
   @spec track(
           String.t() | atom(),
@@ -86,7 +102,7 @@ defmodule Glific.BigQuery.Instrumentation do
     fun.()
   rescue
     exception ->
-      record(table, :exception, action, organization_id)
+      record(table, {:failed, :exception}, action, organization_id)
       reraise exception, __STACKTRACE__
   end
 end
