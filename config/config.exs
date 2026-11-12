@@ -14,7 +14,7 @@ config :glific,
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time [$level] $metadata$message\n",
-  metadata: [:request_id, :remote_ip, :user_id, :org_id, :params]
+  metadata: [:request_id, :remote_ip, :user_agent, :user_id, :org_id, :params]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
