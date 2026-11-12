@@ -405,6 +405,14 @@ defmodule Glific.WhatsappFormResponsesTest do
                |> attrs_with_flow_token(plain_message_id)
                |> WhatsappFormsResponses.create_whatsapp_form_response()
     end
+
+    test "create_whatsapp_form_response/1 rejects a flow_token that decodes to a truncated ciphertext",
+         %{organization_id: organization_id} do
+      assert {:error, "WhatsApp form response has no context id"} =
+               organization_id
+               |> attrs_with_flow_token("93")
+               |> WhatsappFormsResponses.create_whatsapp_form_response()
+    end
   end
 
   test "write_to_google_sheet/2 stringifies map values like calendar_range and list values like options ",
