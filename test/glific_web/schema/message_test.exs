@@ -468,7 +468,14 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "create and send a message to invalid contact will not create a message", %{staff: user} do
     contact = Fixtures.contact_fixture()
-    Contacts.contact_opted_out(contact.phone, contact.organization_id, DateTime.utc_now())
+
+    Contacts.contact_opted_out(
+      :whatsapp,
+      contact.phone,
+      contact.organization_id,
+      DateTime.utc_now()
+    )
+
     message_body = Faker.Lorem.sentence()
 
     result =

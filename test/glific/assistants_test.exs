@@ -203,7 +203,9 @@ defmodule Glific.AssistantsTest do
     test "creates knowledge base and version, and sets kaapi_job_id",
          %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
-        %{method: :post} ->
+        %{method: :post, body: body} ->
+          send(self(), {:collection_request, Jason.decode!(body)})
+
           %Tesla.Env{
             status: 200,
             body: %{data: %{job_id: "job_abc123"}}
@@ -235,6 +237,10 @@ defmodule Glific.AssistantsTest do
       assert Map.has_key?(knowledge_base_version.files, "file_abc")
       assert Map.has_key?(knowledge_base_version.files, "file_xyz")
       assert String.starts_with?(knowledge_base_version.llm_service_id, "temporary-vs-")
+
+      assert_received {:collection_request, collection_request}
+      assert collection_request["name"] == "kbv_#{knowledge_base_version.id}"
+      assert Enum.sort(collection_request["documents"]) == ["file_abc", "file_xyz"]
     end
 
     test "uses existing knowledge base when id is provided",

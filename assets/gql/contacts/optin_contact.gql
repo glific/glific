@@ -1,5 +1,5 @@
-mutation optinContact($phone: String!, $name: String) {
-  optinContact(phone: $phone, name: $name) {
+mutation optinContact($phone: String, $name: String, $channel: MessageChannelEnum, $identifier: String) {
+  optinContact(phone: $phone, name: $name, channel: $channel, identifier: $identifier) {
     contact {
       id
       name

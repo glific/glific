@@ -8,6 +8,9 @@ defmodule GlificWeb.WebChannel.Token do
   request's, never the token's, and an organization without a secret verifies nothing. The
   token's own `alg` is never trusted. Every way a token can be wrong gives `{:error, :invalid}`.
 
+  An NGO's token may carry `optin`, a boolean: `true` is the NGO vouching that the user consented
+  to be messaged on the web channel. Any other type makes the token invalid.
+
   A token lives at most 24 hours, with 60 seconds of clock leeway. A Glific session token also
   carries `jti` (the session) and `sst` (when the session started): it lasts one hour, and
   `renew/3` refreshes it only until the session is 24 hours old.
@@ -29,6 +32,7 @@ defmodule GlificWeb.WebChannel.Token do
           required(:exp) => integer(),
           optional(:name) => String.t(),
           optional(:phone) => String.t(),
+          optional(:optin) => boolean(),
           optional(:session_id) => String.t(),
           optional(:session_started_at) => integer()
         }
@@ -55,7 +59,7 @@ defmodule GlificWeb.WebChannel.Token do
   def verify(_organization_id, _token, _now), do: {:error, :invalid}
 
   @doc """
-  Signs a token for `claims` (`:sub`, optionally `:name`, `:phone`, `:session_id` and
+  Signs a token for `claims` (`:sub`, optionally `:name`, `:phone`, `:optin`, `:session_id` and
   `:session_started_at`) with the organization's secret, issued now unless `:iat` is given and
   expiring after `:exp`, or after one hour when that is absent.
   """
@@ -70,6 +74,7 @@ defmodule GlificWeb.WebChannel.Token do
           "channel" => @channel,
           "name" => claims[:name],
           "phone" => claims[:phone],
+          "optin" => claims[:optin],
           "jti" => claims[:session_id],
           "sst" => claims[:session_started_at],
           "iat" => issued_at,
@@ -152,13 +157,15 @@ defmodule GlificWeb.WebChannel.Token do
        when is_binary(sub) and byte_size(sub) > 0 do
     with true <- String.length(sub) <= @max_length,
          {:ok, name} <- optional_name(fields["name"]),
+         {:ok, optin} <- optional_boolean(fields["optin"]),
          {:ok, session} <- session_claims(fields) do
       claims =
         %{
           sub: sub,
           exp: fields["exp"],
           name: name,
-          phone: normalise_phone(fields["phone"])
+          phone: normalise_phone(fields["phone"]),
+          optin: optin
         }
         |> Map.merge(session)
         |> Map.reject(fn {_key, value} -> is_nil(value) end)
@@ -197,6 +204,10 @@ defmodule GlificWeb.WebChannel.Token do
     do: if(String.length(name) <= @max_length, do: {:ok, name}, else: :error)
 
   defp optional_name(_name), do: :error
+
+  @spec optional_boolean(any()) :: {:ok, boolean() | nil} | :error
+  defp optional_boolean(value) when is_nil(value) or is_boolean(value), do: {:ok, value}
+  defp optional_boolean(_value), do: :error
 
   @spec normalise_phone(any()) :: String.t() | nil
   defp normalise_phone(phone) when is_binary(phone) do

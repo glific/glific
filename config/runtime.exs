@@ -58,7 +58,14 @@ config :glific, Glific.RepoReplica,
 
 config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
-check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
+default_origins = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
+
+check_origin =
+  if Application.get_env(:glific, :environment) == :dev do
+    default_origins ++ ["http://localhost:4000"]
+  else
+    default_origins
+  end
 
 # Glific endpoint configs
 config :glific, GlificWeb.Endpoint,
@@ -236,12 +243,12 @@ config :glific, Glific.ThirdParty.Kaapi.ApiClient,
 
 config :glific, Glific.ThirdParty.Kaapi,
   stt_model: env!("KAAPI_STT_MODEL", :string, "gemini-3.1-pro-preview"),
-  tts_model: env!("KAAPI_TTS_MODEL", :string, "gemini-3.1-flash-tts-preview")
+  tts_model: env!("KAAPI_TTS_MODEL", :string, "gemini-3.8-flash-lite-tts")
 
 config :glific, Glific.ThirdParty.Gemini.ApiClient,
   gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret"),
   stt_model: env!("GEMINI_STT_MODEL", :string, "gemini-2.5-pro"),
-  tts_model: env!("GEMINI_TTS_MODEL", :string, "gemini-2.5-pro-preview-tts")
+  tts_model: env!("GEMINI_TTS_MODEL", :string, "gemini-3.8-flash-lite-tts")
 
 config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),

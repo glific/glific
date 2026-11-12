@@ -308,6 +308,19 @@ defmodule Glific.FLowsTest do
       assert {:error, %Ecto.Changeset{}} = Flows.update_flow(flow, invalid_attrs)
     end
 
+    test "a keyword is unique across channels: a web flow cannot reuse a WhatsApp flow's keyword" do
+      flow_fixture(Map.merge(@valid_attrs, %{name: "WhatsApp help", keywords: ["helpdesk"]}))
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               @valid_attrs
+               |> Map.merge(%{name: "Web help", keywords: ["helpdesk"], channel: :web})
+               |> Map.put(:organization_id, Fixtures.get_org_id())
+               |> Flows.create_flow()
+
+      assert %{keywords: [error]} = errors_on(changeset)
+      assert error =~ "helpdesk"
+    end
+
     test "delete_flow/1 deletes the flow" do
       flow = flow_fixture()
       assert {:ok, %Flow{}} = Flows.delete_flow(flow)
@@ -907,6 +920,38 @@ defmodule Glific.FLowsTest do
                  keyword != Glific.string_clean(keyword)
                end)
     end
+
+    test "flow keyword map records each flow's channel", attrs do
+      flow = flow_fixture(%{name: "Web channel flow", keywords: ["webchannel"], channel: :web})
+      Glific.Caches.remove(attrs.organization_id, ["flow_keywords_map"])
+
+      assert Flows.flow_keywords_map(attrs.organization_id)["channels"][flow.id] == :web
+    end
+  end
+
+  describe "published_keyword_flow_id/3" do
+    @keyword_map %{
+      "published" => %{"adopt" => 1, "help" => 2, "outofoffice" => 3},
+      "channels" => %{1 => :web, 2 => :whatsapp}
+    }
+
+    test "finds a keyword's flow only on the flow's own channel" do
+      assert Flows.published_keyword_flow_id(@keyword_map, "adopt", :web) == 1
+      assert Flows.published_keyword_flow_id(@keyword_map, "adopt", :whatsapp) == nil
+      assert Flows.published_keyword_flow_id(@keyword_map, "help", :whatsapp) == 2
+      assert Flows.published_keyword_flow_id(@keyword_map, "help", :web) == nil
+    end
+
+    # Out of office and the default flow are added as keywords without a row of their own.
+    test "treats a flow with no recorded channel as WhatsApp's" do
+      assert Flows.published_keyword_flow_id(@keyword_map, "outofoffice", :whatsapp) == 3
+      assert Flows.published_keyword_flow_id(@keyword_map, "outofoffice", :web) == nil
+    end
+
+    test "is nil for a word that is no flow's keyword" do
+      assert Flows.published_keyword_flow_id(@keyword_map, "hello", :web) == nil
+      assert Flows.published_keyword_flow_id(@keyword_map, nil, :whatsapp) == nil
+    end
   end
 
   defp clear_flow_cache(flow) do
@@ -1215,6 +1260,7 @@ defmodule Glific.FLowsTest do
     test "a flow started on the web channel runs and replies on the web",
          %{contact: contact, organization_id: organization_id} do
       flow = active_flow(organization_id)
+      contact = Fixtures.opt_in_to_web(contact)
 
       {:ok, _flow} = Flows.start_contact_flow(flow, contact, %{}, :web)
 
