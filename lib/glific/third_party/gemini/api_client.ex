@@ -158,7 +158,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         "speechConfig" => %{
           "voiceConfig" => %{
             "prebuiltVoiceConfig" => %{
-              "voiceName" => "Kore"
+              "voiceName" => "en-in-csagent-9"
             }
           }
         }

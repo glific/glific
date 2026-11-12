@@ -622,7 +622,7 @@ defmodule Glific.ThirdParty.Kaapi do
             type: "tts",
             params: %{
               model: tts_model(opts[:model]),
-              voice: opts[:voice] || "Kore",
+              voice: opts[:voice] || "en-in-csagent-9",
               language: opts[:language] || "hindi",
               response_format: "mp3"
             }
