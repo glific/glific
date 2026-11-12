@@ -1,6 +1,9 @@
 defmodule GlificWeb.Plugs.LogMetadataTest do
   use GlificWeb.ConnCase
 
+  import ExUnit.CaptureLog
+  require Logger
+
   alias GlificWeb.Plugs.LogMetadata
 
   setup do
@@ -40,6 +43,24 @@ defmodule GlificWeb.Plugs.LogMetadataTest do
     |> LogMetadata.call([])
 
     assert Logger.metadata()[:user_agent] == "evil\\x1B[31mred\\x00\\x7F"
+  end
+
+  test "formatted log lines carry no raw control characters", %{conn: conn} do
+    level = Logger.level()
+    Logger.configure(level: :error)
+    on_exit(fn -> Logger.configure(level: level) end)
+
+    conn
+    |> put_req_header("user-agent", "evil\e[31mred")
+    |> LogMetadata.call([])
+
+    log =
+      capture_log([format: "$metadata$message", metadata: [:user_agent]], fn ->
+        Logger.error("request")
+      end)
+
+    assert log =~ "user_agent=evil\\x1B[31mred request"
+    refute log =~ "\e"
   end
 
   test "leaves metadata untouched without a user agent", %{conn: conn} do
