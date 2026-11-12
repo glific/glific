@@ -277,7 +277,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
           params = get_in(decoded, ["config", "blob", "completion", "params"])
           assert params["voice"] == "custom-voice"
           assert params["language"] == "english"
-          assert params["model"] == "custom-tts-model"
+          assert params["model"] == "gemini-3.8-flash-tts"
 
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-789"}}
       end)
@@ -287,7 +287,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
         "Hello",
         @callback_url,
         @request_metadata,
-        %{voice: "custom-voice", language: "english", model: "custom-tts-model"}
+        %{voice: "custom-voice", language: "english", model: "gemini-3.8-flash-tts"}
       )
     end
 
