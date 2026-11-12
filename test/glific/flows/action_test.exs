@@ -1408,6 +1408,14 @@ defmodule Glific.Flows.ActionTest do
 
     assert {:ok, context, []} = Action.execute(blank, context, [])
     assert context.contact.name == "Asha Rao"
+
+    evaluates_blank = %Action{
+      type: "set_contact_fields",
+      contact_fields: [%{name: "Name", key: "name", value: ~s|<%= "" %>|, property: "name"}]
+    }
+
+    assert {:ok, context, []} = Action.execute(evaluates_blank, context, [])
+    assert context.contact.name == "Asha Rao"
   end
 
   test "validate set_contact_fields flags a name row that is empty or repeated" do

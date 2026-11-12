@@ -1315,13 +1315,11 @@ defmodule Glific.Flows.Action do
 
   @spec maybe_set_name(FlowContext.t(), Action.t()) :: FlowContext.t()
   defp maybe_set_name(context, action) do
-    case property_rows(action, "name") do
-      [%{value: value} | _rest] when value not in ["", nil] ->
-        name = ContactField.parse_contact_field_value(context, value)
-        ContactSetting.set_contact_name(context, name)
-
-      _ ->
-        context
+    with [%{value: value} | _rest] when value not in ["", nil] <- property_rows(action, "name"),
+         name when name not in ["", nil] <- ContactField.parse_contact_field_value(context, value) do
+      ContactSetting.set_contact_name(context, name)
+    else
+      _ -> context
     end
   end
 
