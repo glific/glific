@@ -15,14 +15,48 @@ defmodule Glific.Caches.ReplicatorTest do
     %{organization_id: Fixtures.get_org_id()}
   end
 
-  test "set/4 sends the entries it wrote, with their ttl", %{organization_id: organization_id} do
+  test "set/4 sends the entries it wrote, with the deadline of their ttl", %{
+    organization_id: organization_id
+  } do
+    sent_at = System.system_time(:millisecond)
     Caches.set(organization_id, "replicated key", "replicated value", ttl: :timer.minutes(5))
 
     assert_receive {Replicator, origin, {:put_many, entries, opts}}
     assert origin == node()
     assert {{organization_id, "replicated key"}, "replicated value"} in entries
     assert List.keymember?(entries, {organization_id, :cache_reload_key}, 0)
-    assert opts[:ttl] == :timer.minutes(5)
+    refute Keyword.has_key?(opts, :ttl)
+    assert opts[:expires_at] >= sent_at + :timer.minutes(5)
+    assert opts[:expires_at] <= System.system_time(:millisecond) + :timer.minutes(5)
+  end
+
+  test "a write from another node keeps only the time left before its deadline", %{
+    organization_id: organization_id
+  } do
+    expires_at = System.system_time(:millisecond) + :timer.minutes(1)
+
+    broadcast_from(
+      @other_node,
+      {:put_many, [{{organization_id, "deadline key"}, "deadline value"}],
+       [expires_at: expires_at]}
+    )
+
+    assert {:ok, "deadline value"} == Caches.get(organization_id, "deadline key")
+    {:ok, ttl} = Cachex.ttl(:glific_cache, {organization_id, "deadline key"})
+    assert ttl > 0 and ttl <= :timer.minutes(1)
+  end
+
+  test "a write from another node whose deadline has passed is dropped", %{
+    organization_id: organization_id
+  } do
+    expires_at = System.system_time(:millisecond) - 1
+
+    broadcast_from(
+      @other_node,
+      {:put_many, [{{organization_id, "expired key"}, "expired value"}], [expires_at: expires_at]}
+    )
+
+    assert {:ok, false} == Caches.get(organization_id, "expired key")
   end
 
   test "remove/2 sends the keys it deleted", %{organization_id: organization_id} do
