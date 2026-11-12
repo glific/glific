@@ -21,9 +21,9 @@ defmodule Glific.AI.Skills.Knowledge do
     behaving as expected, whether something happened, what a setting means, and
     the steps to achieve something in the product.
 
-    Anything asked as a question belongs here, including questions about
-    producing or sending things. Asking how something is done is not the same
-    as asking for it to be written.
+    Wanting to know how something is done belongs here, including how to
+    produce or send something. Wanting the thing itself written does not,
+    however politely it is asked for.
     """
   end
 

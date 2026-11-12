@@ -20,9 +20,9 @@ defmodule Glific.AI.Skills.DraftHSM do
     message copy, the placeholders it needs, and the category and language it
     should be submitted under.
 
-    Use this only when the request is for text to be written, reworded or
-    translated. A question about how something is done is not such a request,
-    even when it concerns messages.
+    Use this whenever the request is for text to be written, reworded or
+    translated, including when it is put as a question. Wanting to know how
+    something is done instead belongs to the skill that answers questions.
     """
   end
 
