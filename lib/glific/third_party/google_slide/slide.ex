@@ -206,28 +206,32 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
   @spec delete_template_copy(String.t(), String.t()) :: any()
   defp delete_template_copy(token, presentation_id) do
-    Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
-      # There's a chance metadata not yet ready for just copied file, so deleting after 10s
-      Process.sleep(10_000)
-      delete_url = "#{@drive_url}/#{presentation_id}?supportsAllDrives=true"
+    Task.Supervisor.start_child(
+      Glific.TaskSupervisor,
+      Glific.LogContext.wrap(fn -> trash_template_copy(token, presentation_id) end)
+    )
+  end
 
-      case Tesla.patch(client(), delete_url, Jason.encode!(%{"trashed" => true}),
-             headers: auth_headers(token),
-             opts: [adapter: [recv_timeout: @api_timeout]]
-           ) do
-        {:ok, %Tesla.Env{status: status, body: _body}} when status >= 200 and status < 400 ->
-          :ok
+  @spec trash_template_copy(String.t(), String.t()) :: any()
+  defp trash_template_copy(token, presentation_id) do
+    # There's a chance metadata not yet ready for just copied file, so deleting after 10s
+    Process.sleep(10_000)
+    delete_url = "#{@drive_url}/#{presentation_id}?supportsAllDrives=true"
 
-        {:ok, %Tesla.Env{status: status, body: body}} ->
-          Logger.error(
-            "Failed to delete the template copy. Status: #{status}, Response: #{Glific.SafeLog.safe_inspect(body)} "
-          )
+    case Tesla.patch(client(), delete_url, Jason.encode!(%{"trashed" => true}),
+           headers: auth_headers(token),
+           opts: [adapter: [recv_timeout: @api_timeout]]
+         ) do
+      {:ok, %Tesla.Env{status: status, body: _body}} when status >= 200 and status < 400 ->
+        :ok
 
-        {:error, error} ->
-          Logger.error(
-            "Failed to delete the template copy: #{Glific.SafeLog.safe_inspect(error)}"
-          )
-      end
-    end)
+      {:ok, %Tesla.Env{status: status, body: body}} ->
+        Logger.error(
+          "Failed to delete the template copy. Status: #{status}, Response: #{Glific.SafeLog.safe_inspect(body)} "
+        )
+
+      {:error, error} ->
+        Logger.error("Failed to delete the template copy: #{Glific.SafeLog.safe_inspect(error)}")
+    end
   end
 end
