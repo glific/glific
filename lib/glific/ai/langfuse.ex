@@ -37,8 +37,8 @@ defmodule Glific.AI.Langfuse do
   # "6298936 6289903" stays two ids. The country-code alternative counts its
   # groups rather than running to the next digit, or a number followed by any
   # other figure overshoots the fifteen-digit ceiling and masks nothing at all.
-  @phone ~r/\b\d{5}[\s-]\d{5}\b|[+(]\d[\d().\-]{0,4}(?:[\s.\-]?\d{1,5}){1,4}\b|\d[\d().\-]{8,20}\d/
-  @email ~r/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/
+  @phone ~r/\b\d{5}[\s-]\d{5}\b|[+(]\d[\d().\-]{0,4}(?:[\s.\-]?\d{1,5}){1,4}\b|\d[\d().\-]{8,20}\d/u
+  @email ~r/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/u
 
   @doc """
   Traces a question in the background.
@@ -151,10 +151,10 @@ defmodule Glific.AI.Langfuse do
 
   @spec redact(String.t()) :: String.t()
   defp redact(match) do
-    digits = match |> String.replace(~r/\D/, "") |> String.length()
+    digits = match |> String.replace(~r/\D/u, "") |> String.length()
 
     cond do
-      Regex.match?(~r/^\d{4}-\d{2}/, String.trim(match)) -> match
+      Regex.match?(~r/^\d{4}-\d{2}/u, String.trim(match)) -> match
       digits in 10..15 -> "[phone]"
       digits > 15 -> shorten(match)
       true -> match
@@ -167,7 +167,7 @@ defmodule Glific.AI.Langfuse do
   # leaving the whole thing — the number included — in place.
   @spec shorten(String.t()) :: String.t()
   defp shorten(match) do
-    case Regex.run(~r/^(.*)([\s.\-]\d+)$/, match) do
+    case Regex.run(~r/^(.*)([\s.\-]\d+)$/u, match) do
       [_match, head, tail] -> redact(head) <> tail
       nil -> match
     end
