@@ -57,8 +57,6 @@ defmodule Glific.LogContext do
     end
   end
 
-  def handle_event(_event, _measurements, _meta, _config), do: :ok
-
   @spec capture() :: context()
   defp capture do
     {Logger.metadata(), Repo.get_organization_id(), RepoReplica.get_organization_id(),

@@ -13,8 +13,11 @@ defmodule Glific.ErrorLogCounterTest do
     :ok
   end
 
-  test "attach/0 is idempotent" do
+  test "attach/0 adds the handler once and is safe to call again" do
+    :logger.remove_handler(:glific_error_log_counter)
+
     assert ErrorLogCounter.attach() == :ok
+    assert :glific_error_log_counter in :logger.get_handler_ids()
     assert ErrorLogCounter.attach() == :ok
   end
 

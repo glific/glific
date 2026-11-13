@@ -13,10 +13,9 @@ defmodule Glific.ErrorLogCounter do
   @doc "Attaches the handler to `:logger`; safe to call more than once."
   @spec attach() :: :ok | {:error, term()}
   def attach do
-    case :logger.add_handler(@handler_id, __MODULE__, %{level: :error}) do
-      {:error, {:already_exist, @handler_id}} -> :ok
-      result -> result
-    end
+    if @handler_id in :logger.get_handler_ids(),
+      do: :ok,
+      else: :logger.add_handler(@handler_id, __MODULE__, %{level: :error})
   end
 
   @doc "`:logger` handler callback."

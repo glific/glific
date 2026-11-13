@@ -494,6 +494,16 @@ defmodule Glific.AI.LangfuseTest do
       assert Langfuse.configured?()
     end
 
+    test "a configured project hands the work to a background task", %{message: message} do
+      Application.put_env(:glific, Langfuse,
+        host: "https://us.cloud.langfuse.com",
+        public_key: "pk-lf-x",
+        secret_key: "sk-lf-x"
+      )
+
+      assert Langfuse.score_async(%Event{message_id: message.id, data: %{}}) == :ok
+    end
+
     test "an unconfigured project still answers the caller", %{message: message} do
       Application.put_env(:glific, Langfuse, [])
 
