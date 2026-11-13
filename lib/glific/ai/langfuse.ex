@@ -495,7 +495,7 @@ defmodule Glific.AI.Langfuse do
   # on a rolling restart instead of being killed with its caller.
   @spec background((-> any())) :: :ok
   defp background(fun) do
-    Task.Supervisor.start_child(Glific.TaskSupervisor, fun)
+    Task.Supervisor.start_child(Glific.TaskSupervisor, Glific.LogContext.wrap(fun))
     :ok
   end
 

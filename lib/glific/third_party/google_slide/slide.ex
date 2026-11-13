@@ -206,7 +206,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
   @spec delete_template_copy(String.t(), String.t()) :: any()
   defp delete_template_copy(token, presentation_id) do
-    Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+    cleanup = fn ->
       # There's a chance metadata not yet ready for just copied file, so deleting after 10s
       Process.sleep(10_000)
       delete_url = "#{@drive_url}/#{presentation_id}?supportsAllDrives=true"
@@ -228,6 +228,8 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
             "Failed to delete the template copy: #{Glific.SafeLog.safe_inspect(error)}"
           )
       end
-    end)
+    end
+
+    Task.Supervisor.start_child(Glific.TaskSupervisor, Glific.LogContext.wrap(cleanup))
   end
 end

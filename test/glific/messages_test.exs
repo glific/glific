@@ -7,6 +7,9 @@ defmodule Glific.MessagesTest do
   alias Glific.{
     Contacts,
     Fixtures,
+    Flows.Broadcast,
+    Flows.MessageBroadcast,
+    Flows.MessageBroadcastContact,
     Groups,
     Groups.Group,
     Messages,
@@ -768,6 +771,35 @@ defmodule Glific.MessagesTest do
         Repo.fetch_by(Group, %{id: cg1.group_id, organization_id: organization_id})
 
       assert updated_group.last_communication_at >= group.last_communication_at
+    end
+
+    test "executing a group message broadcast sends to and processes every group contact",
+         %{organization_id: organization_id} = attrs do
+      [contact_group | _] = Fixtures.group_contacts_fixture(attrs)
+
+      {:ok, group} =
+        Repo.fetch_by(Group, %{id: contact_group.group_id, organization_id: organization_id})
+
+      message_attrs =
+        Map.merge(
+          %{body: "broadcast body", flow: :outbound, type: :text},
+          foreign_key_constraint(attrs)
+        )
+
+      Messages.create_and_send_message_to_group(message_attrs, group, :session)
+      Broadcast.execute_broadcasts(organization_id)
+
+      {:ok, message_broadcast} =
+        Repo.fetch_by(MessageBroadcast, %{group_id: group.id, type: "message"})
+
+      statuses =
+        MessageBroadcastContact
+        |> where([mbc], mbc.message_broadcast_id == ^message_broadcast.id)
+        |> select([mbc], mbc.status)
+        |> Repo.all()
+
+      assert statuses != []
+      assert Enum.all?(statuses, &(&1 == "processed"))
     end
 
     test "create and send message should send message to contact", attrs do

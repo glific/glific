@@ -82,6 +82,8 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for Ecto DB connection errors:
     attach_repo_telemetry_event()
 
+    Glific.ErrorLogCounter.attach()
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
@@ -105,6 +107,13 @@ defmodule Glific.Application do
   end
 
   defp attach_oban_telemetry_event do
+    :telemetry.attach(
+      "oban-job-log-context",
+      [:oban, :job, :start],
+      &Glific.LogContext.handle_event/4,
+      []
+    )
+
     :telemetry.attach(
       "oban-failure",
       [:oban, :job, :exception],

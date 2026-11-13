@@ -126,17 +126,12 @@ defmodule Glific.Appsignal do
   def handle_event(_, _, _, _), do: nil
 
   @spec organization_id_tag(map() | nil) :: String.t()
-  defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
-    do: to_string(org_id)
-
-  defp organization_id_tag(%{"message" => %{"organization_id" => org_id}})
-       when not is_nil(org_id),
-       do: to_string(org_id)
-
-  defp organization_id_tag(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
-    do: to_string(org_id)
-
-  defp organization_id_tag(_), do: "unknown"
+  defp organization_id_tag(args) do
+    case Glific.LogContext.job_organization_id(args) do
+      nil -> "unknown"
+      org_id -> to_string(org_id)
+    end
+  end
 
   @doc """
   Sends oban queue size metric to Appsignal

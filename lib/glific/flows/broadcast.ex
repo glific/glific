@@ -428,10 +428,11 @@ defmodule Glific.Flows.Broadcast do
         end,
         ordered: false,
         timeout: 11_000,
-        on_timeout: :kill_task
+        on_timeout: :kill_task,
+        zip_input_on_exit: true
       )
 
-    Stream.run(stream)
+    log_task_timeouts(stream, flow.organization_id)
   end
 
   @spec wa_group_tasks(Flow.t(), [non_neg_integer()], Keyword.t()) :: :ok
@@ -447,10 +448,11 @@ defmodule Glific.Flows.Broadcast do
         end,
         ordered: false,
         timeout: 5_000,
-        on_timeout: :kill_task
+        on_timeout: :kill_task,
+        zip_input_on_exit: true
       )
 
-    Stream.run(stream)
+    log_task_timeouts(stream, flow.organization_id)
   end
 
   @spec message_tasks(map(), Contact.t(), Keyword.t()) :: :ok
@@ -487,10 +489,31 @@ defmodule Glific.Flows.Broadcast do
         end,
         ordered: false,
         timeout: 5_000,
-        on_timeout: :kill_task
+        on_timeout: :kill_task,
+        zip_input_on_exit: true
       )
 
-    Stream.run(stream)
+    log_task_timeouts(stream, message_params.organization_id)
+  end
+
+  # A task killed by `on_timeout: :kill_task` logs nothing itself, so its exit is the only trace
+  # that the contact or group was never processed. Crashes are left to the task's own crash report.
+  @spec log_task_timeouts(Enumerable.t(), non_neg_integer()) :: :ok
+  defp log_task_timeouts(stream, organization_id) do
+    Enum.each(stream, fn
+      {:exit, {%Contact{id: contact_id}, :timeout}} ->
+        Logger.error("Broadcast task timed out for contact_id: #{contact_id}",
+          org_id: organization_id
+        )
+
+      {:exit, {wa_group_id, :timeout}} ->
+        Logger.error("Broadcast task timed out for wa_group_id: #{wa_group_id}",
+          org_id: organization_id
+        )
+
+      _result ->
+        :ok
+    end)
   end
 
   @spec init_msg_broadcast(map(), Messages.Message.t(), list(), boolean()) ::

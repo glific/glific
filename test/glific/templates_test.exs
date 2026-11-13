@@ -2,6 +2,8 @@ defmodule Glific.TemplatesTest do
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Mock
+
   alias Glific.{
     Caches,
     Fixtures,
@@ -1166,6 +1168,19 @@ defmodule Glific.TemplatesTest do
 
       assert_raise Ecto.NoResultsError, fn ->
         Templates.get_session_template!(session_template.id)
+      end
+    end
+
+    test "delete_session_template/1 deletes an HSM at the BSP within the organization's context",
+         attrs do
+      session_template = %{session_template_fixture(attrs) | is_hsm: true}
+
+      with_mock Glific.Providers.Gupshup.Template, [:passthrough],
+        delete: fn organization_id, _attrs ->
+          {:ok, Repo.get_organization_id() == organization_id}
+        end do
+        assert {:ok, %SessionTemplate{}} = Templates.delete_session_template(session_template)
+        assert_receive {_ref, {:ok, true}}, 1_000
       end
     end
 
