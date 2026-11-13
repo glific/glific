@@ -981,6 +981,8 @@ defmodule Glific.PartnersTest do
 
     test "update_credential/2 for gupshup should update credentials and apply gupshup settings",
          %{organization_id: organization_id} = _attrs do
+      test_pid = self()
+
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/token"} ->
           {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
@@ -1014,8 +1016,13 @@ defmodule Glific.PartnersTest do
         %{method: :put, url: "https://partner.gupshup.io/partner/app/some_id/appPreference"} ->
           {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
 
-        # Validates that the subscription is set
-        %{method: :post, url: "https://partner.gupshup.io/partner/app/some_id/subscription"} ->
+        # Validates that the subscriptions are set
+        %{
+          method: :post,
+          url: "https://partner.gupshup.io/partner/app/some_id/subscription",
+          body: body
+        } ->
+          send(test_pid, {:subscription, URI.decode_query(body)})
           {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success"})}}
       end)
 
@@ -1035,6 +1042,15 @@ defmodule Glific.PartnersTest do
       assert "some_app" == updated_credential.secrets["app_name"]
       assert "some_id" == updated_credential.secrets["app_id"]
       assert "some_key" == updated_credential.secrets["api_key"]
+
+      assert_received {:subscription, %{"version" => "2"}}
+
+      assert_received {:subscription,
+                       %{
+                         "version" => "3",
+                         "modes" => "FLOW_MESSAGE",
+                         "tag" => "whatsapp_forms_webhook_" <> _
+                       }}
     end
 
     test "update_credential/2 for gupshup with mismatched App Name and App ID should give proper error" <>
@@ -2234,6 +2250,61 @@ defmodule Glific.PartnersTest do
                "status" => "success",
                "subscription" => %{"url" => "https://4bff-116-68-82-101.ngrok-free.app/gupshup"}
              } = data
+    end
+
+    test "set_whatsapp_forms_subscription/1 subscribes the app to form replies over V3" do
+      org = SeedsDev.seed_organizations()
+      assert :ok == PartnerAPI.set_whatsapp_forms_subscription(org.id)
+    end
+
+    test "set_whatsapp_forms_subscription/1 treats an existing subscription as success" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{status: 200, body: JSON.encode!(%{"token" => "token"})}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 400, body: "Duplicate component tag"}
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{partner_app_token: "sk_test_partner_app_token"})
+          }
+      end)
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert :ok == PartnerAPI.set_whatsapp_forms_subscription(org.id)
+        refute called(Appsignal.send_error(:_, :_, :_))
+      end
+    end
+
+    test "set_whatsapp_forms_subscription/1 reports a failure to AppSignal" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{status: 200, body: JSON.encode!(%{"token" => "token"})}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 400, body: "Invalid mode"}
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{partner_app_token: "sk_test_partner_app_token"})
+          }
+      end)
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:error, message} = PartnerAPI.set_whatsapp_forms_subscription(org.id)
+
+        assert message ==
+                 "Failed to set the WhatsApp Forms webhook subscription for org #{org.id}: \"Invalid mode\""
+
+        assert called(Appsignal.send_error(:error, message, :_))
+      end
     end
 
     test "enable webhook subscription for an app, duplicate webhook error", state do

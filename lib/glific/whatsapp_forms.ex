@@ -9,7 +9,6 @@ defmodule Glific.WhatsappForms do
     Enums.WhatsappFormCategory,
     Notifications,
     Partners,
-    Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
     Sheets,
@@ -50,8 +49,7 @@ defmodule Glific.WhatsappForms do
          {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
          {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          {:ok, revision} <- create_whatsapp_form_revision(whatsapp_form, user),
-         {:ok, _} <- update_revision_id(whatsapp_form.id, revision.id),
-         :ok <- maybe_set_subscription(attrs.organization_id) do
+         {:ok, _} <- update_revision_id(whatsapp_form.id, revision.id) do
       # Track metric for WhatsApp form creation
       Glific.Metrics.increment("WhatsApp Form Created", attrs.organization_id)
       {:ok, %{whatsapp_form: whatsapp_form}}
@@ -339,44 +337,6 @@ defmodule Glific.WhatsappForms do
     with {:ok, whatsapp_form} <- Repo.fetch_by(WhatsappForm, %{id: id}),
          {:ok, delete_form} <- Repo.delete(whatsapp_form) do
       {:ok, %{whatsapp_form: delete_form}}
-    end
-  end
-
-  @spec maybe_set_subscription(non_neg_integer()) :: :ok | {:error, any()}
-  defp maybe_set_subscription(organization_id) do
-    # Check if this is the first form for the organization
-    with 1 <- count_whatsapp_forms(%{organization_id: organization_id}),
-         {:ok, _response} <-
-           PartnerAPI.set_subscription(
-             organization_id,
-             nil,
-             ["FLOW_MESSAGE"],
-             3,
-             "whatsapp_forms_webhook"
-           ) do
-      :ok
-    else
-      {:error, %Tesla.Env{body: body, status: 400}} ->
-        if String.contains?(body, "Duplicate component tag") do
-          :ok
-        else
-          Logger.error(
-            "Failed to set subscription for org #{organization_id}: #{Glific.SafeLog.safe_inspect(body)}"
-          )
-
-          {:error, body}
-        end
-
-      {:error, error} ->
-        Logger.error(
-          "Failed to set subscription for org #{organization_id}: #{Glific.SafeLog.safe_inspect(error)}"
-        )
-
-        {:error, error}
-
-      # Any other count (not 1) means it's not the first form
-      _count ->
-        :ok
     end
   end
 
