@@ -1,7 +1,7 @@
 defmodule Glific.ReportsTest do
   use Glific.DataCase
 
-  alias Glific.{Fixtures, Reports}
+  alias Glific.{Contacts, Fixtures, Reports}
 
   test "get_date_preset/3" do
     end_day = NaiveDateTime.utc_now() |> Timex.beginning_of_day()
@@ -45,5 +45,33 @@ defmodule Glific.ReportsTest do
 
     assert valid_before + 1 == Reports.get_kpi(:valid_contact_count, org_id, date_range)
     assert non_opted_before + 1 == Reports.get_kpi(:non_opted_contacts_count, org_id, date_range)
+  end
+
+  test "get_kpi_data/3 excludes simulator contacts from the daily contacts chart",
+       %{organization_id: organization_id} do
+    date_range = %{
+      start_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(-7, :day),
+      end_day: NaiveDateTime.utc_now() |> NaiveDateTime.add(60)
+    }
+
+    total = fn ->
+      organization_id
+      |> Reports.get_kpi_data("contacts", date_range)
+      |> Enum.map(&elem(&1, 1))
+      |> Enum.sum()
+    end
+
+    before = total.()
+
+    Fixtures.contact_fixture(%{organization_id: organization_id})
+
+    Fixtures.contact_fixture(%{
+      organization_id: organization_id,
+      phone: Contacts.simulator_phone_prefix() <> "_9"
+    })
+
+    Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+    assert before + 2 == total.()
   end
 end
