@@ -673,6 +673,82 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
     end
   end
 
+  describe "platform_event" do
+    test "connectivity-check is acknowledged and counted without side effects", %{conn: conn} do
+      message_count = Repo.aggregate(Message, :count)
+
+      with_mock Instrumentation, [:passthrough], track_platform_event: fn _, _ -> :ok end do
+        conn = post(conn, "/gupshup", platform_event_payload(%{"type" => "connectivity-check"}))
+
+        assert response(conn, 200) == ""
+
+        assert_called(
+          Instrumentation.track_platform_event(
+            "connectivity-check",
+            conn.assigns[:organization_id]
+          )
+        )
+      end
+
+      assert all_enqueued(prefix: "global") == []
+      assert Repo.aggregate(Message, :count) == message_count
+    end
+
+    test "unknown sub-type is acknowledged and counted under its type", %{conn: conn} do
+      with_mock Instrumentation, [:passthrough], track_platform_event: fn _, _ -> :ok end do
+        conn = post(conn, "/gupshup", platform_event_payload(%{"type" => "some-future-check"}))
+
+        assert response(conn, 200) == ""
+
+        assert_called(
+          Instrumentation.track_platform_event(
+            "some-future-check",
+            conn.assigns[:organization_id]
+          )
+        )
+      end
+    end
+
+    test "platform-event without a sub-type is counted as unknown", %{conn: conn} do
+      with_mock Instrumentation, [:passthrough], track_platform_event: fn _, _ -> :ok end do
+        conn = post(conn, "/gupshup", platform_event_payload(%{}))
+
+        assert response(conn, 200) == ""
+
+        assert_called(
+          Instrumentation.track_platform_event("unknown", conn.assigns[:organization_id])
+        )
+      end
+    end
+
+    test "inactive organization is acknowledged but not counted", %{conn: conn} do
+      organization = Partners.organization(conn.assigns[:organization_id])
+      {:ok, _organization} = Partners.update_organization(organization, %{status: :suspended})
+
+      with_mock Instrumentation, [:passthrough], track_platform_event: fn _, _ -> :ok end do
+        conn = post(conn, "/gupshup", platform_event_payload(%{"type" => "connectivity-check"}))
+
+        assert response(conn, 200) == ""
+        assert_not_called(Instrumentation.track_platform_event(:_, :_))
+      end
+    end
+
+    test "unknown change field is acknowledged without side effects", %{conn: conn} do
+      message_count = Repo.aggregate(Message, :count)
+
+      payload =
+        %{"type" => "connectivity-check"}
+        |> platform_event_payload()
+        |> put_in(["entry", Access.at(0), "changes", Access.at(0), "field"], "some-future-event")
+
+      conn = post(conn, "/gupshup", payload)
+
+      assert response(conn, 200) == ""
+      assert all_enqueued(prefix: "global") == []
+      assert Repo.aggregate(Message, :count) == message_count
+    end
+  end
+
   describe "dispatch" do
     setup do
       level = Logger.level()
@@ -765,6 +841,25 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.V3.CallbackControllerTest do
             }
           ],
           "id" => "122037724131744"
+        }
+      ]
+    }
+  end
+
+  defp platform_event_payload(value) do
+    %{
+      "gs_app_id" => "0a6f5e4d-1234-4c8b-9f21-7d3e5a9b1c40",
+      "object" => "whatsapp_business_account",
+      "entry" => [
+        %{
+          "id" => "109876543210987",
+          "time" => 1_760_440_000_000,
+          "changes" => [
+            %{
+              "field" => "platform-event",
+              "value" => Map.put(value, "initiator", "gupshup")
+            }
+          ]
         }
       ]
     }

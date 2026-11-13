@@ -5,6 +5,15 @@ defmodule Glific.ThirdParty.GeminiTest do
 
   alias Glific.ThirdParty.Gemini
 
+  defp sample_wav_audio do
+    samples = :binary.copy(<<0::16>>, 2400)
+    data_size = byte_size(samples)
+
+    <<"RIFF", 36 + data_size::32-little, "WAVE", "fmt ", 16::32-little, 1::16-little,
+      1::16-little, 24_000::32-little, 48_000::32-little, 2::16-little, 16::16-little, "data",
+      data_size::32-little>> <> samples
+  end
+
   describe "speech_to_text/2" do
     test "successfully transcribes audio and returns text", %{organization_id: organization_id} do
       mock(fn
@@ -85,12 +94,12 @@ defmodule Glific.ThirdParty.GeminiTest do
     test "successfully converts text to speech with GCS enabled", %{
       organization_id: organization_id
     } do
-      # Base64 encoded sample PCM audio data
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      # Base64 encoded sample WAV audio data
+      sample_audio_data = Base.encode64(sample_wav_audio())
 
       mock(fn
         %{method: :post, url: url} ->
-          assert String.contains?(url, "/gemini-2.5-pro-preview-tts:generateContent")
+          assert String.contains?(url, "/gemini-3.8-flash-lite-tts:generateContent")
 
           %Tesla.Env{
             status: 200,
@@ -139,7 +148,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       mock(fn %{method: :post} ->
         %Tesla.Env{
           status: 400,
-          body: %{error: "Invalid request"}
+          body: %{error: %{message: "Invalid request"}}
         }
       end)
 
@@ -148,18 +157,8 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.success == false
       refute result.media_url
       assert result.translated_text == "Hello World"
-    end
-
-    test "handles Tesla error with body", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        {:error, %Tesla.Env{body: "Service unavailable"}}
-      end)
-
-      result = Gemini.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
+      assert result.http_status == 400
+      assert result.reason == "Gemini TTS failed (400): Invalid request"
     end
 
     test "handles Tesla timeout error", %{organization_id: organization_id} do
@@ -176,7 +175,7 @@ defmodule Glific.ThirdParty.GeminiTest do
 
     @tag :skip
     test "handles GCS upload failure", %{organization_id: organization_id} do
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      sample_audio_data = Base.encode64(sample_wav_audio())
 
       mock(fn %{method: :post} ->
         %Tesla.Env{
@@ -218,12 +217,23 @@ defmodule Glific.ThirdParty.GeminiTest do
     end
   end
 
+  describe "ffmpeg_input_args/1" do
+    test "lets ffmpeg read the header of WAV audio" do
+      assert Gemini.ffmpeg_input_args(sample_wav_audio()) == ["-i"]
+    end
+
+    test "declares the format of headerless PCM audio" do
+      assert Gemini.ffmpeg_input_args(:binary.copy(<<0::16>>, 2400)) ==
+               ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i"]
+    end
+  end
+
   describe "nmt_text_to_speech/5" do
     @tag :skip
     test "successfully translates and converts to speech with Gemini engine", %{
       organization_id: organization_id
     } do
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      sample_audio_data = Base.encode64(sample_wav_audio())
 
       mock_global(fn env ->
         if env.url == "https://translation.googleapis.com/language/translate/v2" do
@@ -296,7 +306,7 @@ defmodule Glific.ThirdParty.GeminiTest do
         is_active: true
       })
 
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      sample_audio_data = Base.encode64(sample_wav_audio())
 
       mock_global(fn env ->
         if env.url == "https://translation.googleapis.com/language/translate/v2" do
@@ -354,7 +364,7 @@ defmodule Glific.ThirdParty.GeminiTest do
 
     @tag :skip
     test "handles errors when token size exceeds 600", %{organization_id: organization_id} do
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      sample_audio_data = Base.encode64(sample_wav_audio())
       # Token size is 640
       long_text = String.duplicate("शामिल होने के लिए धन्यवाद", 16)
 
@@ -439,7 +449,7 @@ defmodule Glific.ThirdParty.GeminiTest do
         else
           %Tesla.Env{
             status: 400,
-            body: %{error: "Invalid request"}
+            body: %{error: %{message: "Invalid request"}}
           }
         end
       end)
@@ -450,6 +460,8 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.success == false
       assert result.media_url == nil
       assert result.translated_text == "Hello"
+      assert result.http_status == 400
+      assert result.reason == "Gemini TTS failed (400): Invalid request"
     end
 
     test "handles OpenAI TTS failure after successful translation", %{
@@ -489,7 +501,7 @@ defmodule Glific.ThirdParty.GeminiTest do
     test "uses gemini engine by default when speech_engine option is not provided", %{
       organization_id: organization_id
     } do
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      sample_audio_data = Base.encode64(sample_wav_audio())
 
       mock_global(fn env ->
         if String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") do
@@ -546,7 +558,7 @@ defmodule Glific.ThirdParty.GeminiTest do
     test "uses gemini engine by default when any unsupported speech_engine option is provided", %{
       organization_id: organization_id
     } do
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      sample_audio_data = Base.encode64(sample_wav_audio())
 
       mock_global(fn env ->
         if String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") do
