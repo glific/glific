@@ -12,7 +12,7 @@ defmodule Glific.ThirdParty.Kaapi do
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Kaapi.ApiClient
 
-  @supported_tts_models ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]
+  @supported_google_tts_models ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]
   @default_google_tts_voice "en-in-csagent-9"
 
   # Update all Error struct data in this format
@@ -611,7 +611,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   # The model and voice defaults are Google ids; any other provider rejects them.
   @spec tts_model(String.t(), String.t() | nil) :: String.t() | nil
-  defp tts_model("google", model) when model in @supported_tts_models, do: model
+  defp tts_model("google", model) when model in @supported_google_tts_models, do: model
   defp tts_model("google", _model), do: model_config(:tts_model)
   defp tts_model(_provider, model), do: model
 
