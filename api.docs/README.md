@@ -75,7 +75,7 @@ status codes in `## Errors`.
 ## Published docs
 
 The `API Docs Site` workflow publishes the collection as a single HTML page to
-[glific.github.io/glific](https://glific.github.io/glific/) whenever a change under
+[api.glific.com](https://api.glific.com/) whenever a change under
 `api.docs/` lands on `master`. It runs `npm run site` in `tools/`, which generates the page
 with Bruno CLI, includes only the `staging` environment and leaves out requests tagged
 `internal`. To preview it locally:
