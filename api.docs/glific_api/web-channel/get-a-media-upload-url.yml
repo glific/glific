@@ -36,8 +36,6 @@ docs: |
 
   ## Example response
 
-  Upload with `PUT <upload_url>` and the header `Content-Type: <content_type>`.
-
   ```json
   {
     "data": {
@@ -48,6 +46,18 @@ docs: |
     }
   }
   ```
+
+  ## Uploading the file
+
+  1. `PUT` the file's bytes to `upload_url` within `expires_in` seconds. This request goes to
+     Google, not Glific: send only `Content-Type`, set to exactly the `content_type` above, and
+     leave out the `authorization` header this request needed, since the URL carries the
+     permission. Use the URL as given, without re-encoding it.
+  2. Success is `200` with an empty body. Google Cloud Storage refuses a different
+     `Content-Type` with `403 SignatureDoesNotMatch`, because the type is part of the
+     signature. It refuses an expired URL too: ask for a new one.
+  3. Push `new_media_message` on the chat socket with `url`, the same `type` and
+     `content_type`, and an optional `caption` (see the **Web Channel** folder).
 
   ## Errors
 

@@ -42,7 +42,7 @@ docs: |
   | Column                                    | Rule                                                              |
   | ----------------------------------------- | ----------------------------------------------------------------- |
   | `Title`                                   | Template label; also identifies the row in the report.            |
-  | `Language`                                | A language label Glific supports for bulk apply, such as `English` or `Hindi`. |
+  | `Language`                                | One of `English`, `Hindi`, `Tamil`, `Kannada`, `Malayalam`, `Telugu`, `Odia`, `Assamese`, `Gujarati`, `Bengali`, `Punjabi`, `Marathi`, `Urdu`, `Spanish` or `Sign Language`. |
   | `Category`                                | `UTILITY` or `MARKETING`.                                         |
   | `Element Name`                            | Lowercase letters, digits and `_`. Must not exist already in that language. |
   | `Message`                                 | Body, with `{{1}}`-style variables.                               |

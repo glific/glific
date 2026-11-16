@@ -32,8 +32,9 @@ docs:
     4. To change the content of an approved HSM, use **Edit an approved HSM template**, which
        sends the new content to Gupshup, where Meta reviews it again.
 
-    `category` is one of `UTILITY` or `MARKETING` (**List WhatsApp HSM categories**). Body
-    variables are written `{{1}}`, `{{2}}`, and `numberParameters` counts them.
+    `category` is one of `UTILITY` or `MARKETING` (**List WhatsApp HSM categories**), or
+    `AUTHENTICATION` for one-time codes. Body variables are written `{{1}}`, `{{2}}`, and Glific
+    sets `numberParameters` to their count plus any variable in a URL button.
 
     Reading templates needs the staff role. Creating plain templates needs staff; changing,
     deleting, syncing and importing need manager.

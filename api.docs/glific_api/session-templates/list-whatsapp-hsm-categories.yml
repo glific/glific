@@ -34,6 +34,9 @@ docs: |
   }
   ```
 
+  **Create a session template** also accepts `AUTHENTICATION`, for one-time code templates,
+  which this list leaves out.
+
   ## Errors
 
   A user without the manager role gets a top-level `Unauthorized` error.

@@ -61,9 +61,19 @@ docs: |
   Meta's approval and stores it with the status Gupshup returns (usually `PENDING`).
 
   For an HSM, Glific lowercases `shortcode`, checks the fields below, sends the template
-  (including any media from `messageMediaId`) to Gupshup, and saves it with `bspId`, `status`,
-  `numberParameters` and `isActive` (`true` only if Gupshup reports `APPROVED`). If `label` is
-  empty, it becomes `<shortcode>_<locale>`, with a numeric suffix if that label is taken.
+  (including any media from `messageMediaId`) to Gupshup with the language's `locale` as its
+  language code, and saves it with `bspId`, `status`, `numberParameters` and `isActive`
+  (`true` only if Gupshup reports `APPROVED`). If Gupshup rejects it, nothing is saved. If
+  `label` is empty, it becomes `<shortcode>_<locale>`, with a numeric suffix if that label is
+  taken; a `label` you send is used as given.
+
+  Glific computes `numberParameters` for an HSM: the variables in `body` plus each `{{1}}` in
+  a URL button's `url`. Don't send it.
+
+  An `AUTHENTICATION` template is for one-time codes: use an `OTP` button, and don't write a
+  security warning in `body`, because Glific asks Meta to add "For your security, do not share
+  this code." The category is accepted here, though **List WhatsApp HSM categories** does not
+  list it.
 
   **Role:** staff
 
@@ -83,21 +93,50 @@ docs: |
   | `body`           | `String`                 | For `TEXT`  | Message text. HSM variables are `{{1}}`, `{{2}}`, ...                       |
   | `shortcode`      | `String`                 | For HSM     | Element name: lowercase letters, digits and `_`. Unique per organization and language. |
   | `isHsm`          | `Boolean`                | No          | `true` submits the template for approval. Defaults to `false`.              |
-  | `category`       | `String`                 | For HSM     | `UTILITY` or `MARKETING`.                                                   |
+  | `category`       | `String`                 | For HSM     | `UTILITY`, `MARKETING` or `AUTHENTICATION` (see above).                     |
   | `example`        | `String`                 | For HSM     | The body with sample values in place of the variables.                      |
-  | `footer`         | `String`                 | No          | Up to 60 characters.                                                        |
+  | `footer`         | `String`                 | No          | Up to 60 characters. An empty footer is not sent to Gupshup.                |
   | `hasButtons`     | `Boolean`                | No          | Whether the template has buttons.                                           |
   | `buttonType`     | `TemplateButtonTypeEnum` | With buttons | `QUICK_REPLY`, `CALL_TO_ACTION`, `OTP` or `WHATSAPP_FORM`.                 |
-  | `buttons`        | `Json`                   | With buttons | List of buttons, such as `{"type":"QUICK_REPLY","text":"Yes"}`, `{"type":"URL","text":"Visit","url":"https://..."}` or `{"type":"PHONE_NUMBER","text":"Call","phone_number":"+91..."}`. |
-  | `messageMediaId` | `ID`                     | For media   | The media (see **Message Media**) for an `IMAGE`, `VIDEO` or `DOCUMENT` template. |
+  | `buttons`        | `Json`                   | With buttons | A JSON-encoded list of buttons (see **Buttons**).                          |
+  | `messageMediaId` | `ID`                     | For media   | The media (see **Message Media**) for an `IMAGE`, `VIDEO` or `DOCUMENT` template. Glific downloads its `url` and uploads it to Gupshup as the sample, so the URL must be public and end in the file's extension. |
   | `tagId`          | `ID`                     | No          | Tag to attach.                                                              |
-  | `translations`   | `Json`                   | No          | Map of language ID to that language's version.                              |
+  | `translations`   | `Json`                   | No          | JSON-encoded map of language ID to that language's version (see **Translations**). |
   | `isActive`       | `Boolean`                | No          | Defaults to `false`; for an HSM it is set from the approval status.         |
   | `isSource`       | `Boolean`                | No          | Defaults to `false`.                                                        |
 
   HSM checks: body, footer and button texts together are at most 1024 characters, each button
   text is at most 20 characters, and button texts contain no variables, newlines, emojis or
   `*`, `_`, `~`.
+
+  ### Buttons
+
+  Each button's `type` is separate from `buttonType`: a `CALL_TO_ACTION` template has `URL` and
+  `PHONE_NUMBER` buttons.
+
+  | `buttonType`     | Button |
+  | ---------------- | ------ |
+  | `QUICK_REPLY`    | `{"type":"QUICK_REPLY","text":"Yes"}` |
+  | `CALL_TO_ACTION` | `{"type":"PHONE_NUMBER","text":"Call us","phone_number":"+910000000001"}` |
+  | `CALL_TO_ACTION` | `{"type":"URL","text":"Track","url":"https://example.org/track/{{1}}","example":["https://example.org/track/ORD-1024"]}`: Meta allows one variable, at the end of the URL, with a full sample URL in `example`. |
+  | `OTP`            | `{"type":"OTP","otp_type":"COPY_CODE","text":"Copy code"}` |
+
+  ### Translations
+
+  `translations` holds the template's other-language versions, keyed by language ID. Each
+  entry has `language_id`, `body`, `example` and `number_parameters`; entries written by
+  **Sync HSM templates** also carry `uuid`, `status`, `type`, `category` and `label`.
+
+  ```json
+  {
+    "2": {
+      "language_id": 2,
+      "body": "नमस्ते {{1}}, आपका ऑर्डर {{2}} भेज दिया गया है।",
+      "example": "नमस्ते [Asha], आपका ऑर्डर [ORD-1024] भेज दिया गया है।",
+      "number_parameters": 2
+    }
+  }
+  ```
 
   ## Example response
 

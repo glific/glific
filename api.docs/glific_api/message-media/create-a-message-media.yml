@@ -55,7 +55,7 @@ docs: |
   | `sourceUrl`       | `String`  | Yes      | Where the file came from. Usually the same as `url`.       |
   | `caption`         | `String`  | No       | Caption sent with the media.                               |
   | `thumbnail`       | `String`  | No       | Thumbnail URL.                                             |
-  | `isTemplateMedia` | `Boolean` | No       | The media belongs to an HSM template.                      |
+  | `isTemplateMedia` | `Boolean` | No       | Set `true` for the sample media of an HSM template; pass the media's `id` as `messageMediaId` to **Create a session template**. |
 
   ## Example response
 
