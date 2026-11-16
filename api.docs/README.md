@@ -73,10 +73,11 @@ status codes in `## Errors`.
 ## Keeping it current
 
 A new or changed GraphQL field or REST endpoint ships with its request here, in the same pull
-request. Before committing, run the checker in `tools/`:
+request. The `api-docs` CI job runs the checker in `tools/` on every pull request; run it
+locally before pushing:
 
 ```bash
-cd api.docs/tools && npm install && npm run schema && npm run validate
+cd api.docs/tools && npm ci && npm run schema && npm run validate
 ```
 
 It confirms Bruno can parse every file, validates each GraphQL request and its variables
