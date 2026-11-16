@@ -35,7 +35,10 @@ defmodule GlificWeb.Providers.Gupshup.Router do
   template-event  # type == template-event
     # payload.type
     status-update
-  v3              # V3 (Meta format) payload with entry[].changes[], see V3.CallbackController
+  platform-event  # type == platform-event, carries no app or message data
+    # payload.type
+    connectivity-check, and any future sub-type
+  v3             # V3 (Meta format) payload with entry[].changes[], see V3.CallbackController
     callback
   """
   scope "/gupshup", Controllers do
@@ -76,6 +79,10 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     scope "/billing-event" do
       post("/conversations", BillingEventController, :conversations)
       post("/*unknown", DefaultController, :unknown)
+    end
+
+    scope "/platform-event" do
+      post("/*sub_type", PlatformEventController, :handler)
     end
 
     scope "/template-event" do

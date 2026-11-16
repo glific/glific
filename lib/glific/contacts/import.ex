@@ -8,6 +8,7 @@ defmodule Glific.Contacts.Import do
     Contacts,
     Contacts.BulkImportWorker,
     Contacts.Contact,
+    CSV.Encoding,
     Groups,
     Groups.GroupContacts,
     Jobs.UserJob,
@@ -25,41 +26,17 @@ defmodule Glific.Contacts.Import do
   and group.
   """
   @spec import_contacts(non_neg_integer(), map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(
-        organization_id,
-        %{user: user, collection: collection, type: type} = _contact_attrs,
-        opts
-      ) do
-    if length(opts) > 1 do
-      raise "Please specify only one of keyword arguments: file_path, url or data"
+  def import_contacts(organization_id, attrs, opts) do
+    ensure_single_source!(opts)
+
+    contact_attrs =
+      attrs
+      |> Map.take([:user, :type, :collection])
+      |> Map.put(:organization_id, organization_id)
+
+    with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
+      handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
     end
-
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-
-    contact_attrs = %{
-      organization_id: organization_id,
-      user: user,
-      collection: collection,
-      type: type
-    }
-
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
-  end
-
-  def import_contacts(organization_id, contact_attrs, opts) do
-    if length(opts) > 1 do
-      raise "Please specify only one of keyword arguments: file_path, url or data"
-    end
-
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-
-    contact_attrs = %{
-      organization_id: organization_id,
-      user: contact_attrs.user,
-      type: contact_attrs.type
-    }
-
-    handle_csv_for_admins(contact_attrs, contact_data_as_stream, opts)
   end
 
   @doc """
@@ -151,24 +128,25 @@ defmodule Glific.Contacts.Import do
   """
   @spec add_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
   def add_contacts_to_group(organization_id, group_label, opts \\ []) do
-    contact_data_as_stream = fetch_contact_data_as_string(opts)
-    {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
+    with {:ok, contact_data_as_stream} <- fetch_contact_data_as_string(opts) do
+      {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
 
-    contact_id_list =
-      contact_data_as_stream
-      |> CSV.decode(headers: true, field_transform: &String.trim/1)
-      |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
-      |> get_contact_id_list(organization_id)
+      contact_id_list =
+        contact_data_as_stream
+        |> CSV.decode(headers: true, field_transform: &String.trim/1)
+        |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
+        |> get_contact_id_list(organization_id)
 
-    %{
-      group_id: group.id,
-      add_contact_ids: contact_id_list,
-      delete_contact_ids: [],
-      organization_id: organization_id
-    }
-    |> GroupContacts.update_group_contacts()
+      %{
+        group_id: group.id,
+        add_contact_ids: contact_id_list,
+        delete_contact_ids: [],
+        organization_id: organization_id
+      }
+      |> GroupContacts.update_group_contacts()
 
-    {:ok, %{message: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
+      {:ok, %{message: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
+    end
   end
 
   @doc """
@@ -251,28 +229,24 @@ defmodule Glific.Contacts.Import do
     data["collection"]
   end
 
-  @spec fetch_contact_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
+  @spec fetch_contact_data_as_string(Keyword.t()) ::
+          {:ok, Enumerable.t()} | {:error, map()}
   defp fetch_contact_data_as_string(opts) do
-    file_path = Keyword.get(opts, :file_path, nil)
-    url = Keyword.get(opts, :url, nil)
-    data = Keyword.get(opts, :data, nil)
-
-    cond do
-      file_path != nil ->
-        file_path |> Path.expand() |> File.stream!()
-
-      url != nil ->
-        {:ok, response} = Tesla.get(url)
-        {:ok, stream} = StringIO.open(response.body)
-        stream |> IO.binstream(:line)
-
-      data != nil ->
-        {:ok, stream} = StringIO.open(data)
-        stream |> IO.binstream(:line)
-    end
+    with {:error, reason} <- Encoding.stream(opts),
+         do: {:error, %{message: reason, details: "No contacts were imported."}}
   end
 
-  @spec handle_csv_for_admins(map(), map(), [{atom(), String.t()}]) :: list() | {:error, any()}
+  @spec ensure_single_source!(Keyword.t()) :: :ok
+  defp ensure_single_source!(opts) do
+    if length(Keyword.take(opts, [:file_path, :url, :data])) > 1 do
+      raise "Please specify only one of keyword arguments: file_path, url or data"
+    end
+
+    :ok
+  end
+
+  @spec handle_csv_for_admins(map(), Enumerable.t(), [{atom(), String.t()}]) ::
+          {:ok, map()} | {:error, map()}
   defp handle_csv_for_admins(contact_attrs, data, opts) do
     # this ensures the  org_id exists and is valid
     case Partners.organization(contact_attrs.organization_id) do
@@ -289,7 +263,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: {:ok, map()}
+  @spec decode_csv_data(map(), Enumerable.t(), [{atom(), String.t()}]) :: {:ok, map()}
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: _user} = params
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")

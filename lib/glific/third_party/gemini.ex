@@ -144,9 +144,13 @@ defmodule Glific.ThirdParty.Gemini do
            choose_engine_and_do_tts(speech_engine, organization_id, translated_text) do
       response
     else
-      %{success: false} ->
+      %{success: false} = failure ->
         Metrics.increment("Gemini TTS Failure", organization_id)
-        %{success: false, media_url: nil, translated_text: text}
+
+        Map.merge(
+          %{success: false, media_url: nil, translated_text: text},
+          Map.take(failure, [:reason, :http_status])
+        )
 
       error ->
         Metrics.increment("Gemini NMT TTS Failure", organization_id)
@@ -177,14 +181,15 @@ defmodule Glific.ThirdParty.Gemini do
       |> Map.put(:media_url, media_meta.url)
       |> Map.put(:translated_text, text)
     else
-      {:error, status} when is_integer(status) ->
+      {:error, {status, message}} ->
         Metrics.increment("Gemini TTS Failure", organization_id)
 
         %{
           success: false,
           media_url: nil,
           translated_text: text,
-          http_status: status
+          http_status: status,
+          reason: "Gemini TTS failed (#{status}): #{message}"
         }
 
       {:error, reason} ->
@@ -217,26 +222,32 @@ defmodule Glific.ThirdParty.Gemini do
   defp choose_engine_and_do_tts(_speech_engine, organization_id, translated_text),
     do: do_text_to_speech(organization_id, translated_text)
 
+  @doc """
+  FFmpeg input flags for Gemini TTS audio: WAV (3.8 models) carries its own format, while
+  older models return headerless 24 kHz mono 16-bit PCM.
+  """
+  @spec ffmpeg_input_args(binary()) :: [String.t()]
+  def ffmpeg_input_args(<<"RIFF", _size::binary-size(4), "WAVE", _rest::binary>>), do: ["-i"]
+  def ffmpeg_input_args(_raw_pcm), do: ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i"]
+
   @spec download_encoded_file(binary()) :: {:ok, String.t(), String.t()} | String.t()
   defp download_encoded_file(decoded_audio) do
     uuid = Ecto.UUID.generate()
     remote_name = "Gemini/outbound/#{uuid}.mp3"
 
-    pcm_file = System.tmp_dir!() <> "#{uuid}.pcm"
-    mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    File.write!(pcm_file, decoded_audio)
+    audio_file = Path.join(System.tmp_dir!(), "#{uuid}.audio")
+    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
+    File.write!(audio_file, decoded_audio)
 
-    case System.cmd(
-           "ffmpeg",
-           ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", pcm_file, mp3_file],
+    case System.cmd("ffmpeg", ffmpeg_input_args(decoded_audio) ++ [audio_file, mp3_file],
            stderr_to_stdout: true
          ) do
       {_output, 0} ->
-        File.rm(pcm_file)
+        File.rm(audio_file)
         {:ok, mp3_file, remote_name}
 
       {output, exit_code} ->
-        File.rm(pcm_file)
+        File.rm(audio_file)
         Logger.error("Gemini TTS FFmpeg failed with exit code #{exit_code}: #{output}")
         "Error while converting file"
     end

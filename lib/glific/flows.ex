@@ -944,6 +944,19 @@ defmodule Glific.Flows do
     end
   end
 
+  @doc """
+  The id of the published flow a keyword starts on a channel, or nil if no flow on that channel has it.
+  """
+  @spec published_keyword_flow_id(map(), String.t() | nil, atom()) :: non_neg_integer() | nil
+  def published_keyword_flow_id(keyword_map, keyword, channel) do
+    flow_id = get_in(keyword_map, ["published", keyword])
+
+    # A keyword whose flow is not in the map, such as an out-of-office keyword pointing at an
+    # inactive flow, is WhatsApp's.
+    if flow_id && Map.get(keyword_map["channels"], flow_id, :whatsapp) == channel,
+      do: flow_id
+  end
+
   @spec update_flow_keyword_map(map(), String.t(), String.t(), non_neg_integer) :: map()
   defp update_flow_keyword_map(map, "template", name, flow_id) do
     map
@@ -1012,6 +1025,7 @@ defmodule Glific.Flows do
         is_template: f.is_template,
         keywords: f.keywords,
         id: f.id,
+        channel: f.channel,
         status: fr.status
       })
       # the revisions table is potentially large, so we really want just a few rows from
@@ -1021,8 +1035,12 @@ defmodule Glific.Flows do
       |> Enum.reduce(
         # create empty arrays always, so all map operations works
         # and wont throw an exception of "expected map, got nil"
-        %{"published" => %{}, "draft" => %{}, "template" => %{}},
-        fn flow, acc -> add_flow_keyword_map(flow, acc) end
+        %{"published" => %{}, "draft" => %{}, "template" => %{}, "channels" => %{}},
+        fn flow, acc ->
+          flow
+          |> add_flow_keyword_map(acc)
+          |> put_in(["channels", flow.id], flow.channel)
+        end
       )
       |> add_default_flows(organization.out_of_office)
       |> Map.put("org_default_new_contact", organization.newcontact_flow_id)

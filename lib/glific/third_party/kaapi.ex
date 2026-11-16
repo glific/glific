@@ -12,6 +12,9 @@ defmodule Glific.ThirdParty.Kaapi do
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Kaapi.ApiClient
 
+  @supported_google_tts_models ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]
+  @default_google_tts_voice "en-in-csagent-9"
+
   @bcp47_languages %{
     "english" => "en-IN",
     "en" => "en-IN",
@@ -422,6 +425,8 @@ defmodule Glific.ThirdParty.Kaapi do
   echoed back so the flow can be resumed. Returns `%{success: true}` on initiation.
 
   Optional `opts` map keys: `provider`, `model`, `language`, `voice` — override defaults when provided.
+  For the google provider, a `model` outside the supported Gemini 3.8 TTS models and a missing
+  `voice` fall back to the Google defaults; other providers get `model` and `voice` unchanged.
   """
   @spec text_to_speech(non_neg_integer(), String.t(), String.t(), map(), map()) :: map()
   def text_to_speech(organization_id, text, callback_url, request_metadata, opts \\ %{}) do
@@ -636,6 +641,17 @@ defmodule Glific.ThirdParty.Kaapi do
     }
   end
 
+  # The model and voice defaults are Google ids; any other provider rejects them, so it gets
+  # its own override or an empty string.
+  @spec tts_model(String.t(), String.t() | nil) :: String.t()
+  defp tts_model("google", model) when model in @supported_google_tts_models, do: model
+  defp tts_model("google", _model), do: model_config(:tts_model)
+  defp tts_model(_provider, model), do: model || ""
+
+  @spec tts_voice(String.t(), String.t() | nil) :: String.t()
+  defp tts_voice("google", voice) when voice in [nil, ""], do: @default_google_tts_voice
+  defp tts_voice(_provider, voice), do: voice || ""
+
   @spec tts_payload(String.t(), String.t(), map(), map()) :: map()
   defp tts_payload(text, callback_url, request_metadata, opts) do
     provider = tts_provider(opts[:provider])
@@ -648,8 +664,8 @@ defmodule Glific.ThirdParty.Kaapi do
             provider: provider,
             type: "tts",
             params: %{
-              model: opts[:model] || model_config(:tts_model),
-              voice: opts[:voice] || "Kore",
+              model: tts_model(provider, opts[:model]),
+              voice: tts_voice(provider, opts[:voice]),
               language: tts_language(provider, opts[:language] || "hindi"),
               response_format: "mp3"
             }
