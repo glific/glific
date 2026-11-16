@@ -556,6 +556,22 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       assert status =~ "in progress"
     end
 
+    test "rejects importing members by file path", %{glific_admin: user, wa_group: wa_group} do
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id),
+            "type" => "FILE_PATH",
+            "data" => "/etc/passwd"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert [%{message: message}] = query_data.errors
+      assert message =~ "type"
+      assert get_in(query_data, [:data, "importWaGroupContacts"]) == nil
+    end
+
     test "is rejected for a non-admin", %{staff: user, wa_group: wa_group} do
       result =
         auth_query_gql_by(:import_members, user,

@@ -452,28 +452,40 @@ defmodule GlificWeb.Schema.ContactTest do
     assert count == 1
   end
 
-  test "Test success for uploading contact through filepath", %{manager: user} do
+  test "importing contacts by file path is rejected", %{manager: user} do
     user = Map.put(user, :roles, [:glific_admin])
-
-    file =
-      System.tmp_dir!()
-      |> Path.join("fixture.csv")
-      |> File.open!([:write, :utf8])
-
-    [
-      ~w(name phone Language opt_in collection),
-      ["test", "+919876543210", "english", "2021-03-09 12:34:25", "collection"]
-    ]
-    |> CSV.encode()
-    |> Enum.each(&IO.write(file, &1))
-
-    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
 
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
           "type" => "FILE_PATH",
-          "data" => file_name,
+          "data" => "/etc/passwd",
+          "group_label" => "collection"
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert [%{message: message}] = query_data.errors
+    assert message =~ "type"
+    refute_enqueued(worker: BulkImportWorker, prefix: "global")
+  end
+
+  test "Test success for uploading contact with mixed case headers", %{manager: user} do
+    user = Map.put(user, :roles, [:glific_admin])
+
+    data =
+      [
+        ~w(name phone Language opt_in collection),
+        ["test", "+919876543210", "english", "2021-03-09 12:34:25", "collection"]
+      ]
+      |> CSV.encode()
+      |> Enum.join()
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "type" => "DATA",
+          "data" => data,
           "group_label" => "collection"
         }
       )
@@ -491,25 +503,19 @@ defmodule GlificWeb.Schema.ContactTest do
   test "test success for uploading contact for different csv", %{manager: user} do
     user = Map.put(user, :roles, [:glific_admin])
 
-    file =
-      System.tmp_dir!()
-      |> Path.join("fixture.csv")
-      |> File.open!([:write, :utf8])
-
-    [
-      ~w(name phone language opt_in delete collection),
-      ["test", "+919989329297", "english", "2021-03-09 12:34:25", "0", "collection"]
-    ]
-    |> CSV.encode()
-    |> Enum.each(&IO.write(file, &1))
-
-    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
+    data =
+      [
+        ~w(name phone language opt_in delete collection),
+        ["test", "+919989329297", "english", "2021-03-09 12:34:25", "0", "collection"]
+      ]
+      |> CSV.encode()
+      |> Enum.join()
 
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
-          "type" => "FILE_PATH",
-          "data" => file_name,
+          "type" => "DATA",
+          "data" => data,
           "group_label" => "collection"
         }
       )

@@ -60,8 +60,12 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Interactive Message Types enum"
   enum(:interactive_message_type_enum, values: Glific.Enums.interactive_message_type_const())
 
+  # :file_path stays available to server-side callers of the import contexts, but over the API it
+  # would let a user read any file on the server, so it is not exposed here.
   @desc "The Import Contact Types enum"
-  enum(:import_contacts_type_enum, values: Glific.Enums.import_contacts_type_const())
+  enum(:import_contacts_type_enum,
+    values: Glific.Enums.import_contacts_type_const() -- [:file_path]
+  )
 
   # doing this in a special way, since values: does not work
   # if we are using default values
