@@ -240,9 +240,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
 
-    permissions:
-      contents: read
-
     env:
       MIX_ENV: test
 
