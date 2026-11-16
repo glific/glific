@@ -2,6 +2,8 @@ info:
   name: Create an organization
   type: graphql
   seq: 4
+  tags:
+    - internal
 
 graphql:
   method: POST

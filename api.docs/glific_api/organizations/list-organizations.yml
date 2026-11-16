@@ -2,6 +2,8 @@ info:
   name: List organizations
   type: graphql
   seq: 1
+  tags:
+    - internal
 
 graphql:
   method: POST

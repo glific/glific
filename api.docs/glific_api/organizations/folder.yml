@@ -17,7 +17,8 @@ docs:
 
     Operations across organizations need the `glific_admin` role and are meant for the Glific
     SaaS team. These include listing, counting, creating and deleting organizations, changing
-    their status and resetting their data.
+    their status and resetting their data. They are in the Bruno collection only, not on the
+    published docs page.
 
     Self-service onboarding and trial accounts are REST endpoints in **SaaS**. BSP and service
     providers are in **Providers**, an organization's keys for them are in **Credentials**, and

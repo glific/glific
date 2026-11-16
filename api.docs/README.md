@@ -52,6 +52,8 @@ Copy the closest request in `tags/` and follow it. Every request has:
   message }` on result types.
 - **Variables**: a realistic example that passes validation. Use IDs from the dev seeds where
   you can. Never commit real phone numbers, tokens or keys.
+- **Tags**: a request whose role is `glific_admin` gets `tags: [internal]` under `info`, and
+  no other request does. The published page leaves these out; they stay in the collection.
 - **Auth**: `auth: inherit` for anything that needs a logged-in user. Leave `auth` out for
   public endpoints such as login. Don't add `authorization`, `Content-Type` or `Accept`
   headers; Bruno and the collection set them.
@@ -75,7 +77,8 @@ status codes in `## Errors`.
 The `API Docs Site` workflow publishes the collection as a single HTML page to
 [glific.github.io/glific](https://glific.github.io/glific/) whenever a change under
 `api.docs/` lands on `master`. It runs `npm run site` in `tools/`, which generates the page
-with Bruno CLI and includes only the `staging` environment. To preview it locally:
+with Bruno CLI, includes only the `staging` environment and leaves out requests tagged
+`internal`. To preview it locally:
 
 ```bash
 cd api.docs/tools && npm ci && npm run site

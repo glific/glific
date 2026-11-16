@@ -2,6 +2,8 @@ info:
   name: Create an extension
   type: graphql
   seq: 3
+  tags:
+    - internal
 
 graphql:
   method: POST

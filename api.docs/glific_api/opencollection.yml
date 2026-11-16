@@ -47,7 +47,9 @@ docs:
 
     Each operation states the lowest role allowed to call it. Roles, highest first:
     `glific_admin` > `admin` > `manager` > `staff` > `none`. A higher role can call anything
-    a lower one can. Calling an operation without the role returns a top-level error:
+    a lower one can. Operations that need `glific_admin` are for the Glific team and are tagged
+    `internal`, which keeps them off the published docs page. Calling an operation without the
+    role returns a top-level error:
 
     ```json
     { "data": { "createTag": null }, "errors": [{ "message": "Unauthorized", "path": ["createTag"] }] }

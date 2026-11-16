@@ -20,6 +20,5 @@ docs:
     `glific_admin` can read and change another organization's billing through
     `organizationId` or a billing ID; every other role is pinned to its own organization.
 
-    Related: **Organizations**, **Consulting hours** (billable hours are invoiced through the
-    subscription).
+    Related: **Organizations**.
   type: text/markdown

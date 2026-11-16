@@ -2,6 +2,8 @@ info:
   name: Reset an organization
   type: graphql
   seq: 9
+  tags:
+    - internal
 
 graphql:
   method: POST

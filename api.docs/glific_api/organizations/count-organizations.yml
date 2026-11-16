@@ -2,6 +2,8 @@ info:
   name: Count organizations
   type: graphql
   seq: 3
+  tags:
+    - internal
 
 graphql:
   method: POST

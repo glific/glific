@@ -118,6 +118,10 @@ for (const folder of folders) {
     else if (!/\*\*Role:\*\*/.test(raw.docs) && raw.graphql) err('docs missing **Role:** line');
     if (!/## Example response/.test(raw.docs || '')) err('docs missing "## Example response"');
     if (!/## Errors/.test(raw.docs || '')) err('docs missing "## Errors"');
+    const internal = (info.tags || []).includes('internal');
+    const glificAdmin = /\*\*Role:\*\* glific_admin/.test(raw.docs || '');
+    if (glificAdmin && !internal) err('glific_admin requests must be tagged `internal`');
+    if (internal && !glificAdmin) err('only glific_admin requests are tagged `internal`');
     for (const h of block.headers || []) {
       const name = String(h.name).toLowerCase();
       if (name === 'content-type' || name === 'accept' || (name === 'authorization' && block.auth === 'inherit'))

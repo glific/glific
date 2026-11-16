@@ -2,6 +2,8 @@ info:
   name: Delete an extension
   type: graphql
   seq: 6
+  tags:
+    - internal
 
 graphql:
   method: POST

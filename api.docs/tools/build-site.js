@@ -1,4 +1,5 @@
-// Builds the static API docs site into _site/index.html with Bruno CLI.
+// Builds the static API docs site into _site/index.html with Bruno CLI, leaving out requests
+// tagged `internal`.
 //
 // Usage, from api.docs/tools:
 //   npm run site
@@ -9,6 +10,7 @@ const { execFileSync } = require('child_process');
 const BRUNO_CLI = '@usebruno/cli@4.3.0';
 const COLLECTION = path.join(__dirname, '..', 'glific_api');
 const OUTPUT = path.join(__dirname, '_site', 'index.html');
+const INTERNAL_TAG = 'internal';
 const VIEWER_TAG = '<script src="https://cdn.usebruno.com/api-docs/api-docs.js"></script>';
 
 // Bruno's CDN viewer now exports OpenCollectionPlayground.OpenCollectionRenderer, while the
@@ -21,7 +23,18 @@ fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
 
 execFileSync(
   'npx',
-  ['--yes', BRUNO_CLI, 'docs', 'generate', '--envs', 'staging', '--output', OUTPUT],
+  [
+    '--yes',
+    BRUNO_CLI,
+    'docs',
+    'generate',
+    '--envs',
+    'staging',
+    '--exclude-tags',
+    INTERNAL_TAG,
+    '--output',
+    OUTPUT
+  ],
   { cwd: COLLECTION, stdio: 'inherit' }
 );
 

@@ -2,6 +2,8 @@ info:
   name: Update a language
   type: graphql
   seq: 5
+  tags:
+    - internal
 
 graphql:
   method: POST

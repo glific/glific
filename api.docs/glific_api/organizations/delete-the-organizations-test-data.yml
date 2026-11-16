@@ -2,6 +2,8 @@ info:
   name: Delete the organization's test data
   type: graphql
   seq: 7
+  tags:
+    - internal
 
 graphql:
   method: POST

@@ -2,6 +2,8 @@ info:
   name: Get a consulting hour
   type: graphql
   seq: 2
+  tags:
+    - internal
 
 graphql:
   method: POST

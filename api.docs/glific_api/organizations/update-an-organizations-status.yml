@@ -2,6 +2,8 @@ info:
   name: Update an organization's status
   type: graphql
   seq: 8
+  tags:
+    - internal
 
 graphql:
   method: POST

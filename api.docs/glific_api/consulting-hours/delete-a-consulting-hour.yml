@@ -2,6 +2,8 @@ info:
   name: Delete a consulting hour
   type: graphql
   seq: 6
+  tags:
+    - internal
 
 graphql:
   method: POST

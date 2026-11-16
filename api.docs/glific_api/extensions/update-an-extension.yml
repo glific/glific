@@ -2,6 +2,8 @@ info:
   name: Update an extension
   type: graphql
   seq: 4
+  tags:
+    - internal
 
 graphql:
   method: POST

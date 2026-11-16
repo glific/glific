@@ -2,6 +2,8 @@ info:
   name: Export consulting hours as CSV
   type: graphql
   seq: 7
+  tags:
+    - internal
 
 graphql:
   method: POST

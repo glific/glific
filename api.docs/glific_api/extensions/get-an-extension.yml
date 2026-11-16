@@ -2,6 +2,8 @@ info:
   name: Get an extension
   type: graphql
   seq: 1
+  tags:
+    - internal
 
 graphql:
   method: POST
