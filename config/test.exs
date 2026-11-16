@@ -30,6 +30,8 @@ config :logger,
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
 
+config :glific, :dns_resolver, Glific.DnsResolverStub
+
 # The index lives in Cachex, which outlives a test's sandbox rollback, so writes do not rebuild it
 # by default. A test that wants the production behaviour turns this on for its duration.
 config :glific, :refresh_organization_index, false

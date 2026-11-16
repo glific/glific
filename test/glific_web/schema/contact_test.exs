@@ -470,6 +470,24 @@ defmodule GlificWeb.Schema.ContactTest do
     refute_enqueued(worker: BulkImportWorker, prefix: "global")
   end
 
+  test "importing contacts from an internal URL is rejected", %{manager: user} do
+    user = Map.put(user, :roles, [:glific_admin])
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "type" => "URL",
+          "data" => "http://169.254.169.254/latest/meta-data",
+          "group_label" => "collection"
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert [%{message: message}] = query_data.errors
+    assert message =~ "public"
+    refute_enqueued(worker: BulkImportWorker, prefix: "global")
+  end
+
   test "Test success for uploading contact with mixed case headers", %{manager: user} do
     user = Map.put(user, :roles, [:glific_admin])
 

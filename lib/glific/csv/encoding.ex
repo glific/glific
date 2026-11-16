@@ -3,6 +3,8 @@ defmodule Glific.CSV.Encoding do
   Rejects CSV uploads that are not valid UTF-8 and strips the Excel BOM.
   """
 
+  alias Glific.PublicUrl
+
   @bom "﻿"
 
   @resave_hint "Re-save it as UTF-8 (Excel: Save As, CSV UTF-8; Google Sheets: Download, CSV)."
@@ -62,8 +64,11 @@ defmodule Glific.CSV.Encoding do
 
   # A non-200 body is an error page, not contacts, so it is never parsed as CSV.
   defp open(url: url) do
-    case Tesla.get(url) do
-      {:ok, %Tesla.Env{status: 200, body: body}} -> open(data: body)
+    with true <- PublicUrl.public?(url),
+         {:ok, %Tesla.Env{status: 200, body: body}} <- Tesla.get(url) do
+      open(data: body)
+    else
+      false -> {:error, "The CSV URL must be a public http or https address."}
       _ -> {:error, "Could not download the CSV from the given URL."}
     end
   end
