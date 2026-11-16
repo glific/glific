@@ -297,6 +297,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
           completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
           assert completion["provider"] == "google"
           assert completion["params"]["model"] == "gemini-3.8-flash-lite-tts"
+          assert completion["params"]["voice"] == "en-in-csagent-9"
 
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-google"}}
       end)
@@ -330,11 +331,12 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
       assert result.success == true
     end
 
-    test "never sends a Gemini model to a non-google provider when model is absent" do
+    test "never sends Google defaults to a non-google provider when model and voice are absent" do
       mock(fn
         %Tesla.Env{method: :post, body: body} ->
           params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
           assert params["model"] == nil
+          assert params["voice"] == nil
 
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-no-model"}}
       end)
