@@ -238,7 +238,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
                    "en-in-csagent-9"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
-                   "hi-IN"
+                   "hindi"
 
           metadata = decoded["request_metadata"]
           assert metadata["organization_id"] == 1
@@ -253,37 +253,30 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
       assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
     end
 
-    test "sends google-native as google with a BCP-47 language", %{fields: fields} do
-      for {language, expected_language} <- [
-            {"Hindi", "hi-IN"},
-            {" ODIA ", "od-IN"},
-            {"mr", "mr-IN"},
-            {"hi-IN", "hi-IN"},
-            {"klingon", "klingon"}
-          ] do
-        Tesla.Mock.mock(fn
-          %{method: :post, body: body} ->
-            completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
-            assert completion["provider"] == "google"
-            assert completion["params"]["language"] == expected_language
-            %Tesla.Env{status: 200, body: %{"job_id" => "tts-789"}}
-        end)
-
-        tts_request = Map.merge(fields, %{"provider" => "google-native", "language" => language})
-        assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
-      end
-    end
-
-    test "leaves the language untouched for non-google providers", %{fields: fields} do
+    test "sends google-native as google and leaves the language for Kaapi to normalize", %{
+      fields: fields
+    } do
       Tesla.Mock.mock(fn
         %{method: :post, body: body} ->
           completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
-          assert completion["provider"] == "openai"
+          assert completion["provider"] == "google"
           assert completion["params"]["language"] == "Hindi"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-789"}}
+      end)
+
+      tts_request = Map.merge(fields, %{"provider" => "google-native", "language" => "Hindi"})
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "keeps any other provider as sent", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "sarvamai"
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-790"}}
       end)
 
-      tts_request = Map.merge(fields, %{"provider" => "openai", "language" => "Hindi"})
+      tts_request = Map.put(fields, "provider", "sarvamai")
       assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
     end
 

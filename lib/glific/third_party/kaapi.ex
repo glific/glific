@@ -15,38 +15,6 @@ defmodule Glific.ThirdParty.Kaapi do
   @supported_google_tts_models ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]
   @default_google_tts_voice "en-in-csagent-9"
 
-  @bcp47_languages %{
-    "english" => "en-IN",
-    "en" => "en-IN",
-    "hindi" => "hi-IN",
-    "hi" => "hi-IN",
-    "bengali" => "bn-IN",
-    "bangla" => "bn-IN",
-    "bn" => "bn-IN",
-    "assamese" => "as-IN",
-    "as" => "as-IN",
-    "marathi" => "mr-IN",
-    "mr" => "mr-IN",
-    "tamil" => "ta-IN",
-    "ta" => "ta-IN",
-    "telugu" => "te-IN",
-    "te" => "te-IN",
-    "kannada" => "kn-IN",
-    "kn" => "kn-IN",
-    "malayalam" => "ml-IN",
-    "ml" => "ml-IN",
-    "gujarati" => "gu-IN",
-    "gu" => "gu-IN",
-    "punjabi" => "pa-IN",
-    "pa" => "pa-IN",
-    "urdu" => "ur-IN",
-    "ur" => "ur-IN",
-    "odia" => "od-IN",
-    "oriya" => "od-IN",
-    "or" => "od-IN",
-    "od" => "od-IN"
-  }
-
   # Update all Error struct data in this format
   defmodule Error do
     @moduledoc """
@@ -666,7 +634,7 @@ defmodule Glific.ThirdParty.Kaapi do
             params: %{
               model: tts_model(provider, opts[:model]),
               voice: tts_voice(provider, opts[:voice]),
-              language: tts_language(provider, opts[:language] || "hindi"),
+              language: opts[:language] || "hindi",
               response_format: "mp3"
             }
           }
@@ -678,16 +646,8 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec tts_provider(String.t() | nil) :: String.t()
-  defp tts_provider(provider) when provider in [nil, "", "google-native"], do: "google"
-  defp tts_provider(provider), do: provider
-
-  @spec tts_language(String.t(), String.t()) :: String.t()
-  defp tts_language("google", language) do
-    normalized = language |> String.trim() |> String.downcase()
-    Map.get(@bcp47_languages, normalized, language)
-  end
-
-  defp tts_language(_provider, language), do: language
+  defp tts_provider("google-native"), do: "google"
+  defp tts_provider(provider), do: provider || "google"
 
   @doc """
   Upload a document to Kaapi documents API, send error to Appsignal if failed.

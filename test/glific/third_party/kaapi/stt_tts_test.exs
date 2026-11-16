@@ -276,7 +276,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
           decoded = Jason.decode!(body)
           params = get_in(decoded, ["config", "blob", "completion", "params"])
           assert params["voice"] == "custom-voice"
-          assert params["language"] == "en-IN"
+          assert params["language"] == "english"
           assert params["model"] == "gemini-3.8-flash-tts"
 
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-789"}}
