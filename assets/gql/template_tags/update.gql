@@ -12,5 +12,9 @@ mutation updateTemplateTags($input:TemplateTagsInput!) {
       }
     }
     numberDeleted
+    errors {
+      key
+      message
+    }
   }
 }

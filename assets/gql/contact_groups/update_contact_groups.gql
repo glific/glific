@@ -12,5 +12,9 @@ mutation updateContactGroups($input:ContactGroupsInput!) {
       }
     }
     numberDeleted
+    errors {
+      key
+      message
+    }
   }
 }

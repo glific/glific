@@ -4,6 +4,9 @@ defmodule GlificWeb.Resolvers.Tags do
   one or more calls to resolve the incoming queries.
   """
 
+  alias Glific.Contacts.Contact
+  alias Glific.Messages.Message
+  alias Glific.Templates.SessionTemplate
   alias Glific.{Messages, Repo, Tags, Tags.Tag}
 
   @doc """
@@ -72,10 +75,16 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc false
   @spec update_message_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_message_tags(_, %{input: params}, _) do
-    # we should add sanity check whether message and tag belongs to the organization of the current user
-    message_tags = Tags.MessageTags.update_message_tags(params)
-    {:ok, message_tags}
+  def update_message_tags(_, %{input: params}, %{context: %{current_user: user}}) do
+    with {:ok, _message} <-
+           Repo.fetch_by(Message, %{id: params.message_id, organization_id: user.organization_id}) do
+      message_tags =
+        params
+        |> scope_add_tag_ids(user.organization_id)
+        |> Tags.MessageTags.update_message_tags()
+
+      {:ok, message_tags}
+    end
   end
 
   @doc false
@@ -92,10 +101,16 @@ defmodule GlificWeb.Resolvers.Tags do
   """
   @spec update_contact_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_contact_tags(_, %{input: params}, _) do
-    # we should add sanity check whether contact and tag belongs to the organization of the current user
-    contact_tags = Tags.ContactTags.update_contact_tags(params)
-    {:ok, contact_tags}
+  def update_contact_tags(_, %{input: params}, %{context: %{current_user: user}}) do
+    with {:ok, _contact} <-
+           Repo.fetch_by(Contact, %{id: params.contact_id, organization_id: user.organization_id}) do
+      contact_tags =
+        params
+        |> scope_add_tag_ids(user.organization_id)
+        |> Tags.ContactTags.update_contact_tags()
+
+      {:ok, contact_tags}
+    end
   end
 
   @doc false
@@ -126,9 +141,24 @@ defmodule GlificWeb.Resolvers.Tags do
   """
   @spec update_template_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_template_tags(_, %{input: params}, _) do
-    # we should add sanity check whether template and tag belongs to the organization of the current user
-    template_tags = Tags.TemplateTags.update_template_tags(params)
-    {:ok, template_tags}
+  def update_template_tags(_, %{input: params}, %{context: %{current_user: user}}) do
+    with {:ok, _template} <-
+           Repo.fetch_by(SessionTemplate, %{
+             id: params.template_id,
+             organization_id: user.organization_id
+           }) do
+      template_tags =
+        params
+        |> scope_add_tag_ids(user.organization_id)
+        |> Tags.TemplateTags.update_template_tags()
+
+      {:ok, template_tags}
+    end
+  end
+
+  @spec scope_add_tag_ids(map(), non_neg_integer()) :: map()
+  defp scope_add_tag_ids(params, organization_id) do
+    add_tag_ids = Repo.filter_ids_by_organization(Tag, params.add_tag_ids, organization_id)
+    Map.put(params, :add_tag_ids, add_tag_ids)
   end
 end

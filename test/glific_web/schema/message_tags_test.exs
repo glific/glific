@@ -2,11 +2,15 @@ defmodule GlificWeb.Schema.MessageTagsTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  import Ecto.Query
+
   alias Glific.{
+    Fixtures,
     Messages.Message,
     Repo,
     Seeds.SeedsDev,
-    Tags
+    Tags,
+    Tags.MessageTag
   }
 
   setup do
@@ -111,5 +115,75 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     assert {:ok, query_data} = result
     message_tags = get_in(query_data, [:data, "updateMessageTags", "messageTags"])
     assert Enum.empty?(message_tags)
+  end
+
+  describe "cross-organization access" do
+    setup %{staff: user} do
+      other_organization =
+        Fixtures.organization_fixture(%{shortcode: "other_organization_message_tags"})
+
+      Repo.put_organization_id(other_organization.id)
+      other_message = Fixtures.message_fixture(%{organization_id: other_organization.id})
+      other_tag = Fixtures.tag_fixture(%{organization_id: other_organization.id})
+      Repo.put_organization_id(user.organization_id)
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          body: "Default message body",
+          organization_id: user.organization_id
+        })
+
+      %{message: message, other_message: other_message, other_tag: other_tag}
+    end
+
+    test "does not add another organization's tag", %{
+      staff: user,
+      message: message,
+      other_tag: other_tag
+    } do
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "input" => %{
+              "message_id" => message.id,
+              "add_tag_ids" => [other_tag.id],
+              "delete_tag_ids" => []
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:data, "updateMessageTags", "messageTags"]) == []
+      refute Repo.exists?(MessageTag |> where(tag_id: ^other_tag.id), skip_organization_id: true)
+    end
+
+    test "rejects another organization's message", %{
+      staff: user,
+      other_message: other_message
+    } do
+      tag_ids = user.organization_id |> tag_status_map() |> Map.values()
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "input" => %{
+              "message_id" => other_message.id,
+              "add_tag_ids" => tag_ids,
+              "delete_tag_ids" => []
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+
+      assert [%{"message" => message}] =
+               get_in(query_data, [:data, "updateMessageTags", "errors"])
+
+      assert message =~ "Resource not found"
+
+      refute Repo.exists?(MessageTag |> where(message_id: ^other_message.id),
+               skip_organization_id: true
+             )
+    end
   end
 end

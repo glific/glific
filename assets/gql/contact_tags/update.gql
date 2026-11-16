@@ -12,5 +12,9 @@ mutation updateContactTags($input:ContactTagsInput!) {
       }
     }
     numberDeleted
+    errors {
+      key
+      message
+    }
   }
 }

@@ -25,4 +25,22 @@ defmodule Glific.Repo do
     |> where([m], field(m, ^key_1) == ^value_1 and field(m, ^key_2) in ^values_2)
     |> __MODULE__.delete_all()
   end
+
+  @doc """
+  Returns the ids from `ids` whose rows in `queryable` belong to `organization_id`.
+  """
+  @spec filter_ids_by_organization(Ecto.Queryable.t(), list(), non_neg_integer()) ::
+          [non_neg_integer()]
+  def filter_ids_by_organization(queryable, ids, organization_id) do
+    integer_ids =
+      for id <- ids,
+          {:ok, integer_id} <- [Glific.parse_maybe_integer(id)],
+          is_integer(integer_id),
+          do: integer_id
+
+    queryable
+    |> where([q], q.id in ^integer_ids and q.organization_id == ^organization_id)
+    |> select([q], q.id)
+    |> __MODULE__.all()
+  end
 end

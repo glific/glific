@@ -2,11 +2,14 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  import Ecto.Query
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Fixtures,
     Groups,
+    Groups.ContactGroup,
     Groups.Group,
     Repo,
     Seeds.SeedsDev
@@ -94,6 +97,134 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert {:ok, query_data} = result
     group_contacts = get_in(query_data, [:data, "updateGroupContacts", "groupContacts"])
     assert group_contacts == []
+  end
+
+  describe "cross-organization access" do
+    setup %{staff: user} do
+      other_organization =
+        Fixtures.organization_fixture(%{shortcode: "other_organization_contact_groups"})
+
+      Repo.put_organization_id(other_organization.id)
+      other_contact = Fixtures.contact_fixture(%{organization_id: other_organization.id})
+      other_group = Fixtures.group_fixture(%{organization_id: other_organization.id})
+      Repo.put_organization_id(user.organization_id)
+
+      {:ok, group} =
+        Repo.fetch_by(Group, %{label: "Default Group", organization_id: user.organization_id})
+
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
+
+      %{
+        group: group,
+        contact: contact,
+        other_contact: other_contact,
+        other_group: other_group
+      }
+    end
+
+    test "update group contacts does not add another organization's contact", %{
+      staff: user,
+      group: group,
+      other_contact: other_contact
+    } do
+      result =
+        auth_query_gql_by(:update_group_contacts, user,
+          variables: %{
+            "input" => %{
+              "group_id" => group.id,
+              "add_contact_ids" => [other_contact.id],
+              "delete_contact_ids" => []
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:data, "updateGroupContacts", "groupContacts"]) == []
+      refute contact_group_exists?(other_contact.id)
+    end
+
+    test "update group contacts rejects another organization's group", %{
+      staff: user,
+      contact: contact,
+      other_group: other_group
+    } do
+      result =
+        auth_query_gql_by(:update_group_contacts, user,
+          variables: %{
+            "input" => %{
+              "group_id" => other_group.id,
+              "add_contact_ids" => [contact.id],
+              "delete_contact_ids" => []
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+
+      assert [%{"message" => message}] =
+               get_in(query_data, [:data, "updateGroupContacts", "errors"])
+
+      assert message =~ "Resource not found"
+      refute contact_group_exists?(contact.id, other_group.id)
+    end
+
+    test "update contact groups does not add another organization's group", %{
+      staff: user,
+      contact: contact,
+      other_group: other_group
+    } do
+      result =
+        auth_query_gql_by(:update_contact_groups, user,
+          variables: %{
+            "input" => %{
+              "contact_id" => contact.id,
+              "add_group_ids" => [other_group.id],
+              "delete_group_ids" => []
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:data, "updateContactGroups", "contactGroups"]) == []
+      refute contact_group_exists?(contact.id, other_group.id)
+    end
+
+    test "update contact groups rejects another organization's contact", %{
+      staff: user,
+      group: group,
+      other_contact: other_contact
+    } do
+      result =
+        auth_query_gql_by(:update_contact_groups, user,
+          variables: %{
+            "input" => %{
+              "contact_id" => other_contact.id,
+              "add_group_ids" => [group.id],
+              "delete_group_ids" => []
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+
+      assert [%{"message" => message}] =
+               get_in(query_data, [:data, "updateContactGroups", "errors"])
+
+      assert message =~ "Resource not found"
+      refute contact_group_exists?(other_contact.id)
+    end
+  end
+
+  defp contact_group_exists?(contact_id, group_id \\ nil) do
+    attrs =
+      if group_id,
+        do: %{contact_id: contact_id, group_id: group_id},
+        else: %{contact_id: contact_id}
+
+    ContactGroup
+    |> where(^Map.to_list(attrs))
+    |> Repo.exists?(skip_organization_id: true)
   end
 
   test "update contact groups", %{staff: user_auth} do

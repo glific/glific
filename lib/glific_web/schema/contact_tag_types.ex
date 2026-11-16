@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema.ContactTagTypes do
   object :contact_tags do
     field :number_deleted, :integer
     field :contact_tags, list_of(:contact_tag)
+    field :errors, list_of(:input_error)
   end
 
   input_object :contact_tag_input do

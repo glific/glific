@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema.TemplateTagTypes do
   object :template_tags do
     field :number_deleted, :integer
     field :template_tags, list_of(:template_tag)
+    field :errors, list_of(:input_error)
   end
 
   input_object :template_tag_input do

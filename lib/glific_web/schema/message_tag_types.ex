@@ -35,6 +35,7 @@ defmodule GlificWeb.Schema.MessageTagTypes do
   object :message_tags do
     field :number_deleted, :integer
     field :message_tags, list_of(:message_tag)
+    field :errors, list_of(:input_error)
   end
 
   input_object :message_tag_input do

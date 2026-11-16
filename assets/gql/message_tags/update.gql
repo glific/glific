@@ -12,5 +12,9 @@ mutation updateMessageTags($input:MessageTagsInput!) {
       }
     }
     numberDeleted
+    errors {
+      key
+      message
+    }
   }
 }

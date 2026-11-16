@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Groups do
   """
   use Gettext, backend: GlificWeb.Gettext
 
+  alias Glific.Contacts.Contact
   alias Glific.{Groups, Repo}
   alias Glific.Groups.{ContactGroups, Group, UserGroups}
 
@@ -141,18 +142,37 @@ defmodule GlificWeb.Resolvers.Groups do
   @doc false
   @spec update_group_contacts(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_group_contacts(_, %{input: params}, _) do
-    # we should add sanity check whether group and contact belongs to the organization of the current user
-    group_contacts = Groups.GroupContacts.update_group_contacts(params)
-    {:ok, group_contacts}
+  def update_group_contacts(_, %{input: params}, %{context: %{current_user: user}}) do
+    with {:ok, _group} <-
+           Repo.fetch_by(Group, %{id: params.group_id, organization_id: user.organization_id}) do
+      add_contact_ids =
+        Repo.filter_ids_by_organization(Contact, params.add_contact_ids, user.organization_id)
+
+      group_contacts =
+        params
+        |> Map.put(:add_contact_ids, add_contact_ids)
+        |> Groups.GroupContacts.update_group_contacts()
+
+      {:ok, group_contacts}
+    end
   end
 
   @doc false
   @spec update_contact_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_contact_groups(_, %{input: params}, _) do
-    group_contacts = ContactGroups.update_contact_groups(params)
-    {:ok, group_contacts}
+  def update_contact_groups(_, %{input: params}, %{context: %{current_user: user}}) do
+    with {:ok, _contact} <-
+           Repo.fetch_by(Contact, %{id: params.contact_id, organization_id: user.organization_id}) do
+      add_group_ids =
+        Repo.filter_ids_by_organization(Group, params.add_group_ids, user.organization_id)
+
+      contact_groups =
+        params
+        |> Map.put(:add_group_ids, add_group_ids)
+        |> ContactGroups.update_contact_groups()
+
+      {:ok, contact_groups}
+    end
   end
 
   @doc """

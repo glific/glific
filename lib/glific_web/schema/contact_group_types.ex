@@ -42,6 +42,7 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
   object :group_contacts do
     field :number_deleted, :integer
     field :group_contacts, list_of(:contact_group)
+    field :errors, list_of(:input_error)
   end
 
   input_object :contact_groups_input do
@@ -53,6 +54,7 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
   object :contact_groups do
     field :number_deleted, :integer
     field :contact_groups, list_of(:contact_group)
+    field :errors, list_of(:input_error)
   end
 
   @desc "Filtering options for messages"
