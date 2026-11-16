@@ -1,0 +1,21 @@
+info:
+  name: Profiles
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A profile is one person behind a contact. When several people share a WhatsApp number,
+    such as a parent and two children, the contact gets a profile for each, and flows switch
+    between them. Each profile has its own name, type, language and contact fields; the
+    contact's default profile (`isDefault: true`) stands for the contact itself.
+
+    Profiles are usually created and switched by flow actions. These operations manage them
+    directly. Reading profiles and updating one needs the staff role; creating and deleting
+    need the manager role.
+
+    See **Contacts** for the contact a profile belongs to.
+  type: text/markdown

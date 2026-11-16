@@ -1,0 +1,99 @@
+info:
+  name: Send an HSM template message
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {
+        sendHsmMessage(templateId: $templateId, receiverId: $receiverId, parameters: $parameters) {
+          message {
+            id
+            body
+            type
+            isHsm
+            templateId
+            params
+            status
+            receiver {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "templateId": "12",
+        "receiverId": "8",
+        "parameters": ["Chrissy", "Friday 5 PM"]
+      }
+  auth: inherit
+
+docs: |
+  Sends an approved HSM (WhatsApp message template) to one contact through the BSP. Unlike a
+  session message, an HSM can be sent outside the 24-hour window, to any contact who has
+  opted in. The message is stored as an outbound message by the calling user and sent from a
+  background job.
+
+  Glific fills the template's `{{1}}`, `{{2}}`, ... placeholders with `parameters`, in order.
+  A parameter can use contact variables such as `@contact.name`. Newlines and runs of spaces in
+  parameters are collapsed to single spaces, as WhatsApp requires. If the template has an
+  approved translation in the contact's language, that translation is sent.
+
+  This mutation has no media argument, so it can only send text templates. To send a media
+  template, use **Send a message** with `isHsm`, `templateId`, `params` and `mediaId`.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument     | Type       | Required | Description                                                                 |
+  | ------------ | ---------- | -------- | --------------------------------------------------------------------------- |
+  | `templateId` | `ID!`      | Yes      | The HSM session template.                                                   |
+  | `receiverId` | `ID!`      | Yes      | The contact to send to.                                                     |
+  | `parameters` | `[String]` | Yes      | One value per placeholder. Pass `[]` for a template without placeholders; omitting it fails. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "sendHsmMessage": {
+        "message": {
+          "id": "1053",
+          "body": "Hi Chrissy, your next session is on Friday 5 PM.",
+          "type": "TEXT",
+          "isHsm": true,
+          "templateId": 12,
+          "params": ["Chrissy", "Friday 5 PM"],
+          "status": "enqueued",
+          "receiver": { "id": "8", "name": "Chrissy Cron" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A refused send returns a top-level error, and `sendHsmMessage` is `null`:
+
+  - `Please provide the right number of parameters for the template.`
+  - `Please provide media for media template.`: the template is a media template.
+  - `Cannot send hsm message to contact, not opted in.`
+  - `Cannot send hsm message to contact, invalid BSP status.`
+  - `Cannot send hsm message to contact, organization is in suspended state`
+  - `Contact status is not valid.` or `Contact has no WhatsApp number.`
+  - `Not able to fetch the template with id <id>. ...`: the template does not exist.
+
+  When a contact check fails, Glific also records a `Message` notification. A user without
+  the staff role gets a top-level `Unauthorized` error.

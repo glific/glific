@@ -1,0 +1,38 @@
+info:
+  name: Track an event
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/session/tracker"
+  body:
+    type: json
+    data: |-
+      {
+        "event": "Signup"
+      }
+
+docs: |
+  Increments a usage counter named `event` for the organization the request host belongs to.
+  Internal: used by the Glific frontend for product metrics before a user logs in.
+
+  ## Request body
+
+  | Field   | Type   | Required | Description                 |
+  | ------- | ------ | -------- | --------------------------- |
+  | `event` | String | Yes      | Name of the counter to bump. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "status": "ok"
+    }
+  }
+  ```
+
+  ## Errors
+
+  A body without `event` is not handled by the controller and fails with a `400`.

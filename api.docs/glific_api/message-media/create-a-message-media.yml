@@ -1,0 +1,82 @@
+info:
+  name: Create a message media
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createMessageMedia($input: MessageMediaInput!) {
+        createMessageMedia(input: $input) {
+          messageMedia {
+            id
+            url
+            sourceUrl
+            caption
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "url": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "sourceUrl": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "caption": "Session schedule"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a message media for an outbound message. Pass the returned ID as `mediaId` to
+  **Messages › Send a message**.
+
+  Media rows are shared: if the organization already has a media row with the same `url` and
+  `caption`, that row is returned instead of a new one.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description           |
+  | -------- | -------------------- | -------- | --------------------- |
+  | `input`  | `MessageMediaInput!` | Yes      | The media to create.  |
+
+  ### `MessageMediaInput`
+
+  | Field             | Type      | Required | Description                                                |
+  | ----------------- | --------- | -------- | ---------------------------------------------------------- |
+  | `url`             | `String`  | Yes      | Public URL of the file. WhatsApp must be able to fetch it. |
+  | `sourceUrl`       | `String`  | Yes      | Where the file came from. Usually the same as `url`.       |
+  | `caption`         | `String`  | No       | Caption sent with the media.                               |
+  | `thumbnail`       | `String`  | No       | Thumbnail URL.                                             |
+  | `isTemplateMedia` | `Boolean` | No       | The media belongs to an HSM template.                      |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createMessageMedia": {
+        "messageMedia": {
+          "id": "57",
+          "url": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "sourceUrl": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "caption": "Session schedule"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - A required field is missing: `errors` is
+    `[{ "key": "url", "message": "Url: can't be blank" }]` and `messageMedia` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,58 @@
+info:
+  name: Send a simulator message
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/simulator/message"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "message",
+        "payload": {
+          "id": "6f1c0e4a-2b7d-4c3e-9a8f-1d2e3f4a5b6c",
+          "type": "text",
+          "payload": {
+            "text": "hi"
+          },
+          "sender": {
+            "phone": "9876543210_1",
+            "name": "Glific Simulator One"
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Receives a message from a simulator contact into the caller's organization, exactly as an
+  incoming WhatsApp message would be: it is stored, shown in the chat and can start or
+  continue a flow.
+
+  The body is a Gupshup inbound-message webhook payload. Any message type Gupshup sends
+  works: `text`, `quick_reply`, `button_reply`, `list_reply`, `image`, `file`, `audio`,
+  `video`, `sticker` and `location`.
+
+  ## Request body
+
+  | Field                   | Type   | Required | Description                                            |
+  | ----------------------- | ------ | -------- | ------------------------------------------------------ |
+  | `type`                  | String | Yes      | `message`.                                             |
+  | `payload.id`            | String | Yes      | A unique ID for the message.                           |
+  | `payload.type`          | String | Yes      | Message type, such as `text`.                          |
+  | `payload.payload`       | Object | Yes      | Content for that type, such as `{ "text": "hi" }`.     |
+  | `payload.sender.phone`  | String | Yes      | A simulator phone, `9876543210_1` to `9876543210_5`.   |
+  | `payload.sender.name`   | String | No       | Display name of the sender.                            |
+
+  ## Example response
+
+  `200` with an empty body. The stored message, and any reply a flow sends, arrive through
+  the message subscriptions.
+
+  ## Errors
+
+  - `403` when `payload.sender.phone` is missing or is not a simulator contact:
+    `{ "error": { "status": 403, "message": "Only simulator contacts can send simulator messages." } }`.
+  - `401` without a valid access token:
+    `{ "error": { "code": 401, "message": "Not authenticated" } }`.

@@ -1,0 +1,77 @@
+info:
+  name: Set an assistant's live version
+  type: graphql
+  seq: 13
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation setLiveVersion($assistantId: ID!, $versionId: ID!) {
+        setLiveVersion(assistantId: $assistantId, versionId: $versionId) {
+          assistant {
+            id
+            activeConfigVersionId
+            liveVersionLabel
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "assistantId": "7",
+        "versionId": "33"
+      }
+  auth: inherit
+
+docs: |
+  Makes a `ready` config version the one the assistant uses in flows.
+
+  - A draft (minor) version such as `2.1` is published as a copy with the next major number
+    (`3.0`), which becomes live. The draft stays in the history unchanged.
+  - A major version such as `1.0` is made live again as it is (a rollback); no version is
+    created.
+
+  The assistant's last evaluation becomes the latest completed evaluation of the chosen
+  version, if any. Nothing is sent to Kaapi: the version is already registered there.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument      | Type  | Required | Description                                     |
+  | ------------- | ----- | -------- | ----------------------------------------------- |
+  | `assistantId` | `ID!` | Yes      | The assistant.                                  |
+  | `versionId`   | `ID!` | Yes      | A config version of that assistant, from **List an assistant's versions**. |
+
+  ## Example response
+
+  `activeConfigVersionId` is the new live version: here the `3.0` copy of draft `2.1`.
+
+  ```json
+  {
+    "data": {
+      "setLiveVersion": {
+        "assistant": {
+          "id": "7",
+          "activeConfigVersionId": "34",
+          "liveVersionLabel": "3.0"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The assistant, or a version of it, does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Assistants.AssistantConfigVersion", "message": "Resource not found" }]`
+    (or `...Assistant`).
+  - The version is not `ready`: a top-level error
+    `Version must be in ready status to be set as live`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

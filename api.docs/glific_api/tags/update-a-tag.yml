@@ -1,0 +1,71 @@
+info:
+  name: Update a tag
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateTag($id: ID!, $input: TagInput!) {
+        updateTag(id: $id, input: $input) {
+          tag {
+            id
+            label
+            description
+            keywords
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "34",
+        "input": {
+          "label": "Young learner",
+          "keywords": ["kid", "student", "learner"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a tag. Only the fields given in `input` change.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type       | Required | Description                                          |
+  | -------- | ---------- | -------- | ---------------------------------------------------- |
+  | `id`     | `ID!`      | Yes      | The tag to change.                                   |
+  | `input`  | `TagInput` | No       | Fields to change. See **Create a tag** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateTag": {
+        "tag": {
+          "id": "34",
+          "label": "Young learner",
+          "description": "Marks the contact as a child",
+          "keywords": ["kid", "student", "learner"]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The tag does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Tags.Tag", "message": "Resource not found" }]`.
+  - The new shortcode is already used in that language:
+    `{ "key": "shortcode", "message": "Shortcode: has already been taken" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

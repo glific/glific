@@ -1,0 +1,25 @@
+info:
+  name: Search
+  type: folder
+  seq: 24
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Search powers the chat inbox. **Search conversations** returns conversations: a contact
+    (or a collection) with its most recent messages, newest conversation first. **Search
+    messages and contacts** returns separate lists of matching contacts and messages for a
+    search term. The WhatsApp group variants do the same for WhatsApp groups and their
+    messages.
+
+    Results only include contacts the user can see: a staff user with restricted access sees
+    only contacts in the collections assigned to them (plus their own contact). Blocked
+    contacts are never returned.
+
+    All operations need the staff role.
+
+    Related: **Saved Searches** (stored filters and inbox counts), **Messages**,
+    **WhatsApp Groups**.
+  type: text/markdown

@@ -1,0 +1,71 @@
+info:
+  name: Get a contact field
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contactsField($id: ID!) {
+        contactsField(id: $id) {
+          contactsField {
+            id
+            name
+            shortcode
+            valueType
+            scope
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Returns one contact field by ID. Unlike **List contact fields**, `variable` is not filled in
+  here.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                  |
+  | -------- | ----- | -------- | ---------------------------- |
+  | `id`     | `ID!` | Yes      | The contact field to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "contactsField": {
+        "contactsField": {
+          "id": "3",
+          "name": "Age Group",
+          "shortcode": "age_group",
+          "valueType": "TEXT",
+          "scope": "CONTACT",
+          "insertedAt": "2026-09-14T08:00:00Z",
+          "updatedAt": "2026-09-14T08:00:00Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The field does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.ContactsField", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

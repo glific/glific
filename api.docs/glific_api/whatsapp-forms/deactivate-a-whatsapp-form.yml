@@ -1,0 +1,63 @@
+info:
+  name: Deactivate a WhatsApp form
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deactivateWhatsappForm($id: ID!) {
+        deactivateWhatsappForm(id: $id) {
+          whatsappForm {
+            id
+            name
+            status
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Sets a form's status to `INACTIVE` so it can't be used in Glific. Only Glific changes; the
+  flow stays published at Meta. Undo it with **Activate a WhatsApp form**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The form to deactivate. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deactivateWhatsappForm": {
+        "whatsappForm": {
+          "id": "3",
+          "name": "sign_up_form",
+          "status": "INACTIVE"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The form does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappForm", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

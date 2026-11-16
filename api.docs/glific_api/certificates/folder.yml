@@ -1,0 +1,25 @@
+info:
+  name: Certificates
+  type: folder
+  seq: 59
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Certificate templates are Google Slides presentations a flow fills in to issue a
+    personalised certificate to a contact, such as a course-completion certificate. The flow
+    replaces text placeholders on the slide, exports it as an image and sends it to the
+    contact.
+
+    `type` is always `SLIDES` for now. A template's `url` must link to one slide
+    (`.../presentation/d/<id>/edit#slide=id.<slide id>`), and the organization's Google Slides
+    credential must be able to open it: Glific checks this when a template is created or its
+    URL changes.
+
+    Reading and creating or changing templates needs the staff role; counting and deleting
+    them needs the manager role.
+
+    Related: **Credentials** (Google Slides), **Flows**.
+  type: text/markdown

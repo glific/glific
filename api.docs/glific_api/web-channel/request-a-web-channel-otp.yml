@@ -1,0 +1,54 @@
+info:
+  name: Request a web channel OTP
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/web_channel/request-otp"
+  body:
+    type: json
+    data: |-
+      {
+        "phone": "910000000005"
+      }
+
+docs: |
+  Sends a one-time code over WhatsApp to the phone, so a beneficiary can sign in to the web
+  channel. Creates the WhatsApp contact if the organization does not have one yet, but
+  records no opt-in. The code is sent with the organization's approved `verify_otp` template
+  (or a session message inside the 24-hour window), even to a contact who has not opted in.
+
+  The answer is the same whether or not the number is known and whether or not the message
+  was delivered, so it cannot be used to discover contacts.
+
+  ## Request body
+
+  | Field   | Type   | Required | Description                                                    |
+  | ------- | ------ | -------- | -------------------------------------------------------------- |
+  | `phone` | String | Yes      | Phone number with country code. Spaces, dashes and `+` are ignored. |
+
+  ## Example response
+
+  `phone` is the normalized number.
+
+  ```json
+  {
+    "data": {
+      "phone": "910000000005",
+      "message": "If this number is registered on WhatsApp, you will receive a one-time code"
+    }
+  }
+  ```
+
+  ## Errors
+
+  All as `{ "error": { "status": <code>, "message": "..." } }`:
+
+  - `422`: `phone` is missing (`Phone number is required`) or not a valid number
+    (`Phone number is not valid. Please enter the phone number with country code, without the + symbol.`).
+  - `429`: a code was sent to this phone in the last 30 seconds
+    (`An OTP was just sent. Please try again in 30 seconds.`), or too many were requested from
+    this IP address
+    (`Too many sign-in attempts from your network. Please wait a few minutes and try again.`).
+  - `404`: the web channel is not enabled for the organization.

@@ -1,0 +1,36 @@
+info:
+  name: List languages
+  type: http
+  seq: 18
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/languages"
+  auth: inherit
+
+docs: |
+  Lists the languages the organization supports, which the editor offers for translating a
+  flow. `default` marks the organization's default language, the one flows are written in.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  {
+    "results": [
+      { "iso": "en", "name": "English", "default": true },
+      { "iso": "hi", "name": "Hindi", "default": false }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

@@ -1,0 +1,63 @@
+info:
+  name: Sync HSM templates
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation syncHsmTemplate {
+        syncHsmTemplate {
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Queues a background job that fetches every template in the organization's Gupshup app and
+  updates Glific to match:
+
+  - Templates Glific doesn't have are added as HSMs, active if Gupshup reports them `APPROVED`
+    or `SANDBOX_REQUESTED`.
+  - Existing HSMs get the BSP's `status`, `category` and `quality`. A move to `APPROVED`,
+    `REJECTED` or `FAILED` sets `isActive` and `reason` and creates a notification.
+  - WhatsApp form templates in a language Glific doesn't know are skipped, with a warning
+    notification.
+
+  Starting the job creates an "HSM template" notification, and so does finishing it
+  (success or failure). Only one sync job per organization can be queued within 5 minutes.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  When a sync is already queued or running, `message` is `HSM sync job already in progress`.
+
+  ```json
+  {
+    "data": {
+      "syncHsmTemplate": {
+        "message": "HSM sync job queued successfully",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The job can't be queued: a top-level error
+    `Failed to queue HSM sync job for organization <id>: <reason>`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

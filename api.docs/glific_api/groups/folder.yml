@@ -1,0 +1,24 @@
+info:
+  name: Groups
+  type: folder
+  seq: 14
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Groups, called **collections** in the Glific UI, are named sets of contacts, users and
+    WhatsApp groups. Flows, broadcasts and triggers target collections, and restricted staff
+    users only see the contacts and conversations of the collections they belong to.
+
+    A group's `groupType` is `WABA` (the default) for a collection of contacts, or `WA` for a
+    collection of WhatsApp groups. When roles and permissions are on for the organization,
+    access roles can be attached to a group (`addRoleIds`), limiting who sees it.
+
+    Reading groups needs the staff role; creating, changing and deleting them needs the
+    manager role. A restricted staff user only sees the groups they are a member of.
+
+    To change membership, see **Contact Groups** (contacts), **User Groups** (users) and
+    **WhatsApp Groups**.
+  type: text/markdown

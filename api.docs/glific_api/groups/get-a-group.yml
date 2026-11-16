@@ -1,0 +1,79 @@
+info:
+  name: Get a group
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query group($id: ID!) {
+        group(id: $id) {
+          group {
+            id
+            label
+            description
+            isRestricted
+            lastCommunicationAt
+            contactsCount
+            users {
+              id
+              name
+            }
+            roles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "7"
+      }
+  auth: inherit
+
+docs: |
+  Returns one group (collection) by ID. A group's `contacts`, `messages` and `waGroups` can be
+  selected too, but load every row; use **List contact groups** to page through members.
+
+  **Role:** staff. A restricted staff user can only read groups they belong to.
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The group to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "group": {
+        "group": {
+          "id": "7",
+          "label": "November cohort",
+          "description": "Learners who joined in November",
+          "isRestricted": false,
+          "lastCommunicationAt": "2026-11-15T11:02:43Z",
+          "contactsCount": 42,
+          "users": [{ "id": "3", "name": "Priya (staff)" }],
+          "roles": []
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The group does not exist, or the user can't see it: `errors` is
+    `[{ "key": "Group", "message": "Group not found or permission denied." }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

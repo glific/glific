@@ -1,0 +1,45 @@
+info:
+  name: Count WhatsApp forms
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countWhatsappForms($filter: WhatsappFormFilter) {
+        countWhatsappForms(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "status": "DRAFT"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's WhatsApp forms that match a filter.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                   |
+  | -------- | -------------------- | -------- | ------------------------------------------------------------- |
+  | `filter` | `WhatsappFormFilter` | No       | Same fields as in **List WhatsApp forms**. Without it, counts all forms. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countWhatsappForms": 2
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

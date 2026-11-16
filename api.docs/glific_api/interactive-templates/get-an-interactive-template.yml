@@ -1,0 +1,83 @@
+info:
+  name: Get an interactive template
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query interactiveTemplate($id: ID!) {
+        interactiveTemplate(id: $id) {
+          interactiveTemplate {
+            id
+            label
+            type
+            interactiveContent
+            translations
+            sendWithTitle
+            insertedAt
+            updatedAt
+            language {
+              id
+              label
+            }
+            tag {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "6"
+      }
+  auth: inherit
+
+docs: |
+  Returns one interactive template by ID, with its translations.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The template to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "interactiveTemplate": {
+        "interactiveTemplate": {
+          "id": "6",
+          "label": "Send Location",
+          "type": "LOCATION_REQUEST_MESSAGE",
+          "interactiveContent": "{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"please share your location\"},\"action\":{\"name\":\"send_location\"}}",
+          "translations": "{\"1\":{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"please share your location\"},\"action\":{\"name\":\"send_location\"}}}",
+          "sendWithTitle": true,
+          "insertedAt": "2026-11-02T09:41:12Z",
+          "updatedAt": "2026-11-02T09:41:12Z",
+          "language": { "id": "1", "label": "English" },
+          "tag": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.InteractiveTemplate", "message": "Resource not found" }]`
+    and `interactiveTemplate` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,52 @@
+info:
+  name: Request a trial account
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/trial/create-trial-user"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "Asha Rao",
+        "email": "asha@sample-ngo.example.org",
+        "phone": "910000000001",
+        "organization_name": "Sample NGO"
+      }
+
+docs: |
+  Records a visitor who wants a trial account and mails them a one-time code. The visitor then
+  sends the code to **Allocate a trial account**.
+
+  Asking again with the same email or phone, before the code was used, mails a new code.
+
+  ## Request body
+
+  | Field               | Type   | Required | Description                                          |
+  | ------------------- | ------ | -------- | ---------------------------------------------------- |
+  | `username`          | String | Yes      | The visitor's name.                                  |
+  | `email`             | String | Yes      | Where the code is sent.                              |
+  | `phone`             | String | Yes      | With country code, without `+`.                      |
+  | `organization_name` | String | Yes      | The visitor's organization.                          |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "message": "OTP sent successfully to asha@sample-ngo.example.org"
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `200` with `success: false`: the email or phone already used a code:
+    `{ "success": false, "error": "Email or phone already registered" }`.
+  - `400`: the phone is invalid, such as
+    `{ "success": false, "error": "Phone number is not valid. Please enter the phone number with country code, without the + symbol." }`,
+    or the record could not be saved: `"Failed to create trial account"`.
+  - `500`: the mail could not be sent: `{ "success": false, "error": "Failed to send OTP email" }`.
+  - A body missing any of the four fields is rejected with `400`.

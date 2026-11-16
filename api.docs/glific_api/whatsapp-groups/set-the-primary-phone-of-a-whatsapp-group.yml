@@ -1,0 +1,85 @@
+info:
+  name: Set the primary phone of a WhatsApp group
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation setPrimaryPhone($waGroupId: ID!, $waManagedPhoneId: ID!) {
+        setPrimaryPhone(waGroupId: $waGroupId, waManagedPhoneId: $waManagedPhoneId) {
+          primaryPhone {
+            id
+            isPrimary
+            isActive
+            waManagedPhone {
+              id
+              phone
+              status
+            }
+          }
+          warning
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "waGroupId": "2",
+        "waManagedPhoneId": "2"
+      }
+  auth: inherit
+
+docs: |
+  Makes a managed phone the group's primary phone, the one outgoing group messages are sent
+  from. The current primary is demoted and the new one promoted in one transaction. If the
+  phone is already primary, nothing changes. Only Glific's record changes; nothing is sent to
+  WhatsApp.
+
+  The phone must already be an active member of the group. The change is still made when the
+  phone is not connected on Maytapi, but `warning` says so, because messages will fail until
+  it reconnects.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument           | Type  | Required | Description                       |
+  | ------------------ | ----- | -------- | --------------------------------- |
+  | `waGroupId`        | `ID!` | Yes      | The WhatsApp group.               |
+  | `waManagedPhoneId` | `ID!` | Yes      | The managed phone to make primary. |
+
+  `primaryPhone` is the group's membership row for the phone, not the managed phone itself.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "setPrimaryPhone": {
+        "primaryPhone": {
+          "id": "9",
+          "isPrimary": true,
+          "isActive": true,
+          "waManagedPhone": { "id": "2", "phone": "910000000008", "status": "loading" }
+        },
+        "warning": "WhatsApp phone 910000000008 is currently 'loading' on Maytapi. Messages may fail until it reconnects.",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as a top-level error:
+
+  - The phone has no membership in the group (or the group or phone does not exist): `This
+    phone is not a member of the group. Add it to the group on WhatsApp before promoting.`
+  - The phone has left the group: `This phone was removed from the group. Re-add it on
+    WhatsApp before promoting.`
+  - A user without the admin role gets `Unauthorized`.

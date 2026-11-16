@@ -1,0 +1,62 @@
+info:
+  name: Start a flow for a WhatsApp group
+  type: graphql
+  seq: 18
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation startWaGroupFlow($flowId: ID!, $waGroupId: ID!) {
+        startWaGroupFlow(flowId: $flowId, waGroupId: $waGroupId) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "flowId": "12",
+        "waGroupId": "4"
+      }
+  auth: inherit
+
+docs: |
+  Starts the published revision of a flow in one WhatsApp group, so the flow's messages go to
+  the group as a whole. WhatsApp groups come from the organization's Maytapi connection; see
+  **WhatsApp Groups**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type  | Required | Description                     |
+  | ----------- | ----- | -------- | ------------------------------- |
+  | `flowId`    | `ID!` | Yes      | The flow to start.              |
+  | `waGroupId` | `ID!` | Yes      | The WhatsApp group to start it in. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "startWaGroupFlow": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow does not exist or has never been published:
+    `[{ "key": "Flow", "message": "Flow not found" }]`.
+  - The flow is inactive: `[{ "key": "Flow", "message": "Flow is not active" }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.
+
+  An unknown WhatsApp group ID is not reported: the call returns `success: true` and nothing
+  starts.

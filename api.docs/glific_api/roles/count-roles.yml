@@ -1,0 +1,46 @@
+info:
+  name: Count roles
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countAccessRoles($filter: AccessRoleFilter) {
+        countAccessRoles(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "isReserved": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's access roles that match a filter. Like **List roles**, counts only
+  reserved roles unless the organization has roles and permissions enabled.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description                                                   |
+  | -------- | ------------------ | -------- | ------------------------------------------------------------- |
+  | `filter` | `AccessRoleFilter` | No       | Same fields as in **List roles**. Without it, counts all roles. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countAccessRoles": 2
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

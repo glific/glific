@@ -1,0 +1,86 @@
+info:
+  name: Get a tag
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query tag($id: ID!) {
+        tag(id: $id) {
+          tag {
+            id
+            label
+            shortcode
+            description
+            colorCode
+            isActive
+            isReserved
+            keywords
+            insertedAt
+            updatedAt
+            language {
+              id
+              label
+            }
+            parent {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "18"
+      }
+  auth: inherit
+
+docs: |
+  Returns one tag by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The tag to return.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "tag": {
+        "tag": {
+          "id": "18",
+          "label": "Child",
+          "shortcode": "child",
+          "description": "Marks the contact as a child",
+          "colorCode": "#0C976D",
+          "isActive": true,
+          "isReserved": false,
+          "keywords": ["kid", "student"],
+          "insertedAt": "2026-11-02T09:41:12Z",
+          "updatedAt": "2026-11-02T09:41:12Z",
+          "language": { "id": "1", "label": "English" },
+          "parent": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The tag does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Tags.Tag", "message": "Resource not found" }]` and `tag` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

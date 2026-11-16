@@ -1,0 +1,114 @@
+info:
+  name: List session templates
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
+        sessionTemplates(filter: $filter, opts: $opts) {
+          id
+          label
+          shortcode
+          body
+          type
+          isHsm
+          status
+          category
+          isActive
+          numberParameters
+          hasButtons
+          buttonType
+          buttons
+          language {
+            id
+            label
+          }
+          tag {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "isHsm": true,
+          "status": "APPROVED"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's session and HSM templates, optionally filtered and paginated.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                    | Required | Description                                    |
+  | -------- | ----------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `SessionTemplateFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`                  | No       | Sorting and pagination. Sorts on `label` by default. |
+
+  ### `SessionTemplateFilter`
+
+  | Field        | Type             | Description                                                            |
+  | ------------ | ---------------- | ---------------------------------------------------------------------- |
+  | `term`       | `String`         | Label, shortcode or body contains this text, or the template's tag label does. |
+  | `label`      | `String`         | Label contains this text.                                              |
+  | `shortcode`  | `String`         | Shortcode, exactly.                                                    |
+  | `body`       | `String`         | Body contains this text.                                               |
+  | `tagIds`     | `[Int]`          | Template's tag is one of these.                                        |
+  | `isHsm`      | `Boolean`        | Only HSM templates, or only session templates.                         |
+  | `status`     | `String`         | HSM status, exactly: `APPROVED`, `PENDING`, `REJECTED`, `FAILED`.      |
+  | `category`   | `String`         | HSM category, exactly: `UTILITY` or `MARKETING`.                       |
+  | `isActive`   | `Boolean`        | Only active or only inactive templates.                                |
+  | `isReserved` | `Boolean`        | Accepted but currently ignored.                                        |
+  | `language`   | `String`         | Language label contains this text.                                     |
+  | `languageId` | `Int`            | Language ID.                                                           |
+  | `parent`     | `String`         | Parent template's label contains this text.                            |
+  | `parentId`   | `Int`            | Parent template's ID.                                                  |
+  | `dateRange`  | `DateRangeInput` | `column` (snake_case, default `inserted_at`) falls between `from` and `to`. |
+
+  ## Example response
+
+  `buttons` is a `Json` value, so it comes back as a JSON-encoded string.
+
+  ```json
+  {
+    "data": {
+      "sessionTemplates": [
+        {
+          "id": "12",
+          "label": "Order update",
+          "shortcode": "order_update",
+          "body": "Hi {{1}}, your order {{2}} has shipped.",
+          "type": "TEXT",
+          "isHsm": true,
+          "status": "APPROVED",
+          "category": "UTILITY",
+          "isActive": true,
+          "numberParameters": 2,
+          "hasButtons": true,
+          "buttonType": "QUICK_REPLY",
+          "buttons": "[{\"type\":\"QUICK_REPLY\",\"text\":\"Track order\"}]",
+          "language": { "id": "1", "label": "English" },
+          "tag": null
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

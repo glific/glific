@@ -1,0 +1,45 @@
+info:
+  name: Create a label
+  type: http
+  seq: 12
+
+http:
+  method: POST
+  url: "{{base_url}}/flow-editor/labels"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Needs follow-up"
+      }
+  auth: inherit
+
+docs: |
+  Creates a flow label from inside the editor. If the organization already has a label with
+  that name, that label is returned unchanged instead.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  | Field  | Type   | Required | Description                   |
+  | ------ | ------ | -------- | ----------------------------- |
+  | `name` | String | Yes      | The label's name.             |
+  | `type` | String | No       | Stored with the label.        |
+
+  ## Example response
+
+  `200`. `count` is always `0`.
+
+  ```json
+  {
+    "uuid": "c7d0f4b2-3a1e-4f7a-9a43-61f4e5c2b8d1",
+    "name": "Needs follow-up",
+    "count": 0
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.
+  - `500`: `name` is missing.

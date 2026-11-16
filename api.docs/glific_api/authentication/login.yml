@@ -1,0 +1,64 @@
+info:
+  name: Login
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/session"
+  body:
+    type: json
+    data: |-
+      {
+        "user": {
+          "phone": "{{phone}}",
+          "password": "{{password}}"
+        }
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        if (body && body.data) {
+          bru.setEnvVar("auth_token", body.data.access_token);
+          bru.setEnvVar("renewal_token", body.data.renewal_token);
+        }
+
+docs: |
+  Logs a staff user in to the organization the request host belongs to and returns a new
+  access token and renewal token. Records the login time and IP address on the user. This
+  request saves the tokens into the `auth_token` and `renewal_token` environment variables.
+
+  ## Request body
+
+  | Field           | Type   | Required | Description                               |
+  | --------------- | ------ | -------- | ----------------------------------------- |
+  | `user.phone`    | String | Yes      | The user's phone number, with country code. |
+  | `user.password` | String | Yes      | The user's password.                      |
+
+  ## Example response
+
+  `last_login_time` is the previous login, before this one. `is_trial` and
+  `trial_expiration_date` describe the organization.
+
+  ```json
+  {
+    "data": {
+      "access_token": "SFMyNTY.ZjQ2NmM3ZTEtM2E2Ni00YjQ1LWE1ZjMtOTc1NjNhNWE4OGQ1.dXzZ9w2Xr1",
+      "renewal_token": "SFMyNTY.YTU5NmM1MjQtNjM0Mi00ZjI4LTg5YjMtNjM2ODNlYzQ5MjVi.qL3kq0YpNw",
+      "token_expiry_time": "2026-11-16T10:00:00.000000Z",
+      "last_login_time": "2026-11-15T08:12:40Z",
+      "is_trial": false,
+      "trial_expiration_date": null
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `401`: wrong phone or password, or no `user` object in the body:
+    `{ "error": { "status": 401, "message": "Invalid phone or password" } }`.
+  - `403`: the organization is suspended or paused, with a message saying so and pointing to
+    support@glific.org.

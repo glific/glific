@@ -1,0 +1,74 @@
+info:
+  name: Get an organization's active billing
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query getOrganizationBilling($organizationId: Gid) {
+        getOrganizationBilling(organizationId: $organizationId) {
+          billing {
+            id
+            name
+            email
+            currency
+            isActive
+            stripeCustomerId
+            stripeSubscriptionStatus
+            stripeSubscriptionItems
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Returns the active billing record of an organization. The frontend uses it to decide
+  whether to show the subscription setup or the billing details.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                                                                   |
+  | ---------------- | ----- | -------- | --------------------------------------------------------------------------------------------- |
+  | `organizationId` | `Gid` | No       | Only honoured for `glific_admin`. Other roles always get their own organization's billing.    |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "getOrganizationBilling": {
+        "billing": {
+          "id": "1",
+          "name": "Glific Foundation",
+          "email": "accounts@example.org",
+          "currency": "inr",
+          "isActive": true,
+          "stripeCustomerId": "cus_xxx",
+          "stripeSubscriptionStatus": "active",
+          "stripeSubscriptionItems": "{\"price_xxx\":\"si_xxx\"}"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The organization has no active billing record: `errors` is
+    `[{ "key": "Elixir.Glific.Partners.Billing", "message": "Resource not found" }]` and
+    `billing` is `null`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

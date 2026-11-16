@@ -1,0 +1,24 @@
+info:
+  name: Billing
+  type: folder
+  seq: 56
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Billing links an organization to a Stripe customer. Each organization has at most one
+    active billing record, which holds the Stripe customer, payment method and subscription
+    IDs and the billing period (`MONTHLY`, `QUARTERLY` or `MANUAL`).
+
+    Most operations here call Stripe: creating a billing record creates a Stripe customer,
+    updating it updates that customer, and creating a subscription attaches the card, raises
+    the setup invoice and starts the subscription. They need the server's Stripe API key.
+
+    All operations need the admin role, except **List billing periods** (manager). A
+    `glific_admin` can read and change another organization's billing through
+    `organizationId` or a billing ID; every other role is pinned to its own organization.
+
+    Related: **Organizations**.
+  type: text/markdown

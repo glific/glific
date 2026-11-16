@@ -1,0 +1,60 @@
+info:
+  name: Delete a poll
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteWaPoll($id: ID!) {
+        deleteWaPoll(id: $id) {
+          waPoll {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a poll.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The poll to delete. |
+
+  ## Example response
+
+  The resolver does not wrap the deleted poll, so `waPoll` is always `null`; an empty `errors`
+  means the delete worked.
+
+  ```json
+  {
+    "data": {
+      "deleteWaPoll": {
+        "waPoll": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The poll does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WAGroup.WaPoll", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

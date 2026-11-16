@@ -1,0 +1,43 @@
+info:
+  name: Session Templates
+  type: folder
+  seq: 40
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Session templates are reusable messages. There are two kinds:
+
+    - **Session templates** (`isHsm: false`): text or media messages that can be sent only inside
+      WhatsApp's 24-hour session window. They are stored in Glific alone and can be changed
+      freely.
+    - **HSM templates** (`isHsm: true`): WhatsApp message templates that Meta must approve
+      before they can be sent outside the session window. Creating one submits it to the BSP
+      (Gupshup) for approval.
+
+    ## HSM approval lifecycle
+
+    1. **Create a session template** with `isHsm: true` submits the template to Gupshup and
+       stores it with the status Gupshup returns, usually `PENDING`, and `isActive: false`.
+    2. Meta reviews it. Gupshup's template webhook and **Sync HSM templates** (also run
+       periodically) update `status`:
+       - `APPROVED`: `isActive` becomes `true` and the template can be sent.
+       - `REJECTED` or `FAILED`: `isActive` becomes `false` and `reason` holds Meta's reason.
+       - Any other BSP status is stored as-is.
+       Each of these changes creates a notification.
+    3. While an HSM is not approved, **Update a session template** refuses every change. Once it
+       is approved, only `isActive` and `tagId` can change locally.
+    4. To change the content of an approved HSM, use **Edit an approved HSM template**, which
+       sends the new content to Gupshup, where Meta reviews it again.
+
+    `category` is one of `UTILITY` or `MARKETING` (**List WhatsApp HSM categories**). Body
+    variables are written `{{1}}`, `{{2}}`, and `numberParameters` counts them.
+
+    Reading templates needs the staff role. Creating plain templates needs staff; changing,
+    deleting, syncing and importing need manager.
+
+    Related: **Template Tags** (tag templates), **Interactive Templates** (quick replies and
+    lists), **Messages** (sending a template to a contact).
+  type: text/markdown

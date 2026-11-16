@@ -1,0 +1,79 @@
+info:
+  name: Get a provider
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query provider($id: ID!) {
+        provider(id: $id) {
+          provider {
+            id
+            name
+            shortcode
+            group
+            description
+            isRequired
+            keys
+            secrets
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "1"
+      }
+  auth: inherit
+
+docs: |
+  Returns one provider by ID. Unlike **List providers**, it also returns internal providers.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The provider to return. |
+
+  ## Example response
+
+  Shortened:
+
+  ```json
+  {
+    "data": {
+      "provider": {
+        "provider": {
+          "id": "1",
+          "name": "Gupshup",
+          "shortcode": "gupshup",
+          "group": "bsp",
+          "description": "Setup Gupshup for WhatsApp message",
+          "isRequired": true,
+          "keys": "{\"url\":{\"default\":\"https://gupshup.io/\",\"hide\":true,\"label\":\"BSP Home Page\",\"type\":\"string\",\"view_only\":true}}",
+          "secrets": "{\"api_key\":{\"default\":null,\"label\":\"API Key\",\"type\":\"string\",\"view_only\":false}}",
+          "insertedAt": "2026-01-10T06:30:00Z",
+          "updatedAt": "2026-01-10T06:30:00Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The provider does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Partners.Provider", "message": "Resource not found" }]` and
+    `provider` is `null`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

@@ -1,0 +1,34 @@
+info:
+  name: Web Channel
+  type: folder
+  seq: 6
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    REST endpoints the web channel widget calls: a chat window an organization embeds on its
+    own website, where beneficiaries talk to it from a browser instead of WhatsApp.
+
+    These endpoints authenticate a **contact**, not a staff user, and do not use the staff
+    `auth_token`. The organization is taken from the request host. The flow is:
+
+    1. **Get the web channel branding** (public) to paint the widget.
+    2. **Request a web channel OTP** (public): a code goes to the phone over WhatsApp.
+    3. **Verify a web channel OTP** (public): returns a web channel `token`, an HS256 JWT signed
+       with the organization's secret. It lasts one hour.
+    4. Use the token to join the chat socket, and as `authorization: Bearer <token>` for
+       **Get a media upload URL**.
+    5. **Renew a web channel token** before it expires. A session can be renewed for up to
+       24 hours after sign-in.
+
+    The verify and renew requests store the token in the runtime variable
+    `web_channel_token`, which **Get a media upload URL** sends.
+
+    The web channel has to be on for the organization: the `web_channel_enabled` feature flag
+    set by a Glific admin, and an active `web_channel` credential set by the organization.
+    Otherwise every endpoint except branding answers `404` with
+    `Web channel is not enabled for this organization`. These endpoints have their own rate
+    limit per IP address, more generous than the staff one; over it the response is `429`.
+  type: text/markdown

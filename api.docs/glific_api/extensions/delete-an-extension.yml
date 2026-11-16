@@ -1,0 +1,60 @@
+info:
+  name: Delete an extension
+  type: graphql
+  seq: 6
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteExtension($id: ID!) {
+        deleteExtension(id: $id) {
+          extension {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Deletes an extension by ID, from any organization. The record is removed; a module it
+  already loaded stays loaded until the server restarts.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description              |
+  | -------- | ----- | -------- | ------------------------ |
+  | `id`     | `ID!` | Yes      | The extension to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteExtension": {
+        "extension": { "id": "3", "name": "URL helpers" },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The extension does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Extensions.Extension", "message": "Resource not found" }]`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

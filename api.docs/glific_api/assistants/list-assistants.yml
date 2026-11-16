@@ -1,0 +1,142 @@
+info:
+  name: List assistants
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query assistants($filter: AssistantFilter, $opts: Opts) {
+        assistants(filter: $filter, opts: $opts) {
+          id
+          assistantDisplayId
+          name
+          assistantId
+          model
+          instructions
+          temperature
+          effort
+          settings
+          inputGuardrails
+          outputGuardrails
+          status
+          newVersionInProgress
+          liveVersionLabel
+          activeConfigVersionId
+          legacy
+          cloneStatus
+          lastEvaluationSummary
+          vectorStore {
+            id
+            knowledgeBaseVersionId
+            vectorStoreId
+            name
+            status
+            size
+            files {
+              id
+              name
+              uploadedAt
+              fileSize
+            }
+          }
+          insertedAt
+          updatedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "nameOrAssistantId": "maternal"
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's assistants. Each one is shown with the settings of its live config
+  version.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description                                                 |
+  | -------- | ----------------- | -------- | ----------------------------------------------------------- |
+  | `filter` | `AssistantFilter` | No       | Narrows the list.                                           |
+  | `opts`   | `Opts`            | No       | Sorting and pagination. Sorts on `inserted_at` by default.  |
+
+  ### `AssistantFilter`
+
+  | Field               | Type     | Description                                                          |
+  | ------------------- | -------- | -------------------------------------------------------------------- |
+  | `name`              | `String` | Name contains this text (case-insensitive).                          |
+  | `nameOrAssistantId` | `String` | Name or `assistantDisplayId` contains this text (case-insensitive).  |
+
+  ## Example response
+
+  These fields come from the live config version: `model`, `instructions` (the prompt),
+  `temperature` and `effort` (read from `settings`), `settings`, the guardrails, `status`,
+  `liveVersionLabel` and `vectorStore`. `newVersionInProgress` is `true` while any config
+  version is still `in_progress`. `legacy` is `true` when the knowledge base was synced
+  directly with OpenAI before Kaapi; its files can't be downloaded. `cloneStatus` is `none`,
+  `in_progress`, `completed` or `failed` (see **Clone an assistant**).
+  `lastEvaluationSummary` is the `results` of the latest completed evaluation of the live
+  version. `vectorStore.size` is formatted, such as `1.2 MB`.
+
+  ```json
+  {
+    "data": {
+      "assistants": [
+        {
+          "id": "7",
+          "assistantDisplayId": "asst_mzxw6ytboi4dcmrtgq2tmnzy",
+          "name": "Maternal health helper",
+          "assistantId": "3f0b6b0e-5c1a-4a43-9a0e-1f3c2d9e8b11",
+          "model": "gpt-5-mini",
+          "instructions": "You are a friendly assistant that answers questions about prenatal care.",
+          "temperature": null,
+          "effort": "low",
+          "settings": "{\"effort\":\"low\"}",
+          "inputGuardrails": "[{\"type\":\"pii_remover\"}]",
+          "outputGuardrails": "[]",
+          "status": "ready",
+          "newVersionInProgress": false,
+          "liveVersionLabel": "2.0",
+          "activeConfigVersionId": "31",
+          "legacy": false,
+          "cloneStatus": "none",
+          "lastEvaluationSummary": "{\"latency\":{\"avg_latency_ms\":1250.5,\"call_count\":50},\"overall_score\":3.84,\"summary_scores\":[{\"avg\":0.74,\"data_type\":\"NUMERIC\",\"name\":\"Cosine Similarity\",\"std\":0.1,\"total_pairs\":25}],\"verdict\":\"Needs Refinement\"}",
+          "vectorStore": {
+            "id": "4",
+            "knowledgeBaseVersionId": "12",
+            "vectorStoreId": "vs_6f2c1b8a9d3e4f50",
+            "name": "VectorStore-mfrgg2lbmfrgg2lbmfrgg2lb",
+            "status": "completed",
+            "size": "1.2 MB",
+            "files": [
+              {
+                "id": "b7e1c3a2-4d5f-4e6a-8b9c-0d1e2f3a4b5c",
+                "name": "prenatal_care.pdf",
+                "uploadedAt": "2026-11-10T08:15:02.481Z",
+                "fileSize": 1258291
+              }
+            ]
+          },
+          "insertedAt": "2026-11-10T08:20:41Z",
+          "updatedAt": "2026-11-12T11:02:17Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

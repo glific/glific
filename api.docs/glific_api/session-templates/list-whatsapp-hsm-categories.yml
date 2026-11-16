@@ -1,0 +1,39 @@
+info:
+  name: List WhatsApp HSM categories
+  type: graphql
+  seq: 14
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query whatsappHsmCategories {
+        whatsappHsmCategories
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns the categories an HSM template can be submitted under. The list is fixed in Glific.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "whatsappHsmCategories": ["UTILITY", "MARKETING"]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

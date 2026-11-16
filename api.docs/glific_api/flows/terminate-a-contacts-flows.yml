@@ -1,0 +1,57 @@
+info:
+  name: Terminate a contact's flows
+  type: graphql
+  seq: 21
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation terminateContactFlows($contactId: ID!) {
+        terminateContactFlows(contactId: $contactId) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "contactId": "26"
+      }
+  auth: inherit
+
+docs: |
+  Ends every flow the contact is running, except background flows, and records a "flows
+  ended" event in the contact's history. The runs are marked completed and killed, so the
+  contact's next message is matched against keywords afresh.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type  | Required | Description                     |
+  | ----------- | ----- | -------- | ------------------------------- |
+  | `contactId` | `ID!` | Yes      | The contact whose flows to end. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "terminateContactFlows": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A contact with no running flows is not an error. A contact ID that doesn't exist in the
+  organization gives a top-level error, `Something unexpected has happened, please reach out
+  to Glific team over discord to get this resolved`. A user without the staff role gets a
+  top-level `Unauthorized` error.

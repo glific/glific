@@ -1,0 +1,32 @@
+info:
+  name: Check if attachments are enabled
+  type: http
+  seq: 25
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/attachments-enabled"
+  auth: inherit
+
+docs: |
+  Tells the editor whether it can offer file uploads for attachments, which needs the
+  organization's Google Cloud Storage integration to be set up. See **Upload a flow
+  attachment**.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  { "is_enabled": true }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

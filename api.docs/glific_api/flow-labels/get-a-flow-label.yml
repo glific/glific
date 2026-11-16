@@ -1,0 +1,67 @@
+info:
+  name: Get a flow label
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query flowLabel($id: ID!) {
+        flowLabel(id: $id) {
+          flowLabel {
+            id
+            uuid
+            name
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "7"
+      }
+  auth: inherit
+
+docs: |
+  Returns one flow label by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description               |
+  | -------- | ----- | -------- | ------------------------- |
+  | `id`     | `ID!` | Yes      | The flow label to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "flowLabel": {
+        "flowLabel": {
+          "id": "7",
+          "uuid": "c7d0f4b2-3a1e-4f7a-9a43-61f4e5c2b8d1",
+          "name": "Needs follow-up",
+          "insertedAt": "2026-11-03T10:15:00Z",
+          "updatedAt": "2026-11-03T10:15:00Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow label does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Flows.FlowLabel", "message": "Resource not found" }]` and
+    `flowLabel` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.
