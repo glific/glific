@@ -3,7 +3,7 @@
   "private": true,
   "description": "Checks the Glific Bruno collection against the GraphQL schema",
   "scripts": {
-    "schema": "cd ../../.. && mix absinthe.schema.json --schema GlificWeb.Schema api.docs/bruno/tools/schema.json",
+    "schema": "cd ../.. && mix absinthe.schema.json --schema GlificWeb.Schema api.docs/tools/schema.json",
     "validate": "node validate.js ../glific_api --coverage"
   },
   "dependencies": {

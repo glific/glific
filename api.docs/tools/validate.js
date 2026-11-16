@@ -1,7 +1,7 @@
 // Checks the Bruno collection: Bruno can parse every file, each GraphQL request and its
-// variables are valid against the schema, and requests follow api.docs/bruno/README.md.
+// variables are valid against the schema, and requests follow api.docs/README.md.
 //
-// Usage, from api.docs/bruno/tools:
+// Usage, from api.docs/tools:
 //   npm install
 //   npm run schema            # dumps the GraphQL schema to schema.json (needs mix)
 //   npm run validate          # whole collection, plus the root fields no request covers

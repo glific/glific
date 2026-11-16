@@ -8,7 +8,7 @@ later**.
 ## Using it
 
 1. Install Bruno from [usebruno.com/downloads](https://www.usebruno.com/downloads).
-2. In Bruno, choose **Open Collection** and pick `api.docs/bruno/glific_api`.
+2. In Bruno, choose **Open Collection** and pick `api.docs/glific_api`.
 3. Pick the `local` or `staging` environment and set `phone` and `password`. The `local`
    environment is prefilled with the seeded admin user.
 4. Run **Authentication › Login**. It stores the tokens in `auth_token` and `renewal_token`,
@@ -20,7 +20,7 @@ roles, errors, pagination and scalars.
 From the command line, with [Bruno CLI](https://www.npmjs.com/package/@usebruno/cli):
 
 ```bash
-cd api.docs/bruno/glific_api && npx @usebruno/cli@4.3.0 run authentication/login.yml tags --env local --insecure
+cd api.docs/glific_api && npx @usebruno/cli@4.3.0 run authentication/login.yml tags --env local --insecure
 ```
 
 ## Layout
@@ -76,7 +76,7 @@ A new or changed GraphQL field or REST endpoint ships with its request here, in 
 request. Before committing, run the checker in `tools/`:
 
 ```bash
-cd api.docs/bruno/tools && npm install && npm run schema && npm run validate
+cd api.docs/tools && npm install && npm run schema && npm run validate
 ```
 
 It confirms Bruno can parse every file, validates each GraphQL request and its variables

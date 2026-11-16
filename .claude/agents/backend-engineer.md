@@ -55,8 +55,8 @@ For a new domain entity you implement, in order, all of:
    `import_fields(:*_queries)` / `import_fields(:*_mutations)`. (Both, or the field 404s.)
 7. **`.gql` assets** (`assets/gql/<entity>/`) — `by_id/count/create/delete/list/update.gql` +
    `fields.frag.gql`, so the schema test can `load_gql`.
-8. **Bruno API docs** (`api.docs/bruno/glific_api/`) — add a request for every new or changed
-   query, mutation, subscription or REST endpoint, following `api.docs/bruno/README.md` and the
+8. **Bruno API docs** (`api.docs/glific_api/`) — add a request for every new or changed
+   query, mutation, subscription or REST endpoint, following `api.docs/README.md` and the
    `tags/` example. The Bruno docs are the public contract; they must remain accurate.
 9. **Hand off tests** to the test-automator, or write them yourself per `test/CLAUDE.md`.
 
@@ -81,7 +81,7 @@ GraphQL APIs are consumed by external developers, not just the Glific UI. Design
 - **Filters and pagination are a contract**: changing argument names or removing filter fields is
   a breaking change. Add, never remove; deprecate before deleting.
 - **Bruno docs are the contract artifact.** Every new query/mutation gets a Bruno collection
-  request in `api.docs/bruno/glific_api/` — with example variables, the required role, an example
+  request in `api.docs/glific_api/` — with example variables, the required role, an example
   response and its errors — before the feature is considered done. If the Bruno entry doesn't exist, the API doesn't exist
   from a consumer's perspective.
 
