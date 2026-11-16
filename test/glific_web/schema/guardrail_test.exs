@@ -2,7 +2,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{Fixtures, Partners}
+  alias Glific.{Caches, Fixtures, Partners}
 
   @schema %{
     "$defs" => %{"Stage" => %{"enum" => ["input", "output"]}},
@@ -23,6 +23,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
       is_active: true
     })
 
+    Caches.remove(organization_id, [:kaapi_guardrail_validators])
     :ok
   end
 
@@ -37,8 +38,9 @@ defmodule GlificWeb.Schema.GuardrailTest do
       "https://projecttech4devai.github.io/kaapi-docs/guardrails/scope-control"
   }
 
+  # The cache fallback runs in Cachex's courier process, so a process-local mock is invisible to it.
   defp mock_kaapi_response(status, body) do
-    Tesla.Mock.mock(fn %{method: :get} ->
+    Tesla.Mock.mock_global(fn %{method: :get} ->
       %Tesla.Env{
         status: status,
         headers: [{"content-type", "application/json"}],
@@ -49,7 +51,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
 
   test "guardrailValidators returns only the supported validator types with their schema and doc link",
        %{manager: user} do
-    Tesla.Mock.mock(fn %{method: :get, url: url, headers: headers} ->
+    Tesla.Mock.mock_global(fn %{method: :get, url: url, headers: headers} ->
       assert String.ends_with?(url, "/api/v1/guardrails")
       assert {"X-API-KEY", "sk_test_key"} in headers
 
@@ -82,6 +84,64 @@ defmodule GlificWeb.Schema.GuardrailTest do
     end
   end
 
+  test "guardrailValidators caches a successful Kaapi response for the organization",
+       %{manager: user} do
+    mock_kaapi_response(200, %{
+      "validators" => [%{"type" => "pii_remover", "config" => @schema}]
+    })
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+
+    assert [%{"type" => "pii_remover"}] =
+             get_in(query_data, [:data, "guardrailValidators", "validators"])
+
+    Tesla.Mock.mock_global(fn %{method: :get} ->
+      flunk("expected the cached validators to be used")
+    end)
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+
+    assert [%{"type" => "pii_remover"}] =
+             get_in(query_data, [:data, "guardrailValidators", "validators"])
+
+    Caches.remove(user.organization_id, [:kaapi_guardrail_validators])
+    mock_kaapi_response(200, %{"validators" => []})
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+    assert [] == get_in(query_data, [:data, "guardrailValidators", "validators"])
+  end
+
+  test "guardrailValidators does not cache a failed Kaapi response", %{manager: user} do
+    mock_kaapi_response(401, %{success: false, error: "Invalid API key"})
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+    assert [%{message: "Invalid API key"}] = query_data.errors
+
+    mock_kaapi_response(200, %{
+      "validators" => [%{"type" => "pii_remover", "config" => @schema}]
+    })
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+
+    assert [%{"type" => "pii_remover"}] =
+             get_in(query_data, [:data, "guardrailValidators", "validators"])
+  end
+
+  test "guardrailValidators sends the request with a 10s receive timeout", %{manager: user} do
+    Tesla.Mock.mock_global(fn %{method: :get, opts: opts} ->
+      assert opts[:adapter][:recv_timeout] == 10_000
+
+      %Tesla.Env{
+        status: 200,
+        headers: [{"content-type", "application/json"}],
+        body: Jason.encode!(%{"validators" => []})
+      }
+    end)
+
+    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
+    assert [] == get_in(query_data, [:data, "guardrailValidators", "validators"])
+  end
+
   test "guardrailValidators returns the error of a failed Kaapi response", %{manager: user} do
     mock_kaapi_response(401, %{success: false, error: "Invalid API key"})
 
@@ -101,7 +161,7 @@ defmodule GlificWeb.Schema.GuardrailTest do
   end
 
   test "guardrailValidators returns a retry message when Kaapi times out", %{manager: user} do
-    Tesla.Mock.mock(fn %{method: :get} -> {:error, :timeout} end)
+    Tesla.Mock.mock_global(fn %{method: :get} -> {:error, :timeout} end)
 
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
 
