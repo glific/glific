@@ -1,0 +1,26 @@
+name: PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    uses: glific/.github/.github/workflows/claude-pr-review.yml@main
+    with:
+      repo_rules: |
+        Elixir/Phoenix backend with an Absinthe GraphQL API, Oban jobs and PostgreSQL.
+        Multi-tenant: every org-scoped query and Oban job must stay within one organization_id.
+        lib/glific_web/schema/**: flag removed or renamed GraphQL fields and arguments (frontend depends on them).
+        priv/repo/migrations/**: flag table-locking, irreversible, or unbatched data migrations.
+        lib/glific_web/controllers/** and router.ex: flag webhook/public endpoints missing auth or signature checks.
+    secrets: inherit

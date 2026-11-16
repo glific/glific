@@ -83,9 +83,16 @@ See `.claude/skills/improve-code-coverage/SKILL.md` and its [reference.md](../im
 
 Phase 1.3 and Phase 4.2 Codecov failures: run the full improve-code-coverage loop until the local script exits 0. Use `--include-worktree` if fixing coverage for uncommitted `lib/*.ex` changes.
 
-## CodeRabbit
+## PR review bot
 
-Config pointer: `.coderabbit.yaml` (remote config URL).
+Workflow: `.github/workflows/pr-review.yml` → shared `glific/.github/.github/workflows/claude-pr-review.yml`.
+Bot instructions and scope: `review/pr-bot.md` and `review/REVIEW_FLOW.md` in `glific/.github`.
+
+### Wait for the review run
+
+```bash
+gh run list --workflow "PR Review" --branch "$(git branch --show-current)" --limit 1
+```
 
 ### Unresolved review comments
 
@@ -114,9 +121,12 @@ gh api graphql -f query='
 ' -f owner=glific -f repo=glific -F pr="$PR"
 ```
 
-Filter `isResolved: false` and `author.login` matching CodeRabbit (often `coderabbitai` or similar).
+Filter `isResolved: false` and `author.login` matching the review bot (`claude`). While CodeRabbit is
+still installed during the transition, also include `coderabbitai`.
 
 ### Classify severity (heuristic)
+
+Bot comments start with `[critical]`, `[major]` or `[minor]`; use that tag. For untagged comments:
 
 | Treat as **major** (ask user) | Treat as **minor** (fix if valid) |
 |-------------------------------|-----------------------------------|

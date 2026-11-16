@@ -2,7 +2,7 @@
 name: make-branch-ready-for-review
 description: >-
   Prepare the current branch for PR review in Glific: run MIX_ENV=test mix check and tests,
-  meet Codecov thresholds, self-review, commit, push, then poll CI/Codecov/CodeRabbit
+  meet Codecov thresholds, self-review, commit, push, then poll CI/Codecov/PR review bot
   until green. Use when the user asks to make a branch review-ready, get changes
   ready for review, or invokes make-branch-ready-for-review.
 disable-model-invocation: true
@@ -36,7 +36,7 @@ Copy and update as you go:
 - [ ] Phase 1 — Local quality (MIX_ENV=test mix check, tests, coverage)
 - [ ] Phase 2 — Review agent + high-risk gate
 - [ ] Phase 3 — Commit and push
-- [ ] Phase 4 — CI loop (tests, codecov, coderabbit)
+- [ ] Phase 4 — CI loop (tests, codecov, PR review bot)
 - [ ] Phase 5 — Final push and done
 ```
 
@@ -178,9 +178,11 @@ Wait for the Codecov status on the PR (names often `codecov/project`, `codecov/p
 | Failure | Open PR Codecov report for context (see [reference.md](reference.md) § Codecov). Then **read and follow** `.claude/skills/improve-code-coverage/SKILL.md` until the local gate is green. **Commit locally; do not push.** |
 | Success | Continue |
 
-### 4.3 CodeRabbit
+### 4.3 PR review bot
 
-Fetch unresolved review threads (see [reference.md](reference.md) § CodeRabbit).
+The `PR Review` workflow (`.github/workflows/pr-review.yml`) runs the shared Claude review bot on
+every push. Its scope is defined in `glific/.github` → `review/REVIEW_FLOW.md`. Wait for the run to
+finish, then fetch unresolved bot threads (see [reference.md](reference.md) § PR review bot).
 
 | Comment severity | Action |
 |------------------|--------|
@@ -196,7 +198,7 @@ Continue the 1-minute loop until **all** are true:
 
 - Required CI jobs green (at minimum: `code-quality`, `tests`, `compile`, and coverage upload job if present)
 - Codecov project + patch green
-- No unresolved CodeRabbit threads you are responsible for (per CONTRIBUTING.md)
+- `PR Review` run finished and no unresolved review bot threads you are responsible for
 - No pending user decisions from this skill
 
 If the same failure repeats after **3** fix attempts, **stop and ask the user**.
@@ -215,7 +217,7 @@ Verify checks stay green once (single `gh pr checks` after push). Then report:
 
 - Branch name and commit SHA
 - PR URL
-- Summary of fixes made in the loop (tests, coverage, CodeRabbit)
+- Summary of fixes made in the loop (tests, coverage, PR review bot)
 - Anything left for human reviewers
 
 ---
@@ -224,7 +226,7 @@ Verify checks stay green once (single `gh pr checks` after push). Then report:
 
 - Unsafe or ambiguous `MIX_ENV=test mix check` / Dialyzer fixes
 - High-risk diff categories (Phase 2.2)
-- Major CodeRabbit or review-agent suggestions
+- Major PR review bot or review-agent suggestions
 - CI failures outside PR scope or requiring workflow changes
 - Coverage blocked per improve-code-coverage (5 loops or large unrelated test work)
 - Repeated loop failures (3+ attempts on same issue)

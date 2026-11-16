@@ -22,6 +22,10 @@ conventions and patterns:
 | Tests, fixtures, mocking, coverage | `test/CLAUDE.md` |
 | Database migrations | `priv/repo/migrations/CLAUDE.md` |
 
+Review flow (shared across glific, glific-frontend and glific-web-channel): local pre-push review via
+`make-branch-ready-for-review`, then the `PR Review` bot workflow, then human review. Who checks what is
+defined in `review/REVIEW_FLOW.md` in the `glific/.github` repo.
+
 Specialized agents in `.claude/agents/` (`backend-engineer`, `code-reviewer`,
 `test-automator`) encode the same conventions for automated implement/review/test workflows.
 
