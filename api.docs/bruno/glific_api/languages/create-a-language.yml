@@ -1,0 +1,85 @@
+info:
+  name: Create a language
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createLanguage($input: LanguageInput!) {
+        createLanguage(input: $input) {
+          language {
+            id
+            label
+            labelLocale
+            locale
+            isActive
+            localized
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "Sindhi",
+          "labelLocale": "سنڌي",
+          "locale": "sd",
+          "isActive": true,
+          "localized": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds a language to the global list. Every organization sees the new language.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description             |
+  | -------- | ---------------- | -------- | ----------------------- |
+  | `input`  | `LanguageInput!` | Yes      | The language to create. |
+
+  ### `LanguageInput`
+
+  | Field         | Type      | Required | Description                                             |
+  | ------------- | --------- | -------- | ------------------------------------------------------- |
+  | `label`       | `String!` | Yes      | Name in English, such as `Hindi`.                       |
+  | `labelLocale` | `String!` | Yes      | Name in the language itself, such as `हिंदी`.           |
+  | `locale`      | `String!` | Yes      | Locale code, such as `hi`.                              |
+  | `isActive`    | `Boolean` | No       | Whether the language can be used.                       |
+  | `localized`   | `Boolean` | No       | Whether templates can be localized in this language.    |
+  | `isReserved`  | `Boolean` | No       | Accepted but ignored: it is not stored.                 |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createLanguage": {
+        "language": {
+          "id": "21",
+          "label": "Sindhi",
+          "labelLocale": "سنڌي",
+          "locale": "sd",
+          "isActive": true,
+          "localized": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The same `label` and `locale` pair already exists: `errors` is
+    `[{ "key": "label", "message": "Label: has already been taken" }]`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

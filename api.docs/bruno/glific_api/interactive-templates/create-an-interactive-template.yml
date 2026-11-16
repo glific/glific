@@ -1,0 +1,103 @@
+info:
+  name: Create an interactive template
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createInteractiveTemplate($input: InteractiveTemplateInput!) {
+        createInteractiveTemplate(input: $input) {
+          interactiveTemplate {
+            id
+            label
+            type
+            interactiveContent
+            translations
+            sendWithTitle
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "Course feedback",
+          "type": "QUICK_REPLY",
+          "languageId": "1",
+          "sendWithTitle": true,
+          "interactiveContent": "{\"type\":\"quick_reply\",\"content\":{\"type\":\"text\",\"header\":\"Course feedback\",\"text\":\"Did you enjoy today's lesson?\"},\"options\":[{\"type\":\"text\",\"title\":\"Yes\"},{\"type\":\"text\",\"title\":\"No\"}]}",
+          "translations": "{\"1\":{\"type\":\"quick_reply\",\"content\":{\"type\":\"text\",\"header\":\"Course feedback\",\"text\":\"Did you enjoy today's lesson?\"},\"options\":[{\"type\":\"text\",\"title\":\"Yes\"},{\"type\":\"text\",\"title\":\"No\"}]}}"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates an interactive template. See the folder docs for the `interactiveContent` shape of
+  each type.
+
+  Before saving, Glific checks that option titles, descriptions and `globalButtons` titles (in
+  the content and in every translation) contain no markdown such as `*bold*`, `_italics_` or
+  links, and that the text of the content is at most 1024 characters in total.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                        | Required | Description             |
+  | -------- | --------------------------- | -------- | ----------------------- |
+  | `input`  | `InteractiveTemplateInput!` | Yes      | The template to create. |
+
+  ### `InteractiveTemplateInput`
+
+  | Field                | Type                         | Required | Description                                                |
+  | -------------------- | ---------------------------- | -------- | ---------------------------------------------------------- |
+  | `label`              | `String`                     | Yes      | Name, unique per organization for a type and a language.   |
+  | `type`               | `InteractiveMessageTypeEnum` | Yes      | `QUICK_REPLY`, `LIST` or `LOCATION_REQUEST_MESSAGE`.       |
+  | `interactiveContent` | `Json`                       | Yes      | The message, as a JSON-encoded string.                     |
+  | `languageId`         | `ID`                         | Yes      | Language of `interactiveContent`.                          |
+  | `translations`       | `Json`                       | No       | Map of language ID to the content in that language.        |
+  | `sendWithTitle`      | `Boolean`                    | No       | Send the list title or quick reply header. Defaults to `true`. |
+  | `tagId`              | `ID`                         | No       | Tag to attach.                                             |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createInteractiveTemplate": {
+        "interactiveTemplate": {
+          "id": "9",
+          "label": "Course feedback",
+          "type": "QUICK_REPLY",
+          "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"Yes\"},{\"type\":\"text\",\"title\":\"No\"}],\"content\":{\"type\":\"text\",\"text\":\"Did you enjoy today's lesson?\",\"header\":\"Course feedback\"}}",
+          "translations": "{\"1\":{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"Yes\"},{\"type\":\"text\",\"title\":\"No\"}],\"content\":{\"type\":\"text\",\"text\":\"Did you enjoy today's lesson?\",\"header\":\"Course feedback\"}}}",
+          "sendWithTitle": true,
+          "language": { "id": "1", "label": "English" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The label is already used: `errors` is
+    `[{ "key": "label", "message": "Label: has already been taken" }]`.
+  - A required field is missing, such as
+    `{ "key": "language_id", "message": "Language_id: can't be blank" }`.
+  - Markdown in a button or option: top-level error
+    `Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc).`
+  - Content too long: top-level error
+    `The total length of the body and options exceeds 1024 characters`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

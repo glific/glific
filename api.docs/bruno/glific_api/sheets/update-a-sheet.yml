@@ -1,0 +1,78 @@
+info:
+  name: Update a sheet
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateSheet($id: ID!, $input: SheetInput!) {
+        updateSheet(id: $id, input: $input) {
+          sheet {
+            id
+            label
+            url
+            type
+            isActive
+            autoSync
+            syncStatus
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2",
+        "input": {
+          "label": "School directory 2026",
+          "autoSync": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a sheet. Only the fields given in `input` change. Changing `url` re-checks access,
+  as in **Create a sheet**, and re-syncs the sheet.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description                                                                  |
+  | -------- | ------------- | -------- | ---------------------------------------------------------------------------- |
+  | `id`     | `ID!`         | Yes      | The sheet to change.                                                         |
+  | `input`  | `SheetInput!` | Yes      | Fields to change. See **Create a sheet**. When `url` is given, `type` must be given too. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateSheet": {
+        "sheet": {
+          "id": "2",
+          "label": "School directory 2026",
+          "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+          "type": "READ",
+          "isActive": true,
+          "autoSync": false,
+          "syncStatus": "SUCCESS"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The sheet does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Sheets.Sheet", "message": "Resource not found" }]`.
+  - `url` without `type`: a top-level `Invalid sheet URL` error.
+  - A new `url` fails validation or the access check: the same errors as **Create a sheet**.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,82 @@
+info:
+  name: Subscribe to message status updates
+  type: graphql
+  seq: 20
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription updateMessageStatus($organizationId: ID!) {
+        updateMessageStatus(organizationId: $organizationId) {
+          id
+          body
+          type
+          flow
+          status
+          bspStatus
+          messageNumber
+          insertedAt
+          contact {
+            id
+            name
+            phone
+          }
+          media {
+            id
+            url
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes an outbound message whenever its delivery state changes: when the BSP accepts it
+  (`bspStatus` `ENQUEUED`, with `bspMessageId` set), when the BSP rejects it (`bspStatus`
+  `ERROR`, with the BSP payload in `errors`), and when the BSP reports a status such as `SENT`,
+  `DELIVERED` or `READ`. Messages sent by a collection broadcast are not pushed. The inbox uses
+  it to show ticks and flag failed messages.
+
+  **Role:** any logged-in user of the organization. The subscription has no role check; it only
+  checks that `organizationId` is the user's own organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                  |
+  | ---------------- | ----- | -------- | -------------------------------------------- |
+  | `organizationId` | `ID!` | Yes      | The logged-in user's organization.           |
+
+  The pushed payload is a `Message`; select any of its fields.
+
+  ## Example response
+
+  Each event is pushed as:
+
+  ```json
+  {
+    "data": {
+      "updateMessageStatus": {
+        "id": "1060",
+        "body": "Thanks for writing in. A volunteer will call you today.",
+        "type": "TEXT",
+        "flow": "OUTBOUND",
+        "status": "sent",
+        "bspStatus": "DELIVERED",
+        "messageNumber": 15,
+        "insertedAt": "2026-11-16T09:30:12Z",
+        "contact": { "id": "8", "name": "Chrissy Cron", "phone": "919876543210" },
+        "media": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization is rejected with the error
+  `Auth Credentials mismatch`.

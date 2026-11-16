@@ -1,0 +1,46 @@
+info:
+  name: Count consulting hours
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countConsultingHours($filter: ConsultingHourFilter) {
+        countConsultingHours(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "organizationName": "Glific"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts consulting hour entries, across all organizations, that match a filter. This is
+  the number of entries, not the sum of their durations.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                                         |
+  | -------- | ---------------------- | -------- | ------------------------------------------------------------------- |
+  | `filter` | `ConsultingHourFilter` | No       | Same fields as in **List consulting hours**. Without it, counts all. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countConsultingHours": 7
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the `glific_admin` role gets a top-level `Unauthorized` error.

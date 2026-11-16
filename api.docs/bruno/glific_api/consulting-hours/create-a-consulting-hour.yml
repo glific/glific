@@ -1,0 +1,98 @@
+info:
+  name: Create a consulting hour
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createConsultingHour($input: ConsultingHourInput!) {
+        createConsultingHour(input: $input) {
+          consultingHour {
+            id
+            participants
+            organizationName
+            staff
+            content
+            when
+            duration
+            isBillable
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "clientId": "1",
+          "organizationName": "Glific Foundation",
+          "participants": "Asha, Ravi",
+          "staff": "Glific support team",
+          "content": "Walked through flow keywords and the WhatsApp opt-in flow",
+          "when": "2026-11-10T10:30:00Z",
+          "duration": 30,
+          "isBillable": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Records a consulting call with a client organization.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description          |
+  | -------- | ---------------------- | -------- | -------------------- |
+  | `input`  | `ConsultingHourInput!` | Yes      | The entry to create. |
+
+  ### `ConsultingHourInput`
+
+  | Field              | Type       | Required | Description                                           |
+  | ------------------ | ---------- | -------- | ----------------------------------------------------- |
+  | `clientId`         | `ID!`      | Yes      | The client organization the call was with.            |
+  | `participants`     | `String`   | Yes      | People from the client organization.                  |
+  | `staff`            | `String`   | Yes      | Glific team members who ran the call.                 |
+  | `content`          | `String`   | Yes      | What the call covered.                                |
+  | `when`             | `DateTime` | Yes      | When the call took place.                             |
+  | `duration`         | `Int`      | Yes      | Length of the call in minutes.                        |
+  | `organizationName` | `String`   | No       | Organization name, stored as given.                   |
+  | `isBillable`       | `Boolean`  | No       | Defaults to `true`.                                   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createConsultingHour": {
+        "consultingHour": {
+          "id": "13",
+          "participants": "Asha, Ravi",
+          "organizationName": "Glific Foundation",
+          "staff": "Glific support team",
+          "content": "Walked through flow keywords and the WhatsApp opt-in flow",
+          "when": "2026-11-10T10:30:00Z",
+          "duration": 30,
+          "isBillable": true
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `consultingHour` set to `null`:
+
+  - A required field is missing: `{ "key": "staff", "message": "Staff: can't be blank" }`.
+  - The same staff already has an entry at that time for that organization:
+    `{ "key": "when", "message": "When: Sorry, Consulting hours are already filled for this call" }`.
+
+  A user without the `glific_admin` role gets a top-level `Unauthorized` error.

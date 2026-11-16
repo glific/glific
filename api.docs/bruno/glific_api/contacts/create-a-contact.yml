@@ -1,0 +1,108 @@
+info:
+  name: Create a contact
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createContact($input: ContactInput!) {
+        createContact(input: $input) {
+          contact {
+            id
+            name
+            phone
+            identities {
+              channel
+              identifier
+            }
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Asha Patil",
+          "phone": "919876501234",
+          "languageId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a contact and its identity in one step: its phone on `WHATSAPP` (the default), or
+  a web username on `WEB`. This does not opt the contact in or send it anything; use **Opt in
+  a contact** for that.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description            |
+  | -------- | --------------- | -------- | ---------------------- |
+  | `input`  | `ContactInput!` | Yes      | The contact to create. |
+
+  ### `ContactInput`
+
+  | Field             | Type                        | Required          | Description                                                             |
+  | ----------------- | --------------------------- | ----------------- | ----------------------------------------------------------------------- |
+  | `channel`         | `MessageChannelEnum`        | No                | `WHATSAPP` (default) or `WEB`. `WEB` needs the web channel enabled.     |
+  | `phone`           | `String`                    | On `WHATSAPP`     | Country code and number, no `+`. Unique in the organization.            |
+  | `identifier`      | `String`                    | On `WEB`          | Web username: letters, digits, `_`, `@` and `.`, 1 to 255 characters, stored lowercase. Only allowed on `WEB`. |
+  | `name`            | `String`                    | No                | Display name.                                                           |
+  | `languageId`      | `ID`                        | No                | Defaults to the organization's default language.                        |
+  | `status`          | `ContactStatusEnum`         | No                | Stored as `VALID` if not given.                                                 |
+  | `bspStatus`       | `ContactProviderStatusEnum` | No                | Stored as `NONE` if not given.                                                  |
+  | `activeProfileId` | `ID`                        | No                | The contact's active profile.                                           |
+  | `fields`          | `Json`                      | No                | Custom fields as a JSON-encoded object keyed by shortcode; each value is an object such as `{"value": "...", "type": "string", "label": "..."}`. |
+  | `settings`        | `Json`                      | No                | JSON-encoded object of contact settings.                                |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createContact": {
+        "contact": {
+          "id": "131",
+          "name": "Asha Patil",
+          "phone": "919876501234",
+          "identities": [
+            { "channel": "WHATSAPP", "identifier": "919876501234" }
+          ],
+          "language": { "id": "1", "label": "English" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `contact` set to `null`:
+
+  - No phone on `WHATSAPP`: `{ "key": "phone", "message": "Phone: can't be blank" }`.
+  - The phone is already used: `{ "key": "phone", "message": "Phone: has already been taken" }`.
+  - `WEB` without an identifier:
+    `{ "key": "Identifier", "message": "Identifier is required for a web contact." }`.
+  - An identifier on `WHATSAPP`:
+    `{ "key": "Identifier", "message": "An identifier is only for a web contact." }`.
+  - The web username is taken:
+    `{ "key": "identifier", "message": "Identifier: has already been taken" }`.
+  - The web username has other characters: `{ "key": "identifier", "message":
+    "Identifier: can only contain letters, numbers, underscores, @ and dots" }`.
+  - `WEB` while the web channel is off:
+    `{ "key": "Contact", "message": "Web channel is not enabled for this organization." }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

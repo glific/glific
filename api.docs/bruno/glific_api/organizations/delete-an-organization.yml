@@ -1,0 +1,70 @@
+info:
+  name: Delete an organization
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteOrganization($id: ID!) {
+        deleteOrganization(id: $id) {
+          organization {
+            id
+            name
+            shortcode
+            status
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Queues a background job that deletes an organization and all its data, then returns the
+  organization as it was. The deletion itself happens later.
+
+  The job only deletes an organization whose status is `READY_TO_DELETE`. Set that first with
+  **Update an organization's status**. When the job finishes or refuses, it adds an `info` or
+  `critical` notification saying so.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                 |
+  | -------- | ----- | -------- | --------------------------- |
+  | `id`     | `ID!` | Yes      | The organization to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteOrganization": {
+        "organization": {
+          "id": "2",
+          "name": "Sample NGO",
+          "shortcode": "sample-ngo",
+          "status": "READY_TO_DELETE"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The organization does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Partners.Organization", "message": "Resource not found" }]`.
+  - A wrong status is not reported here. The job fails later and leaves a notification instead.
+  - A user without the glific_admin role gets a top-level `Unauthorized` error.

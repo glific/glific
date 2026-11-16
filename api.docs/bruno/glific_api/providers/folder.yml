@@ -1,0 +1,25 @@
+info:
+  name: Providers
+  type: folder
+  seq: 52
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A provider is an external service Glific can connect to. Some are BSPs (business solution
+    providers) that carry WhatsApp messages, such as Gupshup, and others are integrations such
+    as BigQuery, Google Cloud Storage or Dialogflow. Providers are global: every organization
+    sees the same list.
+
+    Each provider describes, in `keys` and `secrets`, the fields an organization fills in to
+    connect. The organization's own values are stored as a **Credential**. Some internal
+    providers are hidden from the list, and trial organizations also don't see Google Cloud
+    Storage.
+
+    Reading providers needs the admin role, and the BSP balance needs staff. Creating, changing
+    or deleting providers needs `glific_admin`.
+
+    See **Credentials** to connect an organization to a provider.
+  type: text/markdown

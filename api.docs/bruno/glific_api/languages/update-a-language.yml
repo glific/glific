@@ -1,0 +1,77 @@
+info:
+  name: Update a language
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateLanguage($id: ID!, $input: LanguageInput) {
+        updateLanguage(id: $id, input: $input) {
+          language {
+            id
+            label
+            labelLocale
+            locale
+            isActive
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "21",
+        "input": {
+          "label": "Sindhi",
+          "labelLocale": "سنڌي",
+          "locale": "sd",
+          "isActive": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a language in the global list. The change applies to every organization.
+  `LanguageInput` requires `label`, `labelLocale` and `locale`, so send all three even when
+  they don't change.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                               |
+  | -------- | --------------- | -------- | --------------------------------------------------------- |
+  | `id`     | `ID!`           | Yes      | The language to change.                                   |
+  | `input`  | `LanguageInput` | No       | Fields to change. See **Create a language** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateLanguage": {
+        "language": {
+          "id": "21",
+          "label": "Sindhi",
+          "labelLocale": "سنڌي",
+          "locale": "sd",
+          "isActive": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The language does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Settings.Language 21", "message": "Resource not found" }]`.
+  - The new `label` and `locale` pair already exists:
+    `{ "key": "label", "message": "Label: has already been taken" }`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

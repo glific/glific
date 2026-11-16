@@ -1,0 +1,58 @@
+info:
+  name: Delete a saved search
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteSavedSearch($id: ID!) {
+        deleteSavedSearch(id: $id) {
+          savedSearch {
+            id
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "9"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a saved search. Reserved saved searches can be deleted too; nothing prevents it.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                 |
+  | -------- | ----- | -------- | --------------------------- |
+  | `id`     | `ID!` | Yes      | The saved search to delete. |
+
+  ## Example response
+
+  On success the result does not echo the deleted search: both fields are `null`.
+
+  ```json
+  {
+    "data": {
+      "deleteSavedSearch": {
+        "savedSearch": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The saved search does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Searches.SavedSearch", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

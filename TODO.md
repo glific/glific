@@ -21,13 +21,6 @@
 
 - Backup channel to deliver messages SMS
 
-## How to update slate
-
-- Clone the [repository](https://github.com/glific/slate)
-- Symlink the index.html.md and includes directory from the slate source directory to the glific repositry
-- Run ./deploy.sh
-- Check and ensure the [site is updated](https://glific.github.io/slate/#introduction)
-
 ## How to update Glific Docs on gh pages
 
 - Run CI and ensure it works. This will generate the documentation

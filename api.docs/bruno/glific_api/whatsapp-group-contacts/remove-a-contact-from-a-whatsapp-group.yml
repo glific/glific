@@ -1,0 +1,86 @@
+info:
+  name: Remove a contact from a WhatsApp group
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation removeWaGroupContact($waGroupId: ID!, $contactId: ID!) {
+        removeWaGroupContact(waGroupId: $waGroupId, contactId: $contactId) {
+          waGroup {
+            id
+            label
+            contacts {
+              id
+              name
+              phone
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "waGroupId": "2",
+        "contactId": "32"
+      }
+  auth: inherit
+
+docs: |
+  Removes a contact from a WhatsApp group on WhatsApp, through Maytapi, and deletes the
+  member row in Glific. The request is sent from one of the organization's managed phones
+  that is an admin of the group, picked by Glific.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument    | Type  | Required | Description           |
+  | ----------- | ----- | -------- | --------------------- |
+  | `waGroupId` | `ID!` | Yes      | The WhatsApp group.   |
+  | `contactId` | `ID!` | Yes      | The member to remove. |
+
+  ## Example response
+
+  Returns the group, with its remaining members.
+
+  ```json
+  {
+    "data": {
+      "removeWaGroupContact": {
+        "waGroup": {
+          "id": "2",
+          "label": "Pune volunteers",
+          "contacts": [
+            { "id": "1", "name": "NGO Main Account", "phone": "919876543210" },
+            { "id": "31", "name": "Asha", "phone": "919900112233" }
+          ]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The group does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.WAGroup", "message": "Resource not found" }]`.
+  - These come back as a top-level error:
+    - None of the organization's phones is a group admin: `None of your WhatsApp numbers is an
+      admin of this group, so it can't be managed from Glific. Add one of your numbers as a
+      group admin on WhatsApp first.`
+    - The contact has no WhatsApp number: `Contact has no WhatsApp number.`
+    - The contact isn't in the group on WhatsApp: `That contact isn't a participant in this
+      WhatsApp group.`
+    - The admin phone isn't connected: `This WhatsApp number isn't connected right now. Check
+      its status or reconnect it, then try again.`
+    - Any other Maytapi failure: `WhatsApp couldn't complete this action right now. Please try
+      again in a moment.`
+    - A user without the admin role gets `Unauthorized`.

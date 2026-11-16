@@ -1,0 +1,88 @@
+info:
+  name: Create an extension
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createExtension($input: ExtensionInput!) {
+        createExtension(input: $input) {
+          extension {
+            id
+            name
+            module
+            isActive
+            isValid
+            organization {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "clientId": "2",
+          "name": "URL helpers",
+          "code": "defmodule Glific.Extensions.UrlHelpers do\n  def shorten(url), do: url\nend",
+          "isActive": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates an extension for an organization. With `isActive: true`, Glific compiles `code` on
+  the server and loads the module; `isValid` is `false` and `module` is `null` if it does
+  not compile to exactly one module.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description              |
+  | -------- | ----------------- | -------- | ------------------------ |
+  | `input`  | `ExtensionInput!` | Yes      | The extension to create. |
+
+  ### `ExtensionInput`
+
+  | Field      | Type      | Required | Description                                                         |
+  | ---------- | --------- | -------- | ------------------------------------------------------------------- |
+  | `clientId` | `ID!`     | Yes      | Organization the extension belongs to.                              |
+  | `code`     | `String!` | Yes      | Elixir source defining one module.                                  |
+  | `name`     | `String`  | Yes      | Display name. The schema allows `null`, but the record needs one.   |
+  | `isActive` | `Boolean` | Yes      | Whether to compile and load the code. Leaving it out fails the request with a top-level error. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createExtension": {
+        "extension": {
+          "id": "3",
+          "name": "URL helpers",
+          "module": "Elixir.Glific.Extensions.UrlHelpers",
+          "isActive": true,
+          "isValid": true,
+          "organization": { "id": "2", "name": "Slam Out Loud" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `name` is missing: `{ "key": "name", "message": "Name: can't be blank" }`.
+  - The organization already has an extension with that name and module:
+    `{ "key": "module", "message": "Module: has already been taken" }`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

@@ -1,0 +1,27 @@
+info:
+  name: Authentication
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    REST endpoints for staff users: logging in, renewing and ending a session, registering and
+    resetting a password with a WhatsApp OTP.
+
+    The organization is taken from the request host (its subdomain), never from the body. A
+    successful login, registration or password reset returns an `access_token`, which goes in
+    the `authorization` header of every other request with no `Bearer` prefix, and a
+    `renewal_token` for **Renew a session**. Access tokens last 30 minutes.
+
+    **Login** and **Renew a session** store both tokens in the `auth_token` and `renewal_token`
+    environment variables, so the rest of the collection works right after them.
+
+    These endpoints need no role. Unauthenticated calls are rate limited per IP address; over
+    the limit the response is `429` with the plain-text body `Rate limit exceeded`.
+
+    Staff users are managed through **Users**. The beneficiary-facing web chat has its own,
+    separate sign-in: see **Web Channel**.
+  type: text/markdown

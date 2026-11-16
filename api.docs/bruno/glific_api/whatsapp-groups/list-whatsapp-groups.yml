@@ -1,0 +1,94 @@
+info:
+  name: List WhatsApp groups
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waGroups($filter: WaGroupFilter, $opts: Opts) {
+        waGroups(filter: $filter, opts: $opts) {
+          id
+          label
+          bspId
+          lastCommunicationAt
+          primaryPhone {
+            id
+            phone
+            label
+            status
+          }
+          groups {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "term": "volunteers",
+          "includeGroups": ["3"]
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's WhatsApp groups, optionally filtered and paginated. Sorted by
+  `label` unless `opts.orderWith` says otherwise.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                    |
+  | -------- | --------------- | -------- | ---------------------------------------------- |
+  | `filter` | `WaGroupFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`          | No       | Sorting and pagination.                        |
+
+  ### `WaGroupFilter`
+
+  | Field           | Type     | Description                                                  |
+  | --------------- | -------- | ------------------------------------------------------------ |
+  | `term`          | `String` | Label contains this text (case-insensitive).                 |
+  | `label`         | `String` | Label contains this text (case-insensitive).                 |
+  | `includeGroups` | `[ID]`   | Only groups in at least one of these collections.            |
+  | `excludeGroups` | `[ID]`   | Only groups in none of these collections.                    |
+
+  `primaryPhone` is the managed phone with the active primary membership, or `null` when the
+  group has none. `groups` are the collections the group belongs to.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waGroups": [
+        {
+          "id": "2",
+          "label": "Pune volunteers",
+          "bspId": "120363027326493365@g.us",
+          "lastCommunicationAt": "2026-11-14T08:12:40Z",
+          "primaryPhone": {
+            "id": "1",
+            "phone": "919876543210",
+            "label": "Field team phone",
+            "status": "active"
+          },
+          "groups": [{ "id": "3", "label": "Default WA Group Collection" }]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,35 @@
+info:
+  name: List labels
+  type: http
+  seq: 11
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/labels"
+  auth: inherit
+
+docs: |
+  Lists the organization's flow labels for the editor's "add labels" action. The same labels
+  are readable over GraphQL in **Flow Labels**.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  {
+    "results": [
+      { "uuid": "c7d0f4b2-3a1e-4f7a-9a43-61f4e5c2b8d1", "name": "Needs follow-up" }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

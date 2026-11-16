@@ -1,0 +1,94 @@
+info:
+  name: List organizations
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query organizations($filter: OrganizationFilter, $opts: Opts) {
+        organizations(filter: $filter, opts: $opts) {
+          id
+          name
+          shortcode
+          email
+          isActive
+          isApproved
+          status
+          timezone
+          isTrialOrg
+          defaultLanguage {
+            id
+            label
+          }
+          bsp {
+            id
+            shortcode
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "defaultLanguage": "English"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists every organization on the server, across tenants, optionally filtered and paginated.
+  Sorted by `name` by default.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                    |
+  | -------- | -------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `OrganizationFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`               | No       | Sorting and pagination.                        |
+
+  ### `OrganizationFilter`
+
+  | Field             | Type     | Description                                          |
+  | ----------------- | -------- | ---------------------------------------------------- |
+  | `name`            | `String` | Name contains this text (case-insensitive).          |
+  | `shortcode`       | `String` | Shortcode contains this text.                        |
+  | `email`           | `String` | Email contains this text (case-insensitive).         |
+  | `defaultLanguage` | `String` | Default language's label contains this text.         |
+  | `provider`        | `String` | Accepted by the schema, but the query ignores it.    |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "organizations": [
+        {
+          "id": "1",
+          "name": "Glific",
+          "shortcode": "glific",
+          "email": "admin@example.org",
+          "isActive": true,
+          "isApproved": true,
+          "status": "ACTIVE",
+          "timezone": "Asia/Kolkata",
+          "isTrialOrg": false,
+          "defaultLanguage": { "id": "1", "label": "English" },
+          "bsp": { "id": "1", "shortcode": "gupshup" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the glific_admin role gets a top-level `Unauthorized` error.

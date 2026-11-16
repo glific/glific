@@ -1,0 +1,71 @@
+info:
+  name: Get an organization's extension
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query getOrganizationExtension($clientId: ID!) {
+        getOrganizationExtension(clientId: $clientId) {
+          extension {
+            id
+            name
+            code
+            module
+            isActive
+            isValid
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "clientId": "2"
+      }
+  auth: inherit
+
+docs: |
+  Returns the extension that belongs to an organization.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument   | Type  | Required | Description                          |
+  | ---------- | ----- | -------- | ------------------------------------ |
+  | `clientId` | `ID!` | Yes      | The organization whose extension to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "getOrganizationExtension": {
+        "extension": {
+          "id": "3",
+          "name": "URL helpers",
+          "code": "defmodule Glific.Extensions.UrlHelpers do\n  def shorten(url), do: url\nend",
+          "module": "Elixir.Glific.Extensions.UrlHelpers",
+          "isActive": true,
+          "isValid": true
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The organization has no extension: `errors` is
+    `[{ "key": "Elixir.Glific.Extensions.Extension", "message": "Resource not found" }]` and
+    `extension` is `null`.
+  - The organization has more than one extension: a top-level error, since the lookup expects
+    exactly one.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

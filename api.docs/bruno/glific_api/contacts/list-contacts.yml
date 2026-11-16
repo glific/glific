@@ -1,0 +1,118 @@
+info:
+  name: List contacts
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contacts($filter: ContactFilter, $opts: Opts) {
+        contacts(filter: $filter, opts: $opts) {
+          id
+          name
+          phone
+          maskedPhone
+          status
+          bspStatus
+          optinTime
+          optinMethod
+          optoutTime
+          lastMessageAt
+          isWebOnline
+          identities {
+            channel
+            identifier
+          }
+          language {
+            id
+            label
+          }
+          groups {
+            id
+            label
+          }
+          tags {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "term": "ravi",
+          "includeGroups": ["2"]
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's contacts, optionally filtered and paginated. Blocked contacts are
+  left out unless the filter sets `status`.
+
+  **Role:** staff. A staff user gets `phone` as `""` and `identities` as `[]`; a restricted
+  staff user only sees contacts in their own collections.
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                    |
+  | -------- | --------------- | -------- | ---------------------------------------------- |
+  | `filter` | `ContactFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`          | No       | Sorting and pagination. Sorts on `name` by default. `limit` defaults to 25 and is capped at 50. |
+
+  ### `ContactFilter`
+
+  | Field             | Type                        | Description                                                                 |
+  | ----------------- | --------------------------- | --------------------------------------------------------------------------- |
+  | `term`            | `String`                    | Name contains the term, or the phone is the term (or its digits). For users above staff, also a web username starting with the term. |
+  | `name`            | `String`                    | Name contains this text (case-insensitive).                                 |
+  | `phone`           | `String`                    | Phone contains this text.                                                   |
+  | `status`          | `ContactStatusEnum`         | Only contacts with this status. Set it to `BLOCKED` to list blocked contacts. |
+  | `bspStatus`       | `ContactProviderStatusEnum` | Only contacts with this BSP status.                                         |
+  | `includeTags`     | `[ID]`                      | Contacts with any of these tags.                                            |
+  | `includeGroups`   | `[ID]`                      | Contacts in any of these collections.                                       |
+  | `excludeGroups`   | `[ID]`                      | Contacts in none of these collections.                                      |
+  | `includeWaGroups` | `[ID]`                      | Contacts in any of these WhatsApp groups.                                   |
+  | `excludeWaGroups` | `[ID]`                      | Contacts in none of these WhatsApp groups.                                  |
+  | `dateRange`       | `DateRangeInput`            | `from` and `to` on `column` (snake_case, defaults to `inserted_at`).        |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "contacts": [
+        {
+          "id": "12",
+          "name": "Ravi Kumar",
+          "phone": "919820112345",
+          "maskedPhone": "9198******45",
+          "status": "VALID",
+          "bspStatus": "SESSION_AND_HSM",
+          "optinTime": "2026-10-02T06:15:00Z",
+          "optinMethod": "BSP",
+          "optoutTime": null,
+          "lastMessageAt": "2026-11-15T11:02:43Z",
+          "isWebOnline": false,
+          "identities": [
+            { "channel": "WHATSAPP", "identifier": "919820112345" }
+          ],
+          "language": { "id": "1", "label": "English" },
+          "groups": [{ "id": "2", "label": "Optin contacts" }],
+          "tags": []
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,61 @@
+info:
+  name: Delete a user
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteUser($id: ID!) {
+        deleteUser(id: $id) {
+          user {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "5"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a user and ends all of their sessions. The linked contact is kept.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The user to delete. |
+
+  ## Example response
+
+  On success both fields are `null`: the deleted user is not returned.
+
+  ```json
+  {
+    "data": {
+      "deleteUser": {
+        "user": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The user does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Users.User", "message": "Resource not found" }]`.
+  - The target user has a higher role than the caller: top-level error
+    `Does not have access to the user`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

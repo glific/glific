@@ -1,0 +1,93 @@
+info:
+  name: Export organization data
+  type: graphql
+  seq: 13
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query organizationExportData($filter: ExportFilter) {
+        organizationExportData(filter: $filter) {
+          data
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "startTime": "2026-11-01T00:00:00Z",
+          "endTime": "2026-11-16T00:00:00Z",
+          "limit": 100,
+          "offset": 0,
+          "tables": ["contacts", "messages"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Exports the raw rows of the logged-in user's organization that changed in a time window, one
+  page per table. Use **Export organization stats** first to plan the pages.
+
+  The export reads the tables with raw SQL, so it bypasses user-level permissions (such as
+  staff restricted to some groups) and returns every contact and message in the organization.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                         |
+  | -------- | -------------- | -------- | --------------------------------------------------- |
+  | `filter` | `ExportFilter` | Yes      | Must include `startTime`, although the schema marks it optional. |
+
+  ### `ExportFilter`
+
+  | Field       | Type       | Default    | Description                                                  |
+  | ----------- | ---------- | ---------- | ------------------------------------------------------------ |
+  | `startTime` | `DateTime` | none       | Rows with `updated_at` at or after this time. Required here. |
+  | `endTime`   | `DateTime` | now        | Rows with `updated_at` before this time.                     |
+  | `limit`     | `Int`      | `500`      | Rows per table. Values above 500 are capped at 500.          |
+  | `offset`    | `Int`      | `0`        | Rows to skip in each table.                                  |
+  | `tables`    | `[String]` | all tables | Any of `contacts`, `messages`, `messages_media`, `locations`, `flows`, `flow_results`, `groups`, `interactive_templates`, `organizations`, `organization_data`, `profiles`. Unknown names are dropped. |
+
+  ## Example response
+
+  `data` is JSON. `stats` holds `[count, min updated_at, max updated_at]` for the page of each
+  table, and `data` holds its rows.
+
+  ```json
+  {
+    "data": {
+      "organizationExportData": {
+        "data": {
+          "stats": {
+            "contacts": [1, "2026-11-02T09:41:12", "2026-11-02T09:41:12"],
+            "messages": [0, null, null]
+          },
+          "data": {
+            "contacts": [
+              {
+                "id": 26,
+                "name": "Adelle Cavin",
+                "phone": "919876543210",
+                "organization_id": 1,
+                "updated_at": "2026-11-02T09:41:12"
+              }
+            ],
+            "messages": []
+          }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Leaving out `filter` or `filter.startTime` returns a top-level error.
+  - A user without the admin role gets a top-level `Unauthorized` error.

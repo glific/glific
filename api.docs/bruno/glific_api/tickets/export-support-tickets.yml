@@ -1,0 +1,59 @@
+info:
+  name: Export support tickets
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query fetchSupportTickets($filter: FetchSupportTickets) {
+        fetchSupportTickets(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-15"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Returns the organization's tickets created between two dates (inclusive, in UTC) as a CSV
+  string, for download.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description      |
+  | -------- | --------------------- | -------- | ---------------- |
+  | `filter` | `FetchSupportTickets` | Yes      | The date range.  |
+
+  ### `FetchSupportTickets`
+
+  | Field       | Type   | Required | Description             |
+  | ----------- | ------ | -------- | ----------------------- |
+  | `startDate` | `Date` | Yes      | First day to include.   |
+  | `endDate`   | `Date` | Yes      | Last day to include.    |
+
+  ## Example response
+
+  The CSV has the columns `status`, `body`, `inserted_at` (date only), `topic`, `opened_by`
+  (contact name), `assigned_to` (user name) and `flow_name`, and each row ends with a comma.
+  Empty values show as `nil`.
+
+  ```json
+  {
+    "data": {
+      "fetchSupportTickets": "status,body,inserted_at,topic,opened_by,assigned_to,flow_name\nopen,My certificate has not arrived,2026-11-12,Certificates,Adelle Cavin,NGO Main Account,Help desk,\n"
+    }
+  }
+  ```
+
+  ## Errors
+
+  Leaving out `filter` or either date fails with a top-level error. A user without the staff
+  role gets a top-level `Unauthorized` error.

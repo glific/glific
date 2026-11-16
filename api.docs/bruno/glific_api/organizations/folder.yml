@@ -1,0 +1,25 @@
+info:
+  name: Organizations
+  type: folder
+  seq: 50
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    An organization is a tenant in Glific: one NGO with its own WhatsApp number, contacts, flows
+    and users. Every request runs in the organization of the logged-in user.
+
+    Most users only see their own organization. **Get the current organization** and
+    **Update the current organization** ignore the `id` they are given. Admins can also read the
+    settings lists (timezones and statuses), the exports and the Gupshup daily usage.
+
+    Operations across organizations need the `glific_admin` role and are meant for the Glific
+    SaaS team. These include listing, counting, creating and deleting organizations, changing
+    their status and resetting their data.
+
+    Self-service onboarding and trial accounts are REST endpoints in **SaaS**. BSP and service
+    providers are in **Providers**, an organization's keys for them are in **Credentials**, and
+    Stripe billing is in **Billing**.
+  type: text/markdown

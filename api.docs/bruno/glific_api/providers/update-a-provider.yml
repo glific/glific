@@ -1,0 +1,70 @@
+info:
+  name: Update a provider
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateProvider($id: ID!, $input: ProviderInput) {
+        updateProvider(id: $id, input: $input) {
+          provider {
+            id
+            name
+            description
+            isRequired
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "25",
+        "input": {
+          "description": "Connects an organization to Sample Service v2",
+          "isRequired": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a provider for every organization. Only the fields given in `input` change.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                          |
+  | -------- | --------------- | -------- | ---------------------------------------------------- |
+  | `id`     | `ID!`           | Yes      | The provider to change.                              |
+  | `input`  | `ProviderInput` | No       | Fields to change. See **Create a provider** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateProvider": {
+        "provider": {
+          "id": "25",
+          "name": "Sample Service",
+          "description": "Connects an organization to Sample Service v2",
+          "isRequired": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The provider does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Partners.Provider", "message": "Resource not found" }]`.
+  - The new name is taken: `{ "key": "name", "message": "Name: has already been taken" }`.
+  - A user without the glific_admin role gets a top-level `Unauthorized` error.

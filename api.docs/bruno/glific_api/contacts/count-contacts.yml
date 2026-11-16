@@ -1,0 +1,47 @@
+info:
+  name: Count contacts
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countContacts($filter: ContactFilter) {
+        countContacts(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "status": "VALID",
+          "includeTags": ["5"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's contacts that match a filter. Use it with **List contacts** to
+  build pagination. Blocked contacts are not counted unless the filter sets `status`.
+
+  **Role:** staff. A restricted staff user only counts contacts in their own collections.
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                                       |
+  | -------- | --------------- | -------- | ----------------------------------------------------------------- |
+  | `filter` | `ContactFilter` | No       | Same fields as in **List contacts**. Without it, counts all contacts that aren't blocked. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countContacts": 248
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

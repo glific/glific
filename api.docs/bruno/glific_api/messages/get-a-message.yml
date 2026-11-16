@@ -1,0 +1,139 @@
+info:
+  name: Get a message
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query message($id: ID!) {
+        message(id: $id) {
+          message {
+            id
+            uuid
+            body
+            type
+            flow
+            channel
+            status
+            bspStatus
+            bspMessageId
+            errors
+            isHsm
+            templateId
+            params
+            messageNumber
+            flowLabel
+            sendBy
+            sendAt
+            insertedAt
+            updatedAt
+            contextId
+            interactiveContent
+            contact {
+              id
+              name
+              phone
+            }
+            user {
+              id
+              name
+            }
+            media {
+              id
+              url
+              caption
+            }
+            location {
+              latitude
+              longitude
+            }
+            contextMessage {
+              id
+              body
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "1043"
+      }
+  auth: inherit
+
+docs: |
+  Returns one message by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description            |
+  | -------- | ----- | -------- | ---------------------- |
+  | `id`     | `ID!` | Yes      | The message to return. |
+
+  Notable fields of `Message`:
+
+  | Field                | Description                                                                 |
+  | -------------------- | --------------------------------------------------------------------------- |
+  | `status`             | Glific's own processing status, in lowercase: `enqueued`, `sent`, `received`, `error`, ... |
+  | `bspStatus`          | Delivery status reported by the BSP.                                        |
+  | `bspMessageId`       | The BSP's ID for the message, used to match delivery callbacks.             |
+  | `errors`             | `Json` with the BSP's error payload when a send failed.                     |
+  | `sendBy`             | For outbound messages: `Flow: <flow name>` or the name of the staff user.   |
+  | `contact`            | The contact on the other side of the conversation, inbound or outbound.     |
+  | `contextMessage`     | The message this one replies to, if the contact replied to a message.       |
+  | `interactiveContent` | `Json` content of a list, quick-reply or location-request message.          |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "message": {
+        "message": {
+          "id": "1043",
+          "uuid": "4d0e7d0a-0d6c-4f7f-8b6c-3f3d6f0a8f21",
+          "body": "Your next session is on Friday at 5 PM.",
+          "type": "TEXT",
+          "flow": "OUTBOUND",
+          "channel": "WHATSAPP",
+          "status": "sent",
+          "bspStatus": "READ",
+          "bspMessageId": "6f1c2a7e-91b4-4b55-a1e2-0c6c5f4a7d10",
+          "errors": "{}",
+          "isHsm": false,
+          "templateId": null,
+          "params": null,
+          "messageNumber": 15,
+          "flowLabel": null,
+          "sendBy": "Glific Admin",
+          "sendAt": null,
+          "insertedAt": "2026-11-15T10:13:02Z",
+          "updatedAt": "2026-11-15T10:14:40Z",
+          "contextId": null,
+          "interactiveContent": "{}",
+          "contact": { "id": "8", "name": "Chrissy Cron", "phone": "919876543210" },
+          "user": { "id": "1", "name": "Glific Admin" },
+          "media": null,
+          "location": null,
+          "contextMessage": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The message does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Messages.Message", "message": "Resource not found" }]` and
+    `message` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

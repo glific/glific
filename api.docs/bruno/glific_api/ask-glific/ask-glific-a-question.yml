@@ -1,0 +1,74 @@
+info:
+  name: Ask Glific a question
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation askGlific($input: AskGlificInput!) {
+        askGlific(input: $input) {
+          answer
+          conversationId
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "query": "How do I send a template message to a group?",
+          "conversationId": "5f0d9c1e-8b7a-4c6d-9e2f-3a1b0c9d8e7f",
+          "pageUrl": "https://myorg.glific.com/group/chat",
+          "requestId": "tab-3-1763280409"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Asks the Ask Glific bot a question. The call returns at once with an empty answer; the bot
+  works in the background and the answer is pushed over **Subscribe to Ask Glific answers**
+  to the user who asked.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description       |
+  | -------- | ----------------- | -------- | ----------------- |
+  | `input`  | `AskGlificInput!` | Yes      | The question.     |
+
+  ### `AskGlificInput`
+
+  | Field            | Type      | Required | Description                                                             |
+  | ---------------- | --------- | -------- | ----------------------------------------------------------------------- |
+  | `query`          | `String!` | Yes      | The question.                                                           |
+  | `conversationId` | `String`  | No       | Continue this conversation. Without it, a new conversation is started.  |
+  | `pageUrl`        | `String`  | No       | The page the user is on, passed to Dify as context. Not used by Glific AI. |
+  | `requestId`      | `String`  | No       | Any string; echoed back on the subscription so the caller can match the answer. |
+
+  ## Example response
+
+  The mutation's own result is always empty.
+
+  ```json
+  {
+    "data": {
+      "askGlific": {
+        "answer": null,
+        "conversationId": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Failures while answering (an empty `query`, an unknown `conversationId`, the backend
+  failing) arrive on the subscription, not here. A user without the staff role gets a
+  top-level `Unauthorized` error.

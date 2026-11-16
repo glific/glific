@@ -1,0 +1,76 @@
+info:
+  name: Update a billing record
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateBilling($id: ID!, $input: BillingInput) {
+        updateBilling(id: $id, input: $input) {
+          billing {
+            id
+            name
+            email
+            deductTds
+            tdsAmount
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "1",
+        "input": {
+          "email": "finance@example.org",
+          "deductTds": true,
+          "tdsAmount": 10
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a billing record. The new `name` and `email` are first sent to the Stripe
+  customer, then the record is saved. Only the fields given in `input` change.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                                                                    |
+  | -------- | -------------- | -------- | ---------------------------------------------------------------------------------------------- |
+  | `id`     | `ID!`          | Yes      | The billing record to change. A `glific_admin` can change any organization's record.          |
+  | `input`  | `BillingInput` | No       | Fields to change. See **Create a billing record**. `organizationId` is ignored: a record never moves to another organization. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateBilling": {
+        "billing": {
+          "id": "1",
+          "name": "Glific Foundation",
+          "email": "finance@example.org",
+          "deductTds": true,
+          "tdsAmount": 10.0
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The record does not exist (in the caller's organization, for roles below
+    `glific_admin`): `errors` is
+    `[{ "key": "Elixir.Glific.Partners.Billing", "message": "Resource not found" }]`.
+  - Stripe rejects the customer update: a top-level error.
+  - A required field is cleared: `{ "key": "email", "message": "Email: can't be blank" }`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

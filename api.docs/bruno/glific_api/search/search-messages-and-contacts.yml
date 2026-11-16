@@ -1,0 +1,115 @@
+info:
+  name: Search messages and contacts
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query searchMulti($filter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {
+        searchMulti(filter: $filter, contactOpts: $contactOpts, messageOpts: $messageOpts) {
+          contacts {
+            id
+            name
+            phone
+            lastMessageAt
+          }
+          messages {
+            id
+            body
+            insertedAt
+            contact {
+              id
+              name
+            }
+          }
+          labels {
+            id
+            body
+            flowLabel
+            contact {
+              id
+              name
+            }
+          }
+          tags {
+            id
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "term": "session"
+        },
+        "contactOpts": {
+          "limit": 10,
+          "offset": 0
+        },
+        "messageOpts": {
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Searches for a term in three places at once, like WhatsApp's search box, and returns
+  separate lists:
+
+  - `contacts`: contacts whose name contains the term or whose phone is the term, most
+    recently messaged first.
+  - `messages`: messages whose body contains the term.
+  - `labels`: messages whose flow label contains the term.
+  - `tags`: always empty.
+
+  Only `filter.term` is used; the other `SearchFilter` fields are ignored. Blocked contacts and
+  contacts the user may not see are left out, as in **Search conversations**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument      | Type            | Required | Description                                                         |
+  | ------------- | --------------- | -------- | ------------------------------------------------------------------- |
+  | `filter`      | `SearchFilter!` | Yes      | Only `term` is used. See **Search conversations** for the type.     |
+  | `contactOpts` | `Opts!`         | Yes      | `limit` and `offset` for `contacts`. Give both.                     |
+  | `messageOpts` | `Opts!`         | Yes      | `limit` and `offset` for `messages` and `labels`; `limit` is capped at 250. Give both. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "searchMulti": {
+        "contacts": [
+          { "id": "31", "name": "Session volunteer", "phone": "919812345670", "lastMessageAt": "2026-11-14T16:20:05Z" }
+        ],
+        "messages": [
+          {
+            "id": "1042",
+            "body": "Hi, I want to know about the next session",
+            "insertedAt": "2026-11-15T10:12:44Z",
+            "contact": { "id": "8", "name": "Chrissy Cron" }
+          }
+        ],
+        "labels": [
+          {
+            "id": "998",
+            "body": "2",
+            "flowLabel": "session_feedback",
+            "contact": { "id": "14", "name": "Ravi" }
+          }
+        ],
+        "tags": []
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Omitting `limit` or `offset` from either opts returns a top-level error. A user without the
+  staff role gets a top-level `Unauthorized` error.

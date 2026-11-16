@@ -1,0 +1,70 @@
+info:
+  name: Register a user
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/registration"
+  body:
+    type: json
+    data: |-
+      {
+        "user": {
+          "name": "Test User",
+          "phone": "911234554321",
+          "password": "Secret1234!",
+          "otp": "321721"
+        }
+      }
+
+docs: |
+  Creates a staff user from a phone number verified with **Send an OTP**
+  (`registration: "true"`), and logs them in. The user is linked to the WhatsApp contact
+  with that phone and takes the contact's language.
+
+  The first user of an organization (ignoring the `NGO ...` and `SaaS ...` system users) is
+  made an admin; everyone after that gets no access (`No access`) until an admin changes
+  their role with **Update a user**.
+
+  ## Request body
+
+  | Field           | Type   | Required | Description                                                               |
+  | --------------- | ------ | -------- | ------------------------------------------------------------------------- |
+  | `user.name`     | String | Yes      | Display name.                                                             |
+  | `user.phone`    | String | Yes      | The phone the OTP was sent to.                                            |
+  | `user.password` | String | Yes      | 10 to 30 characters, with a lower-case and an upper-case letter, a number and a special character. |
+  | `user.otp`      | String | Yes      | The code from WhatsApp.                                                   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "access_token": "SFMyNTY.ZjQ2NmM3ZTEtM2E2Ni00YjQ1LWE1ZjMtOTc1NjNhNWE4OGQ1.dXzZ9w2Xr1",
+      "renewal_token": "SFMyNTY.YTU5NmM1MjQtNjM0Mi00ZjI4LTg5YjMtNjM2ODNlYzQ5MjVi.qL3kq0YpNw",
+      "token_expiry_time": "2026-11-16T10:00:00.000000Z"
+    }
+  }
+  ```
+
+  ## Errors
+
+  Every failure is a `500` with `message: "Couldn't create user"` and the reason in `errors`:
+
+  - The OTP is wrong, expired, unknown or blocked after too many attempts: `errors` is one of
+    `["incorrect_code"]`, `["code_expired"]`, `["does_not_exist"]`, `["attempt_blocked"]`.
+  - No contact has that phone: `["Contact not found"]`.
+  - Validation failed: a map of field to messages, such as
+    `{ "password": ["Password is too short!"] }` or
+    `{ "phone": ["has already been taken"] }`.
+
+  ```json
+  {
+    "error": {
+      "status": 500,
+      "message": "Couldn't create user",
+      "errors": ["incorrect_code"]
+    }
+  }
+  ```

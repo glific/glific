@@ -1,0 +1,82 @@
+info:
+  name: List notifications
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query notifications($filter: NotificationFilter, $opts: Opts) {
+        notifications(filter: $filter, opts: $opts) {
+          id
+          category
+          severity
+          message
+          entity
+          isRead
+          insertedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "category": "Message",
+          "isRead": false
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's notifications, optionally filtered and paginated.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                    |
+  | -------- | -------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `NotificationFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`               | No       | Sorting and pagination. `orderWith` defaults to `inserted_at`. Without `limit`, all matching notifications are returned. |
+
+  ### `NotificationFilter`
+
+  | Field      | Type      | Description                                                       |
+  | ---------- | --------- | ----------------------------------------------------------------- |
+  | `category` | `String`  | Category is exactly this, such as `Message`, `Flow` or `Templates`. |
+  | `severity` | `String`  | Severity contains this text: `Critical`, `Warning` or `Information`. |
+  | `message`  | `String`  | Message contains this text (case-insensitive).                    |
+  | `isRead`   | `Boolean` | Only read or only unread notifications.                           |
+
+  ## Example response
+
+  `entity` and `severity` are `Json` strings. For a `Message` notification, `entity` describes
+  the contact the message could not be sent to.
+
+  ```json
+  {
+    "data": {
+      "notifications": [
+        {
+          "id": "77",
+          "category": "Message",
+          "severity": "\"Warning\"",
+          "message": "Sorry! 24 hrs window closed. Your message cannot be sent at this time.",
+          "entity": "{\"status\":\"valid\",\"phone\":\"919876543210\",\"name\":\"Chrissy Cron\",\"last_message_at\":\"2026-11-14T08:01:12Z\",\"is_hsm\":false,\"id\":8,\"group_id\":null,\"flow_id\":null,\"bsp_status\":\"hsm\"}",
+          "isRead": false,
+          "insertedAt": "2026-11-16T09:12:30Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

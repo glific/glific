@@ -1,0 +1,45 @@
+info:
+  name: Count organizations
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countOrganizations($filter: OrganizationFilter) {
+        countOrganizations(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "Glific"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organizations on the server, across tenants, that match a filter.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                            |
+  | -------- | -------------------- | -------- | ---------------------------------------------------------------------- |
+  | `filter` | `OrganizationFilter` | No       | Same fields as in **List organizations**. Without it, counts them all. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countOrganizations": 1
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the glific_admin role gets a top-level `Unauthorized` error.

@@ -1,0 +1,77 @@
+info:
+  name: Update an extension
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateExtension($id: ID!, $input: ExtensionInput) {
+        updateExtension(id: $id, input: $input) {
+          extension {
+            id
+            name
+            module
+            isActive
+            isValid
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "input": {
+          "clientId": "2",
+          "name": "URL helpers",
+          "code": "defmodule Glific.Extensions.UrlHelpers do\n  def shorten(url), do: String.trim(url)\nend",
+          "isActive": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes an extension by ID. Glific unloads the previously loaded module and, with
+  `isActive: true`, compiles and loads the new `code`. With `isActive: false` the module is
+  unloaded and not recompiled.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                                                 |
+  | -------- | ---------------- | -------- | --------------------------------------------------------------------------- |
+  | `id`     | `ID!`            | Yes      | The extension to change.                                                    |
+  | `input`  | `ExtensionInput` | Yes      | See **Create an extension**. `clientId`, `code` and `isActive` are always needed. |
+
+  `clientId` must be the organization that owns the extension: the lookup is scoped to it.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateExtension": {
+        "extension": {
+          "id": "3",
+          "name": "URL helpers",
+          "module": "Elixir.Glific.Extensions.UrlHelpers",
+          "isActive": true,
+          "isValid": true
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - No extension with that ID in the `clientId` organization: `errors` is
+    `[{ "key": "Elixir.Glific.Extensions.Extension", "message": "Resource not found" }]`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

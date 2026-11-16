@@ -66,7 +66,9 @@ Glific already has too many large, unfocused modules. **Do not let new code add 
 - **Public API is generic:** flag GraphQL field names, argument names, or error messages that
   leak UI state (e.g. `showInList`, `selectedForBulkAction`, `uiGroupKey`) or internal
   implementation details. APIs are consumed by external developers; names are a stable contract.
-- **Bruno docs:** flag new queries/mutations that lack a corresponding entry in `api.docs/`.
+- **Bruno docs:** flag new or changed queries, mutations, subscriptions and REST endpoints that
+  lack a matching, up-to-date request in `api.docs/bruno/glific_api/` (see
+  `api.docs/bruno/README.md`).
 
 ### 4. Correctness & idiomatic Elixir
 

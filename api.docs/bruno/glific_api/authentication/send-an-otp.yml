@@ -1,0 +1,67 @@
+info:
+  name: Send an OTP
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/registration/send-otp"
+  body:
+    type: json
+    data: |-
+      {
+        "user": {
+          "phone": "911234554321",
+          "registration": "true"
+        }
+      }
+
+docs: |
+  Sends a one-time code over WhatsApp, for **Register a user** (`registration: "true"`) or
+  **Reset a password** (`registration: "false"`). The code is sent as the organization's
+  `verify_otp` template, or a session message if the contact is inside the 24-hour window. If
+  the organization's Gupshup balance is zero, the code is sent from Glific's own number.
+
+  For registration, the phone is opted in as a contact of the organization first.
+
+  ## Request body
+
+  | Field               | Type   | Required | Description                                                       |
+  | ------------------- | ------ | -------- | ----------------------------------------------------------------- |
+  | `user.phone`        | String | Yes      | Phone number with country code.                                   |
+  | `user.registration` | String | Yes      | `"true"` to register a new user, `"false"` to reset a password.   |
+  | `user.token`        | String | No       | Google reCAPTCHA token. When sent with `registration: "true"`, it is verified first. |
+
+  ## Example response
+
+  Registration:
+
+  ```json
+  {
+    "data": {
+      "phone": "911234554321",
+      "message": "OTP sent successfully to 911234554321"
+    }
+  }
+  ```
+
+  Password reset always gets the same answer, whether or not the account exists or the
+  message was delivered:
+
+  ```json
+  {
+    "data": {
+      "phone": "911234554321",
+      "message": "If you have an account, you will receive an OTP to confirm"
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `400`, registration only, as `{ "error": { "status": 400, "message": "..." } }`:
+    - a user with that phone exists: `Account with phone number 911234554321 already exists`;
+    - the code could not be sent: `Cannot send the otp to 911234554321`;
+    - the reCAPTCHA token failed verification.
+  - `429`: an OTP was already requested from this IP address in the last 30 seconds:
+    `An OTP was just sent. Please try again in 30 seconds.`

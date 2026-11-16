@@ -1,0 +1,49 @@
+info:
+  name: Reset an organization
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation resetOrganization($resetOrganizationId: ID!, $isConfirmed: Boolean!) {
+        resetOrganization(resetOrganizationId: $resetOrganizationId, isConfirmed: $isConfirmed)
+      }
+    variables: |-
+      {
+        "resetOrganizationId": "2",
+        "isConfirmed": true
+      }
+  auth: inherit
+
+docs: |
+  Clears an organization's test data: deletes all its messages, flow results and flow contexts,
+  and empties the `fields` and `settings` of every contact. Contacts, flows and settings stay.
+  It cannot be undone, so it only runs when `isConfirmed` is `true`.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument              | Type       | Required | Description                         |
+  | --------------------- | ---------- | -------- | ----------------------------------- |
+  | `resetOrganizationId` | `ID!`      | Yes      | The organization to reset.          |
+  | `isConfirmed`         | `Boolean!` | Yes      | Must be `true` for anything to run. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "resetOrganization": "Reset Data for Organization"
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `isConfirmed: false` returns a top-level error, `Cannot reset organization data`, and
+    nothing is deleted.
+  - A user without the glific_admin role gets a top-level `Unauthorized` error.

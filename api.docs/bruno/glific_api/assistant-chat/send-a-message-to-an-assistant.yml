@@ -1,0 +1,84 @@
+info:
+  name: Send a message to an assistant
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation sendAssistantMessage($input: AssistantChatInput!) {
+        sendAssistantMessage(input: $input) {
+          jobId
+          requestId
+          conversationId
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "assistantId": "7",
+          "message": "What should I eat during the first trimester?",
+          "configVersionId": "33"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Sends a message to an assistant through Kaapi. The call only queues the job on Kaapi and
+  returns its IDs; the reply arrives later on **Subscribe to assistant chat replies**, with
+  the same `requestId`. Nothing is sent to any contact.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description          |
+  | -------- | --------------------- | -------- | -------------------- |
+  | `input`  | `AssistantChatInput!` | Yes      | The message to send. |
+
+  ### `AssistantChatInput`
+
+  | Field             | Type      | Required | Description                                                          |
+  | ----------------- | --------- | -------- | -------------------------------------------------------------------- |
+  | `assistantId`     | `ID!`     | Yes      | The assistant.                                                       |
+  | `message`         | `String!` | Yes      | The user's message.                                                  |
+  | `conversationId`  | `String`  | No       | Continue this Kaapi conversation. Without it, Kaapi starts a new one. |
+  | `configVersionId` | `ID`      | No       | The config version to chat with. Defaults to the live version.       |
+
+  ## Example response
+
+  `answer` and the guardrail fields are always `null` here; they come on the subscription.
+
+  ```json
+  {
+    "data": {
+      "sendAssistantMessage": {
+        "jobId": "6c1f2a9e-0b7d-4e3a-9c58-1d2e3f4a5b6c",
+        "requestId": "e4b1d0c2-7a3f-4f6b-8d9e-2c1b0a9f8e7d",
+        "conversationId": "conv_8f7e6d5c4b3a",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `sendAssistantMessage` set to
+  `null`:
+
+  - The assistant does not exist in the organization: `Assistant not found`.
+  - The assistant has not been registered on Kaapi yet: `Assistant is not available on Kaapi yet`.
+  - No `configVersionId` and the live version is not on Kaapi yet:
+    `Assistant does not have a live config version yet`.
+  - The chosen version does not exist or is not on Kaapi yet:
+    `Selected assistant version is not available on Kaapi yet`.
+  - Kaapi rejects the call: Kaapi's error message. Without a Kaapi credential it is
+    `Kaapi is not active`.
+  - A user without the staff role gets `Unauthorized`.

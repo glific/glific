@@ -1,0 +1,78 @@
+info:
+  name: Update a contact field
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateContactsField($id: ID!, $input: ContactsFieldInput) {
+        updateContactsField(id: $id, input: $input) {
+          contactsField {
+            id
+            name
+            shortcode
+            valueType
+            scope
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "14",
+        "input": {
+          "name": "Home district",
+          "shortcode": "home_district"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a contact field. Only the fields given in `input` change.
+
+  Renaming also rewrites the stored values: a new `shortcode` moves the value to the new key
+  on every contact (or WhatsApp group, for `WA_GROUP` fields) that has it, unless that contact
+  already has a value under the new key; a new `name` updates the stored label. Flows that
+  use the old `@contact.fields.<shortcode>` are not changed.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                          |
+  | -------- | -------------------- | -------- | -------------------------------------------------------------------- |
+  | `id`     | `ID!`                | Yes      | The field to change.                                                 |
+  | `input`  | `ContactsFieldInput` | Yes\*    | Fields to change. See **Create a contact field** for the list. \* Leaving it out gives a top-level error. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateContactsField": {
+        "contactsField": {
+          "id": "14",
+          "name": "Home district",
+          "shortcode": "home_district",
+          "valueType": "TEXT",
+          "scope": "CONTACT"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The field does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.ContactsField", "message": "Resource not found" }]`.
+  - The new name or shortcode is already used in that scope:
+    `{ "key": "shortcode", "message": "Shortcode: has already been taken" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

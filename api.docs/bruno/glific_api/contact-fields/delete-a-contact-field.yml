@@ -1,0 +1,58 @@
+info:
+  name: Delete a contact field
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteContactsField($id: ID!, $deleteAssoc: Boolean) {
+        deleteContactsField(id: $id, deleteAssoc: $deleteAssoc) {
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "14",
+        "deleteAssoc": true
+      }
+  auth: inherit
+
+docs: |
+  Removes a field from the registry. With `deleteAssoc: true` it also removes the field's
+  value from every contact (or WhatsApp group, for `WA_GROUP` fields) in the organization;
+  otherwise the stored values stay.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument      | Type      | Required | Description                                                  |
+  | ------------- | --------- | -------- | ------------------------------------------------------------ |
+  | `id`          | `ID!`     | Yes      | The field to delete.                                         |
+  | `deleteAssoc` | `Boolean` | No       | Also delete the stored values. Defaults to `false`.          |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteContactsField": {
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  The result's `contactsField` is always `null`, so it is not selected here.
+
+  ## Errors
+
+  - The field does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.ContactsField", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

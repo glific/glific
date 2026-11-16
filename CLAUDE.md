@@ -34,7 +34,7 @@ implementations: `Glific.Tags` / `Glific.Tags.Tag`, `GlificWeb.Resolvers.Tags`,
 ```
 glific/
 ├── .claude/             # Claude Code config (settings, skills, agents)
-├── api.docs/            # Bruno API collections
+├── api.docs/bruno/      # Bruno API collection (OpenCollection YAML) — see its README.md
 ├── assets/              # Frontend assets + assets/gql/ GraphQL operation files
 ├── config/              # Environment configs (dev, test, prod, runtime)
 ├── lib/

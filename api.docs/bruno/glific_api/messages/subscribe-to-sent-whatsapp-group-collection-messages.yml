@@ -1,0 +1,80 @@
+info:
+  name: Subscribe to sent WhatsApp group collection messages
+  type: graphql
+  seq: 24
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription sentWaGroupCollectionMessage($organizationId: ID!) {
+        sentWaGroupCollectionMessage(organizationId: $organizationId) {
+          id
+          body
+          type
+          flow
+          bspStatus
+          insertedAt
+          contact {
+            id
+            name
+          }
+          waGroup {
+            id
+            label
+          }
+          waManagedPhone {
+            id
+            phone
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes the collection message Glific records when a message is sent to a WhatsApp group
+  collection (**Send a message to a WhatsApp group collection**). It is a record of the send;
+  each group's own copy is pushed to `sentWaGroupMessage`.
+
+  **Role:** any logged-in user of the organization. The subscription has no role check; it only
+  checks that `organizationId` is the user's own organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                  |
+  | ---------------- | ----- | -------- | -------------------------------------------- |
+  | `organizationId` | `ID!` | Yes      | The logged-in user's organization.           |
+
+  The pushed payload is a `WaMessage`; select any of its fields.
+
+  ## Example response
+
+  Each event is pushed as:
+
+  ```json
+  {
+    "data": {
+      "sentWaGroupCollectionMessage": {
+        "id": "311",
+        "body": "Holiday notice: no classes on Monday.",
+        "type": "TEXT",
+        "flow": "OUTBOUND",
+        "bspStatus": "SENT",
+        "insertedAt": "2026-11-16T09:31:40Z",
+        "contact": { "id": "21", "name": "Class 7 coordinator" },
+        "waGroup": { "id": "5", "label": "Class 7 parents" },
+        "waManagedPhone": { "id": "2", "phone": "919800000001" }
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization is rejected with the error
+  `Auth Credentials mismatch`.

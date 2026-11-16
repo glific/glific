@@ -1,0 +1,98 @@
+info:
+  name: Set up an organization
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/onboard/setup"
+  body:
+    type: json
+    data: |-
+      {
+        "token": "recaptcha-token-from-the-browser",
+        "name": "Sample NGO",
+        "shortcode": "sample-ngo",
+        "email": "admin@sample-ngo.example.org",
+        "phone": "919876543210",
+        "api_key": "xxx",
+        "app_name": "SampleNgoApp"
+      }
+
+docs: |
+  Creates an organization from the website's signup form. It verifies the reCAPTCHA token,
+  checks the Gupshup app with Gupshup, then creates:
+
+  - the organization, inactive and unapproved, with English as its language and the
+    `Asia/Kolkata` timezone;
+  - its main contact, "NGO Main Account", and an admin user with a random password on `phone`;
+  - its Gupshup credential from `api_key` and `app_name`;
+  - the default seed data (tags, flows, templates and so on).
+
+  The Glific team activates the organization later with
+  **Organizations › Update an organization's status**.
+
+  ## Request body
+
+  | Field       | Type   | Required | Description                                                              |
+  | ----------- | ------ | -------- | ------------------------------------------------------------------------ |
+  | `token`     | String | Yes      | Google reCAPTCHA v3 token. A score of 0.5 or less is rejected.           |
+  | `name`      | String | Yes      | Organization name, 1 to 250 characters.                                  |
+  | `shortcode` | String | Yes      | Lowercase letters, digits and inner hyphens. Unique, including deleted organizations. Used as the subdomain. |
+  | `phone`     | String | Yes      | The WhatsApp business number, with country code.                         |
+  | `api_key`   | String | Yes      | Gupshup app API key.                                                     |
+  | `app_name`  | String | Yes      | Gupshup app name. Must exist in Glific's Gupshup partner account.        |
+  | `email`     | String | No       | Organization email. Also set as the finance, analytics, chatbot design and operations team email. |
+
+  ## Example response
+
+  `organization` and `contact` hold the new records' fields (shortened here).
+
+  ```json
+  {
+    "is_valid": true,
+    "messages": {},
+    "organization": {
+      "id": 2,
+      "name": "Sample NGO",
+      "shortcode": "sample-ngo",
+      "email": "admin@sample-ngo.example.org",
+      "is_active": false,
+      "is_approved": false,
+      "timezone": "Asia/Kolkata",
+      "default_language_id": 1,
+      "active_language_ids": [1]
+    },
+    "contact": {
+      "id": 31,
+      "name": "NGO Main Account",
+      "phone": "919876543210",
+      "organization_id": 2,
+      "language_id": 1
+    },
+    "credential": "Gupshup secrets has been added."
+  }
+  ```
+
+  ## Errors
+
+  - `400`: the reCAPTCHA check fails:
+    `{ "error": { "status": 400, "message": "Failed to verify Google Captcha: <reason>" } }`.
+    A body without `token` is also rejected with `400`.
+  - `200` with `is_valid: false`: a field is invalid. Nothing is created and `messages` names
+    each problem:
+
+    ```json
+    {
+      "is_valid": false,
+      "messages": {
+        "api_key_name": "API Key or App Name is empty.",
+        "shortcode": "Shortcode has already been taken.",
+        "phone": "Phone is not valid.",
+        "name": "Field cannot be empty."
+      }
+    }
+    ```
+
+    Other messages are `"app_name": "Invalid Gupshup App"` and
+    `"shortcode": "Invalid shortcode. It should match the regex /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/."`.

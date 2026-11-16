@@ -1,0 +1,84 @@
+info:
+  name: List languages
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query languages($filter: LanguageFilter, $opts: Opts) {
+        languages(filter: $filter, opts: $opts) {
+          id
+          label
+          labelLocale
+          locale
+          isActive
+          localized
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "localized": true
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the languages Glific supports, optionally filtered and paginated. The list is global,
+  not limited to the organization's active languages.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                          |
+  | -------- | ---------------- | -------- | ---------------------------------------------------- |
+  | `filter` | `LanguageFilter` | No       | Narrows the list. All given fields must match.       |
+  | `opts`   | `Opts`           | No       | Sorting and pagination. Sorts on `label` by default. |
+
+  ### `LanguageFilter`
+
+  | Field       | Type      | Description                                                     |
+  | ----------- | --------- | --------------------------------------------------------------- |
+  | `label`     | `String`  | Label contains this text (case-insensitive).                    |
+  | `locale`    | `String`  | Locale contains this text (case-insensitive).                   |
+  | `localized` | `Boolean` | Only languages with or without template localization.           |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "languages": [
+        {
+          "id": "1",
+          "label": "English",
+          "labelLocale": "English",
+          "locale": "en",
+          "isActive": true,
+          "localized": true
+        },
+        {
+          "id": "2",
+          "label": "Hindi",
+          "labelLocale": "हिंदी",
+          "locale": "hi",
+          "isActive": true,
+          "localized": true
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

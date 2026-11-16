@@ -1,0 +1,84 @@
+info:
+  name: Update an organization's status
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateOrganizationStatus($updateOrganizationId: ID!, $status: OrganizationStatusEnum) {
+        updateOrganizationStatus(updateOrganizationId: $updateOrganizationId, status: $status) {
+          organization {
+            id
+            name
+            shortcode
+            status
+            isActive
+            isApproved
+            isSuspended
+            suspendedUntil
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "updateOrganizationId": "2",
+        "status": "ACTIVE"
+      }
+  auth: inherit
+
+docs: |
+  Sets the status of any organization and the flags that go with it, then clears its cache.
+
+  | `status`            | Effect                                                                 |
+  | ------------------- | ---------------------------------------------------------------------- |
+  | `ACTIVE`            | Active, approved and no longer suspended.                              |
+  | `APPROVED`          | Approved but not active.                                               |
+  | `FORCED_SUSPENSION` | Suspended for one year (`suspendedUntil`). Other flags are unchanged.  |
+  | Any other value     | Neither active nor approved.                                           |
+
+  Leaving out `status` also makes the organization inactive and unapproved, and leaves `status`
+  unchanged. When the organization ends up inactive and has an active Stripe billing record,
+  its Stripe subscription is updated too.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument               | Type                     | Required | Description                                      |
+  | ---------------------- | ------------------------ | -------- | ------------------------------------------------ |
+  | `updateOrganizationId` | `ID!`                    | Yes      | The organization to change.                      |
+  | `status`               | `OrganizationStatusEnum` | No       | See **List organization statuses** for values.   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateOrganizationStatus": {
+        "organization": {
+          "id": "2",
+          "name": "Sample NGO",
+          "shortcode": "sample-ngo",
+          "status": "ACTIVE",
+          "isActive": true,
+          "isApproved": true,
+          "isSuspended": false,
+          "suspendedUntil": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An unknown organization ID raises and comes back as a top-level error. A user without the
+  glific_admin role gets a top-level `Unauthorized` error.

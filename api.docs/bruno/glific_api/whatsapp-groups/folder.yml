@@ -1,0 +1,40 @@
+info:
+  name: WhatsApp Groups
+  type: folder
+  seq: 70
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    WhatsApp groups are real WhatsApp group chats that Glific reaches through
+    [Maytapi](https://maytapi.com), not through the WhatsApp Business API. The organization
+    needs the Maytapi provider set up; without it, Maytapi calls fail with
+    `Maytapi is not active`.
+
+    Key concepts:
+
+    - **Managed phones** are the WhatsApp numbers linked to the organization's Maytapi
+      account. Each group is reached through one or more of them. See **WhatsApp Managed
+      Phones**.
+    - **Phone memberships** (`phones`) record which managed phones are in a group. A
+      membership is `isActive` while the phone is still a participant. Exactly one active
+      membership per group is `isPrimary`: outgoing group messages go from the primary phone,
+      and fall back to another active member when the primary is unhealthy.
+    - **Admin phone.** Adding or removing members is done from a managed phone that is a
+      WhatsApp admin of the group, picked by Glific. If none of the organization's numbers is
+      an admin, those actions fail.
+    - **Sync.** **Sync WhatsApp groups from Maytapi** refreshes the managed phones, then pulls
+      every group each active phone is in: it creates new groups, renames changed ones, and
+      reconciles members, admin flags and phone memberships. It never changes the primary
+      phone.
+    - `bspId` is WhatsApp's group ID, such as `120363027326493365@g.us`.
+
+    Reading groups needs the staff role. Creating groups and changing the primary phone need
+    the admin role.
+
+    Related folders: **WhatsApp Group Contacts** (members), **WhatsApp Group Collections**
+    (collections of groups and the bulk primary-phone change) and **WhatsApp Managed Phones**.
+    Sending messages and starting flows in groups are in **Messages** and **Flows**.
+  type: text/markdown

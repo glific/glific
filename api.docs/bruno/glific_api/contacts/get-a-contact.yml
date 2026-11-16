@@ -1,0 +1,133 @@
+info:
+  name: Get a contact
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contact($id: ID!) {
+        contact(id: $id) {
+          contact {
+            id
+            name
+            phone
+            maskedPhone
+            status
+            bspStatus
+            isOrgRead
+            isOrgReplied
+            isContactReplied
+            optinTime
+            optinMethod
+            optoutTime
+            optoutMethod
+            fields
+            settings
+            lastMessageAt
+            lastCommunicationAt
+            insertedAt
+            updatedAt
+            isWebOnline
+            identities {
+              id
+              channel
+              identifier
+              insertedAt
+            }
+            activeProfile {
+              id
+              name
+            }
+            language {
+              id
+              label
+            }
+            groups {
+              id
+              label
+            }
+            tags {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Returns one contact by ID, including its identities and custom fields.
+
+  **Role:** staff. A staff user gets `phone` as `""` and `identities` as `[]`; a restricted
+  staff user can only read contacts in their own collections.
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description            |
+  | -------- | ----- | -------- | ---------------------- |
+  | `id`     | `ID!` | Yes      | The contact to return. |
+
+  ## Example response
+
+  `fields` and `settings` are JSON-encoded strings. Each field is keyed by its shortcode.
+
+  ```json
+  {
+    "data": {
+      "contact": {
+        "contact": {
+          "id": "12",
+          "name": "Ravi Kumar",
+          "phone": "919820112345",
+          "maskedPhone": "9198******45",
+          "status": "VALID",
+          "bspStatus": "SESSION_AND_HSM",
+          "isOrgRead": true,
+          "isOrgReplied": true,
+          "isContactReplied": true,
+          "optinTime": "2026-10-02T06:15:00Z",
+          "optinMethod": "BSP",
+          "optoutTime": null,
+          "optoutMethod": null,
+          "fields": "{\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"label\":\"Age Group\",\"inserted_at\":\"2026-10-02T06:20:11Z\"}}",
+          "settings": "{}",
+          "lastMessageAt": "2026-11-15T11:02:43Z",
+          "lastCommunicationAt": "2026-11-15T11:02:43Z",
+          "insertedAt": "2026-10-02T06:15:00Z",
+          "updatedAt": "2026-11-15T11:02:43Z",
+          "isWebOnline": false,
+          "identities": [
+            {
+              "id": "40",
+              "channel": "WHATSAPP",
+              "identifier": "919820112345",
+              "insertedAt": "2026-10-02T06:15:00Z"
+            }
+          ],
+          "activeProfile": null,
+          "language": { "id": "1", "label": "English" },
+          "groups": [{ "id": "2", "label": "Optin contacts" }],
+          "tags": [{ "id": "5", "label": "New contact" }]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact does not exist, or the user can't see it: `errors` is
+    `[{ "key": "Contact", "message": "Contact not found or permission denied." }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,35 @@
+info:
+  name: List users
+  type: http
+  seq: 10
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/users"
+  auth: inherit
+
+docs: |
+  Lists the organization's users (staff accounts) for editor pickers.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. `uuid` holds the user's ID as a string.
+
+  ```json
+  {
+    "results": [
+      { "uuid": "1", "name": "Glific Admin", "type": "user" },
+      { "uuid": "2", "name": "NGO Staff", "type": "user" }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

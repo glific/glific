@@ -1,0 +1,109 @@
+info:
+  name: Create a WhatsApp form
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createWhatsappForm($input: WhatsappFormInput!) {
+        createWhatsappForm(input: $input) {
+          whatsappForm {
+            id
+            name
+            status
+            description
+            metaFlowId
+            categories
+            revisionId
+            sheet {
+              id
+              label
+              url
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "sign_up_form",
+          "categories": ["sign_up"],
+          "description": "Collects name and class for new students",
+          "googleSheetUrl": "https://docs.google.com/spreadsheets/d/1AbCdEf/edit"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a WhatsApp form. Glific first creates the flow at Meta through Gupshup (name and
+  categories), then:
+
+  - with `googleSheetUrl`, creates a write-mode Google Sheet named
+    `WhatsApp Form - <name>` and links it, so responses are appended to it;
+  - stores the form as `DRAFT` with Meta's `metaFlowId`;
+  - creates revision 1 with a one-screen starter definition, owned by the calling user, and
+    makes it current;
+  - for the organization's first form, subscribes the Gupshup app to `FLOW_MESSAGE` events so
+    responses reach Glific.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description         |
+  | -------- | -------------------- | -------- | ------------------- |
+  | `input`  | `WhatsappFormInput!` | Yes      | The form to create. |
+
+  ### `WhatsappFormInput`
+
+  | Field            | Type        | Required | Description                                                     |
+  | ---------------- | ----------- | -------- | --------------------------------------------------------------- |
+  | `name`           | `String!`   | Yes      | Unique per organization.                                        |
+  | `categories`     | `[String]!` | Yes      | One or more of the values from **List WhatsApp form categories**, such as `sign_up`. |
+  | `description`    | `String`    | No       | Free text.                                                      |
+  | `googleSheetUrl` | `String`    | No       | Google Sheet to append responses to. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createWhatsappForm": {
+        "whatsappForm": {
+          "id": "3",
+          "name": "sign_up_form",
+          "status": "DRAFT",
+          "description": "Collects name and class for new students",
+          "metaFlowId": "1290481723558123",
+          "categories": ["sign_up"],
+          "revisionId": null,
+          "sheet": {
+            "id": "7",
+            "label": "WhatsApp Form - sign_up_form",
+            "url": "https://docs.google.com/spreadsheets/d/1AbCdEf/edit"
+          }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  `revisionId` is set just after the form row is created, so it is always `null` in this
+  response; read the form again to see it.
+
+  ## Errors
+
+  - The name is already used: `errors` is
+    `[{ "key": "name", "message": "Name: has already been taken" }]`. The flow has already
+    been created at Meta by then.
+  - Gupshup rejects the form, the sheet can't be linked, or the subscription fails: a
+    top-level error with the cause.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,39 @@
+info:
+  name: Triggers
+  type: folder
+  seq: 32
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Triggers start a flow for one or more collections at a scheduled time, once or on a
+    repeating schedule. Glific checks for due triggers every minute; a due trigger starts the
+    flow's published revision for every contact in its collections, as **Flows › Start a flow
+    for a collection** does, or in every WhatsApp group when `groupType` is `WA`.
+
+    ## Scheduling
+
+    - `startDate` and `startTime` (UTC) give the first run; `startAt` is computed from them.
+      It must be in the future.
+    - `frequency` is one of `none` (run once), `hourly`, `daily`, `weekly` or `monthly`, sent
+      as a one-item list such as `["weekly"]`.
+    - `hourly` needs `hours` (0–23); `weekly` needs `days` (1–7, Monday is 1); `monthly` needs
+      `days` (1–31). Other frequencies clear `days` and `hours`.
+    - A repeating trigger (`isRepeating: true`) runs until `endDate`: when the next run would
+      fall on or after `endDate`, the trigger is deactivated. A non-repeating trigger is
+      deactivated after its run.
+
+    The trigger's `name` is generated from the flow name and the start time in the
+    organization's timezone, such as `Help Workflow_17/11/2026_6:45PM`.
+
+    **Validate a trigger** warns when the flow doesn't open with a WhatsApp template: outside
+    the 24-hour session window, WhatsApp only delivers templates.
+
+    All trigger operations need the manager role. When the organization has role-based access
+    control on, users without the Admin, Manager or Staff access role only list the triggers
+    assigned to their roles.
+
+    Related: **Flows**, **Groups** (collections), **WhatsApp Groups**.
+  type: text/markdown

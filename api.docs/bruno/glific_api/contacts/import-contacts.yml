@@ -1,0 +1,87 @@
+info:
+  name: Import contacts
+  type: graphql
+  seq: 15
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation importContacts($data: String!, $type: ImportContactsTypeEnum, $groupLabel: String) {
+        importContacts(data: $data, type: $type, groupLabel: $groupLabel) {
+          status
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "type": "DATA",
+        "groupLabel": "November cohort",
+        "data": "name,phone,language,age_group\nAsha Patil,919876501234,Hindi,19 or above\nRavi Kumar,919820112345,English,15 to 18"
+      }
+  auth: inherit
+
+docs: |
+  Creates or updates contacts from a CSV in the background and adds them to a collection. The
+  call returns as soon as the rows are queued; it creates a "Contact Upload" notification
+  whose entity holds the `user_job_id` to pass to **Get a contact upload report**.
+
+  For each row, the contact with that phone is created or updated. New contacts, and existing
+  ones that have never opted in or out and aren't blocked, are opted in with method `Import`.
+  Field changes, language changes and opt-ins are added to each contact's history.
+
+  CSV columns, with a header row:
+
+  | Column     | Description                                                                    |
+  | ---------- | ------------------------------------------------------------------------------ |
+  | `name`     | Required.                                                                      |
+  | `phone`    | Required. Country code and number.                                             |
+  | `language` | Language label, such as `Hindi`. Defaults to English for a new contact.        |
+  | `delete`   | `1` deletes the contact with this phone instead.                               |
+  | any other  | Stored as a contact field, with the snake_case column name as its shortcode.  |
+
+  Every column except `phone`, `language` and `delete` is stored as a contact field, so
+  `name` is also kept as a `name` field.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument     | Type                     | Required | Description                                                                 |
+  | ------------ | ------------------------ | -------- | --------------------------------------------------------------------------- |
+  | `data`       | `String!`                | Yes      | The CSV itself (`DATA`), a URL to download it from (`URL`), or a file path on the server (`FILE_PATH`). |
+  | `type`       | `ImportContactsTypeEnum` | Yes\*    | `DATA`, `URL` or `FILE_PATH`.                                               |
+  | `groupLabel` | `String`                 | Yes\*    | Collection to add every contact to, created if it doesn't exist. Pass `null` for none. |
+
+  \* Optional in the schema, but the call fails with a top-level error if it is left out.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "importContacts": {
+        "status": "Contact import is in progress",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Problems with the file itself are top-level errors and nothing is imported:
+
+  - The CSV isn't valid UTF-8, such as `Line 3 is not valid UTF-8 (a smart quote, dash or
+    accent saved in a Windows encoding). ...`.
+  - `Could not download the CSV from the given URL.`
+  - `Could not read the CSV file.`
+
+  Problems with individual rows, such as a missing name or an invalid phone, don't stop the
+  import; they are listed in **Get a contact upload report**.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

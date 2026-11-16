@@ -1,0 +1,87 @@
+info:
+  name: List interactive templates
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query interactiveTemplates($filter: InteractiveTemplateFilter, $opts: Opts) {
+        interactiveTemplates(filter: $filter, opts: $opts) {
+          id
+          label
+          type
+          interactiveContent
+          sendWithTitle
+          language {
+            id
+            label
+          }
+          tag {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "type": "QUICK_REPLY"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's interactive templates, optionally filtered and paginated.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                        | Required | Description                                    |
+  | -------- | --------------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `InteractiveTemplateFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`                      | No       | Sorting and pagination. Sorts on `label` by default. |
+
+  ### `InteractiveTemplateFilter`
+
+  | Field           | Type                         | Description                                                        |
+  | --------------- | ---------------------------- | ------------------------------------------------------------------ |
+  | `term`          | `String`                     | Label contains this text (case-insensitive), the content JSON contains it (case-sensitive), or the tag's label contains it. |
+  | `label`         | `String`                     | Label contains this text.                                          |
+  | `type`          | `InteractiveMessageTypeEnum` | `QUICK_REPLY`, `LIST` or `LOCATION_REQUEST_MESSAGE`.               |
+  | `tagIds`        | `[Int]`                      | Template's tag is one of these.                                    |
+  | `language`      | `String`                     | Language label contains this text.                                 |
+  | `languageId`    | `Int`                        | Language ID.                                                       |
+  | `sendWithTitle` | `Boolean`                    | Accepted but currently ignored.                                    |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "interactiveTemplates": [
+        {
+          "id": "1",
+          "label": "Quick Reply Text",
+          "type": "QUICK_REPLY",
+          "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"Excited\"},{\"type\":\"text\",\"title\":\"Very Excited\"}],\"content\":{\"type\":\"text\",\"text\":\"Glific is a two way communication platform\",\"header\":\"Quick Reply Text\"}}",
+          "sendWithTitle": true,
+          "language": { "id": "1", "label": "English" },
+          "tag": null
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

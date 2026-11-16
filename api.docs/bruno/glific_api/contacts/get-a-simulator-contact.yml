@@ -1,0 +1,56 @@
+info:
+  name: Get a simulator contact
+  type: graphql
+  seq: 13
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query simulatorGet {
+        simulatorGet {
+          id
+          name
+          phone
+          language {
+            id
+            label
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Borrows one of the organization's simulator contacts for the current user, so the user can
+  test flows by chatting as that contact. A simulator is held for 10 minutes, or until
+  **Release a simulator contact**. Asking again from the same login first returns the simulator
+  it holds to the pool, then takes one. Simulators held longer than 10 minutes are freed for
+  other users when anyone asks.
+
+  Returns `null` when every simulator is in use.
+
+  **Role:** staff. A staff user gets `phone` as `""`.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "simulatorGet": {
+        "id": "2",
+        "name": "Glific Simulator One",
+        "phone": "9876543210_1",
+        "language": { "id": "1", "label": "English" }
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,49 @@
+info:
+  name: Subscribe to collection count
+  type: graphql
+  seq: 21
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription collectionCount($organizationId: ID!) {
+        collectionCount(organizationId: $organizationId)
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes the number of contacts in each built-in inbox collection (such as unread, not
+  responded and opted out) whenever the periodic count job runs for the organization. The
+  frontend shows them as badges next to the collections.
+
+  **Role:** none. The subscription only checks that `organizationId` is the logged-in user's
+  organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                          |
+  | ---------------- | ----- | -------- | ------------------------------------ |
+  | `organizationId` | `ID!` | Yes      | Must be the user's own organization. |
+
+  ## Example response
+
+  The pushed `Json` maps each collection name to its count.
+
+  ```json
+  {
+    "data": {
+      "collectionCount": "{\"collection\":{\"All\":28,\"Unread\":3,\"Not replied\":5,\"Not Responded\":2,\"Optout\":1}}"
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization rejects the subscription with
+  `Auth Credentials mismatch`.

@@ -1,0 +1,73 @@
+info:
+  name: Copy a poll
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation copyWaPoll($id: ID!, $input: WaPollInput) {
+        copyWaPoll(id: $id, input: $input) {
+          waPoll {
+            id
+            label
+            pollContent
+            allowMultipleAnswer
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4",
+        "input": {
+          "label": "Next session day (copy)",
+          "allowMultipleAnswer": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a new poll from an existing one. The copy takes the source's `pollContent` and
+  `allowMultipleAnswer`; any field in `input` overrides them. The checks of **Create a poll**
+  apply.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description                                                    |
+  | -------- | ------------- | -------- | -------------------------------------------------------------- |
+  | `id`     | `ID!`         | Yes      | The poll to copy.                                              |
+  | `input`  | `WaPollInput` | Yes      | Must include a new `label` (it is not copied). Omitting `input` fails. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "copyWaPoll": {
+        "waPoll": {
+          "id": "5",
+          "label": "Next session day (copy)",
+          "pollContent": "{\"text\":\"Which day suits the next session?\",\"options\":[{\"votes\":0,\"voters\":[],\"name\":\"Saturday\",\"id\":0},{\"votes\":0,\"voters\":[],\"name\":\"Sunday\",\"id\":1}]}",
+          "allowMultipleAnswer": true
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The source poll does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WAGroup.WaPoll", "message": "Resource not found" }]`.
+  - The label is missing or already used, such as
+    `{ "key": "label", "message": "Label: has already been taken" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,96 @@
+info:
+  name: Get a WhatsApp form
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query whatsappForm($id: ID!) {
+        whatsappForm(id: $id) {
+          whatsappForm {
+            id
+            name
+            status
+            description
+            metaFlowId
+            categories
+            sheetId
+            sheet {
+              id
+              label
+              url
+              isActive
+            }
+            revisionId
+            revision {
+              id
+              revisionNumber
+              definition
+            }
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Returns one WhatsApp form with its Google Sheet and its current revision.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The form to return. |
+
+  ## Example response
+
+  `revision.definition` is the WhatsApp Flow JSON, as a JSON-encoded string.
+
+  ```json
+  {
+    "data": {
+      "whatsappForm": {
+        "whatsappForm": {
+          "id": "3",
+          "name": "sign_up_form",
+          "status": "DRAFT",
+          "description": "Collects name and class for new students",
+          "metaFlowId": "1290481723558123",
+          "categories": ["sign_up"],
+          "sheetId": null,
+          "sheet": null,
+          "revisionId": 14,
+          "revision": {
+            "id": "14",
+            "revisionNumber": 1,
+            "definition": "{\"version\":\"7.3\",\"screens\":[{\"title\":\"Screen 1\",\"terminal\":true,\"layout\":{\"type\":\"SingleColumnLayout\",\"children\":[{\"type\":\"Form\",\"name\":\"flow_path\",\"children\":[{\"type\":\"TextHeading\",\"text\":\"Text\"},{\"type\":\"Footer\",\"on-click-action\":{\"payload\":{},\"name\":\"complete\"},\"label\":\"Continue\"}]}]},\"id\":\"screen_bcvvpc\",\"data\":{}}]}"
+          },
+          "insertedAt": "2026-11-04 10:12:31.204118Z",
+          "updatedAt": "2026-11-04 10:12:31.204118Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The form does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappForm", "message": "Resource not found" }]`
+    and `whatsappForm` is `null`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

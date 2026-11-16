@@ -1,0 +1,122 @@
+info:
+  name: Create a flow
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createFlow($input: FlowInput!) {
+        createFlow(input: $input) {
+          flow {
+            id
+            uuid
+            name
+            description
+            keywords
+            ignoreKeywords
+            isActive
+            isBackground
+            channel
+            lastChangedAt
+            tag {
+              id
+              label
+            }
+            roles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "School Registration",
+          "description": "Collects a student's name and class",
+          "keywords": ["register", "School Join"],
+          "ignoreKeywords": false,
+          "isBackground": false,
+          "channel": "WHATSAPP",
+          "tagId": "2"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a flow with an empty draft revision and a new UUID. Build its nodes in the flow
+  editor, then publish it. Contacts can't run it until it has a published revision.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type         | Required | Description         |
+  | -------- | ------------ | -------- | ------------------- |
+  | `input`  | `FlowInput!` | Yes      | The flow to create. |
+
+  ### `FlowInput`
+
+  | Field            | Type                 | Required | Description                                                                 |
+  | ---------------- | -------------------- | -------- | --------------------------------------------------------------------------- |
+  | `name`           | `String`             | Yes      | Unique in the organization.                                                 |
+  | `description`    | `String`             | No       | Free text.                                                                  |
+  | `keywords`       | `[String]`           | No       | Messages that start the flow. Lowercased and stripped of spaces and punctuation (`School Join` is stored as `schooljoin`). Each keyword can belong to only one flow. |
+  | `ignoreKeywords` | `Boolean`            | No       | Defaults to `false`. When `true`, a contact in this flow who sends another flow's keyword stays in this flow. |
+  | `isActive`       | `Boolean`            | No       | Defaults to `true`. Inactive flows can't be started.                       |
+  | `isBackground`   | `Boolean`            | No       | Defaults to `false`. A background flow runs without ending the contact's current flow. |
+  | `isPinned`       | `Boolean`            | No       | Defaults to `false`. Pins the flow to the top of the list in the UI.       |
+  | `isTemplate`     | `Boolean`            | No       | Defaults to `false`. Marks the flow as a template other flows are copied from. |
+  | `skipValidation` | `Boolean`            | No       | Defaults to `false`. Stored for the UI; publishing still validates the flow. |
+  | `channel`        | `MessageChannelEnum` | No       | `WHATSAPP` (default) or `WEB`. Can't be changed later.                      |
+  | `tagId`          | `ID`                 | No       | A tag to group the flow under.                                              |
+  | `addRoleIds`     | `[ID]`               | No       | Access roles that may see the flow, for role-based access control.         |
+  | `deleteRoleIds`  | `[ID]`               | No       | Access roles to remove. Only used together with `addRoleIds`.               |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createFlow": {
+        "flow": {
+          "id": "28",
+          "uuid": "8c3fd2b4-7e8a-4d5f-a0a9-1f0b7d6f2b11",
+          "name": "School Registration",
+          "description": "Collects a student's name and class",
+          "keywords": ["register", "schooljoin"],
+          "ignoreKeywords": false,
+          "isActive": true,
+          "isBackground": false,
+          "channel": "WHATSAPP",
+          "lastChangedAt": "2026-11-16T09:30:00Z",
+          "tag": { "id": "2", "label": "Contacts" },
+          "roles": []
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `flow` set to `null`:
+
+  - `name` is missing: `{ "key": "name", "message": "Name: can't be blank" }`.
+  - The name is taken:
+    `{ "key": "name", "message": "Name: Sorry, the flow name already exists." }`.
+  - A keyword belongs to another flow:
+
+    ```json
+    { "key": "keywords", "message": "Keywords: The keyword `help` was already used in the `Help Workflow` Flow." }
+    ```
+
+  A user without the manager role gets a top-level `Unauthorized` error.

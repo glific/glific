@@ -1,0 +1,40 @@
+info:
+  name: List active sheets
+  type: http
+  seq: 19
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/sheets"
+  auth: inherit
+
+docs: |
+  Lists the organization's active Google Sheets for the editor's "link Google Sheet" action.
+  Manage sheets in **Sheets**.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. `name` is the sheet's label.
+
+  ```json
+  {
+    "results": [
+      {
+        "id": 2,
+        "name": "School directory",
+        "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        "type": "READ"
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

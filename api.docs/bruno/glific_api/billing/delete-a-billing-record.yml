@@ -1,0 +1,61 @@
+info:
+  name: Delete a billing record
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteBilling($id: ID!) {
+        deleteBilling(id: $id) {
+          billing {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a billing record of the caller's organization. Only the Glific record is removed;
+  the Stripe customer and any subscription stay in Stripe.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                   |
+  | -------- | ----- | -------- | ----------------------------- |
+  | `id`     | `ID!` | Yes      | The billing record to delete. |
+
+  ## Example response
+
+  The resolver returns the deleted record itself rather than wrapping it, so `billing` comes
+  back `null` even on success. Check `errors` instead.
+
+  ```json
+  {
+    "data": {
+      "deleteBilling": {
+        "billing": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The record does not exist in the caller's organization: `errors` is
+    `[{ "key": "Elixir.Glific.Partners.Billing", "message": "Resource not found" }]`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

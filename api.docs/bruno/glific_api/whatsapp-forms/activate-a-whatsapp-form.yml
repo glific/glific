@@ -1,0 +1,65 @@
+info:
+  name: Activate a WhatsApp form
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation activateWhatsappForm($id: ID!) {
+        activateWhatsappForm(id: $id) {
+          whatsappForm {
+            id
+            name
+            status
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Sets a deactivated form's status back to `PUBLISHED`. Only Glific changes; Meta is not
+  called. Use it only on a form that was published before: on a `DRAFT` form it sets
+  `PUBLISHED` without publishing anything at Meta. To publish a draft, use **Publish a
+  WhatsApp form**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description           |
+  | -------- | ----- | -------- | --------------------- |
+  | `id`     | `ID!` | Yes      | The form to activate. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "activateWhatsappForm": {
+        "whatsappForm": {
+          "id": "3",
+          "name": "sign_up_form",
+          "status": "PUBLISHED"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The form does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappForm", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

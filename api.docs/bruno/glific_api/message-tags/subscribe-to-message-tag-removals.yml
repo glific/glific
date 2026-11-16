@@ -1,0 +1,62 @@
+info:
+  name: Subscribe to message tag removals
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription deletedMessageTag($organizationId: ID!) {
+        deletedMessageTag(organizationId: $organizationId) {
+          id
+          message {
+            id
+          }
+          tag {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes each tag removed from a message, by **Update a message's tags** or when Glific removes
+  a tag from all of a contact's messages. The payload is the link as it was just before
+  deletion.
+
+  **Role:** any logged-in user of the organization. The subscription has no role check; it only
+  checks that `organizationId` is the user's own organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                        |
+  | ---------------- | ----- | -------- | ---------------------------------- |
+  | `organizationId` | `ID!` | Yes      | The logged-in user's organization. |
+
+  ## Example response
+
+  Each event is pushed as:
+
+  ```json
+  {
+    "data": {
+      "deletedMessageTag": {
+        "id": "901",
+        "message": { "id": "1042" },
+        "tag": { "id": "4", "label": "Unread" }
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization is rejected with the error
+  `Auth Credentials mismatch`.

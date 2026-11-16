@@ -1,0 +1,62 @@
+info:
+  name: Delete a consulting hour
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteConsultingHour($id: ID!) {
+        deleteConsultingHour(id: $id) {
+          consultingHour {
+            id
+            staff
+            when
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "13"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a consulting hour entry from any organization.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The entry to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteConsultingHour": {
+        "consultingHour": {
+          "id": "13",
+          "staff": "Glific support team",
+          "when": "2026-11-10T10:30:00Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The entry does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Saas.ConsultingHour", "message": "Resource not found" }]`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

@@ -1,0 +1,46 @@
+info:
+  name: Count webhook logs
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countWebhookLogs($filter: WebhookLogFilter) {
+        countWebhookLogs(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "url": "api.example.org"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's webhook logs that match a filter. Use it with **List webhook
+  logs** to build pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description                                                                 |
+  | -------- | ------------------ | -------- | --------------------------------------------------------------------------- |
+  | `filter` | `WebhookLogFilter` | No       | Same fields as in **List webhook logs**, also combined with OR. Without it, counts all logs. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countWebhookLogs": 58
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

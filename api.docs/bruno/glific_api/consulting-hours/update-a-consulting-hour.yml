@@ -1,0 +1,73 @@
+info:
+  name: Update a consulting hour
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateConsultingHour($id: ID!, $input: ConsultingHourInput) {
+        updateConsultingHour(id: $id, input: $input) {
+          consultingHour {
+            id
+            duration
+            isBillable
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "13",
+        "input": {
+          "clientId": "1",
+          "duration": 45,
+          "isBillable": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a consulting hour entry. Only the fields given in `input` change, but `clientId`
+  must always be sent. The entry is saved under that `clientId`, so sending a different
+  organization moves the entry to it.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description                                                                         |
+  | -------- | --------------------- | -------- | ----------------------------------------------------------------------------------- |
+  | `id`     | `ID!`                 | Yes      | The entry to change.                                                                |
+  | `input`  | `ConsultingHourInput` | No       | Fields to change. See **Create a consulting hour**. In practice required, for `clientId`. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateConsultingHour": {
+        "consultingHour": {
+          "id": "13",
+          "duration": 45,
+          "isBillable": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The entry does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Saas.ConsultingHour", "message": "Resource not found" }]`.
+  - The change clashes with another entry for the same staff and time:
+    `{ "key": "when", "message": "When: Sorry, Consulting hours are already filled for this call" }`.
+  - `input` is left out: a top-level error.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

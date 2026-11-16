@@ -1,0 +1,72 @@
+info:
+  name: Clone an assistant
+  type: graphql
+  seq: 14
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation cloneAssistant($id: ID!, $versionId: ID) {
+        cloneAssistant(id: $id, versionId: $versionId) {
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "7",
+        "versionId": "31"
+      }
+  auth: inherit
+
+docs: |
+  Copies one config version of an assistant into a new assistant named
+  `Copy of <name> Version <label>` (with ` (2)`, ` (3)`… added if the name is taken).
+
+  This runs in the background as a job. The call only queues it and sets the source
+  assistant's `cloneStatus` to `in_progress`. When the job ends, `cloneStatus` becomes
+  `completed` or `failed` and a notification is created. There is no subscription for it.
+
+  For a legacy assistant (knowledge base synced directly with OpenAI), the live version is
+  cloned, its files are uploaded to Kaapi again and a new knowledge base is built; `versionId`
+  is ignored.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument    | Type  | Required | Description                                                      |
+  | ----------- | ----- | -------- | ---------------------------------------------------------------- |
+  | `id`        | `ID!` | Yes      | The assistant to clone.                                          |
+  | `versionId` | `ID`  | No       | The config version to copy. Required unless the assistant is legacy. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "cloneAssistant": {
+        "message": "Assistant clone initiated",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The assistant does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Assistants.Assistant", "message": "Resource not found" }]`.
+
+  These come back in the top-level `errors` array:
+
+  - `versionId` is missing for a non-legacy assistant:
+    `version_id is required to clone a non-legacy assistant`.
+  - A clone of this assistant is already queued:
+    `A clone is already in progress for this assistant. Please try again in a few minutes`.
+  - A user without the manager role gets `Unauthorized`.

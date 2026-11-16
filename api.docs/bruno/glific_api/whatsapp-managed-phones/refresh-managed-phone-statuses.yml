@@ -1,0 +1,56 @@
+info:
+  name: Refresh managed phone statuses
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation syncWaManagedPhoneStatuses {
+        syncWaManagedPhoneStatuses {
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Asks Maytapi for the current status of every phone on the account and updates the stored
+  `status` and `lastStatusCheckedAt` of the managed phones Glific already knows. Unlike
+  **WhatsApp Groups › Sync WhatsApp groups from Maytapi**, it never adds phones or groups.
+
+  A phone that goes from healthy (`active` or `loading`) to unhealthy gets a critical
+  "WhatsApp Groups" notification.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "syncWaManagedPhoneStatuses": {
+        "message": "WhatsApp phone statuses have been refreshed.",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as a top-level error:
+
+  - Maytapi fails to list the phones: its message, or `WhatsApp couldn't complete this action
+    right now. Please try again in a moment.`
+  - Maytapi is not set up for the organization: `Maytapi is not active`.
+  - A user without the manager role gets `Unauthorized`.
