@@ -1,10 +1,11 @@
 {
   "name": "glific-bruno-tools",
   "private": true,
-  "description": "Checks the Glific Bruno collection against the GraphQL schema",
+  "description": "Validates the Glific Bruno collection and builds its static docs site",
   "scripts": {
     "schema": "cd ../.. && mix absinthe.schema.json --schema GlificWeb.Schema api.docs/tools/schema.json",
-    "validate": "node validate.js ../glific_api --coverage"
+    "validate": "node validate.js ../glific_api --coverage",
+    "site": "node build-site.js"
   },
   "dependencies": {
     "@usebruno/filestore": "0.14.0",

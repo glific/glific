@@ -283,7 +283,7 @@ jobs:
         run: rm -rf _build/${MIX_ENV}/lib/glific
 
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
