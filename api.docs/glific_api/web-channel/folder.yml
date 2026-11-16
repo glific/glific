@@ -47,10 +47,11 @@ docs:
     | `iat`     | Yes      | Issued at, in Unix seconds. |
     | `exp`     | Yes      | Expiry, in Unix seconds. At most 24 hours after `iat`; 60 seconds of clock leeway apply. |
     | `name`    | No       | Up to 255 characters; the contact's name when the contact is created. Without it the name is `sub`. |
-    | `phone`   | No       | The user's phone. If the organization already has a WhatsApp contact with that phone, the web identity is added to that contact instead of creating a new one. An invalid phone is ignored. |
+    | `phone`   | No       | The user's phone. The web identity is added to the organization's existing contact with that phone if that contact has a WhatsApp identity or has messaged before, and is not the organization's own contact. Any other existing contact with that phone is left alone, and a new web contact is created without a phone. If no contact has the phone, the new contact gets it. An invalid phone is ignored. |
     | `optin`   | No       | `true` records that the user agreed to be messaged on the web channel (method `NGO`). Any value that is not a boolean makes the token invalid. |
 
-    Other claims are ignored. The first connect with a new `sub` creates the contact. Your
+    Don't send `jti` or `sst`: they mark Glific's own OTP session tokens, and a token with only
+    one of them is refused. Other claims are ignored. The first connect with a new `sub` creates the contact. Your
     backend renews its own tokens: **Renew a web channel token** only renews tokens from the OTP
     login.
 

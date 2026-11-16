@@ -127,6 +127,11 @@ docs: |
   entry has `language_id`, `body`, `example` and `number_parameters`; entries written by
   **Sync HSM templates** also carry `uuid`, `status`, `type`, `category` and `label`.
 
+  For an HSM, an entry is only used once Meta has approved that language version and
+  **Sync HSM templates** has stored it with `status: "APPROVED"` and its `uuid`. Until then, a
+  contact whose language matches the entry gets the template in its original language. An entry
+  like the one below, with no `status`, is therefore never sent as an HSM.
+
   ```json
   {
     "2": {

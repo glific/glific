@@ -49,6 +49,10 @@ docs: |
 
   ## Uploading the file
 
+  The organization's Google Cloud Storage bucket needs a CORS policy that allows `PUT` from the
+  website the widget runs on, with the `Content-Type` header. Glific does not set this up;
+  without it, browsers block the upload.
+
   1. `PUT` the file's bytes to `upload_url` within `expires_in` seconds. This request goes to
      Google, not Glific: send only `Content-Type`, set to exactly the `content_type` above, and
      leave out the `authorization` header this request needed, since the URL carries the
