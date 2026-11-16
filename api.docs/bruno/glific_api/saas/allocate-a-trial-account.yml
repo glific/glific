@@ -52,5 +52,5 @@ docs: |
     `{ "success": false, "error": "Invalid OTP" }`.
   - `200` with `success: false`: every trial organization is taken. The team is mailed, and
     `error` says the sales team will reach out.
-  - `500`: a step failed, such as an invalid password:
+  - `500`: a step failed, for example because the password is invalid. The body is
     `{ "success": false, "error": "Something went wrong" }`. Nothing is saved.
