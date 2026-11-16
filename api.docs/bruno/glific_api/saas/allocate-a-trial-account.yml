@@ -13,9 +13,9 @@ http:
         "phone": "919876543210",
         "otp": "123456",
         "username": "Asha Rao",
+        "password": "a-strong-test-password",
         "email": "asha@sample-ngo.example.org",
-        "organization_name": "Sample NGO",
-        "password": "a-strong-test-password"
+        "organization_name": "Sample NGO"
       }
 
 docs: |
