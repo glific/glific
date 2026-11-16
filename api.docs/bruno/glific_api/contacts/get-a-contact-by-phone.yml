@@ -29,7 +29,7 @@ graphql:
       }
     variables: |-
       {
-        "phone": "919820112345"
+        "phone": "910000000002"
       }
   auth: inherit
 

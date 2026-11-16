@@ -12,7 +12,7 @@ http:
       {
         "user": {
           "name": "Test User",
-          "phone": "911234554321",
+          "phone": "910000000004",
           "password": "Secret1234!",
           "otp": "321721"
         }

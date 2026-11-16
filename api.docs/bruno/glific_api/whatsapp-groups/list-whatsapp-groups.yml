@@ -74,11 +74,11 @@ docs: |
         {
           "id": "2",
           "label": "Pune volunteers",
-          "bspId": "120363027326493365@g.us",
+          "bspId": "120363000000000001@g.us",
           "lastCommunicationAt": "2026-11-14T08:12:40Z",
           "primaryPhone": {
             "id": "1",
-            "phone": "919876543210",
+            "phone": "910000000001",
             "label": "Field team phone",
             "status": "active"
           },

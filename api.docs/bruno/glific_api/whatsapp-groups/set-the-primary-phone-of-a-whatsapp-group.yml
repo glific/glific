@@ -65,9 +65,9 @@ docs: |
           "id": "9",
           "isPrimary": true,
           "isActive": true,
-          "waManagedPhone": { "id": "2", "phone": "919812345678", "status": "loading" }
+          "waManagedPhone": { "id": "2", "phone": "910000000008", "status": "loading" }
         },
-        "warning": "WhatsApp phone 919812345678 is currently 'loading' on Maytapi. Messages may fail until it reconnects.",
+        "warning": "WhatsApp phone 910000000008 is currently 'loading' on Maytapi. Messages may fail until it reconnects.",
         "errors": null
       }
     }

@@ -77,13 +77,13 @@ docs: |
         {
           "id": "51",
           "isAdmin": true,
-          "contact": { "id": "1", "name": "NGO Main Account", "phone": "919876543210" },
+          "contact": { "id": "1", "name": "NGO Main Account", "phone": "910000000001" },
           "waGroup": { "id": "2", "label": "Pune volunteers" }
         },
         {
           "id": "52",
           "isAdmin": false,
-          "contact": { "id": "31", "name": "Asha", "phone": "919900112233" },
+          "contact": { "id": "31", "name": "Asha", "phone": "910000000007" },
           "waGroup": { "id": "2", "label": "Pune volunteers" }
         }
       ]

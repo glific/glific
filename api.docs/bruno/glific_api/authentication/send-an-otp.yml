@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "user": {
-          "phone": "911234554321",
+          "phone": "910000000004",
           "registration": "true"
         }
       }
@@ -39,8 +39,8 @@ docs: |
   ```json
   {
     "data": {
-      "phone": "911234554321",
-      "message": "OTP sent successfully to 911234554321"
+      "phone": "910000000004",
+      "message": "OTP sent successfully to 910000000004"
     }
   }
   ```
@@ -51,7 +51,7 @@ docs: |
   ```json
   {
     "data": {
-      "phone": "911234554321",
+      "phone": "910000000004",
       "message": "If you have an account, you will receive an OTP to confirm"
     }
   }
@@ -60,8 +60,8 @@ docs: |
   ## Errors
 
   - `400`, registration only, as `{ "error": { "status": 400, "message": "..." } }`:
-    - a user with that phone exists: `Account with phone number 911234554321 already exists`;
-    - the code could not be sent: `Cannot send the otp to 911234554321`;
+    - a user with that phone exists: `Account with phone number 910000000004 already exists`;
+    - the code could not be sent: `Cannot send the otp to 910000000004`;
     - the reCAPTCHA token failed verification.
   - `429`: an OTP was already requested from this IP address in the last 30 seconds:
     `An OTP was just sent. Please try again in 30 seconds.`

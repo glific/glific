@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "phone": "919876543210",
+        "phone": "910000000001",
         "otp": "123456",
         "username": "Asha Rao",
         "password": "a-strong-test-password",

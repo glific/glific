@@ -41,7 +41,7 @@ docs: |
   {
     "data": {
       "getContactUploadReport": {
-        "csvRows": "Phone,Status\r\n91987650,Phone number is not valid. Please enter the phone number with country code, without the + symbol.\r\n919820112345,Contact name is empty",
+        "csvRows": "Phone,Status\r\n91987650,Phone number is not valid. Please enter the phone number with country code, without the + symbol.\r\n910000000002,Contact name is empty",
         "error": null
       }
     }

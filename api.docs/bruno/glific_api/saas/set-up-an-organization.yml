@@ -14,7 +14,7 @@ http:
         "name": "Sample NGO",
         "shortcode": "sample-ngo",
         "email": "admin@sample-ngo.example.org",
-        "phone": "919876543210",
+        "phone": "910000000001",
         "api_key": "xxx",
         "app_name": "SampleNgoApp"
       }
@@ -66,7 +66,7 @@ docs: |
     "contact": {
       "id": 31,
       "name": "NGO Main Account",
-      "phone": "919876543210",
+      "phone": "910000000001",
       "organization_id": 2,
       "language_id": 1
     },

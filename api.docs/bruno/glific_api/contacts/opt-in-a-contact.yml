@@ -27,7 +27,7 @@ graphql:
       }
     variables: |-
       {
-        "phone": "919876501234",
+        "phone": "910000000003",
         "name": "Asha Patil"
       }
   auth: inherit
@@ -64,7 +64,7 @@ docs: |
         "contact": {
           "id": "131",
           "name": "Asha Patil",
-          "phone": "919876501234",
+          "phone": "910000000003",
           "status": "VALID",
           "bspStatus": "HSM",
           "optinTime": "2026-11-16T09:30:00Z",

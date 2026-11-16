@@ -68,7 +68,7 @@ docs: |
         {
           "id": "1",
           "label": "Field team phone",
-          "phone": "919876543210",
+          "phone": "910000000001",
           "phoneId": 48213,
           "status": "active",
           "lastStatusCheckedAt": "2026-11-16T07:55:02Z",

@@ -70,7 +70,7 @@ docs: |
         "user": {
           "id": "2",
           "name": "NGO Staff",
-          "phone": "919820112345",
+          "phone": "910000000002",
           "email": "staff@example.org",
           "roles": ["Staff"],
           "isRestricted": true,

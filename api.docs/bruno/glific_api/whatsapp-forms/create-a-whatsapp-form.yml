@@ -81,7 +81,7 @@ docs: |
           "name": "sign_up_form",
           "status": "DRAFT",
           "description": "Collects name and class for new students",
-          "metaFlowId": "1290481723558123",
+          "metaFlowId": "1000000000000001",
           "categories": ["sign_up"],
           "revisionId": null,
           "sheet": {

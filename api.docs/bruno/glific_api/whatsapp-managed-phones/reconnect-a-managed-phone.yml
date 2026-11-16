@@ -51,7 +51,7 @@ docs: |
       "reconnectWaManagedPhone": {
         "waManagedPhone": {
           "id": "2",
-          "phone": "919812345678",
+          "phone": "910000000008",
           "status": "idle"
         },
         "errors": null

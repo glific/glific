@@ -78,27 +78,27 @@ docs: |
         "waGroup": {
           "id": "2",
           "label": "Pune volunteers",
-          "bspId": "120363027326493365@g.us",
+          "bspId": "120363000000000001@g.us",
           "lastCommunicationAt": "2026-11-14T08:12:40Z",
           "fields": "{}",
-          "primaryPhone": { "id": "1", "phone": "919876543210", "status": "active" },
+          "primaryPhone": { "id": "1", "phone": "910000000001", "status": "active" },
           "phones": [
             {
               "id": "4",
               "isPrimary": true,
               "isActive": true,
-              "waManagedPhone": { "id": "1", "phone": "919876543210", "status": "active" }
+              "waManagedPhone": { "id": "1", "phone": "910000000001", "status": "active" }
             },
             {
               "id": "9",
               "isPrimary": false,
               "isActive": true,
-              "waManagedPhone": { "id": "2", "phone": "919812345678", "status": "loading" }
+              "waManagedPhone": { "id": "2", "phone": "910000000008", "status": "loading" }
             }
           ],
           "contacts": [
-            { "id": "31", "name": "Asha", "phone": "919900112233" },
-            { "id": "32", "name": null, "phone": "919900445566" }
+            { "id": "31", "name": "Asha", "phone": "910000000007" },
+            { "id": "32", "name": null, "phone": "910000000009" }
           ],
           "groups": [{ "id": "3", "label": "Default WA Group Collection" }]
         },

@@ -29,7 +29,7 @@ docs:
       every group each active phone is in: it creates new groups, renames changed ones, and
       reconciles members, admin flags and phone memberships. It never changes the primary
       phone.
-    - `bspId` is WhatsApp's group ID, such as `120363027326493365@g.us`.
+    - `bspId` is WhatsApp's group ID, such as `120363000000000001@g.us`.
 
     Reading groups needs the staff role. Creating groups and changing the primary phone need
     the admin role.

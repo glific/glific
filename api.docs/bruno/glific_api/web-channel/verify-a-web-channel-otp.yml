@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "phone": "919876500001",
+        "phone": "910000000005",
         "otp": "482913",
         "optin": true
       }
@@ -50,7 +50,7 @@ docs: |
       "token": "eyJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsIjoid2ViIiwic3ViIjoiOTE5ODc2NTAwMDAxIn0.Y2xh8nQ4W3",
       "contact_id": 42,
       "name": "Priya",
-      "phone": "919876500001"
+      "phone": "910000000005"
     }
   }
   ```

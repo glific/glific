@@ -20,7 +20,7 @@ graphql:
     variables: |-
       {
         "type": "DATA",
-        "data": "name,phone,collection\nAsha Patil,919876501234,\"November cohort, Mentors\"\nRavi Kumar,919820112345,November cohort"
+        "data": "name,phone,collection\nAsha Patil,910000000003,\"November cohort, Mentors\"\nRavi Kumar,910000000002,November cohort"
       }
   auth: inherit
 

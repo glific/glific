@@ -21,7 +21,7 @@ graphql:
       {
         "waGroupId": "2",
         "type": "DATA",
-        "data": "phone,name\n919900112233,Asha\n919900445566,Ravi\n"
+        "data": "phone,name\n910000000007,Asha\n910000000009,Ravi\n"
       }
   auth: inherit
 

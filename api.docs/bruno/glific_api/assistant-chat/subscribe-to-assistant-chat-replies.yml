@@ -53,7 +53,7 @@ docs: |
         "requestId": "e4b1d0c2-7a3f-4f6b-8d9e-2c1b0a9f8e7d",
         "conversationId": "conv_8f7e6d5c4b3a",
         "answer": "In the first trimester, eat small, frequent meals with plenty of fruit, vegetables, pulses and iron-rich foods.",
-        "inputFromUser": "I am at 9876500000, what should I eat during the first trimester?",
+        "inputFromUser": "I am pregnant, what should I eat during the first trimester?",
         "inputToLlm": "I am at <PHONE_NUMBER>, what should I eat during the first trimester?",
         "outputFromLlm": null,
         "outputToUser": null,

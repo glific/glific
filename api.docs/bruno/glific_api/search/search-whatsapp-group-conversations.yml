@@ -95,7 +95,7 @@ docs: |
           "waGroup": {
             "id": "5",
             "label": "Class 7 parents",
-            "bspId": "120363025012345678@g.us",
+            "bspId": "120363000000000002@g.us",
             "lastCommunicationAt": "2026-11-16T09:31:40Z"
           },
           "group": null,
@@ -107,7 +107,7 @@ docs: |
               "flow": "INBOUND",
               "insertedAt": "2026-11-16T09:31:40Z",
               "contact": { "id": "42", "name": "Meena" },
-              "waManagedPhone": { "id": "2", "phone": "919800000001" }
+              "waManagedPhone": { "id": "2", "phone": "910000000006" }
             }
           ]
         }

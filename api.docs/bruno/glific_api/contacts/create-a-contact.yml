@@ -33,7 +33,7 @@ graphql:
       {
         "input": {
           "name": "Asha Patil",
-          "phone": "919876501234",
+          "phone": "910000000003",
           "languageId": "1"
         }
       }
@@ -76,9 +76,9 @@ docs: |
         "contact": {
           "id": "131",
           "name": "Asha Patil",
-          "phone": "919876501234",
+          "phone": "910000000003",
           "identities": [
-            { "channel": "WHATSAPP", "identifier": "919876501234" }
+            { "channel": "WHATSAPP", "identifier": "910000000003" }
           ],
           "language": { "id": "1", "label": "English" }
         },

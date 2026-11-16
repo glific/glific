@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "phone": "919876500001"
+        "phone": "910000000005"
       }
 
 docs: |
@@ -35,7 +35,7 @@ docs: |
   ```json
   {
     "data": {
-      "phone": "919876500001",
+      "phone": "910000000005",
       "message": "If this number is registered on WhatsApp, you will receive a one-time code"
     }
   }

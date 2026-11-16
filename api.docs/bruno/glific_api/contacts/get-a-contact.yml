@@ -89,7 +89,7 @@ docs: |
         "contact": {
           "id": "12",
           "name": "Ravi Kumar",
-          "phone": "919820112345",
+          "phone": "910000000002",
           "maskedPhone": "9198******45",
           "status": "VALID",
           "bspStatus": "SESSION_AND_HSM",
@@ -111,7 +111,7 @@ docs: |
             {
               "id": "40",
               "channel": "WHATSAPP",
-              "identifier": "919820112345",
+              "identifier": "910000000002",
               "insertedAt": "2026-10-02T06:15:00Z"
             }
           ],

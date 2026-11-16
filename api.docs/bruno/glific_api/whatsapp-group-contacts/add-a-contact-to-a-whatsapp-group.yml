@@ -69,7 +69,7 @@ docs: |
         "contactWaGroup": {
           "id": "52",
           "isAdmin": false,
-          "contact": { "id": "31", "name": "Asha", "phone": "919900112233" },
+          "contact": { "id": "31", "name": "Asha", "phone": "910000000007" },
           "waGroup": { "id": "2", "label": "Pune volunteers" }
         },
         "errors": null

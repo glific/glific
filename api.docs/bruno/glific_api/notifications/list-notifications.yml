@@ -68,7 +68,7 @@ docs: |
           "category": "Message",
           "severity": "\"Warning\"",
           "message": "Sorry! 24 hrs window closed. Your message cannot be sent at this time.",
-          "entity": "{\"status\":\"valid\",\"phone\":\"919876543210\",\"name\":\"Chrissy Cron\",\"last_message_at\":\"2026-11-14T08:01:12Z\",\"is_hsm\":false,\"id\":8,\"group_id\":null,\"flow_id\":null,\"bsp_status\":\"hsm\"}",
+          "entity": "{\"status\":\"valid\",\"phone\":\"910000000001\",\"name\":\"Chrissy Cron\",\"last_message_at\":\"2026-11-14T08:01:12Z\",\"is_hsm\":false,\"id\":8,\"group_id\":null,\"flow_id\":null,\"bsp_status\":\"hsm\"}",
           "isRead": false,
           "insertedAt": "2026-11-16T09:12:30Z"
         }
