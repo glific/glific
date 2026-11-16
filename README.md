@@ -454,6 +454,8 @@ SSL (Secure Sockets Layer) provides encrypted connections between Glific and you
 
  * Set webhook in Gupshup app settings to `https://<ngrok-url>/gupshup`
 
+ > **Note:** ngrok is for local development only. CI (`.github/workflows/cypress-tests.yml`) does not use ngrok; it exposes the backend through a Cloudflare Quick Tunnel via `.github/scripts/cloudflare-tunnel.sh`, which needs no account or secrets.
+
 ### Updating Your Instance
  Run the following commands to update your codebase from the Glific repository.
  ```bash

@@ -1018,7 +1018,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
           ]
       end
     )
-    |> Enum.chunk_every(100)
+    # Contacts carry `fields` twice (`fields`, `raw_fields`), so 100 rows can exceed insertAll's 10 MB request limit.
+    |> Enum.chunk_every(50)
     |> enqueue_chunks(:contacts, organization_id, attrs)
 
     :ok

@@ -232,9 +232,10 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
           assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
-                   "gemini-3.1-flash-tts-preview"
+                   "gemini-3.8-flash-lite-tts"
 
-          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
+          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) ==
+                   "en-in-csagent-9"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
                    "hindi"
@@ -249,6 +250,36 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
       end)
 
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "keeps a supported 3.8 TTS model sent by the flow", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          assert body
+                 |> Jason.decode!()
+                 |> get_in(["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.8-flash-tts"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-457"}}
+      end)
+
+      fields = Map.put(fields, "model", "gemini-3.8-flash-tts")
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "replaces an unsupported TTS model with the default", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          assert body
+                 |> Jason.decode!()
+                 |> get_in(["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.8-flash-lite-tts"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-458"}}
+      end)
+
+      fields = Map.put(fields, "model", "gemini-3.1-flash-tts-preview")
       assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
     end
 

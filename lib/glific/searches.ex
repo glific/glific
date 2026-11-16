@@ -265,14 +265,17 @@ defmodule Glific.Searches do
 
   @spec basic_query(map()) :: Ecto.Query.t()
   defp basic_query(args) do
-    query = from(c in Contact, as: :c)
-
-    query
+    inbox_contacts_query()
     |> add_message_clause(args)
+    |> group_by([c: c], c.id)
+  end
+
+  @spec inbox_contacts_query() :: Ecto.Query.t()
+  defp inbox_contacts_query do
+    from(c in Contact, as: :c)
     |> order_by([c: c], desc: c.last_communication_at, desc: c.id)
     |> where([c: c], c.status != :blocked)
     |> where_in_inbox()
-    |> group_by([c: c], c.id)
     |> repo().add_permission(&Searches.add_permission/2)
   end
 
@@ -564,9 +567,9 @@ defmodule Glific.Searches do
   defp get_filtered_contacts(term, args, user) do
     {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
 
-    # since this revolves around contacts
-    args
-    |> basic_query()
+    # Contacts only: the term matches contact columns, so joining messages would only multiply
+    # every contact by its message count and group it back down.
+    inbox_contacts_query()
     |> where(^TermSearch.match(term, user))
     |> limit(^limit)
     |> offset(^offset)
