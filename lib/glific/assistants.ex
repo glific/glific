@@ -1633,14 +1633,16 @@ defmodule Glific.Assistants do
   end
 
   @spec build_collection_params(KnowledgeBaseVersion.t(), map()) :: map()
-  defp build_collection_params(%KnowledgeBaseVersion{files: files}, params) do
+  defp build_collection_params(%KnowledgeBaseVersion{id: id, files: files}, params) do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
       Glific.api_callback_base(organization.shortcode) <>
         "/kaapi/knowledge_base_version"
 
+    # Kaapi dedupes on name, so a retried request returns the running job instead of a new collection
     %{
+      name: "kbv_#{id}",
       documents: Map.keys(files),
       callback_url: callback_url
     }

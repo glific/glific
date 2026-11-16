@@ -457,7 +457,25 @@ defmodule Glific.Flows.ContactAction do
   Contact opts in via a flow
   """
   @spec optin(FlowContext.t(), Keyword.t()) :: FlowContext.t()
-  def optin(context, opts \\ []) do
+  def optin(context, opts \\ [])
+
+  def optin(%FlowContext{channel: :web} = context, _opts) do
+    contact = context.contact
+
+    with {:error, error} <-
+           Contacts.contact_opted_in(:web, contact, %{organization_id: contact.organization_id},
+             method: "flow"
+           ) do
+      Glific.log_error(
+        "Could not record a web flow opt-in for contact #{contact.id}: " <>
+          Glific.SafeLog.safe_inspect(error)
+      )
+    end
+
+    context
+  end
+
+  def optin(context, opts) do
     # We need to update the contact with optout_time and status
     context.contact
     |> Map.from_struct()
@@ -472,8 +490,9 @@ defmodule Glific.Flows.ContactAction do
   """
   @spec optout(FlowContext.t()) :: FlowContext.t()
   def optout(context) do
-    # We need to update the contact with optout_time and status
+    # Web opt-out is not recorded yet, so a web flow's opt-out node still withdraws WhatsApp consent.
     Contacts.contact_opted_out(
+      :whatsapp,
       context.contact.phone,
       context.contact.organization_id,
       DateTime.utc_now(),

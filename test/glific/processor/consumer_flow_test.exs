@@ -683,4 +683,116 @@ defmodule Glific.Processor.ConsumerFlowTest do
     assert new_context.results["result_1"]["screen_0_Choose_one_0"] == "0_Yes"
     assert new_context.results["result_1"]["screen_1_Customer_service_2"] == "0_Excellent"
   end
+
+  describe "keywords and default flows on the web channel" do
+    setup do
+      contact =
+        Repo.get_by(Contact, %{name: "Chrissy Cron"})
+        |> Fixtures.opt_in_to_web()
+
+      %{contact: contact, organization_id: contact.organization_id}
+    end
+
+    test "a web message starts a web flow by its keyword", %{contact: contact} = attrs do
+      flow = flow_with_keyword(attrs.organization_id, "help", :web)
+
+      process_on(:web, contact, "help")
+
+      assert {:ok, %FlowContext{channel: :web}} =
+               Repo.fetch_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+    end
+
+    test "a web message does not start a WhatsApp flow with that keyword",
+         %{contact: contact} = attrs do
+      flow = flow_with_keyword(attrs.organization_id, "help", :whatsapp)
+
+      process_on(:web, contact, "help")
+
+      refute Repo.get_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+    end
+
+    test "a WhatsApp message does not start a web flow with that keyword",
+         %{contact: contact} = attrs do
+      flow = flow_with_keyword(attrs.organization_id, "help", :web)
+
+      process_on(:whatsapp, contact, "help")
+
+      refute Repo.get_by(FlowContext, %{flow_id: flow.id, contact_id: contact.id})
+    end
+
+    test "a contact opted out on WhatsApp is not sent the opt-in flow on the web",
+         %{contact: contact} do
+      {:ok, contact} = Contacts.update_contact(contact, %{optout_time: DateTime.utc_now()})
+      # Another test caches the opt-in flow as inactive, which would skip it either way.
+      clear_optin_flow_cache(contact.organization_id)
+
+      process_on(:web, contact, "hello")
+
+      assert contexts_for(contact) == []
+    end
+
+    test "a new contact is not sent the new contact flow on the web", %{contact: contact} do
+      state =
+        Fixtures.get_org_id()
+        |> ConsumerFlow.load_state()
+        |> Map.put(:newcontact, true)
+
+      process_on(:web, contact, "hello", state)
+
+      assert contexts_for(contact) == []
+    end
+
+    # The seeded regex flow matches `unique_regex`; on WhatsApp it starts (see the regex test above).
+    test "the regex flow does not run on the web", %{contact: contact} do
+      process_on(:web, contact, "unique_regex")
+
+      assert contexts_for(contact) == []
+    end
+  end
+
+  defp flow_with_keyword(organization_id, keyword, channel) do
+    flow =
+      Flow
+      |> where([f], ^keyword in f.keywords and f.organization_id == ^organization_id)
+      |> Repo.one!()
+      |> Ecto.Changeset.change(channel: channel)
+      |> Repo.update!()
+
+    Glific.Caches.remove(organization_id, [
+      "flow_keywords_map",
+      {:flow_keyword, keyword, "published"},
+      {:flow_id, flow.id, "published"},
+      {:flow_uuid, flow.uuid, "published"}
+    ])
+
+    flow
+  end
+
+  defp process_on(channel, contact, body, state \\ nil) do
+    state = state || ConsumerFlow.load_state(contact.organization_id)
+
+    message =
+      Fixtures.message_fixture(%{body: body, sender_id: contact.id, channel: channel})
+      |> Repo.preload([:contact])
+
+    ConsumerFlow.process_message({message, state}, Glific.string_clean(body))
+  end
+
+  defp clear_optin_flow_cache(organization_id) do
+    optin_flow_id = Flows.flow_keywords_map(organization_id)["org_default_optin"]
+    {:ok, flow} = Repo.fetch_by(Flow, %{id: optin_flow_id})
+
+    Glific.Caches.remove(organization_id, [
+      "flow_keywords_map",
+      {:flow_id, flow.id, "published"},
+      {:flow_uuid, flow.uuid, "published"}
+      | Enum.map(flow.keywords, &{:flow_keyword, &1, "published"})
+    ])
+  end
+
+  defp contexts_for(contact) do
+    FlowContext
+    |> where([fc], fc.contact_id == ^contact.id)
+    |> Repo.all()
+  end
 end

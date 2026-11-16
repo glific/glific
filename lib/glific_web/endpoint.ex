@@ -61,6 +61,9 @@ defmodule GlificWeb.Endpoint do
   # Only gigalixir's x-forwarded-for is trusted; RemoteIp's other default headers are caller-set.
   plug(RemoteIp, headers: ~w[x-forwarded-for])
 
+  # Before Plug.Telemetry so the request start and stop lines carry the metadata too.
+  plug(GlificWeb.Plugs.LogMetadata)
+
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
   # Ahead of the parsers and SubdomainPlug so a blocked caller costs no body buffering or org lookup.

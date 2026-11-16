@@ -656,8 +656,8 @@ query contactLocation($id: ID!) {
 ## Optin a Contact
 
 ```graphql
-mutation optinContact($phone: String!, $name: String) {
-  optinContact(phone: $phone, name: $name) {
+mutation optinContact($phone: String, $name: String, $channel: MessageChannelEnum, $identifier: String) {
+  optinContact(phone: $phone, name: $name, channel: $channel, identifier: $identifier) {
     contact {
       id
       phone
@@ -676,6 +676,13 @@ mutation optinContact($phone: String!, $name: String) {
 {
   "phone": "917834811119",
   "name": "contact name"
+}
+
+# On the web channel
+{
+  "channel": "WEB",
+  "identifier": "ravi_12",
+  "name": "Ravi"
 }
 ```
 
@@ -701,10 +708,17 @@ mutation optinContact($phone: String!, $name: String) {
 
 ### Query Parameters
 
-| Parameter | Type                          | Default  | Description |
-| --------- | ----------------------------- | -------- | ----------- |
-| phone     | <a href="#string">String</a>! | required |             |
-| name      | <a href="#string">String</a>  |          |             |
+| Parameter  | Type                                                 | Default  | Description |
+| ---------- | ---------------------------------------------------- | -------- | ----------- |
+| phone      | <a href="#string">String</a>                         |          | The WhatsApp number. Required on `WHATSAPP` |
+| name       | <a href="#string">String</a>                         |          | The contact's name, used when the contact is created |
+| channel    | <a href="#messagechannelenum">MessageChannelEnum</a> | WHATSAPP | The channel to opt the contact in on |
+| identifier | <a href="#string">String</a>                         |          | The web username. Required on `WEB` |
+
+Opts a contact in on one channel, creating the contact when it does not exist. On `WHATSAPP` the
+contact is found by `phone`. On `WEB` it is found by `identifier`, and the consent is recorded for the
+web channel only: it does not opt the contact in on WhatsApp, and a repeated opt-in keeps the first
+one. `WEB` needs the web channel to be enabled for the organization.
 
 ### Return Parameters
 

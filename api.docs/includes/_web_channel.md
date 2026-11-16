@@ -31,6 +31,9 @@ A JWT signed with the organization's JWT signature secret.
   difference of up to 60 seconds is tolerated.
 * `name` (optional): the contact's name for a new contact. Defaults to `sub`.
 * `phone` (optional): the user's WhatsApp number as digits with the country code and no `+`.
+* `optin` (optional): a boolean. `true` records the user's consent to be messaged on the web channel, the
+  first time it is seen; `false` or absent records nothing, and it never opts the user out. Connecting alone
+  never opts a user in. It has no effect on the user's WhatsApp consent. Any other type makes the token invalid.
 * `jti` and `sst`: reserved for the sessions Glific issues after a one-time code login. Do not send them.
 
 ```javascript
@@ -346,8 +349,9 @@ WhatsApp messages.
 
 You can also create the contact ahead of the first login with the
 <a href="#create-a-contact">createContact</a> mutation with `channel: WEB` and an `identifier` (or give an
-existing contact a username with <a href="#add-an-identity-to-a-contact">addContactIdentity</a>), and look a
-user's contact up with <a href="#get-a-contact-by-identity">contactByIdentity</a>.
+existing contact a username with <a href="#add-an-identity-to-a-contact">addContactIdentity</a>), record the
+user's web consent with <a href="#optin-a-contact">optinContact</a> and `channel: WEB`, and look a user's
+contact up with <a href="#get-a-contact-by-identity">contactByIdentity</a>. Creating a contact never opts it in.
 
 ## Your responsibilities
 

@@ -10,11 +10,13 @@ defmodule Glific.Providers.Gupshup.V3.Dispatcher do
   require Logger
 
   alias Glific.Providers.Gupshup.V3.Handlers.FormResponse
+  alias Glific.Providers.Gupshup.V3.Handlers.PlatformEvent
   alias Glific.Providers.Gupshup.V3.Handlers.Status
 
   @handlers %{
     "statuses" => Status,
-    "nfm_reply" => FormResponse
+    "nfm_reply" => FormResponse,
+    "platform-event" => PlatformEvent
   }
 
   @doc """

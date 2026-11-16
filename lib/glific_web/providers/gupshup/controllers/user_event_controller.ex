@@ -18,10 +18,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
   def opted_in(conn, params) do
     {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
 
-    %{phone: get_in(params, ["payload", "phone"])}
-    |> Glific.Contacts.contact_opted_in(
-      conn.assigns[:organization_id],
-      timestamp,
+    Glific.Contacts.contact_opted_in(
+      :whatsapp,
+      get_in(params, ["payload", "phone"]),
+      %{organization_id: conn.assigns[:organization_id]},
+      utc_time: timestamp,
       method: "BSP"
     )
 
@@ -40,8 +41,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
   def opted_out(conn, params) do
     {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
 
-    get_in(params, ["payload", "phone"])
-    |> Glific.Contacts.contact_opted_out(
+    Glific.Contacts.contact_opted_out(
+      :whatsapp,
+      get_in(params, ["payload", "phone"]),
       conn.assigns[:organization_id],
       timestamp,
       "BSP"
