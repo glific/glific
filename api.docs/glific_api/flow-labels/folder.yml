@@ -1,0 +1,19 @@
+info:
+  name: Flow Labels
+  type: folder
+  seq: 31
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Flow labels are labels a flow's "add labels" action puts on a contact's incoming message,
+    such as `Interested` or `Needs follow-up`. They are stored on the message (its
+    `flowLabel` field) rather than as tags, and are used to find and report on messages.
+
+    Labels are created from the flow editor (**Flow Editor › Create a flow label**); the
+    GraphQL API only reads them. Reading needs the staff role.
+
+    Related: **Flows**, **Flow Editor**, **Tags**.
+  type: text/markdown

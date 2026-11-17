@@ -1,0 +1,58 @@
+info:
+  name: Sync WhatsApp forms
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation syncWhatsappForm {
+        syncWhatsappForm {
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Imports the organization's WhatsApp forms from Gupshup. Glific fetches the list of flows,
+  skips those that are already `PUBLISHED` in Glific, and queues background jobs that handle
+  the rest one at a time. Each job downloads the flow JSON and:
+
+  - creates the form (with the flow's name, categories and status) and its first revision if
+    Glific doesn't have it, the revision owned by the organization's root user;
+  - otherwise, when the name, categories, status or JSON changed, saves the JSON as a new
+    current revision and updates the form.
+
+  "WhatsApp Forms" notifications mark the start and the end of the sync.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "syncWhatsappForm": {
+        "message": "Syncing of WhatsApp forms has started in the background.",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Gupshup's list call fails: a top-level error with its response.
+  - A user without the manager role gets a top-level `Unauthorized` error.

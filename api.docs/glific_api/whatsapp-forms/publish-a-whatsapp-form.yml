@@ -1,0 +1,77 @@
+info:
+  name: Publish a WhatsApp form
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation publishWhatsappForm($id: ID!) {
+        publishWhatsappForm(id: $id) {
+          whatsappForm {
+            id
+            name
+            status
+            metaFlowId
+            revisionId
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Makes a form live at Meta. In order, Glific:
+
+  1. uploads the current revision's definition to Meta as the flow JSON;
+  2. publishes the flow through Gupshup;
+  3. sets the form's status to `PUBLISHED`;
+  4. if a Google Sheet is linked, writes the header row to it: `timestamp`,
+     `contact_phone_number`, `whatsapp_form_id`, `whatsapp_form_name`, then the keys of the
+     form's `complete` action payload.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The form to publish. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "publishWhatsappForm": {
+        "whatsappForm": {
+          "id": "3",
+          "name": "sign_up_form",
+          "status": "PUBLISHED",
+          "metaFlowId": "1000000000000001",
+          "revisionId": 14
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The form does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappForm", "message": "Resource not found" }]`.
+  - Meta rejects the JSON (for example, validation errors in the definition) or the publish:
+    a top-level error with Gupshup's response. The status does not change.
+  - The sheet header can't be written: a top-level error, although the form is already
+    `PUBLISHED`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

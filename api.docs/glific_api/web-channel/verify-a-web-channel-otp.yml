@@ -1,0 +1,70 @@
+info:
+  name: Verify a web channel OTP
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/web_channel/verify-otp"
+  body:
+    type: json
+    data: |-
+      {
+        "phone": "910000000005",
+        "otp": "482913",
+        "optin": true
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        if (body && body.data) {
+          bru.setVar("web_channel_token", body.data.token);
+        }
+
+docs: |
+  Checks a code from **Request a web channel OTP** and signs the beneficiary in: adds a web
+  identity to their contact and returns a web channel token, valid for one hour. This request
+  stores the token in the runtime variable `web_channel_token`.
+
+  With `optin: true` (the widget's consent checkbox) it also records the contact's opt-in to
+  the web channel. That opt-in is separate from WhatsApp opt-in, which is not changed.
+
+  An organization that manages its own users can sign tokens on its own backend instead; see
+  **Tokens signed by your backend** in the **Web Channel** folder.
+
+  ## Request body
+
+  | Field   | Type    | Required | Description                                                |
+  | ------- | ------- | -------- | ---------------------------------------------------------- |
+  | `phone` | String  | Yes      | The phone the code was sent to.                            |
+  | `otp`   | String  | Yes      | The code from WhatsApp.                                    |
+  | `optin` | Boolean | No       | `true` when the beneficiary agreed to be messaged on the web channel. |
+
+  ## Example response
+
+  `name` is the contact's display name.
+
+  ```json
+  {
+    "data": {
+      "token": "eyJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsIjoid2ViIiwic3ViIjoiOTE5ODc2NTAwMDAxIn0.Y2xh8nQ4W3",
+      "contact_id": 42,
+      "name": "Priya",
+      "phone": "910000000005"
+    }
+  }
+  ```
+
+  ## Errors
+
+  All as `{ "error": { "status": <code>, "message": "..." } }`:
+
+  - `401`: the code is wrong, expired or was never issued: `Invalid OTP`.
+  - `422`: `phone` or `otp` is missing (`Phone number and OTP are required`), the phone is not
+    valid, or `optin` is not a boolean (`optin must be true or false`).
+  - `404`: the web channel is not enabled for the organization.
+  - `500`: the code was right but the contact could not be set up:
+    `Could not complete sign in. Please request a new code.`

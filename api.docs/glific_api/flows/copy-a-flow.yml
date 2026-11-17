@@ -1,0 +1,80 @@
+info:
+  name: Copy a flow
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation copyFlow($id: ID!, $input: FlowInput) {
+        copyFlow(id: $id, input: $input) {
+          flow {
+            id
+            uuid
+            name
+            keywords
+            channel
+            isActive
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "input": {
+          "name": "Help Workflow (copy)",
+          "keywords": ["helpcopy"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a new flow from an existing one, typically a template flow. The copy gets a new
+  UUID, the source's channel, and the source's newest revision (draft or published) as its
+  only draft revision. The copy is not published.
+
+  Settings are not copied: the name, keywords and every other setting come from `input`.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type        | Required | Description                                                                 |
+  | -------- | ----------- | -------- | --------------------------------------------------------------------------- |
+  | `id`     | `ID!`       | Yes      | The flow to copy.                                                           |
+  | `input`  | `FlowInput` | Yes      | Settings for the copy; `name` is required. See **Create a flow**. Although the schema marks it optional, the call fails without it. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "copyFlow": {
+        "flow": {
+          "id": "29",
+          "uuid": "b1e9a0e2-5f5c-4c0e-9d0e-2a6c1d9b7f40",
+          "name": "Help Workflow (copy)",
+          "keywords": ["helpcopy"],
+          "channel": "WHATSAPP",
+          "isActive": true
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `name` is missing, taken, or a keyword belongs to another flow: the same `errors` as
+    **Create a flow**.
+  - The source flow does not exist, or `input` is left out: a top-level error, `Something
+    unexpected has happened, please reach out to Glific team over discord to get this
+    resolved`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

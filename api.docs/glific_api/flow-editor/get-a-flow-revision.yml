@@ -1,0 +1,62 @@
+info:
+  name: Get a flow revision
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/revisions/:flowUuid/:revisionId"
+  params:
+    - name: flowUuid
+      value: 3fa22108-f464-41e5-81d9-d8a298854429
+      type: path
+    - name: revisionId
+      value: "425"
+      type: path
+  auth: inherit
+
+docs: |
+  Returns the full definition saved in one revision, including the `_ui` layout. The editor
+  loads it when it opens a flow and when the user picks a revision from the history.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The path takes the flow's UUID and a revision ID from **List flow revisions**.
+
+  | Parameter    | Description                                              |
+  | ------------ | -------------------------------------------------------- |
+  | `flowUuid`   | UUID of the flow. Not checked: the revision ID alone is used. |
+  | `revisionId` | ID of the revision.                                      |
+
+  ## Example response
+
+  `200`, definition shortened. `metadata.issues` is always empty.
+
+  ```json
+  {
+    "definition": {
+      "name": "Help Workflow",
+      "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+      "spec_version": "13.1.0",
+      "language": "base",
+      "type": "messaging",
+      "revision": 12,
+      "expire_after_minutes": 10080,
+      "localization": {},
+      "nodes": [],
+      "_ui": {
+        "nodes": {}
+      }
+    },
+    "metadata": {
+      "issues": []
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.
+  - `404`: no revision with this ID in the organization.

@@ -1,0 +1,44 @@
+info:
+  name: Messages
+  type: folder
+  seq: 20
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Messages are the inbound and outbound messages between the organization and its contacts.
+    Each message has a `flow` (`INBOUND` from the contact, `OUTBOUND` to the contact), a
+    `type` (`TEXT`, `IMAGE`, `DOCUMENT`, ...), a `channel` (`WHATSAPP` or `WEB`) and a
+    `bspStatus` that tracks delivery as the BSP reports it (`ENQUEUED`, `SENT`, `DELIVERED`,
+    `READ`, `ERROR`, ...).
+
+    ## Sending
+
+    Outbound WhatsApp messages go out through the organization's BSP (Gupshup). WhatsApp
+    allows two kinds:
+
+    - **Session messages**: any free-form message. Allowed only while the contact's 24-hour
+      window is open, that is, the contact messaged the organization in the last 24 hours
+      (contact `bspStatus` is `SESSION` or `SESSION_AND_HSM`). Use **Send a message** or
+      **Send a session template**.
+    - **HSM templates**: templates pre-approved by WhatsApp. They can be sent outside the
+      24-hour window to a contact who has opted in. Use **Send an HSM template message**, or
+      **Send a message** with `isHsm: true`.
+
+    A send creates the message row, then queues a job that calls the BSP (at `sendAt` if
+    given). The mutation returns once the job is queued; delivery updates arrive later through
+    **Subscribe to message status updates**. When a send is refused (closed window, contact
+    not opted in, blocked contact), Glific also records a `Message` notification (see
+    **Notifications**).
+
+    Messages to a collection (a contact group) go through a broadcast that sends to members in
+    batches in the background. Messages to WhatsApp groups go through Maytapi, not the BSP.
+
+    Reading and sending need the staff role. Changing or deleting a stored message needs the
+    admin role.
+
+    Related: **Message Media** (attachments), **Message Tags**, **Search** (conversations),
+    **Session Templates** (templates and HSMs), **WhatsApp Groups**.
+  type: text/markdown

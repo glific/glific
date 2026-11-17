@@ -1,0 +1,87 @@
+info:
+  name: Update a template's tags
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateTemplateTags($input: TemplateTagsInput!) {
+        updateTemplateTags(input: $input) {
+          templateTags {
+            id
+            template {
+              id
+              label
+            }
+            tag {
+              id
+              label
+            }
+          }
+          numberDeleted
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "templateId": "12",
+          "addTagIds": ["3", "5"],
+          "deleteTagIds": ["7"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds and removes several tags on one template in a single call. Tags that fail to attach
+  (for example an unknown tag ID) are skipped silently.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description           |
+  | -------- | -------------------- | -------- | --------------------- |
+  | `input`  | `TemplateTagsInput!` | Yes      | The changes to make.  |
+
+  ### `TemplateTagsInput`
+
+  | Field          | Type    | Required | Description                                  |
+  | -------------- | ------- | -------- | -------------------------------------------- |
+  | `templateId`   | `ID!`   | Yes      | The template.                                |
+  | `addTagIds`    | `[ID]!` | Yes      | Tags to attach. Pass `[]` for none.          |
+  | `deleteTagIds` | `[ID]!` | Yes      | Tags to remove. Pass `[]` for none.          |
+
+  ## Example response
+
+  `templateTags` lists the tags attached by this call; `numberDeleted` counts the tags
+  removed.
+
+  ```json
+  {
+    "data": {
+      "updateTemplateTags": {
+        "templateTags": [
+          {
+            "id": "43",
+            "template": { "id": "12", "label": "Order update" },
+            "tag": { "id": "5", "label": "Payments" }
+          },
+          {
+            "id": "42",
+            "template": { "id": "12", "label": "Order update" },
+            "tag": { "id": "3", "label": "Orders" }
+          }
+        ],
+        "numberDeleted": 1
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  This mutation's result has no `errors` field. A user without the staff role gets a
+  top-level `Unauthorized` error.

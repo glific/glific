@@ -1,0 +1,58 @@
+info:
+  name: Delete a message media
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteMessageMedia($id: ID!) {
+        deleteMessageMedia(id: $id) {
+          messageMedia {
+            id
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "57"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a message media row. The file itself is not removed from storage.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The media to delete. |
+
+  ## Example response
+
+  On success the result does not echo the deleted media: both fields are `null`.
+
+  ```json
+  {
+    "data": {
+      "deleteMessageMedia": {
+        "messageMedia": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The media does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Messages.MessageMedia", "message": "Resource not found" }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

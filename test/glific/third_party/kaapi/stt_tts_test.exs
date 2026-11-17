@@ -291,6 +291,61 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
       )
     end
 
+    test "falls back to the default Gemini model for google with an unsupported model" do
+      mock(fn
+        %Tesla.Env{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "google"
+          assert completion["params"]["model"] == "gemini-3.8-flash-lite-tts"
+          assert completion["params"]["voice"] == "en-in-csagent-9"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-google"}}
+      end)
+
+      result =
+        Kaapi.text_to_speech(@org_id, "Hello", @callback_url, @request_metadata, %{
+          model: "unsupported-model"
+        })
+
+      assert result.success == true
+    end
+
+    test "passes a non-google provider's model through unchanged" do
+      mock(fn
+        %Tesla.Env{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "elevenlabs"
+          assert completion["params"]["model"] == "eleven_v3"
+          assert completion["params"]["voice"] == "Liam"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-elevenlabs"}}
+      end)
+
+      result =
+        Kaapi.text_to_speech(@org_id, "Hello", @callback_url, @request_metadata, %{
+          provider: "elevenlabs",
+          model: "eleven_v3",
+          voice: "Liam"
+        })
+
+      assert result.success == true
+    end
+
+    test "sends empty model and voice to a non-google provider when they are absent" do
+      mock(fn
+        %Tesla.Env{method: :post, body: body} ->
+          params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
+          assert params["model"] == ""
+          assert params["voice"] == ""
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-no-model"}}
+      end)
+
+      Kaapi.text_to_speech(@org_id, "Hello", @callback_url, @request_metadata, %{
+        provider: "elevenlabs"
+      })
+    end
+
     test "returns timeout error on transport :timeout from Kaapi" do
       mock(fn
         %Tesla.Env{method: :post} -> {:error, :timeout}

@@ -1,0 +1,80 @@
+info:
+  name: Set the primary phone across a collection
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation setPrimaryPhoneForCollection($collectionId: ID!, $waManagedPhoneId: ID!) {
+        setPrimaryPhoneForCollection(collectionId: $collectionId, waManagedPhoneId: $waManagedPhoneId) {
+          status
+          userJobId
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "collectionId": "3",
+        "waManagedPhoneId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Makes one managed phone the primary phone of every WhatsApp group in a collection. The work
+  runs in a background job; this returns once the job is queued, with the `userJobId` that
+  tracks it. When the job finishes, a "Collection Primary Phone" notification is created.
+
+  For each group, the job does what **WhatsApp Groups › Set the primary phone of a WhatsApp
+  group** does, but skips the group instead of failing, with one of these reasons:
+
+  | Reason                   | When                                                      |
+  | ------------------------ | --------------------------------------------------------- |
+  | `not_a_member`           | The phone is not a member of the group.                   |
+  | `member_inactive`        | The phone has left the group.                             |
+  | `phone_status_unhealthy` | The phone's Maytapi status is not `active`, so every group it would change is skipped. |
+  | `error`                  | The change failed for another reason.                     |
+
+  Groups where the phone is already primary are left as they are and are not reported. Get
+  the skipped groups with **Get a collection primary-phone report**.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument           | Type  | Required | Description                        |
+  | ------------------ | ----- | -------- | ---------------------------------- |
+  | `collectionId`     | `ID!` | Yes      | The collection.                    |
+  | `waManagedPhoneId` | `ID!` | Yes      | The managed phone to make primary. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "setPrimaryPhoneForCollection": {
+        "status": "Setting the primary phone across the collection id 3 has started in the background.",
+        "userJobId": "41",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as a top-level error, with no job started:
+
+  - The phone does not exist in the organization: `The selected WhatsApp phone was not found.`
+  - The collection has no WhatsApp groups (or does not exist): `This collection has no
+    WhatsApp groups.`
+  - The phone is in none of the collection's groups: `This phone is not a member of any
+    WhatsApp group in this collection. Add it to a group on WhatsApp first.`
+  - The job can't be queued: `Could not start the collection primary-phone update. Please try
+    again.`
+  - A user without the admin role gets `Unauthorized`.

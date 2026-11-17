@@ -1,0 +1,81 @@
+info:
+  name: Get a sheet
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query sheet($id: ID!) {
+        sheet(id: $id) {
+          sheet {
+            id
+            label
+            url
+            type
+            isActive
+            autoSync
+            lastSyncedAt
+            syncStatus
+            failureReason
+            sheetDataCount
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Returns one sheet by ID, with the outcome of its last sync.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The sheet to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "sheet": {
+        "sheet": {
+          "id": "2",
+          "label": "School directory",
+          "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+          "type": "READ",
+          "isActive": true,
+          "autoSync": true,
+          "lastSyncedAt": "2026-11-16T00:01:12Z",
+          "syncStatus": "FAILED",
+          "failureReason": "Repeated or missing headers",
+          "sheetDataCount": 0,
+          "insertedAt": "2026-09-02T08:20:41Z",
+          "updatedAt": "2026-11-16T00:01:12Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The sheet does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Sheets.Sheet", "message": "Resource not found" }]` and `sheet` is
+    `null`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

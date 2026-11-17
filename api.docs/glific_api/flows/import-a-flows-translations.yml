@@ -1,0 +1,63 @@
+info:
+  name: Import a flow's translations
+  type: graphql
+  seq: 14
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation importFlowLocalization($id: ID!, $localization: String) {
+        importFlowLocalization(id: $id, localization: $localization) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "localization": "Type,UUID,English,Hindi,Node_uuid\nType,UUID,en,hi,Node_uuid\nAction,e319cd39-f764-4680-9199-4cb7da647166,Thank you for reaching out.,संपर्क करने के लिए धन्यवाद।,3ea030e9-41c4-4c6c-8880-68bc2828d67b\n"
+      }
+  auth: inherit
+
+docs: |
+  Writes translations back into a flow from a CSV made by **Export a flow's translations**.
+  The translations are merged into the newest revision's localization and saved as a new
+  draft revision; publish the flow to make them live.
+
+  The first two rows are skipped. Language columns are read by position in the order the
+  export uses, so keep the columns as exported. The default-language column is ignored: edit
+  the source text in the flow editor.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument       | Type     | Required | Description                         |
+  | -------------- | -------- | -------- | ----------------------------------- |
+  | `id`           | `ID!`    | Yes      | The flow to update.                 |
+  | `localization` | `String` | Yes      | The CSV, as one string.             |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "importFlowLocalization": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow does not exist in the organization, or the CSV can't be parsed: a top-level
+    error, `Something unexpected has happened, please reach out to Glific team over discord to
+    get this resolved`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

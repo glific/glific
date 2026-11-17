@@ -1,0 +1,29 @@
+info:
+  name: WhatsApp Group Contacts
+  type: folder
+  seq: 71
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    The members of WhatsApp groups. Each member row links a contact to a WhatsApp group and
+    records whether the contact is a WhatsApp admin of that group (`isAdmin`).
+
+    Member rows are kept in step with WhatsApp by **WhatsApp Groups › Sync WhatsApp groups from
+    Maytapi**, which adds and removes rows to match each group's participants. The requests
+    here change members in two different ways:
+
+    - **On WhatsApp and in Glific:** **Import contacts into a WhatsApp group** and **Remove a
+      contact from a WhatsApp group** call Maytapi from a managed phone that is an admin of the
+      group, then update Glific. They need the admin role.
+    - **In Glific only:** **Add a contact to a WhatsApp group** and the add half of **Update the
+      contacts of a WhatsApp group** only write member rows. The next sync removes rows for
+      contacts who aren't really in the group. They need the staff role.
+
+    Reading members needs the staff role.
+
+    Related folders: **WhatsApp Groups** and **Contacts**, whose `getContactUploadReport`
+    query returns the per-number results of an import.
+  type: text/markdown

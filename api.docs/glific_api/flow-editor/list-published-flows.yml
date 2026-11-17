@@ -1,0 +1,44 @@
+info:
+  name: List published flows
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/flows"
+  auth: inherit
+
+docs: |
+  Lists the flows another flow can enter: active, non-template flows that have a published
+  revision. The editor uses it for the "enter another flow" action.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. `archived`, `labels`, `expires` and `parent_refs` are fixed values the editor
+  expects.
+
+  ```json
+  {
+    "results": [
+      {
+        "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+        "name": "Help Workflow",
+        "type": "message",
+        "archived": false,
+        "labels": [],
+        "expires": 10080,
+        "parent_refs": []
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

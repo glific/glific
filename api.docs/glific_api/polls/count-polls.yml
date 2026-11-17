@@ -1,0 +1,46 @@
+info:
+  name: Count polls
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countWaPolls($filter: WaPollFilter) {
+        countWaPolls(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "allowMultipleAnswer": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's polls that match a filter. Use it with **List polls** to build
+  pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                           |
+  | -------- | -------------- | -------- | ----------------------------------------------------- |
+  | `filter` | `WaPollFilter` | No       | Same fields as in **List polls**. Without it, counts all polls. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countWaPolls": 2
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

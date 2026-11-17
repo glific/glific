@@ -1,0 +1,48 @@
+info:
+  name: Get a contact's location
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contactLocation($id: ID!) {
+        contactLocation(id: $id) {
+          latitude
+          longitude
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Returns the most recent location a contact shared, or `null` if it has never shared one.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description  |
+  | -------- | ----- | -------- | ------------ |
+  | `id`     | `ID!` | Yes      | The contact. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "contactLocation": { "latitude": 18.5204, "longitude": 73.8567 }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact does not exist in the organization: there is no error, but `contactLocation`
+    comes back as `{ "latitude": null, "longitude": null }` rather than `null`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

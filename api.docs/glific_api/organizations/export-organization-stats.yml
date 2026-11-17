@@ -1,0 +1,64 @@
+info:
+  name: Export organization stats
+  type: graphql
+  seq: 15
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query organizationExportStats($filter: ExportFilter) {
+        organizationExportStats(filter: $filter) {
+          data
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "startTime": "2026-11-01T00:00:00Z",
+          "tables": ["contacts", "messages"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Returns, for each exportable table, how many of the organization's rows changed since
+  `startTime` and the oldest and newest `updated_at`. Use it to plan the pages of
+  **Export organization data**.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                                       |
+  | -------- | -------------- | -------- | ----------------------------------------------------------------- |
+  | `filter` | `ExportFilter` | Yes      | Only `startTime` and `tables` are used. See **Export organization data**. Without `startTime`, all rows are counted. |
+
+  ## Example response
+
+  `data` is JSON mapping each table to `[count, min updated_at, max updated_at]`.
+
+  ```json
+  {
+    "data": {
+      "organizationExportStats": {
+        "data": {
+          "contacts": [28, "2026-11-02T09:41:12", "2026-11-15T17:03:51"],
+          "messages": [412, "2026-11-01T06:20:03", "2026-11-16T08:12:44"]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Leaving out `filter` returns a top-level error, although the schema marks it optional.
+    Pass `{}` to count everything.
+  - A user without the admin role gets a top-level `Unauthorized` error.

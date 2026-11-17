@@ -1,0 +1,74 @@
+info:
+  name: Send an HSM template to a collection
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {
+        sendHsmMessageToGroup(templateId: $templateId, groupId: $groupId, parameters: $parameters) {
+          success
+          contactIds
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "templateId": "12",
+        "groupId": "2",
+        "parameters": ["@contact.name", "Friday 5 PM"]
+      }
+  auth: inherit
+
+docs: |
+  Sends an HSM template to every contact in a collection. Glific records one group message
+  and starts a background broadcast that sends to each member in batches, as in **Send a
+  message to a collection**. Parameters can use contact variables such as `@contact.name`,
+  which are filled in per member.
+
+  **Caution:** the resolver does not set `isHsm` on the broadcast it starts, so in the current
+  code each member is sent a session message with no body rather than the template. Until that
+  is fixed, send HSMs to a collection with **Send a message to a collection** and
+  `isHsm: true`, `templateId` and `params` in the input.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument     | Type       | Required | Description                                               |
+  | ------------ | ---------- | -------- | --------------------------------------------------------- |
+  | `templateId` | `ID!`      | Yes      | The HSM session template.                                 |
+  | `groupId`    | `ID!`      | Yes      | The collection to send to.                                |
+  | `parameters` | `[String]` | No       | One value per placeholder in the template.                |
+
+  ## Example response
+
+  `contactIds` lists the members queued for the broadcast.
+
+  ```json
+  {
+    "data": {
+      "sendHsmMessageToGroup": {
+        "success": true,
+        "contactIds": ["8", "9", "14"],
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The collection does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.Group", "message": "Resource not found" }]`.
+  - The collection has no members: top-level error `The group has no members`.
+  - A user without the staff role gets a top-level `Unauthorized` error.
+
+  Per-member failures (wrong parameter count, contact not opted in) do not fail the mutation;
+  those members are skipped during the broadcast.

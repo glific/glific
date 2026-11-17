@@ -1,0 +1,66 @@
+info:
+  name: Delete an assistant
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteAssistant($id: ID!) {
+        deleteAssistant(id: $id) {
+          assistant {
+            id
+            name
+            kaapiUuid
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "7"
+      }
+  auth: inherit
+
+docs: |
+  Deletes an assistant: first its config and all its versions on Kaapi, then the assistant in
+  Glific. If the assistant never reached Kaapi (`kaapiUuid` is `null`), only the Glific
+  record is deleted.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description              |
+  | -------- | ----- | -------- | ------------------------ |
+  | `id`     | `ID!` | Yes      | The assistant to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteAssistant": {
+        "assistant": {
+          "id": "7",
+          "name": "Maternal health helper",
+          "kaapiUuid": "3f0b6b0e-5c1a-4a43-9a0e-1f3c2d9e8b11"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The assistant does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Assistants.Assistant", "message": "Resource not found" }]`.
+  - Kaapi fails to delete the config: a top-level error
+    `Failed to delete assistant from Kaapi: ...`. Nothing is deleted in Glific.
+  - A user without the manager role gets a top-level `Unauthorized` error.

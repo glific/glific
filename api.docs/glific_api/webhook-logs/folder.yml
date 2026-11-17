@@ -1,0 +1,18 @@
+info:
+  name: Webhook Logs
+  type: folder
+  seq: 27
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Webhook logs record every call a flow's webhook node makes: the URL and method, the
+    request headers (with credentials redacted) and body, the response, the HTTP status code
+    and any error. Use them to debug flow integrations.
+
+    Both operations need the manager role.
+
+    Related: **Flows**.
+  type: text/markdown

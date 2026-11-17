@@ -1,0 +1,73 @@
+info:
+  name: Reconnect a managed phone
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation reconnectWaManagedPhone($waManagedPhoneId: ID!) {
+        reconnectWaManagedPhone(waManagedPhoneId: $waManagedPhoneId) {
+          waManagedPhone {
+            id
+            phone
+            status
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "waManagedPhoneId": "2"
+      }
+  auth: inherit
+
+docs: |
+  Logs an unhealthy managed phone out of WhatsApp through Maytapi, so Maytapi shows a fresh
+  login QR code. Then use **Get a managed phone's login screen** to show the code and scan it
+  with the phone. Only allowed when the phone's stored status is not `active` or `loading`.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument           | Type  | Required | Description                     |
+  | ------------------ | ----- | -------- | ------------------------------- |
+  | `waManagedPhoneId` | `ID!` | Yes      | The managed phone to reconnect. |
+
+  ## Example response
+
+  Returns the phone as stored before the logout; its `status` updates once Maytapi reports
+  the change.
+
+  ```json
+  {
+    "data": {
+      "reconnectWaManagedPhone": {
+        "waManagedPhone": {
+          "id": "2",
+          "phone": "910000000008",
+          "status": "idle"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as a top-level error:
+
+  - The phone is healthy: `This WhatsApp phone is already connected.`
+  - The phone does not exist in the organization:
+    `Elixir.Glific.WAGroup.WAManagedPhone, Resource not found`.
+  - Maytapi refuses the logout: a Maytapi-derived message, such as `WhatsApp couldn't
+    complete this action right now. Please try again in a moment.`
+  - Maytapi is not set up for the organization: `Maytapi is not active`.
+  - A user without the admin role gets `Unauthorized`.

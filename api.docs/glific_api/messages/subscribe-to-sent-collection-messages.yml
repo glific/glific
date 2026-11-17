@@ -1,0 +1,81 @@
+info:
+  name: Subscribe to sent collection messages
+  type: graphql
+  seq: 19
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription sentGroupMessage($organizationId: ID!) {
+        sentGroupMessage(organizationId: $organizationId) {
+          id
+          body
+          type
+          flow
+          status
+          bspStatus
+          messageNumber
+          insertedAt
+          contact {
+            id
+            name
+            phone
+          }
+          media {
+            id
+            url
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes the group message Glific records when a message is sent to a collection (**Send a
+  message to a collection**, **Send an HSM template to a collection**, or a flow sending to a
+  collection). The message is stored against the organization's own contact; it is a record of
+  the broadcast, not a message to one contact.
+
+  **Role:** any logged-in user of the organization. The subscription has no role check; it only
+  checks that `organizationId` is the user's own organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                  |
+  | ---------------- | ----- | -------- | -------------------------------------------- |
+  | `organizationId` | `ID!` | Yes      | The logged-in user's organization.           |
+
+  The pushed payload is a `Message`; select any of its fields.
+
+  ## Example response
+
+  Each event is pushed as:
+
+  ```json
+  {
+    "data": {
+      "sentGroupMessage": {
+        "id": "1060",
+        "body": "Reminder: the parents' meeting is tomorrow at 10 AM.",
+        "type": "TEXT",
+        "flow": "OUTBOUND",
+        "status": "enqueued",
+        "bspStatus": null,
+        "messageNumber": 31,
+        "insertedAt": "2026-11-16T09:30:12Z",
+        "contact": { "id": "8", "name": "Chrissy Cron", "phone": "910000000001" },
+        "media": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization is rejected with the error
+  `Auth Credentials mismatch`.

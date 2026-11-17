@@ -1,0 +1,94 @@
+info:
+  name: Update a WhatsApp form
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateWhatsappForm($id: ID!, $input: WhatsappFormInput!) {
+        updateWhatsappForm(id: $id, input: $input) {
+          whatsappForm {
+            id
+            name
+            status
+            description
+            categories
+            sheet {
+              id
+              label
+              url
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "input": {
+          "name": "student_sign_up_form",
+          "categories": ["sign_up", "survey"],
+          "description": "Collects name, class and school for new students",
+          "googleSheetUrl": "https://docs.google.com/spreadsheets/d/1AbCdEf/edit"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a form's name, categories, description and Google Sheet. The new name and
+  categories are sent to Meta through Gupshup first. To change the form's screens, save a new
+  revision instead (**Save a WhatsApp form revision**).
+
+  The whole input is applied, so send every field:
+
+  - `googleSheetUrl` given: updates the linked sheet's URL and label, or creates and links a
+    sheet if there is none.
+  - `googleSheetUrl` omitted or empty: unlinks the sheet.
+  - `description` omitted: clears it.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                      |
+  | -------- | -------------------- | -------- | ---------------------------------------------------------------- |
+  | `id`     | `ID!`                | Yes      | The form to change.                                              |
+  | `input`  | `WhatsappFormInput!` | Yes      | The form's fields. See **Create a WhatsApp form** for the list.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateWhatsappForm": {
+        "whatsappForm": {
+          "id": "3",
+          "name": "student_sign_up_form",
+          "status": "DRAFT",
+          "description": "Collects name, class and school for new students",
+          "categories": ["sign_up", "survey"],
+          "sheet": {
+            "id": "7",
+            "label": "WhatsApp Form - student_sign_up_form",
+            "url": "https://docs.google.com/spreadsheets/d/1AbCdEf/edit"
+          }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The form does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappForm", "message": "Resource not found" }]`.
+  - The new name is already used: `{ "key": "name", "message": "Name: has already been taken" }`.
+  - Gupshup rejects the change or the sheet can't be updated: a top-level error with the cause.
+  - A user without the manager role gets a top-level `Unauthorized` error.

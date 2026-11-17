@@ -1,0 +1,86 @@
+info:
+  name: Subscribe to config version updates
+  type: graphql
+  seq: 15
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription assistantConfigVersionUpdated {
+        assistantConfigVersionUpdated {
+          id
+          majorVersion
+          minorVersion
+          versionLabel
+          description
+          model
+          prompt
+          settings
+          inputGuardrails
+          outputGuardrails
+          status
+          vectorStore {
+            id
+            knowledgeBaseVersionId
+            vectorStoreId
+            name
+            status
+          }
+          insertedAt
+          updatedAt
+        }
+      }
+  auth: inherit
+
+docs: |
+  Pushes an assistant config version each time one of the organization's versions reaches
+  `ready` or `failed`. That happens when Glific registers the version with Kaapi: during
+  **Create an assistant** or **Update an assistant** when there is no knowledge base or it is
+  already indexed, or later, when Kaapi's knowledge base indexing callback arrives. A version
+  also turns `failed` when its knowledge base fails or times out.
+
+  **Role:** staff. Events are scoped to the user's organization.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `isLive` is not set on this payload. The payload has no assistant ID; match it by version
+  `id` against **List an assistant's versions**.
+
+  ```json
+  {
+    "data": {
+      "assistantConfigVersionUpdated": {
+        "id": "33",
+        "majorVersion": 2,
+        "minorVersion": 1,
+        "versionLabel": "2.1",
+        "description": "Assistant configuration",
+        "model": "gpt-5-mini",
+        "prompt": "You are a friendly assistant that answers questions about prenatal care. Keep replies short.",
+        "settings": "{\"effort\":\"low\"}",
+        "inputGuardrails": "[{\"type\":\"pii_remover\"}]",
+        "outputGuardrails": "[]",
+        "status": "ready",
+        "vectorStore": {
+          "id": "4",
+          "knowledgeBaseVersionId": "13",
+          "vectorStoreId": "vs_9a8b7c6d5e4f3a21",
+          "name": "VectorStore-mfrgg2lbmfrgg2lbmfrgg2lb",
+          "status": "completed"
+        },
+        "insertedAt": "2026-11-13T06:40:10Z",
+        "updatedAt": "2026-11-13T06:52:37Z"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets an `Unauthorized` error when subscribing.

@@ -1,0 +1,103 @@
+info:
+  name: Create a tag
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createTag($input: TagInput!) {
+        createTag(input: $input) {
+          tag {
+            id
+            label
+            shortcode
+            description
+            colorCode
+            keywords
+            language {
+              id
+              label
+            }
+            parent {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "Child",
+          "shortcode": "child",
+          "description": "Marks the contact as a child",
+          "colorCode": "#0C976D",
+          "keywords": ["kid", "student"],
+          "languageId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a tag in the organization.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type        | Required | Description           |
+  | -------- | ----------- | -------- | --------------------- |
+  | `input`  | `TagInput!` | Yes      | The tag to create.    |
+
+  ### `TagInput`
+
+  | Field         | Type       | Required | Description                                                   |
+  | ------------- | ---------- | -------- | ------------------------------------------------------------- |
+  | `label`       | `String`   | Yes      | Display name.                                                 |
+  | `shortcode`   | `String`   | Yes      | Unique per organization and language. Used in flows.          |
+  | `languageId`  | `ID`       | Yes      | Language of the label.                                        |
+  | `description` | `String`   | No       | Free text.                                                    |
+  | `colorCode`   | `String`   | No       | Hex colour shown in the UI, such as `#0C976D`.                |
+  | `keywords`    | `[String]` | No       | Words that match an incoming message to this tag.             |
+  | `parentId`    | `ID`       | No       | Parent tag, for nesting.                                      |
+  | `isActive`    | `Boolean`  | No       | Defaults to `true`.                                           |
+  | `isReserved`  | `Boolean`  | No       | Defaults to `false`. Reserved tags are managed by Glific.     |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createTag": {
+        "tag": {
+          "id": "34",
+          "label": "Child",
+          "shortcode": "child",
+          "description": "Marks the contact as a child",
+          "colorCode": "#0C976D",
+          "keywords": ["kid", "student"],
+          "language": { "id": "1", "label": "English" },
+          "parent": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `tag` set to `null`:
+
+  - A required field is missing: `{ "key": "label", "message": "Label: can't be blank" }`.
+  - The shortcode is already used in that language:
+    `{ "key": "shortcode", "message": "Shortcode: has already been taken" }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

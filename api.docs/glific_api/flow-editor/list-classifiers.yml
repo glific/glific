@@ -1,0 +1,40 @@
+info:
+  name: List classifiers
+  type: http
+  seq: 21
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/classifiers"
+  auth: inherit
+
+docs: |
+  Lists the NLP classifiers the editor's "split by intent" router can use. Glific offers one,
+  Dialogflow, with the intents the organization has defined.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. The classifier is always the same entry; only `intents` varies.
+
+  ```json
+  {
+    "results": [
+      {
+        "uuid": "dialogflow_uuid",
+        "name": "Dialogflow",
+        "type": "dialogflow",
+        "intents": ["greeting", "fee_enquiry"]
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

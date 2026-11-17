@@ -1,0 +1,83 @@
+info:
+  name: Search WhatsApp group messages and groups
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waSearchMulti($filter: WaSearchFilter, $waGroupOpts: Opts!, $waMessageOpts: Opts!) {
+        waSearchMulti(filter: $filter, waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts) {
+          waGroups {
+            id
+            label
+            lastCommunicationAt
+          }
+          waMessages {
+            id
+            body
+            insertedAt
+            waGroup {
+              id
+              label
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "term": "notes"
+        },
+        "waGroupOpts": {
+          "limit": 10,
+          "offset": 0
+        },
+        "waMessageOpts": {
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Searches WhatsApp groups and their messages for a term and returns two lists: `waGroups`
+  whose label contains the term (most recently active first) and `waMessages` posted in a
+  group whose body contains the term (newest first). Only `filter.term` is used.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument        | Type             | Required | Description                                                         |
+  | --------------- | ---------------- | -------- | ------------------------------------------------------------------- |
+  | `filter`        | `WaSearchFilter` | No       | Only `term` is used. See **Search WhatsApp group conversations**.   |
+  | `waGroupOpts`   | `Opts!`          | Yes      | `limit` and `offset` for `waGroups`. Give both.                     |
+  | `waMessageOpts` | `Opts!`          | Yes      | `limit` and `offset` for `waMessages`. Give both.                   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waSearchMulti": {
+        "waGroups": [],
+        "waMessages": [
+          {
+            "id": "311",
+            "body": "Will the notes be shared today?",
+            "insertedAt": "2026-11-16T09:31:40Z",
+            "waGroup": { "id": "5", "label": "Class 7 parents" }
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Omitting `limit` or `offset` from either opts returns a top-level error. A user without the
+  staff role gets a top-level `Unauthorized` error.

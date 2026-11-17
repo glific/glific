@@ -1,0 +1,114 @@
+info:
+  name: Create an assistant
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createAssistant($input: AssistantInput) {
+        createAssistant(input: $input) {
+          assistant {
+            id
+            name
+            assistantDisplayId
+            kaapiUuid
+            activeConfigVersionId
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Maternal health helper",
+          "model": "gpt-5-mini",
+          "instructions": "You are a friendly assistant that answers questions about prenatal care.",
+          "description": "First version",
+          "effort": "low",
+          "inputGuardrails": "[{\"type\": \"pii_remover\"}]",
+          "outputGuardrails": "[]"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates an assistant with its first config version (1.0) and makes that version live.
+
+  - Without `knowledgeBaseVersionId`, or with a knowledge base that has finished indexing,
+    Glific registers the config with Kaapi during the call. The version becomes `ready` and
+    **Subscribe to config version updates** fires.
+  - With a knowledge base that is still indexing, the call returns at once with `kaapiUuid`
+    set to `null` and the version `in_progress`. Glific registers it with Kaapi when the
+    indexing callback arrives, and the subscription reports `ready` or `failed` then.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                                         |
+  | -------- | ---------------- | -------- | ------------------------------------------------------------------- |
+  | `input`  | `AssistantInput` | Yes      | The assistant to create. The type allows `null`, but always send an object, even `{}`. |
+
+  ### `AssistantInput`
+
+  All fields are optional.
+
+  | Field                    | Type     | Description                                                                 |
+  | ------------------------ | -------- | --------------------------------------------------------------------------- |
+  | `name`                   | `String` | Unique in the organization. Defaults to `Assistant-` plus 8 random characters. |
+  | `instructions`           | `String` | The system prompt. Defaults to `You are a helpful assistant`.               |
+  | `model`                  | `String` | A `modelName` from **List Kaapi models**. Defaults to `gpt-4o`.             |
+  | `description`            | `String` | Description of this config version. Defaults to `Assistant configuration`.  |
+  | `settings`               | `Json`   | Model parameters, such as `{"temperature": 0.7}` or `{"effort": "low"}`. When given and not empty, `temperature` and `effort` are ignored. |
+  | `effort`                 | `String` | Reasoning effort for reasoning models. Used when `settings` is empty.       |
+  | `temperature`            | `Float`  | Used when neither `settings` nor `effort` is given. Defaults to `1`.        |
+  | `inputGuardrails`        | `Json`   | List of validators run on the user's message. Each needs a non-empty `type`; see **Guardrails**. |
+  | `outputGuardrails`       | `Json`   | List of validators run on the model's reply. Same shape.                    |
+  | `knowledgeBaseVersionId` | `String` | A `knowledgeBaseVersionId` from **Create a knowledge base version**.        |
+
+  ## Example response
+
+  `kaapiUuid` is the Kaapi config ID; it is `null` while the knowledge base is indexing.
+
+  ```json
+  {
+    "data": {
+      "createAssistant": {
+        "assistant": {
+          "id": "7",
+          "name": "Maternal health helper",
+          "assistantDisplayId": "asst_mzxw6ytboi4dcmrtgq2tmnzy",
+          "kaapiUuid": "3f0b6b0e-5c1a-4a43-9a0e-1f3c2d9e8b11",
+          "activeConfigVersionId": "30",
+          "insertedAt": "2026-11-10T08:20:41Z",
+          "updatedAt": "2026-11-10T08:20:42Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `assistant` set to `null`:
+
+  - The name is taken: `{ "key": "name", "message": "Name: has already been taken" }`.
+  - A guardrail has no `type`:
+    `{ "key": "input_guardrails", "message": "Input_guardrails: each guardrail needs a non-empty \"type\"" }`.
+  - The knowledge base version does not exist:
+    `{ "key": "Elixir.Glific.Assistants.KnowledgeBaseVersion", "message": "Resource not found" }`.
+
+  If Kaapi rejects the config, the call returns a top-level error
+  `Kaapi config creation failed for assistant, Reason: ...`. The assistant is still saved,
+  with its config version marked `failed`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

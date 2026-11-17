@@ -1,0 +1,81 @@
+info:
+  name: Update a message's tags
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateMessageTags($input: MessageTagsInput!) {
+        updateMessageTags(input: $input) {
+          numberDeleted
+          messageTags {
+            id
+            message {
+              id
+            }
+            tag {
+              id
+              label
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "messageId": "1042",
+          "addTagIds": ["6", "7"],
+          "deleteTagIds": ["4"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds and removes several tags on one message in a single call. Each added tag is pushed to
+  **Subscribe to message tag additions** and each removed one to **Subscribe to message tag
+  removals**.
+
+  Failures are skipped silently: a tag that cannot be added is left out of `messageTags`, and
+  IDs to delete that are not on the message are ignored.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description          |
+  | -------- | ------------------- | -------- | -------------------- |
+  | `input`  | `MessageTagsInput!` | Yes      | The changes to make. |
+
+  ### `MessageTagsInput`
+
+  | Field          | Type     | Required | Description                              |
+  | -------------- | -------- | -------- | ---------------------------------------- |
+  | `messageId`    | `ID!`    | Yes      | The message.                             |
+  | `addTagIds`    | `[ID]!`  | Yes      | Tags to add. Pass `[]` to add none.      |
+  | `deleteTagIds` | `[ID]!`  | Yes      | Tags to remove. Pass `[]` to remove none. |
+
+  ## Example response
+
+  `messageTags` lists the links that were added; `numberDeleted` counts the links removed.
+
+  ```json
+  {
+    "data": {
+      "updateMessageTags": {
+        "numberDeleted": 1,
+        "messageTags": [
+          { "id": "905", "message": { "id": "1042" }, "tag": { "id": "7", "label": "Follow up" } },
+          { "id": "904", "message": { "id": "1042" }, "tag": { "id": "6", "label": "Important" } }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  The result has no `errors` field; see above for how failures show. A user without the
+  staff role gets a top-level `Unauthorized` error.

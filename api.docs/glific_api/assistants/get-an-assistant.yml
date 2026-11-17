@@ -1,0 +1,120 @@
+info:
+  name: Get an assistant
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query assistant($id: ID!) {
+        assistant(id: $id) {
+          assistant {
+            id
+            assistantDisplayId
+            name
+            assistantId
+            model
+            instructions
+            settings
+            inputGuardrails
+            outputGuardrails
+            status
+            newVersionInProgress
+            liveVersionLabel
+            activeConfigVersionId
+            cloneStatus
+            vectorStore {
+              id
+              knowledgeBaseVersionId
+              name
+              status
+              legacy
+              size
+              files {
+                id
+                name
+                uploadedAt
+                fileSize
+              }
+            }
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "7"
+      }
+  auth: inherit
+
+docs: |
+  Returns one assistant, with the settings of its live config version. The fields mean the
+  same as in **List assistants**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description              |
+  | -------- | ----- | -------- | ------------------------ |
+  | `id`     | `ID!` | Yes      | The assistant to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "assistant": {
+        "assistant": {
+          "id": "7",
+          "assistantDisplayId": "asst_mzxw6ytboi4dcmrtgq2tmnzy",
+          "name": "Maternal health helper",
+          "assistantId": "3f0b6b0e-5c1a-4a43-9a0e-1f3c2d9e8b11",
+          "model": "gpt-5-mini",
+          "instructions": "You are a friendly assistant that answers questions about prenatal care.",
+          "settings": "{\"effort\":\"low\"}",
+          "inputGuardrails": "[{\"type\":\"pii_remover\"}]",
+          "outputGuardrails": "[]",
+          "status": "ready",
+          "newVersionInProgress": false,
+          "liveVersionLabel": "2.0",
+          "activeConfigVersionId": "31",
+          "cloneStatus": "none",
+          "vectorStore": {
+            "id": "4",
+            "knowledgeBaseVersionId": "12",
+            "name": "VectorStore-mfrgg2lbmfrgg2lbmfrgg2lb",
+            "status": "completed",
+            "legacy": false,
+            "size": "1.2 MB",
+            "files": [
+              {
+                "id": "b7e1c3a2-4d5f-4e6a-8b9c-0d1e2f3a4b5c",
+                "name": "prenatal_care.pdf",
+                "uploadedAt": "2026-11-10T08:15:02.481Z",
+                "fileSize": 1258291
+              }
+            ]
+          },
+          "insertedAt": "2026-11-10T08:20:41Z",
+          "updatedAt": "2026-11-12T11:02:17Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The assistant does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Assistants.Assistant", "message": "Resource not found" }]` and
+    `assistant` is `null`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

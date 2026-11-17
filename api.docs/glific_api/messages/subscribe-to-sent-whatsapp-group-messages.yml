@@ -1,0 +1,79 @@
+info:
+  name: Subscribe to sent WhatsApp group messages
+  type: graphql
+  seq: 22
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription sentWaGroupMessage($organizationId: ID!) {
+        sentWaGroupMessage(organizationId: $organizationId) {
+          id
+          body
+          type
+          flow
+          bspStatus
+          insertedAt
+          contact {
+            id
+            name
+          }
+          waGroup {
+            id
+            label
+          }
+          waManagedPhone {
+            id
+            phone
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes each message Glific posts in a WhatsApp group once Maytapi accepts it, including each
+  group's copy of a collection send.
+
+  **Role:** any logged-in user of the organization. The subscription has no role check; it only
+  checks that `organizationId` is the user's own organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                  |
+  | ---------------- | ----- | -------- | -------------------------------------------- |
+  | `organizationId` | `ID!` | Yes      | The logged-in user's organization.           |
+
+  The pushed payload is a `WaMessage`; select any of its fields.
+
+  ## Example response
+
+  Each event is pushed as:
+
+  ```json
+  {
+    "data": {
+      "sentWaGroupMessage": {
+        "id": "311",
+        "body": "Today's class notes are attached in the drive folder.",
+        "type": "TEXT",
+        "flow": "OUTBOUND",
+        "bspStatus": "SENT",
+        "insertedAt": "2026-11-16T09:31:40Z",
+        "contact": { "id": "21", "name": "Class 7 coordinator" },
+        "waGroup": { "id": "5", "label": "Class 7 parents" },
+        "waManagedPhone": { "id": "2", "phone": "910000000006" }
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization is rejected with the error
+  `Auth Credentials mismatch`.

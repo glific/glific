@@ -1,0 +1,83 @@
+info:
+  name: Add a contact to a collection
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createContactGroup($input: ContactGroupInput!) {
+        createContactGroup(input: $input) {
+          contactGroup {
+            id
+            contact {
+              id
+              name
+            }
+            group {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "contactId": "131",
+          "groupId": "2"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds one contact to one collection. If the contact is already in it, the existing
+  membership is returned.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description            |
+  | -------- | -------------------- | -------- | ---------------------- |
+  | `input`  | `ContactGroupInput!` | Yes      | The membership to add. |
+
+  ### `ContactGroupInput`
+
+  | Field       | Type | Required | Description     |
+  | ----------- | ---- | -------- | --------------- |
+  | `contactId` | `ID` | Yes      | The contact.    |
+  | `groupId`   | `ID` | Yes      | The collection. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createContactGroup": {
+        "contactGroup": {
+          "id": "305",
+          "contact": { "id": "131", "name": "Asha Patil" },
+          "group": { "id": "2", "label": "Optin contacts" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact or collection does not exist: `errors` is
+    `[{ "key": "contact_id", "message": "Contact_id: does not exist" }]` (or `group_id`) and
+    `contactGroup` is `null`.
+  - Send both `contactId` and `groupId`: with only one, the call can return an unrelated
+    existing membership or fail with a top-level error.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

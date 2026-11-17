@@ -1,0 +1,78 @@
+info:
+  name: List WhatsApp form revisions
+  type: graphql
+  seq: 12
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query listWhatsappFormRevisions($whatsappFormId: ID!, $limit: Int) {
+        listWhatsappFormRevisions(whatsappFormId: $whatsappFormId, limit: $limit) {
+          id
+          revisionNumber
+          isCurrent
+          userId
+          insertedAt
+        }
+      }
+    variables: |-
+      {
+        "whatsappFormId": "3",
+        "limit": 5
+      }
+  auth: inherit
+
+docs: |
+  Lists a form's revisions: the current revision first, then the others from newest to
+  oldest.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                   |
+  | ---------------- | ----- | -------- | --------------------------------------------- |
+  | `whatsappFormId` | `ID!` | Yes      | The form whose revisions to list.             |
+  | `limit`          | `Int` | No       | Maximum number of revisions. Defaults to 10.  |
+
+  ## Example response
+
+  `isCurrent` marks the revision the form uses now. `insertedAt` is a string, not
+  `DateTime`. Select `definition` too to get each revision's JSON.
+
+  ```json
+  {
+    "data": {
+      "listWhatsappFormRevisions": [
+        {
+          "id": "14",
+          "revisionNumber": 2,
+          "isCurrent": true,
+          "userId": "1",
+          "insertedAt": "2026-11-05 08:40:02"
+        },
+        {
+          "id": "15",
+          "revisionNumber": 3,
+          "isCurrent": false,
+          "userId": "1",
+          "insertedAt": "2026-11-05 09:02:17"
+        },
+        {
+          "id": "9",
+          "revisionNumber": 1,
+          "isCurrent": false,
+          "userId": "1",
+          "insertedAt": "2026-11-04 10:12:31"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  An unknown form ID returns an empty list. A user without the manager role gets a top-level
+  `Unauthorized` error.

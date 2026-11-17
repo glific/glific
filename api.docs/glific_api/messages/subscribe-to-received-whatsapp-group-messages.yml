@@ -1,0 +1,79 @@
+info:
+  name: Subscribe to received WhatsApp group messages
+  type: graphql
+  seq: 21
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription receivedWaGroupMessage($organizationId: ID!) {
+        receivedWaGroupMessage(organizationId: $organizationId) {
+          id
+          body
+          type
+          flow
+          bspStatus
+          insertedAt
+          contact {
+            id
+            name
+          }
+          waGroup {
+            id
+            label
+          }
+          waManagedPhone {
+            id
+            phone
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes each message posted in a WhatsApp group the organization's managed phones are in, as
+  Maytapi reports it.
+
+  **Role:** any logged-in user of the organization. The subscription has no role check; it only
+  checks that `organizationId` is the user's own organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                  |
+  | ---------------- | ----- | -------- | -------------------------------------------- |
+  | `organizationId` | `ID!` | Yes      | The logged-in user's organization.           |
+
+  The pushed payload is a `WaMessage`; select any of its fields.
+
+  ## Example response
+
+  Each event is pushed as:
+
+  ```json
+  {
+    "data": {
+      "receivedWaGroupMessage": {
+        "id": "311",
+        "body": "Will the notes be shared today?",
+        "type": "TEXT",
+        "flow": "INBOUND",
+        "bspStatus": null,
+        "insertedAt": "2026-11-16T09:31:40Z",
+        "contact": { "id": "21", "name": "Class 7 coordinator" },
+        "waGroup": { "id": "5", "label": "Class 7 parents" },
+        "waManagedPhone": { "id": "2", "phone": "910000000006" }
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization is rejected with the error
+  `Auth Credentials mismatch`.

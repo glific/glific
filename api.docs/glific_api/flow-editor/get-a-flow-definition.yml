@@ -1,0 +1,65 @@
+info:
+  name: Get a flow definition
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/flows/:flowUuid"
+  params:
+    - name: flowUuid
+      value: 3fa22108-f464-41e5-81d9-d8a298854429
+      type: path
+  auth: inherit
+
+docs: |
+  Returns the definition from a flow's newest revision (the draft, which may also be the
+  published one), without the editor's `_ui` layout block.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The path takes the flow's UUID.
+
+  | Parameter  | Description           |
+  | ---------- | --------------------- |
+  | `flowUuid` | UUID of the flow.     |
+
+  ## Example response
+
+  `200`, definition shortened:
+
+  ```json
+  {
+    "results": {
+      "name": "Help Workflow",
+      "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+      "spec_version": "13.1.0",
+      "language": "base",
+      "type": "messaging",
+      "revision": 12,
+      "expire_after_minutes": 10080,
+      "localization": {},
+      "nodes": [
+        {
+          "uuid": "3ea030e9-41c4-4c6c-8880-68bc2828d67b",
+          "actions": [
+            {
+              "uuid": "e319cd39-f764-4680-9199-4cb7da647166",
+              "type": "send_msg",
+              "text": "Thank you for reaching out.",
+              "quick_replies": []
+            }
+          ],
+          "exits": [{ "uuid": "a8311645-482e-4d35-b300-c92a9b18798b", "destination_uuid": null }]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.
+  - `500`: no flow with this UUID in the organization.

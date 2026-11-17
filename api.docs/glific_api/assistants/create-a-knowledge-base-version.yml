@@ -1,0 +1,109 @@
+info:
+  name: Create a knowledge base version
+  type: graphql
+  seq: 12
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createKnowledgeBase($mediaInfo: [FileInfoInput!]!, $id: ID) {
+        createKnowledgeBase(mediaInfo: $mediaInfo, id: $id) {
+          knowledgeBase {
+            id
+            knowledgeBaseVersionId
+            name
+            status
+            size
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4",
+        "mediaInfo": [
+          {
+            "fileId": "b7e1c3a2-4d5f-4e6a-8b9c-0d1e2f3a4b5c",
+            "filename": "prenatal_care.pdf",
+            "uploadedAt": "2026-11-10T08:15:02.481Z",
+            "fileSize": 1258291
+          },
+          {
+            "fileId": "0c9d8e7f-6a5b-4c3d-2e1f-0a9b8c7d6e5f",
+            "filename": "nutrition.md",
+            "uploadedAt": "2026-11-13T06:31:44.120Z",
+            "fileSize": 8211
+          }
+        ]
+      }
+  auth: inherit
+
+docs: |
+  Creates a new version of a knowledge base from a set of uploaded files and asks Kaapi to
+  index it. Each version holds the full file list, so to add or remove a file, send every
+  file the assistant should keep.
+
+  This is asynchronous. The call returns at once with `status: "in_progress"`. Kaapi calls
+  Glific back when indexing ends, the version becomes `completed` or `failed`, and
+  **Subscribe to knowledge base version updates** delivers it. Versions still indexing
+  after an hour are marked `failed`. Then pass `knowledgeBaseVersionId` to **Create an
+  assistant** or **Update an assistant**; you don't have to wait for indexing to finish.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument    | Type               | Required | Description                                                                 |
+  | ----------- | ------------------ | -------- | --------------------------------------------------------------------------- |
+  | `mediaInfo` | `[FileInfoInput!]!` | Yes     | The files, as returned by **Upload a knowledge base file**. An empty list creates nothing and returns `knowledgeBase: null`. |
+  | `id`        | `ID`               | No       | The knowledge base (`vectorStore.id`) to add a version to. Without it, a new knowledge base is created. |
+
+  ### `FileInfoInput`
+
+  | Field        | Type     | Description                         |
+  | ------------ | -------- | ----------------------------------- |
+  | `fileId`     | `String` | The Kaapi file ID.                  |
+  | `filename`   | `String` | The file name.                      |
+  | `uploadedAt` | `String` | When the file was uploaded.         |
+  | `fileSize`   | `Int`    | Size in bytes; summed into `size`.  |
+
+  ## Example response
+
+  `id` is the knowledge base and `knowledgeBaseVersionId` the new version. `size` is
+  formatted, such as `1.21 MB`.
+
+  ```json
+  {
+    "data": {
+      "createKnowledgeBase": {
+        "knowledgeBase": {
+          "id": "4",
+          "knowledgeBaseVersionId": "13",
+          "name": "VectorStore-mfrgg2lbmfrgg2lbmfrgg2lb",
+          "status": "in_progress",
+          "size": "1.21 MB",
+          "insertedAt": "2026-11-10T08:16:00Z",
+          "updatedAt": "2026-11-13T06:32:05Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as a top-level error `Failed to create knowledge base`:
+
+  - The knowledge base `id` does not exist in the organization.
+  - Kaapi refuses to start indexing. The new version, and the knowledge base if this call
+    created it, are deleted again.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

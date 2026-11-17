@@ -1,0 +1,55 @@
+info:
+  name: Create a contact field
+  type: http
+  seq: 14
+
+http:
+  method: POST
+  url: "{{base_url}}/flow-editor/fields"
+  body:
+    type: json
+    data: |-
+      {
+        "label": "School Name",
+        "scope": "contact"
+      }
+  auth: inherit
+
+docs: |
+  Creates a contact field from inside the editor, when the user types a new field name into
+  an "update field" action. The shortcode is the label lowercased, with spaces replaced by
+  underscores (`School Name` becomes `school_name`). The value type is `text`.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  | Field   | Type   | Required | Description                                                     |
+  | ------- | ------ | -------- | --------------------------------------------------------------- |
+  | `label` | String | Yes      | Display name of the field.                                      |
+  | `scope` | String | No       | `contact` (default) or `wa_group` for a WhatsApp group field.   |
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  {
+    "key": "school_name",
+    "name": "School Name",
+    "label": "School Name",
+    "value_type": "text",
+    "scope": "contact"
+  }
+  ```
+
+  ## Errors
+
+  - `400`: the field can't be created, for example because the name or shortcode is taken:
+
+    ```json
+    { "error": { "status": 400, "message": "Cannot create new field with label School Name" } }
+    ```
+
+  - `401`: missing or invalid access token.
+  - `500`: `label` is missing.
