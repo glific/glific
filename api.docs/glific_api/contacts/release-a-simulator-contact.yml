@@ -1,0 +1,43 @@
+info:
+  name: Release a simulator contact
+  type: graphql
+  seq: 14
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query simulatorRelease {
+        simulatorRelease {
+          id
+        }
+      }
+  auth: inherit
+
+docs: |
+  Hands the simulator contact the current user holds back to the pool, along with any other
+  simulator whose 10-minute hold has run out. Users whose expired simulator was freed are told
+  through the `simulatorRelease` subscription (see **Organizations**).
+
+  **Role:** staff
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  Always returns `null`, whether or not the user held a simulator.
+
+  ```json
+  {
+    "data": {
+      "simulatorRelease": null
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

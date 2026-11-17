@@ -1,0 +1,72 @@
+info:
+  name: Get a managed phone's login screen
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query whatsappPhoneScreen($waManagedPhoneId: ID!) {
+        whatsappPhoneScreen(waManagedPhoneId: $waManagedPhoneId) {
+          waPhoneScreen {
+            code
+            status
+            expiresAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "waManagedPhoneId": "2"
+      }
+  auth: inherit
+
+docs: |
+  Fetches the phone's current screen from Maytapi. For a logged-out phone this is the WhatsApp
+  login QR code, which someone scans with the phone to reconnect it. Maytapi rotates the code,
+  so fetch it again after `expiresAt`, 15 seconds after the request.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument           | Type  | Required | Description        |
+  | ------------------ | ----- | -------- | ------------------ |
+  | `waManagedPhoneId` | `ID!` | Yes      | The managed phone. |
+
+  `code` is a PNG data URL (`data:image/png;base64,...`) that can be used directly as an
+  image source. `status` is the status Glific has stored for the phone, not a fresh one.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "whatsappPhoneScreen": {
+        "waPhoneScreen": {
+          "code": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEX...",
+          "status": "qr-screen",
+          "expiresAt": "2026-11-16T09:30:15Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as a top-level error:
+
+  - The phone does not exist in the organization:
+    `Elixir.Glific.WAGroup.WAManagedPhone, Resource not found`.
+  - Maytapi returns no image: Maytapi's message, or `WhatsApp couldn't complete this action
+    right now. Please try again in a moment.`
+  - Maytapi is not set up for the organization: `Maytapi is not active`.
+  - A user without the admin role gets `Unauthorized`.

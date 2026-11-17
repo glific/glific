@@ -1,0 +1,74 @@
+info:
+  name: Update a profile
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateProfile($id: ID!, $input: ProfileInput) {
+        updateProfile(id: $id, input: $input) {
+          profile {
+            id
+            name
+            type
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4",
+        "input": {
+          "name": "Aarav Kumar",
+          "languageId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a profile. Only the fields given in `input` change.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                              |
+  | -------- | -------------- | -------- | -------------------------------------------------------- |
+  | `id`     | `ID!`          | Yes      | The profile to change.                                   |
+  | `input`  | `ProfileInput` | No       | Fields to change. See **Create a profile** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateProfile": {
+        "profile": {
+          "id": "4",
+          "name": "Aarav Kumar",
+          "type": "Child",
+          "language": { "id": "1", "label": "English" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The profile does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Profiles.Profile", "message": "Resource not found" }]`.
+  - The contact already has a profile with that name and type:
+    `{ "key": "name", "message": "Sorry, a profile with same name and type already exists" }`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

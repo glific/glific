@@ -1,0 +1,62 @@
+info:
+  name: Delete a flow
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteFlow($id: ID!) {
+        deleteFlow(id: $id) {
+          flow {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "28"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a flow and clears it from the keyword cache so its keywords stop matching. The
+  database also deletes its revisions, contacts' runs of it, its results, counts, broadcasts
+  and the triggers that start it. Messages it sent keep existing without a flow.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The flow to delete. |
+
+  ## Example response
+
+  On success `errors` is `null`. `flow` is always `null`: the resolver doesn't return the
+  deleted flow in the result's `flow` field.
+
+  ```json
+  {
+    "data": {
+      "deleteFlow": {
+        "flow": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Flows.Flow", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

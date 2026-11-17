@@ -1,0 +1,69 @@
+info:
+  name: Get a language
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query language($id: ID!) {
+        language(id: $id) {
+          language {
+            id
+            label
+            labelLocale
+            locale
+            isActive
+            localized
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Returns one language by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The language to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "language": {
+        "language": {
+          "id": "2",
+          "label": "Hindi",
+          "labelLocale": "हिंदी",
+          "locale": "hi",
+          "isActive": true,
+          "localized": true
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The language does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Settings.Language 2", "message": "Resource not found" }]` and
+    `language` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

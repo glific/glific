@@ -1,0 +1,74 @@
+info:
+  name: Import interactive template translations
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation importInteractiveTemplate($id: ID!, $translation: String) {
+        importInteractiveTemplate(id: $id, translation: $translation) {
+          interactiveTemplate {
+            id
+            label
+            translations
+          }
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "6",
+        "translation": "Attribute,en,hi\nBody,please share your location,कृपया अपना स्थान साझा करें\n"
+      }
+  auth: inherit
+
+docs: |
+  Replaces a template's translations with the contents of a CSV in the format **Export an
+  interactive template** produces. Each column after `Attribute` is a language locale, and the
+  rows must follow the template's current structure (same number of options, items and
+  buttons). The new translations are then trimmed and saved as in **Update an interactive
+  template**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument      | Type     | Required | Description                                            |
+  | ------------- | -------- | -------- | ------------------------------------------------------ |
+  | `id`          | `ID!`    | Yes      | The template to update.                                |
+  | `translation` | `String` | Yes      | The CSV text. Locales must be active languages in Glific. |
+
+  ## Example response
+
+  `message` lists the languages that were trimmed to fit, or is `null`.
+
+  ```json
+  {
+    "data": {
+      "importInteractiveTemplate": {
+        "interactiveTemplate": {
+          "id": "6",
+          "label": "Send Location",
+          "translations": "{\"1\":{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"please share your location\"},\"action\":{\"name\":\"send_location\"}},\"2\":{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"कृपया अपना स्थान साझा करें\"},\"action\":{\"name\":\"send_location\"}}}"
+        },
+        "message": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.InteractiveTemplate", "message": "Resource not found" }]`.
+  - A malformed CSV, an unknown locale or rows that don't match the template: a top-level
+    error.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,31 @@
+info:
+  name: List resthooks
+  type: http
+  seq: 30
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/resthooks"
+  auth: inherit
+
+docs: |
+  Lists resthooks for the editor's "call resthook" action. The editor requires the endpoint,
+  but Glific doesn't support resthooks (use webhooks instead), so the list is always empty.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  { "results": [] }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

@@ -1,0 +1,61 @@
+info:
+  name: Export a flow's translations
+  type: graphql
+  seq: 13
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query exportFlowLocalization($id: ID!, $addTranslation: Boolean) {
+        exportFlowLocalization(id: $id, addTranslation: $addTranslation) {
+          exportData
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "addTranslation": true
+      }
+  auth: inherit
+
+docs: |
+  Exports the text of every "send message" node in the flow's newest (draft) revision as CSV,
+  one column per organization language, so translators can fill in the gaps offline. Send the
+  edited CSV back with **Import a flow's translations**. Template messages are left out.
+
+  With `addTranslation: true` (the default), empty cells are filled with a machine
+  translation from the organization's default language, using the organization's translation
+  service. A translation that fails or times out is left blank; the export still succeeds.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument         | Type      | Required | Description                                                 |
+  | ---------------- | --------- | -------- | ----------------------------------------------------------- |
+  | `id`             | `ID!`     | Yes      | The flow to export.                                         |
+  | `addTranslation` | `Boolean` | No       | Defaults to `true`. `false` exports existing translations only. |
+
+  ## Example response
+
+  `exportData` is the CSV as a string. The first row holds language labels and the second
+  their locales; each following row is one action: `Action`, the action UUID, the text in
+  each language, and the node UUID.
+
+  ```json
+  {
+    "data": {
+      "exportFlowLocalization": {
+        "exportData": "Type,UUID,English,Hindi,Node_uuid\nType,UUID,en,hi,Node_uuid\nAction,e319cd39-f764-4680-9199-4cb7da647166,Thank you for reaching out.,संपर्क करने के लिए धन्यवाद।,3ea030e9-41c4-4c6c-8880-68bc2828d67b\n"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow does not exist in the organization: a top-level error, `Something unexpected has
+    happened, please reach out to Glific team over discord to get this resolved`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

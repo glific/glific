@@ -1,0 +1,68 @@
+info:
+  name: Update a message media
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateMessageMedia($id: ID!, $input: MessageMediaInput) {
+        updateMessageMedia(id: $id, input: $input) {
+          messageMedia {
+            id
+            url
+            caption
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "57",
+        "input": {
+          "caption": "Session schedule (updated)"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a message media. Only the fields given in `input` change. Messages already sent
+  with this media are not changed on the contact's phone.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description                                                    |
+  | -------- | ------------------- | -------- | -------------------------------------------------------------- |
+  | `id`     | `ID!`               | Yes      | The media to change.                                           |
+  | `input`  | `MessageMediaInput` | No       | Fields to change. See **Create a message media** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateMessageMedia": {
+        "messageMedia": {
+          "id": "57",
+          "url": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "caption": "Session schedule (updated)"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The media does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Messages.MessageMedia", "message": "Resource not found" }]`.
+  - A required field set to `null`: `{ "key": "url", "message": "Url: can't be blank" }`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

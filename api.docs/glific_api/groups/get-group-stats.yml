@@ -1,0 +1,49 @@
+info:
+  name: Get group stats
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query groupInfo($id: ID!) {
+        groupInfo(id: $id)
+      }
+    variables: |-
+      {
+        "id": "7"
+      }
+  auth: inherit
+
+docs: |
+  Returns how many contacts a collection has and how many of its `VALID` contacts are in each
+  BSP status, which tells how many can get a session message or a template right now.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description     |
+  | -------- | ----- | -------- | --------------- |
+  | `id`     | `ID!` | Yes      | The collection. |
+
+  ## Example response
+
+  A JSON-encoded object: `total` counts every member, and each BSP status (`session_and_hsm`,
+  `session`, `hsm`, `none`) that any valid member has gets its own count. Statuses no member
+  has are left out.
+
+  ```json
+  {
+    "data": {
+      "groupInfo": "{\"total\":42,\"session_and_hsm\":12,\"hsm\":27,\"none\":1}"
+    }
+  }
+  ```
+
+  ## Errors
+
+  An unknown ID is not an error: it returns `{"total":0}`. A user without the staff role gets a
+  top-level `Unauthorized` error.

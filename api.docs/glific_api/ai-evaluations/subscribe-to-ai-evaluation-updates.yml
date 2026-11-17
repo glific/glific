@@ -1,0 +1,82 @@
+info:
+  name: Subscribe to AI evaluation updates
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription aiEvaluationUpdated {
+        aiEvaluationUpdated {
+          id
+          name
+          status
+          failureReason
+          results
+          goldenQa {
+            id
+            name
+          }
+          assistantConfigVersion {
+            id
+            majorVersion
+            minorVersion
+            assistant {
+              id
+              name
+            }
+          }
+          insertedAt
+          updatedAt
+        }
+      }
+  auth: inherit
+
+docs: |
+  Pushes an AI evaluation when a run started by **Create an AI evaluation** finishes:
+  Kaapi's callback arrives, Glific fetches the scores and the evaluation moves from
+  `PROCESSING` to `COMPLETED` or `FAILED`. Each evaluation is pushed once.
+
+  **Role:** staff. Events are scoped to the user's organization.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "aiEvaluationUpdated": {
+        "id": "21",
+        "name": "prenatal_v2_1_run1",
+        "status": "COMPLETED",
+        "failureReason": null,
+        "results": "{\"latency\":{\"avg_latency_ms\":1250.5,\"call_count\":50},\"overall_score\":3.84,\"summary_scores\":[{\"avg\":0.74,\"data_type\":\"NUMERIC\",\"name\":\"Cosine Similarity\",\"std\":0.1,\"total_pairs\":25}],\"verdict\":\"Needs Refinement\"}",
+        "goldenQa": {
+          "id": "3",
+          "name": "prenatal_faq"
+        },
+        "assistantConfigVersion": {
+          "id": "33",
+          "majorVersion": 2,
+          "minorVersion": 1,
+          "assistant": {
+            "id": "7",
+            "name": "Maternal health helper"
+          }
+        },
+        "insertedAt": "2026-11-13T07:00:00Z",
+        "updatedAt": "2026-11-13T07:06:41Z"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets an `Unauthorized` error when subscribing. A failed run
+  arrives as a normal event with `status: "FAILED"` and `failureReason` set.

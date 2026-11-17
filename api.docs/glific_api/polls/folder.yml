@@ -1,0 +1,37 @@
+info:
+  name: Polls
+  type: folder
+  seq: 44
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Polls are WhatsApp poll messages that flows send to WhatsApp groups (see **WhatsApp
+    Groups**). A poll has a question and up to 12 options. Polls can't be edited after they are
+    created; copy one to make a changed version.
+
+    `pollContent` is a `Json` value, sent and returned as a JSON-encoded string:
+
+    ```json
+    {
+      "text": "Which day suits the next session?",
+      "options": [
+        { "id": 0, "name": "Saturday", "voters": [], "votes": 0 },
+        { "id": 1, "name": "Sunday", "voters": [], "votes": 0 }
+      ]
+    }
+    ```
+
+    | Rule                                    | Limit |
+    | --------------------------------------- | ----- |
+    | `text`                                  | 255 characters |
+    | Number of `options`                     | 12    |
+    | Each option `name`                      | 100 characters, unique within the poll |
+
+    `allowMultipleAnswer` lets a voter choose more than one option. Labels are unique per
+    organization.
+
+    Reading polls needs the staff role; counting, creating, copying and deleting need manager.
+  type: text/markdown

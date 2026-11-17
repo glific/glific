@@ -1,0 +1,88 @@
+info:
+  name: Create a billing record
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createBilling($input: BillingInput!) {
+        createBilling(input: $input) {
+          billing {
+            id
+            name
+            email
+            currency
+            isActive
+            stripeCustomerId
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Glific Foundation",
+          "email": "accounts@example.org",
+          "currency": "inr"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a Stripe customer for the organization and a billing record that points to it.
+  The Stripe customer's metadata carries the organization's ID and name.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                  |
+  | -------- | --------------- | -------- | ---------------------------- |
+  | `input`  | `BillingInput!` | Yes      | The billing record to create. |
+
+  ### `BillingInput`
+
+  | Field                      | Type      | Required | Description                                                                                         |
+  | -------------------------- | --------- | -------- | --------------------------------------------------------------------------------------------------- |
+  | `name`                     | `String`  | Yes      | Customer name in Stripe.                                                                            |
+  | `email`                    | `String`  | Yes      | Customer email in Stripe; invoices go here.                                                         |
+  | `currency`                 | `String`  | Yes      | Stripe currency code, such as `inr` or `usd`. A Stripe customer can use only one currency.          |
+  | `organizationId`           | `Gid`     | No       | Only honoured for `glific_admin`, to bill another organization. Defaults to the caller's organization. |
+  | `deductTds`                | `Boolean` | No       | Whether TDS is deducted from invoices as a customer credit.                                          |
+  | `tdsAmount`                | `Float`   | No       | TDS percentage to credit back when `deductTds` is set.                                              |
+  | `stripeSubscriptionId`     | `String`  | No       | Existing Stripe subscription ID.                                                                    |
+  | `stripeSubscriptionStatus` | `String`  | No       | Stripe subscription status.                                                                         |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createBilling": {
+        "billing": {
+          "id": "4",
+          "name": "Glific Foundation",
+          "email": "accounts@example.org",
+          "currency": "inr",
+          "isActive": true,
+          "stripeCustomerId": "cus_xxx"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `name`, `email` or `currency` is missing, or the server has no Stripe API key: a
+    top-level error listing every problem, such as
+    `"Stripe API Key not present, currency is not set"`.
+  - Stripe rejects the customer: a top-level error.
+  - A user without the admin role gets a top-level `Unauthorized` error.

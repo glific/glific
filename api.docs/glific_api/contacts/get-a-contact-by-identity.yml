@@ -1,0 +1,76 @@
+info:
+  name: Get a contact by identity
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contactByIdentity($channel: MessageChannelEnum!, $identifier: String!) {
+        contactByIdentity(channel: $channel, identifier: $identifier) {
+          contact {
+            id
+            name
+            phone
+            status
+            identities {
+              channel
+              identifier
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "channel": "WEB",
+        "identifier": "ravi.kumar"
+      }
+  auth: inherit
+
+docs: |
+  Returns the contact that holds an identity on a channel: a web username on `WEB`, or a
+  phone number on `WHATSAPP`. Web usernames are matched case-insensitively.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument     | Type                  | Required | Description                                    |
+  | ------------ | --------------------- | -------- | ---------------------------------------------- |
+  | `channel`    | `MessageChannelEnum!` | Yes      | `WEB` or `WHATSAPP`.                           |
+  | `identifier` | `String!`             | Yes      | The web username, or the phone on `WHATSAPP`.  |
+
+  ## Example response
+
+  This contact signed up on the web channel and has no phone.
+
+  ```json
+  {
+    "data": {
+      "contactByIdentity": {
+        "contact": {
+          "id": "87",
+          "name": "Ravi",
+          "phone": null,
+          "status": "VALID",
+          "identities": [
+            { "channel": "WEB", "identifier": "ravi.kumar" }
+          ]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - No contact in the organization holds the identity, or `identifier` is empty: `errors` is
+    `[{ "key": "Contact", "message": "Contact not found or permission denied." }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

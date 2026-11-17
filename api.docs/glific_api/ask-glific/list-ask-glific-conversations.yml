@@ -1,0 +1,72 @@
+info:
+  name: List Ask Glific conversations
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query askGlificConversations($limit: Int, $lastId: String) {
+        askGlificConversations(limit: $limit, lastId: $lastId) {
+          conversations {
+            id
+            name
+            status
+            createdAt
+            updatedAt
+          }
+          hasMore
+          limit
+        }
+      }
+    variables: |-
+      {
+        "limit": 20
+      }
+  auth: inherit
+
+docs: |
+  Lists the current user's Ask Glific conversations, most recent first.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type     | Required | Description                                                                 |
+  | -------- | -------- | -------- | --------------------------------------------------------------------------- |
+  | `limit`  | `Int`    | No       | Maximum number of conversations. Defaults to `20`.                          |
+  | `lastId` | `String` | No       | Dify only: return conversations after this one, for the next page. Ignored with Glific AI, which only returns the first page. |
+
+  ## Example response
+
+  `createdAt` and `updatedAt` are Unix timestamps in seconds. With Dify, only conversations
+  started from this Glific user are listed, so a page can hold fewer than `limit`. With
+  Glific AI, `status` is always `normal`.
+
+  ```json
+  {
+    "data": {
+      "askGlificConversations": {
+        "conversations": [
+          {
+            "id": "5f0d9c1e-8b7a-4c6d-9e2f-3a1b0c9d8e7f",
+            "name": "Sending a template message",
+            "status": "normal",
+            "createdAt": 1763280000,
+            "updatedAt": 1763280412
+          }
+        ],
+        "hasMore": false,
+        "limit": 20
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Dify can't be reached or rejects the call: the error comes back in the top-level
+    `errors` array and `askGlificConversations` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

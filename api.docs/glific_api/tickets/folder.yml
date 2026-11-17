@@ -1,0 +1,22 @@
+info:
+  name: Tickets
+  type: folder
+  seq: 60
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Tickets track a contact's support request inside the organization. A flow's "Open ticket"
+    action creates one, or staff create one from the inbox. A ticket has a free-text
+    `status` (Glific uses `open` and `closed`), a `topic`, the `contact` who raised it and the
+    `user` it is assigned to. `messageNumber` points at the contact's latest message when the
+    ticket was opened.
+
+    Creating a ticket also creates an organization notification ("New Ticket created").
+    Reading, creating and changing tickets needs the staff role; deleting them and the bulk
+    updates need the manager role.
+
+    Related: **Contacts**, **Users**, **Flows**.
+  type: text/markdown

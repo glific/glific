@@ -1,0 +1,75 @@
+info:
+  name: Update the collections of a WhatsApp group
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateWaGroupCollection($input: UpdateWaGroupsCollectionInput!) {
+        updateWaGroupCollection(input: $input) {
+          waGroupsDeleted
+          collectionWaGroups {
+            id
+            group {
+              id
+              label
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "waGroupId": "2",
+          "addGroupIds": ["3"],
+          "deleteGroupIds": []
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds one WhatsApp group to some collections and removes it from others, in one call.
+  Collections the group is already in are returned unchanged.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                             | Required | Description          |
+  | -------- | -------------------------------- | -------- | -------------------- |
+  | `input`  | `UpdateWaGroupsCollectionInput!` | Yes      | The changes to make. |
+
+  ### `UpdateWaGroupsCollectionInput`
+
+  | Field            | Type    | Required | Description                                          |
+  | ---------------- | ------- | -------- | ---------------------------------------------------- |
+  | `waGroupId`      | `ID!`   | Yes      | The WhatsApp group.                                  |
+  | `addGroupIds`    | `[ID]!` | Yes      | Collections to add it to. Pass `[]` for none.        |
+  | `deleteGroupIds` | `[ID]!` | Yes      | Collections to remove it from. Pass `[]` for none.   |
+
+  ## Example response
+
+  `collectionWaGroups` holds a link for each collection added; `waGroupsDeleted` counts the
+  links removed.
+
+  ```json
+  {
+    "data": {
+      "updateWaGroupCollection": {
+        "waGroupsDeleted": 0,
+        "collectionWaGroups": [
+          { "id": "8", "group": { "id": "3", "label": "Default WA Group Collection" } }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  The result has no `errors` field. IDs that don't exist are skipped.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

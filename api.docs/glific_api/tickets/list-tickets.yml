@@ -1,0 +1,91 @@
+info:
+  name: List tickets
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query tickets($filter: TicketFilter, $opts: Opts) {
+        tickets(filter: $filter, opts: $opts) {
+          id
+          body
+          topic
+          status
+          remarks
+          messageNumber
+          insertedAt
+          contact {
+            id
+            name
+          }
+          user {
+            id
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "status": "open"
+        },
+        "opts": {
+          "order": "DESC",
+          "orderWith": "inserted_at",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's tickets, optionally filtered and paginated.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                    |
+  | -------- | -------------- | -------- | ---------------------------------------------- |
+  | `filter` | `TicketFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`         | No       | Sorting and pagination.                        |
+
+  ### `TicketFilter`
+
+  | Field                | Type     | Description                                                                         |
+  | -------------------- | -------- | ----------------------------------------------------------------------------------- |
+  | `status`             | `String` | Status is exactly this value, such as `open`.                                       |
+  | `topic`              | `String` | Accepted, but not applied: it does not narrow the list.                             |
+  | `body`               | `String` | Body contains this text (case-insensitive).                                         |
+  | `contactId`          | `ID`     | Tickets raised by this contact.                                                     |
+  | `userId`             | `ID`     | Tickets assigned to this user.                                                      |
+  | `nameOrPhoneOrBody`  | `String` | Body contains this text, or the contact's name contains it, or the contact's phone equals it. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "tickets": [
+        {
+          "id": "12",
+          "body": "My certificate has not arrived",
+          "topic": "Certificates",
+          "status": "open",
+          "remarks": null,
+          "messageNumber": 48,
+          "insertedAt": "2026-11-12T06:20:41Z",
+          "contact": { "id": "26", "name": "Adelle Cavin" },
+          "user": { "id": "1", "name": "NGO Main Account" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

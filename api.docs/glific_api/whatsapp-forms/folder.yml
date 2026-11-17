@@ -1,0 +1,43 @@
+info:
+  name: WhatsApp Forms
+  type: folder
+  seq: 43
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    WhatsApp forms are Meta WhatsApp Flows: multi-screen forms a contact fills in inside
+    WhatsApp. Glific creates and publishes them through Gupshup's partner API; `metaFlowId` is
+    the flow's ID at Meta.
+
+    ## Lifecycle
+
+    | Status      | Meaning                                                              |
+    | ----------- | -------------------------------------------------------------------- |
+    | `DRAFT`     | Created in Glific and at Meta, not yet published. The content can change. |
+    | `PUBLISHED` | Live at Meta and usable in flows and templates.                      |
+    | `INACTIVE`  | Deactivated in Glific so it can't be used. Still published at Meta.  |
+
+    1. **Create a WhatsApp form** creates the flow at Meta and a `DRAFT` form with a starter
+       definition (revision 1).
+    2. **Save a WhatsApp form revision** stores each edit of the form's JSON definition as a
+       new revision and makes it current. **Revert a WhatsApp form to a revision** points the
+       form back at an older one. Revisions live only in Glific.
+    3. **Publish a WhatsApp form** uploads the current revision's definition to Meta, publishes
+       it and sets `PUBLISHED`.
+    4. **Deactivate a WhatsApp form** and **Activate a WhatsApp form** switch between
+       `INACTIVE` and `PUBLISHED` in Glific only; Meta is not called.
+    5. **Sync WhatsApp forms** imports forms created directly in Meta or Gupshup.
+
+    ## Responses
+
+    When a contact submits a form, Glific stores a WhatsApp form response and receives it as a
+    message of type `WHATSAPP_FORM_RESPONSE`; read it through the message's
+    `whatsappFormResponse` field (see **Messages**). If the form has a Google Sheet
+    (`googleSheetUrl`), each response is also appended to the sheet as a row.
+
+    Every operation needs the manager role, except **List WhatsApp forms**, which needs staff.
+    Related: **Session Templates** (templates with a `WHATSAPP_FORM` button), **Sheets**.
+  type: text/markdown

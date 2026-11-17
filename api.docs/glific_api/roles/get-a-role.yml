@@ -1,0 +1,69 @@
+info:
+  name: Get a role
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query accessRole($id: ID!) {
+        accessRole(id: $id) {
+          accessRole {
+            id
+            label
+            description
+            isReserved
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Returns one access role by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The role to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "accessRole": {
+        "accessRole": {
+          "id": "2",
+          "label": "Staff",
+          "description": "Default Staff Role",
+          "isReserved": true,
+          "insertedAt": "2026-10-02T06:15:00Z",
+          "updatedAt": "2026-10-02T06:15:00Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The role does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.AccessControl.Role", "message": "Resource not found" }]` and
+    `accessRole` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

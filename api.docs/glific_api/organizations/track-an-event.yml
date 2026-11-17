@@ -1,0 +1,47 @@
+info:
+  name: Track an event
+  type: graphql
+  seq: 12
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query tracker($event: String!) {
+        tracker(event: $event)
+      }
+    variables: |-
+      {
+        "event": "Flow Editor Opened"
+      }
+  auth: inherit
+
+docs: |
+  Adds one to the usage counter named `event` for the logged-in user's organization. The
+  frontend calls it to record clicks on high-level actions. Although it changes data, it is a
+  query.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type      | Required | Description                     |
+  | -------- | --------- | -------- | ------------------------------- |
+  | `event`  | `String!` | Yes      | Name of the counter to increase. |
+
+  ## Example response
+
+  Always `true`.
+
+  ```json
+  {
+    "data": {
+      "tracker": true
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

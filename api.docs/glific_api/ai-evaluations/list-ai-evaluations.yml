@@ -1,0 +1,109 @@
+info:
+  name: List AI evaluations
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query aiEvaluations($filter: AiEvaluationFilter, $opts: Opts) {
+        aiEvaluations(filter: $filter, opts: $opts) {
+          id
+          name
+          status
+          failureReason
+          results
+          duplicationFactor
+          goldenQa {
+            id
+            name
+            duplicationFactor
+          }
+          assistantConfigVersion {
+            id
+            majorVersion
+            minorVersion
+            assistant {
+              id
+              name
+            }
+          }
+          insertedAt
+          updatedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "goldenQaId": "3"
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's AI evaluations, with the golden QA and config version each was
+  run on.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                |
+  | -------- | -------------------- | -------- | ---------------------------------------------------------- |
+  | `filter` | `AiEvaluationFilter` | No       | Narrows the list. All given fields must match.             |
+  | `opts`   | `Opts`               | No       | Sorting and pagination. Sorts on `inserted_at` by default. |
+
+  ### `AiEvaluationFilter`
+
+  | Field        | Type     | Description                                   |
+  | ------------ | -------- | --------------------------------------------- |
+  | `name`       | `String` | Name contains this text (case-insensitive).   |
+  | `goldenQaId` | `ID`     | Only evaluations of this golden QA.           |
+
+  ## Example response
+
+  `results` is empty until the evaluation completes. `failureReason` is set when it fails.
+
+  ```json
+  {
+    "data": {
+      "aiEvaluations": [
+        {
+          "id": "21",
+          "name": "prenatal_v2_1_run1",
+          "status": "COMPLETED",
+          "failureReason": null,
+          "results": "{\"latency\":{\"avg_latency_ms\":1250.5,\"call_count\":50},\"overall_score\":3.84,\"summary_scores\":[{\"avg\":0.74,\"data_type\":\"NUMERIC\",\"name\":\"Cosine Similarity\",\"std\":0.1,\"total_pairs\":25}],\"verdict\":\"Needs Refinement\"}",
+          "duplicationFactor": 1,
+          "goldenQa": {
+            "id": "3",
+            "name": "prenatal_faq",
+            "duplicationFactor": 1
+          },
+          "assistantConfigVersion": {
+            "id": "33",
+            "majorVersion": 2,
+            "minorVersion": 1,
+            "assistant": {
+              "id": "7",
+              "name": "Maternal health helper"
+            }
+          },
+          "insertedAt": "2026-11-13T07:00:00Z",
+          "updatedAt": "2026-11-13T07:06:41Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

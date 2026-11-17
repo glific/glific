@@ -1,0 +1,46 @@
+info:
+  name: Count WhatsApp groups
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waGroupsCount($filter: WaGroupFilter) {
+        waGroupsCount(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "excludeGroups": ["3"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's WhatsApp groups that match a filter. Use it with **List WhatsApp
+  groups** to build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                                               |
+  | -------- | --------------- | -------- | ------------------------------------------------------------------------- |
+  | `filter` | `WaGroupFilter` | No       | Same fields as in **List WhatsApp groups**. Without it, counts all groups. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waGroupsCount": 14
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

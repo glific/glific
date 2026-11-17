@@ -1,0 +1,58 @@
+info:
+  name: Import HSM templates
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation importTemplates($data: String) {
+        importTemplates(data: $data) {
+          status
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "data": "TEMPLATEID,NAME,LANGUAGE,TYPE,BODY,STATUS,BUTTONTYPE,BUTTON1,BUTTON2,BUTTON3\r\n4871239,order_update,English,TEXT,\"Hi {{1}}, your order {{2}} has shipped.\",ENABLED,NONE,,,"
+      }
+  auth: inherit
+
+docs: |
+  Imports HSM templates that are already approved, from a CSV export. This works only for
+  organizations on **Gupshup Enterprise**; there, every row is added as an HSM through the
+  same path as **Sync HSM templates**. On the standard Gupshup BSP it does nothing.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type     | Required | Description                                                                 |
+  | -------- | -------- | -------- | --------------------------------------------------------------------------- |
+  | `data`   | `String` | Yes      | CSV text with a header row. Gupshup Enterprise columns used: `TEMPLATEID`, `NAME`, `LANGUAGE`, `TYPE`, `BODY`, `STATUS`, `BUTTONTYPE` (`NONE`, `CALL_TO_ACTION` or `QUICK_REPLY`), `BUTTON1` to `BUTTON3`. Imported templates get the `UTILITY` category. |
+
+  ## Example response
+
+  The BSP's result message is not part of `ImportTemplatesResult`, so `status` is always
+  `null`. Check the templates with **List session templates**.
+
+  ```json
+  {
+    "data": {
+      "importTemplates": {
+        "status": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Malformed CSV: a top-level error.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,82 @@
+info:
+  name: Get a message media
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query messageMedia($id: ID!) {
+        messageMedia(id: $id) {
+          messageMedia {
+            id
+            url
+            sourceUrl
+            thumbnail
+            gcsUrl
+            caption
+            isTemplateMedia
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "57"
+      }
+  auth: inherit
+
+docs: |
+  Returns one message media by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                  |
+  | -------- | ----- | -------- | ---------------------------- |
+  | `id`     | `ID!` | Yes      | The message media to return. |
+
+  `MessageMedia` fields:
+
+  | Field             | Description                                                              |
+  | ----------------- | ------------------------------------------------------------------------ |
+  | `url`             | Public URL the BSP fetches the file from.                                |
+  | `sourceUrl`       | Where the file came from. For inbound media, the BSP's URL.              |
+  | `thumbnail`       | Thumbnail URL, if any.                                                   |
+  | `gcsUrl`          | Copy in the organization's Google Cloud Storage bucket, once uploaded.   |
+  | `caption`         | Caption sent with the media.                                             |
+  | `isTemplateMedia` | The media belongs to an HSM template.                                    |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "messageMedia": {
+        "messageMedia": {
+          "id": "57",
+          "url": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "sourceUrl": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "thumbnail": null,
+          "gcsUrl": null,
+          "caption": "Session schedule",
+          "isTemplateMedia": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The media does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Messages.MessageMedia", "message": "Resource not found" }]` and
+    `messageMedia` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

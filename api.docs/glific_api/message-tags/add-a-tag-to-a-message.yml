@@ -1,0 +1,86 @@
+info:
+  name: Add a tag to a message
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createMessageTag($input: MessageTagInput!) {
+        createMessageTag(input: $input) {
+          messageTag {
+            id
+            value
+            message {
+              id
+              body
+            }
+            tag {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "messageId": "1042",
+          "tagId": "6"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Attaches a tag to a message and pushes the new message tag to **Subscribe to message tag
+  additions**. Adding a tag the message already has replaces the existing link instead of
+  failing.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description       |
+  | -------- | ------------------ | -------- | ----------------- |
+  | `input`  | `MessageTagInput!` | Yes      | The link to add.  |
+
+  ### `MessageTagInput`
+
+  | Field       | Type | Required | Description      |
+  | ----------- | ---- | -------- | ---------------- |
+  | `messageId` | `ID` | Yes      | The message.     |
+  | `tagId`     | `ID` | Yes      | The tag to add.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createMessageTag": {
+        "messageTag": {
+          "id": "903",
+          "value": null,
+          "message": { "id": "1042", "body": "Hi, I want to know about the next session" },
+          "tag": { "id": "6", "label": "Important" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `messageTag` set to `null`:
+
+  - A field is missing: `{ "key": "tag_id", "message": "Tag_id: can't be blank" }`.
+  - The message or tag does not exist:
+    `{ "key": "message_id", "message": "Message_id: does not exist" }` (or `tag_id`).
+
+  A user without the staff role gets a top-level `Unauthorized` error.

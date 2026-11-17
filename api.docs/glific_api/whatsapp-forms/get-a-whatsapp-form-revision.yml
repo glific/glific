@@ -1,0 +1,71 @@
+info:
+  name: Get a WhatsApp form revision
+  type: graphql
+  seq: 13
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query whatsappFormRevision($id: ID!) {
+        whatsappFormRevision(id: $id) {
+          whatsappFormRevision {
+            id
+            whatsappFormId
+            revisionNumber
+            definition
+            userId
+            insertedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "14"
+      }
+  auth: inherit
+
+docs: |
+  Returns one revision of a WhatsApp form, with its JSON definition.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The revision to return. |
+
+  ## Example response
+
+  `isCurrent` is only computed by **List WhatsApp form revisions**; here it is always
+  `false`, so it is not selected. `definition` is a JSON-encoded string.
+
+  ```json
+  {
+    "data": {
+      "whatsappFormRevision": {
+        "whatsappFormRevision": {
+          "id": "14",
+          "whatsappFormId": "3",
+          "revisionNumber": 2,
+          "definition": "{\"version\":\"7.3\",\"screens\":[{\"title\":\"Sign up\",\"terminal\":true,\"layout\":{\"type\":\"SingleColumnLayout\",\"children\":[{\"type\":\"Form\",\"name\":\"flow_path\",\"children\":[{\"type\":\"TextInput\",\"name\":\"student_name\",\"label\":\"Your name\",\"required\":true},{\"type\":\"Footer\",\"on-click-action\":{\"payload\":{\"student_name\":\"${form.student_name}\"},\"name\":\"complete\"},\"label\":\"Submit\"}]}]},\"id\":\"SIGN_UP\",\"data\":{}}]}",
+          "userId": "1",
+          "insertedAt": "2026-11-05 08:40:02"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The revision does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappFormRevision", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

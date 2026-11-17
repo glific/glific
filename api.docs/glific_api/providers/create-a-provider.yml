@@ -1,0 +1,98 @@
+info:
+  name: Create a provider
+  type: graphql
+  seq: 4
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createProvider($input: ProviderInput!) {
+        createProvider(input: $input) {
+          provider {
+            id
+            name
+            shortcode
+            group
+            description
+            isRequired
+            keys
+            secrets
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Sample Service",
+          "shortcode": "sample_service",
+          "group": "integration",
+          "description": "Connects an organization to Sample Service",
+          "isRequired": false,
+          "keys": "{\"url\":{\"type\":\"string\",\"label\":\"Service URL\",\"default\":\"https://api.example.com\",\"view_only\":false}}",
+          "secrets": "{\"api_key\":{\"type\":\"string\",\"label\":\"API Key\",\"default\":null,\"view_only\":false}}"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a provider, available to every organization on the server.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description             |
+  | -------- | ---------------- | -------- | ----------------------- |
+  | `input`  | `ProviderInput!` | Yes      | The provider to create. |
+
+  ### `ProviderInput`
+
+  | Field         | Type      | Required | Description                                                                     |
+  | ------------- | --------- | -------- | ------------------------------------------------------------------------------- |
+  | `name`        | `String`  | Yes      | Display name. Unique.                                                           |
+  | `shortcode`   | `String`  | Yes      | Identifier used in code and in credentials.                                     |
+  | `keys`        | `Json`    | Yes      | Non-secret fields, as a JSON-encoded object of `{ type, label, default, view_only }` per field. |
+  | `secrets`     | `Json`    | Yes      | Secret fields, in the same shape as `keys`.                                     |
+  | `group`       | `String`  | No       | Category, such as `bsp`.                                                        |
+  | `description` | `String`  | No       | Free text.                                                                      |
+  | `isRequired`  | `Boolean` | No       | Defaults to `false`.                                                            |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createProvider": {
+        "provider": {
+          "id": "25",
+          "name": "Sample Service",
+          "shortcode": "sample_service",
+          "group": "integration",
+          "description": "Connects an organization to Sample Service",
+          "isRequired": false,
+          "keys": "{\"url\":{\"default\":\"https://api.example.com\",\"label\":\"Service URL\",\"type\":\"string\",\"view_only\":false}}",
+          "secrets": "{\"api_key\":{\"default\":null,\"label\":\"API Key\",\"type\":\"string\",\"view_only\":false}}"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `provider` set to `null`:
+
+  - A required field is missing: `{ "key": "keys", "message": "Keys: can't be blank" }`.
+  - The name is taken: `{ "key": "name", "message": "Name: has already been taken" }`.
+
+  A `keys` or `secrets` value that is not a valid JSON string is rejected before the mutation
+  runs. A user without the glific_admin role gets a top-level `Unauthorized` error.
