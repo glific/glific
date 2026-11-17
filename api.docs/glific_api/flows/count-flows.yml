@@ -1,0 +1,50 @@
+info:
+  name: Count flows
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countFlows($filter: FlowFilter) {
+        countFlows(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "isActive": true,
+          "status": "published"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's flows that match a filter. Use it with **List flows** to build
+  pagination.
+
+  **Role:** manager
+
+  Unlike **List flows**, the count does not apply role-based access control: it counts every
+  matching flow in the organization.
+
+  ## Arguments
+
+  | Argument | Type         | Required | Description                                                     |
+  | -------- | ------------ | -------- | --------------------------------------------------------------- |
+  | `filter` | `FlowFilter` | No       | Same fields as in **List flows**. Without it, counts all flows. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countFlows": 14
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

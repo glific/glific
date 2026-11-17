@@ -1,0 +1,30 @@
+info:
+  name: Saved Searches
+  type: folder
+  seq: 25
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A saved search stores the arguments of a **Search › Search conversations** call under a
+    label and shortcode, so the inbox can offer it as a filter and flows can count it.
+    Reserved saved searches (`isReserved: true`) are created by Glific, such as `Unread`,
+    `Not replied`, `Not Responded`, `Optin` and `Optout`.
+
+    `args` is a JSON object with the same keys as the search arguments, for example:
+
+    ```json
+    {
+      "filter": { "status": "Unread", "term": "" },
+      "contactOpts": { "limit": 25, "offset": 0 },
+      "messageOpts": { "limit": 20, "offset": 0 }
+    }
+    ```
+
+    Reading and counting need the staff role; creating, changing or deleting a saved search
+    needs the manager role.
+
+    Related: **Search**.
+  type: text/markdown

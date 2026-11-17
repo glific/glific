@@ -1,0 +1,83 @@
+info:
+  name: Bulk apply HSM templates
+  type: graphql
+  seq: 12
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation bulkApplyTemplates($data: String) {
+        bulkApplyTemplates(data: $data) {
+          csvRows
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "data": "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Title,CTA Button 1 Type,CTA Button 1 Value,CTA Button 2 Title,CTA Button 2 Type,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Order update,\"Hi {{1}}, your order has shipped.\",\"Hi [Asha], your order has shipped.\",order_update,UTILITY,,,TRUE,QUICK_REPLY,,,,,,,Track order,Cancel order,\r\nEnglish,Bad row,Hello,Hello,Bad-Name,UTILITY,,,FALSE,,,,,,,,,,"
+      }
+  auth: inherit
+
+docs: |
+  Submits many HSM templates for approval from a CSV. Each row is checked; every valid row is
+  queued as a background job that runs the HSM path of **Create a session template**. The
+  result is a per-row report. This works only on the standard Gupshup BSP; on Gupshup
+  Enterprise `csvRows` is `null`.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type     | Required | Description                         |
+  | -------- | -------- | -------- | ----------------------------------- |
+  | `data`   | `String` | Yes      | CSV text with the header row below. |
+
+  ### CSV columns
+
+  | Column                                    | Rule                                                              |
+  | ----------------------------------------- | ----------------------------------------------------------------- |
+  | `Title`                                   | Template label; also identifies the row in the report.            |
+  | `Language`                                | One of `English`, `Hindi`, `Tamil`, `Kannada`, `Malayalam`, `Telugu`, `Odia`, `Assamese`, `Gujarati`, `Bengali`, `Punjabi`, `Marathi`, `Urdu`, `Spanish` or `Sign Language`. |
+  | `Category`                                | `UTILITY` or `MARKETING`.                                         |
+  | `Element Name`                            | Lowercase letters, digits and `_`. Must not exist already in that language. |
+  | `Message`                                 | Body, with `{{1}}`-style variables.                               |
+  | `Sample Message`                          | The body with each variable replaced by `[value]`.                |
+  | `Attachment Type`                         | Empty, `image`, `video` or `document`.                            |
+  | `Attachment URL`                          | A reachable URL of that type, when `Attachment Type` is set.      |
+  | `Has Buttons`                             | `TRUE` or `FALSE`.                                                |
+  | `Button Type`                             | `QUICK_REPLY` or `CALL_TO_ACTION`, when `Has Buttons` is `TRUE`.  |
+  | `Quick Reply 1 Title` to `Quick Reply 3 Title` | At least one, for `QUICK_REPLY`.                             |
+  | `CTA Button 1/2 Title`, `Type`, `Value`   | For `CALL_TO_ACTION`: type `URL` or `PHONE_NUMBER`, value the URL or number. |
+
+  ## Example response
+
+  `csvRows` is a CSV report, one line per row:
+
+  ```json
+  {
+    "data": {
+      "bulkApplyTemplates": {
+        "csvRows": "Title,Status\r\nOrder update,Template has been applied successfully\r\nBad row,Invalid Element Name",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  "Applied successfully" means the row was queued; the approval itself can still fail. Check
+  the result with **List session templates**.
+
+  ## Errors
+
+  Per-row problems appear in `csvRows`: `Invalid Language`, `Invalid Category`,
+  `Invalid Element Name`, `Invalid Attachment Type`, `Invalid Attachment URL`,
+  `Message and Sample Message does not match`, `Invalid Buttons`, `Invalid Button Type`,
+  `Invalid Call To Action Button type`, `Quick Reply Button Titles are empty`,
+  `Template with same Element Name and language already exist`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

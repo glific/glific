@@ -1,0 +1,46 @@
+info:
+  name: Count tags
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countTags($filter: TagFilter) {
+        countTags(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "isReserved": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's tags that match a filter. Use it with **List tags** to build
+  pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type        | Required | Description                                                  |
+  | -------- | ----------- | -------- | ------------------------------------------------------------ |
+  | `filter` | `TagFilter` | No       | Same fields as in **List tags**. Without it, counts all tags. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countTags": 12
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

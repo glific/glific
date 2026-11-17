@@ -1,0 +1,154 @@
+info:
+  name: Get the current organization
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query organization($id: ID) {
+        organization(id: $id) {
+          organization {
+            id
+            name
+            shortcode
+            email
+            status
+            timezone
+            sessionLimit
+            signaturePhrase
+            newcontactFlowId
+            optinFlowId
+            lastCommunicationAt
+            isSuspended
+            suspendedUntil
+            defaultLanguage {
+              id
+              label
+            }
+            activeLanguages {
+              id
+              label
+            }
+            contact {
+              id
+              name
+            }
+            bsp {
+              id
+              shortcode
+            }
+            outOfOffice {
+              enabled
+              startTime
+              endTime
+              enabledDays {
+                id
+                enabled
+              }
+              flowId
+              defaultFlowId
+            }
+            setting {
+              reportFrequency
+              runFlowEachTime
+              lowBalanceThreshold
+              criticalBalanceThreshold
+              sendWarningMail
+              allowBotNumberUpdate
+            }
+            regxFlow {
+              flowId
+              regx
+              regxOpt
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns the logged-in user's organization and its settings. The `id` argument is ignored: the
+  result is always the caller's own organization.
+
+  **Role:** staff
+
+  `signaturePhrase` is the secret used to sign outgoing webhook payloads. Users with the staff
+  role get it as an empty string.
+
+  ## Arguments
+
+  | Argument | Type | Required | Description                      |
+  | -------- | ---- | -------- | -------------------------------- |
+  | `id`     | `ID` | No       | Ignored. Kept for compatibility. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "organization": {
+        "organization": {
+          "id": "1",
+          "name": "Glific",
+          "shortcode": "glific",
+          "email": "admin@example.org",
+          "status": "ACTIVE",
+          "timezone": "Asia/Kolkata",
+          "sessionLimit": 60,
+          "signaturePhrase": "Sample Secret Phrase",
+          "newcontactFlowId": "2",
+          "optinFlowId": null,
+          "lastCommunicationAt": "2026-11-16T08:12:44Z",
+          "isSuspended": false,
+          "suspendedUntil": null,
+          "defaultLanguage": { "id": "1", "label": "English" },
+          "activeLanguages": [
+            { "id": "1", "label": "English" },
+            { "id": "2", "label": "Hindi" }
+          ],
+          "contact": { "id": "1", "name": "NGO Main Account" },
+          "bsp": { "id": "1", "shortcode": "gupshup" },
+          "outOfOffice": {
+            "enabled": true,
+            "startTime": "09:00:00",
+            "endTime": "20:00:00",
+            "enabledDays": [
+              { "id": 1, "enabled": true },
+              { "id": 2, "enabled": true },
+              { "id": 3, "enabled": true },
+              { "id": 4, "enabled": true },
+              { "id": 5, "enabled": true },
+              { "id": 6, "enabled": false },
+              { "id": 7, "enabled": false }
+            ],
+            "flowId": "3",
+            "defaultFlowId": null
+          },
+          "setting": {
+            "reportFrequency": "WEEKLY",
+            "runFlowEachTime": false,
+            "lowBalanceThreshold": "10",
+            "criticalBalanceThreshold": "3",
+            "sendWarningMail": false,
+            "allowBotNumberUpdate": false
+          },
+          "regxFlow": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

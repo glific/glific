@@ -1,0 +1,41 @@
+info:
+  name: List channels
+  type: http
+  seq: 22
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/channels"
+  auth: inherit
+
+docs: |
+  Returns the messaging channels the editor knows about. It is a fixed list with WhatsApp
+  only; the flow's own channel (`WHATSAPP` or `WEB`) is set on the flow, not here.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. `uuid` is generated afresh on every call.
+
+  ```json
+  {
+    "results": [
+      {
+        "uuid": "6c0e7d2a-1b5f-4c39-8d0e-0f2a4b7c9e11",
+        "name": "WhatsApp",
+        "address": "",
+        "schemes": ["whatsapp"],
+        "roles": ["send", "receive"]
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

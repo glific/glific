@@ -1,0 +1,60 @@
+info:
+  name: Delete a profile
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteProfile($id: ID!) {
+        deleteProfile(id: $id) {
+          profile {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a profile. **Deleting a contact's default profile (`isDefault: true`) deletes the
+  whole contact** and everything attached to it.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description            |
+  | -------- | ----- | -------- | ---------------------- |
+  | `id`     | `ID!` | Yes      | The profile to delete. |
+
+  ## Example response
+
+  On success both fields are `null`: the deleted profile is not returned.
+
+  ```json
+  {
+    "data": {
+      "deleteProfile": {
+        "profile": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The profile does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Profiles.Profile", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

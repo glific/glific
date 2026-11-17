@@ -1,0 +1,31 @@
+info:
+  name: List ticketers
+  type: http
+  seq: 29
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/ticketers"
+  auth: inherit
+
+docs: |
+  Lists ticketing services for the editor's "open ticket" action. The editor requires the
+  endpoint, but Glific doesn't connect ticketers through it, so the list is always empty.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  { "results": [] }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

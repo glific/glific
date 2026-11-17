@@ -1,0 +1,64 @@
+info:
+  name: Send feedback on an Ask Glific answer
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation askGlificFeedback($input: AskGlificFeedbackInput!) {
+        askGlificFeedback(input: $input) {
+          success
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "messageId": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+          "rating": "dislike",
+          "content": "The steps are out of date."
+        }
+      }
+  auth: inherit
+
+docs: |
+  Records a like or dislike, and an optional comment, on an Ask Glific answer.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                      | Required | Description       |
+  | -------- | ------------------------- | -------- | ----------------- |
+  | `input`  | `AskGlificFeedbackInput!` | Yes      | The feedback.     |
+
+  ### `AskGlificFeedbackInput`
+
+  | Field       | Type      | Required | Description                                                           |
+  | ----------- | --------- | -------- | --------------------------------------------------------------------- |
+  | `messageId` | `String!` | Yes      | The answer: `messageId` from the subscription or `id` from **List Ask Glific messages**. |
+  | `rating`    | `String`  | No       | `like` or `dislike`. With Glific AI, any other value clears the rating. |
+  | `content`   | `String`  | No       | A comment.                                                            |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "askGlificFeedback": {
+        "success": true
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `askGlificFeedback` set to `null`:
+
+  - With Glific AI, the answer does not exist or is in another user's conversation:
+    `Message not found`; saving fails: `Could not record feedback`.
+  - Dify can't be reached or rejects the call: the Dify error.
+  - A user without the staff role gets `Unauthorized`.

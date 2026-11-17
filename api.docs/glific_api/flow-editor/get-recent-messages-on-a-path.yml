@@ -1,0 +1,54 @@
+info:
+  name: Get recent messages on a path
+  type: http
+  seq: 7
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/recents/:exitUuid/:destinationUuid/:flowUuid"
+  params:
+    - name: exitUuid
+      value: a8311645-482e-4d35-b300-c92a9b18798b
+      type: path
+    - name: destinationUuid
+      value: 9f7632ee-6e35-4247-9235-c4c7663fd601
+      type: path
+    - name: flowUuid
+      value: 3fa22108-f464-41e5-81d9-d8a298854429
+      type: path
+  auth: inherit
+
+docs: |
+  Returns the latest messages contacts sent on one path (exit to destination node), shown
+  when the user hovers over a path's count in the editor. At most five are kept per path.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The path takes three UUIDs, in this order:
+
+  | Parameter         | Description                          |
+  | ----------------- | ------------------------------------ |
+  | `exitUuid`        | The exit the contacts left by.       |
+  | `destinationUuid` | The node the exit leads to.          |
+  | `flowUuid`        | The flow.                            |
+
+  ## Example response
+
+  `200`, a bare list. `contact.uuid` holds the contact's ID.
+
+  ```json
+  [
+    {
+      "contact": { "uuid": 26, "name": "Adelle Cavin" },
+      "operand": "yes",
+      "time": "2026-11-16T08:41:02.118Z"
+    }
+  ]
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.
+  - `500`: no counts recorded for this path.

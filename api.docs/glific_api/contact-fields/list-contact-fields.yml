@@ -1,0 +1,79 @@
+info:
+  name: List contact fields
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contactsFields($filter: ContactsFieldFilter, $opts: Opts) {
+        contactsFields(filter: $filter, opts: $opts) {
+          id
+          name
+          shortcode
+          variable
+          valueType
+          scope
+          insertedAt
+          updatedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "scope": "CONTACT"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 25,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's contact fields, with the flow variable for each.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description                                                  |
+  | -------- | --------------------- | -------- | ------------------------------------------------------------ |
+  | `filter` | `ContactsFieldFilter` | No       | Narrows the list. All given fields must match.               |
+  | `opts`   | `Opts`                | No       | Sorting and pagination. Sorts on `inserted_at` by default.   |
+
+  ### `ContactsFieldFilter`
+
+  | Field       | Type                    | Description                                      |
+  | ----------- | ----------------------- | ------------------------------------------------ |
+  | `name`      | `String`                | Name contains this text (case-insensitive).      |
+  | `shortcode` | `String`                | Shortcode contains this text.                    |
+  | `scope`     | `ContactFieldScopeEnum` | `CONTACT`, `WA_GROUP` or `GLOBALS`.              |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "contactsFields": [
+        {
+          "id": "3",
+          "name": "Age Group",
+          "shortcode": "age_group",
+          "variable": "@contact.fields.age_group",
+          "valueType": "TEXT",
+          "scope": "CONTACT",
+          "insertedAt": "2026-09-14T08:00:00Z",
+          "updatedAt": "2026-09-14T08:00:00Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

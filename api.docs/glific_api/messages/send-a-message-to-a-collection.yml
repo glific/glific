@@ -1,0 +1,72 @@
+info:
+  name: Send a message to a collection
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createAndSendMessageToGroup($groupId: ID!, $input: MessageInput!) {
+        createAndSendMessageToGroup(groupId: $groupId, input: $input) {
+          success
+          contactIds
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "groupId": "2",
+        "input": {
+          "body": "Reminder: the parents' meeting is tomorrow at 10 AM.",
+          "type": "TEXT"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Sends a message to every contact in a collection (a contact group). Glific records one
+  group message, shown in the collection's conversation and pushed to **Subscribe to sent
+  collection messages**, then starts a broadcast that sends the message to each member in
+  batches in the background, within the organization's BSP rate limit.
+
+  Each member gets the message under the same rules as **Send a message**: a session message
+  reaches only members whose 24-hour window is open; set `isHsm: true` with `templateId` and
+  `params` to send an HSM template instead. Members the message cannot be sent to are skipped
+  (a `Message` notification is recorded for each), without failing the mutation.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument  | Type            | Required | Description                                                   |
+  | --------- | --------------- | -------- | ------------------------------------------------------------- |
+  | `groupId` | `ID!`           | Yes      | The collection to send to.                                    |
+  | `input`   | `MessageInput!` | Yes      | The message. See **Create a message** for the fields; `receiverId` is not needed. |
+
+  ## Example response
+
+  `contactIds` lists the members queued for the broadcast.
+
+  ```json
+  {
+    "data": {
+      "createAndSendMessageToGroup": {
+        "success": true,
+        "contactIds": ["8", "9", "14"],
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The collection does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.Group", "message": "Resource not found" }]`.
+  - The collection has no members: top-level error `The group has no members`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

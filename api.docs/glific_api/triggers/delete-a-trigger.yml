@@ -1,0 +1,60 @@
+info:
+  name: Delete a trigger
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteTrigger($id: ID!) {
+        deleteTrigger(id: $id) {
+          trigger {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "5"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a trigger, so it never runs again. Runs it already started are not affected.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description            |
+  | -------- | ----- | -------- | ---------------------- |
+  | `id`     | `ID!` | Yes      | The trigger to delete. |
+
+  ## Example response
+
+  On success `errors` is `null`. `trigger` is always `null`: the resolver doesn't return the
+  deleted trigger in the result's `trigger` field.
+
+  ```json
+  {
+    "data": {
+      "deleteTrigger": {
+        "trigger": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The trigger does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Triggers.Trigger", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,97 @@
+info:
+  name: Get organization services
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query organizationServices {
+        organizationServices {
+          bigquery
+          googleCloudStorage
+          dialogflow
+          funWithFlags
+          flowUuidDisplay
+          rolesAndPermission
+          contactProfileEnabled
+          ticketingEnabled
+          autoTranslationEnabled
+          whatsappGroupEnabled
+          whatsappFormsEnabled
+          certificateEnabled
+          askGlificEnabled
+          assistantConfigVersionsEnabled
+          supersetEnabled
+          promptGeneratorEnabled
+          templateV2Enabled
+          templateLibraryEnabled
+          glificAiEnabled
+          webChannelEnabled
+          bulkContactUpdateEnabled
+          bulkFlowResultsEnabled
+          aiGuardrailEnabled
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns which integrations and feature flags are on for the logged-in user's organization.
+  The frontend uses it to show or hide features.
+
+  `bigquery`, `googleCloudStorage` and `dialogflow` are `true` when the organization has an
+  active credential for that service (see **Credentials**). `funWithFlags` is the out-of-office
+  flag. The other fields are per-organization feature flags.
+
+  **Role:** staff
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "organizationServices": {
+        "bigquery": false,
+        "googleCloudStorage": true,
+        "dialogflow": false,
+        "funWithFlags": true,
+        "flowUuidDisplay": false,
+        "rolesAndPermission": false,
+        "contactProfileEnabled": false,
+        "ticketingEnabled": true,
+        "autoTranslationEnabled": false,
+        "whatsappGroupEnabled": false,
+        "whatsappFormsEnabled": false,
+        "certificateEnabled": false,
+        "askGlificEnabled": false,
+        "assistantConfigVersionsEnabled": false,
+        "supersetEnabled": false,
+        "promptGeneratorEnabled": false,
+        "templateV2Enabled": false,
+        "templateLibraryEnabled": false,
+        "glificAiEnabled": false,
+        "webChannelEnabled": false,
+        "bulkContactUpdateEnabled": false,
+        "bulkFlowResultsEnabled": false,
+        "aiGuardrailEnabled": false,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

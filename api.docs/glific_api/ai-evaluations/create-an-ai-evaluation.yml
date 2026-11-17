@@ -1,0 +1,88 @@
+info:
+  name: Create an AI evaluation
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createEvaluation($input: EvaluationInput!) {
+        createEvaluation(input: $input) {
+          evaluation {
+            status
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "evaluationName": "prenatal_v2_1_run1",
+          "goldenQaId": "3",
+          "configId": "33",
+          "duplicationFactor": 1
+        }
+      }
+  auth: inherit
+
+docs: |
+  Starts an evaluation run on Kaapi: the config version answers every question in the golden
+  QA and Kaapi scores the answers.
+
+  This is asynchronous. The call returns once Kaapi accepts the run, normally with
+  `PROCESSING`. When the run ends, Kaapi calls Glific back; Glific fetches and saves the
+  scores and **Subscribe to AI evaluation updates** pushes the evaluation as `COMPLETED` or
+  `FAILED`. On completion a notification is created, and if the version is live, the
+  assistant's `lastEvaluationSummary` is updated. The result does not include the new
+  evaluation's ID: find it with **List AI evaluations**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description     |
+  | -------- | ------------------ | -------- | --------------- |
+  | `input`  | `EvaluationInput!` | Yes      | The run.        |
+
+  ### `EvaluationInput`
+
+  | Field               | Type      | Required | Description                                                       |
+  | ------------------- | --------- | -------- | ----------------------------------------------------------------- |
+  | `evaluationName`    | `String!` | Yes      | Unique in the organization.                                       |
+  | `goldenQaId`        | `ID!`     | Yes      | The golden QA to run.                                             |
+  | `configId`          | `ID!`     | Yes      | The assistant config version to evaluate, from **List ready config versions**. |
+  | `duplicationFactor` | `Int`     | No       | 1 to 5. Defaults to `1`.                                          |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createEvaluation": {
+        "evaluation": {
+          "status": "PROCESSING"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `createEvaluation` set to `null`:
+
+  - `Duplication factor must be between 1 and 5`
+  - `An evaluation with this name already exists. Please choose a different name.`
+  - `The specified config version does not exist.`
+  - `The specified Golden QA dataset does not exist or does not belong to your organization.`
+  - Kaapi times out: `Timeout occurred, please try again.`; Kaapi rejects the run: Kaapi's
+    error; Kaapi answers with an unexpected shape or status:
+    `Invalid evaluation response received from Kaapi.` or
+    `Unexpected evaluation status received from Kaapi: <status>`.
+  - A user without the staff role gets `Unauthorized`.

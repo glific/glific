@@ -1,0 +1,82 @@
+info:
+  name: Add a user to a group
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createUserGroup($input: UserGroupInput!) {
+        createUserGroup(input: $input) {
+          userGroup {
+            id
+            user {
+              id
+              name
+            }
+            group {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "userId": "2",
+          "groupId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds one user to one group.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description            |
+  | -------- | ----------------- | -------- | ---------------------- |
+  | `input`  | `UserGroupInput!` | Yes      | The user and the group. |
+
+  ### `UserGroupInput`
+
+  | Field     | Type | Required | Description |
+  | --------- | ---- | -------- | ----------- |
+  | `userId`  | `ID` | Yes      | The user.   |
+  | `groupId` | `ID` | Yes      | The group.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createUserGroup": {
+        "userGroup": {
+          "id": "7",
+          "user": { "id": "2", "name": "NGO Staff" },
+          "group": { "id": "1", "label": "Default Group" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Returned in `errors` with `userGroup` set to `null`:
+
+  - The user is already in the group: `{ "key": "user_id", "message": "User_id: has already been taken" }`.
+  - The user or group does not exist: `{ "key": "user_id", "message": "User_id: does not exist" }` or
+    `{ "key": "group_id", "message": "Group_id: does not exist" }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,63 @@
+info:
+  name: Get the web channel branding
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{api_url}}/v1/web_channel/branding"
+
+docs: |
+  Returns the colours, logo, name and business profile the widget should render with, read
+  from the organization's `web_channel` credential. Public: the widget calls it before anyone
+  signs in.
+
+  Answers `200` even when the web channel is off, with `enabled: false`, the organization's
+  name and its WhatsApp number, so the widget can send the visitor there instead.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  When the web channel is on. Colours not set fall back to `#119656` and `#eab308`;
+  `primary_foreground` is the text colour that reads best on `primary_color`. A `logo_url`
+  that is not `https://` is returned as `null`.
+
+  ```json
+  {
+    "data": {
+      "enabled": true,
+      "display_name": "Glific Learning",
+      "logo_url": "https://example.org/logo.png",
+      "primary_color": "#119656",
+      "primary_foreground": "#fafafa",
+      "secondary_color": "#eab308",
+      "about": {
+        "description": "Learning support for students and parents",
+        "address": "12 MG Road, Bengaluru",
+        "website": "https://example.org",
+        "email": "hello@example.org",
+        "hours": "Mon-Fri, 9am-6pm"
+      }
+    }
+  }
+  ```
+
+  When the web channel is off:
+
+  ```json
+  {
+    "data": {
+      "enabled": false,
+      "display_name": "Glific",
+      "whatsapp_number": "917834811114"
+    }
+  }
+  ```
+
+  ## Errors
+
+  `404` when the host does not resolve to an organization:
+  `{ "error": { "status": 404, "message": "Organization not found." } }`.

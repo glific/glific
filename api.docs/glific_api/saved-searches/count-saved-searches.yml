@@ -1,0 +1,46 @@
+info:
+  name: Count saved searches
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countSavedSearches($filter: SavedSearchFilter) {
+        countSavedSearches(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "label": "parent"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's saved searches that match a filter. Use it with **List saved
+  searches** to build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description                                                         |
+  | -------- | ------------------- | -------- | ------------------------------------------------------------------- |
+  | `filter` | `SavedSearchFilter` | No       | `label` and `shortcode` as in **List saved searches**. `isReserved` is ignored here, so the count includes reserved searches. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countSavedSearches": 3
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

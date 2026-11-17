@@ -1,0 +1,80 @@
+info:
+  name: Get an extension
+  type: graphql
+  seq: 1
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query extension($id: ID!) {
+        extension(id: $id) {
+          extension {
+            id
+            name
+            code
+            module
+            isActive
+            isValid
+            insertedAt
+            updatedAt
+            organization {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Returns one extension by ID, from any organization.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description              |
+  | -------- | ----- | -------- | ------------------------ |
+  | `id`     | `ID!` | Yes      | The extension to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "extension": {
+        "extension": {
+          "id": "3",
+          "name": "URL helpers",
+          "code": "defmodule Glific.Extensions.UrlHelpers do\n  def shorten(url), do: url\nend",
+          "module": "Elixir.Glific.Extensions.UrlHelpers",
+          "isActive": true,
+          "isValid": true,
+          "insertedAt": "2026-11-02T09:41:12Z",
+          "updatedAt": "2026-11-02T09:41:12Z",
+          "organization": { "id": "2", "name": "Slam Out Loud" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The extension does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Extensions.Extension", "message": "Resource not found" }]` and
+    `extension` is `null`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

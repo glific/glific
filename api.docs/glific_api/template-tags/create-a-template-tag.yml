@@ -1,0 +1,85 @@
+info:
+  name: Create a template tag
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createTemplateTag($input: TemplateTagInput!) {
+        createTemplateTag(input: $input) {
+          templateTag {
+            id
+            value
+            template {
+              id
+              label
+            }
+            tag {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "templateId": "12",
+          "tagId": "3"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Attaches one tag to a template. If the pair already exists, the existing row is replaced,
+  so calling it twice is not an error.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description           |
+  | -------- | ------------------- | -------- | --------------------- |
+  | `input`  | `TemplateTagInput!` | Yes      | The template and tag. |
+
+  ### `TemplateTagInput`
+
+  | Field        | Type | Required | Description                       |
+  | ------------ | ---- | -------- | --------------------------------- |
+  | `templateId` | `ID` | Yes      | The session or HSM template.      |
+  | `tagId`      | `ID` | Yes      | The tag to attach.                |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createTemplateTag": {
+        "templateTag": {
+          "id": "41",
+          "value": null,
+          "template": { "id": "12", "label": "Order update" },
+          "tag": { "id": "3", "label": "Orders" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Failures come back in `errors` with `templateTag` set to `null`:
+
+  - A field is missing: `{ "key": "template_id", "message": "Template_id: can't be blank" }`.
+  - The template or tag does not exist:
+    `{ "key": "tag_id", "message": "Tag_id: does not exist" }`.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

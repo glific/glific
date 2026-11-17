@@ -1,0 +1,89 @@
+info:
+  name: Update a session template
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateSessionTemplate($id: ID!, $input: SessionTemplateInput) {
+        updateSessionTemplate(id: $id, input: $input) {
+          sessionTemplate {
+            id
+            label
+            body
+            isHsm
+            status
+            isActive
+            tag {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12",
+        "input": {
+          "isActive": false,
+          "tagId": "3"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a template in Glific only; nothing is sent to the BSP. Only the fields given in
+  `input` change, and what can change depends on the template:
+
+  | Template                     | What changes                                                 |
+  | ---------------------------- | ------------------------------------------------------------ |
+  | Session template (`isHsm: false`) | Any field in `SessionTemplateInput`.                    |
+  | HSM with status `APPROVED`   | Only `isActive` and `tagId`. Other fields are silently ignored. To change the content, use **Edit an approved HSM template**. |
+  | HSM with any other status    | Nothing. The call fails.                                     |
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                                     |
+  | -------- | ---------------------- | -------- | --------------------------------------------------------------- |
+  | `id`     | `ID!`                  | Yes      | The template to change.                                         |
+  | `input`  | `SessionTemplateInput` | No       | Fields to change. See **Create a session template** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateSessionTemplate": {
+        "sessionTemplate": {
+          "id": "12",
+          "label": "Order update",
+          "body": "Hi {{1}}, your order {{2}} has shipped.",
+          "isHsm": true,
+          "status": "APPROVED",
+          "isActive": false,
+          "tag": { "id": "3", "label": "Orders" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.SessionTemplate", "message": "Resource not found" }]`.
+  - The template is an HSM that is not approved yet:
+    `{ "key": "hsm", "message": "Hsm: HSM is not approved yet, it can't be modified" }`.
+  - The new label or shortcode is already used in that language:
+    `{ "key": "label", "message": "Label: has already been taken" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

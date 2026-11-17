@@ -1,0 +1,92 @@
+info:
+  name: Create a template from a message
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createTemplateFormMessage($messageId: ID!, $input: MessageToTemplateInput) {
+        createTemplateFormMessage(messageId: $messageId, input: $input) {
+          sessionTemplate {
+            id
+            label
+            shortcode
+            body
+            type
+            isHsm
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "messageId": "1043",
+        "input": {
+          "label": "Welcome reply",
+          "shortcode": "welcome_reply",
+          "languageId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Saves an existing message as a new session template (not an HSM). The template takes the
+  message's `body` and `type`; `input` supplies the rest. The field name says `Form` but
+  means "from".
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type                     | Required | Description                                   |
+  | ----------- | ------------------------ | -------- | --------------------------------------------- |
+  | `messageId` | `ID!`                    | Yes      | The message to copy.                          |
+  | `input`     | `MessageToTemplateInput` | Yes      | Label, shortcode and language of the template. Omitting it fails. |
+
+  ### `MessageToTemplateInput`
+
+  | Field        | Type     | Required | Description                                          |
+  | ------------ | -------- | -------- | ---------------------------------------------------- |
+  | `label`      | `String` | Yes      | Unique per organization and language.                |
+  | `languageId` | `ID`     | Yes      | Language of the template.                            |
+  | `shortcode`  | `String` | No       | Unique per organization and language.                |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createTemplateFormMessage": {
+        "sessionTemplate": {
+          "id": "27",
+          "label": "Welcome reply",
+          "shortcode": "welcome_reply",
+          "body": "Thanks for reaching out! A volunteer will reply soon.",
+          "type": "TEXT",
+          "isHsm": false,
+          "language": { "id": "1", "label": "English" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The label or shortcode is already used in that language:
+    `{ "key": "label", "message": "Label: has already been taken" }`.
+  - A required field is missing, such as
+    `{ "key": "label", "message": "Label: can't be blank" }`.
+  - The message does not exist: a top-level error.
+  - A user without the staff role gets a top-level `Unauthorized` error.

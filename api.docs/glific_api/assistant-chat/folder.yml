@@ -1,0 +1,29 @@
+info:
+  name: Assistant Chat
+  type: folder
+  seq: 81
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    The "Try it out" sandbox: chat with an assistant's live config version, or any other
+    version, before using it in a flow. The model call runs on Kaapi.
+
+    Chatting is asynchronous:
+
+    1. Open **Subscribe to assistant chat replies** first.
+    2. **Send a message to an assistant** asks Kaapi to run the call and returns at once
+       with a `jobId` and a `requestId`.
+    3. When Kaapi calls Glific back, the reply is pushed over the subscription to the user
+       who sent the message, with the same `requestId`.
+
+    Pass the `conversationId` from a reply to continue the same conversation. When the
+    organization has the `is_ai_guardrail_enabled` flag, replies also show what each
+    guardrail did.
+
+    Sending needs the staff role and an active Kaapi credential.
+
+    Related folders: **Assistants** and **Guardrails**.
+  type: text/markdown

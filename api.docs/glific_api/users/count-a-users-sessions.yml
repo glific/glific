@@ -1,0 +1,46 @@
+info:
+  name: Count a user's sessions
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query fetchUserSessions($id: ID!) {
+        fetchUserSessions(id: $id)
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Returns how many active sessions (unexpired access tokens) a user has, for example to see
+  whether they are logged in before changing their roles.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description        |
+  | -------- | ----- | -------- | ------------------ |
+  | `id`     | `ID!` | Yes      | The user to check. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "fetchUserSessions": 2
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The user does not exist in the organization: a top-level error, with `fetchUserSessions`
+    set to `null`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

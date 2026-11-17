@@ -1,0 +1,19 @@
+info:
+  name: Languages
+  type: folder
+  seq: 58
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Languages are the global list of languages Glific supports, such as English (`en`) and
+    Hindi (`hi`). Contacts, users, tags, templates and organizations each point to a language,
+    and an organization picks the ones it uses through its `activeLanguages` and
+    `defaultLanguage` (see **Organizations**).
+
+    The table is shared by every organization. Reading languages needs the staff role;
+    creating, changing or deleting one needs `glific_admin`, because a change is visible to
+    every organization.
+  type: text/markdown

@@ -1,0 +1,52 @@
+info:
+  name: Upload a base64 media blob
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation uploadBlob($media: String!, $extension: String!) {
+        uploadBlob(media: $media, extension: $extension)
+      }
+    variables: |-
+      {
+        "media": "UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=",
+        "extension": "webp"
+      }
+  auth: inherit
+
+docs: |
+  Uploads a file sent as a base64 string to the organization's Google Cloud Storage bucket and
+  returns its public URL. Unlike **Upload a media file**, this is a plain JSON request. The
+  file is stored as `outbound/<year>-<week>/<user name>/<uuid>.<extension>`. There is no size
+  option; the 20 MB request limit applies to the encoded string.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type      | Required | Description                                                     |
+  | ----------- | --------- | -------- | --------------------------------------------------------------- |
+  | `media`     | `String!` | Yes      | The file, base64-encoded (standard alphabet, with padding, no `data:` prefix). |
+  | `extension` | `String!` | Yes      | File extension for the stored name, such as `mp3` or `png`.     |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "uploadBlob": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/a3f4c9b2-1d2e-4f60-8a7b-9c0d1e2f3a4b.webp"
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors are top-level, and `uploadBlob` is `null`:
+
+  - `media` is not valid base64: the request fails with an error.
+  - `Something went wrong ...`: the upload to Google Cloud Storage failed.
+  - A user without the staff role gets `Unauthorized`.

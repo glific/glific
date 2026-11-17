@@ -1,0 +1,47 @@
+info:
+  name: Get inbox collection counts
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query collectionStats($organizationId: ID!) {
+        collectionStats(organizationId: $organizationId)
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's contacts in each built-in inbox view: all conversations, unread,
+  not replied, not responded, opted in and opted out. Blocked contacts are not counted. The
+  same counts are also pushed to the organization's `collectionCount` subscription.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                                       |
+  | ---------------- | ----- | -------- | ----------------------------------------------------------------- |
+  | `organizationId` | `ID!` | Yes      | Required by the schema but ignored: the counts are always for the logged-in user's organization. |
+
+  ## Example response
+
+  The result is a `Json` string, keyed by organization ID:
+
+  ```json
+  {
+    "data": {
+      "collectionStats": "{\"1\":{\"Unread\":7,\"Optout\":3,\"Optin\":184,\"Not replied\":5,\"Not Responded\":41,\"All\":212}}"
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

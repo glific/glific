@@ -1,0 +1,103 @@
+info:
+  name: List triggers
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query triggers($filter: TriggerFilter, $opts: Opts) {
+        triggers(filter: $filter, opts: $opts) {
+          id
+          name
+          startAt
+          nextTriggerAt
+          endDate
+          isActive
+          isRepeating
+          frequency
+          days
+          hours
+          groupType
+          groups
+          flow {
+            id
+            name
+          }
+          roles {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "flow": "help"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's triggers, optionally filtered and paginated. `groups` holds the
+  labels of the trigger's collections.
+
+  **Role:** manager
+
+  When the organization has role-based access control on, users without the Admin, Manager or
+  Staff access role only get the triggers assigned to one of their roles.
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                    |
+  | -------- | --------------- | -------- | ---------------------------------------------- |
+  | `filter` | `TriggerFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`          | No       | Sorting and pagination. Sorts on `name` by default. |
+
+  ### `TriggerFilter`
+
+  | Field  | Type     | Description                                         |
+  | ------ | -------- | --------------------------------------------------- |
+  | `name` | `String` | Trigger name contains this text (case-insensitive). |
+  | `flow` | `String` | Flow name contains this text (case-insensitive).    |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "triggers": [
+        {
+          "id": "5",
+          "name": "Help Workflow_17/11/2026_6:45PM",
+          "startAt": "2026-11-17T13:15:00Z",
+          "nextTriggerAt": "2026-11-17T13:15:00Z",
+          "endDate": "2026-12-31",
+          "isActive": true,
+          "isRepeating": true,
+          "frequency": "weekly",
+          "days": [2, 4],
+          "hours": [],
+          "groupType": "WABA",
+          "groups": ["Optin contacts"],
+          "flow": { "id": "3", "name": "Help Workflow" },
+          "roles": []
+        }
+      ]
+    }
+  }
+  ```
+
+  `frequency` comes back as a plain string. `waGroups` is never filled in and is always
+  `null`.
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

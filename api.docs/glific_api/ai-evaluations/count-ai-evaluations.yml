@@ -1,0 +1,46 @@
+info:
+  name: Count AI evaluations
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countAiEvaluations($filter: AiEvaluationFilter) {
+        countAiEvaluations(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "prenatal"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's AI evaluations that match a filter. Use it with **List AI
+  evaluations** to build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                          |
+  | -------- | -------------------- | -------- | -------------------------------------------------------------------- |
+  | `filter` | `AiEvaluationFilter` | No       | Same fields as in **List AI evaluations**. Without it, counts all.   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countAiEvaluations": 4
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

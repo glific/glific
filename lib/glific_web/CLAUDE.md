@@ -127,6 +127,13 @@ Every query/mutation a test exercises needs a matching file under `assets/gql/<e
 `load_gql(:create, GlificWeb.Schema, "assets/gql/<entity>/create.gql")`.
 **No `.gql` file → no schema test.**
 
+## Bruno API docs (`api.docs/glific_api/`)
+
+The Bruno collection is the public API reference. Every new or changed query, mutation,
+subscription or client-facing REST endpoint ships with its request file in the same PR, written
+to `api.docs/README.md` and modelled on `tags/`: the role from `Authorize`, the arguments
+and input types, an example response that matches the selection set, and the errors.
+
 ## REST controllers, plugs, providers
 
 - `controllers/` — Pow auth, provider webhook receivers, media/upload, misc REST.

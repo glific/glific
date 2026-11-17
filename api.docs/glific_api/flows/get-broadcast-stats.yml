@@ -1,0 +1,58 @@
+info:
+  name: Get broadcast stats
+  type: graphql
+  seq: 23
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query broadcastStats($messageBroadcastId: ID!) {
+        broadcastStats(messageBroadcastId: $messageBroadcastId)
+      }
+    variables: |-
+      {
+        "messageBroadcastId": "5"
+      }
+  auth: inherit
+
+docs: |
+  Returns delivery statistics for a broadcast: a flow started for a collection (**Start a
+  flow for a collection**, or a trigger) or a message sent to a collection.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument             | Type  | Required | Description          |
+  | -------------------- | ----- | -------- | -------------------- |
+  | `messageBroadcastId` | `ID!` | Yes      | The broadcast's ID.  |
+
+  ## Example response
+
+  The result is a `Json` scalar, so it arrives as a JSON-encoded string. Decoded:
+
+  | Field            | Description                                                                        |
+  | ---------------- | ---------------------------------------------------------------------------------- |
+  | `success`        | Always `0` (see below).                                                            |
+  | `failed`         | Always `0` (see below).                                                            |
+  | `pending`        | Always `0` (see below).                                                            |
+  | `msg_categories` | Counts of the broadcast's messages: `sent` by Glific status, and `delivered`, `read`, `enqueued` and `error` by the WhatsApp provider's status. |
+
+  ```json
+  {
+    "data": {
+      "broadcastStats": "{\"success\":0,\"pending\":0,\"msg_categories\":{\"sent\":120,\"read\":64,\"error\":3,\"enqueued\":0,\"delivered\":41},\"failed\":0}"
+    }
+  }
+  ```
+
+  The code computes per-contact `success`, `failed` and `pending` counts but stores them with
+  `Map.put_new` on keys that already hold `0`, so the zeros are never replaced. Rely on
+  `msg_categories`.
+
+  ## Errors
+
+  An unknown broadcast ID is not an error: every count is `0`. A user without the manager
+  role gets a top-level `Unauthorized` error.

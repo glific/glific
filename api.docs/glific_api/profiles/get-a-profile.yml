@@ -1,0 +1,83 @@
+info:
+  name: Get a profile
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query profile($id: ID!) {
+        profile(id: $id) {
+          profile {
+            id
+            name
+            type
+            fields
+            isActive
+            isDefault
+            insertedAt
+            updatedAt
+            language {
+              id
+              label
+            }
+            contact {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4"
+      }
+  auth: inherit
+
+docs: |
+  Returns one profile by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description            |
+  | -------- | ----- | -------- | ---------------------- |
+  | `id`     | `ID!` | Yes      | The profile to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "profile": {
+        "profile": {
+          "id": "4",
+          "name": "Aarav",
+          "type": "Child",
+          "fields": "{}",
+          "isActive": true,
+          "isDefault": false,
+          "insertedAt": "2026-11-02T09:41:12Z",
+          "updatedAt": "2026-11-02T09:41:12Z",
+          "language": { "id": "2", "label": "Hindi" },
+          "contact": { "id": "2", "name": "Default receiver" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The profile does not exist in the organization: `errors` is
+    `[{ "key": "Profile", "message": "Profile not found or permission denied." }]` and
+    `profile` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

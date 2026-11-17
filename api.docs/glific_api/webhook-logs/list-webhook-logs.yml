@@ -1,0 +1,101 @@
+info:
+  name: List webhook logs
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query webhookLogs($filter: WebhookLogFilter, $opts: Opts) {
+        webhookLogs(filter: $filter, opts: $opts) {
+          id
+          url
+          method
+          requestHeaders
+          requestJson
+          responseJson
+          statusCode
+          status
+          error
+          insertedAt
+          flow {
+            id
+            name
+          }
+          contact {
+            id
+            name
+            phone
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "statusCode": 500
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's webhook logs, optionally filtered and paginated.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description             |
+  | -------- | ------------------ | -------- | ----------------------- |
+  | `filter` | `WebhookLogFilter` | No       | Narrows the list.       |
+  | `opts`   | `Opts`             | No       | Sorting and pagination. `orderWith` defaults to `inserted_at`. Without `limit`, all matching logs are returned. |
+
+  ### `WebhookLogFilter`
+
+  Unlike most filters, these fields are combined with **OR**: a log matches if it matches any
+  one of the given fields.
+
+  | Field          | Type     | Description                                        |
+  | -------------- | -------- | -------------------------------------------------- |
+  | `url`          | `String` | URL contains this text (case-insensitive).         |
+  | `statusCode`   | `Int`    | HTTP status code is exactly this.                  |
+  | `contactPhone` | `String` | The contact's phone contains this text.            |
+
+  ## Example response
+
+  `status` is derived from `statusCode`: `Success` (2xx), `Redirect` (3xx), `Error` (4xx and
+  5xx), `Informational response` (1xx) or `Undefined`. `requestHeaders`, `requestJson` and
+  `responseJson` are `Json` strings; credential headers are redacted.
+
+  ```json
+  {
+    "data": {
+      "webhookLogs": [
+        {
+          "id": "2210",
+          "url": "https://api.example.org/attendance",
+          "method": "POST",
+          "requestHeaders": "{\"Content-Type\":\"application/json\",\"Authorization\":\"[REDACTED]\"}",
+          "requestJson": "{\"student_id\":\"S-1042\",\"present\":true}",
+          "responseJson": "{\"message\":\"internal error\"}",
+          "statusCode": 500,
+          "status": "Error",
+          "error": null,
+          "insertedAt": "2026-11-16T07:45:09Z",
+          "flow": { "id": "4", "name": "Attendance" },
+          "contact": { "id": "8", "name": "Chrissy Cron", "phone": "910000000001" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

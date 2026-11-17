@@ -1,0 +1,46 @@
+info:
+  name: Count languages
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countLanguages($filter: LanguageFilter) {
+        countLanguages(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "localized": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the languages that match a filter. Use it with **List languages** to build
+  pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                                        |
+  | -------- | ---------------- | -------- | ------------------------------------------------------------------ |
+  | `filter` | `LanguageFilter` | No       | Same fields as in **List languages**. Without it, counts them all. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countLanguages": 15
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

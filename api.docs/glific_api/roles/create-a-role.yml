@@ -1,0 +1,79 @@
+info:
+  name: Create a role
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createAccessRole($input: AccessRoleInput!) {
+        createAccessRole(input: $input) {
+          accessRole {
+            id
+            label
+            description
+            isReserved
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "Teacher",
+          "description": "Teachers see only their class's flows and groups",
+          "isReserved": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates an access role in the organization.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description         |
+  | -------- | ------------------ | -------- | ------------------- |
+  | `input`  | `AccessRoleInput!` | Yes      | The role to create. |
+
+  ### `AccessRoleInput`
+
+  | Field         | Type      | Required | Description                                                  |
+  | ------------- | --------- | -------- | ------------------------------------------------------------ |
+  | `label`       | `String`  | Yes      | Name, unique in the organization.                            |
+  | `description` | `String`  | Yes      | Free text.                                                   |
+  | `isReserved`  | `Boolean` | Yes      | `false` for organization roles. `true` marks a built-in role. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createAccessRole": {
+        "accessRole": {
+          "id": "6",
+          "label": "Teacher",
+          "description": "Teachers see only their class's flows and groups",
+          "isReserved": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `accessRole` set to `null`:
+
+  - A required field is missing: `{ "key": "description", "message": "Description: can't be blank" }`.
+  - The label is already used: `{ "key": "label", "message": "Label: has already been taken" }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

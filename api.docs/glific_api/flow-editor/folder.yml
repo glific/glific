@@ -1,0 +1,39 @@
+info:
+  name: Flow Editor
+  type: folder
+  seq: 34
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    REST endpoints the flow editor (Glific's fork of the RapidPro / Nyaruka flow editor) calls
+    while a flow is being designed: loading and saving revisions, showing node counts, and
+    looking up the organization's collections, fields, templates, labels, languages and sheets.
+    Most responses use the editor's own shapes, often wrapped in `{ "results": [...] }`.
+
+    ## URL
+
+    These routes are mounted at `/flow-editor` on the server root, not under `/api`, so for
+    the `local` environment they live at `https://localhost:4001/flow-editor/...`. The requests
+    here use the environment's `base_url`, the server root without `/api`.
+
+    ## Auth
+
+    Every endpoint needs a valid access token in the `authorization` header, like the GraphQL
+    API (the collection sends it). There is no role check beyond being logged in: any user of
+    the organization can call them. Results are scoped to the user's organization.
+
+    Without a valid token the response is `401`:
+
+    ```json
+    { "error": { "code": 401, "message": "Not authenticated" } }
+    ```
+
+    Several endpoints don't guard against unknown IDs and answer `500` (or `404` where noted)
+    instead of a JSON error.
+
+    Related: **Flows** (create, publish, lock and run flows over GraphQL), **Flow Labels**,
+    **Sheets**, **Groups**, **Contact Fields**.
+  type: text/markdown

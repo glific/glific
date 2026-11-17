@@ -1,0 +1,69 @@
+info:
+  name: Revert a WhatsApp form to a revision
+  type: graphql
+  seq: 15
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation revertToWhatsappFormRevision($whatsappFormId: ID!, $revisionId: ID!) {
+        revertToWhatsappFormRevision(whatsappFormId: $whatsappFormId, revisionId: $revisionId) {
+          whatsappFormRevision {
+            id
+            whatsappFormId
+            revisionNumber
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "whatsappFormId": "3",
+        "revisionId": "9"
+      }
+  auth: inherit
+
+docs: |
+  Makes an older revision the form's current one. No revision is copied or deleted, and Meta
+  is not called; publish the form again to make the change live.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                  |
+  | ---------------- | ----- | -------- | -------------------------------------------- |
+  | `whatsappFormId` | `ID!` | Yes      | The form.                                    |
+  | `revisionId`     | `ID!` | Yes      | The revision to use. Must belong to the form. |
+
+  ## Example response
+
+  Returns the revision that is now current.
+
+  ```json
+  {
+    "data": {
+      "revertToWhatsappFormRevision": {
+        "whatsappFormRevision": {
+          "id": "9",
+          "whatsappFormId": "3",
+          "revisionNumber": 1
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The revision does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappFormRevision", "message": "Resource not found" }]`.
+  - The revision belongs to another form: top-level error
+    `Revision does not belong to this form`.
+  - A user without the manager role gets a top-level `Unauthorized` error.
