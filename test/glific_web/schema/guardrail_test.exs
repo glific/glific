@@ -38,7 +38,6 @@ defmodule GlificWeb.Schema.GuardrailTest do
       "https://projecttech4devai.github.io/kaapi-docs/guardrails/scope-control"
   }
 
-  # The cache fallback runs in Cachex's courier process, so a process-local mock is invisible to it.
   defp mock_kaapi_response(status, body) do
     Tesla.Mock.mock_global(fn %{method: :get} ->
       %Tesla.Env{
