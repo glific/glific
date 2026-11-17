@@ -1,0 +1,95 @@
+info:
+  name: Create a WhatsApp group
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createWaGroup($input: CreateWaGroupInput!) {
+        createWaGroup(input: $input) {
+          waGroup {
+            id
+            label
+            bspId
+            primaryPhone {
+              id
+              phone
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Pune volunteers",
+          "waManagedPhoneId": "1",
+          "importData": "phone,name\n910000000007,Asha\n910000000009,Ravi\n"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a new group on WhatsApp through Maytapi, from the chosen managed phone, and saves it
+  in Glific. The creating phone becomes the group's primary phone and a group admin.
+
+  Maytapi creates the group with only the first phone in `importData`. The other rows are
+  added by a background import, which also creates any missing contacts (applying `name` when
+  given). The import is tracked as an upload job and shows a "WA Group Member Upload"
+  notification; numbers WhatsApp rejects are listed in that job's report. If the import fails
+  to start, the group is still created and returned.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description          |
+  | -------- | --------------------- | -------- | -------------------- |
+  | `input`  | `CreateWaGroupInput!` | Yes      | The group to create. |
+
+  ### `CreateWaGroupInput`
+
+  | Field              | Type      | Required | Description                                                           |
+  | ------------------ | --------- | -------- | --------------------------------------------------------------------- |
+  | `name`             | `String!` | Yes      | The group's name on WhatsApp and its `label` in Glific.               |
+  | `waManagedPhoneId` | `ID!`     | Yes      | The managed phone that creates the group. It must be connected.       |
+  | `importData`       | `String!` | Yes      | CSV text with a `phone` column and an optional `name` column. UTF-8. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createWaGroup": {
+        "waGroup": {
+          "id": "15",
+          "label": "Pune volunteers",
+          "bspId": "120363000000000001@g.us",
+          "primaryPhone": { "id": "1", "phone": "910000000001" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The managed phone does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WAGroup.WAManagedPhone", "message": "Resource not found" }]`.
+  - These come back as a top-level error, with nothing created:
+    - `importData` is not valid UTF-8, such as `Line 2 is not valid UTF-8 (...)`.
+    - The phone is not connected: `This WhatsApp number isn't connected right now. Check its
+      status or reconnect it, then try again.`
+    - Maytapi refuses to create the group: `Couldn't create the WhatsApp group. This usually
+      means WhatsApp is temporarily blocking group creation from this number (...)`.
+    - Maytapi is unreachable: `WhatsApp couldn't complete this action right now. Please try
+      again in a moment.`
+    - Maytapi is not set up for the organization: `Maytapi is not active`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

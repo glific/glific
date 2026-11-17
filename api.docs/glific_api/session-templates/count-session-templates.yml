@@ -1,0 +1,47 @@
+info:
+  name: Count session templates
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countSessionTemplates($filter: SessionTemplateFilter) {
+        countSessionTemplates(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "isHsm": true,
+          "status": "PENDING"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's templates that match a filter. Use it with **List session
+  templates** to build pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                    | Required | Description                                                       |
+  | -------- | ----------------------- | -------- | ----------------------------------------------------------------- |
+  | `filter` | `SessionTemplateFilter` | No       | Same fields as in **List session templates**. Without it, counts all templates. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countSessionTemplates": 3
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

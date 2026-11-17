@@ -1,0 +1,49 @@
+info:
+  name: List contact fields
+  type: http
+  seq: 13
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/fields?scope=contact"
+  params:
+    - name: scope
+      value: contact
+      type: query
+  auth: inherit
+
+docs: |
+  Lists the organization's contact fields (and WhatsApp group fields) for the editor's
+  "update field" action and its expression autocomplete.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The query string can narrow the list.
+
+  | Parameter | Description                                                         |
+  | --------- | ------------------------------------------------------------------- |
+  | `scope`   | Optional. `contact` for contact fields, `wa_group` for WhatsApp group fields. Without it, both. |
+
+  ## Example response
+
+  `200`. `key` is the field's shortcode, used in flows as `@contact.fields.<key>`.
+
+  ```json
+  {
+    "results": [
+      {
+        "key": "age_group",
+        "name": "Age Group",
+        "label": "Age Group",
+        "value_type": "text",
+        "scope": "contact"
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

@@ -1,0 +1,60 @@
+info:
+  name: Delete a certificate template
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteCertificateTemplate($id: ID!) {
+        deleteCertificateTemplate(id: $id) {
+          certificateTemplate {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a certificate template. The Google Slides presentation itself is not touched.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The template to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteCertificateTemplate": {
+        "certificateTemplate": {
+          "id": "3",
+          "label": "Course completion 2026"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Certificates.CertificateTemplate", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

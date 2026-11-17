@@ -1,0 +1,100 @@
+info:
+  name: List profiles
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query profiles($filter: ProfileFilter, $opts: Opts) {
+        profiles(filter: $filter, opts: $opts) {
+          id
+          name
+          type
+          fields
+          isActive
+          isDefault
+          language {
+            id
+            label
+          }
+          contact {
+            id
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "contactId": "2",
+          "isActive": true
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's profiles, optionally filtered and paginated. Sorted by name by
+  default.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                    |
+  | -------- | --------------- | -------- | ---------------------------------------------- |
+  | `filter` | `ProfileFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`          | No       | Sorting and pagination.                        |
+
+  ### `ProfileFilter`
+
+  | Field            | Type      | Description                                   |
+  | ---------------- | --------- | --------------------------------------------- |
+  | `contactId`      | `ID`      | Profiles of this contact.                     |
+  | `name`           | `String`  | Name contains this text (case-insensitive).   |
+  | `isActive`       | `Boolean` | Only active or only inactive profiles.        |
+  | `organizationId` | `ID`      | Organization ID. Results are always limited to the caller's organization anyway. |
+
+  ## Example response
+
+  `fields` is a JSON-encoded string of the profile's contact fields.
+
+  ```json
+  {
+    "data": {
+      "profiles": [
+        {
+          "id": "4",
+          "name": "Aarav",
+          "type": "Child",
+          "fields": "{\"age_group\":{\"value\":\"10-14\",\"type\":\"string\",\"label\":\"Age Group\",\"inserted_at\":\"2026-11-02T09:41:12Z\"}}",
+          "isActive": true,
+          "isDefault": false,
+          "language": { "id": "2", "label": "Hindi" },
+          "contact": { "id": "2", "name": "Default receiver" }
+        },
+        {
+          "id": "3",
+          "name": "Default receiver",
+          "type": null,
+          "fields": "{}",
+          "isActive": true,
+          "isDefault": true,
+          "language": { "id": "1", "label": "English" },
+          "contact": { "id": "2", "name": "Default receiver" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

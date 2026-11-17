@@ -1,0 +1,40 @@
+info:
+  name: List billing periods
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation listBillingPeriod {
+        listBillingPeriod
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns the billing periods accepted by **Create a billing subscription**. It is defined as
+  a mutation, so send it with `mutation`, but it changes nothing.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "listBillingPeriod": ["MONTHLY", "QUARTERLY", "MANUAL"]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,20 @@
+info:
+  name: Simulator
+  type: folder
+  seq: 7
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    The simulator is the phone shown in the Glific frontend for trying out flows. Each
+    organization has five simulator contacts, `Glific Simulator One` to `Five`, with phones
+    `9876543210_1` to `9876543210_5`. A message typed into the simulator is posted here as
+    though that contact had sent it over WhatsApp, and goes through the normal inbound
+    pipeline: flows, keywords and automations all run. Replies reach the simulator through the
+    GraphQL message subscriptions.
+
+    Any logged-in user can call it; the organization comes from the access token. See
+    **Messages** for reading the conversation.
+  type: text/markdown

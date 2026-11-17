@@ -1,0 +1,83 @@
+info:
+  name: List Kaapi models
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query kaapiModels {
+        kaapiModels {
+          provider
+          modelName
+          category
+          badge
+          completionType
+          inputModalities
+          outputModalities
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the active OpenAI models Kaapi offers, for the assistant model picker. Glific caches
+  the list globally, so only the first call after the cache expires reaches Kaapi.
+
+  **Role:** staff
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  Glific adds `category` and `badge` and orders the list by them: `recommended` models first
+  (in Glific's chosen order, each with a badge such as `Best value` or `Fastest`), then `all`
+  (alphabetical, no badge), then `to_be_deprecated` (badge `Deprecating`). The other fields,
+  including the `config` and `pricing` JSON not selected here, are passed through from
+  Kaapi. An assistant created without a model uses `gpt-4o`.
+
+  ```json
+  {
+    "data": {
+      "kaapiModels": [
+        {
+          "provider": "openai",
+          "modelName": "gpt-5.6-luna",
+          "category": "recommended",
+          "badge": "Best value",
+          "completionType": ["text"],
+          "inputModalities": ["text"],
+          "outputModalities": ["text"]
+        },
+        {
+          "provider": "openai",
+          "modelName": "gpt-4.1",
+          "category": "all",
+          "badge": null,
+          "completionType": ["text"],
+          "inputModalities": ["text", "image"],
+          "outputModalities": ["text"]
+        },
+        {
+          "provider": "openai",
+          "modelName": "gpt-4o",
+          "category": "to_be_deprecated",
+          "badge": "Deprecating",
+          "completionType": ["text"],
+          "inputModalities": ["text", "image"],
+          "outputModalities": ["text"]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Kaapi can't be reached or rejects the call: the error comes back in the top-level
+    `errors` array and `kaapiModels` is `null`. Without a Kaapi credential the message is
+    `Kaapi is not active`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,66 @@
+info:
+  name: Move contacts
+  type: graphql
+  seq: 16
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation moveContacts($data: String!, $type: ImportContactsTypeEnum) {
+        moveContacts(data: $data, type: $type) {
+          status
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "type": "DATA",
+        "data": "name,phone,collection\nAsha Patil,910000000003,\"November cohort, Mentors\"\nRavi Kumar,910000000002,November cohort"
+      }
+  auth: inherit
+
+docs: |
+  Adds existing contacts to collections listed in a CSV, in the background. It works like
+  **Import contacts** but never creates or opts in a contact: a phone that doesn't match a
+  contact is skipped and reported. Collections that don't exist are created.
+
+  CSV columns, with a header row: `name` and `phone` (both required), and `collection`, a
+  comma-separated list of collection labels. As with an import, the other columns are stored as
+  contact fields. Track progress with **Get a contact upload report**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                     | Required | Description                                                                 |
+  | -------- | ------------------------ | -------- | --------------------------------------------------------------------------- |
+  | `data`   | `String!`                | Yes      | The CSV itself (`DATA`), a URL to download it from (`URL`), or a file path on the server (`FILE_PATH`). |
+  | `type`   | `ImportContactsTypeEnum` | Yes\*    | `DATA`, `URL` or `FILE_PATH`.                                               |
+
+  \* Optional in the schema, but the call fails with a top-level error if it is left out.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "moveContacts": {
+        "status": "Contact import is in progress",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  The same file errors as **Import contacts** come back as top-level errors. A row whose phone
+  matches no contact is listed in the upload report as
+  `Contact <phone> was not found and hence not added`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

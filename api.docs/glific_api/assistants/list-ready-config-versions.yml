@@ -1,0 +1,82 @@
+info:
+  name: List ready config versions
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query assistantConfigVersions {
+        assistantConfigVersions {
+          id
+          assistantId
+          assistantName
+          kaapiUuid
+          majorVersion
+          minorVersion
+          kaapiVersionNumber
+          description
+          provider
+          model
+          prompt
+          settings
+          inputGuardrails
+          outputGuardrails
+          status
+          failureReason
+          insertedAt
+          updatedAt
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the `ready` config versions of every assistant in the organization, sorted by
+  assistant name. Deleted versions are left out. The AI evaluation screen uses it to pick the
+  version to evaluate: pass a version's `id` as `configId` to **Create an AI evaluation**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `kaapiUuid` is the assistant's Kaapi config ID and `kaapiVersionNumber` the version's
+  number on Kaapi.
+
+  ```json
+  {
+    "data": {
+      "assistantConfigVersions": [
+        {
+          "id": "31",
+          "assistantId": "7",
+          "assistantName": "Maternal health helper",
+          "kaapiUuid": "3f0b6b0e-5c1a-4a43-9a0e-1f3c2d9e8b11",
+          "majorVersion": 2,
+          "minorVersion": 0,
+          "kaapiVersionNumber": 4,
+          "description": "Assistant configuration",
+          "provider": "openai",
+          "model": "gpt-5-mini",
+          "prompt": "You are a friendly assistant that answers questions about prenatal care.",
+          "settings": "{\"effort\":\"low\"}",
+          "inputGuardrails": "[{\"type\":\"pii_remover\"}]",
+          "outputGuardrails": "[]",
+          "status": "ready",
+          "failureReason": null,
+          "insertedAt": "2026-11-12T11:02:15Z",
+          "updatedAt": "2026-11-12T11:02:15Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

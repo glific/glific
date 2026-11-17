@@ -1,0 +1,58 @@
+info:
+  name: Delete a ticket
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteTicket($id: ID!) {
+        deleteTicket(id: $id) {
+          ticket {
+            id
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a ticket.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description           |
+  | -------- | ----- | -------- | --------------------- |
+  | `id`     | `ID!` | Yes      | The ticket to delete. |
+
+  ## Example response
+
+  On success both fields are `null`: the resolver does not return the deleted ticket.
+
+  ```json
+  {
+    "data": {
+      "deleteTicket": {
+        "ticket": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The ticket does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Tickets.Ticket", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

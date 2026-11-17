@@ -1,0 +1,31 @@
+info:
+  name: Get environment
+  type: http
+  seq: 27
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/environment"
+  auth: inherit
+
+docs: |
+  Returns the editor's environment settings. The editor requires the endpoint, but Glific
+  has no settings to send, so it always returns an empty object.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  {}
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

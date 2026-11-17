@@ -1,0 +1,76 @@
+info:
+  name: Update an organization's extension
+  type: graphql
+  seq: 5
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateOrganizationExtension($clientId: ID!, $input: ExtensionInput) {
+        updateOrganizationExtension(clientId: $clientId, input: $input) {
+          extension {
+            id
+            name
+            module
+            isActive
+            isValid
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "clientId": "2",
+        "input": {
+          "clientId": "2",
+          "name": "URL helpers",
+          "code": "defmodule Glific.Extensions.UrlHelpers do\n  def shorten(url), do: url\nend",
+          "isActive": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes the extension of an organization, found by the organization instead of the
+  extension ID. Compiling and unloading work as in **Update an extension**.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument   | Type             | Required | Description                                                                  |
+  | ---------- | ---------------- | -------- | ---------------------------------------------------------------------------- |
+  | `clientId` | `ID!`            | Yes      | The organization whose extension to change.                                  |
+  | `input`    | `ExtensionInput` | Yes      | See **Create an extension**. Its `clientId` must match; `code` and `isActive` are always needed. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateOrganizationExtension": {
+        "extension": {
+          "id": "3",
+          "name": "URL helpers",
+          "module": null,
+          "isActive": false,
+          "isValid": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The organization has no extension: `errors` is
+    `[{ "key": "Elixir.Glific.Extensions.Extension", "message": "Resource not found" }]`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

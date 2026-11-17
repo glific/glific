@@ -1,0 +1,80 @@
+info:
+  name: Get a media upload URL
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/web_channel/upload-url"
+  headers:
+    - name: authorization
+      value: "Bearer {{web_channel_token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "image",
+        "content_type": "image/jpeg",
+        "size": 245760
+      }
+
+docs: |
+  Signs a URL the widget can `PUT` one file to, straight into the organization's Google Cloud
+  Storage bucket. The URL is valid for 5 minutes. After uploading, the widget sends `url` as
+  a media message over the chat socket, where the file's real type and size are checked again.
+
+  Needs a web channel token as `authorization: Bearer <token>`, which **Verify a web channel OTP** saves
+  into `web_channel_token`. The staff token does not work here.
+
+  ## Request body
+
+  | Field          | Type    | Required | Description                                              |
+  | -------------- | ------- | -------- | -------------------------------------------------------- |
+  | `type`         | String  | Yes      | `image`, `audio`, `video` or `document`.                 |
+  | `content_type` | String  | Yes      | MIME type of the file, accepted for that `type`.         |
+  | `size`         | Integer | Yes      | File size in bytes. Limits: image 5 MB, audio and video 16 MB, document 100 MB. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "upload_url": "https://storage.googleapis.com/glific-media/uploads/3f1c2a9e-7b4d-4f0e-9a51-2d6c8e0b7a13.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Expires=300&X-Goog-Signature=5b2e",
+      "url": "https://storage.googleapis.com/glific-media/uploads/3f1c2a9e-7b4d-4f0e-9a51-2d6c8e0b7a13.jpg",
+      "content_type": "image/jpeg",
+      "expires_in": 300
+    }
+  }
+  ```
+
+  ## Uploading the file
+
+  The organization's Google Cloud Storage bucket needs a CORS policy that allows `PUT` from the
+  website the widget runs on, with the `Content-Type` header. Glific does not set this up;
+  without it, browsers block the upload.
+
+  1. `PUT` the file's bytes to `upload_url` within `expires_in` seconds. This request goes to
+     Google, not Glific: send only `Content-Type`, set to exactly the `content_type` above, and
+     leave out the `authorization` header this request needed, since the URL carries the
+     permission. Use the URL as given, without re-encoding it.
+  2. Success is `200` with an empty body. Google Cloud Storage refuses a different
+     `Content-Type` with `403 SignatureDoesNotMatch`, because the type is part of the
+     signature. It refuses an expired URL too: ask for a new one.
+  3. Push `new_media_message` on the chat socket with `url`, the same `type` and
+     `content_type`, and an optional `caption` (see the **Web Channel** folder).
+
+  ## Errors
+
+  All as `{ "error": { "status": <code>, "code": "...", "message": "..." } }`:
+
+  | Status | `code`                | When                                                         |
+  | ------ | --------------------- | ------------------------------------------------------------ |
+  | `401`  | `unauthorized`        | Missing, invalid or expired token, or its contact is unknown. |
+  | `404`  | `web_channel_disabled`| The web channel is not enabled for the organization.          |
+  | `413`  | `file_too_large`      | `size` is over the limit for `type`.                          |
+  | `415`  | `unsupported_type`    | `type` or `content_type` is not accepted.                    |
+  | `422`  | `invalid_size`        | `size` is not a positive integer.                             |
+  | `422`  | `upload_failed`       | A field is missing, or the file extension is unknown.         |
+  | `429`  | `rate_limited`        | Too many uploads by this contact, IP address or organization. |
+  | `500`  | `signing_failed`      | The URL could not be signed.                                  |
+  | `503`  | `storage_unavailable` | The organization has no Google Cloud Storage configured.      |

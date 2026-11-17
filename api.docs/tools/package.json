@@ -1,0 +1,15 @@
+{
+  "name": "glific-bruno-tools",
+  "private": true,
+  "description": "Validates the Glific Bruno collection and builds its static docs site",
+  "scripts": {
+    "schema": "cd ../.. && mix absinthe.schema.json --schema GlificWeb.Schema api.docs/tools/schema.json",
+    "validate": "node validate.js ../glific_api --coverage",
+    "site": "node build-site.js"
+  },
+  "dependencies": {
+    "@usebruno/filestore": "0.14.0",
+    "graphql": "16.15.0",
+    "js-yaml": "4.3.2"
+  }
+}

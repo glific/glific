@@ -1,0 +1,88 @@
+info:
+  name: Create a group
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createGroup($input: GroupInput!) {
+        createGroup(input: $input) {
+          group {
+            id
+            label
+            description
+            isRestricted
+            roles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "November cohort",
+          "description": "Learners who joined in November",
+          "isRestricted": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a group (collection) in the organization. It starts empty; add contacts with
+  **Contact Groups** and users with **User Groups**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description          |
+  | -------- | ------------- | -------- | -------------------- |
+  | `input`  | `GroupInput!` | Yes      | The group to create. |
+
+  ### `GroupInput`
+
+  | Field           | Type      | Required | Description                                                             |
+  | --------------- | --------- | -------- | ----------------------------------------------------------------------- |
+  | `label`         | `String`  | Yes      | Name shown in the UI. Unique in the organization.                       |
+  | `description`   | `String`  | No       | Free text.                                                              |
+  | `groupType`     | `String`  | No       | `WABA` (default) for contacts, `WA` for WhatsApp groups.                |
+  | `isRestricted`  | `Boolean` | No       | Defaults to `false`. Stored for the UI; the API doesn't act on it.      |
+  | `addRoleIds`    | `[ID]`    | No       | Access roles to share the group with.                                   |
+  | `deleteRoleIds` | `[ID]`    | No       | Access roles to stop sharing with. Only applied when `addRoleIds` is also sent (use `[]`). |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createGroup": {
+        "group": {
+          "id": "12",
+          "label": "November cohort",
+          "description": "Learners who joined in November",
+          "isRestricted": false,
+          "roles": []
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `group` set to `null`:
+
+  - No label: `{ "key": "label", "message": "Label: can't be blank" }`.
+  - The label is already used: `{ "key": "label", "message": "Label: has already been taken" }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

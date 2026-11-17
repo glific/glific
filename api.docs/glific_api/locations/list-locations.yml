@@ -1,0 +1,54 @@
+info:
+  name: List locations
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query locations($opts: Opts) {
+        locations(opts: $opts) {
+          id
+          latitude
+          longitude
+        }
+      }
+    variables: |-
+      {
+        "opts": {
+          "limit": 25,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the locations contacts in the organization have shared. The list doesn't say which
+  contact shared each one; use **Get a contact's location** for that.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type   | Required | Description                                                         |
+  | -------- | ------ | -------- | ------------------------------------------------------------------- |
+  | `opts`   | `Opts` | No       | `limit` and `offset` page the list; `order` and `orderWith` are ignored. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "locations": [
+        { "id": "4", "latitude": 18.5204, "longitude": 73.8567 },
+        { "id": "5", "latitude": 28.6139, "longitude": 77.209 }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

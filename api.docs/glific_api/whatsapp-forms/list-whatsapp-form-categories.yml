@@ -1,0 +1,49 @@
+info:
+  name: List WhatsApp form categories
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query whatsappFormCategories {
+        whatsappFormCategories
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns the categories a WhatsApp form can have, for the `categories` field of
+  `WhatsappFormInput`. The list is fixed in Glific; Glific sends them to Meta in upper case.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "whatsappFormCategories": [
+        "sign_up",
+        "sign_in",
+        "appointment_booking",
+        "lead_generation",
+        "contact_us",
+        "customer_support",
+        "survey",
+        "other"
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

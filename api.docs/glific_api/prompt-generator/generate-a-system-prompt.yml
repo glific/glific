@@ -1,0 +1,101 @@
+info:
+  name: Generate a system prompt
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation generatePrompt($input: PromptGeneratorInput!) {
+        generatePrompt(input: $input) {
+          promptGeneration {
+            id
+            status
+            generatedPrompt
+            errorMessage
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Asha Sakhi, assistant for the Sneha Foundation",
+          "purpose": "Answer questions about prenatal care, nutrition and maternity schemes",
+          "audience": "Women aged 18-35 in low-income urban settlements, many with low literacy",
+          "language": "Reply in the user's language: Hindi, Hinglish or simple English",
+          "tone": "Warm and simple, like a trusted older sister",
+          "format": "At most 4 short sentences, no bullet points",
+          "offLimits": "No medical diagnoses, prescriptions or politics",
+          "fallback": "Mujhe is baare mein jaankari nahi hai abhi. Apni ASHA didi se poochiye.",
+          "escalation": "For heavy bleeding or difficulty breathing, tell them to call 108"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Asks Kaapi to write a system prompt from the answers. The call returns at once with the
+  request in `in_progress`; Kaapi calls Glific back when it is done. There is no
+  subscription: poll **Get a prompt generation** with the returned `id`.
+
+  **Role:** staff. Needs the `is_prompt_generator_enabled` flag on the organization.
+
+  Each organization can start at most 10 generations a minute.
+
+  ## Arguments
+
+  | Argument | Type                    | Required | Description      |
+  | -------- | ----------------------- | -------- | ---------------- |
+  | `input`  | `PromptGeneratorInput!` | Yes      | The answers.     |
+
+  ### `PromptGeneratorInput`
+
+  All fields are optional strings of at most 2,000 characters. Blank answers are left out of
+  the request to the model.
+
+  | Field        | Description                                            |
+  | ------------ | ------------------------------------------------------ |
+  | `name`       | Organization or chatbot name.                          |
+  | `purpose`    | What the chatbot is for.                               |
+  | `audience`   | Who it talks to.                                       |
+  | `language`   | Language policy, such as `Hindi and English`.          |
+  | `tone`       | Desired tone, such as `friendly` or `professional`.    |
+  | `format`     | Response format and length.                            |
+  | `offLimits`  | Topics the chatbot must avoid.                         |
+  | `fallback`   | Exact message to send when it can't answer.            |
+  | `escalation` | How to reach a human, and when.                        |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "generatePrompt": {
+        "promptGeneration": {
+          "id": "15",
+          "status": "in_progress",
+          "generatedPrompt": null,
+          "errorMessage": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `generatePrompt` set to `null`:
+
+  - The flag is off: `AI Prompt Generator is not enabled for the organization.`
+  - Too many requests: `Rate limit reached. Please try again in a minute.`
+  - An answer is too long:
+    `Field 'purpose' exceeds the maximum length of 2000 characters.`
+  - Kaapi rejects the request: Kaapi's error. Without a Kaapi credential it is
+    `Kaapi is not active`. No request is saved.
+  - A user without the staff role gets `Unauthorized`.

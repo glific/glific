@@ -1,0 +1,46 @@
+info:
+  name: Count notifications
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countNotifications($filter: NotificationFilter) {
+        countNotifications(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "isRead": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's notifications that match a filter, for example the unread ones
+  to show a badge.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                              |
+  | -------- | -------------------- | -------- | ------------------------------------------------------------------------ |
+  | `filter` | `NotificationFilter` | No       | Same fields as in **List notifications**. Without it, counts all notifications. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countNotifications": 4
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

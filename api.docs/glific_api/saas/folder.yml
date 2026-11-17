@@ -1,0 +1,19 @@
+info:
+  name: SaaS
+  type: folder
+  seq: 51
+
+docs:
+  content: |-
+    Public REST endpoints for signing up to Glific, used by the Glific website. None of them
+    need a login. They are rate limited like the other `/v1` endpoints.
+
+    - **Set up an organization** creates a new, inactive organization from the signup form,
+      protected by Google reCAPTCHA. The Glific team then activates it with
+      **Organizations › Update an organization's status**.
+    - **Send a query to support** mails a question from the website to the Glific team.
+    - **Request a trial account** and **Allocate a trial account** give a visitor one of the
+      pre-created trial organizations for 14 days, after an email OTP.
+
+    Mails are sent from the SaaS admin organization configured on the server.
+  type: text/markdown

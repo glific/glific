@@ -1,0 +1,83 @@
+info:
+  name: Get a ticket
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query ticket($id: ID!) {
+        ticket(id: $id) {
+          ticket {
+            id
+            body
+            topic
+            status
+            remarks
+            messageNumber
+            insertedAt
+            updatedAt
+            contact {
+              id
+              name
+            }
+            user {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Returns one ticket by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description           |
+  | -------- | ----- | -------- | --------------------- |
+  | `id`     | `ID!` | Yes      | The ticket to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "ticket": {
+        "ticket": {
+          "id": "12",
+          "body": "My certificate has not arrived",
+          "topic": "Certificates",
+          "status": "open",
+          "remarks": null,
+          "messageNumber": 48,
+          "insertedAt": "2026-11-12T06:20:41Z",
+          "updatedAt": "2026-11-12T06:20:41Z",
+          "contact": { "id": "26", "name": "Adelle Cavin" },
+          "user": { "id": "1", "name": "NGO Main Account" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The ticket does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Tickets.Ticket", "message": "Resource not found" }]` and
+    `ticket` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

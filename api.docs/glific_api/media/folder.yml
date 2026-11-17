@@ -1,0 +1,17 @@
+info:
+  name: Media
+  type: folder
+  seq: 23
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Uploads files to the organization's Google Cloud Storage bucket and returns their public
+    URL. Use the URL as the `url` and `sourceUrl` of a message media (see **Message Media**)
+    to send the file in a message.
+
+    The organization needs the Google Cloud Storage integration configured. Uploading needs
+    the staff role.
+  type: text/markdown

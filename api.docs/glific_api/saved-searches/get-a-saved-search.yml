@@ -1,0 +1,67 @@
+info:
+  name: Get a saved search
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query savedSearch($id: ID!) {
+        savedSearch(id: $id) {
+          savedSearch {
+            id
+            label
+            shortcode
+            args
+            isReserved
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "9"
+      }
+  auth: inherit
+
+docs: |
+  Returns one saved search by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                 |
+  | -------- | ----- | -------- | --------------------------- |
+  | `id`     | `ID!` | Yes      | The saved search to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "savedSearch": {
+        "savedSearch": {
+          "id": "9",
+          "label": "Parents asking about sessions",
+          "shortcode": "parent_sessions",
+          "args": "{\"messageOpts\":{\"offset\":0,\"limit\":20},\"filter\":{\"term\":\"session\",\"includeGroups\":[\"2\"]},\"contactOpts\":{\"offset\":0,\"limit\":25}}",
+          "isReserved": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The saved search does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Searches.SavedSearch", "message": "Resource not found" }]` and
+    `savedSearch` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

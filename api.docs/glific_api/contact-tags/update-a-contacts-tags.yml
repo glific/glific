@@ -1,0 +1,75 @@
+info:
+  name: Update a contact's tags
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateContactTags($input: ContactTagsInput!) {
+        updateContactTags(input: $input) {
+          numberDeleted
+          contactTags {
+            id
+            tag {
+              id
+              label
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "contactId": "131",
+          "addTagIds": ["5", "7"],
+          "deleteTagIds": ["9"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds some tags to one contact and removes others in a single call. This is the only way to
+  remove a tag from a contact.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description          |
+  | -------- | ------------------- | -------- | -------------------- |
+  | `input`  | `ContactTagsInput!` | Yes      | The changes to make. |
+
+  ### `ContactTagsInput`
+
+  | Field          | Type    | Required | Description                                |
+  | -------------- | ------- | -------- | ------------------------------------------ |
+  | `contactId`    | `ID!`   | Yes      | The contact.                               |
+  | `addTagIds`    | `[ID]!` | Yes      | Tags to add. Pass `[]` to add none.        |
+  | `deleteTagIds` | `[ID]!` | Yes      | Tags to remove. Pass `[]` to remove none.  |
+
+  ## Example response
+
+  `contactTags` lists the contact tags for `addTagIds`, including ones that already existed.
+  `numberDeleted` is how many were removed.
+
+  ```json
+  {
+    "data": {
+      "updateContactTags": {
+        "numberDeleted": 1,
+        "contactTags": [
+          { "id": "81", "tag": { "id": "7", "label": "Help needed" } },
+          { "id": "77", "tag": { "id": "5", "label": "New contact" } }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Tags that can't be added (an unknown ID, say) are skipped silently and left out of
+  `contactTags`. A user without the staff role gets a top-level `Unauthorized` error.

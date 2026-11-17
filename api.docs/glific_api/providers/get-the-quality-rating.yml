@@ -1,0 +1,52 @@
+info:
+  name: Get the quality rating
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query qualityRating {
+        qualityRating {
+          currentLimit
+          previousLimit
+          event
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Fetches the WhatsApp messaging limit of the organization's number, and the event that last
+  changed it, from the Gupshup Partner API. Each call makes a request to Gupshup.
+
+  **Role:** admin
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  The values are Gupshup's tier names.
+
+  ```json
+  {
+    "data": {
+      "qualityRating": {
+        "currentLimit": "TIER_1K",
+        "previousLimit": "TIER_250",
+        "event": "UPGRADE"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The organization has no active BSP credential, its BSP is not Gupshup, or Gupshup returns
+    an error: top-level error `Error while fetching Quality Rating details`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

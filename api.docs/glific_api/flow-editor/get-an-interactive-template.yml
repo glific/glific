@@ -1,0 +1,66 @@
+info:
+  name: Get an interactive template
+  type: http
+  seq: 17
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/interactive-templates/:id"
+  params:
+    - name: id
+      value: "4"
+      type: path
+  auth: inherit
+
+docs: |
+  Returns one interactive message template with its content in every language it is
+  translated into, so the editor can preview each translation.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The path takes the template's ID.
+
+  | Parameter | Description                 |
+  | --------- | --------------------------- |
+  | `id`      | ID of the interactive template. |
+
+  ## Example response
+
+  `200`. `translations` maps language locales to the content in that language.
+
+  ```json
+  {
+    "id": 4,
+    "name": "Continue or stop",
+    "type": "quick_reply",
+    "interactive_content": {
+      "type": "quick_reply",
+      "content": { "type": "text", "text": "Do you want to continue?" },
+      "options": [
+        { "type": "text", "title": "Continue" },
+        { "type": "text", "title": "Stop" }
+      ]
+    },
+    "created_on": "2026-10-04T06:21:40Z",
+    "modified_on": "2026-10-04T06:21:40Z",
+    "translations": {
+      "en": {
+        "type": "quick_reply",
+        "content": { "type": "text", "text": "Do you want to continue?" },
+        "options": [
+          { "type": "text", "title": "Continue" },
+          { "type": "text", "title": "Stop" }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: status `200` with
+    `{ "error": "Interactive message not found" }`.
+  - `500`: the ID is not a number.
+  - `401`: missing or invalid access token.

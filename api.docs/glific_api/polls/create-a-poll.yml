@@ -1,0 +1,86 @@
+info:
+  name: Create a poll
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createWaPoll($input: WaPollInput!) {
+        createWaPoll(input: $input) {
+          waPoll {
+            id
+            uuid
+            label
+            pollContent
+            allowMultipleAnswer
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "Next session day",
+          "pollContent": "{\"text\":\"Which day suits the next session?\",\"options\":[{\"id\":0,\"name\":\"Saturday\",\"voters\":[],\"votes\":0},{\"id\":1,\"name\":\"Sunday\",\"voters\":[],\"votes\":0}]}",
+          "allowMultipleAnswer": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a poll. See the folder docs for the `pollContent` shape and limits.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description         |
+  | -------- | -------------- | -------- | ------------------- |
+  | `input`  | `WaPollInput!` | Yes      | The poll to create. |
+
+  ### `WaPollInput`
+
+  | Field                 | Type      | Required | Description                                          |
+  | --------------------- | --------- | -------- | ---------------------------------------------------- |
+  | `label`               | `String`  | Yes      | Name, unique per organization.                       |
+  | `pollContent`         | `Json`    | Yes      | `text` and `options`, as a JSON-encoded string.      |
+  | `allowMultipleAnswer` | `Boolean` | No       | Defaults to `false`.                                 |
+
+  `id`, `insertedAt` and `updatedAt` are also in `WaPollInput` but are ignored.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createWaPoll": {
+        "waPoll": {
+          "id": "4",
+          "uuid": "b5c2a5e0-8d1f-4c41-9a7e-2f6c1d9e3a77",
+          "label": "Next session day",
+          "pollContent": "{\"text\":\"Which day suits the next session?\",\"options\":[{\"votes\":0,\"voters\":[],\"name\":\"Saturday\",\"id\":0},{\"votes\":0,\"voters\":[],\"name\":\"Sunday\",\"id\":1}]}",
+          "allowMultipleAnswer": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The label is already used: `errors` is
+    `[{ "key": "label", "message": "Label: has already been taken" }]`.
+  - These come back as top-level errors, with `createWaPoll` set to `null`:
+    - `The number of options should be up to 12 only, but got 13.`
+    - `Duplicate options detected`
+    - `The body characters should be up to 255 only, but got 300.`
+    - `The following poll options exceed 100 characters: <names>`
+  - `pollContent` without `options` or `text`: a top-level error.
+  - A user without the manager role gets a top-level `Unauthorized` error.

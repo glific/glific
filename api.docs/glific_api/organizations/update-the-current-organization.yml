@@ -1,0 +1,141 @@
+info:
+  name: Update the current organization
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateOrganization($id: ID!, $input: OrganizationInput) {
+        updateOrganization(id: $id, input: $input) {
+          organization {
+            id
+            name
+            timezone
+            sessionLimit
+            activeLanguages {
+              id
+              label
+            }
+            outOfOffice {
+              enabled
+              startTime
+              endTime
+              enabledDays {
+                id
+                enabled
+              }
+              flowId
+            }
+            setting {
+              lowBalanceThreshold
+              sendWarningMail
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "1",
+        "input": {
+          "name": "Glific",
+          "timezone": "Asia/Kolkata",
+          "sessionLimit": 60,
+          "activeLanguageIds": ["1", "2"],
+          "outOfOffice": {
+            "enabled": true,
+            "startTime": "09:00:00",
+            "endTime": "18:00:00",
+            "enabledDays": [
+              { "id": 1, "enabled": true },
+              { "id": 2, "enabled": true },
+              { "id": 3, "enabled": true },
+              { "id": 4, "enabled": true },
+              { "id": 5, "enabled": true },
+              { "id": 6, "enabled": false },
+              { "id": 7, "enabled": false }
+            ],
+            "flowId": "3"
+          },
+          "setting": {
+            "lowBalanceThreshold": "10",
+            "sendWarningMail": true
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes the logged-in user's organization. Only the fields given in `input` change. The `id`
+  argument is required but ignored: the caller's own organization is always the one updated.
+
+  It clears the organization cache. A changed `newcontactFlowId` or `optinFlowId` pins the new
+  flow and unpins the old one. Passing `phone` moves the WhatsApp bot number: it updates the phone of the
+  organization's main contact and main user in one transaction and sets
+  `setting.allowBotNumberUpdate` to `false`.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description                                                     |
+  | -------- | ------------------- | -------- | --------------------------------------------------------------- |
+  | `id`     | `ID!`               | Yes      | Ignored. Kept for compatibility.                                |
+  | `input`  | `OrganizationInput` | No       | Fields to change. See **Create an organization** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateOrganization": {
+        "organization": {
+          "id": "1",
+          "name": "Glific",
+          "timezone": "Asia/Kolkata",
+          "sessionLimit": 60,
+          "activeLanguages": [
+            { "id": "1", "label": "English" },
+            { "id": "2", "label": "Hindi" }
+          ],
+          "outOfOffice": {
+            "enabled": true,
+            "startTime": "09:00:00",
+            "endTime": "18:00:00",
+            "enabledDays": [
+              { "id": 1, "enabled": true },
+              { "id": 2, "enabled": true },
+              { "id": 3, "enabled": true },
+              { "id": 4, "enabled": true },
+              { "id": 5, "enabled": true },
+              { "id": 6, "enabled": false },
+              { "id": 7, "enabled": false }
+            ],
+            "flowId": "3"
+          },
+          "setting": {
+            "lowBalanceThreshold": "10",
+            "sendWarningMail": true
+          }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - A validation failure comes back in `errors`, for example
+    `{ "key": "timezone", "message": "Timezone: is invalid" }`, or
+    `{ "key": "default_language_id", "message": "Default_language_id: default language must be updated according to active languages" }`.
+  - With `phone`: an unparsable number, a missing main contact
+    (`Organization contact not found`) or a missing main user (`NGO Main Account not found`) is
+    a top-level error, and nothing changes.
+  - A user without the admin role gets a top-level `Unauthorized` error.

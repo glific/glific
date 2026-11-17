@@ -1,0 +1,84 @@
+info:
+  name: List sheets
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query sheets($filter: SheetFilter, $opts: Opts) {
+        sheets(filter: $filter, opts: $opts) {
+          id
+          label
+          url
+          type
+          isActive
+          autoSync
+          lastSyncedAt
+          syncStatus
+          failureReason
+          sheetDataCount
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "isActive": true,
+          "type": "READ"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's sheets, optionally filtered and paginated.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description                                    |
+  | -------- | ------------- | -------- | ---------------------------------------------- |
+  | `filter` | `SheetFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`        | No       | Sorting and pagination. Sorts on `label` by default. |
+
+  ### `SheetFilter`
+
+  | Field      | Type      | Description                                                  |
+  | ---------- | --------- | ------------------------------------------------------------ |
+  | `label`    | `String`  | Label contains this text (case-insensitive).                 |
+  | `type`     | `String`  | Type contains this text (case-insensitive): `READ`, `WRITE`, `ALL`. |
+  | `isActive` | `Boolean` | Only active or only inactive sheets.                         |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "sheets": [
+        {
+          "id": "2",
+          "label": "School directory",
+          "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+          "type": "READ",
+          "isActive": true,
+          "autoSync": true,
+          "lastSyncedAt": "2026-11-16T00:01:12Z",
+          "syncStatus": "SUCCESS",
+          "failureReason": null,
+          "sheetDataCount": 248
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

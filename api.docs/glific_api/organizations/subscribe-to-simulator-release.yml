@@ -1,0 +1,49 @@
+info:
+  name: Subscribe to simulator release
+  type: graphql
+  seq: 19
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription simulatorRelease($organizationId: ID!) {
+        simulatorRelease(organizationId: $organizationId)
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes an event when a user's simulator in the organization is taken away from them: it was
+  idle for 10 minutes, or another user took it over. The frontend uses it to close the
+  simulator. Nothing is pushed when the holder just reloads their own simulator.
+
+  **Role:** none. The subscription only checks that `organizationId` is the logged-in user's
+  organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                         |
+  | ---------------- | ----- | -------- | ----------------------------------- |
+  | `organizationId` | `ID!` | Yes      | Must be the user's own organization. |
+
+  ## Example response
+
+  The pushed `Json` names the user who held the simulator.
+
+  ```json
+  {
+    "data": {
+      "simulatorRelease": "{\"simulator_release\":{\"user_id\":1}}"
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization rejects the subscription with
+  `Auth Credentials mismatch`.

@@ -1,0 +1,74 @@
+info:
+  name: List certificate templates
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query certificateTemplates($filter: CertificateTemplateFilter, $opts: Opts) {
+        certificateTemplates(filter: $filter, opts: $opts) {
+          id
+          label
+          url
+          type
+          description
+          insertedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "label": "course"
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's certificate templates, optionally filtered and paginated. Sorted
+  by `inserted_at` unless `opts.orderWith` says otherwise.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                        | Required | Description              |
+  | -------- | --------------------------- | -------- | ------------------------ |
+  | `filter` | `CertificateTemplateFilter` | No       | Narrows the list.        |
+  | `opts`   | `Opts`                      | No       | Sorting and pagination.  |
+
+  ### `CertificateTemplateFilter`
+
+  | Field   | Type     | Description                                  |
+  | ------- | -------- | -------------------------------------------- |
+  | `label` | `String` | Label contains this text (case-insensitive). |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "certificateTemplates": [
+        {
+          "id": "3",
+          "label": "Course completion",
+          "url": "https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/edit#slide=id.p1",
+          "type": "SLIDES",
+          "description": "Issued at the end of the 6-week course",
+          "insertedAt": "2026-11-02T09:41:12Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

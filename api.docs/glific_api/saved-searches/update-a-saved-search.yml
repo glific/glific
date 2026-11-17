@@ -1,0 +1,69 @@
+info:
+  name: Update a saved search
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateSavedSearch($id: ID!, $input: SavedSearchInput) {
+        updateSavedSearch(id: $id, input: $input) {
+          savedSearch {
+            id
+            label
+            shortcode
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "9",
+        "input": {
+          "label": "Parents: session questions"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a saved search. Only the fields given in `input` change; a new `args` replaces the
+  stored arguments as a whole.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description                                                    |
+  | -------- | ------------------ | -------- | -------------------------------------------------------------- |
+  | `id`     | `ID!`              | Yes      | The saved search to change.                                    |
+  | `input`  | `SavedSearchInput` | No       | Fields to change. See **Create a saved search** for the list.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateSavedSearch": {
+        "savedSearch": {
+          "id": "9",
+          "label": "Parents: session questions",
+          "shortcode": "parent_sessions"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The saved search does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Searches.SavedSearch", "message": "Resource not found" }]`.
+  - The new shortcode is already used:
+    `{ "key": "shortcode", "message": "Shortcode: has already been taken" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,71 @@
+info:
+  name: List roles
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query accessRoles($filter: AccessRoleFilter, $opts: Opts) {
+        accessRoles(filter: $filter, opts: $opts) {
+          id
+          label
+          description
+          isReserved
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "isReserved": true
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's access roles, optionally filtered and paginated. Sorted by label by
+  default. Unless the organization has roles and permissions enabled, only reserved roles are
+  returned, whatever the filter says.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description                                    |
+  | -------- | ------------------ | -------- | ---------------------------------------------- |
+  | `filter` | `AccessRoleFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`             | No       | Sorting and pagination.                        |
+
+  ### `AccessRoleFilter`
+
+  | Field         | Type      | Description                                        |
+  | ------------- | --------- | -------------------------------------------------- |
+  | `label`       | `String`  | Label contains this text (case-insensitive).       |
+  | `description` | `String`  | Description contains this text (case-insensitive). |
+  | `isReserved`  | `Boolean` | Only reserved or only organization-defined roles.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "accessRoles": [
+        { "id": "1", "label": "Admin", "description": "Default Admin Role", "isReserved": true },
+        { "id": "3", "label": "Manager", "description": "Default Manager Role", "isReserved": true },
+        { "id": "4", "label": "No access", "description": "Default Role with no permissions", "isReserved": true },
+        { "id": "2", "label": "Staff", "description": "Default Staff Role", "isReserved": true }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

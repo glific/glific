@@ -1,0 +1,80 @@
+info:
+  name: Save a WhatsApp form revision
+  type: graphql
+  seq: 14
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation saveWhatsappFormRevision($input: WhatsappFormRevisionInput!) {
+        saveWhatsappFormRevision(input: $input) {
+          whatsappFormRevision {
+            id
+            whatsappFormId
+            definition
+            userId
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "whatsappFormId": "3",
+          "definition": "{\"version\":\"7.3\",\"screens\":[{\"id\":\"SIGN_UP\",\"title\":\"Sign up\",\"terminal\":true,\"data\":{},\"layout\":{\"type\":\"SingleColumnLayout\",\"children\":[{\"type\":\"Form\",\"name\":\"flow_path\",\"children\":[{\"type\":\"TextInput\",\"name\":\"student_name\",\"label\":\"Your name\",\"required\":true},{\"type\":\"Footer\",\"label\":\"Submit\",\"on-click-action\":{\"name\":\"complete\",\"payload\":{\"student_name\":\"${form.student_name}\"}}}]}]}}]}"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Saves a new version of a form's WhatsApp Flow JSON and makes it the form's current
+  revision. It is stored in Glific only; **Publish a WhatsApp form** sends the current
+  revision to Meta. The revision is recorded against the calling user, and the database gives
+  it the next `revisionNumber` for the form.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                         | Required | Description       |
+  | -------- | ---------------------------- | -------- | ----------------- |
+  | `input`  | `WhatsappFormRevisionInput!` | Yes      | The new revision. |
+
+  ### `WhatsappFormRevisionInput`
+
+  | Field            | Type    | Required | Description                                                 |
+  | ---------------- | ------- | -------- | ----------------------------------------------------------- |
+  | `whatsappFormId` | `ID!`   | Yes      | The form.                                                   |
+  | `definition`     | `Json!` | Yes      | The WhatsApp Flow JSON (`version`, `screens`), as a JSON-encoded string. Not validated by Glific. |
+
+  ## Example response
+
+  `revisionNumber` is assigned by a database trigger and is not read back here; get it with
+  **List WhatsApp form revisions**.
+
+  ```json
+  {
+    "data": {
+      "saveWhatsappFormRevision": {
+        "whatsappFormRevision": {
+          "id": "15",
+          "whatsappFormId": "3",
+          "definition": "{\"version\":\"7.3\",\"screens\":[{\"title\":\"Sign up\",\"terminal\":true,\"layout\":{\"type\":\"SingleColumnLayout\",\"children\":[{\"type\":\"Form\",\"name\":\"flow_path\",\"children\":[{\"type\":\"TextInput\",\"required\":true,\"name\":\"student_name\",\"label\":\"Your name\"},{\"type\":\"Footer\",\"on-click-action\":{\"payload\":{\"student_name\":\"${form.student_name}\"},\"name\":\"complete\"},\"label\":\"Submit\"}]}]},\"id\":\"SIGN_UP\",\"data\":{}}]}",
+          "userId": "1"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The form does not exist: a top-level error from the database constraint.
+  - `definition` is not valid JSON: the request is rejected before it runs.
+  - A user without the manager role gets a top-level `Unauthorized` error.

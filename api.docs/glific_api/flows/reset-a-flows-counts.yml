@@ -1,0 +1,55 @@
+info:
+  name: Reset a flow's counts
+  type: graphql
+  seq: 22
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation resetFlowCount($flowId: ID!) {
+        resetFlowCount(flowId: $flowId) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "flowId": "3"
+      }
+  auth: inherit
+
+docs: |
+  Deletes the visit counts the flow editor shows on a flow's nodes and paths, and the recent
+  messages recorded on each path (see **Flow Editor › Get flow activity**). Counting starts
+  again from zero. Flow results and contacts' runs are not touched.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                     |
+  | -------- | ----- | -------- | ------------------------------- |
+  | `flowId` | `ID!` | Yes      | The flow whose counts to reset. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "resetFlowCount": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Always returns `success: true`, even for a flow ID that doesn't exist in the organization.
+  A user without the manager role gets a top-level `Unauthorized` error.

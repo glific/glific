@@ -1,0 +1,95 @@
+info:
+  name: Create a ticket
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createTicket($input: TicketInput!) {
+        createTicket(input: $input) {
+          ticket {
+            id
+            body
+            topic
+            status
+            messageNumber
+            contact {
+              id
+              name
+            }
+            user {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "body": "My certificate has not arrived",
+          "topic": "Certificates",
+          "contactId": "26",
+          "userId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Opens a ticket for a contact. `status` defaults to `open`, and `messageNumber` is set to
+  the contact's latest message. Also creates a "New Ticket created" notification for the
+  organization.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description           |
+  | -------- | -------------- | -------- | --------------------- |
+  | `input`  | `TicketInput!` | Yes      | The ticket to create. |
+
+  ### `TicketInput`
+
+  | Field       | Type     | Required | Description                               |
+  | ----------- | -------- | -------- | ----------------------------------------- |
+  | `contactId` | `ID`     | Yes      | Contact who raised the ticket.            |
+  | `body`      | `String` | No       | What the contact asked for.               |
+  | `topic`     | `String` | No       | Topic, used to group and bulk-close tickets. |
+  | `status`    | `String` | No       | Defaults to `open`.                       |
+  | `userId`    | `ID`     | No       | User the ticket is assigned to.           |
+  | `remarks`   | `String` | No       | Notes from staff.                         |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createTicket": {
+        "ticket": {
+          "id": "12",
+          "body": "My certificate has not arrived",
+          "topic": "Certificates",
+          "status": "open",
+          "messageNumber": 48,
+          "contact": { "id": "26", "name": "Adelle Cavin" },
+          "user": { "id": "1", "name": "NGO Main Account" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact or user does not exist:
+    `{ "key": "contact_id", "message": "Contact_id: does not exist" }` (or `user_id`).
+  - Without `contactId` the request fails with a top-level error.
+  - A user without the staff role gets a top-level `Unauthorized` error.

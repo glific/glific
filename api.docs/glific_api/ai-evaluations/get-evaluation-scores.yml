@@ -1,0 +1,65 @@
+info:
+  name: Get evaluation scores
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query evaluationScores($id: ID!, $exportFormat: String) {
+        evaluationScores(id: $id, exportFormat: $exportFormat) {
+          scores
+          errors {
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "21",
+        "exportFormat": "row"
+      }
+  auth: inherit
+
+docs: |
+  Fetches an evaluation's full results from Kaapi, including the per-question traces.
+  Nothing is saved in Glific.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument       | Type     | Required | Description                                                |
+  | -------------- | -------- | -------- | ---------------------------------------------------------- |
+  | `id`           | `ID!`    | Yes      | The AI evaluation.                                         |
+  | `exportFormat` | `String` | No       | Layout of the traces, passed to Kaapi: `row` (default) or `grouped`. |
+
+  ## Example response
+
+  `scores` is Kaapi's evaluation payload as JSON. It holds, among others, `status`, `score`
+  (`summary_scores`, `overall` and `traces`) and `latency`.
+
+  ```json
+  {
+    "data": {
+      "evaluationScores": {
+        "scores": "{\"latency\":{\"avg_latency_ms\":1250.5,\"call_count\":50},\"score\":{\"overall\":{\"overall_score\":3.84,\"verdict\":\"Needs Refinement\"},\"summary_scores\":[{\"avg\":0.74,\"data_type\":\"NUMERIC\",\"name\":\"Cosine Similarity\",\"std\":0.1,\"total_pairs\":25}],\"traces\":[]},\"status\":\"completed\"}",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in `errors` as `{ "message": "..." }`, with `scores` set to `null`:
+
+  - The evaluation does not exist in the organization: `Evaluation not found.`
+  - Kaapi times out: `Timeout occurred, please try again.`
+  - Kaapi returns an error message: that message. Without a Kaapi credential it is
+    `Kaapi is not active`.
+  - Any other failure: `An unknown error occurred, please contact Glific support.`
+
+  A user without the staff role gets a top-level `Unauthorized` error.

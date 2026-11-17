@@ -1,0 +1,69 @@
+info:
+  name: Start a flow for a contact
+  type: graphql
+  seq: 16
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation startContactFlow($flowId: ID!, $contactId: ID!, $defaultResults: Json, $channel: MessageChannelEnum) {
+        startContactFlow(flowId: $flowId, contactId: $contactId, defaultResults: $defaultResults, channel: $channel) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "flowId": "3",
+        "contactId": "26",
+        "defaultResults": "{\"source\": {\"input\": \"crm\"}}",
+        "channel": "WHATSAPP"
+      }
+  auth: inherit
+
+docs: |
+  Starts the published revision of a flow for one contact, and runs it until it first waits
+  (for a reply, a timer or a webhook). Starting a non-background flow ends the flow the
+  contact is in; a background flow runs alongside it.
+
+  `success: true` means the flow was handed to the contact. If the flow then refuses to start,
+  for example because the contact can't be messaged, that is logged on the server and not
+  reported here.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument         | Type                 | Required | Description                                                         |
+  | ---------------- | -------------------- | -------- | ------------------------------------------------------------------- |
+  | `flowId`         | `ID!`                | Yes      | The flow to start.                                                  |
+  | `contactId`      | `ID!`                | Yes      | The contact to start it for.                                        |
+  | `defaultResults` | `Json`               | No       | A JSON-encoded object seeded into the run's results, readable in the flow as `@results.<key>`. |
+  | `channel`        | `MessageChannelEnum` | No       | Channel to run on: `WHATSAPP` (default) or `WEB`.                   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "startContactFlow": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact does not exist in the organization:
+    `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - The flow does not exist or has never been published:
+    `[{ "key": "Flow", "message": "Flow not found" }]`.
+  - The flow is inactive: `[{ "key": "Flow", "message": "Flow is not active" }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

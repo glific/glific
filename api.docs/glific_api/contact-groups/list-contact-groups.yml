@@ -1,0 +1,80 @@
+info:
+  name: List contact groups
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contactGroups($filter: ContactGroupFilter, $opts: Opts) {
+        contactGroups(filter: $filter, opts: $opts) {
+          id
+          contact {
+            id
+            name
+          }
+          group {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "groupId": "2"
+        },
+        "opts": {
+          "limit": 25,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists collection memberships: the contacts in a collection (filter by `groupId`) or the
+  collections a contact is in (filter by `contactId`).
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                       |
+  | -------- | -------------------- | -------- | ------------------------------------------------- |
+  | `filter` | `ContactGroupFilter` | No       | Narrows the list. All given fields must match.    |
+  | `opts`   | `Opts`               | No       | Sorting and pagination. Sorts on `id` by default. |
+
+  ### `ContactGroupFilter`
+
+  | Field       | Type             | Description                                                              |
+  | ----------- | ---------------- | ------------------------------------------------------------------------ |
+  | `contactId` | `ID`             | Memberships of this contact.                                             |
+  | `groupId`   | `ID`             | Memberships of this collection.                                          |
+  | `dateRange` | `DateRangeInput` | `from` and `to` on `column` (snake_case, defaults to `inserted_at`, when the contact was added). |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "contactGroups": [
+        {
+          "id": "301",
+          "contact": { "id": "12", "name": "Ravi Kumar" },
+          "group": { "id": "2", "label": "Optin contacts" }
+        },
+        {
+          "id": "302",
+          "contact": { "id": "131", "name": "Asha Patil" },
+          "group": { "id": "2", "label": "Optin contacts" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,61 @@
+info:
+  name: Export consulting hours as CSV
+  type: graphql
+  seq: 7
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query fetchConsultingHours($filter: FetchConsultingHours) {
+        fetchConsultingHours(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "clientId": "1",
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-30"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Returns one organization's consulting hours between two dates as a CSV string, for
+  invoicing. Dates are whole days in UTC, both inclusive.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                       |
+  | -------- | ---------------------- | -------- | ------------------------------------------------- |
+  | `filter` | `FetchConsultingHours` | Yes, in practice | The organization and date range to export. |
+
+  ### `FetchConsultingHours`
+
+  | Field       | Type   | Required | Description                     |
+  | ----------- | ------ | -------- | ------------------------------- |
+  | `clientId`  | `ID!`  | Yes      | The client organization.        |
+  | `startDate` | `Date` | Yes      | First day of the range.         |
+  | `endDate`   | `Date` | Yes      | Last day of the range.          |
+
+  ## Example response
+
+  The CSV has a header row; `inserted_at` and `when` are dates, and text columns are quoted.
+
+  ```json
+  {
+    "data": {
+      "fetchConsultingHours": "content,duration,inserted_at,is_billable,organization_name,participants,staff,when\n\"Walked through flow keywords\",30,2026-11-10,true,Glific Foundation,\"Asha, Ravi\",\"Glific support team\",2026-11-10,\n"
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `filter`, `startDate` or `endDate` is missing: a top-level error.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

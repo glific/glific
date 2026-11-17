@@ -1,0 +1,68 @@
+info:
+  name: List guardrail validators
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query guardrailValidators {
+        guardrailValidators {
+          validators {
+            type
+            config
+            link
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the guardrail validators that can be added to an assistant, each with the JSON
+  schema of its settings (from Kaapi) and a documentation link. Only the validators Glific
+  supports are returned: `gender_assumption_bias`, `pii_remover`, `content_safety` and
+  `topic_relevance_llm`.
+
+  **Role:** staff. Needs the `is_ai_guardrail_enabled` flag on the organization.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `config` is the validator's settings as a JSON schema, passed through from Kaapi.
+
+  ```json
+  {
+    "data": {
+      "guardrailValidators": {
+        "validators": [
+          {
+            "type": "pii_remover",
+            "config": "{\"$defs\":{\"Stage\":{\"enum\":[\"input\",\"output\"]}},\"properties\":{\"stage\":{\"$ref\":\"#/$defs/Stage\"}},\"required\":[\"type\"]}",
+            "link": "https://projecttech4devai.github.io/kaapi-docs/guardrails/privacy-protection"
+          },
+          {
+            "type": "content_safety",
+            "config": "{\"$defs\":{\"Stage\":{\"enum\":[\"input\",\"output\"]}},\"properties\":{\"stage\":{\"$ref\":\"#/$defs/Stage\"}},\"required\":[\"type\"]}",
+            "link": "https://projecttech4devai.github.io/kaapi-docs/guardrails/content-safety"
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `guardrailValidators` set to `null`:
+
+  - The flag is off: `AI Guardrails is not enabled for the organization.`
+  - Kaapi times out: `Timeout occurred, please try again.`
+  - Kaapi rejects the call: Kaapi's error. Without a Kaapi credential it is
+    `Kaapi is not active`.
+  - Any other failure: `An unknown error occurred, please contact Glific support.`
+  - A user without the staff role gets `Unauthorized`.

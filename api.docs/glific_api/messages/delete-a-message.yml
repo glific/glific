@@ -1,0 +1,60 @@
+info:
+  name: Delete a message
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteMessage($id: ID!) {
+        deleteMessage(id: $id) {
+          message {
+            id
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "1051"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a message from Glific, along with its message media if it has one. The message is
+  not recalled from the contact's phone.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description            |
+  | -------- | ----- | -------- | ---------------------- |
+  | `id`     | `ID!` | Yes      | The message to delete. |
+
+  ## Example response
+
+  On success the result does not echo the deleted message: `message` is `null` and `errors`
+  is `[null]`. Treat any entry in `errors` with a `message` as a failure.
+
+  ```json
+  {
+    "data": {
+      "deleteMessage": {
+        "message": null,
+        "errors": [null]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The message does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Messages.Message", "message": "Resource not found" }]`.
+  - A user without the admin role gets a top-level `Unauthorized` error.
