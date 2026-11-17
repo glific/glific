@@ -17,6 +17,14 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
     field(:inserted_at, :datetime)
   end
 
+  @desc "A channel a contact uses, and when the contact last messaged on it"
+  object :contact_channel do
+    field(:channel, :message_channel_enum)
+
+    @desc "Null until the contact first messages on this channel"
+    field(:last_message_at, :datetime)
+  end
+
   object :contact_identity_queries do
     @desc "Get the contact with an identity on a channel; web identities are case-insensitive"
     field :contact_by_identity, :contact_result do

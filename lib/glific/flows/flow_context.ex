@@ -627,27 +627,37 @@ defmodule Glific.Flows.FlowContext do
 
     event_label = get_event_label(source, after_insert_date)
 
-    FlowContext
-    |> where([fc], fc.contact_id == ^contact_id)
-    |> where([fc], is_nil(fc.completed_at))
-    |> maybe_scope_by_channel(Keyword.get(opts, :channel))
-    |> add_date_clause(after_insert_date)
-    # lets not touch the contexts which are waiting to be woken up at a specific time
-    |> where([fc], fc.is_background_flow == false)
-    |> Repo.update_all(
-      set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label]
-    )
+    {_count, stopped_channels} =
+      FlowContext
+      |> where([fc], fc.contact_id == ^contact_id)
+      |> where([fc], is_nil(fc.completed_at))
+      |> maybe_scope_by_channel(Keyword.get(opts, :channel))
+      |> add_date_clause(after_insert_date)
+      # lets not touch the contexts which are waiting to be woken up at a specific time
+      |> where([fc], fc.is_background_flow == false)
+      |> select([fc], fc.channel)
+      |> Repo.update_all(
+        set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label]
+      )
 
-    {:ok, _} =
-      Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
-        event_label: event_label,
-        event_meta:
-          %{
-            after_insert_date: after_insert_date,
-            source: Keyword.get(opts, :source, "")
-          }
-          |> Map.merge(Keyword.get(opts, :event_meta, %{}))
-      })
+    event_meta =
+      %{
+        after_insert_date: after_insert_date,
+        source: Keyword.get(opts, :source, "")
+      }
+      |> Map.merge(Keyword.get(opts, :event_meta, %{}))
+
+    opts
+    |> Keyword.get(:channel)
+    |> history_channels(stopped_channels)
+    |> Enum.each(fn channel ->
+      {:ok, _} =
+        Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
+          event_label: event_label,
+          channel: channel,
+          event_meta: event_meta
+        })
+    end)
 
     :telemetry.execute(
       [:glific, :flow, :stop_all],
@@ -658,6 +668,16 @@ defmodule Glific.Flows.FlowContext do
       }
     )
   end
+
+  # Which channels a "flows stopped" history entry is recorded on, so the profile's History tab can
+  # say which channel's flows stopped (#5877): one entry per channel that had a flow stopped. With
+  # none stopped there is still one entry, as before, on the channel asked for or else WhatsApp,
+  # which is what the column defaulted to when this was written without one.
+  @spec history_channels(atom() | nil, [atom()]) :: [atom()]
+  defp history_channels(requested, []), do: [requested || :whatsapp]
+
+  defp history_channels(_requested, stopped_channels),
+    do: stopped_channels |> Enum.uniq() |> Enum.sort_by(&(&1 != :whatsapp))
 
   @spec get_event_label(String.t(), DateTime.t() | nil) :: String.t()
   defp get_event_label(source, after_insert_date) do

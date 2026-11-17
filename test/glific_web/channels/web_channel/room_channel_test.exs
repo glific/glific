@@ -2,6 +2,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   @moduledoc false
   use GlificWeb.ChannelCase
 
+  import Ecto.Query
+
   alias Glific.{
     Contacts,
     Contacts.Location,
@@ -120,6 +122,68 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
         assert {:error, %{reason: "unauthorized"}} =
                  WebChannelFixtures.join_web_channel(expired_socket)
+      end)
+    end
+  end
+
+  describe "web chat history" do
+    test "one tab records a start on join and an end on leave", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
+
+        assert chat_history(contact) == [{"web_chat_started", :web}]
+
+        leave_and_wait(socket)
+
+        assert chat_history(contact) == [{"web_chat_started", :web}, {"web_chat_ended", :web}]
+      end)
+    end
+
+    test "a second tab neither starts nor ends the chat; the last one to close ends it", %{
+      contact: contact
+    } do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+        {:ok, _reply, first_tab} = WebChannelFixtures.join_web_channel(ws_socket)
+        {:ok, _reply, second_tab} = WebChannelFixtures.join_web_channel(ws_socket)
+
+        assert chat_history(contact) == [{"web_chat_started", :web}]
+
+        leave_and_wait(first_tab)
+        assert chat_history(contact) == [{"web_chat_started", :web}]
+
+        leave_and_wait(second_tab)
+        assert chat_history(contact) == [{"web_chat_started", :web}, {"web_chat_ended", :web}]
+      end)
+    end
+
+    test "a refused join records nothing", %{contact: contact} do
+      with_web_channel_enabled(fn ->
+        {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+
+        expired_socket =
+          Phoenix.Socket.assign(ws_socket, :token_exp, System.system_time(:second) - 3_600)
+
+        assert {:error, _} = WebChannelFixtures.join_web_channel(expired_socket)
+        assert chat_history(contact) == []
+      end)
+    end
+
+    test "without the presence tracker each tab records its own start and end", %{
+      contact: contact
+    } do
+      with_web_channel_enabled(fn ->
+        without_presence(fn ->
+          {:ok, ws_socket} = WebChannelFixtures.web_channel_socket_fixture(contact)
+          {:ok, _reply, socket} = WebChannelFixtures.join_web_channel(ws_socket)
+          leave_and_wait(socket)
+
+          assert chat_history(contact) == [
+                   {"web_chat_started", :web},
+                   {"web_chat_ended", :web}
+                 ]
+        end)
       end)
     end
   end
@@ -984,6 +1048,15 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   # Presence untracks on process exit, which is asynchronous — polling here rather than asserting
   # straight after leave/1 keeps the test from racing the Presence server.
   @spec leave_and_wait(Phoenix.Socket.t()) :: :ok
+  defp chat_history(contact) do
+    Glific.Contacts.ContactHistory
+    |> where([h], h.contact_id == ^contact.id)
+    |> where([h], h.event_type in ["web_chat_started", "web_chat_ended"])
+    |> order_by([h], h.id)
+    |> select([h], {h.event_type, h.channel})
+    |> Repo.all(skip_organization_id: true)
+  end
+
   defp leave_and_wait(socket) do
     channel_pid = socket.channel_pid
     reference = Process.monitor(channel_pid)

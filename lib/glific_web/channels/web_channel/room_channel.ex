@@ -20,6 +20,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     Messages,
     Providers.Web.Upload,
     Repo,
+    SafeLog,
     WebChannel.Rooms
   }
 
@@ -57,9 +58,14 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       # topic rather than Presence, which degrades to an empty list when its tracker is not running.
       Phoenix.PubSub.subscribe(Glific.PubSub, Rooms.topic(socket.assigns.organization_id))
 
+      # Read before tracking this tab, or the contact would always look already online.
+      first_tab? = not Presence.online?(socket.assigns.organization_id, contact_id)
+
       # The channel process, not the socket: presence lives under a per-organization topic, and
       # untracks when this process dies.
       Presence.track_contact(self(), socket.assigns.organization_id, contact_id)
+
+      if first_tab?, do: record_history(socket, :web_chat_started, "Web chat started")
 
       messages =
         contact_id
@@ -68,7 +74,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
         |> Enum.map(&MessageSerializer.serialize/1)
 
       {:ok, %{contact_id: contact_id, messages: messages},
-       assign(socket, :token_expiring_warned?, false)}
+       socket |> assign(:token_expiring_warned?, false) |> assign(:joined?, true)}
     end
   end
 
@@ -253,6 +259,49 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     else
       _refused -> :error
     end
+  end
+
+  # Runs on a clean leave, a closed socket, and the {:stop, :normal} from the token sweep and from the
+  # channel being switched off. Not on a node crash, and a tab closed without a clean disconnect
+  # only gets here when its socket times out, so "ended" can be late or, after a crash, missing.
+  @impl true
+  @spec terminate(any(), Phoenix.Socket.t()) :: :ok
+  def terminate(_reason, %{assigns: %{joined?: true}} = socket) do
+    # This process is still tracked here, so a contact whose last tab is closing counts one.
+    if Presence.connection_count(
+         socket.assigns.organization_id,
+         socket.assigns.current_contact.id
+       ) <=
+         1,
+       do: record_history(socket, :web_chat_ended, "Web chat ended")
+
+    :ok
+  end
+
+  def terminate(_reason, _socket), do: :ok
+
+  # One "started" and one "ended" per contact rather than per tab, for the History tab on the
+  # contact profile (#5877). Presence decides it, which is the one place it feeds anything recorded:
+  # its lag only makes "ended" late, and if the tracker is down it reads as no tabs open, so every
+  # tab records its own start and end rather than none. A chat must not fail over its history, so
+  # a failed write is logged and dropped.
+  @spec record_history(Phoenix.Socket.t(), atom(), String.t()) :: :ok
+  defp record_history(socket, event_type, event_label) do
+    case Contacts.capture_history(socket.assigns.current_contact, event_type, %{
+           event_label: event_label,
+           channel: :web
+         }) do
+      {:ok, _history} ->
+        :ok
+
+      {:error, error} ->
+        Glific.log_error("Web chat history not recorded: #{SafeLog.safe_inspect(error)}", false)
+        :ok
+    end
+  rescue
+    error ->
+      Glific.log_exception(error)
+      :ok
   end
 
   @spec schedule_sweep() :: reference()

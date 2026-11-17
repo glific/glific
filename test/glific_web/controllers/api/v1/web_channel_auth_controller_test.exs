@@ -869,6 +869,106 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     |> get_in(["data", "contact_id"])
   end
 
+  describe "login history on the contact profile (#5877)" do
+    test "requesting a code records it on the web channel", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => @reachable_phone})
+        )
+
+        assert login_history(@reachable_phone) == [
+                 {"web_login_code_requested", "Web login code requested", :web}
+               ]
+      end)
+    end
+
+    test "a request is recorded even when the code cannot be delivered", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        undeliverable = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{
+            "phone" => undeliverable.phone
+          })
+        )
+
+        assert [{"web_login_code_requested", _label, :web}] = login_history(undeliverable.phone)
+      end)
+    end
+
+    test "a correct code records a verified login", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+            "phone" => phone,
+            "otp" => code
+          })
+        )
+
+        assert login_history(phone) == [
+                 {"web_login_code_verified", "Web login code verified", :web}
+               ]
+      end)
+    end
+
+    test "a wrong code for a known contact records the failure", %{conn: conn} do
+      contact = Fixtures.contact_fixture(%{phone: unique_phone()})
+
+      with_web_channel_enabled(fn ->
+        OTP.generate_code(:web_channel, contact.phone)
+
+        conn
+        |> post(
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+            "phone" => contact.phone,
+            "otp" => "000000"
+          })
+        )
+        |> json_response(401)
+
+        assert login_history(contact.phone) == [
+                 {"web_login_code_failed", "Web login code incorrect", :web}
+               ]
+      end)
+    end
+
+    test "a wrong code for an unknown phone creates no contact", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        conn
+        |> post(
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+            "phone" => phone,
+            "otp" => "000000"
+          })
+        )
+        |> json_response(401)
+
+        refute Repo.exists?(from(c in Contact, where: c.phone == ^phone),
+                 skip_organization_id: true
+               )
+      end)
+    end
+  end
+
+  defp login_history(phone) do
+    Glific.Contacts.ContactHistory
+    |> join(:inner, [h], c in Contact, on: c.id == h.contact_id)
+    |> where([_h, c], c.phone == ^phone)
+    |> where([h], like(h.event_type, "web_login_code_%"))
+    |> order_by([h], h.id)
+    |> select([h], {h.event_type, h.event_label, h.channel})
+    |> Repo.all(skip_organization_id: true)
+  end
+
   describe "verify_otp/2" do
     test "fails closed when the organization has no secret to sign with", %{conn: conn} do
       phone = unique_phone()
