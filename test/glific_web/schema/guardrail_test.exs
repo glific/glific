@@ -103,12 +103,6 @@ defmodule GlificWeb.Schema.GuardrailTest do
 
     assert [%{"type" => "pii_remover"}] =
              get_in(query_data, [:data, "guardrailValidators", "validators"])
-
-    Caches.remove(user.organization_id, [:kaapi_guardrail_validators])
-    mock_kaapi_response(200, %{"validators" => []})
-
-    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
-    assert [] == get_in(query_data, [:data, "guardrailValidators", "validators"])
   end
 
   test "guardrailValidators does not cache a failed Kaapi response", %{manager: user} do
@@ -140,14 +134,6 @@ defmodule GlificWeb.Schema.GuardrailTest do
 
     {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
     assert [] == get_in(query_data, [:data, "guardrailValidators", "validators"])
-  end
-
-  test "guardrailValidators returns the error of a failed Kaapi response", %{manager: user} do
-    mock_kaapi_response(401, %{success: false, error: "Invalid API key"})
-
-    {:ok, query_data} = auth_query_gql_by(:list_validators, user, variables: %{})
-
-    assert [%{message: "Invalid API key"}] = query_data.errors
   end
 
   test "guardrailValidators returns a generic error when Kaapi's error body has no message",

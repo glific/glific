@@ -845,18 +845,18 @@ defmodule Glific.ThirdParty.Kaapi do
     Caches.fetch(organization_id, @guardrail_validators_cache_key, fn _key ->
       fetch_guardrail_validators(organization_id)
     end)
-    |> case do
-      {:commit, result, _opts} -> result
-      {_status, result} -> result
-    end
+    |> elem(1)
   end
 
-  @spec fetch_guardrail_validators(non_neg_integer()) ::
-          {:commit, {:ok, map()}, Keyword.t()} | {:ignore, {:error, any()}}
+  @spec fetch_guardrail_validators(non_neg_integer()) :: {:ignore, {:ok, map()} | {:error, any()}}
   defp fetch_guardrail_validators(organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.list_guardrail_validators(secrets["api_key"]) do
-      {:commit, {:ok, result}, ttl: @guardrail_validators_cache_ttl}
+      Caches.set(organization_id, @guardrail_validators_cache_key, {:ok, result},
+        ttl: @guardrail_validators_cache_ttl
+      )
+
+      {:ignore, {:ok, result}}
     else
       {:error, reason} ->
         report_error("Kaapi guardrail validators fetch failed", organization_id, reason)
