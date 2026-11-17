@@ -32,6 +32,9 @@ docs: |
   With `optin: true` (the widget's consent checkbox) it also records the contact's opt-in to
   the web channel. That opt-in is separate from WhatsApp opt-in, which is not changed.
 
+  An organization that manages its own users can sign tokens on its own backend instead; see
+  **Tokens signed by your backend** in the **Web Channel** folder.
+
   ## Request body
 
   | Field   | Type    | Required | Description                                                |

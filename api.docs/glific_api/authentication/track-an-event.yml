@@ -21,7 +21,7 @@ docs: |
 
   | Field   | Type   | Required | Description                 |
   | ------- | ------ | -------- | --------------------------- |
-  | `event` | String | Yes      | Name of the counter to bump. |
+  | `event` | String | Yes      | Name of the counter to bump. It can also be sent as a query parameter, `{{api_url}}/v1/session/tracker?event=Signup`; if both are sent, the body's value wins. |
 
   ## Example response
 
@@ -35,4 +35,4 @@ docs: |
 
   ## Errors
 
-  A body without `event` is not handled by the controller and fails with a `400`.
+  A request without `event` is not handled by the controller and fails with a `400`.

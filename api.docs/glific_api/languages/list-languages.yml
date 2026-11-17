@@ -33,7 +33,8 @@ graphql:
 
 docs: |
   Lists the languages Glific supports, optionally filtered and paginated. The list is global,
-  not limited to the organization's active languages.
+  not limited to the organization's active languages. A language's `locale` is the language
+  code Glific sends to WhatsApp for an HSM template in that language.
 
   **Role:** staff
 

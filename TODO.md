@@ -24,5 +24,5 @@
 ## API docs on GitHub Pages
 
 The `API Docs Site` workflow publishes `api.docs/` to
-[glific.github.io/glific](https://glific.github.io/glific/) on every push to `master` that
+[api.glific.com](https://api.glific.com/) on every push to `master` that
 changes it. See `api.docs/README.md`.
