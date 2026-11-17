@@ -1,0 +1,58 @@
+info:
+  name: Report a template to Gupshup
+  type: graphql
+  seq: 13
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation reportToGupshup($templateId: ID!, $cc: Json) {
+        reportToGupshup(templateId: $templateId, cc: $cc) {
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "templateId": "12",
+        "cc": "{\"manager\":\"programs@example.org\"}"
+      }
+  auth: inherit
+
+docs: |
+  Emails Gupshup support about a problem with an HSM template, such as a rejection to appeal.
+  The mail carries the organization's Gupshup app ID and name, its WhatsApp number and the
+  template's `bspId`. An organization can send one report every 24 hours.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument     | Type   | Required | Description                                                       |
+  | ------------ | ------ | -------- | ----------------------------------------------------------------- |
+  | `templateId` | `ID!`  | Yes      | The template to report.                                           |
+  | `cc`         | `Json` | No       | Object whose values are email addresses to copy on the mail. The keys are ignored. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "reportToGupshup": {
+        "message": "Successfully sent mail to Gupshup Support",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - A report was already sent in the last 24 hours: top-level error
+    `Already a template has been raised to Gupshup in last 24hrs`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

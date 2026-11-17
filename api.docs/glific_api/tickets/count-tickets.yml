@@ -1,0 +1,46 @@
+info:
+  name: Count tickets
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countTickets($filter: TicketFilter) {
+        countTickets(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "status": "open"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's tickets that match a filter. Use it with **List tickets** to
+  build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                                       |
+  | -------- | -------------- | -------- | ----------------------------------------------------------------- |
+  | `filter` | `TicketFilter` | No       | Same fields as in **List tickets**. Without it, counts all tickets. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countTickets": 7
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,47 @@
+info:
+  name: Count a saved search's conversations
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query savedSearchCount($id: ID!, $term: String) {
+        savedSearchCount(id: $id, term: $term)
+      }
+    variables: |-
+      {
+        "id": "9",
+        "term": "friday"
+      }
+  auth: inherit
+
+docs: |
+  Runs a saved search and returns how many conversations (contacts) match it, ignoring its
+  stored pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type     | Required | Description                                                       |
+  | -------- | -------- | -------- | ----------------------------------------------------------------- |
+  | `id`     | `ID!`    | Yes      | The saved search.                                                 |
+  | `term`   | `String` | No       | Replaces the saved search's `term` for this count. Ignored if empty. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "savedSearchCount": 12
+    }
+  }
+  ```
+
+  ## Errors
+
+  An unknown saved search ID returns a top-level error. A user without the staff role gets a
+  top-level `Unauthorized` error.

@@ -1,0 +1,22 @@
+info:
+  name: Roles
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Access roles are the roles an organization assigns to users. Every organization has the
+    reserved roles `Admin`, `Manager`, `Staff` and `No access` (`isReserved: true`), which match
+    the built-in user roles. With roles and permissions enabled for the organization, it can
+    also create its own roles, such as `Teacher`, and attach them to users, flows, groups and
+    triggers to control who sees what.
+
+    Without roles and permissions enabled, listing and counting return only the reserved
+    roles.
+
+    Reading roles needs the staff role; creating, changing or deleting them needs the manager
+    role. Attach roles to users with **Users › Update a user** (`addRoleIds`, `deleteRoleIds`).
+  type: text/markdown

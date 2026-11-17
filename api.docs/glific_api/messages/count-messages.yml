@@ -1,0 +1,46 @@
+info:
+  name: Count messages
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countMessages($filter: MessageFilter) {
+        countMessages(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "bspStatus": "ERROR"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's messages that match a filter. Use it with **List messages** to
+  build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                                       |
+  | -------- | --------------- | -------- | ----------------------------------------------------------------- |
+  | `filter` | `MessageFilter` | No       | Same fields as in **List messages**. Without it, counts all messages. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countMessages": 37
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

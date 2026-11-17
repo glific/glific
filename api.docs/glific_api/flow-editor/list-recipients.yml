@@ -1,0 +1,37 @@
+info:
+  name: List recipients
+  type: http
+  seq: 20
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/recipients"
+  auth: inherit
+
+docs: |
+  Lists who a flow can message besides the contact running it, for the editor's "send
+  message to someone else" action: the contacts of the organization's staff users (users
+  whose role isn't `none`), then the collections.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. `id` is the ID as a string and `extra` the same ID as a number.
+
+  ```json
+  {
+    "results": [
+      { "id": "1", "name": "Glific Admin", "type": "contact", "extra": 1 },
+      { "id": "2", "name": "Default Collection", "type": "group", "extra": 2 }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

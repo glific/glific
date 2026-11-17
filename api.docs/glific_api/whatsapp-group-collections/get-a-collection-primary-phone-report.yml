@@ -1,0 +1,58 @@
+info:
+  name: Get a collection primary-phone report
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waGroupCollectionPrimaryReport($userJobId: ID!) {
+        waGroupCollectionPrimaryReport(userJobId: $userJobId) {
+          csvRows
+          error
+        }
+      }
+    variables: |-
+      {
+        "userJobId": "41"
+      }
+  auth: inherit
+
+docs: |
+  Returns the groups skipped by a finished **Set the primary phone across a collection** job,
+  as CSV text with the columns `Group,Reason`. Each group is written as `<label> (#<id>)`.
+  See that request for the reasons. A job with no skipped groups returns only the header row.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument    | Type  | Required | Description                                             |
+  | ----------- | ----- | -------- | ------------------------------------------------------- |
+  | `userJobId` | `ID!` | Yes      | The `userJobId` returned by **Set the primary phone across a collection**. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waGroupCollectionPrimaryReport": {
+        "csvRows": "Group,Reason\r\nNashik farmers (#1),not_a_member\r\nMumbai mentors (#3),member_inactive\r\n",
+        "error": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  When there is no report, `csvRows` is `null` and `error` says why:
+
+  - The job hasn't finished: `Setting the primary phone across the collection is still in
+    progress.` This is also returned for a job that failed to start.
+  - No such job exists, or it isn't a collection primary-phone job: `This collection
+    primary-phone report doesn't exist.`
+
+  A user without the admin role gets a top-level `Unauthorized` error.

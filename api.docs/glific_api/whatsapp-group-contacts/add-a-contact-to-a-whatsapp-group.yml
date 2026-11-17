@@ -1,0 +1,91 @@
+info:
+  name: Add a contact to a WhatsApp group
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createContactWaGroup($input: ContactWaGroupInput!) {
+        createContactWaGroup(input: $input) {
+          contactWaGroup {
+            id
+            isAdmin
+            contact {
+              id
+              name
+              phone
+            }
+            waGroup {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "contactId": "31",
+          "waGroupId": "2",
+          "isAdmin": false
+        }
+      }
+  auth: inherit
+
+docs: |
+  Records a contact as a member of a WhatsApp group in Glific. It does not add the contact on
+  WhatsApp; to do that, use **Import contacts into a WhatsApp group**. If an identical row
+  already exists, it is returned unchanged.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description            |
+  | -------- | --------------------- | -------- | ---------------------- |
+  | `input`  | `ContactWaGroupInput!` | Yes     | The member row to add. |
+
+  ### `ContactWaGroupInput`
+
+  | Field       | Type      | Required | Description                                     |
+  | ----------- | --------- | -------- | ----------------------------------------------- |
+  | `contactId` | `ID`      | Yes      | The contact.                                    |
+  | `waGroupId` | `ID`      | Yes      | The WhatsApp group.                             |
+  | `isAdmin`   | `Boolean` | No       | Whether the contact is a group admin. Defaults to `false`. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createContactWaGroup": {
+        "contactWaGroup": {
+          "id": "52",
+          "isAdmin": false,
+          "contact": { "id": "31", "name": "Asha", "phone": "910000000007" },
+          "waGroup": { "id": "2", "label": "Pune volunteers" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `contactWaGroup` set to `null`:
+
+  - A required field is missing: `{ "key": "contact_id", "message": "Contact_id: can't be blank" }`.
+  - The contact is already in the group with a different `isAdmin`:
+    `{ "key": "contact_id", "message": "Contact_id: has already been taken" }`.
+  - The contact or group does not exist:
+    `{ "key": "contact_id", "message": "Contact_id: does not exist" }` (or `wa_group_id`).
+
+  A user without the staff role gets a top-level `Unauthorized` error.

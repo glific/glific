@@ -1,0 +1,41 @@
+info:
+  name: List timezones
+  type: graphql
+  seq: 16
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query timezones {
+        timezones
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Lists every IANA timezone name the server accepts for an organization's `timezone`.
+
+  **Role:** admin
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  Shortened:
+
+  ```json
+  {
+    "data": {
+      "timezones": ["Africa/Abidjan", "Africa/Accra", "Asia/Kolkata", "Europe/London", "UTC"]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the admin role gets a top-level `Unauthorized` error.

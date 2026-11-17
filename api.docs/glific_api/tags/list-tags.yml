@@ -1,0 +1,104 @@
+info:
+  name: List tags
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query tags($filter: TagFilter, $opts: Opts) {
+        tags(filter: $filter, opts: $opts) {
+          id
+          label
+          shortcode
+          description
+          colorCode
+          isActive
+          isReserved
+          keywords
+          language {
+            id
+            label
+          }
+          parent {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "label": "child"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's tags, optionally filtered and paginated.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type        | Required | Description                                   |
+  | -------- | ----------- | -------- | --------------------------------------------- |
+  | `filter` | `TagFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`      | No       | Sorting and pagination.                       |
+
+  ### `TagFilter`
+
+  | Field         | Type      | Description                                      |
+  | ------------- | --------- | ------------------------------------------------ |
+  | `label`       | `String`  | Label contains this text (case-insensitive).     |
+  | `shortcode`   | `String`  | Shortcode contains this text.                    |
+  | `description` | `String`  | Description contains this text.                  |
+  | `parent`      | `String`  | Parent tag's label contains this text.           |
+  | `parentId`    | `Int`     | Parent tag's ID.                                 |
+  | `language`    | `String`  | Language label contains this text.               |
+  | `languageId`  | `Int`     | Language ID.                                     |
+  | `isActive`    | `Boolean` | Only active or only inactive tags.               |
+  | `isReserved`  | `Boolean` | Only reserved or only organization-defined tags. |
+
+  ### `Opts`
+
+  | Field       | Type        | Default | Description                                 |
+  | ----------- | ----------- | ------- | ------------------------------------------- |
+  | `order`     | `SortOrder` | `ASC`   | `ASC` or `DESC`.                            |
+  | `orderWith` | `String`    | `label` | Field to sort on, in snake_case.            |
+  | `limit`     | `Int`       | none    | Maximum number of tags to return.           |
+  | `offset`    | `Int`       | `0`     | Number of tags to skip.                     |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "tags": [
+        {
+          "id": "18",
+          "label": "Child",
+          "shortcode": "child",
+          "description": "Marks the contact as a child",
+          "colorCode": "#0C976D",
+          "isActive": true,
+          "isReserved": false,
+          "keywords": ["kid", "student"],
+          "language": { "id": "1", "label": "English" },
+          "parent": { "id": "2", "label": "Contacts" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

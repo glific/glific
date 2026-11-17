@@ -1,0 +1,67 @@
+info:
+  name: Validate a media URL
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query validateMedia($url: String!, $type: String!) {
+        validateMedia(url: $url, type: $type)
+      }
+    variables: |-
+      {
+        "url": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+        "type": "image"
+      }
+  auth: inherit
+
+docs: |
+  Checks that WhatsApp will accept a media URL for a message type: Glific fetches the URL and
+  checks the response's content type and size. A valid result is cached for an hour.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type      | Required | Description                                                       |
+  | -------- | --------- | -------- | ----------------------------------------------------------------- |
+  | `url`    | `String!` | Yes      | The media URL.                                                    |
+  | `type`   | `String!` | Yes      | `image`, `video`, `audio`, `document` or `sticker`, in lowercase. |
+
+  The checks per type:
+
+  | Type       | Accepted content                   | Size limit |
+  | ---------- | ---------------------------------- | ---------- |
+  | `image`    | `image/*`                          | 5 MB       |
+  | `video`    | `video/*`                          | 16 MB      |
+  | `audio`    | `audio/*` except `audio/ogg`       | 16 MB      |
+  | `document` | PDF, Word, Excel or PowerPoint     | 100 MB     |
+  | `sticker`  | A URL containing `.webp`           | 100 KB     |
+
+  The size comes from the response's `content-length` header.
+
+  ## Example response
+
+  The result is a `Json` string with `is_valid` and `message`.
+
+  ```json
+  {
+    "data": {
+      "validateMedia": "{\"message\":\"success\",\"is_valid\":true}"
+    }
+  }
+  ```
+
+  ## Errors
+
+  An invalid media is not an error: `is_valid` is `false` and `message` says why, one of:
+
+  - `Please provide a media URL`
+  - `This media URL is invalid`: not a URL, or fetching it did not return a 2xx response.
+  - `Media content-type is not valid`
+  - `Size is too big for the image. Maximum size limit is 5120KB` (with the type and its limit).
+
+  A user without the staff role gets a top-level `Unauthorized` error.

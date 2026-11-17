@@ -1,0 +1,60 @@
+info:
+  name: Delete a contact
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteContact($id: ID!) {
+        deleteContact(id: $id) {
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "131"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a contact along with its messages, history, collection memberships and flow
+  contexts. This can't be undone. The organization's own (chatbot) contact and simulator
+  contacts can't be deleted.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description            |
+  | -------- | ----- | -------- | ---------------------- |
+  | `id`     | `ID!` | Yes      | The contact to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteContact": {
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  The result's `contact` field is always `null`, so it is not selected here.
+
+  ## Errors
+
+  - The contact does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - The organization's own contact: a top-level error
+    `Sorry, this is your chatbot number and hence cannot be deleted.`
+  - A simulator contact: a top-level error
+    `Sorry, this is simulator number and hence cannot be deleted.`
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,121 @@
+info:
+  name: Search WhatsApp group conversations
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waSearch($filter: WaSearchFilter, $waGroupOpts: Opts!, $waMessageOpts: Opts!) {
+        waSearch(filter: $filter, waGroupOpts: $waGroupOpts, waMessageOpts: $waMessageOpts) {
+          id
+          waGroup {
+            id
+            label
+            bspId
+            lastCommunicationAt
+          }
+          group {
+            id
+            label
+          }
+          waMessages {
+            id
+            body
+            type
+            flow
+            insertedAt
+            contact {
+              id
+              name
+            }
+            waManagedPhone {
+              id
+              phone
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "term": "class 7"
+        },
+        "waGroupOpts": {
+          "limit": 25,
+          "offset": 0
+        },
+        "waMessageOpts": {
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Returns WhatsApp group conversations: each WhatsApp group the organization's managed phones
+  are in, with its latest messages, most recently active group first. With `searchGroup: true`
+  it returns WhatsApp group collections and the messages sent to them instead.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument        | Type             | Required | Description                                             |
+  | --------------- | ---------------- | -------- | ------------------------------------------------------- |
+  | `filter`        | `WaSearchFilter` | No       | What to match. Without it, all groups.                  |
+  | `waGroupOpts`   | `Opts!`          | Yes      | `limit` and `offset` over groups. Give both.            |
+  | `waMessageOpts` | `Opts!`          | Yes      | `limit` and `offset` over each group's messages.        |
+
+  ### `WaSearchFilter`
+
+  | Field         | Type      | Description                                                              |
+  | ------------- | --------- | ------------------------------------------------------------------------ |
+  | `term`        | `String`  | Group label contains this text (case-insensitive).                       |
+  | `id`          | `Gid`     | One WhatsApp group. With `searchGroup`, a collection ID.                 |
+  | `ids`         | `[Gid]`   | These WhatsApp groups. With `searchGroup`, collection IDs.               |
+  | `waPhoneIds`  | `[Gid]`   | Groups whose managed phone is one of these.                              |
+  | `searchGroup` | `Boolean` | Return WhatsApp group collections instead of groups.                     |
+  | `groupLabel`  | `String`  | With `searchGroup`, collections whose label contains this text.          |
+
+  `term`, `id`, `ids` and `waPhoneIds` combine: a group must match all that are given.
+
+  ## Example response
+
+  `id` is `wa_group_<group id>` for a group and `group_<collection id>` for a collection.
+
+  ```json
+  {
+    "data": {
+      "waSearch": [
+        {
+          "id": "wa_group_5",
+          "waGroup": {
+            "id": "5",
+            "label": "Class 7 parents",
+            "bspId": "120363000000000002@g.us",
+            "lastCommunicationAt": "2026-11-16T09:31:40Z"
+          },
+          "group": null,
+          "waMessages": [
+            {
+              "id": "311",
+              "body": "Will the notes be shared today?",
+              "type": "TEXT",
+              "flow": "INBOUND",
+              "insertedAt": "2026-11-16T09:31:40Z",
+              "contact": { "id": "42", "name": "Meena" },
+              "waManagedPhone": { "id": "2", "phone": "910000000006" }
+            }
+          ]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

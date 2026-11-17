@@ -1,0 +1,96 @@
+info:
+  name: Publish a flow
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation publishFlow($uuid: UUID4!) {
+        publishFlow(uuid: $uuid) {
+          success
+          errors {
+            key
+            message
+            category
+            blocking
+            nodeUuid
+          }
+        }
+      }
+    variables: |-
+      {
+        "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
+      }
+  auth: inherit
+
+docs: |
+  Validates the flow's newest (draft) revision and publishes it, so contacts start running
+  it. The previously published revision is archived, the revision's version goes up by one,
+  the flow cache is refreshed and the keyword cache is cleared.
+
+  Validation returns two kinds of problem:
+
+  - **Blocking** (`blocking: true`): the flow uses something its channel can't run, such as a
+    WhatsApp template, a WhatsApp group action or a split by collection in a `WEB` flow, or a
+    sub-flow on another channel. Nothing is published.
+  - **Non-blocking** (`blocking: false`), with `category` `Warning` or `Critical`: for example
+    dangling nodes, missing translations, an empty flow, or contacts waiting on a node that
+    was deleted. **The flow is still published**, but the result has `success: false` and
+    lists them.
+
+  So `success: true` means published with no problems; `success: false` means check
+  `blocking` to see whether it was published.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type     | Required | Description                     |
+  | -------- | -------- | -------- | ------------------------------- |
+  | `uuid`   | `UUID4!` | Yes      | UUID of the flow to publish.    |
+
+  ## Example response
+
+  Published, with a warning:
+
+  ```json
+  {
+    "data": {
+      "publishFlow": {
+        "success": false,
+        "errors": [
+          {
+            "key": "0808cc85-a9dd-424c-bd5e-040fbbcc6d42",
+            "message": "Your flow has dangling nodes",
+            "category": "Warning",
+            "blocking": false,
+            "nodeUuid": null
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+  Published cleanly: `{ "success": true, "errors": null }`.
+
+  ## Errors
+
+  Each entry in `errors` is a `PublishFlowError`:
+
+  | Field      | Type       | Description                                                          |
+  | ---------- | ---------- | -------------------------------------------------------------------- |
+  | `key`      | `String!`  | What the problem is about: a node UUID (comma-separated for dangling nodes), a module name such as `Elixir.Glific.Flows.Flow`, or the kind of object. |
+  | `message`  | `String!`  | What's wrong.                                                        |
+  | `category` | `String!`  | `Warning` or `Critical`.                                             |
+  | `blocking` | `Boolean!` | `true` if the flow was not published because of it.                 |
+  | `nodeUuid` | `String`   | The node to fix, when known.                                         |
+
+  - No flow with this UUID in the organization: `success: false` and
+    `[{ "key": "Elixir.Glific.Flows.Flow", "message": "Resource not found", "category": "Critical", "blocking": false, "nodeUuid": null }]`.
+    Nothing is published.
+  - A database error while saving: one `Database Error` entry with `category: "Critical"`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,101 @@
+info:
+  name: List contact history
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contactHistory($filter: ContactsHistoryFilter, $opts: Opts) {
+        contactHistory(filter: $filter, opts: $opts) {
+          id
+          eventType
+          eventLabel
+          eventMeta
+          eventDatetime
+          channel
+          profile {
+            id
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "contactId": "12"
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists history events: opt-ins and opt-outs, flows started and ended, field, name and
+  language changes, collection changes and profile switches. Filter by `contactId` to get one
+  contact's timeline. A contact's full history is also available as the `history` field on a
+  contact.
+
+  Event types include `contact_opted_in`, `contact_opted_out`, `contact_flow_started`,
+  `contact_flow_ended`, `contact_flow_ended_all`, `contact_fields_updated`,
+  `contact_fields_reset`, `contact_name_updated`, `contact_language_updated`,
+  `contact_groups_updated` and `profile_switched`.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                    | Required | Description                                       |
+  | -------- | ----------------------- | -------- | ------------------------------------------------- |
+  | `filter` | `ContactsHistoryFilter` | No       | Narrows the list. All given fields must match.    |
+  | `opts`   | `Opts`                  | No       | Sorting and pagination. Sorts on `id` by default. |
+
+  ### `ContactsHistoryFilter`
+
+  | Field        | Type                 | Description                                 |
+  | ------------ | -------------------- | ------------------------------------------- |
+  | `contactId`  | `ID`                 | Events of this contact.                     |
+  | `profileId`  | `ID`                 | Events of this profile.                     |
+  | `eventType`  | `String`             | Event type contains this text.              |
+  | `eventLabel` | `String`             | Event label contains this text.             |
+  | `channel`    | `MessageChannelEnum` | Events that came from this channel.         |
+
+  ## Example response
+
+  `eventMeta` is a JSON-encoded string.
+
+  ```json
+  {
+    "data": {
+      "contactHistory": [
+        {
+          "id": "905",
+          "eventType": "contact_flow_started",
+          "eventLabel": "Flow Started",
+          "eventMeta": "{\"context_id\":5521,\"flow\":{\"id\":3,\"name\":\"Registration\",\"uuid\":\"5f3fd8c6-2ec3-4945-8e7c-314db8c04c31\"}}",
+          "eventDatetime": "2026-11-15T11:02:45Z",
+          "channel": "WHATSAPP",
+          "profile": null
+        },
+        {
+          "id": "881",
+          "eventType": "contact_opted_in",
+          "eventLabel": "contact opted in, via BSP",
+          "eventMeta": "{\"channel\":\"whatsapp\",\"method\":\"BSP\",\"utc_time\":\"2026-10-02T06:15:00Z\"}",
+          "eventDatetime": "2026-10-02T06:15:00Z",
+          "channel": "WHATSAPP",
+          "profile": null
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

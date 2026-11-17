@@ -1,0 +1,44 @@
+info:
+  name: Release the flow lock
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query flowRelease {
+        flowRelease {
+          id
+          name
+        }
+      }
+  auth: inherit
+
+docs: |
+  Releases the editing lock the current user's session holds, taken with **Lock a flow for
+  editing**, so others can edit that flow. It takes no arguments: a session holds at most one
+  lock.
+
+  **Role:** manager
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  Always returns `null`, whether or not a lock was held.
+
+  ```json
+  {
+    "data": {
+      "flowRelease": null
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

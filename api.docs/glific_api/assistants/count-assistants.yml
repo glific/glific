@@ -1,0 +1,46 @@
+info:
+  name: Count assistants
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countAssistants($filter: AssistantFilter) {
+        countAssistants(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "health"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's assistants that match a filter. Use it with **List assistants**
+  to build pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description                                                              |
+  | -------- | ----------------- | -------- | ------------------------------------------------------------------------ |
+  | `filter` | `AssistantFilter` | No       | Same fields as in **List assistants**. Without it, counts all assistants. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countAssistants": 3
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,32 @@
+info:
+  name: Get the organization name
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/session/name"
+
+docs: |
+  Returns the name and status of the organization the request host belongs to, so the login
+  page can show which account the user is signing in to. Internal: used by the Glific
+  frontend.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "name": "Glific",
+      "status": "active"
+    }
+  }
+  ```
+
+  ## Errors
+
+  None specific to this endpoint.

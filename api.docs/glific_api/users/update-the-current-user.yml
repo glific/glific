@@ -1,0 +1,88 @@
+info:
+  name: Update the current user
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateCurrentUser($input: CurrentUserInput!) {
+        updateCurrentUser(input: $input) {
+          user {
+            id
+            name
+            email
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "NGO Main Account",
+          "email": "admin@example.org",
+          "languageId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes the logged-in user's own name, email, language or password. To change the
+  password, send `password` together with an `otp` from **Authentication › Send an OTP**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description       |
+  | -------- | ------------------- | -------- | ----------------- |
+  | `input`  | `CurrentUserInput!` | Yes      | Fields to change. |
+
+  ### `CurrentUserInput`
+
+  | Field        | Type     | Description                                         |
+  | ------------ | -------- | --------------------------------------------------- |
+  | `name`       | `String` | Display name.                                       |
+  | `email`      | `String` | Email address.                                      |
+  | `languageId` | `ID`     | Interface language.                                 |
+  | `password`   | `String` | New password. Needs `otp`.                          |
+  | `otp`        | `String` | Code sent over WhatsApp to the user's phone.        |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateCurrentUser": {
+        "user": {
+          "id": "1",
+          "name": "NGO Main Account",
+          "email": "admin@example.org",
+          "language": { "id": "1", "label": "English" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Returned in `errors` with `user` set to `null`:
+
+  - The OTP is wrong, expired, unknown or blocked: `{ "key": "OTP", "message": "incorrect_code" }`
+    (or `code_expired`, `does_not_exist`, `attempt_blocked`).
+  - `password` without `otp`:
+    `{ "key": "password_confirmation", "message": "Password_confirmation: can't be blank" }`.
+  - An invalid email: `{ "key": "email", "message": "Email: has invalid format" }`.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

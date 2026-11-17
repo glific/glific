@@ -1,0 +1,72 @@
+info:
+  name: Get a prompt generation
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query promptGeneration($id: ID!) {
+        promptGeneration(id: $id) {
+          promptGeneration {
+            id
+            status
+            generatedPrompt
+            errorMessage
+            inputs
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "15"
+      }
+  auth: inherit
+
+docs: |
+  Returns a prompt generation request, to poll for its result after **Generate a system
+  prompt**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                     |
+  | -------- | ----- | -------- | ------------------------------- |
+  | `id`     | `ID!` | Yes      | The request to return.          |
+
+  ## Example response
+
+  `status` is `in_progress`, `ready` or `failed`. `generatedPrompt` is set when `ready`, and
+  `errorMessage` when `failed`. `inputs` holds the answers as submitted, for pre-filling
+  the form; it also contains the `organization_id` Glific adds to every mutation input.
+
+  ```json
+  {
+    "data": {
+      "promptGeneration": {
+        "promptGeneration": {
+          "id": "15",
+          "status": "ready",
+          "generatedPrompt": "You are Asha Sakhi, a caring assistant for the Sneha Foundation.\n\nROLE\nYour purpose is to support pregnant women and new mothers...",
+          "errorMessage": null,
+          "inputs": "{\"audience\":\"Women aged 18-35 in low-income urban settlements\",\"name\":\"Asha Sakhi, assistant for the Sneha Foundation\",\"organization_id\":1,\"purpose\":\"Answer questions about prenatal care and nutrition\",\"tone\":\"Warm and simple\"}"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The request does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.PromptGenerator.PromptGenerationRequest", "message": "Resource not found" }]`
+    and `promptGeneration` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

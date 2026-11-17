@@ -1,0 +1,58 @@
+info:
+  name: Get a contact upload report
+  type: graphql
+  seq: 17
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation getContactUploadReport($userJobId: ID) {
+        getContactUploadReport(userJobId: $userJobId) {
+          csvRows
+          error
+        }
+      }
+    variables: |-
+      {
+        "userJobId": "57"
+      }
+  auth: inherit
+
+docs: |
+  Returns the rows that failed in a finished **Import contacts** or **Move contacts** run, as
+  CSV text with a `Phone,Status` header. The job ID is in the "Contact Upload" notification the
+  import created. Although it only reads, this is a mutation.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type | Required | Description                                                      |
+  | ----------- | ---- | -------- | ---------------------------------------------------------------- |
+  | `userJobId` | `ID` | Yes\*    | The import's user job. \* Leaving it out gives a top-level error. |
+
+  ## Example response
+
+  Each line after the header is a phone (or a row-level key) and why it failed.
+
+  ```json
+  {
+    "data": {
+      "getContactUploadReport": {
+        "csvRows": "Phone,Status\r\n91987650,Phone number is not valid. Please enter the phone number with country code, without the + symbol.\r\n910000000002,Contact name is empty",
+        "error": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Returned in `error`, with `csvRows` set to `null`:
+
+  - `Contact upload is in progress`: the job hasn't finished.
+  - `Contact upload report doesn't exist`: no job has this ID.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

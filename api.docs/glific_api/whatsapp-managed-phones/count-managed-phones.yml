@@ -1,0 +1,45 @@
+info:
+  name: Count managed phones
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countWaManagedPhones($filter: WaManagedPhoneFilter) {
+        countWaManagedPhones(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "label": "field"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's managed phones that match a filter.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                                               |
+  | -------- | ---------------------- | -------- | ------------------------------------------------------------------------- |
+  | `filter` | `WaManagedPhoneFilter` | No       | Same fields as in **List managed phones**. Without it, counts all phones. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countWaManagedPhones": 3
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

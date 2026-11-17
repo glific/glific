@@ -1,0 +1,91 @@
+info:
+  name: Create a certificate template
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createCertificateTemplate($input: CertificateTemplateInput!) {
+        createCertificateTemplate(input: $input) {
+          certificateTemplate {
+            id
+            label
+            url
+            type
+            description
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "Course completion",
+          "url": "https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/edit#slide=id.p1",
+          "description": "Issued at the end of the 6-week course"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a certificate template. Before saving, Glific checks that the URL points to a
+  single Google Slides slide and fetches the presentation with the organization's Google
+  Slides credential to confirm it has access.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                        | Required | Description             |
+  | -------- | --------------------------- | -------- | ----------------------- |
+  | `input`  | `CertificateTemplateInput!` | Yes      | The template to create. |
+
+  ### `CertificateTemplateInput`
+
+  | Field         | Type                          | Required | Description                                                                         |
+  | ------------- | ----------------------------- | -------- | ----------------------------------------------------------------------------------- |
+  | `label`       | `String`                      | Yes      | Name, at most 40 characters. Unique in the organization.                            |
+  | `url`         | `String`                      | Yes      | Google Slides link ending in `#slide=id.<slide id>`.                                |
+  | `description` | `String`                      | No       | At most 150 characters.                                                             |
+  | `type`        | `CertificateTemplateTypeEnum` | No       | Only `SLIDES`, the default.                                                         |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createCertificateTemplate": {
+        "certificateTemplate": {
+          "id": "3",
+          "label": "Course completion",
+          "url": "https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/edit#slide=id.p1",
+          "type": "SLIDES",
+          "description": "Issued at the end of the 6-week course"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `certificateTemplate` set to `null`:
+
+  - A required field is missing: `{ "key": "label", "message": "Label: can't be blank" }`.
+  - The label is too long: `"Label: should be at most 40 character(s)"`; the description:
+    `"Description: should be at most 150 character(s)"`.
+  - The label is already used: `"Label: has already been taken"`.
+  - The URL is not a URL: `"Url: Invalid url"`.
+  - The URL is not a link to one slide: `"Url: Template url not a valid Google Slides url"`.
+  - Google refuses access: `"Url: Insufficient permissions to access this slide"`.
+  - The organization has no working Google Slides credential:
+    `"Url: Failed to get Google Slides goth token, please check Google Slides credentials"`.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

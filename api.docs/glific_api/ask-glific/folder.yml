@@ -1,0 +1,30 @@
+info:
+  name: Ask Glific
+  type: folder
+  seq: 85
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Ask Glific is the help chatbot inside the Glific app: staff ask how to use Glific and get
+    an answer. Conversations belong to the user who started them; no one else can read them.
+
+    The bot answers from one of two backends, picked per organization:
+
+    - **Dify** (default): Glific forwards the question to a Dify app.
+    - **Glific AI**, when the organization has the `glific_ai_enabled` flag: Glific's own
+      agent answers, routing each question to a skill (`knowledge` or `draft_hsm`).
+      Conversation IDs are then Glific IDs, and Dify history is not carried over.
+
+    Asking is asynchronous:
+
+    1. Open **Subscribe to Ask Glific answers** first.
+    2. **Ask Glific a question** returns at once with an empty answer and works in the
+       background.
+    3. The answer is pushed over the subscription to the user who asked. Send a `requestId`
+       with the question to recognise its answer.
+
+    Everything here needs the staff role. Ask Glific does not use Kaapi.
+  type: text/markdown

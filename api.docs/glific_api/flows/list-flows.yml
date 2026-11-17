@@ -1,0 +1,116 @@
+info:
+  name: List flows
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query flows($filter: FlowFilter, $opts: Opts) {
+        flows(filter: $filter, opts: $opts) {
+          id
+          uuid
+          name
+          description
+          keywords
+          ignoreKeywords
+          isActive
+          isBackground
+          isPinned
+          isTemplate
+          channel
+          versionNumber
+          lastPublishedAt
+          lastChangedAt
+          tag {
+            id
+            label
+          }
+          roles {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "isActive": true,
+          "isTemplate": false,
+          "nameOrKeywordOrTags": "help"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's flows, optionally filtered and paginated. Each flow carries
+  `lastPublishedAt` (when its current published revision was created) and `lastChangedAt`
+  (when its newest revision was saved).
+
+  **Role:** staff
+
+  When the organization has role-based access control on, users without the Admin, Manager or
+  Staff access role only get the flows assigned to one of their roles.
+
+  ## Arguments
+
+  | Argument | Type         | Required | Description                                    |
+  | -------- | ------------ | -------- | ---------------------------------------------- |
+  | `filter` | `FlowFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`       | No       | Sorting and pagination. Sorts on `name` by default, then newest revision first. |
+
+  ### `FlowFilter`
+
+  | Field                 | Type                 | Description                                                         |
+  | --------------------- | -------------------- | ------------------------------------------------------------------- |
+  | `name`                | `String`             | Name contains this text (case-insensitive).                         |
+  | `nameOrKeywordOrTags` | `String`             | Name contains this text. When `isActive` and `isTemplate` are also given, also matches flows with this exact keyword or whose tag label contains it. |
+  | `keyword`             | `String`             | Flow has this exact keyword.                                        |
+  | `tagIds`              | `[Int]`              | Flow's tag is one of these.                                         |
+  | `uuid`                | `UUID4`              | Flow's UUID.                                                        |
+  | `status`              | `String`             | Flow has a revision with this status: `published`, `draft` or `archived`. |
+  | `channel`             | `MessageChannelEnum` | `WHATSAPP` or `WEB`.                                                |
+  | `isActive`            | `Boolean`            | Only active or only inactive flows.                                 |
+  | `isTemplate`          | `Boolean`            | Only template flows or only regular ones.                           |
+  | `isBackground`        | `Boolean`            | Only background flows or only foreground ones.                      |
+  | `isPinned`            | `Boolean`            | Only pinned or only unpinned flows.                                 |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "flows": [
+        {
+          "id": "3",
+          "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+          "name": "Help Workflow",
+          "description": null,
+          "keywords": ["help", "मदद"],
+          "ignoreKeywords": true,
+          "isActive": true,
+          "isBackground": false,
+          "isPinned": false,
+          "isTemplate": false,
+          "channel": "WHATSAPP",
+          "versionNumber": "13.1.0",
+          "lastPublishedAt": "2026-11-10T07:12:44Z",
+          "lastChangedAt": "2026-11-14T11:03:09Z",
+          "tag": null,
+          "roles": []
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

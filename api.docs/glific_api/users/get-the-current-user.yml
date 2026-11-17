@@ -1,0 +1,80 @@
+info:
+  name: Get the current user
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query currentUser {
+        currentUser {
+          user {
+            id
+            name
+            phone
+            email
+            roles
+            language {
+              id
+              label
+              locale
+            }
+            contact {
+              id
+              name
+            }
+            organization {
+              id
+              name
+            }
+            accessRoles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: ""
+  auth: inherit
+
+docs: |
+  Returns the logged-in user: the owner of the access token.
+
+  **Role:** staff
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "currentUser": {
+        "user": {
+          "id": "1",
+          "name": "NGO Main Account",
+          "phone": "917834811114",
+          "email": null,
+          "roles": ["Admin"],
+          "language": { "id": "1", "label": "English", "locale": "en" },
+          "contact": { "id": "1", "name": "NGO Main Account" },
+          "organization": { "id": "1", "name": "Glific" },
+          "accessRoles": [{ "id": "1", "label": "Admin" }]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

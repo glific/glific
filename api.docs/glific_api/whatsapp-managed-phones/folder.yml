@@ -1,0 +1,30 @@
+info:
+  name: WhatsApp Managed Phones
+  type: folder
+  seq: 73
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Managed phones are the WhatsApp numbers linked to the organization's Maytapi account.
+    Glific reaches WhatsApp groups only through them: they create groups, send group messages
+    and add or remove members. Each managed phone also has a contact (its own number).
+
+    Managed phones are not created through the API. They are added when Glific pulls the
+    phones from Maytapi, which **WhatsApp Groups › Sync WhatsApp groups from Maytapi** does.
+
+    `status` is the phone's Maytapi status, such as `active`, `loading`, `qr-screen` or
+    `idle`. Only `active` and `loading` count as healthy. Glific keeps it current from
+    Maytapi's status webhook and from **Refresh managed phone statuses**. When a phone turns
+    unhealthy, Glific creates a critical "WhatsApp Groups" notification. To bring a phone
+    back, run **Reconnect a managed phone**, then show the QR code from **Get a managed phone's
+    login screen** and scan it with the phone.
+
+    Listing phones and refreshing statuses need the manager role; reconnecting needs the admin
+    role.
+
+    Related folders: **WhatsApp Groups** (primary phone per group) and **WhatsApp Group
+    Collections**.
+  type: text/markdown

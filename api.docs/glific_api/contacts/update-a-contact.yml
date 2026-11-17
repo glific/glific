@@ -1,0 +1,83 @@
+info:
+  name: Update a contact
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateContact($id: ID!, $input: ContactInput) {
+        updateContact(id: $id, input: $input) {
+          contact {
+            id
+            name
+            status
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "131",
+        "input": {
+          "name": "Asha P.",
+          "languageId": "2"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a contact. Only the fields given in `input` change. This is also how a contact is
+  blocked (`status: BLOCKED`) and unblocked (`status: VALID`); a blocked contact gets no
+  messages and is hidden from contact lists.
+
+  Blocking a simulator contact succeeds without changing anything. Changes to the contact's
+  consent and session state are copied to its WhatsApp identity.
+
+  **Role:** staff. A restricted staff user can only change contacts in their own collections.
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                                                 |
+  | -------- | -------------- | -------- | --------------------------------------------------------------------------- |
+  | `id`     | `ID!`          | Yes      | The contact to change.                                                      |
+  | `input`  | `ContactInput` | No       | Fields to change. See **Create a contact** for the list. `phone`, `channel` and `identifier` can't be changed here. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateContact": {
+        "contact": {
+          "id": "131",
+          "name": "Asha P.",
+          "status": "VALID",
+          "language": { "id": "2", "label": "Hindi" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - `fields` has a value that isn't an object:
+    `{ "key": "fields", "message": "Fields: value should be a map" }`.
+  - `input` sets `phone`, `channel` or `identifier`: a top-level error
+    `Cannot modify read-only fields`.
+  - A restricted staff user changes a contact outside their collections: a top-level error
+    `Something unexpected has happened, ...`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

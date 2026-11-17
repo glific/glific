@@ -1,0 +1,38 @@
+info:
+  name: Contacts
+  type: folder
+  seq: 10
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Contacts are the people an organization talks to. A contact reaches the organization on
+    one or more channels, recorded as **identities**: its WhatsApp phone number (`WHATSAPP`)
+    and any web channel usernames (`WEB`). A contact made on the web channel can have no phone
+    at all. A phone, once set, can't be removed or changed through the API.
+
+    Key concepts:
+
+    - **Status** (`VALID`, `INVALID`, `BLOCKED`, `FAILED`, `PROCESSING`): whether messages can
+      be sent. Blocking is an **Update a contact** with `status: BLOCKED`; unblocking sets it
+      back to `VALID`. Lists and counts hide blocked contacts unless you filter by `status`.
+    - **BSP status** (`SESSION_AND_HSM`, `SESSION`, `HSM`, `NONE`): which kinds of WhatsApp
+      message can be sent now, based on the 24-hour session window and opt-in.
+    - **Opt-in and opt-out**: recorded with `optinTime`, `optinMethod`, `optoutTime` and
+      `optoutMethod`, and in the contact's history.
+    - **Fields**: per-contact values keyed by a contact field's shortcode (see **Contact
+      Fields**), returned as a JSON-encoded string.
+    - **History**: a log of events such as opt-ins, flow starts and field changes.
+    - **Simulator contacts**: each organization has a few contacts whose phone starts with
+      `9876543210`. Users borrow one to test flows; they can't be blocked or deleted.
+
+    Reading contacts needs the staff role; creating, deleting, opting in, importing and
+    looking up by identity need the manager role. A staff user always gets `phone` as `""`
+    and `identities` as `[]`, and a restricted staff user only sees contacts in the
+    collections they belong to.
+
+    See also **Contact Groups** and **Groups** (collections), **Contact Tags**, **Contact
+    Fields** and **Locations**.
+  type: text/markdown

@@ -1,0 +1,60 @@
+info:
+  name: Delete a role
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteAccessRole($id: ID!) {
+        deleteAccessRole(id: $id) {
+          accessRole {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "6"
+      }
+  auth: inherit
+
+docs: |
+  Deletes an access role and detaches it from every user, flow, group and trigger. Reserved
+  roles are not protected.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The role to delete. |
+
+  ## Example response
+
+  On success both fields are `null`: the deleted role is not returned.
+
+  ```json
+  {
+    "data": {
+      "deleteAccessRole": {
+        "accessRole": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The role does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.AccessControl.Role", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

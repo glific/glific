@@ -1,0 +1,63 @@
+info:
+  name: Delete the organization's test data
+  type: graphql
+  seq: 7
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteOrganizationTestData($id: ID!) {
+        deleteOrganizationTestData(id: $id) {
+          organization {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "1"
+      }
+  auth: inherit
+
+docs: |
+  Deletes every message of the logged-in user's organization, and every contact that is not a
+  user or the organization's own contact. Use it to clear test conversations before going live.
+  It cannot be undone. The `id` argument is required but ignored: the caller's own
+  organization is always the one cleared.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                      |
+  | -------- | ----- | -------- | -------------------------------- |
+  | `id`     | `ID!` | Yes      | Ignored. Kept for compatibility. |
+
+  ## Example response
+
+  The resolver returns the organization without wrapping it in the result object, so on success
+  both fields come back `null`.
+
+  ```json
+  {
+    "data": {
+      "deleteOrganizationTestData": {
+        "organization": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the glific_admin role gets a top-level `Unauthorized` error.

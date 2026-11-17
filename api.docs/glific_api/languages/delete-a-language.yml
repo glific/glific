@@ -1,0 +1,64 @@
+info:
+  name: Delete a language
+  type: graphql
+  seq: 6
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteLanguage($id: ID!) {
+        deleteLanguage(id: $id) {
+          language {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "21"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a language from the global list.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The language to delete. |
+
+  ## Example response
+
+  On success both fields are `null`: the resolver does not return the deleted language.
+
+  ```json
+  {
+    "data": {
+      "deleteLanguage": {
+        "language": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The language does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Settings.Language 21", "message": "Resource not found" }]`.
+  - Tags still use the language: `errors` has the key `tags_language_id_fkey`. Contacts,
+    users, templates and organizations that use it also block the delete, but with a
+    top-level error.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

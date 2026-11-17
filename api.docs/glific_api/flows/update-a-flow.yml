@@ -1,0 +1,83 @@
+info:
+  name: Update a flow
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateFlow($id: ID!, $input: FlowInput) {
+        updateFlow(id: $id, input: $input) {
+          flow {
+            id
+            name
+            keywords
+            ignoreKeywords
+            isActive
+            isPinned
+            roles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "28",
+        "input": {
+          "name": "School Registration 2026",
+          "keywords": ["register", "enrol"],
+          "isPinned": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a flow's settings. Only the fields given in `input` change; the definition is
+  edited in the flow editor. Setting `isActive: false` ends every contact's run of the flow
+  straight away.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type        | Required | Description                                                       |
+  | -------- | ----------- | -------- | ----------------------------------------------------------------- |
+  | `id`     | `ID!`       | Yes      | The flow to change.                                               |
+  | `input`  | `FlowInput` | No       | Fields to change. See **Create a flow** for the list. `channel` can't change. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateFlow": {
+        "flow": {
+          "id": "28",
+          "name": "School Registration 2026",
+          "keywords": ["register", "enrol"],
+          "ignoreKeywords": false,
+          "isActive": true,
+          "isPinned": true,
+          "roles": []
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Flows.Flow", "message": "Resource not found" }]`.
+  - `channel` differs from the flow's channel:`{ "key": "channel", "message": "Channel: cannot be changed after the flow is created" }`.
+  - The name or a keyword is taken: the same errors as **Create a flow**.
+  - A user without the manager role gets a top-level `Unauthorized` error.

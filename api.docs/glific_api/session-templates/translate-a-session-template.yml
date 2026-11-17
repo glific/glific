@@ -1,0 +1,91 @@
+info:
+  name: Translate a session template
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation translateSessionTemplate(
+        $templateId: ID!
+        $languageId: ID!
+        $body: String
+        $footer: String
+        $buttons: [String]
+      ) {
+        translateSessionTemplate(
+          templateId: $templateId
+          languageId: $languageId
+          body: $body
+          footer: $footer
+          buttons: $buttons
+        ) {
+          body
+          footer
+          buttons
+          sourceLanguage {
+            id
+            label
+            locale
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "templateId": "12",
+        "languageId": "2",
+        "body": "Hi {{1}}, your order {{2}} has shipped.",
+        "footer": "Reply STOP to opt out",
+        "buttons": ["Track order"]
+      }
+  auth: inherit
+
+docs: |
+  Machine-translates draft text for a new language version of an HSM template, using Google
+  Translate. The source language is the language of the template given by `templateId`. It
+  returns the translated strings only; nothing is saved. Pass the result to **Create a session
+  template** to submit the new language.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument     | Type       | Required | Description                                              |
+  | ------------ | ---------- | -------- | -------------------------------------------------------- |
+  | `templateId` | `ID!`      | Yes      | The existing template whose language is the source.      |
+  | `languageId` | `ID!`      | Yes      | The language to translate into.                          |
+  | `body`       | `String`   | No       | Body text to translate.                                  |
+  | `footer`     | `String`   | No       | Footer text. If omitted, `footer` comes back `null`.     |
+  | `buttons`    | `[String]` | No       | Button texts, translated in order.                       |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "translateSessionTemplate": {
+        "body": "नमस्ते {{1}}, आपका ऑर्डर {{2}} भेज दिया गया है।",
+        "footer": "ऑप्ट आउट करने के लिए STOP लिखें",
+        "buttons": ["ऑर्डर ट्रैक करें"],
+        "sourceLanguage": { "id": "1", "label": "English", "locale": "en" },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as top-level errors:
+
+  - The template or the language does not exist: `Resource not found`.
+  - The target language is the template's own language:
+    `Source and target language cannot be the same.`
+  - Google Translate fails: its error message.
+  - A user without the staff role gets `Unauthorized`.

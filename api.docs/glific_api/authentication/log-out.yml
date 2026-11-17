@@ -1,0 +1,29 @@
+info:
+  name: Log out
+  type: http
+  seq: 3
+
+http:
+  method: DELETE
+  url: "{{api_url}}/v1/session"
+  auth: inherit
+
+docs: |
+  Ends the session of the access token in the `authorization` header: the access token and
+  its renewal token stop working, and the user's open subscription socket is disconnected.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {}
+  }
+  ```
+
+  ## Errors
+
+  None. A missing, invalid or expired token still gets `200` with an empty `data` object.

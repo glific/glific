@@ -1,0 +1,70 @@
+info:
+  name: Resume a contact's flow
+  type: graphql
+  seq: 20
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: Json) {
+        resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "flowId": "14",
+        "contactId": "26",
+        "result": "{\"payment\": {\"status\": \"paid\", \"amount\": 500}}"
+      }
+  auth: inherit
+
+docs: |
+  Resumes a contact's flow that is paused at a "wait for result" node, for example while an
+  external system processes something. `result` is merged into the run's results, readable
+  in the flow as `@results.<key>`, and the flow carries on from that node.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument    | Type   | Required | Description                                                       |
+  | ----------- | ------ | -------- | ----------------------------------------------------------------- |
+  | `flowId`    | `ID!`  | Yes      | The flow the contact is waiting in.                               |
+  | `contactId` | `ID!`  | Yes      | The contact to resume.                                            |
+  | `result`    | `Json` | Yes      | A JSON-encoded object to add to the results. Pass `"{}"` for none. The schema marks it optional, but the call fails without it. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "resumeContactFlow": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact has no run of this flow waiting for a result. Note that `success` is still
+    `true`:
+
+    ```json
+    {
+      "success": true,
+      "errors": [{ "key": "Flow", "message": "26 does not have any active flows awaiting results." }]
+    }
+    ```
+
+  - The contact does not exist in the organization:
+    `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.
