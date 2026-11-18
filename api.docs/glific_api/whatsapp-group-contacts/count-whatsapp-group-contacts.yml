@@ -1,0 +1,45 @@
+info:
+  name: Count WhatsApp group contacts
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countContactWaGroup($filter: ContactWaGroupFilter) {
+        countContactWaGroup(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "waGroupId": "2"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts WhatsApp group member rows that match a filter, such as the members of one group.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                                                         |
+  | -------- | ---------------------- | -------- | ----------------------------------------------------------------------------------- |
+  | `filter` | `ContactWaGroupFilter` | No       | Same fields as in **List WhatsApp group contacts**. Without it, counts every row. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countContactWaGroup": 48
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

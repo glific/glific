@@ -1,0 +1,57 @@
+info:
+  name: Get a location
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query location($id: ID!) {
+        location(id: $id) {
+          location {
+            latitude
+            longitude
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4"
+      }
+  auth: inherit
+
+docs: |
+  Returns one location by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The location to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "location": {
+        "location": { "latitude": 18.5204, "longitude": 73.8567 },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The location does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.Location", "message": "Resource not found" }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,26 @@
+info:
+  name: Contact Fields
+  type: folder
+  seq: 11
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Contact fields are the custom variables an organization stores on contacts, such as
+    `age_group` or `district`. This folder manages the registry of fields; the values live in
+    each contact's `fields` (see **Contacts**), and flows read them as
+    `@contact.fields.<shortcode>`.
+
+    A field has a `name` (its label), a `shortcode` (stored in snake_case), a `valueType`
+    (`TEXT`, `INTEGER`, `NUMBER`, `BOOLEAN` or `DATE`) and a `scope`: `CONTACT` fields belong
+    to contacts, `WA_GROUP` fields to WhatsApp groups (`@wa_group.fields.<shortcode>`), and
+    `GLOBALS` to the organization. Names and shortcodes are unique within a scope.
+
+    Renaming, merging or deleting a field can rewrite the stored values on every contact or
+    WhatsApp group in the organization. Flows and imports also create fields automatically when
+    they save a value to a new shortcode.
+
+    Every operation here needs the manager role.
+  type: text/markdown

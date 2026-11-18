@@ -1,0 +1,77 @@
+info:
+  name: Sync a sheet
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation syncSheet($id: ID!) {
+        syncSheet(id: $id) {
+          sheet {
+            id
+            label
+            lastSyncedAt
+            syncStatus
+            failureReason
+            sheetDataCount
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Re-reads a sheet from Google now and replaces its stored rows, instead of waiting for the
+  daily auto-sync. The read and replace happen in one transaction, so a failed sync keeps the
+  previous rows. After a successful sync, a background job checks any media URLs in the rows.
+  `WRITE` sheets aren't synced: the call returns the sheet unchanged.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description        |
+  | -------- | ----- | -------- | ------------------ |
+  | `id`     | `ID!` | Yes      | The sheet to sync. |
+
+  ## Example response
+
+  A failed sync is not an error: the sheet comes back with `syncStatus: "FAILED"` and the
+  reason, and a notification is posted.
+
+  ```json
+  {
+    "data": {
+      "syncSheet": {
+        "sheet": {
+          "id": "2",
+          "label": "School directory",
+          "lastSyncedAt": "2026-11-16T09:30:00Z",
+          "syncStatus": "SUCCESS",
+          "failureReason": null,
+          "sheetDataCount": 251
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  Typical `failureReason` values: `Repeated or missing headers`, `Unknown error or empty
+  content`, `Sheet is not accessible or not found.`
+
+  ## Errors
+
+  - The sheet does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Sheets.Sheet", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

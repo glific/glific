@@ -1,0 +1,70 @@
+info:
+  name: Browse the template library
+  type: graphql
+  seq: 15
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query templateLibrary {
+        templateLibrary {
+          elementName
+          category
+          body
+          languageCode
+          industry
+          topic
+          usecase
+          containerMeta
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns Meta's library of pre-approved WhatsApp templates, fetched live from Gupshup, to
+  prefill a new HSM template. Nothing is saved. The list holds only `UTILITY` templates in the
+  organization's active languages, without the `PAYMENTS` and `ORDER_MANAGEMENT` topics. It
+  is cached per organization for 20 minutes.
+
+  **Role:** staff. Needs the `is_template_library_enabled` feature flag.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `containerMeta` is a `Json` value (the template's header, footer and buttons as Gupshup
+  describes them), returned as a JSON-encoded string.
+
+  ```json
+  {
+    "data": {
+      "templateLibrary": [
+        {
+          "elementName": "appointment_reminder_1",
+          "category": "UTILITY",
+          "body": "Hi {{1}}, this is a reminder of your appointment on {{2}} at {{3}}.",
+          "languageCode": "en",
+          "industry": "HEALTH",
+          "topic": "APPOINTMENT",
+          "usecase": "APPOINTMENT_REMINDER",
+          "containerMeta": "{\"buttons\":[{\"type\":\"QUICK_REPLY\",\"text\":\"Confirm\"}]}"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as top-level errors:
+
+  - The flag is off: `Template Library is not enabled for the organization.`
+  - Gupshup's call fails: the BSP response.
+  - The organization is on Gupshup Enterprise: `Feature not available`.
+  - A user without the staff role gets `Unauthorized`.

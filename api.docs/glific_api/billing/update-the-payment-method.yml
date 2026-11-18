@@ -1,0 +1,64 @@
+info:
+  name: Update the payment method
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updatePaymentMethod($stripePaymentMethodId: String!) {
+        updatePaymentMethod(stripePaymentMethodId: $stripePaymentMethodId) {
+          billing {
+            id
+            stripeCustomerId
+            stripePaymentMethodId
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "stripePaymentMethodId": "pm_xxx"
+      }
+  auth: inherit
+
+docs: |
+  Attaches a new card to the organization's Stripe customer, makes it the default for
+  invoices, and stores it on the active billing record.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument                | Type      | Required | Description                                   |
+  | ----------------------- | --------- | -------- | --------------------------------------------- |
+  | `stripePaymentMethodId` | `String!` | Yes      | Stripe payment method from Stripe Elements.   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updatePaymentMethod": {
+        "billing": {
+          "id": "1",
+          "stripeCustomerId": "cus_xxx",
+          "stripePaymentMethodId": "pm_xxx"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Stripe rejects the payment method, or the record cannot be saved
+    (`"Error while saving details"`): a top-level error.
+  - The organization has no active billing record: a top-level error.
+  - A user without the admin role gets a top-level `Unauthorized` error.

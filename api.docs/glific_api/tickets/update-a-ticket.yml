@@ -1,0 +1,74 @@
+info:
+  name: Update a ticket
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateTicket($id: ID!, $input: TicketInput) {
+        updateTicket(id: $id, input: $input) {
+          ticket {
+            id
+            status
+            remarks
+            user {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12",
+        "input": {
+          "status": "closed",
+          "remarks": "Certificate resent on WhatsApp"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a ticket, such as closing it or reassigning it. Only the fields given in `input`
+  change.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description                                         |
+  | -------- | ------------- | -------- | --------------------------------------------------- |
+  | `id`     | `ID!`         | Yes      | The ticket to change.                               |
+  | `input`  | `TicketInput` | No       | Fields to change. See **Create a ticket** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateTicket": {
+        "ticket": {
+          "id": "12",
+          "status": "closed",
+          "remarks": "Certificate resent on WhatsApp",
+          "user": { "id": "1", "name": "NGO Main Account" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The ticket does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Tickets.Ticket", "message": "Resource not found" }]`.
+  - The new user does not exist: `{ "key": "user_id", "message": "User_id: does not exist" }`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

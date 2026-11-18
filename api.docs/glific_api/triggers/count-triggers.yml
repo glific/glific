@@ -1,0 +1,49 @@
+info:
+  name: Count triggers
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countTriggers($filter: TriggerFilter) {
+        countTriggers(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "help"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's triggers that match a filter. Use it with **List triggers** to
+  build pagination.
+
+  **Role:** manager
+
+  Only the `name` filter applies here: `flow` is ignored, so a count with `flow` set counts
+  every trigger. Role-based access control is not applied either.
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                          |
+  | -------- | --------------- | -------- | ---------------------------------------------------- |
+  | `filter` | `TriggerFilter` | No       | See **List triggers**. Without it, counts all triggers. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countTriggers": 3
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

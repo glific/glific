@@ -1,0 +1,75 @@
+info:
+  name: List saved searches
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query savedSearches($filter: SavedSearchFilter, $opts: Opts) {
+        savedSearches(filter: $filter, opts: $opts) {
+          id
+          label
+          shortcode
+          args
+          isReserved
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "isReserved": false
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's saved searches, optionally filtered and paginated.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description                                    |
+  | -------- | ------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `SavedSearchFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`              | No       | Sorting and pagination. `orderWith` defaults to `label`. |
+
+  ### `SavedSearchFilter`
+
+  | Field        | Type      | Description                                        |
+  | ------------ | --------- | -------------------------------------------------- |
+  | `label`      | `String`  | Label contains this text (case-insensitive).       |
+  | `shortcode`  | `String`  | Shortcode is exactly this.                         |
+  | `isReserved` | `Boolean` | Only reserved or only organization-defined searches. |
+
+  ## Example response
+
+  `args` is a `Json` string holding the stored search arguments.
+
+  ```json
+  {
+    "data": {
+      "savedSearches": [
+        {
+          "id": "9",
+          "label": "Parents asking about sessions",
+          "shortcode": "parent_sessions",
+          "args": "{\"messageOpts\":{\"offset\":0,\"limit\":20},\"filter\":{\"term\":\"session\",\"includeGroups\":[\"2\"]},\"contactOpts\":{\"offset\":0,\"limit\":25}}",
+          "isReserved": false
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,47 @@
+info:
+  name: Count contact history
+  type: graphql
+  seq: 12
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countContactHistory($filter: ContactsHistoryFilter) {
+        countContactHistory(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "contactId": "12",
+          "eventType": "flow"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts history events that match a filter. Use it with **List contact history** to build
+  pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                    | Required | Description                                                            |
+  | -------- | ----------------------- | -------- | ---------------------------------------------------------------------- |
+  | `filter` | `ContactsHistoryFilter` | No       | Same fields as in **List contact history**. Without it, counts every event in the organization. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countContactHistory": 14
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

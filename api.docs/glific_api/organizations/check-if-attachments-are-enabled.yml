@@ -1,0 +1,40 @@
+info:
+  name: Check if attachments are enabled
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query attachmentsEnabled {
+        attachmentsEnabled
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns `true` when the logged-in user's organization has Google Cloud Storage set up, which
+  staff need in order to send media attachments from the chat window.
+
+  **Role:** staff
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "attachmentsEnabled": true
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

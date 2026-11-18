@@ -1,0 +1,76 @@
+info:
+  name: Send a message in a WhatsApp group
+  type: graphql
+  seq: 13
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation sendMessageInWaGroup($input: WaMessageInput!) {
+        sendMessageInWaGroup(input: $input) {
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "waGroupId": "5",
+          "message": "Today's class notes are attached in the drive folder.",
+          "type": "TEXT"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Posts a message in a WhatsApp group through Maytapi (not the BSP; no 24-hour window
+  applies). Glific picks the sending phone itself: the group's primary managed phone, or a
+  backup phone in the group if the primary is not active, promoting it to primary. The sent
+  message is pushed to **Subscribe to sent WhatsApp group messages**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description          |
+  | -------- | ----------------- | -------- | -------------------- |
+  | `input`  | `WaMessageInput!` | Yes      | The message to post. |
+
+  ### `WaMessageInput`
+
+  | Field              | Type              | Required | Description                                                      |
+  | ------------------ | ----------------- | -------- | ---------------------------------------------------------------- |
+  | `waGroupId`        | `ID`              | Yes      | The WhatsApp group.                                              |
+  | `message`          | `String`          | No       | Text of the message, or the caption for media.                   |
+  | `type`             | `MessageTypeEnum` | No       | Defaults to `TEXT`. For media, also pass `mediaId`.              |
+  | `mediaId`          | `ID`              | No       | Message media to send.                                           |
+  | `pollId`           | `Int`             | No       | A WhatsApp poll to send; its text and options replace `message` and `type`. |
+  | `waManagedPhoneId` | `ID`              | No       | Ignored: the sending phone is chosen as described above.        |
+
+  ## Example response
+
+  The result carries only `errors`; read the sent message from the subscription.
+
+  ```json
+  {
+    "data": {
+      "sendMessageInWaGroup": {
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The WhatsApp group does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.WAGroup", "message": "Resource not found" }]`.
+  - No phone in the group is active: top-level error `No active phones are linked to this
+    group. Reconnect a phone or add a backup before sending.`
+  - The backup phone could not be promoted: top-level error `Could not switch to a backup
+    phone right now. Please retry.`
+  - A user without the staff role gets a top-level `Unauthorized` error.

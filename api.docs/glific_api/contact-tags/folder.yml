@@ -1,0 +1,17 @@
+info:
+  name: Contact Tags
+  type: folder
+  seq: 13
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A contact tag attaches one **Tag** to one contact, such as marking a contact as `Child`
+    or `Help needed`. A contact's tags are read through the `tags` field on a contact (see
+    **Contacts**), and lists can filter on them with `includeTags`.
+
+    Tagging a contact that already has the tag is not an error. Both operations here need the
+    staff role. To define the tags themselves, see **Tags**.
+  type: text/markdown

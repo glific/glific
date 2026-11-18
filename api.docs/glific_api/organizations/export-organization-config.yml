@@ -1,0 +1,64 @@
+info:
+  name: Export organization config
+  type: graphql
+  seq: 14
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query organizationExportConfig {
+        organizationExportConfig {
+          data
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Returns the column schema of every exportable table, for setting up a sync of
+  **Export organization data** (the types use Airbyte names). It holds no organization data.
+
+  **Role:** admin
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `data` is JSON: one entry per table mapping each column to `[type, default]`, plus the lists
+  `tables` (exportable tables) and `config` (shared tables: `languages`, `providers`).
+  Shortened:
+
+  ```json
+  {
+    "data": {
+      "organizationExportConfig": {
+        "data": {
+          "contacts": {
+            "schema": {
+              "id": ["integer", "nextval('contacts_id_seq'::regclass)"],
+              "name": ["character varying", null],
+              "fields": ["object", "'{}'::jsonb"],
+              "updated_at": ["timestamp_without_timezone", null]
+            }
+          },
+          "tables": ["contacts", "messages", "messages_media", "locations", "flows", "flow_results", "groups", "interactive_templates", "organizations", "organization_data", "profiles"],
+          "config": ["languages", "providers"]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the admin role gets a top-level `Unauthorized` error.

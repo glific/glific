@@ -1,0 +1,82 @@
+info:
+  name: Import contacts into a WhatsApp group
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation importWaGroupContacts($waGroupId: ID!, $type: ImportContactsTypeEnum!, $data: String!) {
+        importWaGroupContacts(waGroupId: $waGroupId, type: $type, data: $data) {
+          status
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "waGroupId": "2",
+        "type": "DATA",
+        "data": "phone,name\n910000000007,Asha\n910000000009,Ravi\n"
+      }
+  auth: inherit
+
+docs: |
+  Adds members to a WhatsApp group from a CSV, in the background. Returns as soon as the work
+  is queued.
+
+  For each row, Glific creates the contact if it doesn't exist (applying `name` when given),
+  then adds the number to the group on WhatsApp through Maytapi, sending from a managed phone
+  that is an admin of the group. Numbers already in the group are skipped, so running the
+  same import again is safe. Rows are processed in chunks of 100, with the Maytapi calls a
+  couple of seconds apart.
+
+  The import is tracked as an upload job. A "WA Group Member Upload" notification is created
+  when it starts and another when it completes; the notification's `entity` holds the
+  `user_job_id`. Pass it to `getContactUploadReport` (in **Contacts**) to get a CSV of the
+  numbers that failed (`Phone,Status`), such as `This number isn't on WhatsApp.` or
+  `Phone number is missing.`
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument    | Type                      | Required | Description                                                    |
+  | ----------- | ------------------------- | -------- | -------------------------------------------------------------- |
+  | `waGroupId` | `ID!`                     | Yes      | The WhatsApp group.                                            |
+  | `type`      | `ImportContactsTypeEnum!` | Yes      | Where the CSV comes from: `DATA`, `URL` or `FILE_PATH`.        |
+  | `data`      | `String!`                 | Yes      | The CSV text, its URL, or a file path on the server, per `type`. |
+
+  The CSV has a `phone` column and an optional `name` column, and must be UTF-8. A `URL` must
+  return the CSV with HTTP status 200.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "importWaGroupContacts": {
+        "status": "WA group member import is in progress",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The group does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.WAGroup", "message": "Resource not found" }]`.
+  - These come back as a top-level error, with nothing queued:
+    - The CSV is not valid UTF-8, such as `Line 2 is not valid UTF-8 (...)`.
+    - The URL can't be downloaded: `Could not download the CSV from the given URL.`
+    - The file can't be read: `Could not read the CSV file.`
+    - `data` is empty: `Please specify exactly one of: file_path, url or data`.
+    - A user without the admin role gets `Unauthorized`.
+
+  When none of the organization's phones is a group admin, the import still starts, and
+  every number is reported as failed with that reason.

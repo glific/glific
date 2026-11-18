@@ -1,0 +1,115 @@
+info:
+  name: Get a WhatsApp group
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waGroup($id: ID!) {
+        waGroup(id: $id) {
+          waGroup {
+            id
+            label
+            bspId
+            lastCommunicationAt
+            fields
+            primaryPhone {
+              id
+              phone
+              status
+            }
+            phones {
+              id
+              isPrimary
+              isActive
+              waManagedPhone {
+                id
+                phone
+                status
+              }
+            }
+            contacts {
+              id
+              name
+              phone
+            }
+            groups {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Returns one WhatsApp group by ID, with its phone memberships, members and collections.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                   |
+  | -------- | ----- | -------- | ----------------------------- |
+  | `id`     | `ID!` | Yes      | The WhatsApp group to return. |
+
+  `phones` lists every managed-phone membership, active and inactive. `isActive` is `false`
+  once the phone has left the group. At most one membership has `isPrimary: true`;
+  `primaryPhone` is that membership's phone while it is active, otherwise `null`.
+  `contacts` are the group's members as last synced.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waGroup": {
+        "waGroup": {
+          "id": "2",
+          "label": "Pune volunteers",
+          "bspId": "120363000000000001@g.us",
+          "lastCommunicationAt": "2026-11-14T08:12:40Z",
+          "fields": "{}",
+          "primaryPhone": { "id": "1", "phone": "910000000001", "status": "active" },
+          "phones": [
+            {
+              "id": "4",
+              "isPrimary": true,
+              "isActive": true,
+              "waManagedPhone": { "id": "1", "phone": "910000000001", "status": "active" }
+            },
+            {
+              "id": "9",
+              "isPrimary": false,
+              "isActive": true,
+              "waManagedPhone": { "id": "2", "phone": "910000000008", "status": "loading" }
+            }
+          ],
+          "contacts": [
+            { "id": "31", "name": "Asha", "phone": "910000000007" },
+            { "id": "32", "name": null, "phone": "910000000009" }
+          ],
+          "groups": [{ "id": "3", "label": "Default WA Group Collection" }]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The group does not exist in the organization: `waGroup` is `null` and `errors` is
+    `[{ "key": "WAGroup", "message": "WAGroup not found or permission denied." }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

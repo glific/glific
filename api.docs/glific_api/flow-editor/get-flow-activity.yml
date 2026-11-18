@@ -1,0 +1,53 @@
+info:
+  name: Get flow activity
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/activity?flow=3fa22108-f464-41e5-81d9-d8a298854429"
+  params:
+    - name: flow
+      value: 3fa22108-f464-41e5-81d9-d8a298854429
+      type: query
+  auth: inherit
+
+docs: |
+  Returns the visit counts the editor overlays on a flow: how many times contacts reached
+  each node and took each path, with the latest messages on each path. Counts build up from
+  the flow's first run, or since **Flows › Reset a flow's counts**.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The query string takes the flow.
+
+  | Parameter | Description                                                  |
+  | --------- | ------------------------------------------------------------ |
+  | `flow`    | UUID of the flow. Without it, the response is all empty maps. |
+
+  ## Example response
+
+  `200`. `nodes` maps node UUIDs to counts. `segments` and `recentMessages` are keyed by
+  `<exit UUID>:<destination node UUID>`; `recentMessages` holds up to 5 messages per path.
+
+  ```json
+  {
+    "nodes": {
+      "3ea030e9-41c4-4c6c-8880-68bc2828d67b": 112
+    },
+    "segments": {
+      "a8311645-482e-4d35-b300-c92a9b18798b:9f7632ee-6e35-4247-9235-c4c7663fd601": 87
+    },
+    "recentMessages": {
+      "a8311645-482e-4d35-b300-c92a9b18798b:9f7632ee-6e35-4247-9235-c4c7663fd601": [
+        { "text": "yes", "sent": "2026-11-16T08:41:02.118Z" }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

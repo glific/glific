@@ -1,0 +1,71 @@
+info:
+  name: Upload a knowledge base file
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation uploadFilesearchFile($media: Upload!, $targetFormat: String, $callbackUrl: String) {
+        uploadFilesearchFile(media: $media, targetFormat: $targetFormat, callbackUrl: $callbackUrl) {
+          fileId
+          filename
+          uploadedAt
+          fileSize
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "media": "file"
+      }
+  auth: inherit
+
+docs: |
+  Uploads a document to Kaapi so it can go into a knowledge base. Pass the returned fields
+  to **Create a knowledge base version**.
+
+  The file travels as a GraphQL multipart request (`multipart/form-data`): a `query` part,
+  a `variables` part where `media` names the file part (here `"file"`), and the file itself
+  in a part with that name. Bruno's GraphQL body can't attach files, so send this from a
+  client that supports multipart GraphQL uploads.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument       | Type      | Required | Description                                                       |
+  | -------------- | --------- | -------- | ----------------------------------------------------------------- |
+  | `media`        | `Upload!` | Yes      | The document. Allowed extensions: `doc`, `docx`, `htm`, `html`, `md`, `markdown`, `pdf`, `txt` (any case). |
+  | `targetFormat` | `String`  | No       | Passed to Kaapi to convert the document; Kaapi supports PDF to Markdown. |
+  | `callbackUrl`  | `String`  | No       | Passed to Kaapi, which calls it with the conversion status.       |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "uploadFilesearchFile": {
+        "fileId": "b7e1c3a2-4d5f-4e6a-8b9c-0d1e2f3a4b5c",
+        "filename": "prenatal_care.pdf",
+        "uploadedAt": "2026-11-10T08:15:02.481Z",
+        "fileSize": 1258291,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `uploadFilesearchFile` set to `null`:
+
+  - The extension is not allowed: `Files with extension '.xlsx' not supported in Assistants`.
+  - Kaapi rejects the file: `File upload failed (status <code>): <Kaapi's message>`.
+  - The organization has no Kaapi credential: `Kaapi is not active`.
+  - A user without the manager role gets `Unauthorized`.

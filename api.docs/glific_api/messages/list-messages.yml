@@ -1,0 +1,119 @@
+info:
+  name: List messages
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query messages($filter: MessageFilter, $opts: Opts) {
+        messages(filter: $filter, opts: $opts) {
+          id
+          body
+          type
+          flow
+          channel
+          bspStatus
+          isHsm
+          messageNumber
+          sendBy
+          insertedAt
+          sender {
+            id
+            name
+          }
+          receiver {
+            id
+            name
+          }
+          media {
+            id
+            url
+            caption
+          }
+          tags {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "either": "91987",
+          "types": ["TEXT", "IMAGE"],
+          "dateRange": {
+            "from": "2026-11-01T00:00:00Z",
+            "to": "2026-11-16T00:00:00Z"
+          }
+        },
+        "opts": {
+          "order": "DESC",
+          "orderWith": "inserted_at",
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's messages, optionally filtered and paginated. Returns at most 50
+  messages per call: without `opts.limit` it returns 25, and a larger limit is lowered to 50.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                    |
+  | -------- | --------------- | -------- | ---------------------------------------------- |
+  | `filter` | `MessageFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`          | No       | Sorting and pagination. `orderWith` defaults to `body`; set it to `inserted_at` for newest first. |
+
+  ### `MessageFilter`
+
+  | Field          | Type                   | Description                                                    |
+  | -------------- | ---------------------- | -------------------------------------------------------------- |
+  | `body`         | `String`               | Body contains this text (case-insensitive).                    |
+  | `sender`       | `String`               | Sender contact's name contains this text.                      |
+  | `receiver`     | `String`               | Receiver contact's name contains this text.                    |
+  | `either`       | `String`               | The conversation contact's phone contains this text.           |
+  | `user`         | `String`               | Name of the staff user who sent it contains this text.         |
+  | `types`        | `[MessageTypeEnum]`    | Message type is one of these.                                  |
+  | `bspStatus`    | `MessageStatusEnum`    | Delivery status, such as `DELIVERED` or `ERROR`.               |
+  | `tagsIncluded` | `[ID]`                 | Message has at least one of these tags.                        |
+  | `tagsExcluded` | `[ID]`                 | Message has none of these tags.                                |
+  | `flowId`       | `ID`                   | Message was sent or received by this flow.                     |
+  | `dateRange`    | `DateRangeInput`       | `from` and `to` (`DateTime`; `to` extends to the end of that day) on `column`, in snake_case, which defaults to `inserted_at`. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "messages": [
+        {
+          "id": "1042",
+          "body": "Hi, I want to know about the next session",
+          "type": "TEXT",
+          "flow": "INBOUND",
+          "channel": "WHATSAPP",
+          "bspStatus": "DELIVERED",
+          "isHsm": false,
+          "messageNumber": 14,
+          "sendBy": "",
+          "insertedAt": "2026-11-15T10:12:44Z",
+          "sender": { "id": "8", "name": "Chrissy Cron" },
+          "receiver": { "id": "1", "name": "Glific Admin" },
+          "media": null,
+          "tags": [{ "id": "4", "label": "Unread" }]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

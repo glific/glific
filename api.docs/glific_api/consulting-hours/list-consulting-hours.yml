@@ -1,0 +1,92 @@
+info:
+  name: List consulting hours
+  type: graphql
+  seq: 1
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query consultingHours($filter: ConsultingHourFilter, $opts: Opts) {
+        consultingHours(filter: $filter, opts: $opts) {
+          id
+          participants
+          organizationName
+          staff
+          content
+          when
+          duration
+          isBillable
+          organization {
+            id
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "isBillable": true,
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-30"
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists consulting hours across all organizations, optionally filtered and paginated.
+  Sorted by `inserted_at` unless `opts.orderWith` says otherwise.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                    |
+  | -------- | ---------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `ConsultingHourFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`                 | No       | Sorting and pagination.                        |
+
+  ### `ConsultingHourFilter`
+
+  | Field              | Type      | Description                                                 |
+  | ------------------ | --------- | ----------------------------------------------------------- |
+  | `organizationName` | `String`  | Organization name contains this text (case-insensitive).    |
+  | `participants`     | `String`  | Participants contain this text (case-insensitive).          |
+  | `staff`            | `String`  | Staff contains this text (case-insensitive).                |
+  | `isBillable`       | `Boolean` | Only billable or only non-billable hours.                   |
+  | `startDate`        | `Date`    | Call on or after the start of this day (UTC).               |
+  | `endDate`          | `Date`    | Call on or before the end of this day (UTC).                |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "consultingHours": [
+        {
+          "id": "12",
+          "participants": "Asha, Ravi",
+          "organizationName": "Glific Foundation",
+          "staff": "Glific support team",
+          "content": "Walked through flow keywords and the WhatsApp opt-in flow",
+          "when": "2026-11-10T10:30:00Z",
+          "duration": 30,
+          "isBillable": true,
+          "organization": { "id": "1", "name": "Glific Foundation" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the `glific_admin` role gets a top-level `Unauthorized` error.

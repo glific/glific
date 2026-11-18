@@ -1,0 +1,50 @@
+info:
+  name: Create a collection
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{base_url}}/flow-editor/groups"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Grade 8 students"
+      }
+  auth: inherit
+
+docs: |
+  Creates a collection from inside the editor, when the user types a new name into a
+  collection picker.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  | Field  | Type   | Required | Description             |
+  | ------ | ------ | -------- | ----------------------- |
+  | `name` | String | Yes      | The collection's label. |
+
+  ## Example response
+
+  `200`. Unlike **List collections**, `uuid` here is the ID as a number.
+
+  ```json
+  {
+    "name": "Grade 8 students",
+    "uuid": 14,
+    "type": "group"
+  }
+  ```
+
+  ## Errors
+
+  - `400`: the collection can't be created, for example because the name is taken or
+    missing:
+
+    ```json
+    { "error": { "status": 400, "message": "Cannot create new collection with name Grade 8 students" } }
+    ```
+
+  - `401`: missing or invalid access token.

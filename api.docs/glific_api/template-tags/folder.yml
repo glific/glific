@@ -1,0 +1,18 @@
+info:
+  name: Template Tags
+  type: folder
+  seq: 42
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Template tags attach tags to session and HSM templates, many tags per template. They are
+    separate from a template's single `tag` field (set with `tagId` on the template).
+
+    There are no queries here; read a template's tags through the template. Both mutations need
+    the staff role.
+
+    Related: **Tags** (defining tags), **Session Templates**.
+  type: text/markdown

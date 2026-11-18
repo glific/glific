@@ -1,0 +1,83 @@
+info:
+  name: Tag a contact
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createContactTag($input: ContactTagInput!) {
+        createContactTag(input: $input) {
+          contactTag {
+            id
+            contact {
+              id
+              name
+            }
+            tag {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "contactId": "131",
+          "tagId": "5"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Attaches one tag to one contact. If the contact already has the tag, that contact tag is
+  overwritten and returned, so tagging twice is safe.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description              |
+  | -------- | ------------------ | -------- | ------------------------ |
+  | `input`  | `ContactTagInput!` | Yes      | The contact and the tag. |
+
+  ### `ContactTagInput`
+
+  | Field       | Type | Required | Description  |
+  | ----------- | ---- | -------- | ------------ |
+  | `contactId` | `ID` | Yes      | The contact. |
+  | `tagId`     | `ID` | Yes      | The tag.     |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createContactTag": {
+        "contactTag": {
+          "id": "77",
+          "contact": { "id": "131", "name": "Asha Patil" },
+          "tag": { "id": "5", "label": "New contact" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `contactTag` set to `null`:
+
+  - A field is missing: `{ "key": "tag_id", "message": "Tag_id: can't be blank" }`.
+  - The contact or tag does not exist:
+    `{ "key": "tag_id", "message": "Tag_id: does not exist" }`.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

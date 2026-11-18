@@ -1,0 +1,22 @@
+info:
+  name: Message Media
+  type: folder
+  seq: 21
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Message media are the attachments of image, audio, video, document and sticker messages.
+    A media row holds the public `url` the BSP fetches, the `sourceUrl` it came from, an
+    optional `caption`, and `gcsUrl` once Glific has copied the file to the organization's
+    Google Cloud Storage bucket.
+
+    To send media, create a media row (or upload a file first with **Media › Upload a media
+    file** and use the returned URL), then pass its ID as `mediaId` to a send mutation in
+    **Messages**. Use **Validate a media URL** to check that WhatsApp will accept a URL before
+    sending it.
+
+    All operations need the staff role.
+  type: text/markdown

@@ -1,0 +1,51 @@
+info:
+  name: Renew a session
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/session/renew"
+  headers:
+    - name: authorization
+      value: "{{renewal_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        if (body && body.data) {
+          bru.setEnvVar("auth_token", body.data.access_token);
+          bru.setEnvVar("renewal_token", body.data.renewal_token);
+        }
+
+docs: |
+  Exchanges a renewal token for a new access token and renewal token. The old access token
+  and the renewal token used here stop working. This request saves the new tokens into
+  `auth_token` and `renewal_token`.
+
+  The renewal token goes in the `authorization` header, in place of the access token, with
+  no `Bearer` prefix. The body is ignored.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "access_token": "SFMyNTY.OWQ0YzBkOWEtNWYyOS00ZTAyLWI2YjMtZTNkM2Q0OGJmNmU5.Hk2b7JrYcU",
+      "renewal_token": "SFMyNTY.MmE1ZTM4YmMtNjE5Ny00ZTZiLTk2ZGEtYmI4MmU0ZjcwMmNm.Pn0wBsx1aE",
+      "token_expiry_time": "2026-11-16T10:30:00.000000Z"
+    }
+  }
+  ```
+
+  ## Errors
+
+  `401` when the header is missing, the renewal token is invalid or already used, or it
+  belongs to another organization:
+  `{ "error": { "status": 401, "message": "Invalid token" } }`.

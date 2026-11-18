@@ -1,0 +1,81 @@
+info:
+  name: Copy an interactive template
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation copyInteractiveTemplate($id: ID!, $input: InteractiveTemplateInput) {
+        copyInteractiveTemplate(id: $id, input: $input) {
+          interactiveTemplate {
+            id
+            label
+            type
+            interactiveContent
+            sendWithTitle
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "6",
+        "input": {
+          "label": "Send Location (copy)",
+          "languageId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Creates a new interactive template from an existing one. The copy takes the source's
+  `type`, `interactiveContent`, `translations` and `sendWithTitle`; any field in `input`
+  overrides them. The markdown and length checks of **Create an interactive template** are not
+  run.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                       | Required | Description                                                       |
+  | -------- | -------------------------- | -------- | ----------------------------------------------------------------- |
+  | `id`     | `ID!`                      | Yes      | The template to copy.                                             |
+  | `input`  | `InteractiveTemplateInput` | Yes      | Must include a new `label` and a `languageId` (neither is copied). Omitting `input` fails. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "copyInteractiveTemplate": {
+        "interactiveTemplate": {
+          "id": "10",
+          "label": "Send Location (copy)",
+          "type": "LOCATION_REQUEST_MESSAGE",
+          "interactiveContent": "{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"please share your location\"},\"action\":{\"name\":\"send_location\"}}",
+          "sendWithTitle": true,
+          "language": { "id": "1", "label": "English" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The source template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.InteractiveTemplate", "message": "Resource not found" }]`.
+  - The label is already used: `{ "key": "label", "message": "Label: has already been taken" }`.
+  - `label` or `languageId` missing, such as `{ "key": "label", "message": "Label: can't be blank" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

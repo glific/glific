@@ -1,0 +1,74 @@
+info:
+  name: Update a collection's contacts
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateGroupContacts($input: GroupContactsInput!) {
+        updateGroupContacts(input: $input) {
+          numberDeleted
+          groupContacts {
+            id
+            contact {
+              id
+              name
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "groupId": "2",
+          "addContactIds": ["131", "132"],
+          "deleteContactIds": ["12"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds contacts to one collection and removes others from it in a single call.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description         |
+  | -------- | --------------------- | -------- | ------------------- |
+  | `input`  | `GroupContactsInput!` | Yes      | The changes to make. |
+
+  ### `GroupContactsInput`
+
+  | Field              | Type    | Required | Description                                       |
+  | ------------------ | ------- | -------- | ------------------------------------------------- |
+  | `groupId`          | `ID!`   | Yes      | The collection.                                   |
+  | `addContactIds`    | `[ID]!` | Yes      | Contacts to add. Pass `[]` to add none.           |
+  | `deleteContactIds` | `[ID]!` | Yes      | Contacts to remove. Pass `[]` to remove none.     |
+
+  ## Example response
+
+  `groupContacts` lists the memberships for `addContactIds`, including ones that already
+  existed. `numberDeleted` is how many were removed.
+
+  ```json
+  {
+    "data": {
+      "updateGroupContacts": {
+        "numberDeleted": 1,
+        "groupContacts": [
+          { "id": "306", "contact": { "id": "132", "name": "Meena Rao" } },
+          { "id": "305", "contact": { "id": "131", "name": "Asha Patil" } }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Contacts that can't be added (an unknown ID, say) are skipped silently and left out of
+  `groupContacts`. A user without the staff role gets a top-level `Unauthorized` error.
