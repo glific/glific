@@ -1061,7 +1061,7 @@ defmodule Glific.Flows.FlowContext do
     Glific.log_error(
       "Multiple flow contexts awaiting a result: contact_id=#{newest.contact_id}, " <>
         "flow_id=#{newest.flow_id}, resumed=#{newest.id}, " <>
-        "closed=#{Glific.SafeLog.safe_inspect(closed_ids)}"
+        "closed=#{Enum.join(closed_ids, ",")}"
     )
 
     :ok
