@@ -132,6 +132,26 @@ defmodule Glific.Flows.WebhookResumeTest do
     assert %{"answer" => _} = Repo.get!(FlowContext, context.id).results
   end
 
+  test "an LLM callback whose log was written for another contact records nothing", %{
+    organization_id: organization_id,
+    contact: contact,
+    flow: flow
+  } do
+    context = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
+    webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+
+    Webhook.resume(organization_id, %{"success" => true}, %{
+      "contact_id" => contact.id,
+      "flow_id" => flow.id,
+      "webhook_log_id" => webhook_log.id,
+      "result_name" => "answer",
+      "call_type" => "llm"
+    })
+
+    assert %{"answer" => _} = Repo.get!(FlowContext, context.id).results
+    assert Repo.all(LlmCall) == []
+  end
+
   defp webhook_log_for(organization_id, context) do
     {:ok, webhook_log} =
       %{organization_id: organization_id, flow_context_id: context.id}

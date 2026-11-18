@@ -1038,12 +1038,12 @@ defmodule Glific.Flows.FlowContext do
   defp newest_awaiting_context([]), do: nil
   defp newest_awaiting_context([context]), do: context
 
-  # Waits on different channels are separate conversations. This lookup has no channel to
-  # pick between them, so it resumes and closes nothing rather than guess.
-  defp newest_awaiting_context([newest | older] = contexts) do
+  # A contact can wait on the same flow on WhatsApp and web at once; those are separate runs.
+  # A flow-id lookup can't tell which one a result is for, so it resumes and closes neither.
+  defp newest_awaiting_context([newest | older]) do
     if Enum.all?(older, &(&1.channel == newest.channel)),
       do: supersede_older_contexts(newest, older),
-      else: skip_waits_across_channels(contexts)
+      else: nil
   end
 
   @spec supersede_older_contexts(FlowContext.t(), [FlowContext.t()]) :: FlowContext.t()
@@ -1054,19 +1054,6 @@ defmodule Glific.Flows.FlowContext do
     |> report_closed_duplicates(newest)
 
     newest
-  end
-
-  @spec skip_waits_across_channels([FlowContext.t()]) :: nil
-  defp skip_waits_across_channels([newest | _older] = contexts) do
-    context_ids = Enum.map(contexts, & &1.id)
-
-    message =
-      "Not resuming: flow contexts awaiting a result on more than one channel: " <>
-        "contact_id=#{newest.contact_id}, flow_id=#{newest.flow_id}, " <>
-        "contexts=#{Glific.SafeLog.safe_inspect(context_ids)}"
-
-    Logger.info(message)
-    nil
   end
 
   @spec report_closed_duplicates([non_neg_integer()], FlowContext.t()) :: :ok
