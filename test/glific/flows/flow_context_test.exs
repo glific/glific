@@ -575,8 +575,8 @@ defmodule Glific.Flows.FlowContextTest do
       flow: flow,
       contact: contact
     } do
-      older = park_awaiting_context(organization_id, contact, flow)
-      newest = park_awaiting_context(organization_id, contact, flow)
+      older = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
+      newest = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
 
       assert {:ok, _context, _messages} =
                FlowContext.resume_contact_flow(
@@ -602,7 +602,7 @@ defmodule Glific.Flows.FlowContextTest do
       flow: flow,
       contact: contact
     } do
-      context = park_awaiting_context(organization_id, contact, flow)
+      context = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
 
       assert {:ok, _context, _messages} =
                FlowContext.resume_contact_flow(
@@ -622,9 +622,13 @@ defmodule Glific.Flows.FlowContextTest do
       flow: flow,
       contact: contact
     } do
-      older_whatsapp_context = park_awaiting_context(organization_id, contact, flow)
-      web_context = park_awaiting_context(organization_id, contact, flow, :web)
-      whatsapp_context = park_awaiting_context(organization_id, contact, flow)
+      older_whatsapp_context =
+        Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
+
+      web_context =
+        Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact, channel: :web})
+
+      whatsapp_context = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
 
       assert {:error, _reason} =
                FlowContext.resume_contact_flow(
@@ -1034,24 +1038,5 @@ defmodule Glific.Flows.FlowContextTest do
 
     {:ok, context} = FlowContext.create_flow_context(context_attrs)
     {context, contact, node_uuid}
-  end
-
-  defp park_awaiting_context(organization_id, contact, flow, channel \\ :whatsapp) do
-    [node | _tail] = flow.nodes
-
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: contact.id,
-        flow_id: flow.id,
-        flow_uuid: flow.uuid,
-        uuid_map: %{},
-        organization_id: organization_id,
-        is_await_result: true,
-        wakeup_at: DateTime.add(DateTime.utc_now(), 180),
-        node_uuid: node.uuid,
-        channel: channel
-      })
-
-    context
   end
 end

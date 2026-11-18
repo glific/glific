@@ -816,6 +816,27 @@ defmodule Glific.Fixtures do
     nil
   end
 
+  @doc "Create a flow context parked at the first node of its flow, awaiting a result."
+  @spec awaiting_flow_context_fixture(map()) :: FlowContext.t()
+  def awaiting_flow_context_fixture(%{flow: flow, contact: contact} = attrs) do
+    [node | _tail] = flow.nodes
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        uuid_map: %{},
+        organization_id: contact.organization_id,
+        is_await_result: true,
+        wakeup_at: Timex.shift(Timex.now(), minutes: 1),
+        node_uuid: node.uuid,
+        channel: Map.get(attrs, :channel, :whatsapp)
+      })
+
+    context
+  end
+
   @doc false
   @spec webhook_log_fixture(map()) :: WebhookLog.t()
   def webhook_log_fixture(attrs) do

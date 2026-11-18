@@ -55,6 +55,8 @@ defmodule Glific.Flows.Webhook do
 
   @timeout_error "Timeout: taking long to process response"
 
+  @typep resume_target :: non_neg_integer() | FlowContext.t() | nil
+
   @doc """
   Execute a webhook action, could be either get or post for now
   """
@@ -534,66 +536,81 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  # A callback resumes only the context that made the call. It is dropped whole when that context
-  # is no longer parked for it: the call timed out (its flow already took the Failure branch) or a
-  # newer message restarted the flow. Matching on contact + flow alone would hand this stale
-  # result to whichever async node the contact is parked at now.
+  # A callback resumes only the context that made the call, and is dropped when that context is no
+  # longer parked for it: the call timed out, or a newer message restarted the flow.
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume(organization_id, result, response, contact) do
     webhook_log_id = response["webhook_log_id"]
+    flow_id = Glific.parse_maybe_integer!(response["flow_id"])
 
-    case resume_target(webhook_log_id, response["flow_id"], contact) do
+    case resume_target(webhook_log_id, flow_id, contact) do
       {:ok, target} ->
         resume_flow(organization_id, result, response, contact, target)
 
-      {:drop, reason} ->
+      {:drop, reason, record_usage?} ->
         Logger.info("Dropping async webhook callback #{reason}: webhook_log_id=#{webhook_log_id}")
-        maybe_create_llm_call(organization_id, result, response)
+        maybe_record_dropped_usage(record_usage?, organization_id, result, response)
     end
-
-    :ok
   end
 
+  # The usage recorder copies the question from the webhook log, so a dropped callback records
+  # usage only when its log was written for this contact and signed flow.
+  @spec maybe_record_dropped_usage(boolean(), non_neg_integer(), map(), map()) :: :ok
+  defp maybe_record_dropped_usage(false, _organization_id, _result, _response), do: :ok
+
+  defp maybe_record_dropped_usage(true, organization_id, result, response),
+    do: maybe_create_llm_call(organization_id, result, response)
+
   @spec resume_target(non_neg_integer() | nil, non_neg_integer() | nil, Contact.t()) ::
-          {:ok, non_neg_integer() | FlowContext.t() | nil} | {:drop, String.t()}
+          {:ok, resume_target()} | {:drop, String.t(), boolean()}
   defp resume_target(nil, flow_id, _contact), do: {:ok, flow_id}
 
   defp resume_target(webhook_log_id, flow_id, contact) do
     case Repo.get(WebhookLog, webhook_log_id) do
-      %WebhookLog{error: @timeout_error} ->
-        {:drop, "after timeout"}
-
-      %WebhookLog{flow_context_id: context_id} when is_integer(context_id) ->
-        awaiting_target(contact, context_id, flow_id)
-
-      _ ->
-        {:ok, flow_id}
+      nil -> {:ok, flow_id}
+      webhook_log -> logged_target(webhook_log, flow_id, contact)
     end
   end
 
   # The signature covers flow_id but not webhook_log_id, so the logged context must belong to the
   # signed flow; otherwise one signed callback could resume another flow of the same contact.
-  @spec awaiting_target(Contact.t(), non_neg_integer(), non_neg_integer() | String.t() | nil) ::
-          {:ok, FlowContext.t()} | {:drop, String.t()}
-  defp awaiting_target(contact, context_id, flow_id) do
-    case FlowContext.fetch_awaiting_context(contact.id, context_id) do
-      nil ->
-        {:drop, "for a flow context no longer awaiting it"}
+  @spec logged_target(WebhookLog.t(), non_neg_integer() | nil, Contact.t()) ::
+          {:ok, resume_target()} | {:drop, String.t(), boolean()}
+  defp logged_target(
+         %WebhookLog{error: @timeout_error, flow_context_id: nil},
+         _flow_id,
+         _contact
+       ),
+       do: {:drop, "after timeout", false}
 
-      context ->
-        if to_string(context.flow_id) == to_string(flow_id),
-          do: {:ok, context},
-          else: {:drop, "for a flow context outside the signed flow"}
+  defp logged_target(%WebhookLog{flow_context_id: nil}, flow_id, _contact), do: {:ok, flow_id}
+
+  defp logged_target(webhook_log, flow_id, contact) do
+    context = Repo.get(FlowContext, webhook_log.flow_context_id)
+    owned? = owned_by?(context, contact, flow_id)
+
+    cond do
+      webhook_log.error == @timeout_error ->
+        {:drop, "after timeout", owned?}
+
+      !FlowContext.awaiting_result?(context) ->
+        {:drop, "for a flow context no longer awaiting it", owned?}
+
+      !owned? ->
+        {:drop, "for a flow context outside the signed flow", false}
+
+      true ->
+        {:ok, Repo.preload(context, :flow)}
     end
   end
 
-  @spec resume_flow(
-          non_neg_integer(),
-          map(),
-          map(),
-          Contact.t(),
-          non_neg_integer() | FlowContext.t() | nil
-        ) :: :ok
+  @spec owned_by?(FlowContext.t() | nil, Contact.t(), non_neg_integer() | nil) :: boolean()
+  defp owned_by?(nil, _contact, _flow_id), do: false
+
+  defp owned_by?(context, contact, flow_id),
+    do: context.contact_id == contact.id and context.flow_id == flow_id
+
+  @spec resume_flow(non_neg_integer(), map(), map(), Contact.t(), resume_target()) :: :ok
   defp resume_flow(organization_id, result, response, contact, target) do
     maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
 

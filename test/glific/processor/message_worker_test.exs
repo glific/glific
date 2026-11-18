@@ -7,6 +7,9 @@ defmodule Glific.Processor.MessageWorkerTest do
   alias Glific.Processor.MessageWorker
   alias Glific.Seeds.SeedsDev
 
+  @completion_poll_attempts 100
+  @completion_poll_interval_ms 50
+
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
@@ -195,7 +198,7 @@ defmodule Glific.Processor.MessageWorkerTest do
     |> Map.get(:completed_at)
   end
 
-  defp assert_jobs_completed(jobs, attempts_left \\ 100)
+  defp assert_jobs_completed(jobs, attempts_left \\ @completion_poll_attempts)
 
   defp assert_jobs_completed(jobs, 0), do: flunk("jobs did not complete: #{inspect(jobs)}")
 
@@ -203,7 +206,7 @@ defmodule Glific.Processor.MessageWorkerTest do
     if Enum.all?(jobs, &completed_at/1) do
       :ok
     else
-      Process.sleep(50)
+      Process.sleep(@completion_poll_interval_ms)
       assert_jobs_completed(jobs, attempts_left - 1)
     end
   end

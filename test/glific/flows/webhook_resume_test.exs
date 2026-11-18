@@ -27,9 +27,9 @@ defmodule Glific.Flows.WebhookResumeTest do
     contact: contact,
     flow: flow
   } do
-    context = park_context(organization_id, contact, flow)
+    context = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
     webhook_log = webhook_log_for(organization_id, context)
-    newer = park_context(organization_id, contact, flow)
+    newer = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
 
     resume(organization_id, contact, flow, webhook_log.id, "answer")
 
@@ -45,7 +45,7 @@ defmodule Glific.Flows.WebhookResumeTest do
     contact: contact,
     flow: flow
   } do
-    context = park_context(organization_id, contact, flow)
+    context = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
     webhook_log = webhook_log_for(organization_id, context)
     other_flow = Fixtures.flow_fixture(%{organization_id: organization_id})
 
@@ -61,7 +61,7 @@ defmodule Glific.Flows.WebhookResumeTest do
     contact: contact,
     flow: flow
   } do
-    replaced = park_context(organization_id, contact, flow)
+    replaced = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
     webhook_log = webhook_log_for(organization_id, replaced)
     {:ok, _} = FlowContext.update_flow_context(replaced, %{completed_at: DateTime.utc_now()})
 
@@ -76,17 +76,36 @@ defmodule Glific.Flows.WebhookResumeTest do
     assert contact_id == contact.id
   end
 
+  test "a dropped LLM callback whose log belongs to another flow records nothing", %{
+    organization_id: organization_id,
+    contact: contact,
+    flow: flow
+  } do
+    context = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
+    webhook_log = webhook_log_for(organization_id, context)
+    other_flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+
+    Webhook.resume(organization_id, %{"success" => true}, %{
+      "contact_id" => contact.id,
+      "flow_id" => other_flow.id,
+      "webhook_log_id" => webhook_log.id,
+      "call_type" => "llm"
+    })
+
+    assert Repo.all(LlmCall) == []
+  end
+
   test "a callback for a replaced context does not resume the context that replaced it", %{
     organization_id: organization_id,
     contact: contact,
     flow: flow
   } do
-    replaced = park_context(organization_id, contact, flow)
+    replaced = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
     replaced_log = webhook_log_for(organization_id, replaced)
 
     {:ok, _} = FlowContext.update_flow_context(replaced, %{completed_at: DateTime.utc_now()})
 
-    current = park_context(organization_id, contact, flow)
+    current = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
     current_log = webhook_log_for(organization_id, current)
 
     resume(organization_id, contact, flow, replaced_log.id, "stale_answer")
@@ -105,30 +124,12 @@ defmodule Glific.Flows.WebhookResumeTest do
     contact: contact,
     flow: flow
   } do
-    context = park_context(organization_id, contact, flow)
+    context = Fixtures.awaiting_flow_context_fixture(%{flow: flow, contact: contact})
     webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
     resume(organization_id, contact, flow, webhook_log.id, "answer")
 
     assert %{"answer" => _} = Repo.get!(FlowContext, context.id).results
-  end
-
-  defp park_context(organization_id, contact, flow) do
-    [node | _] = flow.nodes
-
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: contact.id,
-        flow_id: flow.id,
-        flow_uuid: flow.uuid,
-        uuid_map: %{},
-        organization_id: organization_id,
-        is_await_result: true,
-        wakeup_at: DateTime.add(DateTime.utc_now(), 60),
-        node_uuid: node.uuid
-      })
-
-    context
   end
 
   defp webhook_log_for(organization_id, context) do

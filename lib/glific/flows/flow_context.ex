@@ -62,6 +62,8 @@ defmodule Glific.Flows.FlowContext do
   # we store one more than the number of messages specified here
   @max_message_len 11
 
+  @superseded_reason "Superseded by a newer context awaiting the same result"
+
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid_map: map() | nil,
@@ -1039,44 +1041,46 @@ defmodule Glific.Flows.FlowContext do
   # Waits on different channels are separate conversations. This lookup has no channel to
   # pick between them, so it resumes and closes nothing rather than guess.
   defp newest_awaiting_context([newest | older] = contexts) do
-    if Enum.all?(older, &(&1.channel == newest.channel)) do
-      older
-      |> Enum.map(& &1.id)
-      |> close_superseded_contexts()
-      |> report_closed_duplicates(newest)
-
-      newest
-    else
-      report_waits_across_channels(contexts)
-      nil
-    end
+    if Enum.all?(older, &(&1.channel == newest.channel)),
+      do: supersede_older_contexts(newest, older),
+      else: skip_waits_across_channels(contexts)
   end
 
-  @spec report_closed_duplicates([non_neg_integer], FlowContext.t()) :: any()
-  defp report_closed_duplicates([], _newest), do: :ok
+  @spec supersede_older_contexts(FlowContext.t(), [FlowContext.t()]) :: FlowContext.t()
+  defp supersede_older_contexts(newest, older) do
+    older
+    |> Enum.map(& &1.id)
+    |> close_superseded_contexts()
+    |> report_closed_duplicates(newest)
 
+    newest
+  end
+
+  @spec skip_waits_across_channels([FlowContext.t()]) :: nil
+  defp skip_waits_across_channels([newest | _older] = contexts) do
+    context_ids = Enum.map(contexts, & &1.id)
+
+    message =
+      "Not resuming: flow contexts awaiting a result on more than one channel: " <>
+        "contact_id=#{newest.contact_id}, flow_id=#{newest.flow_id}, " <>
+        "contexts=#{Glific.SafeLog.safe_inspect(context_ids)}"
+
+    Logger.info(message)
+    nil
+  end
+
+  @spec report_closed_duplicates([non_neg_integer()], FlowContext.t()) :: :ok
   defp report_closed_duplicates(closed_ids, newest) do
     Glific.log_error(
       "Multiple flow contexts awaiting a result: contact_id=#{newest.contact_id}, " <>
         "flow_id=#{newest.flow_id}, resumed=#{newest.id}, " <>
         "closed=#{Glific.SafeLog.safe_inspect(closed_ids)}"
     )
+
+    :ok
   end
 
-  @spec report_waits_across_channels([FlowContext.t()]) :: :ok
-  defp report_waits_across_channels([newest | _older] = contexts) do
-    context_ids = Enum.map(contexts, & &1.id)
-
-    Logger.info(
-      "Not resuming: flow contexts awaiting a result on more than one channel: " <>
-        "contact_id=#{newest.contact_id}, flow_id=#{newest.flow_id}, " <>
-        "contexts=#{Glific.SafeLog.safe_inspect(context_ids)}"
-    )
-  end
-
-  @spec close_superseded_contexts([non_neg_integer]) :: [non_neg_integer]
-  defp close_superseded_contexts([]), do: []
-
+  @spec close_superseded_contexts([non_neg_integer()]) :: [non_neg_integer()]
   defp close_superseded_contexts(context_ids) do
     now = DateTime.utc_now()
 
@@ -1091,24 +1095,17 @@ defmodule Glific.Flows.FlowContext do
           completed_at: now,
           updated_at: now,
           is_killed: true,
-          reason: "Superseded by a newer context awaiting the same result"
+          reason: @superseded_reason
         ]
       )
 
     closed_ids
   end
 
-  @doc "Fetch the contact's flow context with this id if it is still parked awaiting a result."
-  @spec fetch_awaiting_context(non_neg_integer, non_neg_integer) :: FlowContext.t() | nil
-  def fetch_awaiting_context(contact_id, context_id) do
-    FlowContext
-    |> where([fc], fc.id == ^context_id)
-    |> where([fc], fc.contact_id == ^contact_id)
-    |> where([fc], fc.is_await_result == true)
-    |> where([fc], is_nil(fc.completed_at))
-    |> preload(:flow)
-    |> Repo.one()
-  end
+  @doc "True when the context is still parked awaiting a result."
+  @spec awaiting_result?(FlowContext.t() | nil) :: boolean()
+  def awaiting_result?(%FlowContext{is_await_result: true, completed_at: nil}), do: true
+  def awaiting_result?(_context), do: false
 
   @doc """
   Resume the flow for a given contact and a given flow id if still active
