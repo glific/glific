@@ -321,7 +321,18 @@ defmodule Glific.Providers.Gupshup.Message do
       organization_id: message.organization_id
     }
 
-    worker_module.create_changeset(worker_args, scheduled_at: message.send_at)
+    worker_module.create_changeset(worker_args, scheduling_opts(message.send_at))
     |> Oban.insert()
   end
+
+  # Any scheduled_at makes Oban insert the job as "scheduled", which then waits for the stager
+  # before it can run; only future sends need that.
+  @spec scheduling_opts(DateTime.t() | nil) :: Keyword.t()
+  defp scheduling_opts(%DateTime{} = send_at) do
+    if DateTime.after?(send_at, DateTime.utc_now()),
+      do: [scheduled_at: send_at],
+      else: []
+  end
+
+  defp scheduling_opts(_send_at), do: []
 end

@@ -424,6 +424,19 @@ defmodule Glific.CommunicationsTest do
       )
     end
 
+    test "send message with send_at not in the future is enqueued as available",
+         %{global_schema: global_schema} = attrs do
+      message =
+        %{send_at: DateTime.utc_now()}
+        |> Map.merge(attrs)
+        |> message_fixture()
+
+      Communications.Message.send_message(message)
+
+      assert_enqueued(worker: Worker, state: "available", prefix: global_schema)
+      refute_enqueued(worker: Worker, state: "scheduled", prefix: global_schema)
+    end
+
     test "send message to simulator will be process normally",
          %{global_schema: global_schema, organization_id: _organization_id} = _attrs do
       simulator_phone = Contacts.simulator_phone_prefix() <> "_1"
