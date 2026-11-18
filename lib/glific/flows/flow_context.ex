@@ -1041,21 +1041,38 @@ defmodule Glific.Flows.FlowContext do
   defp newest_awaiting_context([newest | older]) do
     {same_channel, other_channels} = Enum.split_with(older, &(&1.channel == newest.channel))
 
-    closed_ids =
-      same_channel
-      |> Enum.map(& &1.id)
-      |> close_superseded_contexts()
+    same_channel
+    |> Enum.map(& &1.id)
+    |> close_superseded_contexts()
+    |> report_closed_duplicates(newest)
 
-    other_channel_ids = Enum.map(other_channels, & &1.id)
+    other_channels
+    |> Enum.map(& &1.id)
+    |> report_other_channel_waits(newest)
 
+    newest
+  end
+
+  @spec report_closed_duplicates([non_neg_integer], FlowContext.t()) :: any()
+  defp report_closed_duplicates([], _newest), do: :ok
+
+  defp report_closed_duplicates(closed_ids, newest) do
     Glific.log_error(
       "Multiple flow contexts awaiting a result: contact_id=#{newest.contact_id}, " <>
         "flow_id=#{newest.flow_id}, resumed=#{newest.id}, " <>
-        "closed=#{Glific.SafeLog.safe_inspect(closed_ids)}, " <>
-        "other_channels=#{Glific.SafeLog.safe_inspect(other_channel_ids)}"
+        "closed=#{Glific.SafeLog.safe_inspect(closed_ids)}"
     )
+  end
 
-    newest
+  @spec report_other_channel_waits([non_neg_integer], FlowContext.t()) :: :ok
+  defp report_other_channel_waits([], _newest), do: :ok
+
+  defp report_other_channel_waits(context_ids, newest) do
+    Logger.info(
+      "Resumed flow context #{newest.id} left waits on other channels open: " <>
+        "contact_id=#{newest.contact_id}, flow_id=#{newest.flow_id}, " <>
+        "contexts=#{Glific.SafeLog.safe_inspect(context_ids)}"
+    )
   end
 
   @spec close_superseded_contexts([non_neg_integer]) :: [non_neg_integer]

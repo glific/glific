@@ -9,6 +9,7 @@ defmodule Glific.Flows.WebhookResumeTest do
   alias Glific.Flows.Flow
   alias Glific.Flows.FlowContext
   alias Glific.Flows.Webhook
+  alias Glific.Flows.WebhookLog
   alias Glific.LlmCalls.LlmCall
   alias Glific.Repo
 
@@ -131,10 +132,15 @@ defmodule Glific.Flows.WebhookResumeTest do
   end
 
   defp webhook_log_for(organization_id, context) do
-    Fixtures.webhook_log_fixture(%{
-      organization_id: organization_id,
-      flow_context_id: context.id
-    })
+    {:ok, webhook_log} =
+      %{organization_id: organization_id, flow_context_id: context.id}
+      |> Fixtures.webhook_log_fixture()
+      |> WebhookLog.update_webhook_log(%{
+        contact_id: context.contact_id,
+        flow_id: context.flow_id
+      })
+
+    webhook_log
   end
 
   defp resume(organization_id, contact, flow, webhook_log_id, result_name) do
