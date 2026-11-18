@@ -62,8 +62,6 @@ defmodule Glific.Flows.FlowContext do
   # we store one more than the number of messages specified here
   @max_message_len 11
 
-  @superseded_reason "Superseded by a newer context awaiting the same result"
-
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid_map: map() | nil,
@@ -1028,71 +1026,9 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], fc.flow_id == ^flow_id)
     |> where([fc], fc.is_await_result == true)
     |> where([fc], is_nil(fc.completed_at))
-    |> order_by([fc], desc: fc.id)
     |> preload(:flow)
-    |> Repo.all()
-    |> newest_awaiting_context()
+    |> Repo.one()
   end
-
-  @spec newest_awaiting_context([FlowContext.t()]) :: FlowContext.t() | nil
-  defp newest_awaiting_context([]), do: nil
-  defp newest_awaiting_context([context]), do: context
-
-  # A contact can wait on the same flow on WhatsApp and web at once; those are separate runs.
-  # A flow-id lookup can't tell which one a result is for, so it resumes and closes neither.
-  defp newest_awaiting_context([newest | older]) do
-    if Enum.all?(older, &(&1.channel == newest.channel)),
-      do: supersede_older_contexts(newest, older),
-      else: nil
-  end
-
-  @spec supersede_older_contexts(FlowContext.t(), [FlowContext.t()]) :: FlowContext.t()
-  defp supersede_older_contexts(newest, older) do
-    older
-    |> Enum.map(& &1.id)
-    |> close_superseded_contexts()
-    |> report_closed_duplicates(newest)
-
-    newest
-  end
-
-  @spec report_closed_duplicates([non_neg_integer()], FlowContext.t()) :: :ok
-  defp report_closed_duplicates(closed_ids, newest) do
-    Glific.log_error(
-      "Multiple flow contexts awaiting a result: contact_id=#{newest.contact_id}, " <>
-        "flow_id=#{newest.flow_id}, resumed=#{newest.id}, " <>
-        "closed=#{Enum.join(closed_ids, ",")}"
-    )
-
-    :ok
-  end
-
-  @spec close_superseded_contexts([non_neg_integer()]) :: [non_neg_integer()]
-  defp close_superseded_contexts(context_ids) do
-    now = DateTime.utc_now()
-
-    {_count, closed_ids} =
-      FlowContext
-      |> where([fc], fc.id in ^context_ids)
-      |> where([fc], fc.is_await_result == true)
-      |> where([fc], is_nil(fc.completed_at))
-      |> select([fc], fc.id)
-      |> Repo.update_all(
-        set: [
-          completed_at: now,
-          updated_at: now,
-          is_killed: true,
-          reason: @superseded_reason
-        ]
-      )
-
-    closed_ids
-  end
-
-  @doc "True when the context is still parked awaiting a result."
-  @spec awaiting_result?(FlowContext.t() | nil) :: boolean()
-  def awaiting_result?(%FlowContext{is_await_result: true, completed_at: nil}), do: true
-  def awaiting_result?(_context), do: false
 
   @doc """
   Resume the flow for a given contact and a given flow id if still active

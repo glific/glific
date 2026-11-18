@@ -55,8 +55,6 @@ defmodule Glific.Flows.Webhook do
 
   @timeout_error "Timeout: taking long to process response"
 
-  @typep resume_target :: non_neg_integer() | FlowContext.t() | nil
-
   @doc """
   Execute a webhook action, could be either get or post for now
   """
@@ -536,72 +534,32 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  # A callback resumes only the context that made the call, and is dropped when that context is no
-  # longer parked for it: the call timed out, or a newer message restarted the flow.
+  # A callback for a timed-out call is dropped whole: its flow already took the Failure branch,
+  # and await_context/2 matches on contact + flow only, so resuming would hand this stale result
+  # to whichever async node the contact is parked at now.
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume(organization_id, result, response, contact) do
     webhook_log_id = response["webhook_log_id"]
-    webhook_log = fetch_webhook_log(webhook_log_id)
-    flow_id = Glific.parse_maybe_integer!(response["flow_id"])
 
-    case resume_target(webhook_log, flow_id, contact) do
-      {:ok, target} ->
-        resume_flow(organization_id, result, response, contact, target)
-
-      {:drop, reason} ->
-        Logger.info("Dropping async webhook callback #{reason}: webhook_log_id=#{webhook_log_id}")
+    if timed_out?(webhook_log_id) do
+      Logger.info(
+        "Dropping async webhook callback after timeout: webhook_log_id=#{webhook_log_id}"
+      )
+    else
+      resume_flow(organization_id, result, response, contact)
     end
 
-    if logged_for?(webhook_log, contact, flow_id),
-      do: maybe_create_llm_call(organization_id, result, response),
-      else: :ok
+    :ok
   end
 
-  @spec fetch_webhook_log(non_neg_integer() | nil) :: WebhookLog.t() | nil
-  defp fetch_webhook_log(nil), do: nil
-  defp fetch_webhook_log(webhook_log_id), do: Repo.get(WebhookLog, webhook_log_id)
+  @spec timed_out?(non_neg_integer() | nil) :: boolean()
+  defp timed_out?(nil), do: false
 
-  # The usage recorder copies the question from the webhook log, so usage is recorded only when
-  # the log was written for this contact and signed flow.
-  @spec logged_for?(WebhookLog.t() | nil, Contact.t(), non_neg_integer() | nil) :: boolean()
-  defp logged_for?(nil, _contact, _flow_id), do: true
+  defp timed_out?(webhook_log_id),
+    do: Repo.get_by(WebhookLog, id: webhook_log_id, error: @timeout_error) != nil
 
-  defp logged_for?(webhook_log, contact, flow_id),
-    do: webhook_log.contact_id == contact.id and webhook_log.flow_id == flow_id
-
-  @spec resume_target(WebhookLog.t() | nil, non_neg_integer() | nil, Contact.t()) ::
-          {:ok, resume_target()} | {:drop, String.t()}
-  defp resume_target(%WebhookLog{error: @timeout_error}, _flow_id, _contact),
-    do: {:drop, "after timeout"}
-
-  defp resume_target(%WebhookLog{flow_context_id: context_id}, flow_id, contact)
-       when is_integer(context_id) do
-    FlowContext
-    |> Repo.get(context_id)
-    |> logged_target(flow_id, contact)
-  end
-
-  defp resume_target(_webhook_log, flow_id, _contact), do: {:ok, flow_id}
-
-  # The signature covers flow_id but not webhook_log_id, so the logged context must belong to the
-  # signed flow; otherwise one signed callback could resume another flow of the same contact.
-  @spec logged_target(FlowContext.t() | nil, non_neg_integer() | nil, Contact.t()) ::
-          {:ok, FlowContext.t()} | {:drop, String.t()}
-  defp logged_target(context, flow_id, contact) do
-    cond do
-      !FlowContext.awaiting_result?(context) ->
-        {:drop, "for a flow context no longer awaiting it"}
-
-      context.contact_id != contact.id or context.flow_id != flow_id ->
-        {:drop, "for a flow context outside the signed flow"}
-
-      true ->
-        {:ok, Repo.preload(context, :flow)}
-    end
-  end
-
-  @spec resume_flow(non_neg_integer(), map(), map(), Contact.t(), resume_target()) :: :ok
-  defp resume_flow(organization_id, result, response, contact, target) do
+  @spec resume_flow(non_neg_integer(), map(), map(), Contact.t()) :: :ok
+  defp resume_flow(organization_id, result, response, contact) do
     maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
 
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
@@ -610,11 +568,13 @@ defmodule Glific.Flows.Webhook do
 
     FlowContext.resume_contact_flow(
       contact,
-      target,
+      response["flow_id"],
       %{response_key => shaped},
       resume_message(result, response, organization_id)
     )
     |> report_resume_error(response)
+
+    maybe_create_llm_call(organization_id, result, response)
   end
 
   @spec maybe_create_llm_call(non_neg_integer(), map(), map()) :: :ok

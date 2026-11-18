@@ -47,13 +47,9 @@ defmodule Glific.WebhookTestHelpers do
   @spec build_await_context(non_neg_integer()) :: {Contact.t(), WebhookLog.t(), Flow.t()}
   def build_await_context(organization_id) do
     contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+    webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
     [node | _] = flow.nodes
-
-    {:ok, webhook_log} =
-      %{organization_id: organization_id}
-      |> Fixtures.webhook_log_fixture()
-      |> WebhookLog.update_webhook_log(%{contact_id: contact.id, flow_id: flow.id})
 
     {:ok, _context} =
       FlowContext.create_flow_context(%{
