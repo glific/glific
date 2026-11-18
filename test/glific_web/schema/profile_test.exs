@@ -18,6 +18,7 @@ defmodule GlificWeb.Schema.ProfileTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/profiles/update_profile.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/profiles/by_id.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/profiles/list.gql")
+  load_gql(:channels, GlificWeb.Schema, "assets/gql/profiles/channels.gql")
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -225,5 +226,46 @@ defmodule GlificWeb.Schema.ProfileTest do
     assert length(profiles) == 2
     assert Enum.any?(profiles, &(&1["name"] == "john"))
     assert Enum.any?(profiles, &(&1["name"] == "user"))
+  end
+
+  test "each profile shows only the activity from while it was active", %{staff: user} do
+    contact = Fixtures.contact_fixture(%{organization_id: user.organization_id})
+
+    profile_attrs = fn name ->
+      %{
+        "contact_id" => contact.id,
+        "organization_id" => contact.organization_id,
+        "name" => name,
+        "type" => "student",
+        "language_id" => 1
+      }
+    end
+
+    {:ok, active} = Glific.Profiles.create_profile(profile_attrs.("Active"))
+    {:ok, never_active} = Glific.Profiles.create_profile(profile_attrs.("Never active"))
+
+    # The message insert trigger stamps the contact's active profile on the message.
+    {:ok, contact} = Glific.Contacts.update_contact(contact, %{active_profile_id: active.id})
+
+    Fixtures.message_fixture(%{
+      sender_id: contact.id,
+      receiver_id: contact.id,
+      flow: :inbound,
+      organization_id: contact.organization_id
+    })
+
+    result =
+      auth_query_gql_by(:channels, user, variables: %{"filter" => %{"contact_id" => contact.id}})
+
+    assert {:ok, query_data} = result
+    profiles = get_in(query_data, [:data, "profiles"])
+    by_name = Map.new(profiles, &{&1["name"], &1["channels"]})
+
+    assert [%{"channel" => "WHATSAPP", "lastMessageAt" => last}] = by_name["Active"]
+    assert last != nil
+
+    # Same channel list (the contact's), but no activity of its own.
+    assert [%{"channel" => "WHATSAPP", "lastMessageAt" => nil}] = by_name["Never active"]
+    assert never_active.id != active.id
   end
 end

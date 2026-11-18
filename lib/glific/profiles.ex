@@ -130,6 +130,46 @@ defmodule Glific.Profiles do
   end
 
   @doc """
+  The channels a profile's contact uses, each with when the contact last messaged on it while this
+  profile was the active one (`nil` if never), WhatsApp first.
+
+  The channels themselves belong to the contact (one phone, one web login, shared by its
+  profiles); only the times are per profile. They come from `messages.profile_id`, which the
+  message insert trigger stamps with the contact's active profile, so a profile that has never
+  been active shows every channel with no activity.
+  """
+  @spec channel_activity(Profile.t()) :: [
+          %{channel: atom(), last_message_at: DateTime.t() | nil}
+        ]
+  def channel_activity(%Profile{} = profile) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             id: profile.contact_id,
+             organization_id: profile.organization_id
+           }) do
+      contact = Repo.preload(contact, :identities)
+
+      latest =
+        Message
+        |> where(
+          [m],
+          m.contact_id == ^profile.contact_id and m.profile_id == ^profile.id and
+            m.flow == :inbound
+        )
+        |> group_by([m], m.channel)
+        |> select([m], {m.channel, max(m.inserted_at)})
+        |> Repo.all()
+        |> Map.new()
+
+      contact
+      |> Contacts.channel_activity(contact.identities)
+      |> Enum.map(&%{&1 | last_message_at: Map.get(latest, &1.channel)})
+    else
+      _missing -> []
+    end
+  end
+
+  @doc """
   Switches active profile of a contact
 
   ## Examples

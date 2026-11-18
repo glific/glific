@@ -5,7 +5,7 @@ defmodule GlificWeb.Schema.ProfileTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers
-  alias Glific.Repo
+  alias Glific.{Profiles, Repo}
 
   alias GlificWeb.{
     Resolvers,
@@ -33,6 +33,16 @@ defmodule GlificWeb.Schema.ProfileTypes do
 
     field :contact, :contact do
       resolve(dataloader(Repo))
+    end
+
+    @desc """
+    The contact's channels, each with when the contact last messaged on it while this profile was
+    active. Null for a channel this profile has never been active on.
+    """
+    field :channels, list_of(:contact_channel) do
+      resolve(fn profile, _args, _resolution ->
+        {:ok, Profiles.channel_activity(profile)}
+      end)
     end
   end
 
