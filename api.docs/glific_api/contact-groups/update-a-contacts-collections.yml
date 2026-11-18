@@ -11,6 +11,10 @@ graphql:
       mutation updateContactGroups($input: ContactGroupsInput!) {
         updateContactGroups(input: $input) {
           numberDeleted
+          errors {
+            key
+            message
+          }
           contactGroups {
             id
             group {
@@ -62,7 +66,8 @@ docs: |
         "contactGroups": [
           { "id": "311", "group": { "id": "4", "label": "Mentors" } },
           { "id": "305", "group": { "id": "2", "label": "Optin contacts" } }
-        ]
+        ],
+        "errors": null
       }
     }
   }
@@ -70,5 +75,8 @@ docs: |
 
   ## Errors
 
-  Collections that can't be added (an unknown ID, say) are skipped silently and left out of
-  `contactGroups`. A user without the staff role gets a top-level `Unauthorized` error.
+  - `contactId` is unknown or belongs to another organization: nothing changes, and
+    `errors` is `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - Collections that can't be added (an unknown ID, or one from another organization) are
+    skipped silently and left out of `contactGroups`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

@@ -11,6 +11,10 @@ graphql:
       mutation updateContactTags($input: ContactTagsInput!) {
         updateContactTags(input: $input) {
           numberDeleted
+          errors {
+            key
+            message
+          }
           contactTags {
             id
             tag {
@@ -63,7 +67,8 @@ docs: |
         "contactTags": [
           { "id": "81", "tag": { "id": "7", "label": "Help needed" } },
           { "id": "77", "tag": { "id": "5", "label": "New contact" } }
-        ]
+        ],
+        "errors": null
       }
     }
   }
@@ -71,5 +76,8 @@ docs: |
 
   ## Errors
 
-  Tags that can't be added (an unknown ID, say) are skipped silently and left out of
-  `contactTags`. A user without the staff role gets a top-level `Unauthorized` error.
+  - `contactId` is unknown or belongs to another organization: nothing changes, and
+    `errors` is `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - Tags that can't be added (an unknown ID, or one from another organization) are
+    skipped silently and left out of `contactTags`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

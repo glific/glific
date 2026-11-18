@@ -11,6 +11,10 @@ graphql:
       mutation updateMessageTags($input: MessageTagsInput!) {
         updateMessageTags(input: $input) {
           numberDeleted
+          errors {
+            key
+            message
+          }
           messageTags {
             id
             message {
@@ -37,9 +41,6 @@ docs: |
   Adds and removes several tags on one message in a single call. Each added tag is pushed to
   **Subscribe to message tag additions** and each removed one to **Subscribe to message tag
   removals**.
-
-  Failures are skipped silently: a tag that cannot be added is left out of `messageTags`, and
-  IDs to delete that are not on the message are ignored.
 
   **Role:** staff
 
@@ -69,7 +70,8 @@ docs: |
         "messageTags": [
           { "id": "905", "message": { "id": "1042" }, "tag": { "id": "7", "label": "Follow up" } },
           { "id": "904", "message": { "id": "1042" }, "tag": { "id": "6", "label": "Important" } }
-        ]
+        ],
+        "errors": null
       }
     }
   }
@@ -77,5 +79,9 @@ docs: |
 
   ## Errors
 
-  The result has no `errors` field; see above for how failures show. A user without the
-  staff role gets a top-level `Unauthorized` error.
+  - `messageId` is unknown or belongs to another organization: nothing changes, and
+    `errors` is `[{ "key": "Elixir.Glific.Messages.Message", "message": "Resource not found" }]`.
+  - Tags that can't be added (an unknown ID, or one from another organization) are
+    skipped silently and left out of `messageTags`.
+  - IDs in `deleteTagIds` that aren't on the message are ignored.
+  - A user without the staff role gets a top-level `Unauthorized` error.

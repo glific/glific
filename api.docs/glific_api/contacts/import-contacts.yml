@@ -53,8 +53,8 @@ docs: |
 
   | Argument     | Type                     | Required | Description                                                                 |
   | ------------ | ------------------------ | -------- | --------------------------------------------------------------------------- |
-  | `data`       | `String!`                | Yes      | The CSV itself (`DATA`), a URL to download it from (`URL`), or a file path on the server (`FILE_PATH`). |
-  | `type`       | `ImportContactsTypeEnum` | Yes\*    | `DATA`, `URL` or `FILE_PATH`.                                               |
+  | `data`       | `String!`                | Yes      | The CSV itself (`DATA`) or a public http(s) URL to download it from (`URL`). |
+  | `type`       | `ImportContactsTypeEnum` | Yes\*    | `DATA` or `URL`.                                                            |
   | `groupLabel` | `String`                 | Yes\*    | Collection to add every contact to, created if it doesn't exist. Pass `null` for none. |
 
   \* Optional in the schema, but the call fails with a top-level error if it is left out.
@@ -78,8 +78,9 @@ docs: |
 
   - The CSV isn't valid UTF-8, such as `Line 3 is not valid UTF-8 (a smart quote, dash or
     accent saved in a Windows encoding). ...`.
+  - `The CSV URL must be a public http or https address.` The URL must use http or https and
+    must not point at a private, loopback or link-local address.
   - `Could not download the CSV from the given URL.`
-  - `Could not read the CSV file.`
 
   Problems with individual rows, such as a missing name or an invalid phone, don't stop the
   import; they are listed in **Get a contact upload report**.

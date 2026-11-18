@@ -48,11 +48,11 @@ docs: |
   | Argument    | Type                      | Required | Description                                                    |
   | ----------- | ------------------------- | -------- | -------------------------------------------------------------- |
   | `waGroupId` | `ID!`                     | Yes      | The WhatsApp group.                                            |
-  | `type`      | `ImportContactsTypeEnum!` | Yes      | Where the CSV comes from: `DATA`, `URL` or `FILE_PATH`.        |
-  | `data`      | `String!`                 | Yes      | The CSV text, its URL, or a file path on the server, per `type`. |
+  | `type`      | `ImportContactsTypeEnum!` | Yes      | Where the CSV comes from: `DATA` or `URL`.                     |
+  | `data`      | `String!`                 | Yes      | The CSV text or its URL, per `type`.                           |
 
-  The CSV has a `phone` column and an optional `name` column, and must be UTF-8. A `URL` must
-  return the CSV with HTTP status 200.
+  The CSV has a `phone` column and an optional `name` column, and must be UTF-8. A `URL` must be
+  a public http or https address and return the CSV with HTTP status 200.
 
   ## Example response
 
@@ -73,8 +73,9 @@ docs: |
     `[{ "key": "Elixir.Glific.Groups.WAGroup", "message": "Resource not found" }]`.
   - These come back as a top-level error, with nothing queued:
     - The CSV is not valid UTF-8, such as `Line 2 is not valid UTF-8 (...)`.
+    - The URL isn't a public http or https address:
+      `The CSV URL must be a public http or https address.`
     - The URL can't be downloaded: `Could not download the CSV from the given URL.`
-    - The file can't be read: `Could not read the CSV file.`
     - `data` is empty: `Please specify exactly one of: file_path, url or data`.
     - A user without the admin role gets `Unauthorized`.
 

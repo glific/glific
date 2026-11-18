@@ -39,8 +39,8 @@ docs: |
 
   | Argument | Type                     | Required | Description                                                                 |
   | -------- | ------------------------ | -------- | --------------------------------------------------------------------------- |
-  | `data`   | `String!`                | Yes      | The CSV itself (`DATA`), a URL to download it from (`URL`), or a file path on the server (`FILE_PATH`). |
-  | `type`   | `ImportContactsTypeEnum` | Yes\*    | `DATA`, `URL` or `FILE_PATH`.                                               |
+  | `data`   | `String!`                | Yes      | The CSV itself (`DATA`) or a public http(s) URL to download it from (`URL`). |
+  | `type`   | `ImportContactsTypeEnum` | Yes\*    | `DATA` or `URL`.                                                            |
 
   \* Optional in the schema, but the call fails with a top-level error if it is left out.
 
