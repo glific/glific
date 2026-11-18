@@ -534,32 +534,59 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  # A callback for a timed-out call is dropped whole: its flow already took the Failure branch,
-  # and await_context/2 matches on contact + flow only, so resuming would hand this stale result
-  # to whichever async node the contact is parked at now.
+  # A callback resumes only the context that made the call. It is dropped whole when that context
+  # is no longer parked for it: the call timed out (its flow already took the Failure branch) or a
+  # newer message restarted the flow. Matching on contact + flow alone would hand this stale
+  # result to whichever async node the contact is parked at now.
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume(organization_id, result, response, contact) do
     webhook_log_id = response["webhook_log_id"]
 
-    if timed_out?(webhook_log_id) do
-      Logger.info(
-        "Dropping async webhook callback after timeout: webhook_log_id=#{webhook_log_id}"
-      )
-    else
-      resume_flow(organization_id, result, response, contact)
+    case resume_target(webhook_log_id, response["flow_id"], contact) do
+      {:ok, target} ->
+        resume_flow(organization_id, result, response, contact, target)
+
+      {:drop, reason} ->
+        Logger.info("Dropping async webhook callback #{reason}: webhook_log_id=#{webhook_log_id}")
     end
 
     :ok
   end
 
-  @spec timed_out?(non_neg_integer() | nil) :: boolean()
-  defp timed_out?(nil), do: false
+  @spec resume_target(non_neg_integer() | nil, non_neg_integer() | nil, Contact.t()) ::
+          {:ok, non_neg_integer() | FlowContext.t() | nil} | {:drop, String.t()}
+  defp resume_target(nil, flow_id, _contact), do: {:ok, flow_id}
 
-  defp timed_out?(webhook_log_id),
-    do: Repo.get_by(WebhookLog, id: webhook_log_id, error: @timeout_error) != nil
+  defp resume_target(webhook_log_id, flow_id, contact) do
+    case Repo.get(WebhookLog, webhook_log_id) do
+      %WebhookLog{error: @timeout_error} ->
+        {:drop, "after timeout"}
 
-  @spec resume_flow(non_neg_integer(), map(), map(), Contact.t()) :: :ok
-  defp resume_flow(organization_id, result, response, contact) do
+      %WebhookLog{flow_context_id: context_id} when is_integer(context_id) ->
+        awaiting_target(contact, context_id)
+
+      _ ->
+        {:ok, flow_id}
+    end
+  end
+
+  @spec awaiting_target(Contact.t(), non_neg_integer()) ::
+          {:ok, FlowContext.t()} | {:drop, String.t()}
+  defp awaiting_target(contact, context_id) do
+    case FlowContext.fetch_awaiting_context(contact.id, context_id) do
+      nil -> {:drop, "for a flow context no longer awaiting it"}
+      context -> {:ok, context}
+    end
+  end
+
+  @spec resume_flow(
+          non_neg_integer(),
+          map(),
+          map(),
+          Contact.t(),
+          non_neg_integer() | FlowContext.t() | nil
+        ) :: :ok
+  defp resume_flow(organization_id, result, response, contact, target) do
     maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
 
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
@@ -568,7 +595,7 @@ defmodule Glific.Flows.Webhook do
 
     FlowContext.resume_contact_flow(
       contact,
-      response["flow_id"],
+      target,
       %{response_key => shaped},
       resume_message(result, response, organization_id)
     )

@@ -1030,6 +1030,18 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.one()
   end
 
+  @doc "Fetch the contact's flow context with this id if it is still parked awaiting a result."
+  @spec fetch_awaiting_context(non_neg_integer, non_neg_integer) :: FlowContext.t() | nil
+  def fetch_awaiting_context(contact_id, context_id) do
+    FlowContext
+    |> where([fc], fc.id == ^context_id)
+    |> where([fc], fc.contact_id == ^contact_id)
+    |> where([fc], fc.is_await_result == true)
+    |> where([fc], is_nil(fc.completed_at))
+    |> preload(:flow)
+    |> Repo.one()
+  end
+
   @doc """
   Resume the flow for a given contact and a given flow id if still active
   """
