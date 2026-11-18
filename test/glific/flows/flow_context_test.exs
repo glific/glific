@@ -560,6 +560,64 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.is_await_result == false
   end
 
+  describe "resume_contact_flow/4 with duplicate awaiting contexts" do
+    setup %{organization_id: organization_id} do
+      Tesla.Mock.mock_global(fn _ -> %Tesla.Env{status: 200, body: %{}} end)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      %{flow: flow, contact: contact}
+    end
+
+    test "resumes the newest context and closes the older ones instead of raising", %{
+      organization_id: organization_id,
+      flow: flow,
+      contact: contact
+    } do
+      older = park_awaiting_context(organization_id, contact, flow)
+      newest = park_awaiting_context(organization_id, contact, flow)
+
+      assert {:ok, _context, _messages} =
+               FlowContext.resume_contact_flow(
+                 contact,
+                 flow.id,
+                 %{"answer" => "yes"},
+                 Messages.create_temp_message(organization_id, "1")
+               )
+
+      newest = Repo.get!(FlowContext, newest.id)
+      assert %{"answer" => "yes"} = newest.results
+      refute newest.is_killed
+
+      older = Repo.get!(FlowContext, older.id)
+      refute Map.has_key?(older.results, "answer")
+      assert older.completed_at != nil
+      assert older.is_killed
+      assert older.reason == "Superseded by a newer context awaiting the same result"
+    end
+
+    test "resumes a single awaiting context without closing it", %{
+      organization_id: organization_id,
+      flow: flow,
+      contact: contact
+    } do
+      context = park_awaiting_context(organization_id, contact, flow)
+
+      assert {:ok, _context, _messages} =
+               FlowContext.resume_contact_flow(
+                 contact,
+                 flow.id,
+                 %{"answer" => "yes"},
+                 Messages.create_temp_message(organization_id, "1")
+               )
+
+      context = Repo.get!(FlowContext, context.id)
+      assert %{"answer" => "yes"} = context.results
+      refute context.is_killed
+    end
+  end
+
   describe "init_wa_group_context/3" do
     setup do
       SeedsDev.seed_test_flows()
@@ -951,5 +1009,23 @@ defmodule Glific.Flows.FlowContextTest do
 
     {:ok, context} = FlowContext.create_flow_context(context_attrs)
     {context, contact, node_uuid}
+  end
+
+  defp park_awaiting_context(organization_id, contact, flow) do
+    [node | _tail] = flow.nodes
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        uuid_map: %{},
+        organization_id: organization_id,
+        is_await_result: true,
+        wakeup_at: DateTime.add(DateTime.utc_now(), 180),
+        node_uuid: node.uuid
+      })
+
+    context
   end
 end

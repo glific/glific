@@ -1026,8 +1026,37 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], fc.flow_id == ^flow_id)
     |> where([fc], fc.is_await_result == true)
     |> where([fc], is_nil(fc.completed_at))
+    |> order_by([fc], desc: fc.id)
     |> preload(:flow)
-    |> Repo.one()
+    |> Repo.all()
+    |> newest_awaiting_context()
+  end
+
+  @spec newest_awaiting_context([FlowContext.t()]) :: FlowContext.t() | nil
+  defp newest_awaiting_context([]), do: nil
+  defp newest_awaiting_context([context]), do: context
+
+  defp newest_awaiting_context([newest | superseded]) do
+    superseded_ids = Enum.map(superseded, & &1.id)
+    now = DateTime.utc_now()
+
+    FlowContext
+    |> where([fc], fc.id in ^superseded_ids)
+    |> Repo.update_all(
+      set: [
+        completed_at: now,
+        updated_at: now,
+        is_killed: true,
+        reason: "Superseded by a newer context awaiting the same result"
+      ]
+    )
+
+    Glific.log_error(
+      "Multiple flow contexts awaiting a result: contact_id=#{newest.contact_id}, " <>
+        "flow_id=#{newest.flow_id}, resumed=#{newest.id}, closed=#{Glific.SafeLog.safe_inspect(superseded_ids)}"
+    )
+
+    newest
   end
 
   @doc "Fetch the contact's flow context with this id if it is still parked awaiting a result."
