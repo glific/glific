@@ -1036,7 +1036,7 @@ defmodule Glific.Flows.FlowContext do
   defp newest_awaiting_context([]), do: nil
   defp newest_awaiting_context([context]), do: context
 
-  # Waits on different channels are separate conversations (#5719). This lookup has no channel to
+  # Waits on different channels are separate conversations. This lookup has no channel to
   # pick between them, so it resumes and closes nothing rather than guess.
   defp newest_awaiting_context([newest | older] = contexts) do
     if Enum.all?(older, &(&1.channel == newest.channel)) do
