@@ -431,7 +431,7 @@ defmodule Glific.CommunicationsTest do
         |> Map.merge(attrs)
         |> message_fixture()
 
-      Communications.Message.send_message(message)
+      assert {:ok, _message} = Communications.Message.send_message(message)
 
       assert_enqueued(worker: Worker, state: "available", prefix: global_schema)
       refute_enqueued(worker: Worker, state: "scheduled", prefix: global_schema)
