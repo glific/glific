@@ -1036,21 +1036,20 @@ defmodule Glific.Flows.FlowContext do
   defp newest_awaiting_context([]), do: nil
   defp newest_awaiting_context([context]), do: context
 
-  # A wait on another channel is a separate conversation (#5719), not a duplicate, so only the
-  # newest context's own channel is cleaned up.
-  defp newest_awaiting_context([newest | older]) do
-    {same_channel, other_channels} = Enum.split_with(older, &(&1.channel == newest.channel))
+  # Waits on different channels are separate conversations (#5719). This lookup has no channel to
+  # pick between them, so it resumes and closes nothing rather than guess.
+  defp newest_awaiting_context([newest | older] = contexts) do
+    if Enum.all?(older, &(&1.channel == newest.channel)) do
+      older
+      |> Enum.map(& &1.id)
+      |> close_superseded_contexts()
+      |> report_closed_duplicates(newest)
 
-    same_channel
-    |> Enum.map(& &1.id)
-    |> close_superseded_contexts()
-    |> report_closed_duplicates(newest)
-
-    other_channels
-    |> Enum.map(& &1.id)
-    |> report_other_channel_waits(newest)
-
-    newest
+      newest
+    else
+      report_waits_across_channels(contexts)
+      nil
+    end
   end
 
   @spec report_closed_duplicates([non_neg_integer], FlowContext.t()) :: any()
@@ -1064,12 +1063,12 @@ defmodule Glific.Flows.FlowContext do
     )
   end
 
-  @spec report_other_channel_waits([non_neg_integer], FlowContext.t()) :: :ok
-  defp report_other_channel_waits([], _newest), do: :ok
+  @spec report_waits_across_channels([FlowContext.t()]) :: :ok
+  defp report_waits_across_channels([newest | _older] = contexts) do
+    context_ids = Enum.map(contexts, & &1.id)
 
-  defp report_other_channel_waits(context_ids, newest) do
     Logger.info(
-      "Resumed flow context #{newest.id} left waits on other channels open: " <>
+      "Not resuming: flow contexts awaiting a result on more than one channel: " <>
         "contact_id=#{newest.contact_id}, flow_id=#{newest.flow_id}, " <>
         "contexts=#{Glific.SafeLog.safe_inspect(context_ids)}"
     )

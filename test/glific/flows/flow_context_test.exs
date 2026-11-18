@@ -617,15 +617,16 @@ defmodule Glific.Flows.FlowContextTest do
       refute context.is_killed
     end
 
-    test "leaves a wait on another channel open", %{
+    test "resumes and closes nothing when waits span channels", %{
       organization_id: organization_id,
       flow: flow,
       contact: contact
     } do
+      older_whatsapp_context = park_awaiting_context(organization_id, contact, flow)
       web_context = park_awaiting_context(organization_id, contact, flow, :web)
       whatsapp_context = park_awaiting_context(organization_id, contact, flow)
 
-      assert {:ok, _context, _messages} =
+      assert {:error, _reason} =
                FlowContext.resume_contact_flow(
                  contact,
                  flow.id,
@@ -633,12 +634,12 @@ defmodule Glific.Flows.FlowContextTest do
                  Messages.create_temp_message(organization_id, "1")
                )
 
-      assert %{"answer" => "yes"} = Repo.get!(FlowContext, whatsapp_context.id).results
-
-      web_context = Repo.get!(FlowContext, web_context.id)
-      assert web_context.is_await_result
-      assert web_context.completed_at == nil
-      refute web_context.is_killed
+      for context <- [older_whatsapp_context, web_context, whatsapp_context] do
+        context = Repo.get!(FlowContext, context.id)
+        assert context.is_await_result
+        assert context.completed_at == nil
+        refute Map.has_key?(context.results, "answer")
+      end
     end
   end
 
