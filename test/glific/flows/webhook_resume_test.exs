@@ -9,6 +9,7 @@ defmodule Glific.Flows.WebhookResumeTest do
   alias Glific.Flows.Flow
   alias Glific.Flows.FlowContext
   alias Glific.Flows.Webhook
+  alias Glific.LlmCalls.LlmCall
   alias Glific.Repo
 
   setup %{organization_id: organization_id} do
@@ -27,10 +28,51 @@ defmodule Glific.Flows.WebhookResumeTest do
   } do
     context = park_context(organization_id, contact, flow)
     webhook_log = webhook_log_for(organization_id, context)
+    newer = park_context(organization_id, contact, flow)
 
     resume(organization_id, contact, flow, webhook_log.id, "answer")
 
     assert %{"answer" => _} = Repo.get!(FlowContext, context.id).results
+
+    newer = Repo.get!(FlowContext, newer.id)
+    assert newer.is_await_result
+    refute Map.has_key?(newer.results, "answer")
+  end
+
+  test "a callback whose logged context belongs to another flow is dropped", %{
+    organization_id: organization_id,
+    contact: contact,
+    flow: flow
+  } do
+    context = park_context(organization_id, contact, flow)
+    webhook_log = webhook_log_for(organization_id, context)
+    other_flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+
+    resume(organization_id, contact, other_flow, webhook_log.id, "answer")
+
+    context = Repo.get!(FlowContext, context.id)
+    assert context.is_await_result
+    refute Map.has_key?(context.results, "answer")
+  end
+
+  test "a dropped LLM callback still records the LLM call", %{
+    organization_id: organization_id,
+    contact: contact,
+    flow: flow
+  } do
+    replaced = park_context(organization_id, contact, flow)
+    webhook_log = webhook_log_for(organization_id, replaced)
+    {:ok, _} = FlowContext.update_flow_context(replaced, %{completed_at: DateTime.utc_now()})
+
+    Webhook.resume(organization_id, %{"success" => true}, %{
+      "contact_id" => contact.id,
+      "flow_id" => flow.id,
+      "webhook_log_id" => webhook_log.id,
+      "call_type" => "llm"
+    })
+
+    assert [%LlmCall{contact_id: contact_id}] = Repo.all(LlmCall)
+    assert contact_id == contact.id
   end
 
   test "a callback for a replaced context does not resume the context that replaced it", %{

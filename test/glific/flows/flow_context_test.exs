@@ -616,6 +616,30 @@ defmodule Glific.Flows.FlowContextTest do
       assert %{"answer" => "yes"} = context.results
       refute context.is_killed
     end
+
+    test "leaves a wait on another channel open", %{
+      organization_id: organization_id,
+      flow: flow,
+      contact: contact
+    } do
+      web_context = park_awaiting_context(organization_id, contact, flow, :web)
+      whatsapp_context = park_awaiting_context(organization_id, contact, flow)
+
+      assert {:ok, _context, _messages} =
+               FlowContext.resume_contact_flow(
+                 contact,
+                 flow.id,
+                 %{"answer" => "yes"},
+                 Messages.create_temp_message(organization_id, "1")
+               )
+
+      assert %{"answer" => "yes"} = Repo.get!(FlowContext, whatsapp_context.id).results
+
+      web_context = Repo.get!(FlowContext, web_context.id)
+      assert web_context.is_await_result
+      assert web_context.completed_at == nil
+      refute web_context.is_killed
+    end
   end
 
   describe "init_wa_group_context/3" do
@@ -1011,7 +1035,7 @@ defmodule Glific.Flows.FlowContextTest do
     {context, contact, node_uuid}
   end
 
-  defp park_awaiting_context(organization_id, contact, flow) do
+  defp park_awaiting_context(organization_id, contact, flow, channel \\ :whatsapp) do
     [node | _tail] = flow.nodes
 
     {:ok, context} =
@@ -1023,7 +1047,8 @@ defmodule Glific.Flows.FlowContextTest do
         organization_id: organization_id,
         is_await_result: true,
         wakeup_at: DateTime.add(DateTime.utc_now(), 180),
-        node_uuid: node.uuid
+        node_uuid: node.uuid,
+        channel: channel
       })
 
     context

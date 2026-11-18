@@ -548,6 +548,7 @@ defmodule Glific.Flows.Webhook do
 
       {:drop, reason} ->
         Logger.info("Dropping async webhook callback #{reason}: webhook_log_id=#{webhook_log_id}")
+        maybe_create_llm_call(organization_id, result, response)
     end
 
     :ok
@@ -563,19 +564,26 @@ defmodule Glific.Flows.Webhook do
         {:drop, "after timeout"}
 
       %WebhookLog{flow_context_id: context_id} when is_integer(context_id) ->
-        awaiting_target(contact, context_id)
+        awaiting_target(contact, context_id, flow_id)
 
       _ ->
         {:ok, flow_id}
     end
   end
 
-  @spec awaiting_target(Contact.t(), non_neg_integer()) ::
+  # The signature covers flow_id but not webhook_log_id, so the logged context must belong to the
+  # signed flow; otherwise one signed callback could resume another flow of the same contact.
+  @spec awaiting_target(Contact.t(), non_neg_integer(), non_neg_integer() | String.t() | nil) ::
           {:ok, FlowContext.t()} | {:drop, String.t()}
-  defp awaiting_target(contact, context_id) do
+  defp awaiting_target(contact, context_id, flow_id) do
     case FlowContext.fetch_awaiting_context(contact.id, context_id) do
-      nil -> {:drop, "for a flow context no longer awaiting it"}
-      context -> {:ok, context}
+      nil ->
+        {:drop, "for a flow context no longer awaiting it"}
+
+      context ->
+        if to_string(context.flow_id) == to_string(flow_id),
+          do: {:ok, context},
+          else: {:drop, "for a flow context outside the signed flow"}
     end
   end
 

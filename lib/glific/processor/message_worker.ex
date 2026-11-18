@@ -8,8 +8,8 @@ defmodule Glific.Processor.MessageWorker do
   traffic surge from one org queues behind its own allowance instead of
   exhausting the shared pool for every other org.
 
-  Jobs are chained by contact, so one contact's messages run one at a time in
-  arrival order and never drive the flow engine concurrently.
+  Jobs are chained by contact, so one contact's messages run one at a time in the
+  order their jobs were enqueued and never drive the flow engine concurrently.
   """
 
   use Oban.Pro.Worker,

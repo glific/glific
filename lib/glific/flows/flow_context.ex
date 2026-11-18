@@ -1036,27 +1036,50 @@ defmodule Glific.Flows.FlowContext do
   defp newest_awaiting_context([]), do: nil
   defp newest_awaiting_context([context]), do: context
 
-  defp newest_awaiting_context([newest | superseded]) do
-    superseded_ids = Enum.map(superseded, & &1.id)
-    now = DateTime.utc_now()
+  # A wait on another channel is a separate conversation (#5719), not a duplicate, so only the
+  # newest context's own channel is cleaned up.
+  defp newest_awaiting_context([newest | older]) do
+    {same_channel, other_channels} = Enum.split_with(older, &(&1.channel == newest.channel))
 
-    FlowContext
-    |> where([fc], fc.id in ^superseded_ids)
-    |> Repo.update_all(
-      set: [
-        completed_at: now,
-        updated_at: now,
-        is_killed: true,
-        reason: "Superseded by a newer context awaiting the same result"
-      ]
-    )
+    closed_ids =
+      same_channel
+      |> Enum.map(& &1.id)
+      |> close_superseded_contexts()
+
+    other_channel_ids = Enum.map(other_channels, & &1.id)
 
     Glific.log_error(
       "Multiple flow contexts awaiting a result: contact_id=#{newest.contact_id}, " <>
-        "flow_id=#{newest.flow_id}, resumed=#{newest.id}, closed=#{Glific.SafeLog.safe_inspect(superseded_ids)}"
+        "flow_id=#{newest.flow_id}, resumed=#{newest.id}, " <>
+        "closed=#{Glific.SafeLog.safe_inspect(closed_ids)}, " <>
+        "other_channels=#{Glific.SafeLog.safe_inspect(other_channel_ids)}"
     )
 
     newest
+  end
+
+  @spec close_superseded_contexts([non_neg_integer]) :: [non_neg_integer]
+  defp close_superseded_contexts([]), do: []
+
+  defp close_superseded_contexts(context_ids) do
+    now = DateTime.utc_now()
+
+    {_count, closed_ids} =
+      FlowContext
+      |> where([fc], fc.id in ^context_ids)
+      |> where([fc], fc.is_await_result == true)
+      |> where([fc], is_nil(fc.completed_at))
+      |> select([fc], fc.id)
+      |> Repo.update_all(
+        set: [
+          completed_at: now,
+          updated_at: now,
+          is_killed: true,
+          reason: "Superseded by a newer context awaiting the same result"
+        ]
+      )
+
+    closed_ids
   end
 
   @doc "Fetch the contact's flow context with this id if it is still parked awaiting a result."
