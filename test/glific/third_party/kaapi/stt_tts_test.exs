@@ -331,12 +331,12 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
       assert result.success == true
     end
 
-    test "never sends Google defaults to a non-google provider when model and voice are absent" do
+    test "sends empty model and voice to a non-google provider when they are absent" do
       mock(fn
         %Tesla.Env{method: :post, body: body} ->
           params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
-          assert params["model"] == nil
-          assert params["voice"] == nil
+          assert params["model"] == ""
+          assert params["voice"] == ""
 
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-no-model"}}
       end)
