@@ -91,7 +91,7 @@ oban_queues = [
   gupshup_high_tps: 20,
   clone_assistant: 5,
   gupshup_inbound: [
-    local_limit: 30,
+    local_limit: 40,
     global_limit: [
       allowed: 10,
       burst: false,
