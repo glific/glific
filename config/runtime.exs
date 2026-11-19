@@ -112,6 +112,9 @@ config :glific,
   rate_limit_web_channel_otp_phone: rate_limit.("RATE_LIMIT_WEB_CHANNEL_OTP_PHONE", 30_000, 1),
   # Its per-address companion. A computer lab signing a class in at once must not be refused.
   rate_limit_web_channel_otp_ip: rate_limit.("RATE_LIMIT_WEB_CHANNEL_OTP_IP", 60_000, 100),
+  # Sign-in code requests and failures written to a contact's History tab, per contact and event.
+  rate_limit_web_channel_login_history:
+    rate_limit.("RATE_LIMIT_WEB_CHANNEL_LOGIN_HISTORY", 600_000, 1),
   # Inbound socket messages, per contact.
   rate_limit_web_channel_message: rate_limit.("RATE_LIMIT_WEB_CHANNEL_MESSAGE", 10_000, 20),
   # Socket connects, charged before the token is verified so a flood cannot make us do the work.

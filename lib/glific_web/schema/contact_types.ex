@@ -8,7 +8,6 @@ defmodule GlificWeb.Schema.ContactTypes do
   import Ecto.Query
 
   alias Glific.{
-    Contacts,
     Contacts.Contact,
     Contacts.ContactHistory,
     Repo
@@ -78,21 +77,6 @@ defmodule GlificWeb.Schema.ContactTypes do
           do: {:ok, []},
           else: dataloader(Repo).(contact, args, resolution)
       end)
-    end
-
-    @desc """
-    The channels the contact uses, WhatsApp first, each with when the contact last messaged on it
-    (null until its first message there). Unlike `identities` it carries no phone or username, so
-    staff users see it too.
-    """
-    field :channels, list_of(:contact_channel) do
-      resolve(
-        dataloader(Repo, :identities,
-          callback: fn identities, contact, _args ->
-            {:ok, Contacts.channel_activity(contact, identities)}
-          end
-        )
-      )
     end
 
     field :active_profile, :profile do

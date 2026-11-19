@@ -1315,14 +1315,6 @@ defmodule Glific.Contacts do
     do: ContactIdentities.web_contact_ids_query(organization_id)
 
   @doc """
-  The channels a contact uses and when it last messaged on each, from its already-loaded identities.
-  See `Glific.Contacts.ContactIdentities.channel_activity/2`.
-  """
-  @spec channel_activity(Contact.t(), [ContactIdentity.t()]) :: [map()]
-  def channel_activity(contact, identities),
-    do: ContactIdentities.channel_activity(contact, identities)
-
-  @doc """
   Looks a contact up by its identity on a channel (web identities are case-insensitive).
   """
   @spec fetch_by_identity(:whatsapp | :web, String.t() | nil) ::

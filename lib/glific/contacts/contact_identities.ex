@@ -231,67 +231,6 @@ defmodule Glific.Contacts.ContactIdentities do
   end
 
   @doc """
-  The channels a contact uses, each with when the contact last messaged on it (`nil` before the
-  first message), WhatsApp first. Built from identities the caller has already loaded, so a list of
-  contacts can batch the read.
-
-  Gives only the channel and a time, never an identifier, so it is safe to show to any staff user.
-
-  WhatsApp takes the later of its identities' times and `contacts.last_message_at`, the same
-  WhatsApp clock: the trigger only advances the identity whose identifier is the contact's current
-  phone, and a contact whose identity row has not been written yet has only the contact's clock.
-  """
-  @spec channel_activity(Contact.t(), [ContactIdentity.t()]) :: [
-          %{channel: MessageChannel.t(), last_message_at: DateTime.t() | nil}
-        ]
-  def channel_activity(%Contact{} = contact, identities) do
-    by_channel = Enum.group_by(identities, & &1.channel)
-
-    [
-      whatsapp_activity(contact, Map.get(by_channel, :whatsapp, [])),
-      web_activity(Map.get(by_channel, :web, []))
-    ]
-    |> Enum.reject(&is_nil/1)
-  end
-
-  @spec whatsapp_activity(Contact.t(), [ContactIdentity.t()]) :: map() | nil
-  defp whatsapp_activity(%Contact{phone: phone}, []) when phone in [nil, ""], do: nil
-
-  # A contact holds one WhatsApp identity. A second is a data bug to surface, but reading on keeps
-  # one bad contact from failing the whole contact list it is batched into.
-  defp whatsapp_activity(%Contact{} = contact, [_, _ | _] = identities) do
-    Glific.log_error(
-      "Contact #{contact.id} has #{length(identities)} WhatsApp identities; expected one"
-    )
-
-    whatsapp_activity_of(contact, identities)
-  end
-
-  defp whatsapp_activity(%Contact{} = contact, identities),
-    do: whatsapp_activity_of(contact, identities)
-
-  @spec whatsapp_activity_of(Contact.t(), [ContactIdentity.t()]) :: map()
-  defp whatsapp_activity_of(contact, identities),
-    do: %{
-      channel: :whatsapp,
-      last_message_at:
-        latest([contact.last_message_at | Enum.map(identities, & &1.last_message_at)])
-    }
-
-  @spec web_activity([ContactIdentity.t()]) :: map() | nil
-  defp web_activity([]), do: nil
-
-  defp web_activity(identities),
-    do: %{channel: :web, last_message_at: latest(Enum.map(identities, & &1.last_message_at))}
-
-  @spec latest([DateTime.t() | nil]) :: DateTime.t() | nil
-  defp latest(times) do
-    times
-    |> Enum.reject(&is_nil/1)
-    |> Enum.max(DateTime, fn -> nil end)
-  end
-
-  @doc """
   Whether a contact changeset's changes touch what a WhatsApp identity holds: the phone or the consent and session fields.
   """
   @spec whatsapp_changes?(changes()) :: boolean()

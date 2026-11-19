@@ -2,8 +2,6 @@ defmodule Glific.Communications.WebMessageTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
 
-  import Ecto.Query
-
   alias Glific.{
     Communications.WebMessage,
     Contacts,
@@ -70,23 +68,6 @@ defmodule Glific.Communications.WebMessageTest do
                )
 
       assert %Contact{last_message_at: nil} = Repo.get!(Contact, contact.id)
-    end
-
-    # The profile shows when the contact last wrote on each channel (#5877); for the web that time
-    # lives on the web identity, matched by contact rather than phone, since a username has none.
-    test "an inbound web message records the time on the contact's web identity only", %{
-      contact: contact
-    } do
-      {:ok, contact} = Contacts.add_identity(contact, :web, "ravi_web_#{contact.id}")
-      before = identity_message_times(contact)
-
-      assert {:ok, _message} = WebMessage.receive_message(contact, %{body: "hi"}, :text)
-
-      after_message = identity_message_times(contact)
-
-      assert is_nil(before[:web])
-      assert_in_delta DateTime.to_unix(after_message[:web]), System.system_time(:second), 5
-      assert after_message[:whatsapp] == before[:whatsapp]
     end
 
     # The rest of the inbox state is channel-agnostic and still has to update, or a web
@@ -302,12 +283,5 @@ defmodule Glific.Communications.WebMessageTest do
       assert contact_id == contact.id
       assert sender_id == contact.id
     end
-  end
-
-  defp identity_message_times(contact) do
-    Glific.Contacts.ContactIdentity
-    |> where([i], i.contact_id == ^contact.id)
-    |> Repo.all()
-    |> Map.new(&{&1.channel, &1.last_message_at})
   end
 end
