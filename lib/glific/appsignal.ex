@@ -21,6 +21,7 @@ defmodule Glific.Appsignal do
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
 
+    record_inbound_hold_time(meta)
     @tracer.close_span(span, end_time: time)
   end
 
@@ -51,6 +52,8 @@ defmodule Glific.Appsignal do
         tags
       )
     end
+
+    record_inbound_hold_time(meta)
   end
 
   def handle_event([:tesla, :request, :stop], measurement, meta, _) do
@@ -133,6 +136,27 @@ defmodule Glific.Appsignal do
   end
 
   def handle_event(_, _, _, _), do: nil
+
+  # Oban Pro emits no telemetry event for chain holds, so the hold time is derived here. A
+  # chained inbound job is parked with a far-future scheduled_at, and its release resets
+  # scheduled_at to now, so the hold never shows up in queue_time. Inbound jobs are never
+  # scheduled ahead, so scheduled_at - inserted_at is exactly the time spent held.
+  @spec record_inbound_hold_time(map()) :: :ok
+  defp record_inbound_hold_time(%{queue: "gupshup_inbound", job: %Oban.Job{} = job}) do
+    hold_ms = DateTime.diff(job.scheduled_at, job.inserted_at, :millisecond)
+
+    if hold_ms > 0,
+      do:
+        Appsignal.add_distribution_value(
+          "inbound_job_hold_time",
+          Float.ceil(hold_ms / 1_000, 2),
+          %{organization_id: organization_id_tag(job.args)}
+        )
+
+    :ok
+  end
+
+  defp record_inbound_hold_time(_meta), do: :ok
 
   @spec organization_id_tag(map() | nil) :: String.t()
   defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),

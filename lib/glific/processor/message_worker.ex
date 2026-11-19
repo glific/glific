@@ -7,11 +7,15 @@ defmodule Glific.Processor.MessageWorker do
   pipeline: the queue's global limit is partitioned by organization, so a
   traffic surge from one org queues behind its own allowance instead of
   exhausting the shared pool for every other org.
+
+  Jobs are chained by contact, so one contact's messages run one at a time in the
+  order their jobs were enqueued and never drive the flow engine concurrently.
   """
 
-  use Oban.Worker,
+  use Oban.Pro.Worker,
     queue: :gupshup_inbound,
-    max_attempts: 1
+    max_attempts: 1,
+    chain: [by: [args: :contact_id]]
 
   use Publicist
 
@@ -28,17 +32,33 @@ defmodule Glific.Processor.MessageWorker do
   """
   @spec make_job(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def make_job(message) do
-    %{message_id: message.id, organization_id: message.organization_id}
+    %{
+      message_id: message.id,
+      organization_id: message.organization_id,
+      contact_id: message.contact_id
+    }
     |> __MODULE__.new()
     |> Oban.insert()
+    |> tap(&count_held_job(&1, message.organization_id))
   end
+
+  # Oban Pro emits no telemetry event when a chain holds a job, so the hold is counted here
+  # from the inserted job's meta.
+  @spec count_held_job({:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}, non_neg_integer()) ::
+          :ok
+  defp count_held_job({:ok, %Oban.Job{meta: %{"on_hold" => true}}}, organization_id) do
+    Appsignal.increment_counter("inbound_job_held_count", 1, %{organization_id: organization_id})
+    :ok
+  end
+
+  defp count_held_job(_insert_result, _organization_id), do: :ok
 
   @doc """
   Process one inbound message through the tagger and flow pipeline.
   """
-  @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok
-  def perform(%Oban.Job{
+  @impl Oban.Pro.Worker
+  @spec process(Oban.Job.t()) :: :ok
+  def process(%Oban.Job{
         args: %{"message_id" => message_id, "organization_id" => organization_id}
       }) do
     Repo.put_process_state(organization_id)
