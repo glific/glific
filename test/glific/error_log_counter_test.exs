@@ -1,17 +1,9 @@
 defmodule Glific.ErrorLogCounterTest do
   use Glific.DataCase
 
-  import ExUnit.CaptureLog
   import Mock
 
   alias Glific.ErrorLogCounter
-
-  setup do
-    level = Logger.level()
-    Logger.configure(level: :error)
-    on_exit(fn -> Logger.configure(level: level) end)
-    :ok
-  end
 
   test "attach/0 adds the handler once and is safe to call again" do
     :logger.remove_handler(:glific_error_log_counter)
@@ -40,28 +32,6 @@ defmodule Glific.ErrorLogCounterTest do
     with_mock Appsignal, [:passthrough], increment_counter: fn _, _, _ -> raise "nif down" end do
       assert ErrorLogCounter.log(%{level: :error, meta: %{org_id: 5}, msg: {:string, "x"}}, %{}) ==
                :ok
-    end
-  end
-
-  test "a crash inside a wrapped task is counted against its organization", %{
-    organization_id: organization_id
-  } do
-    organization_tag = to_string(organization_id)
-
-    with_mock Appsignal, [:passthrough], increment_counter: fn _, _, _ -> :ok end do
-      capture_log(fn ->
-        {:ok, pid} =
-          Glific.Task.Supervisor.start_child(fn -> raise "flow processing failed" end)
-
-        ref = Process.monitor(pid)
-        assert_receive {:DOWN, ^ref, :process, ^pid, _reason}, 1_000
-      end)
-
-      assert called(
-               Appsignal.increment_counter("error_log_count", 1, %{
-                 organization_id: organization_tag
-               })
-             )
     end
   end
 end

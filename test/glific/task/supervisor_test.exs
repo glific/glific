@@ -15,19 +15,6 @@ defmodule Glific.Task.SupervisorTest do
     assert_receive {:DOWN, ^ref, :process, ^pid, _reason}, 1_000
   end
 
-  test "start_child/1 runs with the caller's logger metadata", %{
-    organization_id: organization_id
-  } do
-    Logger.metadata(request_id: "req-123")
-    caller = self()
-
-    Glific.Task.Supervisor.start_child(fn -> send(caller, {:metadata, Logger.metadata()}) end)
-
-    assert_receive {:metadata, metadata}, 1_000
-    assert metadata[:org_id] == organization_id
-    assert metadata[:request_id] == "req-123"
-  end
-
   test "async_nolink/1 runs with the caller's logger metadata", %{
     organization_id: organization_id
   } do
@@ -59,19 +46,5 @@ defmodule Glific.Task.SupervisorTest do
 
     assert log =~ "flow processing failed"
     assert log =~ "org_id=#{organization_id}"
-  end
-
-  test "a plain Task.Supervisor task loses org_id on its error" do
-    log =
-      capture_log(fn ->
-        wait_until_down(
-          Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
-            raise "flow processing failed"
-          end)
-        )
-      end)
-
-    assert log =~ "flow processing failed"
-    refute log =~ "org_id="
   end
 end

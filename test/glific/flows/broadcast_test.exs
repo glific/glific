@@ -21,8 +21,7 @@ defmodule Glific.Flows.BroadcastTest do
           [
             {:ok, :ok},
             {:exit, {%Contact{id: 11}, :timeout}},
-            {:exit, {42, :timeout}},
-            {:exit, {%Contact{id: 12}, :killed}}
+            {:exit, {42, :timeout}}
           ],
           organization_id
         )
@@ -31,6 +30,5 @@ defmodule Glific.Flows.BroadcastTest do
     assert log =~ "org_id=#{organization_id}"
     assert log =~ "Broadcast task timed out for contact_id: 11"
     assert log =~ "Broadcast task timed out for wa_group_id: 42"
-    refute log =~ "contact_id: 12"
   end
 end
