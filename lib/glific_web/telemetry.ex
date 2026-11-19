@@ -34,13 +34,6 @@ defmodule GlificWeb.Telemetry do
         unit: {:native, :millisecond}
       ),
 
-      # Database Metrics
-      summary("glific.repo.query.total_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.decode_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.query_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.queue_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.idle_time", unit: {:native, :millisecond}),
-
       # VM Metrics
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
       summary("vm.total_run_queue_lengths.total"),
