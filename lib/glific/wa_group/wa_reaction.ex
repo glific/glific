@@ -1,7 +1,6 @@
 defmodule Glific.WAGroup.WaReaction do
   @moduledoc false
   use Ecto.Schema
-  import Ecto.Query, warn: false
   import Ecto.Changeset
 
   alias Glific.{

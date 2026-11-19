@@ -8,9 +8,9 @@ defmodule Glific.ContactsTest do
 
   alias Glific.{
     Contacts,
+    Contacts.BulkImportWorker,
     Contacts.Contact,
     Contacts.Import,
-    Contacts.ImportWorker,
     Jobs.UserJob,
     Partners,
     Partners.Organization,
@@ -406,8 +406,14 @@ defmodule Glific.ContactsTest do
         "type" => "import_contact"
       }
 
-      job_args = %{"contacts" => contacts, "params" => params, "user_job_id" => user_job.id}
-      assert :ok == ImportWorker.perform(%Oban.Job{args: job_args})
+      job_args = %{
+        "contacts" => contacts,
+        "params" => params,
+        "user_job_id" => user_job.id,
+        "organization_id" => organization.id
+      }
+
+      assert :ok == BulkImportWorker.perform(%Oban.Job{args: job_args})
     end
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
@@ -475,10 +481,10 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -505,14 +511,90 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 0
+    end
+
+    test "import_contact/3 folds a phone listed twice in the same csv into one contact" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+      [organization | _] = Partners.list_organizations()
+
+      data =
+        "name,phone,language,city,age\n" <>
+          "dup_one,+919989329293,english,Pune,30\n" <>
+          "dup_two,+919989329293,english,Mumbai,\n"
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
+
+      assert Contacts.count_contacts(%{filter: %{phone: "919989329293"}}) == 1
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329293"})
+
+      assert get_in(contact.fields, ["city", "value"]) == "Mumbai"
+      assert get_in(contact.fields, ["age", "value"]) == "30"
+    end
+
+    test "import_contact/3 merges new contact fields into the existing ones" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+      [organization | _] = Partners.list_organizations()
+
+      import_data = fn data ->
+        Import.import_contacts(
+          organization.id,
+          %{user: user, collection: "collection", type: :import_contact},
+          data: data
+        )
+
+        Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
+      end
+
+      import_data.("name,phone,language,city,age\nfield_merge,+919989329299,english,Pune,30\n")
+
+      import_data.("name,phone,language,age,state\nfield_merge,+919989329299,english,31,MH\n")
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329299"})
+
+      assert get_in(contact.fields, ["city", "value"]) == "Pune"
+      assert get_in(contact.fields, ["age", "value"]) == "31"
+      assert get_in(contact.fields, ["state", "value"]) == "MH"
+    end
+
+    test "import_contact/3 does not erase an existing field when the csv cell is blank" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+      [organization | _] = Partners.list_organizations()
+
+      import_data = fn data ->
+        Import.import_contacts(
+          organization.id,
+          %{user: user, collection: "collection", type: :import_contact},
+          data: data
+        )
+
+        Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
+      end
+
+      import_data.("name,phone,language,city\nblank_field,+919989329298,english,Pune\n")
+      import_data.("name,phone,language,city\nblank_field,+919989329298,english,\n")
+
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: "919989329298"})
+
+      assert get_in(contact.fields, ["city", "value"]) == "Pune"
     end
 
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
@@ -530,10 +612,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "919989329297"}})
 
@@ -555,10 +637,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "919989329297"}})
 
@@ -595,10 +677,10 @@ defmodule Glific.ContactsTest do
         url: "http://www.bar.com/foo.csv"
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -634,10 +716,10 @@ defmodule Glific.ContactsTest do
         url: "http://www.bar.com/foo.csv"
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -671,10 +753,10 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -700,10 +782,10 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       Import.import_contacts(organization.id, %{user: user, type: :import_contact}, data: data)
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -729,10 +811,10 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       Import.import_contacts(organization.id, %{user: user, type: :import_contact}, data: data)
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -769,10 +851,10 @@ defmodule Glific.ContactsTest do
         url: "http://www.bar.com/foo.csv"
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -807,10 +889,10 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -846,10 +928,14 @@ defmodule Glific.ContactsTest do
           file_path: get_tmp_path()
         )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true, with_safety: false)
+               Oban.drain_queue(
+                 queue: :contact_import_bulk,
+                 with_scheduled: true,
+                 with_safety: false
+               )
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -885,10 +971,10 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -928,10 +1014,10 @@ defmodule Glific.ContactsTest do
           file_path: get_tmp_path()
         )
 
-        assert_enqueued(worker: ImportWorker, prefix: "global")
+        assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
         assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-                 Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+                 Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
         assert_not_called(Contacts.optin_contact())
       end
@@ -1351,7 +1437,8 @@ defmodule Glific.ContactsTest do
       optin_time = DateTime.utc_now()
       message_id = Ecto.UUID.generate()
 
-      Contacts.contact_opted_in(%{phone: contact.phone}, organization_id, optin_time,
+      Contacts.contact_opted_in(:whatsapp, contact.phone, %{organization_id: organization_id},
+        utc_time: optin_time,
         method: "Testing",
         message_id: message_id
       )
@@ -1376,7 +1463,7 @@ defmodule Glific.ContactsTest do
 
       # if the contact is blocked he want be able to optin again
       Contacts.update_contact(contact, %{status: :blocked})
-      Contacts.contact_opted_in(%{phone: contact.phone}, organization_id, DateTime.utc_now())
+      Contacts.contact_opted_in(:whatsapp, contact.phone, %{organization_id: organization_id})
 
       {:ok, contact} =
         Repo.fetch_by(
@@ -1392,6 +1479,7 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(%{organization_id: organization_id, status: :valid})
 
       Contacts.contact_opted_out(
+        :whatsapp,
         contact.phone,
         organization_id,
         DateTime.utc_now(),
@@ -1414,7 +1502,12 @@ defmodule Glific.ContactsTest do
 
       assert history.event_meta["method"] == "OptedoutTesting"
 
-      assert Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now()) ==
+      assert Contacts.contact_opted_out(
+               :whatsapp,
+               "8910928313",
+               organization_id,
+               DateTime.utc_now()
+             ) ==
                :error
     end
 
@@ -1508,10 +1601,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
@@ -1532,10 +1625,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "abcdef"}})
       assert count == 0
@@ -1555,10 +1648,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
       assert count == 1
@@ -1578,10 +1671,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
       assert count == 1
@@ -1601,10 +1694,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
       assert contact.language_id == 1
@@ -1624,10 +1717,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
       assert contact.language_id == 2
@@ -1647,10 +1740,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
       assert contact.language_id == 1
@@ -1682,10 +1775,10 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       imported_contact = Contacts.get_contact_by_phone!(contact.phone)
 
@@ -1714,10 +1807,10 @@ defmodule Glific.ContactsTest do
         file_path: get_tmp_path()
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       contact_history =
         Contacts.list_contact_history(Map.merge(attrs, %{filter: %{contact_id: contact.id}}))
@@ -1729,42 +1822,6 @@ defmodule Glific.ContactsTest do
         end)
 
       assert length(language_history) == 1
-    end
-
-    test "may_update_contact/1 returns error when contact does not exist" do
-      update_attrs = %{
-        name: "updated",
-        delete: nil,
-        organization_id: 1,
-        phone: "phone number that does not exist",
-        contact_fields: %{"collection" => "collection"},
-        language_id: 1,
-        optin_time: "2025-05-19 03:49:07.595436",
-        collection: "collection"
-      }
-
-      {:error, error} = Import.may_update_contact(update_attrs)
-
-      assert error == %{"phone number that does not exist" => "Contact not found."}
-    end
-
-    test "may_update_contact/1 returns error when contact upload fails", attrs do
-      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
-
-      update_attrs = %{
-        name: %{"val" => "name val"},
-        delete: nil,
-        organization_id: 1,
-        phone: contact.phone,
-        contact_fields: %{"collection" => "collection"},
-        language_id: 1,
-        optin_time: "2025-05-19 03:49:07.595436",
-        collection: "collection"
-      }
-
-      {:error, error} = Import.may_update_contact(update_attrs)
-
-      assert error == %{"919917443992" => "Contact upload failed."}
     end
 
     test "get_contact_field_map/1 should return the active_profile_name if active profile is there",
@@ -1809,10 +1866,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
       assert count == 0
@@ -1832,10 +1889,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
     end
   end
 
@@ -1855,10 +1912,10 @@ defmodule Glific.ContactsTest do
         data: data
       )
 
-      assert_enqueued(worker: ImportWorker, prefix: "global")
+      assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "919989329297"}})
       assert count == 1
@@ -1878,7 +1935,7 @@ defmodule Glific.ContactsTest do
         data: data1
       )
 
-      Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+      Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       data2 =
         "name,phone,Language,opt_in\nunicode_contact,\u200E+919876543210\u200F,english,2021-03-09 12:34:25\n"
@@ -1889,11 +1946,246 @@ defmodule Glific.ContactsTest do
         data: data2
       )
 
-      Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+      Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
       # Should still be only 1 contact, not duplicated
       count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
       assert count == 1
+    end
+  end
+
+  describe "contacts without a phone" do
+    test "simulator_contact?/1 is false for a nil phone" do
+      refute Contacts.simulator_contact?(nil)
+    end
+
+    test "fetch_by_identity/2 refuses a nil or empty identifier without querying" do
+      assert {:error, :no_identifier} == Contacts.fetch_by_identity(:whatsapp, nil)
+      assert {:error, :no_identifier} == Contacts.fetch_by_identity(:whatsapp, "")
+    end
+
+    test "fetch_by_identity/2 finds a WhatsApp contact by phone", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{id: id}} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
+      assert id == contact.id
+      assert {:error, :not_found} == Contacts.fetch_by_identity(:whatsapp, "919999900000")
+    end
+
+    test "fetch_by_identity/2 only finds contacts in the current organization", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      other_organization = Fixtures.organization_fixture()
+
+      Repo.put_organization_id(other_organization.id)
+      assert {:error, :not_found} == Contacts.fetch_by_identity(:whatsapp, contact.phone)
+
+      Repo.put_organization_id(organization_id)
+      assert {:ok, %Contact{}} = Contacts.fetch_by_identity(:whatsapp, contact.phone)
+    end
+
+    test "whatsapp_phone/1 returns the phone only when there is one" do
+      assert {:ok, "919876543211"} == Contacts.whatsapp_phone(%Contact{phone: "919876543211"})
+      assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: nil})
+      assert {:error, :no_phone} == Contacts.whatsapp_phone(%Contact{phone: ""})
+    end
+
+    test "maybe_create_contact/1 never resolves a nil phone to an existing contact",
+         %{organization_id: organization_id} do
+      Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      for phone <- [nil, ""] do
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id})
+
+        assert %{phone: ["can't be blank"]} = errors_on(changeset)
+      end
+
+      assert {:error, %Ecto.Changeset{}} =
+               Contacts.maybe_create_contact(%{organization_id: organization_id})
+    end
+
+    test "maybe_update_contact/1 reports a missing phone" do
+      assert {:error, "Phone number is missing"} ==
+               Contacts.maybe_update_contact(%{phone: nil, name: "x"})
+    end
+
+    test "contact_opted_in/4 and contact_opted_out/5 refuse a nil phone",
+         %{organization_id: organization_id} do
+      now = DateTime.utc_now()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Contacts.contact_opted_in(:whatsapp, nil, %{organization_id: organization_id},
+                 utc_time: now
+               )
+
+      assert :error == Contacts.contact_opted_out(:whatsapp, nil, organization_id, now)
+    end
+
+    test "optin_contact/1 refuses a contact without a phone", %{organization_id: organization_id} do
+      assert {:error, "Contact has no WhatsApp number."} ==
+               Contacts.optin_contact(%{phone: nil, organization_id: organization_id})
+    end
+
+    test "can_send_message_to? refuses WhatsApp sends, and web sends until opted in on web",
+         %{organization_id: organization_id} do
+      contact = %Contact{
+        phone: nil,
+        status: :valid,
+        bsp_status: :session_and_hsm,
+        optin_time: DateTime.utc_now(),
+        last_message_at: DateTime.utc_now(),
+        organization_id: organization_id
+      }
+
+      no_number = {:error, "Contact has no WhatsApp number."}
+
+      assert no_number == Contacts.can_send_message_to?(contact)
+      assert no_number == Contacts.can_send_message_to?(contact, true)
+      assert no_number == Contacts.can_send_message_to?(contact, true, %{is_optin_flow: true})
+      assert no_number == Contacts.can_send_message_to?(contact, false, %{is_optin_flow: true})
+
+      assert no_number ==
+               Contacts.can_send_message_to?(contact, true, %{is_web_channel_otp: true})
+
+      assert {:error, "Contact has not opted in on the web channel."} ==
+               Contacts.can_send_message_to?(contact, false, %{channel: :web})
+
+      web_contact =
+        %{organization_id: organization_id}
+        |> Fixtures.contact_without_phone_fixture()
+        |> Fixtures.opt_in_to_web()
+
+      assert {:ok, nil} == Contacts.can_send_message_to?(web_contact, false, %{channel: :web})
+    end
+
+    test "contact_blocked?/1 does not consult client block rules without a phone" do
+      refute Contacts.contact_blocked?(%Contact{phone: nil, status: :valid, organization_id: 1})
+      assert Contacts.contact_blocked?(%Contact{phone: nil, status: :blocked, organization_id: 1})
+    end
+
+    test "get_contact_by_phone!/1 raises a clear error for a nil phone" do
+      assert_raise ArgumentError, ~r/phone number is required/, fn ->
+        Contacts.get_contact_by_phone!(nil)
+      end
+    end
+
+    test "file_key/1 is the phone, or the contact id when there is no phone" do
+      assert "919876543211" == Contacts.file_key(%Contact{id: 7, phone: "919876543211"})
+      assert "contact-7" == Contacts.file_key(%Contact{id: 7, phone: nil})
+      assert "contact-7" == Contacts.file_key(%Contact{id: 7, phone: ""})
+    end
+
+    test "populate_masked_phone/1 leaves masked_phone nil when there is no phone" do
+      assert %Contact{masked_phone: nil} = Contact.populate_masked_phone(%Contact{phone: nil})
+    end
+
+    test "several contacts without phone can exist in one organization", %{
+      organization_id: organization_id
+    } do
+      first = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      second = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert [nil, nil] == Enum.map([first, second], &Repo.reload!(&1).phone)
+    end
+
+    test "a phone-less contact can be updated, blocked and deleted", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{name: "Ravi", phone: nil}} =
+               Contacts.update_contact(contact, %{name: "Ravi"})
+
+      assert {:ok, %Contact{status: :blocked}} =
+               Contacts.update_contact(contact, %{status: :blocked})
+
+      assert {:ok, _} = Contacts.delete_contact(Repo.reload!(contact))
+    end
+
+    test "are listed and found by name, with no phone or masked phone",
+         %{organization_id: organization_id} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert [%Contact{phone: nil} = found] =
+               Contacts.list_contacts(%{filter: %{name: contact.name}})
+
+      assert found.id == contact.id
+      assert %Contact{masked_phone: nil} = Contact.populate_masked_phone(found)
+    end
+
+    test "can be given a phone later", %{organization_id: organization_id} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{phone: "919876543299"}} =
+               Contacts.update_contact(contact, %{phone: "919876543299"})
+    end
+
+    test "a contact's phone can be changed but not removed", %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      for phone <- [nil, ""] do
+        assert {:error, changeset} = Contacts.update_contact(contact, %{phone: phone})
+        assert %{phone: ["can't be removed once set"]} = errors_on(changeset)
+      end
+
+      assert {:ok, %Contact{phone: "919876543298"}} =
+               Contacts.update_contact(contact, %{phone: "919876543298"})
+    end
+
+    test "a new WhatsApp contact needs a phone, a new contact on the web channel doesn't", %{
+      organization_id: organization_id
+    } do
+      attrs = %{name: "No phone", language_id: 1, organization_id: organization_id}
+
+      assert %{phone: ["can't be blank"]} =
+               %Contact{} |> Contact.changeset(attrs) |> errors_on()
+
+      assert {:ok, %Contact{phone: nil}} =
+               attrs |> Contacts.new_contact_changeset(:web) |> Repo.insert()
+    end
+
+    test "create_contact/1 still requires a phone", %{organization_id: organization_id} do
+      assert {:error, changeset} =
+               Contacts.create_contact(%{name: "No phone", organization_id: organization_id})
+
+      assert %{phone: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "upsert/1 refuses a missing phone instead of inserting a contact without one",
+         %{organization_id: organization_id} do
+      assert_raise Ecto.InvalidChangesetError, fn ->
+        Contacts.upsert(%{name: "No phone", organization_id: organization_id})
+      end
+    end
+
+    test "upsert/1 still matches an existing contact on phone", %{
+      organization_id: organization_id
+    } do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:ok, %Contact{id: id}} =
+               Contacts.upsert(%{
+                 phone: contact.phone,
+                 name: "Renamed",
+                 organization_id: organization_id
+               })
+
+      assert id == contact.id
+    end
+
+    test "maybe_create_contact/1 refuses a nil phone rather than resolving to one of them",
+         %{organization_id: organization_id} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+      Fixtures.contact_without_phone_fixture(%{organization_id: organization_id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Contacts.maybe_create_contact(%{phone: nil, organization_id: organization_id})
+
+      assert [] == Glific.Messages.list_messages(%{filter: %{contact_id: contact.id}})
     end
   end
 end

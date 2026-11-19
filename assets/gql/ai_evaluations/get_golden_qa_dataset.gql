@@ -1,13 +1,18 @@
-#import "./golden_qa_fields.frag.gql"
-
 query GetGoldenQa($id: ID!, $includeSignedUrl: Boolean) {
-  goldenQA(id: $id, includeSignedUrl: $includeSignedUrl) {
-    id
-    name
-    duplicationFactor
-    fileName
-    signedUrl
-    insertedAt
-    updatedAt
+  goldenQa(id: $id, includeSignedUrl: $includeSignedUrl) {
+    goldenQa {
+      id
+      name
+      datasetId
+      duplicationFactor
+      fileName
+      signedUrl
+      totalItems
+      insertedAt
+      updatedAt
+    }
+    errors {
+      message
+    }
   }
 }

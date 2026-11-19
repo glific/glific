@@ -10,7 +10,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
   require Logger
 
   alias Ecto.Changeset
-  alias PasswordlessAuth
   alias Plug.Conn
 
   alias GlificWeb.{
@@ -21,10 +20,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    OTP,
     Partners,
     Partners.Saas,
     Providers.Gupshup.PartnerAPI,
     Repo,
+    SafeLog,
     Users,
     Users.User
   }
@@ -47,15 +48,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  @doc """
-  verify the otp
-  """
+  @doc "Verifies an OTP minted by one of the phone-based authentication flows."
   @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, [String.t()]}
   def verify_otp(phone, otp) do
-    case PasswordlessAuth.verify_code(phone, otp) do
+    case OTP.verify_code(:auth, phone, otp) do
       :ok ->
-        # Remove otp code
-        PasswordlessAuth.remove_code(phone)
         {:ok, "verified"}
 
       {:error, error} ->
@@ -64,13 +61,19 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
+  @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, [String.t()] | map()}
   defp create_user(conn, user_params) do
     organization_id = conn.assigns[:organization_id]
 
-    {:ok, contact} =
-      Repo.fetch_by(Contact, %{phone: user_params["phone"], organization_id: organization_id})
+    case Contacts.fetch_by_identity(:whatsapp, user_params["phone"]) do
+      {:ok, contact} -> register_user(conn, user_params, contact, organization_id)
+      {:error, _reason} -> {:error, ["Contact not found"]}
+    end
+  end
 
+  @spec register_user(Conn.t(), map(), Contact.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map()}
+  defp register_user(conn, user_params, contact, organization_id) do
     updated_user_params =
       user_params
       |> Map.merge(%{
@@ -142,7 +145,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
             handle_registration_otp(conn, organization_id, phone)
 
           "false" ->
-            handle_non_registration_otp(conn, organization_id, phone)
+            handle_non_registration_otp(conn, phone)
         end
 
       {:error, message} ->
@@ -156,15 +159,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
   # defaults to one request per 30 seconds) to prevent OTP spamming.
   @spec check_otp_rate_limit(Conn.t()) :: :ok | {:error, String.t()}
   defp check_otp_rate_limit(conn) do
-    # Fall back to sane defaults so a missing/partial config never crashes the OTP endpoint.
-    config = Application.get_env(:glific, :otp_rate_limit, [])
-    scale_ms = Keyword.get(config, :scale_ms, 30_000)
-    count = Keyword.get(config, :count, 1)
     key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
 
-    case ExRated.check_rate(key, scale_ms, count) do
-      {:ok, _count} -> :ok
-      {:error, _limit} -> {:error, "An OTP was just sent. Please try again in 30 seconds."}
+    case Glific.RateLimit.check(:rate_limit_api_otp, key) do
+      :ok -> :ok
+      {:error, :rate_limited} -> {:error, "An OTP was just sent. Please try again in 30 seconds."}
     end
   end
 
@@ -188,13 +187,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  defp handle_non_registration_otp(conn, organization_id, phone) do
+  defp handle_non_registration_otp(conn, phone) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
 
     case existing_user do
       {:ok, _user} ->
-        with {:ok, contact} <-
-               Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
+        with {:ok, contact} <- Contacts.fetch_by_identity(:whatsapp, phone),
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
              true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
@@ -203,7 +201,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
           error ->
             # Do not surface delivery failures to the client either; a distinguishable response
             # here would still let a caller enumerate accounts. Log internally instead.
-            Logger.error("Failed to send forgot-password OTP to #{phone}: #{inspect(error)}")
+            Logger.error(
+              "Failed to send forgot-password OTP to #{phone}: #{SafeLog.safe_inspect(error)}"
+            )
         end
 
       {:error, _} ->
@@ -229,7 +229,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   """
   @spec create_and_send_verification_code(Contact.t()) :: {:ok, String.t()}
   def create_and_send_verification_code(contact) do
-    code = PasswordlessAuth.generate_code(contact.phone)
+    code = OTP.generate_code(:auth, contact.phone)
     Glific.Messages.create_and_send_otp_verification_message(contact, code)
     {:ok, code}
   end
@@ -297,12 +297,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec optin_contact(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, []}
   defp optin_contact(organization_id, phone) do
-    %{
-      phone: phone,
-      organization_id: organization_id,
+    Contacts.contact_opted_in(:whatsapp, phone, %{organization_id: organization_id},
       method: "registration"
-    }
-    |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "registration")
+    )
   end
 
   # If the org's gupshup account has 0 balance or gupshup is inactive

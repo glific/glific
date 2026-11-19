@@ -18,13 +18,15 @@ defmodule GlificWeb.ChannelCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias Glific.Repo
+  alias Glific.{Fixtures, Partners, Repo, WebChannelFlagHelpers}
 
   using do
     quote do
       # Import conveniences for testing with channels
       import Phoenix.ChannelTest
       import GlificWeb.ChannelCase
+
+      alias Glific.WebChannelFixtures
 
       # The default endpoint for testing
       @endpoint GlificWeb.Endpoint
@@ -38,6 +40,16 @@ defmodule GlificWeb.ChannelCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
-    :ok
+    Repo.put_organization_id(1)
+    Repo.put_current_user(Fixtures.user_fixture(%{name: "NGO Test Admin", roles: ["manager"]}))
+
+    organization_id = 1
+    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
+    WebChannelFlagHelpers.reset_web_channel_flag(organization_id)
+
+    %{organization_id: organization_id}
   end
+
+  defdelegate reset_web_channel_flag(organization_id \\ 1), to: WebChannelFlagHelpers
+  defdelegate with_web_channel_enabled(organization_id \\ 1, fun), to: WebChannelFlagHelpers
 end

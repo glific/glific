@@ -4,6 +4,9 @@ defmodule Glific.Flows.ContactActionTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactIdentities,
+    Contacts.ContactIdentity,
+    Fixtures,
     Flows.Action,
     Flows.ContactAction,
     Flows.FlowContext,
@@ -28,6 +31,9 @@ defmodule Glific.Flows.ContactActionTest do
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
+    # The backfill gives an existing contact its WhatsApp identity; the dual-write keeps it in step.
+    ContactIdentities.move_whatsapp_identity_to_phone(contact)
+
     # preload contact
     context =
       %FlowContext{contact_id: contact.id}
@@ -38,11 +44,36 @@ defmodule Glific.Flows.ContactActionTest do
     contact = Contacts.get_contact!(contact.id)
     assert contact.optout_time != nil
     assert contact.optin_time == nil
+    assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
 
     ContactAction.optin(context)
     contact = Contacts.get_contact!(contact.id)
     assert contact.optout_time == nil
     assert contact.optin_time != nil
+    assert %{contact: state, identity: state} = Fixtures.whatsapp_optin_fields(contact)
+    assert state.optin_status
+  end
+
+  test "an opt-in in a web flow is recorded on the contact's web identities, not on WhatsApp",
+       attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    {:ok, contact} =
+      Contacts.update_contact(contact, %{optin_status: false, optin_time: nil, optin_method: nil})
+
+    {:ok, contact} = Contacts.add_identity(contact, :web, "web_flow_user")
+
+    context =
+      %FlowContext{contact_id: contact.id, channel: :web}
+      |> Repo.preload(:contact)
+
+    ContactAction.optin(context, method: "WA")
+
+    assert %{optin_status: true, optin_method: "flow"} =
+             Repo.get_by!(ContactIdentity, contact_id: contact.id, channel: :web)
+
+    assert %Contact{optin_status: false, optin_time: nil} = Contacts.get_contact!(contact.id)
   end
 
   test "send message text", attrs do
@@ -72,6 +103,63 @@ defmodule Glific.Flows.ContactActionTest do
 
     assert message.body == "This is test message"
     assert message.flow_id == context.flow_id
+  end
+
+  # The reply must carry the context's channel — that's what routes it to the web adapter, not
+  # the BSP. Drop `channel: context.channel` in ContactAction and this fails.
+  test "a text send on a web context produces a web message", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: attrs.organization_id,
+        channel: :web
+      })
+
+    Fixtures.opt_in_to_web(contact)
+    context = Repo.preload(context, [:contact, :flow])
+
+    ContactAction.send_message(context, %Action{text: "web reply"}, [])
+
+    message =
+      Message |> where([m], m.contact_id == ^contact.id) |> Ecto.Query.last() |> Repo.one()
+
+    assert message.channel == :web
+    assert message.body == "web reply"
+    # A web message never gets a BSP id — nothing routes it to Gupshup.
+    assert is_nil(message.bsp_message_id)
+  end
+
+  # A broadcast/notify node in a web flow sends to a *different* contact (e.g. staff). The web
+  # channel is a per-contact socket that can't reach them, so the send must go over WhatsApp, not
+  # inherit the web trigger's channel and get silently dropped.
+  test "a send to a different contact from a web context goes over whatsapp", attrs do
+    [sender | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    other = Fixtures.contact_fixture(attrs)
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: sender.id,
+        organization_id: attrs.organization_id,
+        channel: :web
+      })
+
+    context = Repo.preload(context, [:contact, :flow])
+
+    ContactAction.send_message(context, %Action{text: "notify staff"}, [], other.id)
+
+    message = Message |> where([m], m.contact_id == ^other.id) |> Ecto.Query.last() |> Repo.one()
+
+    assert message.channel == :whatsapp
+    assert message.body == "notify staff"
   end
 
   test "send message template", attrs do
@@ -110,6 +198,36 @@ defmodule Glific.Flows.ContactActionTest do
 
     assert message.body == "var_1 के लिए आपका OTP var_2 है। यह var_3 के लिए मान्य है।"
     assert message.flow_id == context.flow_id
+  end
+
+  # A template node in a web flow must be refused, not leaked: templates need a BSP, so a web
+  # context returns the guard error rather than sending the rendered body over WhatsApp.
+  test "a template send on a web context is refused, not delivered", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id,
+        channel: :web
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    action = %Action{
+      templating: %Templating{template: template, variables: ["var_1", "var_2", "var_3"]}
+    }
+
+    ContactAction.send_message(context, action, [])
+
+    refute Message |> where([m], m.contact_id == ^contact.id) |> Repo.exists?()
   end
 
   test "send interactive message", attrs do

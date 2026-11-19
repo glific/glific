@@ -3,13 +3,16 @@ query AssistantConfigVersions {
     id
     assistantId
     kaapiUuid
-    versionNumber
+    majorVersion
+    minorVersion
     assistantName
     description
     prompt
     provider
     model
     settings
+    inputGuardrails
+    outputGuardrails
     status
     failureReason
     insertedAt

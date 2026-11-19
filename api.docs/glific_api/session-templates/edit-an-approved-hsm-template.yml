@@ -1,0 +1,94 @@
+info:
+  name: Edit an approved HSM template
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation editApprovedTemplate($id: ID!, $input: EditApprovedTemplateInput) {
+        editApprovedTemplate(id: $id, input: $input) {
+          sessionTemplate {
+            id
+            label
+            body
+            status
+            isActive
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12",
+        "input": {
+          "content": "Hi {{1}}, your order {{2}} is on its way.",
+          "example": "Hi [Asha], your order [#4521] is on its way.",
+          "category": "UTILITY",
+          "footer": "Reply STOP to opt out"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Sends new content for an HSM template to Gupshup's edit-template API, so Meta reviews the
+  template again. Use it to change an HSM that **Update a session template** won't change.
+
+  The input fields are passed to Gupshup as they are. After Gupshup accepts the edit, Glific
+  updates its own copy through the same rules as **Update a session template**: for an
+  `APPROVED` HSM that means the stored `body`, `example` and `footer` do **not** change, and the
+  template keeps its current `status` until the next status update from Gupshup.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                        | Required | Description                 |
+  | -------- | --------------------------- | -------- | --------------------------- |
+  | `id`     | `ID!`                       | Yes      | The HSM template to edit.   |
+  | `input`  | `EditApprovedTemplateInput` | No       | The new content.            |
+
+  ### `EditApprovedTemplateInput`
+
+  | Field          | Type     | Description                                                       |
+  | -------------- | -------- | ----------------------------------------------------------------- |
+  | `content`      | `String` | New body, with `{{1}}`-style variables.                           |
+  | `example`      | `String` | The body with sample values.                                      |
+  | `category`     | `String` | `UTILITY` or `MARKETING`.                                         |
+  | `header`       | `String` | Header text.                                                      |
+  | `footer`       | `String` | Footer text.                                                      |
+  | `enableSample` | `String` | Passed through to Gupshup.                                        |
+  | `templateYpe`  | `String` | Passed through to Gupshup. The name is misspelled in the schema.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "editApprovedTemplate": {
+        "sessionTemplate": {
+          "id": "12",
+          "label": "Order update",
+          "body": "Hi {{1}}, your order {{2}} has shipped.",
+          "status": "APPROVED",
+          "isActive": true
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.SessionTemplate", "message": "Resource not found" }]`.
+  - Gupshup rejects the edit: a top-level error with the BSP response.
+  - The HSM is not approved: Gupshup is still called, then `errors` is
+    `[{ "key": "hsm", "message": "Hsm: HSM is not approved yet, it can't be modified" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

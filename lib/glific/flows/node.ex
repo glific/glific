@@ -15,6 +15,7 @@ defmodule Glific.Flows.Node do
 
   alias Glific.Flows.{
     Action,
+    Channels,
     Exit,
     Flow,
     FlowContext,
@@ -185,6 +186,16 @@ defmodule Glific.Flows.Node do
         &Action.validate(&1, &2, flow)
       )
 
+    # Validate the expression-bearing fields on every action (value, enter-flow,
+    # interactive-template, message-template) — the type-specific Action.validate
+    # clauses above do not cover these.
+    errors =
+      node.actions
+      |> Enum.reduce(
+        errors,
+        &Action.validate_expressions(&1, &2, flow)
+      )
+
     errors =
       node.exits
       |> Enum.reduce(
@@ -192,9 +203,12 @@ defmodule Glific.Flows.Node do
         &Exit.validate(&1, &2, flow)
       )
 
-    if node.router,
-      do: Router.validate(node.router, errors, flow),
-      else: errors
+    errors =
+      if node.router,
+        do: Router.validate(node.router, errors, flow),
+        else: errors
+
+    Channels.validate(flow.channel, node, errors)
   end
 
   @doc """

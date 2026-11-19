@@ -2,7 +2,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlag do
   @moduledoc """
   Middleware that checks if a given feature flag is enabled for the current user's organization.
   If the flag is disabled, returns a 403-style error and halts resolution.
-  Configuration: `{flag_name, feature_name}` e.g. `{:ai_evaluations, "AI Evaluations"}`
+  Configuration: `{flag_name, feature_name}` e.g. `{:is_ai_guardrail_enabled, "AI Guardrails"}`
   """
   @behaviour Absinthe.Middleware
 

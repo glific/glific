@@ -14,14 +14,32 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     Partners.Organization
   }
 
+  @type latency_stage() :: %{avg_latency_ms: float(), call_count: non_neg_integer()}
+
+  @type latency() :: %{
+          optional(:response) => latency_stage(),
+          optional(:judge) => latency_stage(),
+          optional(:embedding) => latency_stage(),
+          avg_latency_ms: float(),
+          call_count: non_neg_integer()
+        }
+
+  @type results() :: %{
+          summary_scores: [map()],
+          verdict: String.t() | nil,
+          overall_score: float() | nil,
+          latency: latency() | nil
+        }
+
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer() | nil,
           name: String.t() | nil,
           status: AIEvaluationStatus.t(),
           failure_reason: String.t() | nil,
-          results: map(),
+          results: results() | %{},
           kaapi_evaluation_id: non_neg_integer() | nil,
+          duplication_factor: non_neg_integer() | nil,
           golden_qa_id: non_neg_integer() | nil,
           golden_qa: GoldenQA.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer() | nil,
@@ -44,7 +62,8 @@ defmodule Glific.AIEvaluations.AIEvaluation do
   @optional_fields [
     :failure_reason,
     :results,
-    :kaapi_evaluation_id
+    :kaapi_evaluation_id,
+    :duplication_factor
   ]
 
   schema "ai_evaluations" do
@@ -53,6 +72,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     field(:failure_reason, :string)
     field(:results, :map, default: %{})
     field(:kaapi_evaluation_id, :integer)
+    field(:duplication_factor, :integer, default: 1)
     belongs_to(:golden_qa, GoldenQA)
     belongs_to(:assistant_config_version, AssistantConfigVersion)
     belongs_to(:organization, Organization)

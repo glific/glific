@@ -1,3 +1,6 @@
+# Playwright MCP browser-session artifacts (snapshots/screenshots/logs).
+/.playwright-mcp/
+
 # The directory Mix will write compiled artifacts to.
 /_build
 

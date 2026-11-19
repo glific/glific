@@ -1,0 +1,87 @@
+info:
+  name: Create a contact field
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createContactsField($input: ContactsFieldInput!) {
+        createContactsField(input: $input) {
+          contactsField {
+            id
+            name
+            shortcode
+            variable
+            valueType
+            scope
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "District",
+          "shortcode": "District",
+          "valueType": "TEXT",
+          "scope": "CONTACT"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds a field to the organization's registry. No contact gets a value until a flow, an
+  import or **Update a contact** sets one.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description          |
+  | -------- | --------------------- | -------- | -------------------- |
+  | `input`  | `ContactsFieldInput!` | Yes      | The field to create. |
+
+  ### `ContactsFieldInput`
+
+  | Field       | Type                        | Required | Description                                                    |
+  | ----------- | --------------------------- | -------- | -------------------------------------------------------------- |
+  | `name`      | `String`                    | Yes      | Label shown in the UI. Unique per scope.                       |
+  | `shortcode` | `String`                    | Yes      | Key the value is stored under; converted to snake_case. Unique per scope. |
+  | `valueType` | `ContactFieldValueTypeEnum` | No       | `TEXT` (default), `INTEGER`, `NUMBER`, `BOOLEAN` or `DATE`.   |
+  | `scope`     | `ContactFieldScopeEnum`     | No       | `CONTACT` (default), `WA_GROUP` or `GLOBALS`.                  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createContactsField": {
+        "contactsField": {
+          "id": "14",
+          "name": "District",
+          "shortcode": "district",
+          "variable": "@contact.fields.district",
+          "valueType": "TEXT",
+          "scope": "CONTACT"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `contactsField` set to `null`:
+
+  - A required field is missing: `{ "key": "name", "message": "Name: can't be blank" }`.
+  - The name or shortcode is already used in that scope:
+    `{ "key": "shortcode", "message": "Shortcode: has already been taken" }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

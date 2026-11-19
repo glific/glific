@@ -5,8 +5,8 @@ defmodule GlificWeb.Schema.ContactTest do
 
   alias Glific.{
     Contacts,
+    Contacts.BulkImportWorker,
     Contacts.Contact,
-    Contacts.ImportWorker,
     Fixtures,
     Flows,
     Messages.Message,
@@ -138,6 +138,39 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
+  describe "a contact without a phone" do
+    test "is returned with a null phone and masked phone", %{manager: user} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+
+      {:ok, query_data} = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
+
+      assert %{"id" => _, "phone" => nil, "maskedPhone" => nil} =
+               get_in(query_data, [:data, "contact", "contact"])
+    end
+
+    test "staff still don't see a phone", %{staff: user} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+
+      {:ok, query_data} = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
+
+      assert get_in(query_data, [:data, "contact", "contact", "phone"]) == ""
+    end
+
+    test "can be renamed", %{manager: user} do
+      contact = Fixtures.contact_without_phone_fixture(%{organization_id: user.organization_id})
+
+      {:ok, query_data} =
+        auth_query_gql_by(:update, user,
+          variables: %{"id" => contact.id, "input" => %{"name" => "Ravi"}}
+        )
+
+      assert %{"name" => "Ravi", "phone" => nil} =
+               get_in(query_data, [:data, "updateContact", "contact"])
+
+      assert nil == get_in(query_data, [:data, "updateContact", "errors"])
+    end
+  end
+
   test "contact by id returns one contact or nil", %{staff: user} do
     name = "NGO Main Account"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
@@ -150,6 +183,13 @@ defmodule GlificWeb.Schema.ContactTest do
     # staff role should not have access to phone
     assert fetched_contact["phone"] == ""
     assert fetched_contact["maskedPhone"] != contact.phone
+
+    # a restricted staff user is more limited, so it must not see more
+    {:ok, restricted_user} = Glific.Users.update_user(user, %{is_restricted: true})
+
+    result = auth_query_gql_by(:by_id, restricted_user, variables: %{"id" => contact.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "contact", "contact", "phone"]) == ""
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
@@ -273,10 +313,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _query_data} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     assert Contacts.count_contacts(%{filter: %{phone: "918979120220"}}) == 0
   end
@@ -300,10 +340,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     # Will fail since contact is not a valid phone number
     assert Contacts.count_contacts(%{filter: %{phone: test_phone}}) == 0
@@ -333,10 +373,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     # Phone is stored in normalized format without + prefix
     normalized_phone = "919917443992"
@@ -370,10 +410,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     assert Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}}) == 0
     assert Contacts.count_contacts(%{filter: %{term: "#{test_name} updated"}}) == 0
@@ -403,10 +443,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     count = Contacts.count_contacts(%{filter: %{name: "uploaded_contact"}})
     assert count == 1
@@ -439,10 +479,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
     assert count == 1
@@ -475,10 +515,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
     assert count == 1
@@ -504,10 +544,10 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
+    assert_enqueued(worker: BulkImportWorker, prefix: "global")
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+             Oban.drain_queue(queue: :contact_import_bulk, with_scheduled: true)
 
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
     assert count == 0

@@ -1,0 +1,17 @@
+fragment ContactIdentityFields on ContactResult {
+  contact {
+    id
+    name
+    identities {
+      channel
+      identifier
+    }
+  }
+}
+
+fragment ErrorFields on ContactResult {
+  errors {
+    key
+    message
+  }
+}

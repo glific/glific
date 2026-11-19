@@ -6,8 +6,7 @@ defmodule Glific.Dialogflow.Intent do
 
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Partners.Organization, Repo}
 
   @required_fields [:name, :organization_id]

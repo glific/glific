@@ -1,15 +1,17 @@
 defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
-  alias Glific.Contacts
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     Communications.GroupMessage,
+    Contacts,
     Groups.WAGroup,
     Groups.WAGroupPhone,
     Groups.WAGroups,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo,
     Seeds.SeedsDev,
     WAGroup.WAMessage,
@@ -332,15 +334,80 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       %{message_params: message_params}
     end
 
-    test "Incoming text message without phone should raise exception", %{conn: conn} do
-      text_msg_webhook = Map.delete(@text_message_webhook, "user")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", text_msg_webhook) end
+    test "Incoming text message with a blank user.phone recovers the sender number from the message id",
+         %{conn: conn} do
+      expected_phone = "919642961343"
 
-      text_msg_webhook = put_in(@text_message_webhook, ["user", "phone"], nil)
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", text_msg_webhook) end
+      blank_users = [Map.delete(@text_message_webhook, "user")]
 
-      text_msg_webhook = put_in(@text_message_webhook, ["user", "phone"], "")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", text_msg_webhook) end
+      blank_users =
+        blank_users ++
+          [
+            put_in(@text_message_webhook, ["user", "phone"], nil),
+            put_in(@text_message_webhook, ["user", "phone"], "")
+          ]
+
+      for text_msg_webhook <- blank_users do
+        text_msg_webhook = put_in(text_msg_webhook, ["message", "id"], Ecto.UUID.generate())
+
+        conn = post(conn, "/maytapi", text_msg_webhook)
+        assert conn.halted
+
+        {:ok, message} =
+          Repo.fetch_by(WAMessage, %{
+            bsp_id: get_in(text_msg_webhook, ["message", "id"]),
+            organization_id: conn.assigns[:organization_id]
+          })
+
+        message = Repo.preload(message, [:contact])
+        assert message.contact.phone == expected_phone
+      end
+    end
+
+    test "Incoming text message from an unresolved @lid participant is acked and dropped rather than raising",
+         %{conn: conn} do
+      lid_serialized = "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_289473521@lid"
+
+      lid_webhook =
+        @text_message_webhook
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
+        |> put_in(["message", "id"], lid_serialized)
+        |> put_in(["message", "_serialized"], lid_serialized)
+
+      conn = post(conn, "/maytapi", lid_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: lid_serialized,
+                 organization_id: conn.assigns[:organization_id]
+               })
+    end
+
+    test "Incoming text message whose id carries the receiving managed phone is dropped, not attributed to the organization",
+         %{conn: conn} do
+      bsp_id = Ecto.UUID.generate()
+
+      own_number_webhook =
+        @text_message_webhook
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
+        |> put_in(["message", "id"], bsp_id)
+        |> put_in(
+          ["message", "_serialized"],
+          "false_120363213149844251@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us"
+        )
+        |> put_in(["receiver"], "917834811114")
+
+      conn = post(conn, "/maytapi", own_number_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: bsp_id,
+                 organization_id: conn.assigns[:organization_id]
+               })
     end
 
     test "Incoming text message should be stored in the database, new contact", %{conn: conn} do
@@ -508,8 +575,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -601,15 +668,81 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       %{message_params: message_params}
     end
 
-    test "Incoming media message without phone should raise exception", %{conn: conn} do
-      media_msg_webhook = Map.delete(@media_message_webhook, "user")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+    test "Incoming media message with a blank user.phone recovers the sender number from the message id",
+         %{conn: conn} do
+      expected_phone = "919917443994"
 
-      media_msg_webhook = put_in(@media_message_webhook, ["user", "phone"], nil)
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+      blank_users =
+        [Map.delete(@media_message_webhook, "user")] ++
+          [
+            put_in(@media_message_webhook, ["user", "phone"], nil),
+            put_in(@media_message_webhook, ["user", "phone"], "")
+          ]
 
-      media_msg_webhook = put_in(@media_message_webhook, ["user", "phone"], "")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+      for media_msg_webhook <- blank_users do
+        media_msg_webhook = put_in(media_msg_webhook, ["message", "id"], Ecto.UUID.generate())
+
+        conn = post(conn, "/maytapi", media_msg_webhook)
+        assert conn.halted
+
+        {:ok, message} =
+          Repo.fetch_by(WAMessage, %{
+            bsp_id: get_in(media_msg_webhook, ["message", "id"]),
+            organization_id: conn.assigns[:organization_id]
+          })
+
+        message = Repo.preload(message, [:contact])
+        assert message.contact.phone == expected_phone
+      end
+    end
+
+    test "Incoming media message from an unresolved @lid participant is acked and dropped rather than raising",
+         %{conn: conn} do
+      bsp_id = Ecto.UUID.generate()
+
+      lid_webhook =
+        @media_message_webhook
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
+        |> put_in(["message", "id"], bsp_id)
+        |> put_in(
+          ["message", "_serialized"],
+          "false_120363027326493365@g.us_0C623FCC2528444570C488FB229F7628_289473521@lid"
+        )
+
+      conn = post(conn, "/maytapi", lid_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: bsp_id,
+                 organization_id: conn.assigns[:organization_id]
+               })
+    end
+
+    test "Incoming media message whose id carries the receiving managed phone is dropped, not attributed to the organization",
+         %{conn: conn} do
+      bsp_id = Ecto.UUID.generate()
+
+      own_number_webhook =
+        @media_message_webhook
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
+        |> put_in(["message", "id"], bsp_id)
+        |> put_in(
+          ["message", "_serialized"],
+          "false_120363213149844251@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us"
+        )
+        |> put_in(["receiver"], "917834811114")
+
+      conn = post(conn, "/maytapi", own_number_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: bsp_id,
+                 organization_id: conn.assigns[:organization_id]
+               })
     end
 
     test "Incoming media message should be stored in the database, new contact", %{conn: conn} do
@@ -814,8 +947,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)

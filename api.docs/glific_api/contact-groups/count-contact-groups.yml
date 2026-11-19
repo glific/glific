@@ -1,0 +1,46 @@
+info:
+  name: Count contact groups
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countContactGroups($filter: ContactGroupFilter) {
+        countContactGroups(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "groupId": "2"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts collection memberships that match a filter, such as the number of contacts in a
+  collection. Use it with **List contact groups** to build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                           |
+  | -------- | -------------------- | -------- | --------------------------------------------------------------------- |
+  | `filter` | `ContactGroupFilter` | No       | Same fields as in **List contact groups**. Without it, counts every membership. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countContactGroups": 57
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

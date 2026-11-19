@@ -1,0 +1,67 @@
+info:
+  name: Merge contact fields
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation mergeContactsField($id: ID!, $input: ContactsFieldInput) {
+        mergeContactsField(id: $id, input: $input) {
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "15",
+        "input": {
+          "name": "Age Group",
+          "shortcode": "age_group"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Folds one field into another and deletes the first. `id` is the field to remove; `input`
+  names the field to keep. On every contact (or WhatsApp group, for `WA_GROUP` fields) with a
+  value for the removed field:
+
+  - if it has no value for the kept field, the value moves to the kept shortcode, taking
+    `name` as its label when one is given;
+  - if it has both, the removed field's value is dropped.
+
+  The removed field is then deleted from the registry.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                                             |
+  | -------- | -------------------- | -------- | ----------------------------------------------------------------------- |
+  | `id`     | `ID!`                | Yes      | The field to merge away and delete.                                     |
+  | `input`  | `ContactsFieldInput` | Yes\*    | `shortcode` and `name` of the field to keep. \* Leaving it out, or leaving out `shortcode`, gives a top-level error. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "mergeContactsField": {
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  The result's `contactsField` is always `null`, so it is not selected here.
+
+  ## Errors
+
+  - The field does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.ContactsField", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

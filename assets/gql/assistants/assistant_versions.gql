@@ -1,10 +1,14 @@
 query AssistantVersions($assistant_id: ID!) {
   assistantVersions(assistantId: $assistant_id) {
     id
-    version_number
+    major_version
+    minor_version
+    version_label
     model
     prompt
     settings
+    input_guardrails
+    output_guardrails
     status
     is_live
     description

@@ -7,12 +7,17 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   alias Glific.{
     Communications,
-    Providers.Gupshup
+    Providers.Gupshup,
+    Providers.Gupshup.Instrumentation
   }
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
+  def handler(conn, _params, msg) do
+    # Explicit inbound receive counter — these controllers stay in AppSignal's
+    # `ignore_namespaces`, so without this the receive volume is invisible.
+    Instrumentation.track_receive(msg, conn.assigns[:organization_id])
+
     conn
     |> Plug.Conn.send_resp(200, "")
     |> Plug.Conn.halt()
@@ -107,29 +112,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     |> Communications.Message.receive_message(:location)
 
     handler(conn, params, "location handler")
-  end
-
-  @doc """
-  Handler for WhatsApp Form Response messages
-  """
-  @spec whatsapp_form_response(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def whatsapp_form_response(conn, params) do
-    extract_message_from_webhook(params)
-    |> Gupshup.Message.receive_whatsapp_form_response()
-    |> update_message_params(%{organization_id: conn.assigns[:organization_id]})
-    |> Communications.Message.receive_message(:whatsapp_form_response)
-
-    handler(conn, params, "whatsapp_form_response handler")
-  end
-
-  @spec extract_message_from_webhook(map()) :: {map(), map()}
-  defp extract_message_from_webhook(%{
-         "entry" => [change | _]
-       }) do
-    %{"changes" => [%{"value" => %{"messages" => [message | _], "contacts" => [contact | _]}}]} =
-      change
-
-    {message, contact}
   end
 
   @spec update_message_params(map(), map()) :: map()

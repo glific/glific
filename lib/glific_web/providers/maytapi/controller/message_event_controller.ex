@@ -7,6 +7,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   alias Glific.{
     Communications,
+    Providers.Maytapi.Instrumentation,
     Repo
   }
 
@@ -51,7 +52,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
           do_update_status(response, ack_type, org_id)
 
         _ ->
-          nil
+          Instrumentation.track_receive("unhandled_event", org_id)
       end
     end)
   end
@@ -67,22 +68,27 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
     Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
+    Instrumentation.track_status(status || :unknown, org_id)
   end
 
   @spec do_update_error_status(map(), non_neg_integer()) :: any()
   defp do_update_error_status(params, org_id) do
     bsp_message_id = Map.get(params["data"], "id")
     Communications.GroupMessage.update_bsp_error_status(bsp_message_id, params, org_id)
+    Instrumentation.track_status(:error, org_id)
   end
 
   @spec handle_reactions(map(), non_neg_integer()) :: any()
   defp handle_reactions(params, org_id) do
+    Instrumentation.track_receive("reaction", org_id)
+
     params
     |> Communications.GroupMessage.receive_reaction_msg(org_id)
   end
 
   @spec update_poll_response(map(), non_neg_integer()) :: any()
   defp update_poll_response(response, org_id) do
+    Instrumentation.track_receive("poll_response", org_id)
     bsp_message_id = Map.get(response, "msgId")
 
     poll_content = %{

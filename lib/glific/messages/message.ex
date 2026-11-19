@@ -1,5 +1,9 @@
 defmodule Glific.Messages.Message do
-  @moduledoc false
+  @moduledoc """
+  The schema for a single inbound or outbound WhatsApp message: its content, media/location
+  attachments, delivery status, and links to the sender/receiver contacts, session template,
+  flow, and group it belongs to.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -21,13 +25,14 @@ defmodule Glific.Messages.Message do
     WhatsappForms.WhatsappFormResponse
   }
 
-  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
+  alias Glific.Enums.{MessageChannel, MessageFlow, MessageStatus, MessageType}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | atom() | nil,
+          channel: String.t() | atom() | nil,
           is_hsm: boolean | nil,
           template: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           flow: String.t() | nil,
@@ -83,8 +88,11 @@ defmodule Glific.Messages.Message do
     :contact_id,
     :organization_id
   ]
+  @flow_label_max_length 255
+
   @optional_fields [
     :uuid,
+    :channel,
     :body,
     :flow_label,
     :clean_body,
@@ -118,6 +126,7 @@ defmodule Glific.Messages.Message do
     field(:flow_label, :string)
     field(:flow, MessageFlow)
     field(:type, MessageType)
+    field(:channel, MessageChannel, default: :whatsapp)
     field(:status, MessageStatus)
 
     field(:send_by, :string, virtual: true)
@@ -185,7 +194,37 @@ defmodule Glific.Messages.Message do
     |> cast(attrs, @required_fields ++ @optional_fields, empty_values: [[], nil])
     |> validate_required(@required_fields)
     |> validate_media(message)
+    |> truncate_flow_label()
     |> unique_constraint([:bsp_message_id, :organization_id])
+  end
+
+  @spec truncate_flow_label(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp truncate_flow_label(changeset),
+    do: update_change(changeset, :flow_label, &fit_flow_label/1)
+
+  # a label within the limit in bytes is within it in codepoints, so only longer ones are walked
+  @spec fit_flow_label(String.t() | nil) :: String.t() | nil
+  defp fit_flow_label(label) when is_binary(label) and byte_size(label) > @flow_label_max_length,
+    do: binary_part(label, 0, fit_long_flow_labels(label, @flow_label_max_length, 0))
+
+  defp fit_flow_label(label), do: label
+
+  # varchar(255) counts codepoints; stop at the last whole grapheme that fits, so the walk is
+  # bounded by the limit rather than by the length of the label
+  @spec fit_long_flow_labels(String.t(), non_neg_integer(), non_neg_integer()) ::
+          non_neg_integer()
+  defp fit_long_flow_labels(rest, budget, size) do
+    case String.next_grapheme(rest) do
+      {grapheme, rest} ->
+        cost = length(String.codepoints(grapheme))
+
+        if cost <= budget,
+          do: fit_long_flow_labels(rest, budget - cost, size + byte_size(grapheme)),
+          else: size
+
+      nil ->
+        size
+    end
   end
 
   @doc """

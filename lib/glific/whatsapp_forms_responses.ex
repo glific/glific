@@ -2,7 +2,7 @@ defmodule Glific.WhatsappFormsResponses do
   @moduledoc """
   Module to handle WhatsApp Form Responses
   """
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Publicist
   require Logger
 
@@ -15,6 +15,7 @@ defmodule Glific.WhatsappFormsResponses do
     SafeLog,
     Sheets,
     Sheets.GoogleSheets,
+    Vault,
     WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormResponse,
     WhatsappForms.WhatsappFormWorker
@@ -26,9 +27,14 @@ defmodule Glific.WhatsappFormsResponses do
   @spec create_whatsapp_form_response(map()) ::
           {:ok, WhatsappFormResponse.t()} | {:error, Ecto.Changeset.t() | String.t() | any()}
   def create_whatsapp_form_response(attrs) do
-    with {:ok, whatsapp_form} <- get_whatsapp_form(attrs.context_id, attrs.organization_id),
+    with {:ok, decoded_response} <- Jason.decode(attrs.raw_response),
+         {:ok, whatsapp_form} <-
+           get_whatsapp_form(
+             decoded_response["flow_token"],
+             attrs.context_id,
+             attrs.organization_id
+           ),
          {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
-         {:ok, decoded_response} <- Jason.decode(attrs.raw_response),
          {:ok, result} <-
            do_create_whatsapp_form_response(%{
              raw_response: decoded_response,
@@ -53,17 +59,58 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
-  @spec get_whatsapp_form(String.t(), non_neg_integer()) ::
+  @doc """
+  Encrypts an outbound message id into the flow_token sent with a WhatsApp form.
+  """
+  @spec encode_flow_token(non_neg_integer()) :: String.t()
+  def encode_flow_token(message_id) do
+    {:ok, ciphertext} = message_id |> to_string() |> Vault.encrypt()
+    Base.url_encode64(ciphertext, padding: false)
+  end
+
+  @spec decode_flow_token(String.t() | nil) :: {:ok, non_neg_integer()} | :error
+  defp decode_flow_token(flow_token) when is_binary(flow_token) do
+    with {:ok, ciphertext} <- Base.url_decode64(flow_token, padding: false),
+         {:ok, plaintext} <- Vault.decrypt(ciphertext) do
+      {:ok, String.to_integer(plaintext)}
+    else
+      _ -> :error
+    end
+  rescue
+    # Cloak raises instead of returning an error on ciphertext too short to carry its tag.
+    MatchError -> :error
+  end
+
+  defp decode_flow_token(_flow_token), do: :error
+
+  @spec get_whatsapp_form(String.t() | nil, String.t() | nil, non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
-  defp get_whatsapp_form(context_id, org_id) do
-    with {:ok, previous_message} <-
-           Repo.fetch_by(Message, %{bsp_message_id: context_id, organization_id: org_id}),
-         %{template: template} <- Repo.preload(previous_message, [:template]),
-         [%{"flow_id" => flow_id}] <- template.buttons,
+  defp get_whatsapp_form(flow_token, context_id, org_id) do
+    with {:ok, sent_message} <- fetch_sent_message(flow_token, context_id, org_id),
+         %{template: template} <- Repo.preload(sent_message, [:template]),
+         buttons = template.buttons || [],
+         %{"flow_id" => flow_id} <- Enum.find(buttons, &Map.has_key?(&1, "flow_id")),
          wa_form when not is_nil(wa_form) <- Repo.get_by(WhatsappForm, %{meta_flow_id: flow_id}) do
       {:ok, wa_form}
     else
+      {:error, reason} when is_binary(reason) -> {:error, reason}
       _ -> {:error, "WhatsApp Form not found for the given template_id"}
+    end
+  end
+
+  # Forms sent before the flow_token, or through V2, carry "unused" and are matched by context.
+  @spec fetch_sent_message(String.t() | nil, String.t() | nil, non_neg_integer()) ::
+          {:ok, Message.t()} | {:error, any()}
+  defp fetch_sent_message(flow_token, context_id, org_id) do
+    case decode_flow_token(flow_token) do
+      {:ok, message_id} ->
+        Repo.fetch_by(Message, %{id: message_id, organization_id: org_id})
+
+      :error when is_nil(context_id) ->
+        {:error, "WhatsApp form response has no context id"}
+
+      :error ->
+        Repo.fetch_by(Message, %{bsp_message_id: context_id, organization_id: org_id})
     end
   end
 
@@ -129,15 +176,17 @@ defmodule Glific.WhatsappFormsResponses do
   A media field is a list of maps shaped like
   `%{"id" => 913.., "file_name" => "x.jpg", "mime_type" => "image/jpeg", "sha256" => ".."}`.
   Non-media fields (strings, multi-select lists) are returned untouched. Any single
-  download/upload failure is logged and leaves that entry as-is, so one bad photo
-  never blocks the rest of the response.
+  download/upload failure is logged and marks that entry with `download_failed`, so
+  one bad photo never blocks the rest of the response and is never re-downloaded.
+
+  Items within one media field are downloaded concurrently (see `@media_concurrency`).
   """
   @spec save_response_media(map(), non_neg_integer()) :: map()
   def save_response_media(raw_response, organization_id) when is_map(raw_response) do
     Map.new(raw_response, fn
       {key, value} when is_list(value) ->
         if media_list?(value),
-          do: {key, Enum.map(value, &save_one_media(&1, organization_id))},
+          do: {key, save_media_list(value, organization_id)},
           else: {key, value}
 
       kv ->
@@ -146,6 +195,35 @@ defmodule Glific.WhatsappFormsResponses do
   end
 
   def save_response_media(raw_response, _organization_id), do: raw_response
+
+  @media_concurrency 3
+  @media_timeout :timer.minutes(1)
+
+  @spec save_media_list([map()], non_neg_integer()) :: [map()]
+  defp save_media_list(media_list, organization_id) do
+    media_list
+    |> Task.async_stream(
+      fn media ->
+        Repo.put_process_state(organization_id)
+        save_one_media(media, organization_id)
+      end,
+      max_concurrency: @media_concurrency,
+      timeout: @media_timeout,
+      on_timeout: :kill_task
+    )
+    |> Enum.zip(media_list)
+    |> Enum.map(fn
+      {{:ok, media}, _media} ->
+        media
+
+      {{:exit, reason}, media} ->
+        Logger.error(
+          "Timed out saving WhatsApp form media #{media["file_name"]} (id #{media["id"]}): #{SafeLog.safe_inspect(reason)}"
+        )
+
+        Map.put(media, "download_failed", true)
+    end)
+  end
 
   # A media list is a NON-EMPTY list where EVERY item carries the WhatsApp media
   # fields we need to download it. Validating all items (not just the head) means a
@@ -169,6 +247,11 @@ defmodule Glific.WhatsappFormsResponses do
        when is_binary(gcs_url),
        do: media
 
+  # Already failed once (marker persisted on the response row). Gupshup blocks every
+  # media request for the app for the rest of the hour after 20 failed ones, so a
+  # failed download is never re-attempted on an Oban retry.
+  defp save_one_media(%{"download_failed" => true} = media, _organization_id), do: media
+
   # Requires id + file_name — the same fields media_list?/1 classifies on, so every
   # item treated as media here is actually downloadable (no silent skip).
   defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id) do
@@ -191,7 +274,7 @@ defmodule Glific.WhatsappFormsResponses do
           "Failed to save WhatsApp form media #{file_name} (id #{id}): #{SafeLog.safe_inspect(error)}"
         )
 
-        media
+        Map.put(media, "download_failed", true)
     end
   end
 

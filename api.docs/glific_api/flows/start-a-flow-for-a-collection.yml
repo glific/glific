@@ -1,0 +1,69 @@
+info:
+  name: Start a flow for a collection
+  type: graphql
+  seq: 17
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation startGroupFlow($flowId: ID!, $groupId: ID!, $defaultResults: Json) {
+        startGroupFlow(flowId: $flowId, groupId: $groupId, defaultResults: $defaultResults) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "flowId": "3",
+        "groupId": "1",
+        "defaultResults": "{\"campaign\": \"term-2\"}"
+      }
+  auth: inherit
+
+docs: |
+  Starts the published revision of a flow for every contact in a collection (group). The call
+  queues a broadcast and returns; the contacts are started in batches in the background over
+  the following minutes. It also posts a `Starting flow: <flow> for group: <collection>`
+  message to the collection's conversation. Track progress with **Get broadcast stats**.
+
+  As with **Start a flow for a contact**, each contact's current non-background flow ends when
+  this one starts.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument         | Type   | Required | Description                                                              |
+  | ---------------- | ------ | -------- | ------------------------------------------------------------------------ |
+  | `flowId`         | `ID!`  | Yes      | The flow to start.                                                       |
+  | `groupId`        | `ID!`  | Yes      | The collection whose contacts to start it for.                           |
+  | `defaultResults` | `Json` | No       | A JSON-encoded object seeded into each run's results, readable as `@results.<key>`. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "startGroupFlow": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow does not exist in the organization:
+    `[{ "key": "Elixir.Glific.Flows.Flow", "message": "Resource not found" }]`.
+  - The collection does not exist: a top-level error, `No valid groups found`.
+  - The flow has never been published: a top-level error, `Something unexpected has happened,
+    please reach out to Glific team over discord to get this resolved`.
+  - A user without the manager role gets a top-level `Unauthorized` error.
+
+  Unlike **Start a flow for a contact**, this does not check that the flow is active.

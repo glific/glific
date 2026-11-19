@@ -67,7 +67,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   Standard perform method to use Oban worker.
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: {:error, any()} | :ok
+  @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{
         args: %{
           "payload" => payload,
@@ -88,6 +88,8 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     # so a flow can read the photo URL after a short wait node.
     WhatsappFormsResponses.inject_media_into_flow_results(payload)
 
+    # The sheet write already retries at the HTTP layer (Tesla retry middleware), so a
+    # failure here is terminal — returning :ok keeps Oban from replaying the whole job.
     case WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form) do
       {:ok, _} ->
         :ok
@@ -97,7 +99,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
           "Failed to write WhatsApp form response to Google Sheet: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
-        {:error, reason}
+        :ok
     end
   end
 
@@ -145,6 +147,15 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
       response
       |> WhatsappFormResponse.changeset(%{raw_response: updated_response})
       |> Repo.update()
+      |> case do
+        {:ok, _response} ->
+          :ok
+
+        {:error, changeset} ->
+          Logger.error(
+            "Failed to persist WhatsApp form response media for response #{id}: #{Glific.SafeLog.safe_inspect(changeset)}"
+          )
+      end
 
       payload
       |> Map.put("raw_response", updated_response)

@@ -13,8 +13,8 @@ config :glific,
 
 # Configures Elixir's Logger
 config :logger, :default_formatter,
-  format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id, :user_id, :org_id, :params]
+  format: "$time [$level] $metadata$message\n",
+  metadata: [:request_id, :remote_ip, :user_agent, :user_id, :org_id, :params]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
@@ -28,15 +28,36 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 
 oban_queues = [
-  bigquery: 10,
+  bigquery: [
+    local_limit: 10,
+    global_limit: [
+      allowed: 1,
+      burst: true,
+      partition: [args: :organization_id]
+    ]
+  ],
   crontab: 10,
   default: [
     limit: 10,
     rate_limit: [allowed: 30, period: {1, :minute}, partition: [:worker, args: :organization_id]]
   ],
   dialogflow: 5,
+  flow_wakeup: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 1,
+      partition: [args: :organization_id]
+    ]
+  ],
   gcs: 10,
-  gupshup: 10,
+  gupshup: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 10,
+      burst: false,
+      partition: [args: :organization_id]
+    ]
+  ],
   webhook: [
     local_limit: 20,
     global_limit: [
@@ -60,9 +81,23 @@ oban_queues = [
       partition: [args: :organization_id]
     ]
   ],
-  contact_import: 10,
-  gupshup_high_tps: 10,
-  clone_assistant: 5
+  contact_import_bulk: [
+    local_limit: 10,
+    global_limit: [
+      allowed: 5,
+      partition: [args: :organization_id]
+    ]
+  ],
+  gupshup_high_tps: 20,
+  clone_assistant: 5,
+  gupshup_inbound: [
+    local_limit: 40,
+    global_limit: [
+      allowed: 10,
+      burst: false,
+      partition: [args: :organization_id]
+    ]
+  ]
 ]
 
 oban_crontab = [
@@ -72,7 +107,6 @@ oban_crontab = [
   {"*/2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :triggers_and_broadcast}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :check_user_job_status}},
-  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :poll_ai_evaluations}},
   {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :stats}},
   {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
   {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
@@ -83,6 +117,8 @@ oban_crontab = [
   # 21:00 Sat UTC is  02:30 SAT IST, running the msg purging a day before other DB purges
   # to test this in isolation
   {"0 21 * * FRI", Glific.Jobs.MinuteWorker, args: %{job: :weekly_message_purge}},
+  # 21:30 Fri UTC is 03:00 Sat IST, a day ahead of the versions VACUUM in :weekly_tasks
+  {"30 21 * * FRI", Glific.Jobs.MinuteWorker, args: %{job: :weekly_version_purge}},
   # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}},
   # We are sending report of previous week(MON to SUN)
@@ -112,6 +148,10 @@ config :glific, Oban,
   plugins: oban_plugins,
   shutdown_grace_period: :timer.seconds(60)
 
+# Smart engine fetches only local_limit * multiplier partition keys per refresh; orgs beyond that
+# wait a full cache cycle, so the multiplier must cover every org with queued jobs.
+config :oban_pro, Oban.Pro.Partition, keys_limit_multiplier: 7
+
 # Adding ssl_options to fix #3037. However I dont understand this or the implications
 # We will revisit it once we build a better understanding
 config :tesla,
@@ -120,8 +160,6 @@ config :tesla,
      ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}],
      pool: :glific_default_pool,
      connect_timeout: 5_000}
-
-config :glific, :max_rate_limit_request, 60
 
 config :glific, :pow,
   user: Glific.Users.User,
@@ -207,8 +245,35 @@ config :ex_audit,
     DateTime
   ]
 
-# Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
-config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
+config :mime, :types, %{
+  "audio/amr" => ["amr"],
+  "audio/mp4" => ["m4a"],
+  "audio/ogg" => ["oga", "ogg"],
+  "video/3gpp" => ["3gp", "3gpp"]
+}
+
+config :glific, Glific.AI,
+  model: "anthropic:claude-haiku-4-5",
+  # Routing a question to a skill is a one-word answer, so it is pinned to the
+  # cheapest model rather than following whatever answers the question. Without
+  # this, upgrading `model` would silently make every classification cost more.
+  classifier_model: "anthropic:claude-haiku-4-5",
+  max_tokens: 4_096,
+  receive_timeout: 60_000
+
+# What bounds one question. Nothing in a model's control flow stops it looping,
+# so these are the circuit breaker: whichever is reached first ends the run and
+# records why.
+config :glific, Glific.AI.Agent,
+  max_run_steps: 12,
+  max_run_cost_usd: "0.50",
+  max_run_duration_ms: 120_000
+
+# The documentation search. These must match what `mix glific.docs.index` last
+# wrote, or the stored vectors rank at random.
+config :glific, Glific.Docs,
+  embedding_model: "openai:text-embedding-3-small",
+  embedding_dimensions: 256
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

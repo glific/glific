@@ -33,13 +33,32 @@ if Code.ensure_loaded?(Plug) do
         else: Plug.put_organization(conn, subdomain, config)
     end
 
+    @doc """
+    The organization id a request host belongs to, resolved as `call/2` does for a `conn`; for
+    callers with no `conn`, such as a WebSocket connect.
+    """
+    @spec organization_id_for_host(String.t() | nil) :: {:ok, non_neg_integer()} | :error
+    def organization_id_for_host(host) do
+      config = struct(SubdomainPlugConfig)
+      subdomain = subdomain_for_host(host, config.endpoint)
+
+      with false <- is_nil(subdomain) and Application.get_env(:glific, :environment) != :test,
+           false <- subdomain != nil and GlificWeb.Tenants.reserved_organization?(subdomain),
+           id when id != 0 <- config.organization_handler.(subdomain) do
+        {:ok, id}
+      else
+        _unresolved -> :error
+      end
+    end
+
     @spec get_subdomain(Conn.t(), map()) :: String.t() | nil
     defp get_subdomain(_conn, %SubdomainPlugConfig{endpoint: nil}), do: nil
 
-    defp get_subdomain(
-           %Conn{host: host},
-           %SubdomainPlugConfig{endpoint: endpoint}
-         ) do
+    defp get_subdomain(%Conn{host: host}, %SubdomainPlugConfig{endpoint: endpoint}),
+      do: subdomain_for_host(host, endpoint)
+
+    @spec subdomain_for_host(String.t() | nil, module()) :: String.t() | nil
+    defp subdomain_for_host(host, endpoint) when is_binary(host) do
       root_host = endpoint.config(:url)[:host]
       glific_subdomain = Glific.base_domain()
 
@@ -63,5 +82,7 @@ if Code.ensure_loaded?(Plug) do
           |> String.replace("api.", "")
       end
     end
+
+    defp subdomain_for_host(_host, _endpoint), do: nil
   end
 end

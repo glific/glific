@@ -4,8 +4,6 @@ defmodule Glific.Processor.ConsumerFlow do
   consumer_worker which is the main workhorse
   """
   @dialyzer {:nowarn_function, context_nil?: 1}
-  import Ecto.Query, warn: false
-
   alias Glific.{
     Contacts.Contact,
     Flows,
@@ -38,7 +36,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
     if is_draft,
       do:
-        mark_flows_complete(message.contact_id, %{
+        mark_flows_complete(message.contact_id, message.channel, %{
           is_draft: true,
           body: body
         })
@@ -50,25 +48,27 @@ defmodule Glific.Processor.ConsumerFlow do
 
     if is_template,
       do:
-        mark_flows_complete(message.contact_id, %{
+        mark_flows_complete(message.contact_id, message.channel, %{
           is_template: true,
           body: body
         })
 
-    context = FlowContext.active_context(message.contact_id)
+    context = FlowContext.active_context(message.contact_id, channel: message.channel)
 
     # if contact is not optout if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly
     # context is not nil
 
-    if start_optin_flow?(message.contact, context, body),
+    if start_optin_flow?(message, context, body),
       do: start_optin_flow(message, state),
       else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
 
-  defp mark_flows_complete(contact_id, event_meta) do
+  # Scoped to the channel the keyword arrived on, so a browser keyword completes only web flows.
+  defp mark_flows_complete(contact_id, channel, event_meta) do
     FlowContext.mark_flows_complete(contact_id, false,
       source: "process_message",
+      channel: channel,
       event_meta: event_meta
     )
   end
@@ -100,12 +100,12 @@ defmodule Glific.Processor.ConsumerFlow do
         flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, flow_params: flow_params)
 
-      start_new_contact_flow?(state) ->
+      start_new_contact_flow?(state, message) ->
         flow_id = state.flow_keywords["org_default_new_contact"]
         flow_params = {:flow_id, flow_id, @final_phrase}
         start_new_flow(message, body, state, delay: @delay_time, flow_params: flow_params)
 
-      flow_keyword?(state, body) ->
+      flow_keyword?(state, body, message.channel) ->
         flow_params = {:flow_keyword, body, @final_phrase}
         start_new_flow(message, body, state, flow_params: flow_params)
 
@@ -124,8 +124,13 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
+  # The org's default flows (regex, out of office, periodic) are WhatsApp's; on the web an
+  # unmatched message waits for staff.
   @spec handle_nil_context(map(), Message.t(), String.t()) ::
           {Message.t(), map()}
+  defp handle_nil_context(state, %{channel: channel} = message, _body) when channel != :whatsapp,
+    do: {message, state}
+
   defp handle_nil_context(state, message, body) do
     if match_with_regex?(state.regx_flow, message.body) do
       flow_id = Glific.parse_maybe_integer!(state.regx_flow.flow_id)
@@ -150,7 +155,12 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows.get_cached_flow(message.organization_id, flow_params)
     |> case do
       {:ok, flow} ->
-        opts = Keyword.put(opts, :flow_keyword, message.body)
+        # Carry the triggering message's channel so the flow's replies route back over it.
+        opts =
+          opts
+          |> Keyword.put(:flow_keyword, message.body)
+          |> Keyword.put(:channel, message.channel)
+
         FlowContext.init_context(flow, message.contact, status, opts)
 
       {:error, _} ->
@@ -229,16 +239,20 @@ defmodule Glific.Processor.ConsumerFlow do
       Map.get(state, :simulator, true)
   end
 
+  @spec start_optin_flow?(Message.t(), FlowContext.t() | nil, String.t()) :: boolean()
+  defp start_optin_flow?(message, context, body),
+    do: whatsapp?(message) && opted_out_outside_optin_flow?(message.contact, context, body)
+
   ## check if contact is not in the optin flow and has optout time
-  @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
-  defp start_optin_flow?(contact, nil, _body),
+  @spec opted_out_outside_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
+  defp opted_out_outside_optin_flow?(contact, nil, _body),
     do: !is_nil(contact.optout_time)
 
-  defp start_optin_flow?(contact, active_context, body),
+  defp opted_out_outside_optin_flow?(contact, active_context, body),
     do:
       if(Flows.optin_flow?(active_context.flow),
         do: false,
-        else: start_optin_flow?(contact, nil, body)
+        else: opted_out_outside_optin_flow?(contact, nil, body)
       )
 
   @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
@@ -246,6 +260,7 @@ defmodule Glific.Processor.ConsumerFlow do
     ## remove all the previous flow context
     FlowContext.mark_flows_complete(message.contact_id, false,
       source: "start_optin_flow",
+      channel: message.channel,
       event_meta: %{
         message_id: message.id
       }
@@ -260,7 +275,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
     case Flows.get_cached_flow(message.organization_id, args) do
       {:ok, flow} when flow.is_active ->
-        FlowContext.init_context(flow, message.contact, @final_phrase, is_draft: false)
+        FlowContext.init_context(flow, message.contact, @final_phrase,
+          is_draft: false,
+          channel: message.channel
+        )
 
       _ ->
         nil
@@ -269,15 +287,20 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  @spec start_new_contact_flow?(map()) :: boolean()
-  defp start_new_contact_flow?(state) do
-    Map.get(state, :newcontact, false) && !is_nil(state.flow_keywords["org_default_new_contact"])
+  @spec start_new_contact_flow?(map(), Message.t()) :: boolean()
+  defp start_new_contact_flow?(state, message) do
+    whatsapp?(message) && Map.get(state, :newcontact, false) &&
+      !is_nil(state.flow_keywords["org_default_new_contact"])
   end
 
-  @spec flow_keyword?(map(), String.t()) :: boolean()
-  defp flow_keyword?(state, body) do
-    Map.has_key?(state.flow_keywords["published"], body)
-  end
+  @spec flow_keyword?(map(), String.t(), atom()) :: boolean()
+  defp flow_keyword?(state, body, channel),
+    do: !is_nil(Flows.published_keyword_flow_id(state.flow_keywords, body, channel))
+
+  # Opt-in, new contact and the other org default flows are WhatsApp's alone: on the web the
+  # contact opened the chat themselves, and the defaults are configured for WhatsApp.
+  @spec whatsapp?(Message.t()) :: boolean()
+  defp whatsapp?(message), do: message.channel == :whatsapp
 
   @spec match_with_regex?(map(), String.t()) :: boolean()
   defp match_with_regex?(regx_flow, body) when nil in [regx_flow, body], do: false

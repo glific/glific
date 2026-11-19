@@ -1,0 +1,82 @@
+info:
+  name: Send a session template
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation sendSessionMessage($id: ID!, $receiverId: ID!) {
+        sendSessionMessage(id: $id, receiverId: $receiverId) {
+          message {
+            id
+            body
+            type
+            templateId
+            status
+            media {
+              id
+              url
+            }
+            receiver {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "receiverId": "8"
+      }
+  auth: inherit
+
+docs: |
+  Sends a saved session template (a "speed send") to one contact as a session message: its
+  body, type and media are copied into a new outbound message and sent through the BSP. It
+  needs the contact's 24-hour window to be open. To send an HSM, use **Send an HSM template
+  message**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument     | Type  | Required | Description                     |
+  | ------------ | ----- | -------- | ------------------------------- |
+  | `id`         | `ID!` | Yes      | The session template to send.   |
+  | `receiverId` | `ID!` | Yes      | The contact to send it to.      |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "sendSessionMessage": {
+        "message": {
+          "id": "1054",
+          "body": "Our helpline is open 9 AM to 6 PM, Monday to Saturday.",
+          "type": "TEXT",
+          "templateId": 3,
+          "status": "enqueued",
+          "media": null,
+          "receiver": { "id": "8", "name": "Chrissy Cron" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A refused send returns a top-level error, such as
+  `Sorry! 24 hrs window closed. Your message cannot be sent at this time.`; see **Send a
+  message** for the full list. An unknown template ID also returns a top-level error. A user
+  without the staff role gets a top-level `Unauthorized` error.

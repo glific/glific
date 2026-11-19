@@ -1,0 +1,64 @@
+info:
+  name: Subscribe to message tag additions
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription createdMessageTag($organizationId: ID!) {
+        createdMessageTag(organizationId: $organizationId) {
+          id
+          value
+          message {
+            id
+          }
+          tag {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes each tag added to a message, whether by **Add a tag to a message**, **Update a
+  message's tags** or Glific's own processing of incoming messages (such as a Dialogflow
+  intent tag).
+
+  **Role:** any logged-in user of the organization. The subscription has no role check; it only
+  checks that `organizationId` is the user's own organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                        |
+  | ---------------- | ----- | -------- | ---------------------------------- |
+  | `organizationId` | `ID!` | Yes      | The logged-in user's organization. |
+
+  ## Example response
+
+  Each event is pushed as:
+
+  ```json
+  {
+    "data": {
+      "createdMessageTag": {
+        "id": "903",
+        "value": null,
+        "message": { "id": "1042" },
+        "tag": { "id": "6", "label": "Important" }
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization is rejected with the error
+  `Auth Credentials mismatch`.

@@ -1,0 +1,46 @@
+info:
+  name: Count providers
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countProviders($filter: ProviderFilter) {
+        countProviders(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "Gupshup"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the providers that match a filter, leaving out the same internal providers as
+  **List providers**.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                                        |
+  | -------- | ---------------- | -------- | ------------------------------------------------------------------ |
+  | `filter` | `ProviderFilter` | No       | Same fields as in **List providers**. Without it, counts them all. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countProviders": 1
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the admin role gets a top-level `Unauthorized` error.

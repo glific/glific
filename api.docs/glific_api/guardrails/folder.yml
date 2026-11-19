@@ -1,0 +1,24 @@
+info:
+  name: Guardrails
+  type: folder
+  seq: 84
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Guardrails are validators Kaapi runs on the user's message before it reaches the model
+    (input guardrails) and on the model's reply before it reaches the user (output
+    guardrails), for example to remove personal data or block unsafe content.
+
+    Guardrails are not stored as records in Glific: they live in an assistant's config
+    version, as the `inputGuardrails` and `outputGuardrails` JSON lists set with **Create an
+    assistant** or **Update an assistant**. Each entry is an object with a `type` from
+    **List guardrail validators** plus that validator's settings. Kaapi validates the full
+    settings; Glific only checks that each entry has a non-empty `type`.
+
+    Listing validators needs the staff role, the `is_ai_guardrail_enabled` flag and an
+    active Kaapi credential. The same flag makes **Assistant Chat** replies show what each
+    guardrail did.
+  type: text/markdown

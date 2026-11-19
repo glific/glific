@@ -1,0 +1,81 @@
+info:
+  name: Interactive Templates
+  type: folder
+  seq: 41
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Interactive templates are WhatsApp interactive messages: buttons, lists and location
+    requests. They are session messages, so they can be sent only inside the 24-hour window,
+    and they need no Meta approval. Flows send them from a "Send message" node.
+
+    `type` (`InteractiveMessageTypeEnum`) and the `type` inside `interactiveContent` must agree:
+
+    | `type`                     | `interactiveContent.type`    |
+    | -------------------------- | ---------------------------- |
+    | `QUICK_REPLY`              | `quick_reply`                |
+    | `LIST`                     | `list`                       |
+    | `LOCATION_REQUEST_MESSAGE` | `location_request_message`   |
+
+    `interactiveContent` and `translations` are `Json` values: send them as JSON-encoded
+    strings, and they come back the same way.
+
+    ### Quick reply
+
+    Up to a few reply buttons under a header and text. `content.type` is `text`, `image`,
+    `video` or `file`; media types add a `url` (and `filename` for a file), and `caption`
+    holds the footer.
+
+    ```json
+    {
+      "type": "quick_reply",
+      "content": { "type": "text", "header": "Are you excited?", "text": "Glific is a two way communication platform" },
+      "options": [
+        { "type": "text", "title": "Excited" },
+        { "type": "text", "title": "Very excited" }
+      ]
+    }
+    ```
+
+    ### List
+
+    A button (`globalButtons`) that opens sections (`items`), each with options.
+
+    ```json
+    {
+      "type": "list",
+      "title": "Glific",
+      "body": "Pick a topic",
+      "globalButtons": [{ "type": "text", "title": "Topics" }],
+      "items": [
+        {
+          "title": "Features",
+          "subtitle": "Features",
+          "options": [
+            { "type": "text", "title": "Flows", "description": "Build chatbot flows" }
+          ]
+        }
+      ]
+    }
+    ```
+
+    ### Location request
+
+    ```json
+    {
+      "type": "location_request_message",
+      "body": { "type": "text", "text": "Please share your location" },
+      "action": { "name": "send_location" }
+    }
+    ```
+
+    `translations` maps a language ID (as a string) to the same structure in that language.
+    With `sendWithTitle: false`, a list is sent without its `title` and a text quick reply
+    without its `header`.
+
+    Reading needs the staff role; counting and every change need manager. Related:
+    **Session Templates**, **Polls**.
+  type: text/markdown

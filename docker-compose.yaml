@@ -1,11 +1,14 @@
 services:
   postgres:
-    image: postgres:13
+    image: postgres:15.18
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      # Match prod (en_US.UTF8). Only applies on first init of the volume.
+      - LANG=en_US.utf8
+      - POSTGRES_INITDB_ARGS=--locale=en_US.utf8 --encoding=UTF8
     volumes:
       - pgdata:/var/lib/postgresql/data
 

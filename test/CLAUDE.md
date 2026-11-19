@@ -104,6 +104,36 @@ Use descriptive, full names — never abbreviations — for test-local variables
 Bad: `new_cv`, `org_id`, `kbv`. Good: `new_config_version`, `organization_id`, `knowledge_base_version`.
 This applies to all schema-level concepts: prefer `config_version` over `cv`, `knowledge_base` over `kb`, etc.
 
+## Sorting by name / label — collation
+
+Prod and CI use **Linux glibc** `en_US.utf8`. Text `ORDER BY` (including
+`lower(label)` / `lower(name)` via `Repo.opts_with_*`) follows that locale.
+
+CI pins it via Postgres `LANG` / `POSTGRES_INITDB_ARGS`, and `DB_LOCALE=en_US.utf8`
+in `config/test.exs` so `ecto.create` (`test_full` / coveralls drop+recreate) builds
+from `template0` with matching `LC_COLLATE` / `LC_CTYPE`.
+
+When asserting list order by name/label:
+
+- Assert the **first value** under **Linux** `en_US.utf8` (CI/prod). Example from
+  `tag_test.exs`: ASC first is `"Child"`, DESC first is `"यह परीक्षण के लिए है"`.
+- **macOS `en_US.UTF-8` is not the same** — Apple’s collation often sorts
+  Devanagari *before* Latin, so the same assert fails locally even when
+  `datcollate` looks identical. For collation-sensitive tests, run against the
+  Docker Postgres in `docker-compose.yaml` (Linux glibc), not host Homebrew/
+  Postgres.app.
+- Confirm order on a Linux/`en_US.utf8` DB:
+
+  ```sql
+  SELECT label FROM tags ORDER BY lower(label) ASC;
+  SHOW lc_collate;
+  ```
+
+- If the sort key is **not unique** (e.g. `opts_with_inserted_at` with identical
+  timestamps), position is unstable — assert membership / filter, or add a
+  deterministic secondary `order_by` (e.g. `id`) in the product query. Do not
+  assert "first == X" on tied rows.
+
 ## Running & coverage
 
 ```bash

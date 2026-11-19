@@ -2,8 +2,7 @@ defmodule Glific.Providers.Maytapi.Message do
   @moduledoc """
   Message API layer between application and Maytapi
   """
-
-  import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Communications,
@@ -12,18 +11,29 @@ defmodule Glific.Providers.Maytapi.Message do
     Groups.WAGroup,
     Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
+    Providers.Maytapi.Sender,
     Repo,
-    WAGroup.WAManagedPhone,
+    SafeLog,
     WAGroup.WAMessage,
     WAGroup.WaPoll,
     WAMessages
   }
 
-  @doc false
-  @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) ::
+  @doc """
+  Pick the managed phone for `wa_group` via `Sender.pick_for_send/2` (so
+  primary-with-failover applies), record the outbound `wa_message`, and
+  dispatch it through Maytapi.
+
+  Returns `{:ok, %WAMessage{}}` on success, `{:error, :no_active_phones}`
+  when the group has no usable phone, `{:error, :promotion_failed}` when
+  a failover candidate was found but the primary swap could not be
+  persisted, or any error surfaced by the underlying create/send pipeline.
+  """
+  @spec create_and_send_wa_message(WAGroup.t(), map()) ::
           {:ok, WAMessage.t()} | {:error, any()}
-  def create_and_send_wa_message(wa_phone, wa_group, attrs) do
-    with {:ok, {attrs, poll}} <- add_poll_details(attrs),
+  def create_and_send_wa_message(%WAGroup{} = wa_group, attrs) do
+    with {:ok, wa_phone, _source} <- Sender.pick_for_send(wa_group),
+         {:ok, {attrs, poll}} <- add_poll_details(attrs),
          {:ok, message} <- create_wa_message(attrs, wa_phone, wa_group) do
       GroupMessage.send_message(message, %{
         wa_group_bsp_id: wa_group.bsp_id,
@@ -73,7 +83,7 @@ defmodule Glific.Providers.Maytapi.Message do
       WaGroupsCollections.list_wa_groups_collection(%{
         filter: %{group_id: group.id, organization_id: group.organization_id}
       })
-      |> Repo.preload([:wa_group])
+      |> Repo.preload(wa_group: :primary_phone)
 
     case wa_group_collections do
       [] ->
@@ -89,17 +99,14 @@ defmodule Glific.Providers.Maytapi.Message do
           fn wa_group_collection ->
             Repo.put_process_state(wa_group_collection.organization_id)
 
-            {:ok, wa_managed_phone} =
-              Repo.fetch_by(WAManagedPhone, %{
-                id: wa_group_collection.wa_group.wa_managed_phone_id,
-                organization_id: wa_group_collection.organization_id
-              })
+            result =
+              create_and_send_wa_message(
+                wa_group_collection.wa_group,
+                Map.delete(attrs, :group_id)
+              )
 
-            create_and_send_wa_message(
-              wa_managed_phone,
-              wa_group_collection.wa_group,
-              Map.delete(attrs, :group_id)
-            )
+            log_collection_send_failure(result, wa_group_collection, group)
+            result
           end,
           max_concurrency: 20,
           on_timeout: :kill_task
@@ -110,17 +117,40 @@ defmodule Glific.Providers.Maytapi.Message do
     end
   end
 
+  @spec log_collection_send_failure(any(), WAGroupsCollection.t(), Group.t()) :: :ok
+  defp log_collection_send_failure({:ok, _}, _wa_group_collection, _group), do: :ok
+
+  defp log_collection_send_failure(result, %{wa_group_id: wa_group_id}, %{
+         id: group_id,
+         organization_id: org_id
+       }) do
+    Glific.log_error(
+      "Maytapi send failed (collection): wa_group=#{SafeLog.safe_inspect(wa_group_id)} group=#{SafeLog.safe_inspect(group_id)} org=#{org_id} result=#{SafeLog.safe_inspect(result)}"
+    )
+
+    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "collection"})
+    :ok
+  end
+
   @doc """
   Record a message sent to a group in the wa_message table.
   """
 
   @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
+  def create_wa_group_message(
+        [%{wa_group: %{primary_phone: nil} = wa_group} | _rest],
+        %{id: group_id, organization_id: org_id} = _group,
+        _attrs
+      ) do
+    Glific.log_error(
+      "Maytapi collection: skipping group-level wa_message row (no primary phone) wa_group=#{SafeLog.safe_inspect(wa_group.id)} org=#{org_id} collection=#{SafeLog.safe_inspect(group_id)}"
+    )
+
+    {:error, :no_primary_phone}
+  end
+
   def create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
-    {:ok, wa_managed_phone} =
-      Repo.fetch_by(WAManagedPhone, %{
-        id: wa_group_collection.wa_group.wa_managed_phone_id,
-        organization_id: group.organization_id
-      })
+    wa_managed_phone = wa_group_collection.wa_group.primary_phone
 
     attrs
     |> Map.put_new(:type, :text)
@@ -140,6 +170,10 @@ defmodule Glific.Providers.Maytapi.Message do
         {:ok, wa_message}
 
       {:error, error} ->
+        Glific.log_error(
+          "Maytapi collection: group-level wa_message insert failed collection=#{SafeLog.safe_inspect(group.id)} org=#{group.organization_id} error=#{SafeLog.safe_inspect(error)}"
+        )
+
         {:error, error}
     end
   end
@@ -158,14 +192,13 @@ defmodule Glific.Providers.Maytapi.Message do
   def receive_text(%{"message" => %{"fromMe" => from_me}} = params) do
     payload = params["message"]
 
-    :ok = validate_phone_number(params["user"]["phone"], payload)
     {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
 
     %{
       bsp_id: payload["id"],
       body: payload["text"],
       sender: %{
-        phone: params["user"]["phone"],
+        phone: resolve_sender_phone(params),
         name: params["user"]["name"]
       },
       flow: flow,
@@ -178,7 +211,6 @@ defmodule Glific.Providers.Maytapi.Message do
   def receive_media(%{"message" => %{"fromMe" => from_me}} = params) do
     payload = params["message"]
 
-    :ok = validate_phone_number(params["user"]["phone"], payload)
     {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
 
     %{
@@ -188,7 +220,7 @@ defmodule Glific.Providers.Maytapi.Message do
       content_type: payload["type"],
       source_url: payload["url"],
       sender: %{
-        phone: params["user"]["phone"],
+        phone: resolve_sender_phone(params),
         name: params["user"]["name"]
       },
       flow: flow,
@@ -201,7 +233,6 @@ defmodule Glific.Providers.Maytapi.Message do
   def receive_location(%{"message" => %{"fromMe" => from_me}} = params) do
     payload = params["message"]
 
-    :ok = validate_phone_number(params["user"]["phone"], payload)
     {flow, status} = if from_me, do: {:outbound, :sent}, else: {:inbound, :received}
 
     [latitude, longitude] = payload["payload"] |> String.split(",")
@@ -211,7 +242,7 @@ defmodule Glific.Providers.Maytapi.Message do
       longitude: longitude,
       latitude: latitude,
       sender: %{
-        phone: params["user"]["phone"],
+        phone: resolve_sender_phone(params),
         name: params["user"]["name"]
       },
       flow: flow,
@@ -219,17 +250,52 @@ defmodule Glific.Providers.Maytapi.Message do
     }
   end
 
-  # lets ensure that we have a phone number
-  # sometime the maytapi payload has a blank payload
-  # or maybe a simulator or some test code
-  @spec validate_phone_number(String.t(), map()) :: :ok | RuntimeError
-  defp validate_phone_number(phone, payload) when phone in [nil, ""] do
-    error = "Phone number is blank, #{Glific.SafeLog.safe_inspect(payload)}"
-    Glific.log_error(error)
-    raise(RuntimeError, message: error)
+  # Maytapi delivers a blank `user.phone` for participants in privacy-enabled
+  # (LID) WhatsApp groups. When the participant is a regular `@c.us` user the
+  # real number is still present as the trailing segment of the message id, so
+  # we recover it from there. A genuine `@lid` participant stays unresolved
+  # (nil) and the message is dropped-with-ack by the controller.
+  @spec resolve_sender_phone(map()) :: String.t() | nil
+  defp resolve_sender_phone(params) do
+    case params["user"]["phone"] do
+      phone when phone in [nil, ""] -> recovered_sender_phone(params)
+      phone -> phone
+    end
   end
 
-  defp validate_phone_number(_phone, _payload), do: :ok
+  @spec recovered_sender_phone(map()) :: String.t() | nil
+  defp recovered_sender_phone(params) do
+    phone = phone_from_message_id(params["message"])
+
+    if own_number?(phone, params), do: nil, else: phone
+  end
+
+  # Maytapi has been observed putting the receiving managed phone in the
+  # participant slot of the message id when it cannot resolve a LID sender. An
+  # inbound message never originates from our own number, so treat that as
+  # unresolved rather than attributing a group member's message to the
+  # organization itself.
+  @spec own_number?(String.t() | nil, map()) :: boolean()
+  defp own_number?(nil, _params), do: false
+  defp own_number?(_phone, %{"message" => %{"fromMe" => true}}), do: false
+  defp own_number?(phone, params), do: phone == params["receiver"]
+
+  @spec phone_from_message_id(map()) :: String.t() | nil
+  defp phone_from_message_id(payload) do
+    (payload["_serialized"] || payload["id"] || "")
+    |> String.split("_")
+    |> List.last()
+    |> c_us_phone()
+  end
+
+  @spec c_us_phone(String.t() | nil) :: String.t() | nil
+  defp c_us_phone(segment) when is_binary(segment) do
+    if String.ends_with?(segment, "@c.us"),
+      do: String.trim_trailing(segment, "@c.us"),
+      else: nil
+  end
+
+  defp c_us_phone(_segment), do: nil
 
   @doc false
   @spec receive_poll(map()) :: map()
@@ -249,7 +315,7 @@ defmodule Glific.Providers.Maytapi.Message do
       poll_content: poll_content,
       type: payload["type"],
       sender: %{
-        phone: params["user"]["phone"],
+        phone: resolve_sender_phone(params),
         name: params["user"]["name"]
       },
       flow: flow,

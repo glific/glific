@@ -1,18 +1,16 @@
 defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
+  use Oban.Testing, repo: Glific.Repo
 
   import Mock
 
   alias Glific.{
     Contacts,
     Contacts.Location,
-    Messages,
     Messages.Message,
+    Processor.MessageWorker,
     Repo,
-    Seeds.SeedsDev,
-    Templates,
-    WhatsappForms,
-    WhatsappForms.WhatsappFormResponse
+    Seeds.SeedsDev
   }
 
   @message_request_params %{
@@ -85,8 +83,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -140,8 +138,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -151,10 +149,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(message_params, ["payload", "sender", "phone"])
 
       # Duplicate delivery — handled gracefully by handle_inbound_create_result/2;
-      # the duplicate must be swallowed without dispatching to the poolboy worker
+      # the duplicate must be swallowed without enqueuing another processing job
       conn3 = post(conn, "/gupshup", message_params)
       assert response(conn3, 200) == ""
-      refute_receive :received_message_to_process, 50
+      assert [_only_job] = all_enqueued(worker: MessageWorker, prefix: "global")
     end
 
     test "Updating the contacts due to sender contact already existing", %{
@@ -179,8 +177,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -211,8 +213,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -246,8 +252,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(
+        worker: MessageWorker,
+        args: %{message_id: message.id, organization_id: message.organization_id},
+        prefix: "global"
+      )
 
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
@@ -320,8 +330,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.caption == setup_config.image_payload["caption"]
@@ -355,8 +365,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -385,8 +395,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -414,8 +424,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -444,8 +454,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -493,228 +503,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       {:ok, location} = Repo.fetch_by(Location, %{message_id: message.id})
 
-      # ensure the message has been received by the mock
-      assert_receive :received_message_to_process
+      # ensure the message has been enqueued for processing
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       # test location fields
       assert location.longitude == setup_config.location_payload["longitude"]
-    end
-  end
-
-  describe "whatsapp_form_response" do
-    test "Incoming WhatsApp form response should be stored in the database with whatsapp_response_id",
-         %{conn: conn, user: user} do
-      Tesla.Mock.mock(fn
-        %{method: :post, url: url} ->
-          cond do
-            String.contains?(url, "/flows") ->
-              %Tesla.Env{
-                status: 201,
-                body: %{id: "1787478395302778", status: "success", validation_errors: []}
-              }
-
-            String.contains?(url, "subscription") ->
-              %Tesla.Env{
-                status: 200,
-                body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
-              }
-          end
-      end)
-
-      {:ok, temp} =
-        Templates.create_session_template(%{
-          label: "Whatsapp Form Template",
-          type: :text,
-          body: "Hello World",
-          language_id: 1,
-          organization_id: conn.assigns[:organization_id],
-          uuid: "3982792f-a178-442d-be4b-3eadbb804726",
-          buttons: [
-            %{
-              "text" => "RATE",
-              "type" => "FLOW",
-              "flow_id" => "1787478395302778",
-              "flow_action" => "NAVIGATE",
-              "navigate_screen" => "RATE"
-            }
-          ]
-        })
-
-      {:ok, _message} =
-        Messages.create_message(%{
-          body: "Hello| [Open] ",
-          flow: :outbound,
-          type: :text,
-          sender_id: 1,
-          receiver_id: 2,
-          contact_id: 1,
-          organization_id: conn.assigns[:organization_id],
-          bsp_message_id: "0e74fb92-eb8a-415a-bccd-42ee768665e0",
-          template_id: temp.id
-        })
-
-      {:ok, _wa_form} =
-        WhatsappForms.create_whatsapp_form(
-          %{
-            name: "Customer Feedback Form",
-            meta_flow_id: "1787478395302778",
-            form_json: %{
-              "screens" => []
-            },
-            categories: ["other"],
-            description: "A form to collect customer feedback",
-            organization_id: conn.assigns[:organization_id]
-          },
-          user
-        )
-
-      payload = %{
-        "entry" => [
-          %{
-            "changes" => [
-              %{
-                "field" => "messages",
-                "value" => %{
-                  "contacts" => [
-                    %{
-                      "profile" => %{"name" => "Smit"},
-                      "wa_id" => "919917443994"
-                    }
-                  ],
-                  "messages" => [
-                    %{
-                      "context" => %{
-                        "from" => "919917443994",
-                        "gs_id" => "0e74fb92-eb8a-415a-bccd-42ee768665e0",
-                        "id" => "031AGDymvDNTGOEfndITwW",
-                        "meta_msg_id" =>
-                          "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAERgSNzY4MjM3OEU5RDBFQUY1MDNFAA=="
-                      },
-                      "from" => "919917443994",
-                      "id" => "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
-                      "interactive" => %{
-                        "nfm_reply" => %{
-                          "body" => "Sent",
-                          "name" => "flow",
-                          "response_json" =>
-                            "{\"screen_1_Purchase_experience_0\":\"0_Excellent\",\"screen_1_Delivery_and_setup_1\":\"2_Average\",\"screen_0_Choose_one_0\":\"0_Yes\",\"flow_token\":\"unused\",\"screen_1_Customer_service_2\":\"0_Excellent\"}"
-                        },
-                        "type" => "nfm_reply"
-                      },
-                      "timestamp" => "1763015605",
-                      "type" => "interactive"
-                    }
-                  ]
-                }
-              }
-            ],
-            "id" => "122037724131744"
-          }
-        ]
-      }
-
-      conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
-      assert conn2.halted
-
-      bsp_message_id = "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA"
-
-      {:ok, message} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
-          organization_id: conn.assigns[:organization_id]
-        })
-
-      message = Repo.preload(message, [:sender, :media])
-      assert_receive :received_message_to_process
-
-      assert message.whatsapp_form_response_id != nil
-      assert message.flow == :inbound
-      assert message.sender.phone == "919917443994"
-      assert message.context_id == "0e74fb92-eb8a-415a-bccd-42ee768665e0"
-
-      {:ok, form_response} =
-        Repo.fetch_by(WhatsappFormResponse, %{id: message.whatsapp_form_response_id})
-
-      assert form_response.raw_response != nil
-    end
-
-    test "WhatsApp form response with no matching form should not be stored", %{conn: conn} do
-      {:ok, _temp} =
-        Templates.create_session_template(%{
-          label: "Whatsapp Form Template",
-          type: :text,
-          body: "Hello World",
-          language_id: 1,
-          organization_id: conn.assigns[:organization_id],
-          bsp_id: "3982792f-a178-442d-be4b-3eadbb804726",
-          buttons: [
-            %{
-              "text" => "RATE",
-              "type" => "FLOW",
-              "flow_id" => "1787478395302778",
-              "flow_action" => "NAVIGATE",
-              "navigate_screen" => "RATE"
-            }
-          ]
-        })
-
-      payload = %{
-        "entry" => [
-          %{
-            "changes" => [
-              %{
-                "field" => "messages",
-                "value" => %{
-                  "contacts" => [
-                    %{
-                      "profile" => %{"name" => "Smit"},
-                      "wa_id" => "919917443994"
-                    }
-                  ],
-                  "messages" => [
-                    %{
-                      "context" => %{
-                        "from" => "919917443994",
-                        "gs_id" => "0e74fb92-eb8a-415a-bccd-42ee768665e0",
-                        "id" => "031AGDymvDNTGOEfndITwW",
-                        "meta_msg_id" =>
-                          "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAERgSNzY4MjM3OEU5RDBFQUY1MDNFAA=="
-                      },
-                      "from" => "919917443994",
-                      "id" => "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
-                      "interactive" => %{
-                        "nfm_reply" => %{
-                          "body" => "Sent",
-                          "name" => "flow",
-                          "response_json" =>
-                            "{\"screen_1_Purchase_experience_0\":\"0_Excellent\",\"screen_1_Delivery_and_setup_1\":\"2_Average\",\"screen_0_Choose_one_0\":\"0_Yes\",\"flow_token\":\"unused\",\"screen_1_Customer_service_2\":\"0_Excellent\"}"
-                        },
-                        "type" => "nfm_reply"
-                      },
-                      "timestamp" => "1763015605",
-                      "type" => "interactive"
-                    }
-                  ]
-                }
-              }
-            ],
-            "id" => "122037724131744"
-          }
-        ]
-      }
-
-      conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
-      assert conn2.halted
-
-      bsp_message_id = "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA"
-
-      {:error, error} =
-        Repo.fetch_by(Message, %{
-          bsp_message_id: bsp_message_id,
-          organization_id: conn.assigns[:organization_id]
-        })
-
-      assert error == ["Elixir.Glific.Messages.Message", "Resource not found"]
     end
   end
 
@@ -749,7 +542,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn1 = post(conn, "/gupshup", text_params)
       assert conn1.halted
-      assert_receive :received_message_to_process
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       {:ok, original_message} =
         Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
@@ -759,8 +552,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                 increment_counter: fn _, _, _ -> :ok end do
         conn2 = post(conn, "/gupshup", text_params)
         assert conn2.halted
-        # Duplicate delivery must not trigger downstream flow processing
-        refute_receive :received_message_to_process, 50
+        # Duplicate delivery must not enqueue another processing job
+        assert [_only_job] = all_enqueued(worker: MessageWorker, prefix: "global")
 
         assert called(
                  Elixir.Appsignal.increment_counter(
@@ -784,7 +577,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn1 = post(conn, "/gupshup", image_params)
       assert conn1.halted
-      assert_receive :received_message_to_process
+      assert_enqueued(worker: MessageWorker, prefix: "global")
 
       {:ok, original_message} =
         Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
@@ -797,8 +590,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                 increment_counter: fn _, _, _ -> :ok end do
         conn2 = post(conn, "/gupshup", image_params)
         assert conn2.halted
-        # Duplicate delivery must not trigger downstream flow processing
-        refute_receive :received_message_to_process, 50
+        # Duplicate delivery must not enqueue another processing job
+        assert [_only_job] = all_enqueued(worker: MessageWorker, prefix: "global")
 
         assert called(
                  Elixir.Appsignal.increment_counter(
@@ -838,9 +631,28 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         conn2 = post(conn, "/gupshup", text_params)
         # The controller still returns 200 — error is logged, not propagated
         assert conn2.halted
-        # Error path must not trigger downstream flow processing either
-        refute_receive :received_message_to_process, 50
+        # Error path must not enqueue a processing job either
+        refute_enqueued(worker: MessageWorker, prefix: "global")
         assert called(Elixir.Appsignal.send_error(:error, :_, :_))
+      end
+    end
+
+    test "enqueue failure is logged and does not break the inbound pipeline",
+         %{conn: conn, text_params: text_params} do
+      with_mock MessageWorker, [:passthrough], make_job: fn _message -> {:error, :boom} end do
+        conn2 = post(conn, "/gupshup", text_params)
+        assert conn2.halted
+
+        # the message is still stored even though enqueueing its processing failed
+        bsp_message_id = get_in(text_params, ["payload", "id"])
+
+        assert {:ok, _message} =
+                 Repo.fetch_by(Message, %{
+                   bsp_message_id: bsp_message_id,
+                   organization_id: conn.assigns[:organization_id]
+                 })
+
+        refute_enqueued(worker: MessageWorker, prefix: "global")
       end
     end
   end

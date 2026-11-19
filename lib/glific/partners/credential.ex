@@ -13,6 +13,8 @@ defmodule Glific.Partners.Credential do
     Provider
   }
 
+  alias Glific.WebChannel.JwtSecret
+
   @derive {ExAudit.Tracker, except: [:secrets]}
 
   @required_fields [:organization_id, :provider_id]
@@ -54,8 +56,23 @@ defmodule Glific.Partners.Credential do
     credential
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_jwt_secret()
     |> unique_constraint([:provider_id, :organization_id])
     |> foreign_key_constraint(:provider_id)
     |> foreign_key_constraint(:organization_id)
+  end
+
+  # Not validate_change/3: it skips a nil change, which would let `secrets: nil` remove a saved secret.
+  @spec validate_jwt_secret(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_jwt_secret(%{data: %Credential{secrets: old_secrets}} = changeset) do
+    case fetch_change(changeset, :secrets) do
+      {:ok, secrets} when is_map(secrets) or is_nil(secrets) ->
+        old_secrets
+        |> JwtSecret.validate_new_secret(secrets)
+        |> Enum.reduce(changeset, &add_error(&2, :secrets, &1))
+
+      _no_change ->
+        changeset
+    end
   end
 end

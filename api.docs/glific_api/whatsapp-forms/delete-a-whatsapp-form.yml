@@ -1,0 +1,61 @@
+info:
+  name: Delete a WhatsApp form
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteWhatsappForm($id: ID!) {
+        deleteWhatsappForm(id: $id) {
+          whatsappForm {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a WhatsApp form from Glific. The flow at Meta is not deleted or deprecated, and a
+  later **Sync WhatsApp forms** can bring it back.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The form to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteWhatsappForm": {
+        "whatsappForm": {
+          "id": "3",
+          "name": "sign_up_form"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The form does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WhatsappForms.WhatsappForm", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

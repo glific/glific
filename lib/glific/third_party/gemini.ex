@@ -40,30 +40,44 @@ defmodule Glific.ThirdParty.Gemini do
   ## Examples
 
       iex> Glific.ThirdParty.Gemini.speech_to_text("https://example.com/audio.mp3", 1)
-      %{success: true, asr_response_text: "Hello, this is a transcription"}
+      %{success: true, asr_response_text: "Hello, this is a transcription", audio_byte_size: 12345}
 
       iex> Glific.ThirdParty.Gemini.speech_to_text("https://invalid.url/audio.mp3", 1)
       %{success: false, error: "Failed to fetch audio"}
 
+  Attaches the decoded audio size (`audio_byte_size`) whenever the download succeeds — on both the
+  success and STT-failure branches — so callers can size-bucket latency even for failed STT.
   """
   @spec speech_to_text(String.t(), non_neg_integer()) :: map() | String.t()
   def speech_to_text(audio_url, organization_id) do
-    with {:ok, encoded_audio, _content_type} <-
-           GupshupClient.download_media_content(audio_url, organization_id),
-         %{success: true} = response <- ApiClient.speech_to_text(encoded_audio, organization_id) do
-      Metrics.increment("Gemini STT Success", organization_id)
+    case GupshupClient.download_media_content(audio_url, organization_id) do
+      {:ok, encoded_audio, _content_type} ->
+        audio_byte_size = approx_audio_bytes(encoded_audio)
 
-      response
-    else
+        encoded_audio
+        |> ApiClient.speech_to_text(organization_id)
+        |> tag_stt_result(organization_id, audio_byte_size)
+
       {:error, :download_failed} ->
         Metrics.increment("Gemini STT Failure", organization_id)
         %{success: false, asr_response_text: "File download failed"}
-
-      error ->
-        Metrics.increment("Gemini STT Failure", organization_id)
-        error
     end
   end
+
+  @spec tag_stt_result(map(), non_neg_integer(), non_neg_integer()) :: map()
+  defp tag_stt_result(%{success: true} = response, organization_id, audio_byte_size) do
+    Metrics.increment("Gemini STT Success", organization_id)
+    Map.put(response, :audio_byte_size, audio_byte_size)
+  end
+
+  defp tag_stt_result(%{} = response, organization_id, audio_byte_size) do
+    Metrics.increment("Gemini STT Failure", organization_id)
+    Map.put(response, :audio_byte_size, audio_byte_size)
+  end
+
+  @spec approx_audio_bytes(binary()) :: non_neg_integer()
+  defp approx_audio_bytes(encoded_audio) when is_binary(encoded_audio),
+    do: div(byte_size(encoded_audio) * 3, 4)
 
   @doc """
   Converts text to speech using Gemini API and uploads the audio to Google Cloud Storage.
@@ -130,9 +144,13 @@ defmodule Glific.ThirdParty.Gemini do
            choose_engine_and_do_tts(speech_engine, organization_id, translated_text) do
       response
     else
-      %{success: false} ->
+      %{success: false} = failure ->
         Metrics.increment("Gemini TTS Failure", organization_id)
-        %{success: false, media_url: nil, translated_text: text}
+
+        Map.merge(
+          %{success: false, media_url: nil, translated_text: text},
+          Map.take(failure, [:reason, :http_status])
+        )
 
       error ->
         Metrics.increment("Gemini NMT TTS Failure", organization_id)
@@ -163,14 +181,15 @@ defmodule Glific.ThirdParty.Gemini do
       |> Map.put(:media_url, media_meta.url)
       |> Map.put(:translated_text, text)
     else
-      {:error, status} when is_integer(status) ->
+      {:error, {status, message}} ->
         Metrics.increment("Gemini TTS Failure", organization_id)
 
         %{
           success: false,
           media_url: nil,
           translated_text: text,
-          http_status: status
+          http_status: status,
+          reason: "Gemini TTS failed (#{status}): #{message}"
         }
 
       {:error, reason} ->
@@ -203,26 +222,32 @@ defmodule Glific.ThirdParty.Gemini do
   defp choose_engine_and_do_tts(_speech_engine, organization_id, translated_text),
     do: do_text_to_speech(organization_id, translated_text)
 
+  @doc """
+  FFmpeg input flags for Gemini TTS audio: WAV (3.8 models) carries its own format, while
+  older models return headerless 24 kHz mono 16-bit PCM.
+  """
+  @spec ffmpeg_input_args(binary()) :: [String.t()]
+  def ffmpeg_input_args(<<"RIFF", _size::binary-size(4), "WAVE", _rest::binary>>), do: ["-i"]
+  def ffmpeg_input_args(_raw_pcm), do: ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i"]
+
   @spec download_encoded_file(binary()) :: {:ok, String.t(), String.t()} | String.t()
   defp download_encoded_file(decoded_audio) do
     uuid = Ecto.UUID.generate()
     remote_name = "Gemini/outbound/#{uuid}.mp3"
 
-    pcm_file = System.tmp_dir!() <> "#{uuid}.pcm"
-    mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    File.write!(pcm_file, decoded_audio)
+    audio_file = Path.join(System.tmp_dir!(), "#{uuid}.audio")
+    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
+    File.write!(audio_file, decoded_audio)
 
-    case System.cmd(
-           "ffmpeg",
-           ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", pcm_file, mp3_file],
+    case System.cmd("ffmpeg", ffmpeg_input_args(decoded_audio) ++ [audio_file, mp3_file],
            stderr_to_stdout: true
          ) do
       {_output, 0} ->
-        File.rm(pcm_file)
+        File.rm(audio_file)
         {:ok, mp3_file, remote_name}
 
       {output, exit_code} ->
-        File.rm(pcm_file)
+        File.rm(audio_file)
         Logger.error("Gemini TTS FFmpeg failed with exit code #{exit_code}: #{output}")
         "Error while converting file"
     end

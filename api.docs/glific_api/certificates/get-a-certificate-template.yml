@@ -1,0 +1,71 @@
+info:
+  name: Get a certificate template
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query certificateTemplate($id: ID!) {
+        certificateTemplate(id: $id) {
+          certificateTemplate {
+            id
+            label
+            url
+            type
+            description
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Returns one certificate template by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The template to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "certificateTemplate": {
+        "certificateTemplate": {
+          "id": "3",
+          "label": "Course completion",
+          "url": "https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/edit#slide=id.p1",
+          "type": "SLIDES",
+          "description": "Issued at the end of the 6-week course",
+          "insertedAt": "2026-11-02T09:41:12Z",
+          "updatedAt": "2026-11-02T09:41:12Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Certificates.CertificateTemplate", "message": "Resource not found" }]`
+    and `certificateTemplate` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

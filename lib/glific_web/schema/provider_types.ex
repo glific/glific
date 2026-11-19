@@ -61,6 +61,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
 
     @desc "getting bsp balance"
     field :bspbalance, :json do
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.bspbalance/3)
     end
 

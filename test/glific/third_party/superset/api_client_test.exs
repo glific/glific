@@ -36,6 +36,42 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
       assert {:ok, %{token: "embed_token_xyz"}} = ApiClient.get_embed_token(organization_id)
     end
 
+    test "scopes the guest token request to the given organization_id via an rls clause",
+         %{organization_id: organization_id} do
+      test_pid = self()
+
+      mock(fn
+        %{method: :post, url: url} when url == @base_url <> "/security/login" ->
+          %Tesla.Env{
+            status: 200,
+            body: %{access_token: "test_token"},
+            headers: []
+          }
+
+        %{method: :get, url: url} when url == @base_url <> "/security/csrf_token/" ->
+          %Tesla.Env{
+            status: 200,
+            body: %{result: "csrf123"},
+            headers: [{"set-cookie", "session=abc123; Path=/"}]
+          }
+
+        %{method: :post, url: url, body: body}
+        when url == @base_url <> "/security/guest_token/" ->
+          send(test_pid, {:guest_token_body, body})
+
+          %Tesla.Env{
+            status: 200,
+            body: %{token: "embed_token_xyz"},
+            headers: []
+          }
+      end)
+
+      assert {:ok, %{token: "embed_token_xyz"}} = ApiClient.get_embed_token(organization_id)
+      assert_receive {:guest_token_body, body}
+      decoded = Jason.decode!(body)
+      assert decoded["rls"] == [%{"clause" => "organization_id = #{organization_id}"}]
+    end
+
     test "returns {:error, %{status: 401, body: _}} when login returns 401",
          %{organization_id: organization_id} do
       mock(fn

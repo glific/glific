@@ -122,6 +122,42 @@ defmodule Glific.SearchesTest do
       assert message_count > new_message_count
     end
 
+    test "search_multi/2 finds a contact once, without joining its messages", attrs do
+      contact = Fixtures.contact_fixture(Map.put(attrs, :name, "Searchable Learner"))
+
+      for _n <- 1..3,
+          do: Fixtures.message_fixture(Map.merge(attrs, %{sender_id: contact.id, body: "hello"}))
+
+      test_pid = self()
+      handler = "search-contacts-sql-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler,
+        [:glific, :repo, :query],
+        fn _event, _measurements, %{query: sql, source: source}, _config ->
+          if source == "contacts", do: send(test_pid, {:contacts_sql, sql})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      # Two filter keys used to add a messages join to the contact search.
+      args = %{
+        filter: %{term: "Searchable", include_groups: []},
+        contact_opts: %{limit: 25, offset: 0},
+        message_opts: %{limit: 20, offset: 0}
+      }
+
+      search = Searches.search_multi("Searchable", args)
+
+      assert [found] = Enum.filter(search.contacts, &(&1.id == contact.id))
+      assert found.name == "Searchable Learner"
+
+      assert_received {:contacts_sql, sql}
+      refute sql =~ ~s(JOIN "messages")
+    end
+
     test "wa_search_multi/2 returns the search result", attrs do
       Fixtures.wa_managed_phone_fixture(attrs)
       wa_message = Fixtures.wa_message_fixture(attrs)
@@ -149,6 +185,68 @@ defmodule Glific.SearchesTest do
       search = Searches.wa_search_multi(wa_group.label, args)
       wa_group_count = search.wa_groups |> length()
       assert wa_group_count == 1
+    end
+  end
+
+  describe "search/2 filtered by channel" do
+    setup %{organization_id: organization_id} do
+      web_channel_contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      whatsapp_contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      # `create_message/1` derives `contact_id` from the flow direction, so an inbound message's
+      # contact is its *sender* — set that, not the receiver, or the conversation lands on the
+      # fixture-generated counterpart contact instead.
+      Fixtures.message_fixture(%{
+        organization_id: organization_id,
+        sender_id: web_channel_contact.id,
+        channel: :web,
+        body: "sent from a browser"
+      })
+
+      Fixtures.message_fixture(%{
+        organization_id: organization_id,
+        sender_id: whatsapp_contact.id,
+        body: "sent over whatsapp"
+      })
+
+      %{web_channel_contact: web_channel_contact, whatsapp_contact: whatsapp_contact}
+    end
+
+    defp search_contact_ids(organization_id, filter) do
+      %{
+        filter: Map.put(filter, :organization_id, organization_id),
+        contact_opts: %{limit: 50, offset: 0},
+        message_opts: %{limit: 10, offset: 0}
+      }
+      |> Searches.search(false)
+      |> Enum.map(& &1.contact.id)
+    end
+
+    test "returns only contacts with a message on that channel", %{
+      organization_id: organization_id,
+      web_channel_contact: web_channel_contact,
+      whatsapp_contact: whatsapp_contact
+    } do
+      web_results = search_contact_ids(organization_id, %{channel: :web})
+
+      assert web_channel_contact.id in web_results
+      refute whatsapp_contact.id in web_results
+
+      whatsapp_results = search_contact_ids(organization_id, %{channel: :whatsapp})
+
+      assert whatsapp_contact.id in whatsapp_results
+      refute web_channel_contact.id in whatsapp_results
+    end
+
+    test "returns both when no channel is given", %{
+      organization_id: organization_id,
+      web_channel_contact: web_channel_contact,
+      whatsapp_contact: whatsapp_contact
+    } do
+      results = search_contact_ids(organization_id, %{term: ""})
+
+      assert web_channel_contact.id in results
+      assert whatsapp_contact.id in results
     end
   end
 end

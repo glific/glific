@@ -1,0 +1,28 @@
+mutation translateSessionTemplate(
+  $templateId: ID!
+  $languageId: ID!
+  $body: String
+  $footer: String
+  $buttons: [String]
+) {
+  translateSessionTemplate(
+    templateId: $templateId
+    languageId: $languageId
+    body: $body
+    footer: $footer
+    buttons: $buttons
+  ) {
+    body
+    footer
+    buttons
+    sourceLanguage {
+      id
+      label
+      locale
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

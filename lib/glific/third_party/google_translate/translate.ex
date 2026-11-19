@@ -69,9 +69,6 @@ defmodule Glific.GoogleTranslate.Translate do
            ),
          combined_texts <- combine_string(final_string) do
       {:ok, combined_texts}
-    else
-      {_status, response} ->
-        {:error, "Invalid response #{Glific.SafeLog.safe_inspect(response)}"}
     end
   end
 
@@ -88,8 +85,32 @@ defmodule Glific.GoogleTranslate.Translate do
     {:ok, translated_texts}
   end
 
-  defp extract_translations(_unexpected) do
-    {:error, "Failed to extract translations"}
+  defp extract_translations({:ok, %Tesla.Env{status: status, body: %{"error" => %{} = error}}})
+       when status != 200 do
+    reason =
+      case error |> Map.get("details", []) |> List.wrap() |> List.first() do
+        %{"reason" => reason} -> reason
+        _ -> nil
+      end
+
+    message = Map.get(error, "message", "")
+    google_status = Map.get(error, "status", "")
+
+    detail = if reason, do: "#{reason} -- #{message}", else: message
+
+    {:error, "Google Translate API #{status} #{google_status}: #{detail}"}
+  end
+
+  defp extract_translations({:ok, %Tesla.Env{status: status, body: body}}) when status != 200 do
+    {:error, "Google Translate API #{status}: #{Glific.SafeLog.safe_inspect(body)}"}
+  end
+
+  defp extract_translations({:error, reason}) do
+    {:error, "Google Translate API request failed: #{Glific.SafeLog.safe_inspect(reason)}"}
+  end
+
+  defp extract_translations(unexpected) do
+    {:error, "Failed to extract translations: #{Glific.SafeLog.safe_inspect(unexpected)}"}
   end
 
   @spec map_translations_to_indices(list(String.t()), map()) :: list()

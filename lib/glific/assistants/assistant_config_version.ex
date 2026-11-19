@@ -10,6 +10,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
+    Enums.AssistantConfigVersionBumpType,
     Enums.AssistantConfigVersionStatus,
     Partners.Organization
   }
@@ -19,13 +20,17 @@ defmodule Glific.Assistants.AssistantConfigVersion do
           id: non_neg_integer() | nil,
           assistant_id: non_neg_integer() | nil,
           assistant: Assistant.t() | Ecto.Association.NotLoaded.t() | nil,
-          version_number: non_neg_integer() | nil,
+          major_version: non_neg_integer() | nil,
+          minor_version: non_neg_integer() | nil,
+          bump_type: AssistantConfigVersionBumpType.t(),
           kaapi_version_number: non_neg_integer() | nil,
           description: String.t() | nil,
           prompt: String.t() | nil,
           provider: String.t() | nil,
           model: String.t() | nil,
           settings: map(),
+          input_guardrails: [map()],
+          output_guardrails: [map()],
           status: AssistantConfigVersionStatus.t(),
           failure_reason: String.t() | nil,
           deleted_at: DateTime.t() | nil,
@@ -49,13 +54,19 @@ defmodule Glific.Assistants.AssistantConfigVersion do
   @optional_fields [
     :description,
     :failure_reason,
-    :version_number,
+    :major_version,
+    :minor_version,
+    :bump_type,
     :kaapi_version_number,
-    :deleted_at
+    :deleted_at,
+    :input_guardrails,
+    :output_guardrails
   ]
 
   schema "assistant_config_versions" do
-    field(:version_number, :integer)
+    field(:major_version, :integer, read_after_writes: true)
+    field(:minor_version, :integer, read_after_writes: true)
+    field(:bump_type, AssistantConfigVersionBumpType, default: :minor)
     field(:kaapi_version_number, :integer)
     field(:description, :string)
     field(:prompt, :string)
@@ -64,6 +75,8 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     field(:model, :string)
 
     field(:settings, :map, default: %{})
+    field(:input_guardrails, {:array, :map}, default: [])
+    field(:output_guardrails, {:array, :map}, default: [])
     field(:status, AssistantConfigVersionStatus, default: :in_progress)
     field(:failure_reason, :string)
     field(:deleted_at, :utc_datetime_usec)
@@ -88,10 +101,28 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     config_version
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_change(:input_guardrails, &validate_guardrails/2)
+    |> validate_change(:output_guardrails, &validate_guardrails/2)
     |> assoc_constraint(:assistant)
     |> unique_constraint(
-      [:assistant_id, :version_number],
-      name: :assistant_config_versions_assistant_id_version_number_index
+      [:assistant_id, :major_version, :minor_version],
+      name: :assistant_config_versions_assistant_id_major_version_minor_vers
     )
   end
+
+  # Kaapi validates the full spec; Glific only guards the shape it relies on.
+  @spec validate_guardrails(atom(), [map()]) :: [{atom(), String.t()}]
+  defp validate_guardrails(field, guardrails) do
+    if Enum.all?(guardrails, &match?(%{"type" => type} when is_binary(type) and type != "", &1)),
+      do: [],
+      else: [{field, "each guardrail needs a non-empty \"type\""}]
+  end
+
+  @doc "Display label for a config version, e.g. `\"1.3\"`."
+  @spec version_label(map()) :: String.t() | nil
+  def version_label(%{major_version: major, minor_version: minor})
+      when not is_nil(major) and not is_nil(minor),
+      do: "#{major}.#{minor}"
+
+  def version_label(_config_version), do: nil
 end

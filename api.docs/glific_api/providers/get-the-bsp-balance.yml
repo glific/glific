@@ -1,0 +1,45 @@
+info:
+  name: Get the BSP balance
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query bspbalance {
+        bspbalance
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Fetches the logged-in user's organization's Gupshup wallet balance from the Gupshup Partner
+  API. Each call makes a request to Gupshup. To get updates pushed instead, see
+  **Organizations › Subscribe to BSP balance**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `bspbalance` is a JSON-encoded string with the balance in USD.
+
+  ```json
+  {
+    "data": {
+      "bspbalance": "{\"balance\":4.43}"
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The organization has no active BSP credential, its BSP is not Gupshup, or Gupshup returns
+    an error: top-level error `Error while fetching the BSP balance`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

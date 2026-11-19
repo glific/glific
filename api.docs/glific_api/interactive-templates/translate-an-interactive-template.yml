@@ -1,0 +1,71 @@
+info:
+  name: Translate an interactive template
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation translateInteractiveTemplate($id: ID!) {
+        translateInteractiveTemplate(id: $id) {
+          interactiveTemplate {
+            id
+            label
+            translations
+          }
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "6"
+      }
+  auth: inherit
+
+docs: |
+  Machine-translates the template's `interactiveContent` into every active language of the
+  organization with Google Translate, and saves the result as `translations`, replacing the
+  stored ones. The content is treated as English: the English entry is a copy, the others are
+  translated from English. The translations are then trimmed and saved as in **Update an
+  interactive template**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description                |
+  | -------- | ----- | -------- | -------------------------- |
+  | `id`     | `ID!` | Yes      | The template to translate. |
+
+  ## Example response
+
+  `message` lists the languages that were trimmed to fit, or is `null`.
+
+  ```json
+  {
+    "data": {
+      "translateInteractiveTemplate": {
+        "interactiveTemplate": {
+          "id": "6",
+          "label": "Send Location",
+          "translations": "{\"1\":{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"please share your location\"},\"action\":{\"name\":\"send_location\"}},\"2\":{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"कृपया अपना स्थान साझा करें\"},\"action\":{\"name\":\"send_location\"}}}"
+        },
+        "message": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.InteractiveTemplate", "message": "Resource not found" }]`.
+  - Google Translate fails: a top-level error with its message.
+  - A user without the manager role gets a top-level `Unauthorized` error.

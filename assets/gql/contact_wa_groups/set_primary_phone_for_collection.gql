@@ -1,0 +1,10 @@
+mutation SetPrimaryPhoneForCollection($collectionId: ID!, $waManagedPhoneId: ID!) {
+  setPrimaryPhoneForCollection(collectionId: $collectionId, waManagedPhoneId: $waManagedPhoneId) {
+    status
+    userJobId
+    errors {
+      key
+      message
+    }
+  }
+}

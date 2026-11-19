@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query contactByIdentity($channel: MessageChannelEnum!, $identifier: String!) {
+  contactByIdentity(channel: $channel, identifier: $identifier) {
+    ...ContactIdentityFields
+
+    ...ErrorFields
+  }
+}

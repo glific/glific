@@ -1,0 +1,100 @@
+info:
+  name: List users
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query users($filter: UserFilter, $opts: Opts) {
+        users(filter: $filter, opts: $opts) {
+          id
+          name
+          phone
+          email
+          roles
+          isRestricted
+          insertedAt
+          groups {
+            id
+            label
+          }
+          accessRoles {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "NGO"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's users, optionally filtered and paginated. Sorted by name by
+  default.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type         | Required | Description                                    |
+  | -------- | ------------ | -------- | ---------------------------------------------- |
+  | `filter` | `UserFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`       | No       | Sorting and pagination.                        |
+
+  ### `UserFilter`
+
+  | Field   | Type     | Description                                  |
+  | ------- | -------- | -------------------------------------------- |
+  | `name`  | `String` | Name contains this text (case-insensitive).  |
+  | `phone` | `String` | Phone contains this text.                    |
+
+  ## Example response
+
+  `isRestricted` is always `null` when the caller has the staff role.
+
+  ```json
+  {
+    "data": {
+      "users": [
+        {
+          "id": "3",
+          "name": "NGO Manager",
+          "phone": "910000000011",
+          "email": null,
+          "roles": ["Manager"],
+          "isRestricted": false,
+          "insertedAt": "2026-10-02T06:15:00Z",
+          "groups": [],
+          "accessRoles": [{ "id": "3", "label": "Manager" }]
+        },
+        {
+          "id": "2",
+          "name": "NGO Staff",
+          "phone": "910000000002",
+          "email": "staff@example.org",
+          "roles": ["Staff"],
+          "isRestricted": true,
+          "insertedAt": "2026-10-02T06:15:00Z",
+          "groups": [{ "id": "1", "label": "Default Group" }],
+          "accessRoles": [{ "id": "2", "label": "Staff" }]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

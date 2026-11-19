@@ -1,0 +1,61 @@
+info:
+  name: Update ticket status by topic
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateTicketStatusBasedOnTopic($input: UpdateTicketStatusBasedOnTopic) {
+        updateTicketStatusBasedOnTopic(input: $input) {
+          success
+          message
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "topic": "Certificates",
+          "status": "closed"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Sets the status of every ticket in the organization with a given topic, such as closing
+  all `Certificates` tickets at once.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                             | Required | Description                 |
+  | -------- | -------------------------------- | -------- | --------------------------- |
+  | `input`  | `UpdateTicketStatusBasedOnTopic` | No       | Topic and the new status.   |
+
+  ### `UpdateTicketStatusBasedOnTopic`
+
+  | Field    | Type     | Required | Description                                  |
+  | -------- | -------- | -------- | -------------------------------------------- |
+  | `topic`  | `String` | Yes      | Tickets whose topic is exactly this value.   |
+  | `status` | `String` | Yes      | New status, such as `closed`.                |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateTicketStatusBasedOnTopic": {
+        "success": true,
+        "message": "Updated successfully"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Always reports success, including when no ticket has the topic. A user without the manager
+  role gets a top-level `Unauthorized` error.

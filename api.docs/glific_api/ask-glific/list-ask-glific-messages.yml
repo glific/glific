@@ -1,0 +1,78 @@
+info:
+  name: List Ask Glific messages
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query askGlificMessages($conversationId: String!, $limit: Int, $firstId: String) {
+        askGlificMessages(conversationId: $conversationId, limit: $limit, firstId: $firstId) {
+          messages {
+            id
+            conversationId
+            query
+            answer
+            createdAt
+            feedback
+          }
+          hasMore
+          limit
+        }
+      }
+    variables: |-
+      {
+        "conversationId": "5f0d9c1e-8b7a-4c6d-9e2f-3a1b0c9d8e7f",
+        "limit": 20
+      }
+  auth: inherit
+
+docs: |
+  Lists the questions and answers in one of the current user's Ask Glific conversations.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument         | Type      | Required | Description                                                         |
+  | ---------------- | --------- | -------- | ------------------------------------------------------------------- |
+  | `conversationId` | `String!` | Yes      | The conversation, from **List Ask Glific conversations**.           |
+  | `limit`          | `Int`     | No       | Maximum number of messages. Defaults to `20`.                       |
+  | `firstId`        | `String`  | No       | Dify only: return messages before this one, for older history. Ignored with Glific AI, where `hasMore` is always `false`. |
+
+  ## Example response
+
+  Each message is one question with its answer. `id` is what **Send feedback on an Ask
+  Glific answer** takes. `feedback` is `like`, `dislike` or `null`. `createdAt` is a Unix
+  timestamp in seconds.
+
+  ```json
+  {
+    "data": {
+      "askGlificMessages": {
+        "messages": [
+          {
+            "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+            "conversationId": "5f0d9c1e-8b7a-4c6d-9e2f-3a1b0c9d8e7f",
+            "query": "How do I send a template message to a group?",
+            "answer": "Open the group, choose Send a message, pick Template and select an approved template.",
+            "createdAt": 1763280410,
+            "feedback": "like"
+          }
+        ],
+        "hasMore": false,
+        "limit": 20
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `askGlificMessages` set to `null`:
+
+  - The conversation does not exist or belongs to another user: `Conversation not found`.
+  - Dify can't be reached or rejects the call: the Dify error.
+  - A user without the staff role gets `Unauthorized`.

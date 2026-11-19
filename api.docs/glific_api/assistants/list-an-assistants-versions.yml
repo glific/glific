@@ -1,0 +1,121 @@
+info:
+  name: List an assistant's versions
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query assistantVersions($assistantId: ID!) {
+        assistantVersions(assistantId: $assistantId) {
+          id
+          majorVersion
+          minorVersion
+          versionLabel
+          description
+          model
+          prompt
+          settings
+          inputGuardrails
+          outputGuardrails
+          status
+          isLive
+          vectorStore {
+            id
+            knowledgeBaseVersionId
+            name
+            status
+            legacy
+            size
+          }
+          insertedAt
+          updatedAt
+        }
+      }
+    variables: |-
+      {
+        "assistantId": "7"
+      }
+  auth: inherit
+
+docs: |
+  Lists every config version of an assistant, newest first (by major, then minor version).
+  `isLive` marks the version the assistant currently uses.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument      | Type  | Required | Description                         |
+  | ------------- | ----- | -------- | ----------------------------------- |
+  | `assistantId` | `ID!` | Yes      | The assistant whose versions to list. |
+
+  ## Example response
+
+  `status` is `in_progress`, `ready` or `failed`. Only `ready` versions can be set live or
+  chatted with.
+
+  ```json
+  {
+    "data": {
+      "assistantVersions": [
+        {
+          "id": "33",
+          "majorVersion": 2,
+          "minorVersion": 1,
+          "versionLabel": "2.1",
+          "description": "Assistant configuration",
+          "model": "gpt-5-mini",
+          "prompt": "You are a friendly assistant that answers questions about prenatal care. Keep replies short.",
+          "settings": "{\"effort\":\"low\"}",
+          "inputGuardrails": "[{\"type\":\"pii_remover\"}]",
+          "outputGuardrails": "[]",
+          "status": "ready",
+          "isLive": false,
+          "vectorStore": {
+            "id": "4",
+            "knowledgeBaseVersionId": "12",
+            "name": "VectorStore-mfrgg2lbmfrgg2lbmfrgg2lb",
+            "status": "completed",
+            "legacy": false,
+            "size": "1.2 MB"
+          },
+          "insertedAt": "2026-11-13T06:40:10Z",
+          "updatedAt": "2026-11-13T06:40:12Z"
+        },
+        {
+          "id": "31",
+          "majorVersion": 2,
+          "minorVersion": 0,
+          "versionLabel": "2.0",
+          "description": "Assistant configuration",
+          "model": "gpt-5-mini",
+          "prompt": "You are a friendly assistant that answers questions about prenatal care.",
+          "settings": "{\"effort\":\"low\"}",
+          "inputGuardrails": "[{\"type\":\"pii_remover\"}]",
+          "outputGuardrails": "[]",
+          "status": "ready",
+          "isLive": true,
+          "vectorStore": {
+            "id": "4",
+            "knowledgeBaseVersionId": "12",
+            "name": "VectorStore-mfrgg2lbmfrgg2lbmfrgg2lb",
+            "status": "completed",
+            "legacy": false,
+            "size": "1.2 MB"
+          },
+          "insertedAt": "2026-11-12T11:02:15Z",
+          "updatedAt": "2026-11-12T11:02:15Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The assistant does not exist in the organization: no list comes back and the query
+    reports a `Resource not found` error.
+  - A user without the manager role gets a top-level `Unauthorized` error.

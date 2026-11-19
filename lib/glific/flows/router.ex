@@ -143,23 +143,17 @@ defmodule Glific.Flows.Router do
       else: category.exit_uuid
   end
 
-  @spec validate_eex(list(), map()) :: list()
-  defp validate_eex(errors, router) do
+  @spec validate_eex(list(), map(), non_neg_integer()) :: list()
+  defp validate_eex(errors, router, organization_id) do
     node_uuid_sliced = String.slice(router.node_uuid, -4, 4)
 
-    try do
-      cond do
-        Glific.suspicious_code(router.operand) ->
-          [{EEx, "Node #{node_uuid_sliced} has unsupported expression", "Critical"}] ++ errors
+    case Glific.validate_flow_expression(router.operand, organization_id) do
+      :ok ->
+        errors
 
-        !is_nil(EEx.compile_string(router.operand)) ->
+      {:error, reason} ->
+        [{EEx, "Node #{node_uuid_sliced} has unsupported expression: #{reason}", "Critical"}] ++
           errors
-      end
-    rescue
-      # if there is a syntax error or anything else
-      # an exception is thrown and hence we rescue it here
-      _ ->
-        [{EEx, "Node #{node_uuid_sliced} has invalid expression", "Critical"}] ++ errors
     end
   end
 
@@ -168,7 +162,7 @@ defmodule Glific.Flows.Router do
   """
   @spec validate(Router.t(), list(), map()) :: list()
   def validate(router, errors, flow) do
-    errors = validate_eex(errors, router)
+    errors = validate_eex(errors, router, flow.organization_id)
 
     errors =
       router.categories
@@ -347,7 +341,10 @@ defmodule Glific.Flows.Router do
   @spec update_context_results(FlowContext.t(), String.t(), Message.t(), {Category.t(), boolean}) ::
           FlowContext.t()
   defp update_context_results(context, key, _msg, _) when key in ["", nil] do
-    Logger.info("invalid results key for context: #{Glific.SafeLog.safe_inspect(context)}")
+    Logger.info(
+      "invalid results key for flow_context_id: #{context.id}, organization_id: #{context.organization_id}, flow_id: #{context.flow_id}"
+    )
+
     context
   end
 

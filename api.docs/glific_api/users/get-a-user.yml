@@ -1,0 +1,95 @@
+info:
+  name: Get a user
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query user($id: ID!) {
+        user(id: $id) {
+          user {
+            id
+            name
+            phone
+            email
+            roles
+            isRestricted
+            insertedAt
+            updatedAt
+            language {
+              id
+              label
+            }
+            contact {
+              id
+              name
+            }
+            groups {
+              id
+              label
+            }
+            accessRoles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Returns one user by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The user to return. |
+
+  ## Example response
+
+  `isRestricted` is always `null` when the caller has the staff role.
+
+  ```json
+  {
+    "data": {
+      "user": {
+        "user": {
+          "id": "2",
+          "name": "NGO Staff",
+          "phone": "910000000002",
+          "email": "staff@example.org",
+          "roles": ["Staff"],
+          "isRestricted": true,
+          "insertedAt": "2026-10-02T06:15:00Z",
+          "updatedAt": "2026-11-10T11:02:31Z",
+          "language": { "id": "1", "label": "English" },
+          "contact": { "id": "5", "name": "NGO Staff" },
+          "groups": [{ "id": "1", "label": "Default Group" }],
+          "accessRoles": [{ "id": "2", "label": "Staff" }]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The user does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Users.User", "message": "Resource not found" }]` and `user` is
+    `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

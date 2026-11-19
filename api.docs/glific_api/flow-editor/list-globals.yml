@@ -1,0 +1,31 @@
+info:
+  name: List globals
+  type: http
+  seq: 28
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/globals"
+  auth: inherit
+
+docs: |
+  Lists the editor's global variables (`@globals`). The editor requires the endpoint, but
+  Glific doesn't support globals, so the list is always empty.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`:
+
+  ```json
+  { "results": [] }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

@@ -1,0 +1,54 @@
+info:
+  name: Upload a flow attachment
+  type: http
+  seq: 26
+
+http:
+  method: POST
+  url: "{{base_url}}/flow-editor/flow-attachment"
+  body:
+    type: multipart-form
+    data:
+      - name: media
+        type: file
+        value: []
+      - name: extension
+        type: text
+        value: png
+  auth: inherit
+
+docs: |
+  Uploads a file to the organization's Google Cloud Storage bucket so a "send message" node
+  can attach it, and returns its public URL. Only works when **Check if attachments are
+  enabled** says so. The file is stored as
+  `outbound/<year>-<ISO week>/<user name>/<random UUID>.<extension>`.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  `multipart/form-data`. Pick the file for `media` in Bruno before sending.
+
+  | Field       | Type   | Required | Description                                  |
+  | ----------- | ------ | -------- | -------------------------------------------- |
+  | `media`     | File   | Yes      | The file to upload.                          |
+  | `extension` | String | Yes      | File extension for the stored name, such as `png` or `pdf`. |
+
+  ## Example response
+
+  `200`, uploaded. `type` is the media type Glific detects from the URL.
+
+  ```json
+  {
+    "url": "https://storage.googleapis.com/glific-media/outbound/2026-47/Glific Admin/0e5f4c4a-2b7d-4d0e-9a8a-5b2c1f6d3e70.png",
+    "type": "image",
+    "error": null
+  }
+  ```
+
+  ## Errors
+
+  - The upload failed, for example because storage isn't set up: status `200` with
+    `{ "url": null, "error": "<reason>" }`.
+  - `400`: `media` or `extension` is missing.
+  - `401`: missing or invalid access token.

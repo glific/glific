@@ -84,7 +84,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
                "Please retry, or contact support if the issue persists."
     end
 
-    test "sends an empty rls list in guest token request (UI-level org filtering active)",
+    test "sends an rls clause scoped to the current user's organization_id in guest token request",
          %{conn: conn, organization_id: organization_id} do
       FunWithFlags.enable(:superset_enabled, for_actor: %{organization_id: organization_id})
       test_pid = self()
@@ -107,13 +107,16 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       end)
 
       post(
-        api_auth_conn(conn, Fixtures.user_fixture(%{roles: ["staff"]})),
+        api_auth_conn(
+          conn,
+          Fixtures.user_fixture(%{roles: ["staff"], organization_id: organization_id})
+        ),
         "/api/v1/get-embed-token"
       )
 
       assert_receive {:guest_token_body, body}
       decoded = Jason.decode!(body)
-      assert decoded["rls"] == []
+      assert decoded["rls"] == [%{"clause" => "organization_id = #{organization_id}"}]
     end
   end
 end

@@ -1,0 +1,125 @@
+info:
+  name: Send a message
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createAndSendMessage($input: MessageInput!) {
+        createAndSendMessage(input: $input) {
+          message {
+            id
+            body
+            type
+            flow
+            status
+            bspStatus
+            isHsm
+            sendAt
+            sendBy
+            receiver {
+              id
+              name
+            }
+            media {
+              id
+              url
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "body": "Thanks for writing in. A volunteer will call you today.",
+          "type": "TEXT",
+          "receiverId": "8"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Sends a message to one contact and stores it as an outbound message by the calling user.
+  The message goes out through the organization's BSP (or to the browser for `channel: WEB`)
+  from a background job, at `sendAt` if given, otherwise right away.
+
+  What is sent depends on the input:
+
+  - **Session message** (default): free-form text or media. WhatsApp accepts it only while
+    the contact's 24-hour window is open (the contact messaged in the last 24 hours).
+  - **HSM template**: set `isHsm: true`, `templateId` and `params` (one value per
+    placeholder; `[]` if the template has none). Allowed outside the 24-hour window for an
+    opted-in contact. This is the only way to send a media HSM: pass its `mediaId` too. Same
+    checks as **Send an HSM template message**.
+  - **Interactive message**: set `interactiveTemplateId`. The body and buttons are taken from
+    the interactive template, in the contact's language. Needs an open 24-hour window.
+
+  `senderId` and `flow` are ignored: the sender is always the organization's own contact and
+  the flow `OUTBOUND`. When the send is refused, Glific also records a `Message` notification.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                                 |
+  | -------- | --------------- | -------- | ----------------------------------------------------------- |
+  | `input`  | `MessageInput!` | Yes      | The message to send. See **Create a message** for the fields. `receiverId` and `type` are required; `body` is required for `TEXT`, `mediaId` for media types. |
+
+  To send a media message, create the media first (**Message Media › Create a message
+  media**) and pass its ID:
+
+  ```json
+  { "input": { "type": "IMAGE", "mediaId": "57", "body": "Session schedule", "receiverId": "8" } }
+  ```
+
+  To schedule a message, add `"sendAt": "2026-11-17T04:30:00Z"`.
+
+  ## Example response
+
+  `status` is `enqueued` until the job hands the message to the BSP.
+
+  ```json
+  {
+    "data": {
+      "createAndSendMessage": {
+        "message": {
+          "id": "1052",
+          "body": "Thanks for writing in. A volunteer will call you today.",
+          "type": "TEXT",
+          "flow": "OUTBOUND",
+          "status": "enqueued",
+          "bspStatus": null,
+          "isHsm": false,
+          "sendAt": null,
+          "sendBy": "Glific Admin",
+          "receiver": { "id": "8", "name": "Chrissy Cron" },
+          "media": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A refused send returns a top-level error, and `createAndSendMessage` is `null`:
+
+  - `Sorry! 24 hrs window closed. Your message cannot be sent at this time.`: a session
+    message to a contact whose window is closed. Send an HSM template instead.
+  - `Contact status is not valid.`: the contact is blocked or invalid.
+  - `Contact has no WhatsApp number.`
+  - `Could not send message with empty body`: a `TEXT` message with no `body`.
+  - `Receiver does not exist`
+  - `HSM templates cannot be sent on the web channel.`
+  - On the web channel: `Contact is blocked.` or `Contact has not opted in on the web channel.`
+  - For HSM sends, the errors listed in **Send an HSM template message**.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

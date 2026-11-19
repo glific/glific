@@ -20,11 +20,9 @@ defmodule Glific.Providers.GupshupContacts do
 
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
-  def optin_contact(%{organization_id: organization_id} = attrs) do
-    Contacts.contact_opted_in(
-      attrs,
-      organization_id,
-      attrs[:optin_time] || DateTime.utc_now(),
+  def optin_contact(%{organization_id: _organization_id} = attrs) do
+    Contacts.contact_opted_in(:whatsapp, attrs[:phone], attrs,
+      utc_time: attrs[:optin_time] || DateTime.utc_now(),
       method: attrs[:method] || "BSP"
     )
   end

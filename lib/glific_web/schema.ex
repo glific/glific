@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.OrganizationTypes)
   import_types(__MODULE__.ProfileTypes)
   import_types(__MODULE__.ContactTypes)
+  import_types(__MODULE__.ContactIdentityTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.EnumTypes)
   import_types(__MODULE__.GenericTypes)
@@ -59,8 +60,10 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WAGroupsCollectionTypes)
   import_types(__MODULE__.WaGroupTypes)
   import_types(__MODULE__.AssistantTypes)
+  import_types(__MODULE__.AssistantChatTypes)
   import_types(__MODULE__.PromptGeneratorTypes)
   import_types(__MODULE__.AIEvaluationTypes)
+  import_types(__MODULE__.GuardrailTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
   import_types(__MODULE__.WhatsappFormTypes)
@@ -72,6 +75,7 @@ defmodule GlificWeb.Schema do
     import_fields(:profile_queries)
 
     import_fields(:contact_queries)
+    import_fields(:contact_identity_queries)
 
     import_fields(:language_queries)
 
@@ -133,7 +137,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:wa_group_queries)
 
-    import_fields(:filesearch_queries)
+    import_fields(:assistant_queries)
 
     import_fields(:wa_poll_queries)
 
@@ -145,6 +149,8 @@ defmodule GlificWeb.Schema do
 
     import_fields(:ai_evaluation_queries)
 
+    import_fields(:guardrail_queries)
+
     import_fields(:ask_glific_queries)
 
     import_fields(:prompt_generator_queries)
@@ -154,6 +160,7 @@ defmodule GlificWeb.Schema do
     import_fields(:profile_mutations)
 
     import_fields(:contact_mutations)
+    import_fields(:contact_identity_mutations)
 
     import_fields(:contact_tag_mutations)
 
@@ -215,9 +222,11 @@ defmodule GlificWeb.Schema do
 
     import_fields(:wa_group_mutations)
 
+    import_fields(:wa_managed_phone_mutations)
+
     import_fields(:wa_groups_collection_mutations)
 
-    import_fields(:filesearch_mutations)
+    import_fields(:assistant_mutations)
 
     import_fields(:wa_poll_mutations)
 
@@ -232,6 +241,8 @@ defmodule GlificWeb.Schema do
     import_fields(:ask_glific_mutations)
 
     import_fields(:prompt_generator_mutations)
+
+    import_fields(:assistant_chat_mutations)
   end
 
   subscription do
@@ -242,6 +253,12 @@ defmodule GlificWeb.Schema do
     import_fields(:organization_subscriptions)
 
     import_fields(:ask_glific_subscriptions)
+
+    import_fields(:assistant_chat_subscriptions)
+
+    import_fields(:ai_evaluation_subscriptions)
+
+    import_fields(:assistant_subscriptions)
   end
 
   @doc """

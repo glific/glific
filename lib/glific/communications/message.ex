@@ -13,6 +13,7 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
+    Processor.MessageWorker,
     Repo,
     WhatsappFormsResponses
   }
@@ -35,10 +36,27 @@ defmodule Glific.Communications.Message do
     location_request_message: :send_interactive
   }
 
+  # One failure can arrive from several callback sources (Gupshup V2 and Meta-format V3).
+  # A source earlier in this list replaces a stored failure from a later one, never the
+  # reverse. Move "meta" first once every callback is V3.
+  @error_source_priority ["gupshup", "meta"]
+
+  # Error codes that need handling, by the source that sent them. Meta codes are only
+  # recorded for now; map them here when moving to V3.
+  @error_actions %{
+    "gupshup" => %{
+      1002 => :number_does_not_exist,
+      471 => :rate_limit_exceeded,
+      1003 => :insufficient_balance
+    },
+    "meta" => %{}
+  }
+
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, String.t()}
+  @spec send_message(Message.t(), map()) ::
+          {:ok, Message.t()} | {:error, String.t() | Ecto.Changeset.t()}
   def send_message(message, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
@@ -46,32 +64,49 @@ defmodule Glific.Communications.Message do
       "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{message.id}'"
     )
 
-    with {:ok, _} <-
-           apply(
-             Communications.provider_handler(message.organization_id),
-             @type_to_token[message.type],
-             [message, attrs]
-           ) do
-      :telemetry.execute(
-        [:glific, :message, :sent],
-        # currently we are not measuring latency
-        %{duration: 1},
-        %{
-          type: message.type,
-          sender_id: message.sender_id,
-          receiver_id: message.receiver_id,
-          organization_id: message.organization_id
-        }
-      )
+    case apply(message_handler(message), @type_to_token[message.type], [message, attrs]) do
+      {:ok, _} ->
+        :telemetry.execute(
+          [:glific, :message, :sent],
+          # currently we are not measuring latency
+          %{duration: 1},
+          %{
+            type: message.type,
+            sender_id: message.sender_id,
+            receiver_id: message.receiver_id,
+            organization_id: message.organization_id
+          }
+        )
 
-      publish_message(message)
+        publish_message(message)
+
+      {:error, :no_phone} ->
+        log_error(message, "Contact has no WhatsApp number.")
+
+      error ->
+        error
     end
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
     _ ->
-      log_error(message, "Could not send message to contact: Check Gupshup Setting")
+      log_error(message, send_failure_reason(message))
   end
+
+  # The only thing standing between a web-channel message and the organization's WhatsApp BSP.
+  # The recipient is a browser visitor who has consented to be messaged on the web and, since
+  # #5713, explicitly not on WhatsApp — so the channel decides the handler, never the org's
+  # BSP credential.
+  @spec message_handler(Message.t()) :: atom()
+  defp message_handler(%Message{channel: :web}), do: Glific.Providers.Web.Message
+  defp message_handler(message), do: Communications.provider_handler(message.organization_id)
+
+  @spec send_failure_reason(Message.t()) :: String.t()
+  defp send_failure_reason(%Message{channel: :web}),
+    do: "Could not deliver message on the web channel"
+
+  defp send_failure_reason(_message),
+    do: "Could not send message to contact: Check Gupshup Setting"
 
   @spec log_error(Message.t(), String.t()) :: {:error, String.t()}
   defp log_error(message, reason) do
@@ -96,16 +131,15 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when message send successfully.
   """
-  @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Message.t()}
+  @spec handle_success_response(Tesla.Env.t() | Req.Response.t(), Message.t()) ::
+          {:ok, Message.t()}
   def handle_success_response(response, message) do
-    body = response.body |> Jason.decode!()
-
     {:ok, message} =
       message
       |> Poison.encode!()
       |> Poison.decode!(as: %Message{})
       |> Messages.update_message(%{
-        bsp_message_id: body["messageId"],
+        bsp_message_id: sent_message_id(response),
         bsp_status: :enqueued,
         status: :sent,
         flow: :outbound,
@@ -115,6 +149,14 @@ defmodule Glific.Communications.Message do
     publish_message_status(message)
     {:ok, message}
   end
+
+  @spec sent_message_id(Tesla.Env.t() | Req.Response.t()) :: String.t() | nil
+  # Gupshup V3 message API, whose body Req has already decoded.
+  defp sent_message_id(%Req.Response{body: body}),
+    do: get_in(body, ["messages", Access.at(0), "id"])
+
+  # Gupshup V2 and Gupshup Enterprise, where Tesla returns the body as a raw JSON string.
+  defp sent_message_id(%{body: body}), do: Jason.decode!(body)["messageId"]
 
   @spec build_error(any()) :: map()
   defp build_error(body) do
@@ -160,31 +202,99 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
-  Callback to update the provider status for a message
+  Callback to update the provider status for a message, returns whether the status changed.
+  A failure from a higher priority source replaces a stored one and runs the error handling,
+  but isn't a status change. `error_source` names the callback a failure came from, see
+  `@error_source_priority`.
   """
-  @spec update_bsp_status(String.t(), atom(), map()) :: any()
-  def update_bsp_status(bsp_message_id, :error, errors) do
-    # we are making an additional query to db to fetch message for sending message status subscription
-    from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
-    |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
+  @spec update_bsp_status(String.t(), atom() | nil, map() | nil, String.t()) :: boolean()
+  def update_bsp_status(bsp_message_id, bsp_status, params, error_source \\ "gupshup")
 
-    Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
-    |> case do
+  def update_bsp_status(bsp_message_id, :error, errors, error_source) do
+    errors = Map.put(errors, "source", error_source)
+
+    {updated, previous_statuses} =
+      bsp_message_id
+      |> failure_query(error_source)
+      |> Repo.update_all(
+        set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()]
+      )
+
+    if updated > 0, do: publish_and_process_errors(bsp_message_id, errors)
+    Enum.any?(previous_statuses, &(&1 != :error))
+  end
+
+  def update_bsp_status(bsp_message_id, bsp_status, _params, _error_source) do
+    {updated, _} =
+      bsp_message_id
+      |> status_change_query(bsp_status)
+      |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+
+    # we are making an additional query to db to fetch message for sending message status subscription
+    if updated > 0, do: fetch_and_publish_message_status(bsp_message_id)
+    updated > 0
+  end
+
+  # Gupshup can send the same status more than once (retries, and both V2 and V3 callbacks
+  # for one message), so only a real change may run the status side effects
+  @spec status_change_query(String.t(), atom() | nil) :: Ecto.Query.t()
+  defp status_change_query(bsp_message_id, nil),
+    do:
+      from(m in Message,
+        where: m.bsp_message_id == ^bsp_message_id and not is_nil(m.bsp_status)
+      )
+
+  defp status_change_query(bsp_message_id, bsp_status),
+    do:
+      from(m in Message,
+        where:
+          m.bsp_message_id == ^bsp_message_id and
+            (is_nil(m.bsp_status) or m.bsp_status != ^bsp_status)
+      )
+
+  # A failure applies when it changes the status, or replaces a stored failure from a lower
+  # priority source; the same failure from another callback, or a retry, is skipped. The
+  # joined subquery reads the row before the update, so the previous status is returned and
+  # a replacement can be told apart from a status change.
+  @spec failure_query(String.t(), String.t()) :: Ecto.Query.t()
+  defp failure_query(bsp_message_id, error_source) do
+    lower_sources = lower_priority_sources(error_source)
+
+    previous =
+      from(p in Message,
+        where: p.bsp_message_id == ^bsp_message_id,
+        select: %{id: p.id, bsp_status: p.bsp_status}
+      )
+
+    from(m in Message,
+      join: p in subquery(previous),
+      on: p.id == m.id,
+      where:
+        is_nil(m.bsp_status) or m.bsp_status != ^:error or
+          is_nil(fragment("?->>'source'", m.errors)) or
+          fragment("?->>'source' = ANY(?)", m.errors, ^lower_sources),
+      select: p.bsp_status
+    )
+  end
+
+  @spec lower_priority_sources(String.t()) :: [String.t()]
+  defp lower_priority_sources(error_source) do
+    @error_source_priority
+    |> Enum.drop_while(&(&1 != error_source))
+    |> Enum.drop(1)
+  end
+
+  @spec publish_and_process_errors(String.t(), map()) :: any()
+  defp publish_and_process_errors(bsp_message_id, errors) do
+    case Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id}) do
       {:ok, message} ->
+        error_code = get_in(errors, ["payload", "payload", "code"])
         publish_message_status(message)
-        process_errors(message, errors, errors["payload"]["payload"]["code"])
+        process_errors(message, errors["source"], error_code)
 
       error ->
         Logger.error("Could not update message status: #{Glific.SafeLog.safe_inspect(error)}")
     end
-  end
-
-  def update_bsp_status(bsp_message_id, bsp_status, _params) do
-    # we are making an additional query to db to fetch message for sending message status subscription
-    from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
-    |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
-
-    fetch_and_publish_message_status(bsp_message_id)
   end
 
   @doc """
@@ -318,40 +428,57 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
+  # The form response and its message are inserted in one transaction so a duplicate
+  # bsp_message_id (Gupshup retries) rolls back the form response and its sheet-write job too.
   @spec receive_whatsapp_form_response(map()) :: :ok | {:error, any()}
   defp receive_whatsapp_form_response(%{organization_id: organization_id} = message_params) do
-    case WhatsappFormsResponses.create_whatsapp_form_response(message_params) do
-      {:ok, form_response} ->
-        Glific.Metrics.increment("WhatsApp Form Response Received", organization_id)
-
-        message_attrs = %{
-          flow: :inbound,
-          type: :whatsapp_form_response,
-          organization_id: message_params.organization_id,
-          sender_id: form_response.contact_id,
-          receiver_id: Partners.organization_contact_id(message_params.organization_id),
-          contact_id: form_response.contact_id,
-          body: "",
-          whatsapp_form_response_id: form_response.id,
-          bsp_message_id: message_params.bsp_message_id,
-          bsp_status: :delivered,
-          status: :received,
-          context_id: message_params.context_id
-        }
-
-        {:ok, message} = Messages.create_message(message_attrs)
-
+    Repo.transaction(fn ->
+      with {:ok, form_response} <-
+             WhatsappFormsResponses.create_whatsapp_form_response(message_params),
+           {:ok, message} <-
+             create_whatsapp_form_response_message(message_params, form_response) do
         message
-        |> publish_data(:received_message)
-        |> process_message()
-
-      {:error, reason} ->
+      else
+        {:error, %Ecto.Changeset{data: %Message{}} = changeset} -> Repo.rollback(changeset)
+        {:error, reason} -> Repo.rollback({:form_response, reason})
+      end
+    end)
+    |> case do
+      {:error, {:form_response, reason}} ->
         Logger.error(
-          "Failed to create WhatsApp form response: #{Glific.SafeLog.safe_inspect(reason)}"
+          "Failed to create WhatsApp form response: bsp_message_id=#{message_params.bsp_message_id}, reason=#{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
+
+      {:ok, _message} = result ->
+        Glific.Metrics.increment("WhatsApp Form Response Received", organization_id)
+        handle_inbound_create_result(result, message_params)
+
+      result ->
+        handle_inbound_create_result(result, message_params)
     end
+  end
+
+  @spec create_whatsapp_form_response_message(map(), map()) ::
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  defp create_whatsapp_form_response_message(message_params, form_response) do
+    attrs = %{
+      flow: :inbound,
+      type: :whatsapp_form_response,
+      organization_id: message_params.organization_id,
+      sender_id: form_response.contact_id,
+      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      contact_id: form_response.contact_id,
+      body: "",
+      whatsapp_form_response_id: form_response.id,
+      bsp_message_id: message_params.bsp_message_id,
+      bsp_status: :delivered,
+      status: :received,
+      context_id: message_params.context_id
+    }
+
+    Messages.create_message(attrs)
   end
 
   # preload the context message if it exists, so frontend can do the right thing
@@ -395,22 +522,10 @@ defmodule Glific.Communications.Message do
 
   defp publish_simulator(message, _type), do: message
 
-  # lets have a default timeout of 5 seconds for each call
-  @timeout 5000
-
-  @spec error(String.t(), any(), any(), list() | nil, boolean()) :: nil
-  defp error(error, e, r \\ nil, stacktrace \\ nil, send_to_appsignal \\ true) do
-    error = error <> ": #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
-    Logger.error(error)
-
-    stacktrace =
-      if stacktrace == nil,
-        do: Process.info(self(), :current_stacktrace) |> elem(1),
-        else: stacktrace
-
-    if send_to_appsignal do
-      Appsignal.send_error(:error, error, stacktrace)
-    end
+  @spec error(String.t(), any(), any()) :: nil
+  defp error(error, e, r \\ nil) do
+    "#{error}: #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
+    |> Glific.log_error()
 
     nil
   end
@@ -419,47 +534,28 @@ defmodule Glific.Communications.Message do
   defp process_message(nil), do: :ok
 
   defp process_message(message) do
-    # lets transfer the organization id and current user to the poolboy worker
-    process_state = {
-      Repo.get_organization_id(),
-      Repo.get_current_user()
-    }
-
-    self = self()
-
-    # We don't want to block the input pipeline, and we are unsure how long the consumer worker
-    # will take. So we run it as a separate task
-    # We will also set a short timeout for both the genserver and the poolboy transaction
-    Task.start(fn ->
-      :poolboy.transaction(
-        Glific.Application.message_poolname(),
-        fn pid ->
-          try do
-            GenServer.call(pid, {message, process_state, self}, @timeout)
-          catch
-            e, r ->
-              error(
-                "Poolboy genserver caught error while processing the message for flow.",
-                e,
-                r,
-                __STACKTRACE__,
-                false
-              )
-          end
-        end
-      )
-    end)
+    case MessageWorker.make_job(message) do
+      {:ok, _job} -> :ok
+      {:error, err} -> error("Enqueue message processing error", err)
+    end
   end
 
-  @spec process_errors(Message.t(), map(), integer | nil) :: any
-  defp process_errors(message, _errors, 1002) do
+  @spec process_errors(Message.t(), String.t() | nil, term()) :: any()
+  defp process_errors(message, error_source, error_code) do
+    @error_actions
+    |> get_in([error_source, error_code])
+    |> run_error_action(message)
+  end
+
+  @spec run_error_action(atom() | nil, Message.t()) :: any()
+  defp run_error_action(:number_does_not_exist, message) do
     # Issue #2047 - Number does not exist in WhatsApp
     # Lets disable this contact and make it inactive
     # This is relatively common, so we don't send an email or log this error
     Contacts.number_does_not_exist(message.contact_id)
   end
 
-  defp process_errors(message, _errors, 471) do
+  defp run_error_action(:rate_limit_exceeded, message) do
     # Issue #2049 - Organization has hit rate limit and
     # WABA is now rejecting messages
     organization = Partners.organization(message.organization_id)
@@ -476,7 +572,7 @@ defmodule Glific.Communications.Message do
     BalanceAlertMail.rate_exceeded(organization, body)
   end
 
-  defp process_errors(message, _errors, 1003) do
+  defp run_error_action(:insufficient_balance, message) do
     # Issue #2049 - Organization has insufficient balance
     # Gupshup is now rejecting messages
     # We should send a message to ops and also email the org and glific support
@@ -494,7 +590,7 @@ defmodule Glific.Communications.Message do
     BalanceAlertMail.no_balance(organization, body)
   end
 
-  defp process_errors(_message, _errors, _code), do: nil
+  defp run_error_action(nil, _message), do: nil
 
   @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
   defp create_message_metadata(contact, message_params, type) do

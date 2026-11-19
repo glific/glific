@@ -1,5 +1,6 @@
 defmodule Glific.AssistantsTest do
   use Glific.DataCase
+  import Glific.WebhookTestHelpers
   import Tesla.Mock
 
   import Ecto.Query
@@ -9,33 +10,21 @@ defmodule Glific.AssistantsTest do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Fixtures
   alias Glific.Notifications.Notification
   alias Glific.Partners
   alias Glific.Repo
+  alias Glific.ThirdParty.Kaapi
 
   defp enable_kaapi(attrs) do
-    {:ok, credential} =
-      Partners.create_credential(%{
-        organization_id: attrs.organization_id,
-        shortcode: "kaapi",
-        keys: %{},
-        secrets: %{
-          "api_key" => "sk_test_key"
-        }
-      })
-
-    valid_update_attrs = %{
-      keys: %{},
-      secrets: %{
-        "api_key" => "sk_test_key"
-      },
-      is_active: true,
-      organization_id: attrs.organization_id,
-      shortcode: "kaapi"
-    }
-
-    {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    Fixtures.kaapi_credential_fixture(%{organization_id: attrs.organization_id})
     :ok
+  end
+
+  defp count_config_versions(assistant_id) do
+    AssistantConfigVersion
+    |> where([config_version], config_version.assistant_id == ^assistant_id)
+    |> Repo.aggregate(:count)
   end
 
   describe "create_knowledge_base/1" do
@@ -214,7 +203,9 @@ defmodule Glific.AssistantsTest do
     test "creates knowledge base and version, and sets kaapi_job_id",
          %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
-        %{method: :post} ->
+        %{method: :post, body: body} ->
+          send(self(), {:collection_request, Jason.decode!(body)})
+
           %Tesla.Env{
             status: 200,
             body: %{data: %{job_id: "job_abc123"}}
@@ -246,6 +237,10 @@ defmodule Glific.AssistantsTest do
       assert Map.has_key?(knowledge_base_version.files, "file_abc")
       assert Map.has_key?(knowledge_base_version.files, "file_xyz")
       assert String.starts_with?(knowledge_base_version.llm_service_id, "temporary-vs-")
+
+      assert_received {:collection_request, collection_request}
+      assert collection_request["name"] == "kbv_#{knowledge_base_version.id}"
+      assert Enum.sort(collection_request["documents"]) == ["file_abc", "file_xyz"]
     end
 
     test "uses existing knowledge base when id is provided",
@@ -377,6 +372,28 @@ defmodule Glific.AssistantsTest do
 
       assert {:error, _} = Assistants.create_knowledge_base_with_version(params)
     end
+
+    test "returns nil knowledge base and skips Kaapi when media_info is empty",
+         %{organization_id: organization_id} do
+      kb_count_before = Repo.aggregate(KnowledgeBase, :count, :id)
+      kbv_count_before = Repo.aggregate(KnowledgeBaseVersion, :count, :id)
+
+      params = %{media_info: [], organization_id: organization_id}
+
+      assert {:ok, %{knowledge_base: nil, knowledge_base_version: nil}} =
+               Assistants.create_knowledge_base_with_version(params)
+
+      assert Repo.aggregate(KnowledgeBase, :count, :id) == kb_count_before
+      assert Repo.aggregate(KnowledgeBaseVersion, :count, :id) == kbv_count_before
+    end
+
+    test "returns nil knowledge base and skips Kaapi when media_info is empty, regardless of id",
+         %{organization_id: organization_id} do
+      params = %{id: 0, media_info: [], organization_id: organization_id}
+
+      assert {:ok, %{knowledge_base: nil, knowledge_base_version: nil}} =
+               Assistants.create_knowledge_base_with_version(params)
+    end
   end
 
   describe "update_assistant/2" do
@@ -495,6 +512,61 @@ defmodule Glific.AssistantsTest do
         |> Repo.one()
 
       assert get_in(new_config_version.settings, ["temperature"]) == 0.5
+    end
+
+    test "unlinks the knowledge base when knowledge_base_version_id is explicitly nil",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_unlink", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 temperature: 0.5,
+                 knowledge_base_version_id: nil,
+                 organization_id: organization_id
+               })
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+        |> Repo.preload(:knowledge_base_versions)
+
+      assert new_config_version.knowledge_base_versions == []
+    end
+
+    test "creates a new config version when effort changes",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_effort", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 effort: "high",
+                 organization_id: organization_id
+               })
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert get_in(new_config_version.settings, ["effort"]) == "high"
     end
 
     test "creates a new config version when model changes",
@@ -738,6 +810,93 @@ defmodule Glific.AssistantsTest do
                  instructions: "Updated instructions",
                  organization_id: organization_id
                })
+    end
+
+    test "creates a new config version when only the guardrails change",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["input_guardrails"] == [
+                   %{"type" => "pii_remover"}
+                 ]
+
+          assert decoded_body["config_blob"]["output_guardrails"] == [
+                   %{"type" => "gender_assumption_bias"}
+                 ]
+
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_abc", version: 2}}}
+      end)
+
+      initial_config_count = count_config_versions(assistant.id)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: config_version.prompt,
+                 model: config_version.model,
+                 temperature: get_in(config_version.settings, ["temperature"]),
+                 input_guardrails: [%{"type" => "pii_remover"}],
+                 output_guardrails: [%{"type" => "gender_assumption_bias"}],
+                 organization_id: organization_id
+               })
+
+      assert count_config_versions(assistant.id) == initial_config_count + 1
+      assert result.name == assistant.name
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.major_version, desc: acv.minor_version)
+        |> limit(1)
+        |> Repo.one()
+
+      assert new_config_version.input_guardrails == [
+               %{"type" => "pii_remover"}
+             ]
+
+      assert new_config_version.output_guardrails == [%{"type" => "gender_assumption_bias"}]
+      assert new_config_version.status == :ready
+      assert new_config_version.kaapi_version_number == 2
+    end
+
+    test "treats identical guardrails as no change",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
+      {:ok, _config_version} =
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          input_guardrails: [%{"type" => "pii_remover"}]
+        })
+        |> Repo.update()
+
+      initial_config_count = count_config_versions(assistant.id)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: config_version.prompt,
+                 model: config_version.model,
+                 temperature: get_in(config_version.settings, ["temperature"]),
+                 input_guardrails: [%{"type" => "pii_remover"}],
+                 organization_id: organization_id
+               })
+
+      assert result.input_guardrails == [%{"type" => "pii_remover"}]
+      assert count_config_versions(assistant.id) == initial_config_count
+    end
+
+    test "rejects a guardrail without a type",
+         %{organization_id: organization_id, assistant: assistant} do
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 input_guardrails: [%{"on_fail" => "fix"}],
+                 organization_id: organization_id
+               })
+
+      assert %{input_guardrails: ["each guardrail needs a non-empty \"type\""]} =
+               errors_on(changeset)
     end
   end
 
@@ -1045,7 +1204,7 @@ defmodule Glific.AssistantsTest do
     {:ok, knowledge_base} =
       %KnowledgeBase{}
       |> KnowledgeBase.changeset(%{
-        name: "Test Knowledge Base #{:rand.uniform(10000)}",
+        name: "Test Knowledge Base #{System.unique_integer([:positive])}",
         organization_id: org_id
       })
       |> Repo.insert()
@@ -1057,7 +1216,7 @@ defmodule Glific.AssistantsTest do
         organization_id: org_id,
         files: %{"file1.pdf" => %{"size" => 1024}},
         status: status,
-        llm_service_id: "vs_test_#{:rand.uniform(10000)}",
+        llm_service_id: "vs_test_#{System.unique_integer([:positive])}",
         kaapi_job_id: kaapi_job_id
       })
       |> Repo.insert()
@@ -1078,9 +1237,9 @@ defmodule Glific.AssistantsTest do
     {:ok, assistant} =
       %Assistant{}
       |> Assistant.changeset(%{
-        name: "Test Assistant #{:rand.uniform(10000)}",
+        name: "Test Assistant #{System.unique_integer([:positive])}",
         organization_id: org_id,
-        kaapi_uuid: "asst_#{:rand.uniform(10000)}"
+        kaapi_uuid: "asst_#{System.unique_integer([:positive])}"
       })
       |> Repo.insert()
 
@@ -1092,7 +1251,7 @@ defmodule Glific.AssistantsTest do
         provider: "openai",
         model: "gpt-4o",
         prompt: "You are a helpful assistant",
-        kaapi_uuid: "acv_#{:rand.uniform(10000)}",
+        kaapi_uuid: "acv_#{System.unique_integer([:positive])}",
         settings: %{"temperature" => 1.0},
         status: status
       })
@@ -1203,6 +1362,10 @@ defmodule Glific.AssistantsTest do
       assert config_version.model == "gpt-4o"
       assert config_version.prompt == "You are a helpful assistant"
 
+      # A brand new assistant's first config version is immediately live at "1.0",
+      # with no explicit publish call needed
+      assert AssistantConfigVersion.version_label(config_version) == "1.0"
+
       config_version = Repo.preload(config_version, :knowledge_base_versions)
       assert length(config_version.knowledge_base_versions) == 1
     end
@@ -1286,7 +1449,7 @@ defmodule Glific.AssistantsTest do
                })
 
       assert String.starts_with?(assistant.name, "Assistant-")
-      assert config_version.model == "gpt-4o"
+      assert config_version.model == Kaapi.default_model()
       assert config_version.prompt == "You are a helpful assistant"
       assert config_version.description == "Assistant configuration"
 
@@ -1294,6 +1457,89 @@ defmodule Glific.AssistantsTest do
         config_version.settings[:temperature] || config_version.settings["temperature"]
 
       assert temperature == 1
+    end
+
+    test "persists reasoning-model settings without a temperature",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Settings Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :in_progress,
+          llm_service_id: "vs_settings_test",
+          size: 0
+        })
+
+      assert {:ok, %{config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "GPT-5.1 Assistant",
+                 model: "gpt-5.1",
+                 settings: %{"effort" => "none"},
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      assert config_version.settings == %{"effort" => "none"}
+    end
+
+    test "stores inline guardrails on the config version and sends them to Kaapi",
+         %{organization_id: organization_id} do
+      Fixtures.kaapi_credential_fixture(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["input_guardrails"] == [
+                   %{"type" => "pii_remover"},
+                   %{
+                     "type" => "topic_relevance_llm",
+                     "on_fail" => "rephrase",
+                     "is_enabled" => false
+                   }
+                 ]
+
+          assert decoded_body["config_blob"]["output_guardrails"] == []
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_guardrail_uuid", version: %{version: 1}}}
+          }
+      end)
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Guarded Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 input_guardrails: [
+                   %{"type" => "pii_remover"},
+                   %{
+                     "type" => "topic_relevance_llm",
+                     "on_fail" => "rephrase",
+                     "is_enabled" => false
+                   }
+                 ],
+                 organization_id: organization_id
+               })
+
+      assert assistant.kaapi_uuid == "kaapi_guardrail_uuid"
+      assert config_version.status == :ready
+
+      assert config_version.input_guardrails == [
+               %{"type" => "pii_remover"},
+               %{"type" => "topic_relevance_llm", "on_fail" => "rephrase", "is_enabled" => false}
+             ]
+
+      assert config_version.output_guardrails == []
     end
   end
 
@@ -2924,6 +3170,597 @@ defmodule Glific.AssistantsTest do
       FunWithFlags.disable(:assistant_config_versions_enabled,
         for_actor: %{organization_id: organization_id}
       )
+    end
+  end
+
+  describe "send_message/3" do
+    setup [:enable_kaapi]
+
+    defp create_live_assistant(organization_id) do
+      Fixtures.live_assistant_fixture(%{
+        organization_id: organization_id,
+        kaapi_uuid: "kaapi_uuid_001",
+        kaapi_version_number: 3
+      })
+    end
+
+    test "dispatches the stored-config payload and returns the job_id",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded = Jason.decode!(body)
+        assert decoded["config"] == %{"id" => "kaapi_uuid_001", "version" => 3}
+
+        assert decoded["query"] == %{
+                 "input" => "Hello",
+                 "conversation" => %{"auto_create" => true}
+               }
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{job_id: "job_chat_001", conversation: %{id: "conv_001"}}}
+        }
+      end)
+
+      assert {:ok, %{job_id: "job_chat_001", request_id: request_id, conversation_id: "conv_001"}} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+
+      assert is_binary(request_id)
+    end
+
+    test "reuses an existing conversation_id when given one",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded = Jason.decode!(body)
+        assert decoded["query"]["conversation"] == %{"id" => "conv_existing"}
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_002"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_chat_002"}} =
+               Assistants.send_message(
+                 %{
+                   assistant_id: assistant.id,
+                   input: "Follow-up question",
+                   conversation_id: "conv_existing"
+                 },
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error for an assistant in another organization",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      assert {:error, "Assistant not found"} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id + 1,
+                 1
+               )
+    end
+
+    test "returns an error when the assistant is not on Kaapi yet",
+         %{organization_id: organization_id} do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Provisioning Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      assert {:error, "Assistant is not available on Kaapi yet"} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error when the assistant has no live config version yet",
+         %{organization_id: organization_id} do
+      assistant =
+        Fixtures.assistant_fixture(%{
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_002"
+        })
+
+      assert {:error, "Assistant does not have a live config version yet"} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
+    test "dispatches the selected config version instead of the live one",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      selected_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          kaapi_version_number: 7
+        })
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded = Jason.decode!(body)
+        assert decoded["config"] == %{"id" => "kaapi_uuid_001", "version" => 7}
+        assert decoded["include_guardrail_metadata"] == false
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_003"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_chat_003"}} =
+               Assistants.send_message(
+                 %{
+                   assistant_id: assistant.id,
+                   input: "Hello",
+                   config_version_id: selected_version.id
+                 },
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error when the selected config version belongs to another assistant",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+      other_assistant = Fixtures.live_assistant_fixture(%{organization_id: organization_id})
+
+      other_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: other_assistant.id,
+          organization_id: organization_id,
+          kaapi_version_number: 9
+        })
+
+      assert {:error, "Selected assistant version is not available on Kaapi yet"} =
+               Assistants.send_message(
+                 %{
+                   assistant_id: assistant.id,
+                   input: "Hello",
+                   config_version_id: other_version.id
+                 },
+                 organization_id,
+                 1
+               )
+    end
+
+    test "asks Kaapi for guardrail metadata when the flag is enabled",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      FunWithFlags.enable(:is_ai_guardrail_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        assert Jason.decode!(body)["include_guardrail_metadata"] == true
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_004"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_chat_004"}} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+
+      FunWithFlags.disable(:is_ai_guardrail_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+
+    test "returns an error when Kaapi dispatch fails",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal Server Error"}}
+      end)
+
+      assert {:error, _reason} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+  end
+
+  describe "handle_assistant_chat_callback/2" do
+    test "publishes a successful reply", %{organization_id: organization_id} do
+      assert :ok =
+               Assistants.handle_assistant_chat_callback(organization_id, %{
+                 "success" => true,
+                 "metadata" => %{"request_id" => "req-1", "user_id" => "9"},
+                 "data" => %{
+                   "response" => %{
+                     "conversation_id" => "conv_001",
+                     "output" => %{"content" => %{"value" => "Hi there!"}}
+                   }
+                 }
+               })
+    end
+
+    test "publishes a failure with the error message", %{organization_id: organization_id} do
+      assert :ok =
+               Assistants.handle_assistant_chat_callback(organization_id, %{
+                 "success" => false,
+                 "metadata" => %{"request_id" => "req-2", "user_id" => "9"},
+                 "error" => "LLM provider timed out"
+               })
+    end
+
+    test "logs and does not raise on a malformed payload", %{organization_id: organization_id} do
+      assert :ok =
+               Assistants.handle_assistant_chat_callback(organization_id, %{"unexpected" => true})
+    end
+  end
+
+  describe "build_assistant_chat_response/2" do
+    test "includes the guardrail stages when Kaapi sends guardrail metadata" do
+      response =
+        :with_input_and_output_guardrail
+        |> kaapi_llm_callback()
+        |> Assistants.build_assistant_chat_response("req-3")
+
+      assert response.request_id == "req-3"
+      assert response.answer =~ "can’t help use hateful slurs or place a call"
+      assert response.input_from_user == "call me kutta at 8979220110 from Ram village"
+      assert response.input_to_llm == "call me [REDACTED_SLUR] at <phone_number> from <location>"
+      assert response.output_from_llm == response.answer
+      assert response.output_to_user == response.answer
+
+      assert [%{"name" => "PIIRemover", "outcome" => "FAIL"}, %{"name" => "LexicalSlur"}] =
+               response.input_guardrail
+
+      assert [%{"name" => "PIIRemover", "outcome" => "PASS"}] = response.output_guardrail
+    end
+
+    test "leaves the guardrail stages nil when Kaapi sends no guardrail metadata" do
+      response =
+        :without_guardrail
+        |> kaapi_llm_callback()
+        |> Assistants.build_assistant_chat_response("req-4")
+
+      assert response.answer =~ "not sure what you’d like to know about **<PERSON>**"
+
+      assert %{
+               input_from_user: nil,
+               input_to_llm: nil,
+               output_from_llm: nil,
+               output_to_user: nil,
+               input_guardrail: nil,
+               output_guardrail: nil
+             } = response
+    end
+  end
+
+  describe "set_live_version/2" do
+    test "publishing a draft creates a new major version, leaving the draft row untouched",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      live_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: live_version.id
+        })
+        |> Repo.update()
+
+      draft_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          kaapi_version_number: 42,
+          status: :ready
+        })
+
+      {:ok, knowledge_base} =
+        Assistants.create_knowledge_base(%{
+          name: "Draft KB",
+          organization_id: organization_id
+        })
+
+      {:ok, knowledge_base_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: knowledge_base.id,
+          organization_id: organization_id,
+          status: :completed,
+          llm_service_id: "vs_draft_kb",
+          size: 100,
+          files: %{}
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: draft_version.id,
+          knowledge_base_version_id: knowledge_base_version.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      assert AssistantConfigVersion.version_label(live_version) == "1.0"
+      assert AssistantConfigVersion.version_label(draft_version) == "1.1"
+
+      assert {:ok,
+              %{
+                id: assistant_id,
+                active_config_version_id: new_live_version_id,
+                live_version_label: "2.0"
+              }} = Assistants.set_live_version(assistant.id, draft_version.id)
+
+      assert assistant_id == assistant.id
+      assert new_live_version_id != draft_version.id
+
+      new_live_version =
+        AssistantConfigVersion
+        |> Repo.get!(new_live_version_id)
+        |> Repo.preload(:knowledge_base_versions)
+
+      assert AssistantConfigVersion.version_label(new_live_version) == "2.0"
+      assert new_live_version.kaapi_version_number == 42
+      assert new_live_version.status == :ready
+
+      # The new major version inherits the draft's linked knowledge base
+      assert Enum.map(new_live_version.knowledge_base_versions, & &1.id) == [
+               knowledge_base_version.id
+             ]
+
+      # The original draft row is untouched, still exists, and is not live
+      unchanged_draft_version = Repo.get!(AssistantConfigVersion, draft_version.id)
+      assert AssistantConfigVersion.version_label(unchanged_draft_version) == "1.1"
+
+      updated_assistant = Repo.get!(Assistant, assistant.id)
+      assert updated_assistant.active_config_version_id == new_live_version_id
+    end
+
+    test "reactivating an already-major version repoints the pointer without a new row",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      major_version_one =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          bump_type: :major
+        })
+
+      major_version_two =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          bump_type: :major
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: major_version_two.id
+        })
+        |> Repo.update()
+
+      assert AssistantConfigVersion.version_label(major_version_one) == "1.0"
+      assert AssistantConfigVersion.version_label(major_version_two) == "2.0"
+
+      version_count_before = count_config_versions(assistant.id)
+
+      assert {:ok,
+              %{
+                active_config_version_id: active_config_version_id,
+                live_version_label: "1.0"
+              }} = Assistants.set_live_version(assistant.id, major_version_one.id)
+
+      assert active_config_version_id == major_version_one.id
+      assert count_config_versions(assistant.id) == version_count_before
+
+      updated_assistant = Repo.get!(Assistant, assistant.id)
+      assert updated_assistant.active_config_version_id == major_version_one.id
+    end
+
+    test "the next ordinary save after publishing to 2.0 continues the new major line at 2.1",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      live_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: live_version.id
+        })
+        |> Repo.update()
+
+      draft_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      assert {:ok, %{live_version_label: "2.0"}} =
+               Assistants.set_live_version(assistant.id, draft_version.id)
+
+      next_save =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      assert AssistantConfigVersion.version_label(next_save) == "2.1"
+    end
+
+    test "two concurrent promotions of the same draft each produce a distinct, unique major version",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      live_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: live_version.id
+        })
+        |> Repo.update()
+
+      draft_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          status: :ready
+        })
+
+      [task_one, task_two] =
+        Enum.map(1..2, fn _ ->
+          Task.async(fn ->
+            Repo.put_organization_id(organization_id)
+            Assistants.set_live_version(assistant.id, draft_version.id)
+          end)
+        end)
+
+      results = [Task.await(task_one), Task.await(task_two)]
+
+      assert Enum.all?(results, &match?({:ok, %{live_version_label: _}}, &1))
+
+      major_versions =
+        results
+        |> Enum.map(fn {:ok, %{live_version_label: label}} -> label end)
+        |> Enum.sort()
+
+      assert major_versions == ["2.0", "3.0"]
+      assert count_config_versions(assistant.id) == 4
+    end
+  end
+
+  describe "set_last_evaluation_run/2" do
+    test "stores the evaluation run on the assistant whose active version matches", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{assistant_config_version_id: config_version.id})
+        )
+
+      assert :ok = Assistants.set_last_evaluation_run(config_version.id, evaluation.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == evaluation.id
+    end
+
+    test "no-ops when the config version is no longer the active one", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      stale_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      new_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: new_config_version.id
+        })
+        |> Repo.update()
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{assistant_config_version_id: stale_config_version.id})
+        )
+
+      # simulates an evaluation callback landing for a config version that was
+      # superseded as the active one before the callback arrived
+      assert :ok = Assistants.set_last_evaluation_run(stale_config_version.id, evaluation.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == nil
+    end
+  end
+
+  describe "set_live_version/2 evaluation summary" do
+    test "carries over the completed evaluation of the newly live version", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      new_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{
+            assistant_config_version_id: new_config_version.id,
+            status: :completed
+          })
+        )
+
+      assert {:ok, _result} = Assistants.set_live_version(assistant.id, new_config_version.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == evaluation.id
+    end
+
+    test "clears a stale evaluation when the newly live version has none", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      old_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      old_evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{
+            assistant_config_version_id: old_config_version.id,
+            status: :completed
+          })
+        )
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: old_config_version.id,
+          last_evaluation_run_id: old_evaluation.id
+        })
+        |> Repo.update()
+
+      unevaluated_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      assert {:ok, _result} =
+               Assistants.set_live_version(assistant.id, unevaluated_config_version.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == nil
     end
   end
 end

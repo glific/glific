@@ -19,6 +19,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
     Flows.FlowContext,
     Flows.Webhook,
     Flows.WebhookLog,
+    Flows.Webhooks.TextToSpeech,
     Partners,
     Repo,
     Seeds.SeedsDev
@@ -36,6 +37,9 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
         is_active: true
       })
 
+    # The STT/TTS rate-limit ExRated bucket is process-global and shared across both webhooks.
+    # Reset it before every test so tokens don't leak between tests (order-dependent snoozes).
+    ExRated.delete_bucket("kaapi_stt_tts:#{Partners.organization(1).shortcode}")
     :ok
   end
 
@@ -200,6 +204,199 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.error != nil
+    end
+  end
+
+  # Dispatch-level tests: exercise call/2 (Kaapi ack + payload structure) directly. The per-org
+  # STT/TTS rate-limit bucket is reset per test so these extra call/2 invocations don't exhaust
+  # the shared budget and snooze.
+  describe "text_to_speech dispatch" do
+    setup do
+      %{fields: tts_fields(Fixtures.contact_fixture().id)}
+    end
+
+    test "returns success when Kaapi acknowledges the TTS request", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_456"}}
+      end)
+
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "sends correct payload structure to Kaapi for TTS", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+          assert get_in(decoded, ["query", "input"]) == "Hello world"
+          assert get_in(decoded, ["config", "blob", "completion", "type"]) == "tts"
+          assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.8-flash-lite-tts"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) ==
+                   "en-in-csagent-9"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
+                   "hindi"
+
+          metadata = decoded["request_metadata"]
+          assert metadata["organization_id"] == 1
+          assert metadata["flow_id"] == 1
+          assert metadata["webhook_log_id"] == 1
+          assert metadata["result_name"] == "response"
+          assert decoded["callback_url"] =~ "/webhook/flow_resume"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
+      end)
+
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "sends google-native as google and leaves the language for Kaapi to normalize", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "google"
+          assert completion["params"]["language"] == "Hindi"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-789"}}
+      end)
+
+      tts_request = Map.merge(fields, %{"provider" => "google-native", "language" => "Hindi"})
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "keeps any other provider as sent", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "sarvamai"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-790"}}
+      end)
+
+      tts_request = Map.put(fields, "provider", "sarvamai")
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "sends empty model and voice for a non-google provider without overrides", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
+          assert params["model"] == ""
+          assert params["voice"] == ""
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-791"}}
+      end)
+
+      tts_request = Map.put(fields, "provider", "sarvamai")
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "keeps model and voice overrides for a non-google provider", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
+          assert params["model"] == "bulbul:v3"
+          assert params["voice"] == "shubh"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-792"}}
+      end)
+
+      tts_request =
+        Map.merge(fields, %{"provider" => "sarvamai", "model" => "bulbul:v3", "voice" => "shubh"})
+
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "uses the google default voice when the flow sends a blank voice", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
+          assert params["voice"] == "en-in-csagent-9"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-793"}}
+      end)
+
+      tts_request = Map.merge(fields, %{"provider" => "google-native", "voice" => ""})
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "keeps a supported 3.8 TTS model sent by the flow", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          assert body
+                 |> Jason.decode!()
+                 |> get_in(["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.8-flash-tts"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-457"}}
+      end)
+
+      fields = Map.put(fields, "model", "gemini-3.8-flash-tts")
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "replaces an unsupported TTS model with the default", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          assert body
+                 |> Jason.decode!()
+                 |> get_in(["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.8-flash-lite-tts"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-458"}}
+      end)
+
+      fields = Map.put(fields, "model", "gemini-3.1-flash-tts-preview")
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "tags malformed flow metadata as :invalid_input (config)", %{fields: fields} do
+      bad = Map.put(fields, "organization_id", "not-an-int")
+      assert {:error, :invalid_input, _reason} = TextToSpeech.call(bad, %{})
+    end
+  end
+
+  defp tts_fields(contact_id) do
+    %{
+      "text" => "Hello world",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "#{contact_id}",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
+  end
+
+  describe "perform/1 rate limiting" do
+    test "snoozes a text_to_speech job once the shared per-org rate limit is exceeded" do
+      # The shared kaapi_stt_tts bucket allows 10 requests / 60s per org (see
+      # Glific.Flows.Webhook). ExRated buckets are process-global, so reset around the test.
+      key = "kaapi_stt_tts:#{Partners.organization(1).shortcode}"
+      ExRated.delete_bucket(key)
+      on_exit(fn -> ExRated.delete_bucket(key) end)
+
+      for _ <- 1..10 do
+        {:ok, _} = ExRated.check_rate(key, 60_000, 10)
+      end
+
+      job = %Oban.Job{
+        args: %{
+          "method" => "function",
+          "url" => "text_to_speech",
+          "body" => Jason.encode!(%{"organization_id" => 1}),
+          "result_name" => "response",
+          "headers" => [],
+          "webhook_log_id" => 1,
+          "context" => %{"id" => 1},
+          "organization_id" => 1,
+          "flow_id" => 1,
+          "contact_id" => 1
+        }
+      }
+
+      assert {:snooze, 5} = Webhook.perform(job)
     end
   end
 end

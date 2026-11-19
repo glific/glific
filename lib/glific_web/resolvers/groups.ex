@@ -35,6 +35,8 @@ defmodule GlificWeb.Resolvers.Groups do
           {:ok, any} | {:error, any}
   def export_collection(_, %{id: id}, _) do
     {:ok, Groups.export_collection(id)}
+  rescue
+    _ -> {:error, ["Group", dgettext("errors", "Group not found or permission denied.")]}
   end
 
   @doc """

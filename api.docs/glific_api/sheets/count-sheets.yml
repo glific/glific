@@ -1,0 +1,46 @@
+info:
+  name: Count sheets
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countSheets($filter: SheetFilter) {
+        countSheets(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "isActive": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's sheets that match a filter. Use it with **List sheets** to build
+  pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description                                                      |
+  | -------- | ------------- | -------- | ---------------------------------------------------------------- |
+  | `filter` | `SheetFilter` | No       | Same fields as in **List sheets**. Without it, counts all sheets. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countSheets": 3
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

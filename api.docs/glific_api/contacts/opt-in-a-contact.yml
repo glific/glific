@@ -1,0 +1,88 @@
+info:
+  name: Opt in a contact
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation optinContact($phone: String, $name: String, $channel: MessageChannelEnum, $identifier: String) {
+        optinContact(phone: $phone, name: $name, channel: $channel, identifier: $identifier) {
+          contact {
+            id
+            name
+            phone
+            status
+            bspStatus
+            optinTime
+            optinMethod
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "phone": "910000000003",
+        "name": "Asha Patil"
+      }
+  auth: inherit
+
+docs: |
+  Records that a contact has agreed to receive messages, creating the contact if it doesn't
+  exist yet. No message is sent.
+
+  - On `WHATSAPP` (the default) the contact is found or created by `phone`. Its status becomes
+    `VALID`, any opt-out is cleared, `optinMethod` is `BSP`, and a `contact_opted_in` event is
+    added to its history. If the contact is already opted in, only its BSP status is refreshed
+    and no new event is recorded.
+  - On `WEB` the contact is found or created by its web username (`identifier`). Only the
+    first opt-in of that username is recorded, with method `API`.
+  - A blocked contact is returned unchanged.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument     | Type                 | Required      | Description                                               |
+  | ------------ | -------------------- | ------------- | --------------------------------------------------------- |
+  | `phone`      | `String`             | On `WHATSAPP` | The WhatsApp number: country code and number, no `+`.     |
+  | `identifier` | `String`             | On `WEB`      | The web username. Needs the web channel enabled.          |
+  | `channel`    | `MessageChannelEnum` | No            | `WHATSAPP` (default) or `WEB`.                            |
+  | `name`       | `String`             | No            | Name for a contact this creates; on `WHATSAPP` it also updates an existing contact's name. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "optinContact": {
+        "contact": {
+          "id": "131",
+          "name": "Asha Patil",
+          "phone": "910000000003",
+          "status": "VALID",
+          "bspStatus": "HSM",
+          "optinTime": "2026-11-16T09:30:00Z",
+          "optinMethod": "BSP"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `WHATSAPP` without a phone: `{ "key": "phone", "message": "Phone: can't be blank" }`.
+  - `WEB` without an identifier: `{ "key": "Identifier", "message": "Identifier is required to
+    opt in on the web channel." }`.
+  - `WEB` while the web channel is off:
+    `{ "key": "Contact", "message": "Web channel is not enabled for this organization." }`.
+  - A web username with other characters than letters, digits, `_`, `@` and `.` fails
+    validation on `identifier`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

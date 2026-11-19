@@ -999,6 +999,33 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_glific_admin(Organization.t() | nil) :: AccessControl.UserRole.t() | nil
+    def seed_glific_admin(organization \\ nil) do
+      organization = get_organization(organization)
+
+      case Repo.fetch_by(AccessControl.Role, %{label: "Glific_admin"}) do
+        {:ok, role} ->
+          {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
+          utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+          {_, user} =
+            create_contact_user(
+              {organization, en, utc_now},
+              {"Glific Admin", "919900000001", ["glific_admin"]}
+            )
+
+          Repo.insert!(%AccessControl.UserRole{
+            user_id: user.id,
+            role_id: role.id,
+            organization_id: organization.id
+          })
+
+        _ ->
+          nil
+      end
+    end
+
+    @doc false
     @spec seed_test_flows(Organization.t() | nil) :: nil
     def seed_test_flows(organization \\ nil) do
       organization = get_organization(organization)
@@ -1801,7 +1828,7 @@ if Code.ensure_loaded?(Faker) do
       if trusted_env?,
         do:
           Repo.insert!(%Role{
-            label: "Glific Admin",
+            label: "Glific_admin",
             description: "Super Admin Role for Glific",
             is_reserved: true,
             organization_id: organization.id
@@ -2165,6 +2192,8 @@ if Code.ensure_loaded?(Faker) do
       seed_contact_history(organization)
 
       seed_user_roles(organization)
+
+      seed_glific_admin(organization)
 
       seed_stats(organization)
 

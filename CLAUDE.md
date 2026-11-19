@@ -34,7 +34,7 @@ implementations: `Glific.Tags` / `Glific.Tags.Tag`, `GlificWeb.Resolvers.Tags`,
 ```
 glific/
 ├── .claude/             # Claude Code config (settings, skills, agents)
-├── api.docs/            # Bruno API collections
+├── api.docs/            # Bruno API collection (OpenCollection YAML) — see its README.md
 ├── assets/              # Frontend assets + assets/gql/ GraphQL operation files
 ├── config/              # Environment configs (dev, test, prod, runtime)
 ├── lib/
@@ -67,6 +67,27 @@ Applies to all Elixir modules unless a layer doc says otherwise.
 - `@moduledoc` on all modules
 - `@doc` with iex examples where useful
 
+### Comments
+
+- `@moduledoc` is expected on every module; a public function gets a **one-line** `@doc`.
+- **Do not comment normal/private functions.** No inline comments that restate what the
+  code does — the code says that already.
+- The only allowed inline comment is a short **why** for a genuinely non-obvious or critical
+  decision (a subtle ordering constraint, a guard against a specific failure, a deliberate
+  deviation). If a reader could work out the reason in a few seconds, drop the comment.
+- Prefer a clear name or a small function over a comment. When in doubt, leave it out.
+
+### Naming
+
+Name things after the **mechanism they implement**, never after the task, ticket or incident that
+prompted the change. `rate_limit_global` describes what the code does; `rate_limit_url_scan` names
+the incident that happened to motivate it, and stops making sense once that incident is forgotten.
+
+This covers the whole surface of a change — functions, variables, module attributes, config keys,
+environment variables, cache and bucket prefixes, test names — not just the headline module. Apply
+it while writing: the motivating case is what is in your head at the time, and is exactly what
+leaks into the names.
+
 ## Multi-tenancy (summary)
 
 Glific is multi-tenant: every major table has `organization_id`, and `Repo.prepare_query/3`
@@ -79,7 +100,7 @@ paths. **Oban workers and resolver by-id lookups have extra rules** — see
 
 - **Location**: `lib/glific/scripts/` — IEx console helpers, not web-facing or Oban workers
 - **Pattern**: self-contained module with `@moduledoc` showing the exact IEx invocation
-- **Naming**: `Glific.Scripts.<Domain>` (e.g., `Glific.Scripts.Evals`)
+- **Naming**: `Glific.Scripts.<Domain>` (e.g., `Glific.Scripts.BackfillWAGroupPrimary`)
 - Always call `Repo.put_organization_id/1` at the top of any function that touches org-scoped data
 
 ## Claude Code Project Configuration

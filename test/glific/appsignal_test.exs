@@ -7,7 +7,7 @@ defmodule Glific.AppsignalTest do
 
   defp call_handle_event(args) do
     meta = %{queue: "default", worker: "TestWorker", args: args}
-    measurement = %{queue_time: 1_500_000}
+    measurement = %{queue_time: 1_500_000, duration: 2_000_000}
     Appsignal.handle_event([:oban, :job, :stop], measurement, meta, nil)
   end
 

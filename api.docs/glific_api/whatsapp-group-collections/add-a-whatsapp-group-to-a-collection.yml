@@ -1,0 +1,90 @@
+info:
+  name: Add a WhatsApp group to a collection
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createWaGroupsCollection($input: WaGroupsCollectionInput!) {
+        createWaGroupsCollection(input: $input) {
+          waGroupsCollection {
+            id
+            group {
+              id
+              label
+              waGroups {
+                id
+                label
+              }
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "groupId": "3",
+          "waGroupId": "3"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds one WhatsApp group to a collection. If the group is already in the collection, the
+  existing link is returned.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                       | Required | Description       |
+  | -------- | -------------------------- | -------- | ----------------- |
+  | `input`  | `WaGroupsCollectionInput!` | Yes      | The link to make. |
+
+  ### `WaGroupsCollectionInput`
+
+  | Field       | Type | Required | Description         |
+  | ----------- | ---- | -------- | ------------------- |
+  | `groupId`   | `ID` | Yes      | The collection.     |
+  | `waGroupId` | `ID` | Yes      | The WhatsApp group. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createWaGroupsCollection": {
+        "waGroupsCollection": {
+          "id": "7",
+          "group": {
+            "id": "3",
+            "label": "Default WA Group Collection",
+            "waGroups": [
+              { "id": "1", "label": "Nashik farmers" },
+              { "id": "2", "label": "Pune volunteers" },
+              { "id": "3", "label": "Mumbai mentors" }
+            ]
+          }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `waGroupsCollection` set to `null`:
+
+  - A required field is missing: `{ "key": "group_id", "message": "Group_id: can't be blank" }`.
+  - The collection or WhatsApp group does not exist:
+    `{ "key": "group_id", "message": "Group_id: does not exist" }` (or `wa_group_id`).
+
+  A user without the staff role gets a top-level `Unauthorized` error.

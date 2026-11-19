@@ -1,0 +1,61 @@
+info:
+  name: Delete a sheet
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteSheet($id: ID!) {
+        deleteSheet(id: $id) {
+          sheet {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2"
+      }
+  auth: inherit
+
+docs: |
+  Unlinks a sheet and deletes its synced rows from Glific. The Google Sheet itself is not
+  touched. Flow nodes that use the sheet stop finding rows.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The sheet to delete. |
+
+  ## Example response
+
+  On success `errors` is `null`. `sheet` is always `null`: the resolver doesn't return the
+  deleted sheet in the result's `sheet` field.
+
+  ```json
+  {
+    "data": {
+      "deleteSheet": {
+        "sheet": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The sheet does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Sheets.Sheet", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

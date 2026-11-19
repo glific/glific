@@ -11,7 +11,10 @@ defmodule Glific.Templates.InteractiveTemplates do
     Templates.InteractiveTemplate
   }
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
+
+  @button_title_limit 20
+  @list_title_limit 24
 
   @doc """
   Returns the list of interactive templates
@@ -477,10 +480,7 @@ defmodule Glific.Templates.InteractiveTemplates do
       )
 
   @spec meet_waba_title_spec(String.t()) :: String.t()
-  defp meet_waba_title_spec(str), do: str |> String.slice(0..1024)
-
-  @spec meet_waba_button_spec(String.t()) :: String.t()
-  defp meet_waba_button_spec(str), do: str |> String.slice(0..20)
+  defp meet_waba_title_spec(str), do: trim_field(str, 1024)
 
   @spec do_get_interactive_body(map(), String.t(), String.t()) :: String.t()
   defp do_get_interactive_body(interactive_content, "quick_reply", type)
@@ -624,7 +624,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     interactive_content
     |> get_in(["items"])
     |> hd()
-    |> Map.put("options", build_list_items(params))
+    |> Map.put("options", build_list_items(params, @list_title_limit))
     |> then(&Map.put(interactive_content, "items", [&1]))
     |> process_dynamic_attachments(attachment)
   end
@@ -634,7 +634,7 @@ defmodule Glific.Templates.InteractiveTemplates do
         params,
         attachment
       ) do
-    Map.put(interactive_content, "options", build_list_items(params))
+    Map.put(interactive_content, "options", build_list_items(params, @button_title_limit))
     |> process_dynamic_attachments(attachment)
   end
 
@@ -643,13 +643,13 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   ## We might need to move this function to gupshup provider
   ## since this is specific to that only but this is fine for now.
-  @spec build_list_items(list()) :: list()
-  defp build_list_items(params) do
+  @spec build_list_items(list(), pos_integer()) :: list()
+  defp build_list_items(params, title_limit) do
     Enum.map(params, fn
       param when is_map(param) ->
         %{
-          "title" => param["label"] |> meet_waba_button_spec(),
-          "description" => "",
+          "title" => trim_field(param["label"], title_limit),
+          "description" => trim_field(param["description"], 72) || "",
           "type" => "text",
           "id" => param["id"] || "",
           "postbackText" => param["id"] || ""
@@ -657,7 +657,7 @@ defmodule Glific.Templates.InteractiveTemplates do
 
       param ->
         %{
-          "title" => param |> meet_waba_button_spec(),
+          "title" => trim_field(param, title_limit),
           "description" => "",
           "type" => "text"
         }
@@ -686,17 +686,17 @@ defmodule Glific.Templates.InteractiveTemplates do
     interactive_msg_type = interactive_content["type"]
     label = interactive_template.label
 
-    translated_contents =
-      translate_interactive_content(
-        interactive_msg_type,
-        interactive_content,
-        active_languages,
-        language_code_map,
-        organization_id,
-        label
-      )
-
-    update_interactive_template(interactive_template, %{translations: translated_contents})
+    with {:ok, translated_contents} <-
+           translate_interactive_content(
+             interactive_msg_type,
+             interactive_content,
+             active_languages,
+             language_code_map,
+             organization_id,
+             label
+           ) do
+      update_interactive_template(interactive_template, %{translations: translated_contents})
+    end
   end
 
   @spec translate_interactive_content(
@@ -706,7 +706,7 @@ defmodule Glific.Templates.InteractiveTemplates do
           map(),
           non_neg_integer(),
           String.t()
-        ) :: map()
+        ) :: {:ok, map()} | {:error, String.t()}
 
   defp translate_interactive_content(
          "quick_reply",
@@ -752,11 +752,12 @@ defmodule Glific.Templates.InteractiveTemplates do
     )
   end
 
-  @spec translate_quick_reply(map(), map(), map(), non_neg_integer(), String.t()) :: map()
+  @spec translate_quick_reply(map(), map(), map(), non_neg_integer(), String.t()) ::
+          {:ok, map()} | {:error, String.t()}
   defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
     content_to_translate = content_to_translate(content, label)
 
-    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+    Enum.reduce_while(active_languages, %{}, fn {lang_name, lang_code}, acc ->
       translations =
         if lang_name == "English" do
           {:ok, content_to_translate}
@@ -773,20 +774,26 @@ defmodule Glific.Templates.InteractiveTemplates do
           translated_template =
             create_translated_template(content, translated_label, remaining_translations)
 
-          Map.put(
-            acc,
-            Integer.to_string(Map.get(language_code_map, lang_code)),
-            translated_template
-          )
+          {:cont,
+           Map.put(
+             acc,
+             Integer.to_string(Map.get(language_code_map, lang_code)),
+             translated_template
+           )}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
       end
     end)
+    |> wrap_translated_contents()
   end
 
-  @spec translate_list(map(), map(), map(), non_neg_integer()) :: map()
+  @spec translate_list(map(), map(), map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
   defp translate_list(content, active_languages, language_code_map, organization_id) do
     content_to_translate = build_content_to_translate(content)
 
-    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+    Enum.reduce_while(active_languages, %{}, fn {lang_name, lang_code}, acc ->
       translations =
         if lang_name == "English" do
           {:ok, content_to_translate}
@@ -820,20 +827,26 @@ defmodule Glific.Templates.InteractiveTemplates do
             "type" => "list"
           }
 
-          Map.put(
-            acc,
-            Integer.to_string(Map.get(language_code_map, lang_code)),
-            translated_template
-          )
+          {:cont,
+           Map.put(
+             acc,
+             Integer.to_string(Map.get(language_code_map, lang_code)),
+             translated_template
+           )}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
       end
     end)
+    |> wrap_translated_contents()
   end
 
-  @spec translate_location_request(map(), map(), map(), non_neg_integer()) :: map()
+  @spec translate_location_request(map(), map(), map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
   defp translate_location_request(content, active_languages, language_code_map, organization_id) do
     content_to_translate = [content["body"]["text"]]
 
-    Enum.reduce(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+    Enum.reduce_while(active_languages, %{}, fn {lang_name, lang_code}, acc ->
       translations =
         if lang_name == "English" do
           {:ok, content_to_translate}
@@ -851,14 +864,26 @@ defmodule Glific.Templates.InteractiveTemplates do
             "type" => content["type"]
           }
 
-          Map.put(
-            acc,
-            Integer.to_string(Map.get(language_code_map, lang_code)),
-            translated_template
-          )
+          {:cont,
+           Map.put(
+             acc,
+             Integer.to_string(Map.get(language_code_map, lang_code)),
+             translated_template
+           )}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
       end
     end)
+    |> wrap_translated_contents()
   end
+
+  # `Enum.reduce_while/3` above either halts with `{:error, reason}` (a translate call failed)
+  # or completes with the accumulated translations map -- normalize both into a tagged tuple.
+  @spec wrap_translated_contents({:error, String.t()} | map()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp wrap_translated_contents({:error, _reason} = error), do: error
+  defp wrap_translated_contents(translated_contents), do: {:ok, translated_contents}
 
   @spec build_content_to_translate(map()) :: list
   defp build_content_to_translate(content) do
@@ -1006,15 +1031,17 @@ defmodule Glific.Templates.InteractiveTemplates do
     Export interactive msg in all the active languages
   """
   @spec export_interactive_template(InteractiveTemplate.t(), boolean()) ::
-          {:ok, %{export_data: String.t()}}
+          {:ok, %{export_data: String.t()}} | {:error, String.t()}
 
   def export_interactive_template(interactive_template, false) do
     generate_csv_data(interactive_template)
   end
 
   def export_interactive_template(interactive_template, true) do
-    {:ok, translated_template, _message} = translate_interactive_template(interactive_template)
-    generate_csv_data(translated_template)
+    with {:ok, translated_template, _message} <-
+           translate_interactive_template(interactive_template) do
+      generate_csv_data(translated_template)
+    end
   end
 
   @spec generate_csv_data(InteractiveTemplate.t()) ::

@@ -1,0 +1,51 @@
+defmodule Glific.Providers.Gupshup.Instrumentation do
+  @moduledoc """
+  Gupshup instrumentation adapter.
+
+  Inherits the standard provider counters (`track_send/2`, `track_receive/2`,
+  `track_status/3`, `track_action/3`) from `Glific.Providers.Instrumentation`,
+  and adds Gupshup's frequency-cap classification: a capped send is recorded as
+  `frequency_capped` rather than `error`, both on the synchronous send response
+  (`classify_send/2`) and on the asynchronous failed delivery callback
+  (`classify_status/2`), so throttled traffic doesn't trip failure alerts. HSM
+  template sync is recorded via `track_action("hsm_sync", ...)`.
+  """
+
+  use Glific.Providers.Instrumentation, provider: "gupshup"
+
+  # 131049 is Meta's "not delivered to maintain healthy ecosystem engagement"
+  # code, surfaced by Gupshup at payload.payload.code on a failed callback —
+  # confirmed against a live frequency-capped payload.
+  @frequency_cap_error_codes [131_049]
+
+  def classify_send(:error, context) do
+    if frequency_capped?(context[:error_code]), do: :frequency_capped, else: :error
+  end
+
+  def classify_send(status, context), do: super(status, context)
+
+  def classify_status(:error, context) do
+    if frequency_capped?(context[:error_code]), do: :frequency_capped, else: :error
+  end
+
+  def classify_status(status, context), do: super(status, context)
+
+  @doc """
+  Whether a Gupshup error code represents a frequency-capped send. Accepts the
+  raw code as an integer or string.
+  """
+  @spec frequency_capped?(any()) :: boolean()
+  def frequency_capped?(code), do: normalize_code(code) in @frequency_cap_error_codes
+
+  @spec normalize_code(any()) :: integer() | nil
+  defp normalize_code(code) when is_integer(code), do: code
+
+  defp normalize_code(code) when is_binary(code) do
+    case Integer.parse(code) do
+      {int, _rest} -> int
+      :error -> nil
+    end
+  end
+
+  defp normalize_code(_code), do: nil
+end

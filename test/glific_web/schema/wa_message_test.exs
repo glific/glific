@@ -117,7 +117,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -174,7 +174,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -241,7 +241,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -270,7 +270,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -310,7 +310,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -359,7 +359,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -396,7 +396,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -435,5 +435,34 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
              WAMessage
              |> where([wa], wa.poll_id == ^wa_poll.id)
              |> Repo.one()
+  end
+
+  test "returns a user-facing error when the group has no active managed phones",
+       %{staff: user, conn: _conn} do
+    wa_phone =
+      Fixtures.wa_managed_phone_fixture(%{
+        organization_id: user.organization_id
+      })
+
+    wa_grp =
+      Fixtures.wa_group_fixture(%{
+        organization_id: user.organization_id,
+        wa_managed_phone_id: wa_phone.id
+      })
+
+    result =
+      auth_query_gql_by(:send_msg, user,
+        variables: %{
+          "input" => %{
+            "message" => "should not send",
+            "wa_group_id" => wa_grp.id,
+            "wa_managed_phone_id" => wa_phone.id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    [%{message: error_message} | _] = query_data[:errors]
+    assert error_message =~ "No active phones are linked to this group"
   end
 end

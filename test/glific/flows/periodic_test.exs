@@ -3,6 +3,7 @@ defmodule Glific.Flows.PeriodicTest do
 
   alias Glific.{
     Fixtures,
+    Flows,
     Flows.Periodic,
     Partners,
     Seeds.SeedsDev
@@ -141,5 +142,23 @@ defmodule Glific.Flows.PeriodicTest do
     {:ok, monday} = Timex.parse("2020-08-10T00:00:00+00:00", "{ISO:Extended}")
     assert {state, false} == Periodic.periodic_flow(state, "monday", nil, monday)
     assert {state, false} == Periodic.periodic_flow(state, "wednesday", nil, monday)
+  end
+
+  test "init_common_flow returns {state, false} instead of crashing when the cached flow lookup errors",
+       %{organization_id: organization_id} = attrs do
+    # there is no flow (and hence no published revision) with this id, so
+    # Flows.get_cached_flow/2 will fail to load a flow from the DB, Cachex will
+    # catch the raised error and get_cached_flow/2 returns {:error, _} instead of {:ok, flow}
+    non_existent_flow_id = 0
+
+    message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
+
+    sentinel_state = %{sentinel_marker: :untouched}
+
+    assert {^sentinel_state, false} =
+             Periodic.init_common_flow(sentinel_state, non_existent_flow_id, message)
+
+    assert {:error, %Cachex.ExecutionError{}} =
+             Flows.get_cached_flow(organization_id, {:flow_id, non_existent_flow_id, "published"})
   end
 end

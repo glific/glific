@@ -36,7 +36,7 @@ defmodule Glific.Templates.TemplateWorker do
         # 5 mins
         period: 60 * 5,
         keys: [:organization_id],
-        states: [:available, :scheduled, :executing]
+        states: [:available, :scheduled, :executing, :retryable]
       ]
     )
     |> Oban.insert()

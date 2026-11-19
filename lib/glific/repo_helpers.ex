@@ -368,7 +368,11 @@ defmodule Glific.RepoHelpers do
       @impl true
       @spec default_options(atom()) :: Keyword.t()
       def default_options(_operation) do
-        [organization_id: get_organization_id()]
+        organization_id = get_organization_id()
+
+        # The audit org is the process org, not the audited record's, and a caller passing its
+        # own :ex_audit_custom replaces this keyword list wholesale (Ecto merges opts per key).
+        [organization_id: organization_id, ex_audit_custom: [organization_id: organization_id]]
       end
 
       @doc false

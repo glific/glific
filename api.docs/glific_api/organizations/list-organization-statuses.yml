@@ -1,0 +1,46 @@
+info:
+  name: List organization statuses
+  type: graphql
+  seq: 17
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query organizationStatus {
+        organizationStatus
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Lists the values of `OrganizationStatusEnum`, the statuses an organization can have.
+
+  **Role:** admin
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "organizationStatus": [
+        "INACTIVE",
+        "APPROVED",
+        "ACTIVE",
+        "SUSPENDED",
+        "READY_TO_DELETE",
+        "FORCED_SUSPENSION"
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the admin role gets a top-level `Unauthorized` error.

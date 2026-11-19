@@ -1,0 +1,88 @@
+info:
+  name: List WhatsApp forms
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query listWhatsappForms($filter: WhatsappFormFilter) {
+        listWhatsappForms(filter: $filter) {
+          id
+          name
+          status
+          description
+          metaFlowId
+          categories
+          revisionId
+          sheet {
+            id
+            label
+            url
+          }
+          insertedAt
+          updatedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "status": "PUBLISHED"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's WhatsApp forms, optionally filtered. There is no `opts` argument:
+  all matching forms come back, in no particular order.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                                    |
+  | -------- | -------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `WhatsappFormFilter` | No       | Narrows the list. All given fields must match. |
+
+  ### `WhatsappFormFilter`
+
+  | Field        | Type                       | Description                                 |
+  | ------------ | -------------------------- | ------------------------------------------- |
+  | `name`       | `String`                   | Name contains this text (case-insensitive). |
+  | `metaFlowId` | `String`                   | Meta flow ID, exactly.                      |
+  | `status`     | `WhatsappFormStatusEnum`   | `DRAFT`, `PUBLISHED` or `INACTIVE`.         |
+
+  ## Example response
+
+  `insertedAt` and `updatedAt` are strings here, not `DateTime`.
+
+  ```json
+  {
+    "data": {
+      "listWhatsappForms": [
+        {
+          "id": "3",
+          "name": "sign_up_form",
+          "status": "PUBLISHED",
+          "description": "Collects name and class for new students",
+          "metaFlowId": "1000000000000001",
+          "categories": ["sign_up"],
+          "revisionId": 14,
+          "sheet": {
+            "id": "7",
+            "label": "WhatsApp Form - sign_up_form",
+            "url": "https://docs.google.com/spreadsheets/d/1AbCdEf/edit"
+          },
+          "insertedAt": "2026-11-04 10:12:31.204118Z",
+          "updatedAt": "2026-11-05 08:40:02.551930Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.
