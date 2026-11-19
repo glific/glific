@@ -939,62 +939,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "repeated code requests for one contact record one request per window", %{conn: conn} do
-      contact = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
-      original_config = Application.get_env(:glific, :rate_limit_web_channel_login_history)
-
-      Application.put_env(:glific, :rate_limit_web_channel_login_history,
-        scale_ms: 600_000,
-        count: 1
-      )
-
-      on_exit(fn ->
-        Application.put_env(:glific, :rate_limit_web_channel_login_history, original_config)
-      end)
-
-      with_web_channel_enabled(fn ->
-        for _attempt <- 1..3 do
-          post(
-            conn,
-            Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => contact.phone})
-          )
-        end
-
-        assert [{"web_login_code_requested", _label, :web}] = login_history(contact.phone)
-      end)
-    end
-
-    test "repeated wrong codes for one contact record one failure per window", %{conn: conn} do
-      contact = Fixtures.contact_fixture(%{phone: unique_phone()})
-      original_config = Application.get_env(:glific, :rate_limit_web_channel_login_history)
-
-      Application.put_env(:glific, :rate_limit_web_channel_login_history,
-        scale_ms: 600_000,
-        count: 1
-      )
-
-      on_exit(fn ->
-        Application.put_env(:glific, :rate_limit_web_channel_login_history, original_config)
-      end)
-
-      with_web_channel_enabled(fn ->
-        OTP.generate_code(:web_channel, contact.phone)
-
-        for _attempt <- 1..3 do
-          conn
-          |> post(
-            Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
-              "phone" => contact.phone,
-              "otp" => "000000"
-            })
-          )
-          |> json_response(401)
-        end
-
-        assert [{"web_login_code_failed", _label, :web}] = login_history(contact.phone)
-      end)
-    end
-
     test "a request refused by the phone rate limit records nothing", %{conn: conn} do
       contact = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
       rate_limit_key = "web_channel_send_otp:#{contact.phone}"

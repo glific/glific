@@ -279,12 +279,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     build_context(organization_id)
 
     with {:ok, contact} <- ensure_contact(organization_id, phone),
-         :ok <-
-           record_throttled_history(
-             contact,
-             :web_login_code_requested,
-             "Web login code requested"
-           ),
+         :ok <- record_history(contact, :web_login_code_requested, "Web login code requested"),
          true <- can_send_message_to?(contact),
          code = mint_code(phone),
          {:ok, _message} <-
@@ -354,7 +349,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
     case Contacts.fetch_by_identity(:whatsapp, phone) do
       {:ok, contact} ->
-        record_throttled_history(contact, :web_login_code_failed, "Web login code incorrect")
+        record_history(contact, :web_login_code_failed, "Web login code incorrect")
 
       {:error, _} ->
         :ok
@@ -363,20 +358,6 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     error ->
       Glific.log_exception(error)
       :ok
-  end
-
-  # For events an unauthenticated caller can trigger knowing only a phone number. A contact keeps
-  # only its newest history rows (the remove_old_history trigger), so without a per-contact bound a
-  # caller hammering one number would push that contact's real history out.
-  @spec record_throttled_history(Contact.t(), atom(), String.t()) :: :ok
-  defp record_throttled_history(contact, event_type, event_label) do
-    case Glific.RateLimit.check(
-           :rate_limit_web_channel_login_history,
-           "web_channel_login_history:#{event_type}:#{contact.organization_id}:#{contact.id}"
-         ) do
-      :ok -> record_history(contact, event_type, event_label)
-      {:error, :rate_limited} -> :ok
-    end
   end
 
   # For the contact's History tab on the profile (#5877). Never holds the code itself. Sign-in does
