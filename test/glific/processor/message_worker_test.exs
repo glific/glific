@@ -2,6 +2,8 @@ defmodule Glific.Processor.MessageWorkerTest do
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Mock
+
   alias Glific.Fixtures
   alias Glific.Flows.FlowContext
   alias Glific.Processor.MessageWorker
@@ -81,6 +83,27 @@ defmodule Glific.Processor.MessageWorkerTest do
 
       assert second_job.state == "scheduled"
       assert second_job.meta["on_hold"] == true
+    end
+
+    test "counts a held job and leaves a job that runs straight away uncounted" do
+      contact = Fixtures.contact_fixture()
+
+      with_mock Appsignal, [:passthrough], increment_counter: fn _, _, _ -> :ok end do
+        {:ok, first_job} = enqueue_message(contact, "help")
+        refute called(Appsignal.increment_counter("inbound_job_held_count", :_, :_))
+
+        {:ok, _second_job} = enqueue_message(contact, "help")
+
+        assert_called_exactly(
+          Appsignal.increment_counter("inbound_job_held_count", 1, %{
+            organization_id: contact.organization_id
+          }),
+          1
+        )
+
+        stored_first_job = Repo.get!(Oban.Job, first_job.id, prefix: "global")
+        assert stored_first_job.scheduled_at == stored_first_job.inserted_at
+      end
     end
 
     test "body-less media messages from one contact are chained too" do

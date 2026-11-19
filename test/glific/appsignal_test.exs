@@ -43,6 +43,38 @@ defmodule Glific.AppsignalTest do
     end
   end
 
+  describe "handle_event [:oban, :job, :stop] inbound hold time" do
+    defp stop_event(queue, held_seconds) do
+      inserted_at = DateTime.utc_now()
+
+      job = %Oban.Job{
+        args: %{"organization_id" => 1},
+        inserted_at: inserted_at,
+        scheduled_at: DateTime.add(inserted_at, held_seconds)
+      }
+
+      meta = %{queue: queue, worker: "TestWorker", args: job.args, job: job}
+      measurement = %{queue_time: 0, duration: 0}
+
+      with_mock Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end do
+        Appsignal.handle_event([:oban, :job, :stop], measurement, meta, nil)
+        called(Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", :_, :_))
+      end
+    end
+
+    test "records the hold time of a held inbound job" do
+      assert stop_event("gupshup_inbound", 3)
+    end
+
+    test "records nothing for an inbound job that was never held" do
+      refute stop_event("gupshup_inbound", 0)
+    end
+
+    test "records nothing for jobs on other queues" do
+      refute stop_event("default", 3)
+    end
+  end
+
   describe "send_oban_queue_size/0" do
     test "executes without error" do
       assert Appsignal.send_oban_queue_size() == :ok
