@@ -10,10 +10,6 @@ defmodule GlificWeb.WebChannel.Presence do
   never persisted and must never be reported on — a contact whose browser was closed without a
   clean disconnect stays listed until the socket times out.
 
-  The one exception is `GlificWeb.WebChannel.RoomChannel`, which reads `online?/2` and
-  `connection_count/2` to record one "web chat started" and "ended" per contact rather than per
-  tab. That lag only makes "ended" late, and it says so there.
-
   Every function here degrades rather than raises when the tracker is not running. Presence is a
   display nicety; a conversation must not fail to open, and a contact query must not 500, because
   of it. That is not hypothetical: Phoenix's dev reloader recompiles modules without restarting
@@ -48,25 +44,6 @@ defmodule GlificWeb.WebChannel.Presence do
   rescue
     error -> unavailable(error, "read presence for contact #{contact_id}", false)
   end
-
-  @doc """
-  How many web-channel sockets a contact has open, one per browser tab; 0 if the tracker is not
-  running.
-  """
-  @spec connection_count(non_neg_integer(), non_neg_integer()) :: non_neg_integer()
-  def connection_count(organization_id, contact_id) do
-    organization_id
-    |> topic()
-    |> get_by_key(to_string(contact_id))
-    |> presence_metas()
-    |> length()
-  rescue
-    error -> unavailable(error, "count connections for contact #{contact_id}", 0)
-  end
-
-  @spec presence_metas(map() | list()) :: list()
-  defp presence_metas(%{metas: metas}), do: metas
-  defp presence_metas(_none), do: []
 
   @doc """
   The ids of every contact in an organization with a web-channel socket open.

@@ -139,7 +139,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
          {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
          {:ok, token} <- Token.generate(organization_id, contact.phone),
          :ok <- record_optin(optin?, contact.phone, organization_id) do
-      record_history(contact, :web_login_code_verified, "Web login code verified")
+      record_history(contact, :web_login_code_verified, "Logged into web")
 
       json(conn, %{
         data: %{
@@ -352,7 +352,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         record_history(contact, :web_login_code_failed, "Web login code incorrect")
 
       {:error, _} ->
-        :ok
+        Appsignal.Logger.info(
+          "web_channel_auth",
+          "Web login code verify failed for a contact that does not exist in org #{organization_id}"
+        )
     end
   rescue
     error ->

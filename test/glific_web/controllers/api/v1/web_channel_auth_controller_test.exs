@@ -913,7 +913,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         )
 
         assert login_history(phone) == [
-                 {"web_login_code_verified", "Web login code verified", :web}
+                 {"web_login_code_verified", "Logged into web", :web}
                ]
       end)
     end
