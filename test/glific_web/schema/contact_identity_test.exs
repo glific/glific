@@ -413,6 +413,10 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
       |> where([i], i.contact_id == ^contact.id and i.channel == :whatsapp)
       |> Repo.update_all(set: [last_message_at: whatsapp_time])
 
+      Glific.Contacts.Contact
+      |> where([c], c.id == ^contact.id)
+      |> Repo.update_all(set: [last_message_at: whatsapp_time])
+
       assert [
                %{"channel" => "WHATSAPP", "lastMessageAt" => whatsapp},
                %{"channel" => "WEB", "lastMessageAt" => web}
@@ -420,6 +424,48 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
 
       assert {:ok, ^whatsapp_time, _} = DateTime.from_iso8601(whatsapp)
       assert {:ok, ^web_time, _} = DateTime.from_iso8601(web)
+    end
+
+    test "a contact with two WhatsApp identities is reported and still gets the latest time", %{
+      staff: user
+    } do
+      contact =
+        Fixtures.contact_fixture(%{
+          phone: "91" <> to_string(8_300_000_000 + System.unique_integer([:positive]))
+        })
+
+      later = ~U[2026-11-05 10:00:00Z]
+
+      ContactIdentity
+      |> where([i], i.contact_id == ^contact.id and i.channel == :whatsapp)
+      |> Repo.update_all(set: [last_message_at: ~U[2026-11-01 10:00:00Z]])
+
+      # The data bug this guards against: a second WhatsApp row for the same contact.
+      Repo.insert!(%ContactIdentity{
+        contact_id: contact.id,
+        organization_id: contact.organization_id,
+        channel: :whatsapp,
+        identifier: "91" <> to_string(8_400_000_000 + System.unique_integer([:positive])),
+        last_message_at: later
+      })
+
+      Glific.Contacts.Contact
+      |> where([c], c.id == ^contact.id)
+      |> Repo.update_all(set: [last_message_at: ~U[2026-11-01 10:00:00Z]])
+
+      level = Logger.level()
+      Logger.configure(level: :error)
+      on_exit(fn -> Logger.configure(level: level) end)
+
+      log =
+        ExUnit.CaptureLog.capture_log(fn ->
+          assert [%{"channel" => "WHATSAPP", "lastMessageAt" => whatsapp}] =
+                   channels_of(user, contact)
+
+          assert {:ok, ^later, _} = DateTime.from_iso8601(whatsapp)
+        end)
+
+      assert log =~ "Contact #{contact.id} has 2 WhatsApp identities"
     end
 
     test "a WhatsApp contact without an identity row yet falls back to the contact's clock", %{
@@ -438,6 +484,32 @@ defmodule GlificWeb.Schema.ContactIdentityTest do
                channels_of(user, contact)
 
       assert {:ok, ^at, _} = DateTime.from_iso8601(whatsapp)
+    end
+
+    test "WhatsApp shows the contact's clock when it is newer than its identity's", %{
+      staff: user
+    } do
+      contact =
+        Fixtures.contact_fixture(%{
+          phone: "91" <> to_string(8_200_000_000 + System.unique_integer([:positive]))
+        })
+
+      identity_time = ~U[2026-11-01 10:00:00Z]
+      contact_time = ~U[2026-11-04 10:00:00Z]
+
+      # Written directly: update_contact/2 would carry the contact's clock onto the identity.
+      ContactIdentity
+      |> where([i], i.contact_id == ^contact.id and i.channel == :whatsapp)
+      |> Repo.update_all(set: [last_message_at: identity_time])
+
+      Glific.Contacts.Contact
+      |> where([c], c.id == ^contact.id)
+      |> Repo.update_all(set: [last_message_at: contact_time])
+
+      assert [%{"channel" => "WHATSAPP", "lastMessageAt" => whatsapp}] =
+               channels_of(user, contact)
+
+      assert {:ok, ^contact_time, _} = DateTime.from_iso8601(whatsapp)
     end
   end
 

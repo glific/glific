@@ -123,8 +123,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         resolve_contact_and_sign_in(conn, organization_id, normalized, optin?)
 
       # Distinguishing these would tell an attacker whether a code was ever issued for a number.
-      {:error, _reason} ->
-        record_failed_verify(organization_id, normalized)
+      {:error, reason} ->
+        if reason == :incorrect_code, do: record_failed_verify(organization_id, normalized)
         invalid_otp_error(conn)
     end
   end

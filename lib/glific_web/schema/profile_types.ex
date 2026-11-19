@@ -37,11 +37,14 @@ defmodule GlificWeb.Schema.ProfileTypes do
 
     @desc """
     The contact's channels, each with when the contact last messaged on it while this profile was
-    active. Null for a channel this profile has never been active on.
+    active. Read from message history, which is purged after two months, so null means no such
+    message in that window, even if the contact has messaged on the channel.
     """
     field :channels, list_of(:contact_channel) do
       resolve(fn profile, _args, _resolution ->
-        {:ok, Profiles.channel_activity(profile)}
+        batch({Profiles, :channel_activity, profile.organization_id}, profile, fn by_profile ->
+          {:ok, Map.get(by_profile, profile.id, [])}
+        end)
       end)
     end
   end

@@ -17,11 +17,11 @@ defmodule GlificWeb.Schema.ContactIdentityTypes do
     field(:inserted_at, :datetime)
   end
 
-  @desc "A channel a contact uses, and when the contact last messaged on it"
+  @desc "A channel a contact uses, with the time of its last inbound message there"
   object :contact_channel do
     field(:channel, :message_channel_enum)
 
-    @desc "Null until the contact first messages on this channel"
+    @desc "Null when there is no recorded inbound message on this channel"
     field(:last_message_at, :datetime)
   end
 

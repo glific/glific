@@ -268,4 +268,50 @@ defmodule GlificWeb.Schema.ProfileTest do
     assert [%{"channel" => "WHATSAPP", "lastMessageAt" => nil}] = by_name["Never active"]
     assert never_active.id != active.id
   end
+
+  test "one profiles list query gives each contact's profiles their own channel activity", %{
+    staff: user
+  } do
+    [first, second] =
+      for name <- ["First", "Second"] do
+        contact = Fixtures.contact_fixture(%{organization_id: user.organization_id})
+
+        {:ok, profile} =
+          Glific.Profiles.create_profile(%{
+            "contact_id" => contact.id,
+            "organization_id" => contact.organization_id,
+            "name" => name,
+            "type" => "student",
+            "language_id" => 1
+          })
+
+        {:ok, contact} = Glific.Contacts.update_contact(contact, %{active_profile_id: profile.id})
+        profile
+      end
+
+    Fixtures.message_fixture(%{
+      sender_id: first.contact_id,
+      receiver_id: first.contact_id,
+      flow: :inbound,
+      organization_id: first.organization_id
+    })
+
+    {:ok, query_data} =
+      auth_query_gql_by(:channels, user, variables: %{"opts" => %{"limit" => 1000}})
+
+    by_id = Map.new(get_in(query_data, [:data, "profiles"]), &{&1["id"], &1["channels"]})
+
+    assert [%{"channel" => "WHATSAPP", "lastMessageAt" => last}] = by_id[to_string(first.id)]
+    assert last != nil
+    assert [%{"channel" => "WHATSAPP", "lastMessageAt" => nil}] = by_id[to_string(second.id)]
+  end
+
+  test "a user below staff cannot read profile channels" do
+    user = Fixtures.user_fixture(%{roles: ["none"]})
+
+    {:ok, query_data} = auth_query_gql_by(:channels, user, variables: %{"filter" => %{}})
+
+    assert [%{message: "Unauthorized"}] = query_data.errors
+    assert get_in(query_data, [:data, "profiles"]) == nil
+  end
 end

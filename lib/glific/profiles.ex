@@ -130,43 +130,50 @@ defmodule Glific.Profiles do
   end
 
   @doc """
-  The channels a profile's contact uses, each with when the contact last messaged on it while this
-  profile was the active one (`nil` if never), WhatsApp first.
+  The channels each profile's contact uses, keyed by profile id, each with when the contact last
+  messaged on it while that profile was active, WhatsApp first; batched for a list of profiles.
 
-  The channels themselves belong to the contact (one phone, one web login, shared by its
-  profiles); only the times are per profile. They come from `messages.profile_id`, which the
-  message insert trigger stamps with the contact's active profile, so a profile that has never
-  been active shows every channel with no activity.
+  The channels belong to the contact (one phone, one web login, shared by its profiles); only the
+  times are per profile. They come from `messages.profile_id`, which the message insert trigger
+  stamps with the contact's active profile, so `nil` means no such message in the retained history:
+  a profile never active on a channel, or active only before `Glific.Erase` purged its messages.
   """
-  @spec channel_activity(Profile.t()) :: [
-          %{channel: atom(), last_message_at: DateTime.t() | nil}
-        ]
-  def channel_activity(%Profile{} = profile) do
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             id: profile.contact_id,
-             organization_id: profile.organization_id
-           }) do
-      contact = Repo.preload(contact, :identities)
+  @spec channel_activity(non_neg_integer(), [Profile.t()]) :: %{
+          non_neg_integer() => [%{channel: atom(), last_message_at: DateTime.t() | nil}]
+        }
+  def channel_activity(organization_id, profiles) do
+    # Absinthe runs a batch in its own Task, which does not inherit the resolver's org context.
+    Repo.put_organization_id(organization_id)
+    profile_ids = Enum.map(profiles, & &1.id)
 
-      latest =
-        Message
-        |> where(
-          [m],
-          m.contact_id == ^profile.contact_id and m.profile_id == ^profile.id and
-            m.flow == :inbound
-        )
-        |> group_by([m], m.channel)
-        |> select([m], {m.channel, max(m.inserted_at)})
-        |> Repo.all()
-        |> Map.new()
+    contacts =
+      Contact
+      |> where([c], c.id in ^Enum.map(profiles, & &1.contact_id))
+      |> preload(:identities)
+      |> Repo.all()
+      |> Map.new(&{&1.id, &1})
 
-      contact
-      |> Contacts.channel_activity(contact.identities)
-      |> Enum.map(&%{&1 | last_message_at: Map.get(latest, &1.channel)})
-    else
-      _missing -> []
-    end
+    latest =
+      Message
+      |> where([m], m.profile_id in ^profile_ids and m.flow == :inbound)
+      |> group_by([m], [m.profile_id, m.channel])
+      |> select([m], {{m.profile_id, m.channel}, max(m.inserted_at)})
+      |> Repo.all()
+      |> Map.new()
+
+    Map.new(profiles, fn profile ->
+      {profile.id,
+       profile_channel_activity(profile, Map.get(contacts, profile.contact_id), latest)}
+    end)
+  end
+
+  @spec profile_channel_activity(Profile.t(), Contact.t() | nil, map()) :: [map()]
+  defp profile_channel_activity(_profile, nil, _latest), do: []
+
+  defp profile_channel_activity(profile, contact, latest) do
+    contact
+    |> Contacts.channel_activity(contact.identities)
+    |> Enum.map(&%{&1 | last_message_at: Map.get(latest, {profile.id, &1.channel})})
   end
 
   @doc """

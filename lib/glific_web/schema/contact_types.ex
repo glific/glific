@@ -81,8 +81,9 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
 
     @desc """
-    The channels the contact uses, WhatsApp first, each with when the contact last messaged on it.
-    Unlike `identities` it carries no phone or username, so staff users see it too.
+    The channels the contact uses, WhatsApp first, each with when the contact last messaged on it
+    (null until its first message there). Unlike `identities` it carries no phone or username, so
+    staff users see it too.
     """
     field :channels, list_of(:contact_channel) do
       resolve(

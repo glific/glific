@@ -237,8 +237,9 @@ defmodule Glific.Contacts.ContactIdentities do
 
   Gives only the channel and a time, never an identifier, so it is safe to show to any staff user.
 
-  A contact on WhatsApp whose identity row has not been written yet (the backfill has not reached
-  it) still shows WhatsApp, with `contacts.last_message_at`, which is the same WhatsApp clock.
+  WhatsApp takes the later of its identities' times and `contacts.last_message_at`, the same
+  WhatsApp clock: the trigger only advances the identity whose identifier is the contact's current
+  phone, and a contact whose identity row has not been written yet has only the contact's clock.
   """
   @spec channel_activity(Contact.t(), [ContactIdentity.t()]) :: [
           %{channel: MessageChannel.t(), last_message_at: DateTime.t() | nil}
@@ -256,22 +257,36 @@ defmodule Glific.Contacts.ContactIdentities do
   @spec whatsapp_activity(Contact.t(), [ContactIdentity.t()]) :: map() | nil
   defp whatsapp_activity(%Contact{phone: phone}, []) when phone in [nil, ""], do: nil
 
+  # A contact holds one WhatsApp identity. A second is a data bug to surface, but reading on keeps
+  # one bad contact from failing the whole contact list it is batched into.
+  defp whatsapp_activity(%Contact{} = contact, [_, _ | _] = identities) do
+    Glific.log_error(
+      "Contact #{contact.id} has #{length(identities)} WhatsApp identities; expected one"
+    )
+
+    whatsapp_activity_of(contact, identities)
+  end
+
   defp whatsapp_activity(%Contact{} = contact, identities),
+    do: whatsapp_activity_of(contact, identities)
+
+  @spec whatsapp_activity_of(Contact.t(), [ContactIdentity.t()]) :: map()
+  defp whatsapp_activity_of(contact, identities),
     do: %{
       channel: :whatsapp,
-      last_message_at: latest_message_at(identities) || contact.last_message_at
+      last_message_at:
+        latest([contact.last_message_at | Enum.map(identities, & &1.last_message_at)])
     }
 
   @spec web_activity([ContactIdentity.t()]) :: map() | nil
   defp web_activity([]), do: nil
 
   defp web_activity(identities),
-    do: %{channel: :web, last_message_at: latest_message_at(identities)}
+    do: %{channel: :web, last_message_at: latest(Enum.map(identities, & &1.last_message_at))}
 
-  @spec latest_message_at([ContactIdentity.t()]) :: DateTime.t() | nil
-  defp latest_message_at(identities) do
-    identities
-    |> Enum.map(& &1.last_message_at)
+  @spec latest([DateTime.t() | nil]) :: DateTime.t() | nil
+  defp latest(times) do
+    times
     |> Enum.reject(&is_nil/1)
     |> Enum.max(DateTime, fn -> nil end)
   end
