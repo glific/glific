@@ -42,6 +42,8 @@ defmodule Glific.Processor.MessageWorker do
     |> tap(&count_held_job(&1, message.organization_id))
   end
 
+  # Oban Pro emits no telemetry event when a chain holds a job, so the hold is counted here
+  # from the inserted job's meta.
   @spec count_held_job({:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}, non_neg_integer()) ::
           :ok
   defp count_held_job({:ok, %Oban.Job{meta: %{"on_hold" => true}}}, organization_id) do
