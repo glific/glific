@@ -19,6 +19,7 @@ defmodule Glific.Appsignal do
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
 
+    record_inbound_hold_time(meta)
     @tracer.close_span(span, end_time: time)
   end
 

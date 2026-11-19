@@ -43,8 +43,8 @@ defmodule Glific.AppsignalTest do
     end
   end
 
-  describe "handle_event [:oban, :job, :stop] inbound hold time" do
-    defp stop_event(queue, held_seconds) do
+  describe "handle_event [:oban, :job, _] inbound hold time" do
+    defp job_event(event, queue, held_seconds) do
       inserted_at = DateTime.utc_now()
 
       job = %Oban.Job{
@@ -53,25 +53,46 @@ defmodule Glific.AppsignalTest do
         scheduled_at: DateTime.add(inserted_at, held_seconds)
       }
 
-      meta = %{queue: queue, worker: "TestWorker", args: job.args, job: job}
+      meta = %{
+        id: 1,
+        queue: queue,
+        worker: "TestWorker",
+        args: job.args,
+        job: job,
+        attempt: 1,
+        max_attempts: 1,
+        kind: :error,
+        error: %RuntimeError{message: "boom"},
+        stacktrace: []
+      }
+
       measurement = %{queue_time: 0, duration: 0}
 
       with_mock Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end do
-        Appsignal.handle_event([:oban, :job, :stop], measurement, meta, nil)
-        called(Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", :_, :_))
+        Appsignal.handle_event([:oban, :job, event], measurement, meta, nil)
+
+        called(
+          Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", 3.0, %{
+            organization_id: "1"
+          })
+        )
       end
     end
 
-    test "records the hold time of a held inbound job" do
-      assert stop_event("gupshup_inbound", 3)
+    test "records the hold time of a held inbound job that completes" do
+      assert job_event(:stop, "gupshup_inbound", 3)
+    end
+
+    test "records the hold time of a held inbound job that fails" do
+      assert job_event(:exception, "gupshup_inbound", 3)
     end
 
     test "records nothing for an inbound job that was never held" do
-      refute stop_event("gupshup_inbound", 0)
+      refute job_event(:stop, "gupshup_inbound", 0)
     end
 
     test "records nothing for jobs on other queues" do
-      refute stop_event("default", 3)
+      refute job_event(:stop, "default", 3)
     end
   end
 
