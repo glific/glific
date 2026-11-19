@@ -6,6 +6,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   use GlificWeb.ConnCase
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     Contacts,
@@ -1022,6 +1023,83 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         refute Repo.exists?(from(c in Contact, where: c.phone == ^phone),
                  skip_organization_id: true
                )
+      end)
+    end
+
+    test "a login still succeeds when its history write returns an error", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        with_mock(Contacts, [:passthrough],
+          capture_history: fn _contact, _event_type, _attrs ->
+            {:error, "history write failed"}
+          end
+        ) do
+          response =
+            conn
+            |> post(
+              Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                "phone" => phone,
+                "otp" => code
+              })
+            )
+            |> json_response(200)
+
+          assert response["data"]["token"]
+        end
+
+        assert login_history(phone) == []
+      end)
+    end
+
+    test "a login still succeeds when its history write raises", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        with_mock(Contacts, [:passthrough],
+          capture_history: fn _contact, _event_type, _attrs -> raise "history write failed" end
+        ) do
+          response =
+            conn
+            |> post(
+              Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                "phone" => phone,
+                "otp" => code
+              })
+            )
+            |> json_response(200)
+
+          assert response["data"]["token"]
+        end
+
+        assert login_history(phone) == []
+      end)
+    end
+
+    test "a wrong code still returns 401 when looking up its contact raises", %{conn: conn} do
+      contact = Fixtures.contact_fixture(%{phone: unique_phone()})
+
+      with_web_channel_enabled(fn ->
+        OTP.generate_code(:web_channel, contact.phone)
+
+        with_mock(Contacts, [:passthrough],
+          fetch_by_identity: fn _channel, _identifier -> raise "lookup failed" end
+        ) do
+          conn
+          |> post(
+            Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+              "phone" => contact.phone,
+              "otp" => "000000"
+            })
+          )
+          |> json_response(401)
+        end
+
+        assert login_history(contact.phone) == []
       end)
     end
   end
