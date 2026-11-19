@@ -850,7 +850,10 @@ defmodule Glific.ThirdParty.Kaapi do
     Caches.fetch(organization_id, @guardrail_validators_cache_key, fn _key ->
       fetch_guardrail_validators(organization_id)
     end)
-    |> elem(1)
+    |> case do
+      {:error, error} -> {:error, error}
+      {_status, result} -> result
+    end
   end
 
   @spec fetch_guardrail_validators(non_neg_integer()) :: {:ignore, {:ok, map()} | {:error, any()}}
