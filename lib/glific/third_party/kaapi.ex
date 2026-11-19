@@ -14,6 +14,8 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @supported_google_tts_models ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]
   @default_google_tts_voice "en-in-csagent-9"
+  @guardrail_validators_cache_key :kaapi_guardrail_validators
+  @guardrail_validators_cache_ttl :timer.hours(1)
 
   # Update all Error struct data in this format
   defmodule Error do
@@ -845,14 +847,26 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec list_guardrail_validators(non_neg_integer()) :: {:ok, map()} | {:error, any()}
   def list_guardrail_validators(organization_id) do
+    Caches.fetch(organization_id, @guardrail_validators_cache_key, fn _key ->
+      fetch_guardrail_validators(organization_id)
+    end)
+    |> elem(1)
+  end
+
+  @spec fetch_guardrail_validators(non_neg_integer()) :: {:ignore, {:ok, map()} | {:error, any()}}
+  defp fetch_guardrail_validators(organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.list_guardrail_validators(secrets["api_key"]) do
-      {:ok, result}
+      Caches.set(organization_id, @guardrail_validators_cache_key, {:ok, result},
+        ttl: @guardrail_validators_cache_ttl
+      )
+
+      {:ignore, {:ok, result}}
     else
       {:error, reason} ->
         report_error("Kaapi guardrail validators fetch failed", organization_id, reason)
 
-        {:error, reason}
+        {:ignore, {:error, reason}}
     end
   end
 

@@ -1,9 +1,9 @@
-name: staging
+name: production
 variables:
   - name: base_url
-    value: https://api.staging.glific.com
+    value: https://api.shortcode.glific.com
   - name: api_url
-    value: https://api.staging.glific.com/api
+    value: https://api.shortcode.glific.com/api
   - secret: true
     name: phone
   - secret: true
