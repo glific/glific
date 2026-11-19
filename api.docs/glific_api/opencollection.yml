@@ -20,11 +20,19 @@ docs:
 
     ## Getting started
 
-    1. Pick an environment: `local` (`https://localhost:4001/api`) or `staging`.
-    2. Set `phone` and `password` in the environment.
-    3. Run **Authentication › Login**. It saves the access and renewal tokens into
+    Use the Bruno app (v4.3 or later) to run these requests. Click **Open in Bruno** at the
+    top of this page, or open `api.docs/glific_api` from the Glific repository. The web
+    playground can't run GraphQL requests.
+
+    1. Pick an environment: `local` (`https://localhost:4001/api`) or `production`.
+    2. In `production`, replace `shortcode` in `base_url` and `api_url` with your
+       organization's shortcode, then save. For example, the shortcode `myorg` gives
+       `https://api.myorg.glific.com` and `https://api.myorg.glific.com/api`. Bruno keeps
+       saved environment values, so you only need to do this once.
+    3. Set `phone` and `password` in the environment.
+    4. Run **Authentication › Login**. It saves the access and renewal tokens into
        `auth_token` and `renewal_token`.
-    4. Run any other request. The collection sends `authorization: {{auth_token}}` on every
+    5. Run any other request. The collection sends `authorization: {{auth_token}}` on every
        request whose auth is set to inherit.
 
     ## Endpoints
