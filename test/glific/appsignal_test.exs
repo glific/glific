@@ -216,4 +216,80 @@ defmodule Glific.AppsignalTest do
       end
     end
   end
+
+  describe "send_repo_pool_metrics/0" do
+    test "reports connections in use and waiting callers per repo, summed across pool sources" do
+      pool_size = Ecto.Adapter.lookup_meta(Glific.Repo).opts[:pool_size]
+      replica_pool_size = Ecto.Adapter.lookup_meta(Glific.RepoReplica).opts[:pool_size]
+
+      with_mocks([
+        {Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end},
+        {DBConnection, [:passthrough],
+         get_connection_metrics: fn _, _ ->
+           [
+             %{source: {:pool, self()}, ready_conn_count: 2, checkout_queue_length: 3},
+             %{source: {:proxy, self()}, ready_conn_count: 1, checkout_queue_length: 1}
+           ]
+         end}
+      ]) do
+        assert Appsignal.send_repo_pool_metrics() == :ok
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.in_use",
+                   pool_size - 3,
+                   %{repo: :repo}
+                 )
+               )
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.in_use",
+                   replica_pool_size - 3,
+                   %{repo: :repo_replica}
+                 )
+               )
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.checkout_queue_length",
+                   4,
+                   %{repo: :repo}
+                 )
+               )
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.checkout_queue_length",
+                   4,
+                   %{repo: :repo_replica}
+                 )
+               )
+      end
+    end
+
+    test "never reports a negative in_use count" do
+      with_mocks([
+        {Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end},
+        {DBConnection, [:passthrough],
+         get_connection_metrics: fn _, _ ->
+           [%{source: {:pool, self()}, ready_conn_count: 10_000, checkout_queue_length: 0}]
+         end}
+      ]) do
+        assert Appsignal.send_repo_pool_metrics() == :ok
+
+        assert called(Elixir.Appsignal.add_distribution_value("glific.repo.pool.in_use", 0, :_))
+      end
+    end
+
+    test "returns :ok without reporting when the pool cannot be reached" do
+      with_mocks([
+        {Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end},
+        {DBConnection, [:passthrough], get_connection_metrics: fn _, _ -> exit(:noproc) end}
+      ]) do
+        assert Appsignal.send_repo_pool_metrics() == :ok
+        refute called(Elixir.Appsignal.add_distribution_value(:_, :_, :_))
+      end
+    end
+  end
 end

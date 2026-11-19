@@ -186,6 +186,37 @@ defmodule Glific.Appsignal do
     end)
   end
 
+  @doc """
+  Sends DB connection pool usage (connections in use, callers waiting for one) to Appsignal
+  """
+  @spec send_repo_pool_metrics :: :ok
+  def send_repo_pool_metrics do
+    Enum.each([{Repo, :repo}, {Glific.RepoReplica, :repo_replica}], fn {repo, tag} ->
+      send_repo_pool_metrics(repo, tag)
+    end)
+  end
+
+  @spec send_repo_pool_metrics(module(), atom()) :: :ok
+  defp send_repo_pool_metrics(repo, tag) do
+    %{pid: pool, opts: opts} = Ecto.Adapter.lookup_meta(repo)
+    metrics = DBConnection.get_connection_metrics(pool, opts)
+    ready = metrics |> Enum.map(& &1.ready_conn_count) |> Enum.sum()
+    waiting = metrics |> Enum.map(& &1.checkout_queue_length) |> Enum.sum()
+    in_use = opts |> Keyword.get(:pool_size, 0) |> Kernel.-(ready) |> max(0)
+
+    # Distributions rather than gauges: a gauge keeps only the last sample of the minute,
+    # which would hide the short spikes this is meant to catch.
+    Appsignal.add_distribution_value("glific.repo.pool.in_use", in_use, %{repo: tag})
+
+    Appsignal.add_distribution_value("glific.repo.pool.checkout_queue_length", waiting, %{
+      repo: tag
+    })
+  catch
+    # telemetry_poller drops a measurement for good once it raises, so a repo that is
+    # restarting must not take the metric down with it.
+    _kind, _reason -> :ok
+  end
+
   @spec record_event(atom(), any(), any(), integer()) :: any()
   defp record_event(:job, measurement, meta, time) do
     metadata = %{"id" => meta.id, "queue" => meta.queue, "attempt" => meta.attempt}
