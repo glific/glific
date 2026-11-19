@@ -1,0 +1,72 @@
+info:
+  name: Update a certificate template
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateCertificateTemplate($id: ID!, $input: CertificateTemplateInput!) {
+        updateCertificateTemplate(id: $id, input: $input) {
+          certificateTemplate {
+            id
+            label
+            url
+            description
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "input": {
+          "label": "Course completion 2026",
+          "description": "Issued at the end of the 8-week course"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a certificate template. Only the fields given in `input` change. A new `url` is
+  checked against Google Slides in the same way as in **Create a certificate template**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                        | Required | Description                                                         |
+  | -------- | --------------------------- | -------- | ------------------------------------------------------------------- |
+  | `id`     | `ID!`                       | Yes      | The template to change.                                             |
+  | `input`  | `CertificateTemplateInput!` | Yes      | Fields to change. See **Create a certificate template** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateCertificateTemplate": {
+        "certificateTemplate": {
+          "id": "3",
+          "label": "Course completion 2026",
+          "url": "https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/edit#slide=id.p1",
+          "description": "Issued at the end of the 8-week course"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Certificates.CertificateTemplate", "message": "Resource not found" }]`.
+  - The same validation errors as **Create a certificate template**, such as
+    `{ "key": "url", "message": "Url: Template url not a valid Google Slides url" }`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

@@ -1,0 +1,94 @@
+info:
+  name: Add an identity to a contact
+  type: graphql
+  seq: 10
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation addContactIdentity($contactId: ID!, $channel: MessageChannelEnum!, $identifier: String!) {
+        addContactIdentity(contactId: $contactId, channel: $channel, identifier: $identifier) {
+          contact {
+            id
+            name
+            identities {
+              id
+              channel
+              identifier
+              insertedAt
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "contactId": "12",
+        "channel": "WEB",
+        "identifier": "ravi.kumar"
+      }
+  auth: inherit
+
+docs: |
+  Gives an existing contact a web username, so the person can log in to the web channel as
+  that contact. Only `WEB` identities can be added; a contact's `WHATSAPP` identity always
+  follows its phone. Adding a username the contact already has succeeds without change.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument     | Type                  | Required | Description                                                                   |
+  | ------------ | --------------------- | -------- | ----------------------------------------------------------------------------- |
+  | `contactId`  | `ID!`                 | Yes      | The contact.                                                                  |
+  | `channel`    | `MessageChannelEnum!` | Yes      | Must be `WEB`.                                                                |
+  | `identifier` | `String!`             | Yes      | Web username: letters, digits, `_`, `@` and `.`, 1 to 255 characters, stored lowercase. Unique in the organization. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "addContactIdentity": {
+        "contact": {
+          "id": "12",
+          "name": "Ravi Kumar",
+          "identities": [
+            {
+              "id": "40",
+              "channel": "WHATSAPP",
+              "identifier": "910000000002",
+              "insertedAt": "2026-10-02T06:15:00Z"
+            },
+            {
+              "id": "212",
+              "channel": "WEB",
+              "identifier": "ravi.kumar",
+              "insertedAt": "2026-11-16T09:30:00Z"
+            }
+          ]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - `channel` is `WHATSAPP`:
+    `{ "key": "channel", "message": "Channel: whatsapp identities follow the contact's phone" }`.
+  - Another contact holds the username:
+    `{ "key": "identifier", "message": "Identifier: has already been taken" }`.
+  - The username has other characters: `{ "key": "identifier", "message":
+    "Identifier: can only contain letters, numbers, underscores, @ and dots" }`.
+  - The web channel is off:
+    `{ "key": "Contact", "message": "Web channel is not enabled for this organization." }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

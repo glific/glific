@@ -1,0 +1,64 @@
+info:
+  name: Update tickets in bulk
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateBulkTicket($input: BulkTicketInput) {
+        updateBulkTicket(input: $input) {
+          success
+          message
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "updateIds": ["12", "13", "15"],
+          "status": "closed",
+          "userId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Sets the status and assignee of several tickets at once, such as closing a selection from
+  the ticket list.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description            |
+  | -------- | ----------------- | -------- | ---------------------- |
+  | `input`  | `BulkTicketInput` | No       | Tickets and new values. |
+
+  ### `BulkTicketInput`
+
+  | Field       | Type   | Required | Description                                  |
+  | ----------- | ------ | -------- | -------------------------------------------- |
+  | `updateIds` | `[ID]` | Yes      | Tickets to change. Unknown IDs are skipped.  |
+  | `status`    | `String` | No     | New status, such as `closed`.                |
+  | `userId`    | `ID`   | No       | User to assign the tickets to.               |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateBulkTicket": {
+        "success": true,
+        "message": "Updated successfully"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Always reports success: a ticket that fails to update (for example, an unknown `userId`) is
+  left unchanged without an error. A user without the manager role gets a top-level
+  `Unauthorized` error.

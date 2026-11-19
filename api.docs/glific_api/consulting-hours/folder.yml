@@ -1,0 +1,21 @@
+info:
+  name: Consulting hours
+  type: folder
+  seq: 57
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Consulting hours record the support calls the Glific team has with client
+    organizations: who took part, who from the Glific team ran the call, what was covered,
+    when, how long (in minutes), and whether the time is billable.
+
+    These are SaaS operator tools: every operation needs the `glific_admin` role and works
+    across organizations. The client organization is given as `clientId` on input and
+    filters, not taken from the logged-in user. Billable hours feed the consulting-hours line
+    of the organization's Stripe subscription.
+
+    Related: **Organizations**, **Billing**.
+  type: text/markdown

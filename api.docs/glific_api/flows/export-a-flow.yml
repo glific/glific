@@ -1,0 +1,96 @@
+info:
+  name: Export a flow
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query exportFlow($id: ID!) {
+        exportFlow(id: $id) {
+          exportData
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3"
+      }
+  auth: inherit
+
+docs: |
+  Exports a flow so it can be imported into another organization with **Import flows**. The
+  export includes every sub-flow the flow enters (recursively), the contact fields and
+  collections its nodes set, and the interactive message templates it sends. Each flow
+  carries its newest revision's definition (draft or published), keywords and channel.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The flow to export. |
+
+  ## Example response
+
+  `exportData` is a `Json` scalar, so it arrives as a JSON-encoded string. Decoded, it has
+  this shape (definition shortened):
+
+  ```json
+  {
+    "flows": [
+      {
+        "definition": {
+          "name": "Help Workflow",
+          "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+          "spec_version": "13.1.0",
+          "language": "base",
+          "type": "messaging",
+          "nodes": [],
+          "localization": {},
+          "_ui": {}
+        },
+        "keywords": ["help", "मदद"],
+        "channel": "whatsapp"
+      }
+    ],
+    "contact_field": ["name"],
+    "collections": ["Optin contacts"],
+    "interactive_templates": [
+      {
+        "source_id": 4,
+        "label": "Quick Reply Text",
+        "type": "quick_reply",
+        "interactive_content": {},
+        "translations": {},
+        "language_id": 1,
+        "send_with_title": true
+      }
+    ]
+  }
+  ```
+
+  The response itself:
+
+  ```json
+  {
+    "data": {
+      "exportFlow": {
+        "exportData": "{\"flows\":[{\"definition\":{...},\"keywords\":[\"help\",\"मदद\"],\"channel\":\"whatsapp\"}],\"contact_field\":[\"name\"],\"collections\":[\"Optin contacts\"],\"interactive_templates\":[...]}",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow, or a sub-flow it enters, does not exist in the organization: a top-level error
+    with the reason, such as `Flow doesn't exist, Name - Registration, UUID - 5b3f...`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

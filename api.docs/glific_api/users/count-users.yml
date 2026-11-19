@@ -1,0 +1,46 @@
+info:
+  name: Count users
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countUsers($filter: UserFilter) {
+        countUsers(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "NGO"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's users that match a filter. Use it with **List users** to build
+  pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type         | Required | Description                                                   |
+  | -------- | ------------ | -------- | ------------------------------------------------------------- |
+  | `filter` | `UserFilter` | No       | Same fields as in **List users**. Without it, counts all users. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countUsers": 4
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

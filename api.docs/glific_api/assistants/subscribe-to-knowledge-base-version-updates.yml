@@ -1,0 +1,58 @@
+info:
+  name: Subscribe to knowledge base version updates
+  type: graphql
+  seq: 16
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription knowledgeBaseVersionUpdated {
+        knowledgeBaseVersionUpdated {
+          id
+          knowledgeBaseId
+          versionNumber
+          status
+          size
+          insertedAt
+          updatedAt
+        }
+      }
+  auth: inherit
+
+docs: |
+  Pushes a knowledge base version each time one of the organization's versions reaches
+  `completed` or `failed`: when Kaapi's indexing callback for **Create a knowledge base
+  version** arrives, or when a version still indexing after an hour is marked `failed`.
+
+  **Role:** staff. Events are scoped to the user's organization.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `id` is the version (`knowledgeBaseVersionId` elsewhere) and `knowledgeBaseId` the
+  knowledge base (`vectorStore.id`). `size` is in bytes here.
+
+  ```json
+  {
+    "data": {
+      "knowledgeBaseVersionUpdated": {
+        "id": "13",
+        "knowledgeBaseId": "4",
+        "versionNumber": 3,
+        "status": "completed",
+        "size": 1266502,
+        "insertedAt": "2026-11-13T06:32:05Z",
+        "updatedAt": "2026-11-13T06:52:36Z"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets an `Unauthorized` error when subscribing.

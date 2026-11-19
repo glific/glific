@@ -1,0 +1,20 @@
+info:
+  name: User Groups
+  type: folder
+  seq: 5
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    User groups link staff users to collections (contact groups). A restricted user
+    (`isRestricted: true`) sees only the contacts and conversations of the groups they belong
+    to; for other users membership only affects assignment.
+
+    Add one user to one group, change a group's users, or change a user's groups. All three
+    need the manager role. **Users › Update a user** with `groupIds` is another way to set a
+    user's groups in one go.
+
+    See **Groups** for the groups themselves and **Users** for the users.
+  type: text/markdown

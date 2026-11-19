@@ -1,0 +1,62 @@
+info:
+  name: Delete a session template
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteSessionTemplate($id: ID!) {
+        deleteSessionTemplate(id: $id) {
+          sessionTemplate {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a template from Glific. For an HSM template, Glific also asks Gupshup, in the
+  background, to delete the template by its element name (`shortcode`); a failure there is
+  only logged.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The template to delete. |
+
+  ## Example response
+
+  The resolver does not wrap the deleted template, so `sessionTemplate` is always `null`; an
+  empty `errors` means the delete worked.
+
+  ```json
+  {
+    "data": {
+      "deleteSessionTemplate": {
+        "sessionTemplate": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.SessionTemplate", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,57 @@
+info:
+  name: Export a collection
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query exportCollection($id: ID!) {
+        exportCollection(id: $id) {
+          status
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "7"
+      }
+  auth: inherit
+
+docs: |
+  Returns the contacts in a collection as CSV text with a `Name,Phone` header, in `status`.
+
+  **Role:** staff. A restricted staff user can only export groups they belong to. Unlike the
+  contact queries, the export includes phone numbers for staff users too.
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description               |
+  | -------- | ----- | -------- | ------------------------- |
+  | `id`     | `ID!` | Yes      | The collection to export. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "exportCollection": {
+        "status": "Name,Phone\r\nRavi Kumar,910000000002\r\nAsha Patil,910000000003\r\n",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - A restricted staff user exports a group they don't belong to: `errors` is
+    `[{ "key": "Group", "message": "Group not found or permission denied." }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.
+
+  An unknown ID returns just the header row.

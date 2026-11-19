@@ -1,0 +1,88 @@
+info:
+  name: Import flows
+  type: graphql
+  seq: 12
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation importFlow($flow: Json) {
+        importFlow(flow: $flow) {
+          status {
+            flowName
+            status
+            assistantNodeUuids
+            invalidSheetNodeUuids
+          }
+        }
+      }
+    variables: |-
+      {
+        "flow": "{\"flows\":[{\"definition\":{\"name\":\"Import Workflow\",\"uuid\":\"0b6e8a55-3e62-4b0e-a2a7-5a3c7a4e6f10\",\"spec_version\":\"13.1.0\",\"language\":\"base\",\"type\":\"messaging\",\"nodes\":[],\"localization\":{},\"_ui\":{}},\"keywords\":[\"importdemo\"],\"channel\":\"whatsapp\"}],\"contact_field\":[],\"collections\":[],\"interactive_templates\":[]}"
+      }
+  auth: inherit
+
+docs: |
+  Imports the flows in an export made by **Export a flow**. Each flow is created with the
+  name, UUID, keywords and channel from the export, and its definition becomes the flow's
+  draft revision. Nothing is published: publish each flow after checking it.
+
+  While importing, Glific adapts the definitions to the organization:
+
+  - Interactive templates are matched by label, and created when missing; nodes are pointed
+    at the local template IDs.
+  - Collections used by "add to/remove from collection" nodes and listed in `collections` are
+    found by name or created. Contact fields in `contact_field` are created.
+  - A "send message" node using a WhatsApp template the organization doesn't have loses the
+    template, and its text becomes `Update this with template`.
+  - A "link Google Sheet" node is linked to the organization's sheet with the same URL, or a
+    new sheet is created. If that fails, the node is imported unlinked and listed in
+    `invalidSheetNodeUuids`.
+  - A webhook node that names an AI assistant has its `assistant_id` cleared and is listed in
+    `assistantNodeUuids`, because assistants don't carry over between organizations.
+
+  Node lists hold the last four characters of each node's UUID, the label the flow editor
+  shows.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type   | Required | Description                                                                 |
+  | -------- | ------ | -------- | --------------------------------------------------------------------------- |
+  | `flow`   | `Json` | Yes      | The `exportData` string from **Export a flow**: a JSON-encoded object with `flows`, `contact_field`, `collections` and `interactive_templates`. All four keys must be present. |
+
+  ## Example response
+
+  One status per flow in the export, in the same order:
+
+  ```json
+  {
+    "data": {
+      "importFlow": {
+        "status": [
+          {
+            "flowName": "Import Workflow",
+            "status": "Successfully imported",
+            "assistantNodeUuids": [],
+            "invalidSheetNodeUuids": []
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A flow that can't be created gets an error message as its `status`, and the import moves on
+  to the next flow:
+
+  - A flow with that name exists: `Sorry, the flow name already exists.`
+  - A keyword belongs to another flow: ``The keyword `importdemo` was already used in the `Demo` Flow.``
+  - Anything else, such as a flow with the same UUID: `Something went wrong`.
+
+  An export missing one of the four keys, or a `flow` value that isn't valid JSON, gives a
+  top-level error. A user without the manager role gets a top-level `Unauthorized` error.

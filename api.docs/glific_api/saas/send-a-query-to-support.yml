@@ -1,0 +1,55 @@
+info:
+  name: Send a query to support
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/onboard/reachout"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Asha Rao",
+        "email": "asha@sample-ngo.example.org",
+        "org_name": "Sample NGO",
+        "message": "We would like to know how to move our WhatsApp number to Glific."
+      }
+
+docs: |
+  Mails a question from the Glific website to the Glific operations team.
+
+  ## Request body
+
+  | Field      | Type   | Required | Description                     |
+  | ---------- | ------ | -------- | ------------------------------- |
+  | `name`     | String | Yes      | Sender's name, 1 to 100 characters. |
+  | `email`    | String | Yes      | Sender's email.                 |
+  | `message`  | String | Yes      | The question, 1 to 300 characters. |
+  | `org_name` | String | No       | Organization name, up to 250 characters. |
+
+  ## Example response
+
+  ```json
+  {
+    "is_valid": true,
+    "messages": {}
+  }
+  ```
+
+  ## Errors
+
+  Always `200`. An invalid field returns `is_valid: false` and no mail is sent:
+
+  ```json
+  {
+    "is_valid": false,
+    "messages": {
+      "email": "Email is not valid.",
+      "message": "Field cannot be more than 300 letters."
+    }
+  }
+  ```
+
+  If the mail itself fails to send, the error is logged and the response still has
+  `is_valid: true`.

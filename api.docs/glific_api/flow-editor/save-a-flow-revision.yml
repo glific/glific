@@ -1,0 +1,73 @@
+info:
+  name: Save a flow revision
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{base_url}}/flow-editor/revisions"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Help Workflow",
+        "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+        "spec_version": "13.1.0",
+        "language": "base",
+        "type": "messaging",
+        "revision": 13,
+        "expire_after_minutes": 10080,
+        "localization": {},
+        "nodes": [
+          {
+            "uuid": "3ea030e9-41c4-4c6c-8880-68bc2828d67b",
+            "actions": [
+              {
+                "uuid": "e319cd39-f764-4680-9199-4cb7da647166",
+                "type": "send_msg",
+                "text": "Thank you for reaching out.",
+                "quick_replies": []
+              }
+            ],
+            "exits": [{ "uuid": "a8311645-482e-4d35-b300-c92a9b18798b", "destination_uuid": null }]
+          }
+        ],
+        "_ui": {
+          "nodes": {
+            "3ea030e9-41c4-4c6c-8880-68bc2828d67b": {
+              "position": { "left": 0, "top": 0 },
+              "type": "execute_actions"
+            }
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Saves a flow definition as the flow's newest revision, which becomes its draft. The editor
+  calls it on every autosave. The draft cache is cleared so the simulator picks up the change.
+  Contacts keep running the published revision until the flow is published again (see
+  **Flows › Publish a flow**).
+
+  **Auth:** any logged-in user. The revision is recorded as made by the caller.
+
+  ## Request body
+
+  The complete flow definition as the editor produces it (spec version 13). Its `uuid` picks
+  the flow. Keep the `_ui` block: the first node is the top-left one in `_ui.nodes`.
+
+  ## Example response
+
+  `200`, with the new revision's ID:
+
+  ```json
+  {
+    "revision": 426
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.
+  - `500`: no flow with the definition's `uuid` in the organization, or the definition
+    can't be saved.

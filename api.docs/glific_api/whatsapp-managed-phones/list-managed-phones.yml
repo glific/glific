@@ -1,0 +1,85 @@
+info:
+  name: List managed phones
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waManagedPhones($filter: WaManagedPhoneFilter, $opts: Opts) {
+        waManagedPhones(filter: $filter, opts: $opts) {
+          id
+          label
+          phone
+          phoneId
+          status
+          lastStatusCheckedAt
+          insertedAt
+          contact {
+            id
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "phone": "91"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's managed phones, optionally filtered and paginated. Sorted by
+  `inserted_at` unless `opts.orderWith` says otherwise.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                    |
+  | -------- | ---------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `WaManagedPhoneFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`                 | No       | Sorting and pagination.                        |
+
+  ### `WaManagedPhoneFilter`
+
+  | Field   | Type     | Description                                  |
+  | ------- | -------- | -------------------------------------------- |
+  | `label` | `String` | Label contains this text (case-insensitive). |
+  | `phone` | `String` | Phone number contains this text.             |
+
+  `phoneId` is the phone's ID in Maytapi. `label` is its name in Maytapi.
+  `lastStatusCheckedAt` is when Glific last updated `status`.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waManagedPhones": [
+        {
+          "id": "1",
+          "label": "Field team phone",
+          "phone": "910000000001",
+          "phoneId": 48213,
+          "status": "active",
+          "lastStatusCheckedAt": "2026-11-16T07:55:02Z",
+          "insertedAt": "2026-08-03T10:20:11Z",
+          "contact": { "id": "1", "name": "NGO Main Account" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

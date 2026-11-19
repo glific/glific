@@ -611,19 +611,20 @@ defmodule Glific.ThirdParty.Kaapi do
     }
   end
 
-  # The model and voice defaults are Google ids; any other provider rejects them.
-  @spec tts_model(String.t(), String.t() | nil) :: String.t() | nil
+  # The model and voice defaults are Google ids; any other provider rejects them, so it gets
+  # its own override or an empty string.
+  @spec tts_model(String.t(), String.t() | nil) :: String.t()
   defp tts_model("google", model) when model in @supported_google_tts_models, do: model
   defp tts_model("google", _model), do: model_config(:tts_model)
-  defp tts_model(_provider, model), do: model
+  defp tts_model(_provider, model), do: model || ""
 
-  @spec tts_voice(String.t(), String.t() | nil) :: String.t() | nil
-  defp tts_voice("google", nil), do: @default_google_tts_voice
-  defp tts_voice(_provider, voice), do: voice
+  @spec tts_voice(String.t(), String.t() | nil) :: String.t()
+  defp tts_voice("google", voice) when voice in [nil, ""], do: @default_google_tts_voice
+  defp tts_voice(_provider, voice), do: voice || ""
 
   @spec tts_payload(String.t(), String.t(), map(), map()) :: map()
   defp tts_payload(text, callback_url, request_metadata, opts) do
-    provider = opts[:provider] || "google"
+    provider = tts_provider(opts[:provider])
 
     %{
       query: %{input: text},
@@ -645,6 +646,10 @@ defmodule Glific.ThirdParty.Kaapi do
       request_metadata: request_metadata
     }
   end
+
+  @spec tts_provider(String.t() | nil) :: String.t()
+  defp tts_provider("google-native"), do: "google"
+  defp tts_provider(provider), do: provider || "google"
 
   @doc """
   Upload a document to Kaapi documents API, send error to Appsignal if failed.

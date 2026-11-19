@@ -1,0 +1,77 @@
+info:
+  name: Update a user's groups
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateUserGroups($input: UserGroupsInput!) {
+        updateUserGroups(input: $input) {
+          numberDeleted
+          userGroups {
+            id
+            user {
+              id
+            }
+            group {
+              id
+              label
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "userId": "2",
+          "addGroupIds": ["1"],
+          "deleteGroupIds": ["2"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds a user to some groups and removes them from others, in one call.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description          |
+  | -------- | ------------------ | -------- | -------------------- |
+  | `input`  | `UserGroupsInput!` | Yes      | The changes to make. |
+
+  ### `UserGroupsInput`
+
+  | Field            | Type    | Required | Description                                    |
+  | ---------------- | ------- | -------- | ---------------------------------------------- |
+  | `userId`         | `ID!`   | Yes      | The user.                                      |
+  | `addGroupIds`    | `[ID]!` | Yes      | Groups to add. Send `[]` to add none.          |
+  | `deleteGroupIds` | `[ID]!` | Yes      | Groups to remove. Send `[]` to remove none.    |
+
+  ## Example response
+
+  `userGroups` lists only the memberships this call created; `numberDeleted` counts those it
+  removed.
+
+  ```json
+  {
+    "data": {
+      "updateUserGroups": {
+        "numberDeleted": 1,
+        "userGroups": [
+          { "id": "10", "user": { "id": "2" }, "group": { "id": "1", "label": "Default Group" } }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  None in the result: a group the user is already in, or that does not exist, is skipped and
+  left out of `userGroups`. A user without the manager role gets a top-level `Unauthorized`
+  error.

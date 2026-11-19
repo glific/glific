@@ -1,0 +1,62 @@
+info:
+  name: Get a knowledge base file
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query getFile($fileId: String!) {
+        getFile(fileId: $fileId) {
+          fileId
+          filename
+          signedUrl
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "fileId": "b7e1c3a2-4d5f-4e6a-8b9c-0d1e2f3a4b5c"
+      }
+  auth: inherit
+
+docs: |
+  Returns a knowledge base file's name and a signed URL to download it, fetched from Kaapi.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type      | Required | Description                                                  |
+  | -------- | --------- | -------- | ------------------------------------------------------------ |
+  | `fileId` | `String!` | Yes      | The file's Kaapi ID, as in `vectorStore.files[].id`.         |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "getFile": {
+        "fileId": "b7e1c3a2-4d5f-4e6a-8b9c-0d1e2f3a4b5c",
+        "filename": "prenatal_care.pdf",
+        "signedUrl": "https://kaapi-documents.s3.amazonaws.com/b7e1c3a2/prenatal_care.pdf?X-Amz-Expires=3600&X-Amz-Signature=5d1f0c",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in the top-level `errors` array, with `getFile` set to `null`:
+
+  - The file belongs to a legacy knowledge base (`legacy: true`):
+    `This file belongs to a legacy knowledge base created before the knowledge base rewrite and cannot be downloaded`.
+  - Kaapi rejects the request: `File download failed (status <code>): <Kaapi's message>`.
+  - The organization has no Kaapi credential: `Kaapi is not active`.
+  - A user without the manager role gets `Unauthorized`.

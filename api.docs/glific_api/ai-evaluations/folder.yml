@@ -1,0 +1,39 @@
+info:
+  name: AI Evaluations
+  type: folder
+  seq: 82
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    AI evaluations measure how well an assistant's config version answers a set of known
+    questions. The runs happen on Kaapi.
+
+    Key concepts:
+
+    - **Golden QA**: a CSV of up to 100 `question`,`answer` pairs, uploaded to Kaapi as a
+      dataset. `duplicationFactor` (1 to 5) repeats each question to average out variation.
+    - **AI evaluation**: one run of a golden QA against one config version. Its `status` is
+      `CREATE_IN_PROGRESS`, `PROCESSING`, `COMPLETED` or `FAILED`; `results` holds the
+      summary scores, the overall score and verdict, and latency once it completes.
+
+    Two operations are asynchronous and finish through a Kaapi callback:
+
+    - **Create an AI evaluation** returns at once, usually with `PROCESSING`. When Kaapi
+      calls Glific back, Glific fetches the scores, saves them, and
+      **Subscribe to AI evaluation updates** pushes the evaluation with `COMPLETED` or
+      `FAILED`. A notification is created on completion, and if the version is live, the
+      assistant's `lastEvaluationSummary` is updated.
+    - **Improve an evaluation's prompt** returns `pending`. Kaapi writes an improved prompt
+      from the evaluation and calls Glific back; Glific saves it as a new `ready` config
+      version of the assistant, and **Subscribe to improve-prompt updates** pushes it (or
+      the failure).
+
+    Everything here needs the staff role and an active Kaapi credential for the calls that
+    reach Kaapi.
+
+    Related folders: **Assistants** (config versions to evaluate: see **List ready config
+    versions**, and **Set an assistant's live version** to publish an improved version).
+  type: text/markdown

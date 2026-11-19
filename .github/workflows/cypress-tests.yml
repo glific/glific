@@ -156,7 +156,7 @@ jobs:
         run: |
           cd glific-frontend
           yarn run cypress run \
-            --config '{"excludeSpecPattern":["cypress/e2e/filesearch/Filesearch.spec.ts","cypress/e2e/smoke.spec.ts"]}' \
+            --config '{"excludeSpecPattern":["cypress/e2e/aiAssistant/AssistantEndToEnd.spec.ts","cypress/e2e/smoke.spec.ts"]}' \
             --record \
             --key ${{ secrets.CYPRESS_DASHBOARD_KEY }}
         env:

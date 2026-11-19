@@ -1,0 +1,91 @@
+info:
+  name: Get daily app usage
+  type: graphql
+  seq: 18
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query dailyAppUsage($fromDate: Date!, $toDate: Date!) {
+        dailyAppUsage(fromDate: $fromDate, toDate: $toDate) {
+          date
+          incomingMsg
+          outgoingMsg
+          outgoingMediaMsg
+          templateMsg
+          templateMediaMsg
+          totalMsg
+          marketing
+          service
+          utility
+          fep
+          ftc
+          gupshupCap
+          gupshupFees
+          whatsappFees
+          totalFees
+          discount
+          cumulativeBill
+        }
+      }
+    variables: |-
+      {
+        "fromDate": "2026-11-01",
+        "toDate": "2026-11-02"
+      }
+  auth: inherit
+
+docs: |
+  Fetches the organization's day-by-day message counts and fees for its WhatsApp app from the
+  Gupshup Partner API. Each call makes a request to Gupshup.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument   | Type    | Required | Description              |
+  | ---------- | ------- | -------- | ------------------------ |
+  | `fromDate` | `Date!` | Yes      | First day, `YYYY-MM-DD`. |
+  | `toDate`   | `Date!` | Yes      | Last day, `YYYY-MM-DD`.  |
+
+  ## Example response
+
+  `fep` and `ftc` are Gupshup's free-entry-point and free-tier conversation counts. Fees are in
+  USD.
+
+  ```json
+  {
+    "data": {
+      "dailyAppUsage": [
+        {
+          "date": "2026-11-01",
+          "incomingMsg": 120,
+          "outgoingMsg": 310,
+          "outgoingMediaMsg": 12,
+          "templateMsg": 85,
+          "templateMediaMsg": 4,
+          "totalMsg": 430,
+          "marketing": 20,
+          "service": 34,
+          "utility": 61,
+          "fep": 0,
+          "ftc": 0,
+          "gupshupCap": 0.0,
+          "gupshupFees": 0.43,
+          "whatsappFees": 2.81,
+          "totalFees": 3.24,
+          "discount": 0.0,
+          "cumulativeBill": 3.24
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Gupshup returns an error or the organization has no Gupshup app: top-level error
+    `Error fetching daily app usage list`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

@@ -1,0 +1,24 @@
+info:
+  name: Users
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Users are the staff who log in to Glific. Each user is linked to the WhatsApp contact with
+    the same phone, and new users are created through **Authentication › Register a user**, not
+    through GraphQL.
+
+    A user's `roles` decide what they can call: `Glific_admin`, `Admin`, `Manager`, `Staff` or
+    `No access` (see the collection docs for the ordering). Organizations with roles and
+    permissions enabled can also attach custom **Roles** (`accessRoles`), which control which
+    flows, groups and triggers the user can see. A restricted user (`isRestricted`) sees only
+    contacts in the groups they belong to; see **User Groups**.
+
+    Reading users needs the staff role; changing or deleting them needs the manager role, and a
+    user can never change someone with a higher role or grant a role above their own. Changing
+    a user's roles or restriction logs them out everywhere.
+  type: text/markdown

@@ -1,0 +1,71 @@
+info:
+  name: List flow labels
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query flowLabels($filter: FlowLabelFilter, $opts: Opts) {
+        flowLabels(filter: $filter, opts: $opts) {
+          id
+          uuid
+          name
+          insertedAt
+          updatedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "follow"
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's flow labels, optionally filtered and paginated.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description                                   |
+  | -------- | ----------------- | -------- | --------------------------------------------- |
+  | `filter` | `FlowLabelFilter` | No       | Narrows the list.                             |
+  | `opts`   | `Opts`            | No       | Sorting and pagination. Sorts on `inserted_at` by default. |
+
+  ### `FlowLabelFilter`
+
+  | Field  | Type     | Description                                  |
+  | ------ | -------- | -------------------------------------------- |
+  | `name` | `String` | Name contains this text (case-insensitive).  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "flowLabels": [
+        {
+          "id": "7",
+          "uuid": "c7d0f4b2-3a1e-4f7a-9a43-61f4e5c2b8d1",
+          "name": "Needs follow-up",
+          "insertedAt": "2026-11-03T10:15:00Z",
+          "updatedAt": "2026-11-03T10:15:00Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.
