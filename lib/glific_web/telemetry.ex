@@ -12,13 +12,10 @@ defmodule GlificWeb.Telemetry do
   def init(_arg) do
     children = [
       {:telemetry_poller, measurements: periodic_measurements(), period: 60_000},
-      Supervisor.child_spec(
-        {:telemetry_poller,
-         name: :glific_repo_pool_poller,
-         measurements: [{Glific.Appsignal, :send_repo_pool_metrics, []}],
-         period: 10_000},
-        id: :glific_repo_pool_poller
-      )
+      {:telemetry_poller,
+       name: :glific_repo_pool_poller,
+       measurements: [{Glific.Appsignal, :send_repo_pool_metrics, []}],
+       period: 10_000}
       # Add reporters as children of your supervision tree.
       # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
     ]
