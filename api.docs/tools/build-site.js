@@ -29,7 +29,7 @@ execFileSync(
     'docs',
     'generate',
     '--envs',
-    'staging',
+    'production',
     '--exclude-tags',
     INTERNAL_TAG,
     '--output',
