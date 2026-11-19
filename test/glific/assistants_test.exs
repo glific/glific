@@ -1459,6 +1459,79 @@ defmodule Glific.AssistantsTest do
       assert temperature == 1
     end
 
+    test "defaults input guardrails to pii_remover when none are given",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["input_guardrails"] == [%{"type" => "pii_remover"}]
+          assert decoded_body["config_blob"]["output_guardrails"] == []
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_uuid_default_pii", version: %{version: 1}}}
+          }
+      end)
+
+      assert {:ok, %{config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Default PII Assistant",
+                 organization_id: organization_id
+               })
+
+      assert config_version.input_guardrails == [%{"type" => "pii_remover"}]
+      assert config_version.output_guardrails == []
+    end
+
+    test "keeps an explicit empty input guardrail list",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          assert Jason.decode!(body)["config_blob"]["input_guardrails"] == []
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_uuid_no_pii", version: %{version: 1}}}
+          }
+      end)
+
+      assert {:ok, %{config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "No Guardrail Assistant",
+                 input_guardrails: [],
+                 organization_id: organization_id
+               })
+
+      assert config_version.input_guardrails == []
+    end
+
+    test "keeps explicit input guardrails without adding pii_remover",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_uuid_custom_guardrail", version: %{version: 1}}}
+          }
+      end)
+
+      assert {:ok, %{config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Content Safety Assistant",
+                 input_guardrails: [%{"type" => "content_safety"}],
+                 organization_id: organization_id
+               })
+
+      assert config_version.input_guardrails == [%{"type" => "content_safety"}]
+    end
+
     test "persists reasoning-model settings without a temperature",
          %{organization_id: organization_id} do
       {:ok, kb} =
