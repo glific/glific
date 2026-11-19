@@ -224,7 +224,7 @@ defmodule Glific.AI.Agent do
 
     results =
       numbered
-      |> Task.async_stream(
+      |> Glific.Task.Supervisor.async_stream(
         fn {call, _index} -> run_tool(user, call, modules) end,
         max_concurrency: max(length(running), 1),
         timeout: limits()[:max_run_duration_ms],

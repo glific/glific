@@ -6,6 +6,8 @@ defmodule Glific.Appsignal do
   @tracer Appsignal.Tracer
   @span Appsignal.Span
 
+  require Logger
+
   alias Glific.Repo
 
   @doc """
@@ -132,20 +134,34 @@ defmodule Glific.Appsignal do
     maybe_track_db_connection_error(repo, meta[:result])
   end
 
+  def handle_event([:oban, :job, :start], _measurement, %{args: args}, _) do
+    case job_organization_id(args) do
+      nil -> :ok
+      org_id -> Logger.metadata(org_id: org_id)
+    end
+  end
+
   def handle_event(_, _, _, _), do: nil
 
+  @doc "Returns the organization id carried in Oban job args, or nil."
+  @spec job_organization_id(map() | nil) :: non_neg_integer() | String.t() | nil
+  def job_organization_id(%{"organization_id" => org_id}) when not is_nil(org_id), do: org_id
+
+  def job_organization_id(%{"message" => %{"organization_id" => org_id}}) when not is_nil(org_id),
+    do: org_id
+
+  def job_organization_id(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
+    do: org_id
+
+  def job_organization_id(_args), do: nil
+
   @spec organization_id_tag(map() | nil) :: String.t()
-  defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
-    do: to_string(org_id)
-
-  defp organization_id_tag(%{"message" => %{"organization_id" => org_id}})
-       when not is_nil(org_id),
-       do: to_string(org_id)
-
-  defp organization_id_tag(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
-    do: to_string(org_id)
-
-  defp organization_id_tag(_), do: "unknown"
+  defp organization_id_tag(args) do
+    case job_organization_id(args) do
+      nil -> "unknown"
+      org_id -> to_string(org_id)
+    end
+  end
 
   @doc """
   Sends oban queue size metric to Appsignal

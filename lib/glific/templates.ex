@@ -424,7 +424,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def delete_session_template(%SessionTemplate{} = session_template) do
     if session_template.is_hsm do
-      Task.Supervisor.async_nolink(Glific.TaskSupervisor, fn ->
+      Glific.Task.Supervisor.async_nolink(fn ->
         org_id = session_template.organization_id
         bsp_module = Provider.bsp_module(org_id, :template)
         bsp_module.delete(org_id, Map.from_struct(session_template))

@@ -45,7 +45,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
     {texts, errors} =
       strings
       |> Translate.check_large_strings(opts)
-      |> Task.async_stream(fn text -> do_translate(text, languages, org_id) end,
+      |> Glific.Task.Supervisor.async_stream(&do_translate(&1, languages, org_id),
         timeout: 300_000,
         on_timeout: :kill_task
       )
