@@ -4,7 +4,7 @@ defmodule Glific.ErrorLogCounterTest do
   import ExUnit.CaptureLog
   import Mock
 
-  alias Glific.{ErrorLogCounter, LogContext}
+  alias Glific.ErrorLogCounter
 
   setup do
     level = Logger.level()
@@ -51,10 +51,7 @@ defmodule Glific.ErrorLogCounterTest do
     with_mock Appsignal, [:passthrough], increment_counter: fn _, _, _ -> :ok end do
       capture_log(fn ->
         {:ok, pid} =
-          Task.Supervisor.start_child(
-            Glific.TaskSupervisor,
-            LogContext.wrap(fn -> raise "flow processing failed" end)
-          )
+          Glific.Task.Supervisor.start_child(fn -> raise "flow processing failed" end)
 
         ref = Process.monitor(pid)
         assert_receive {:DOWN, ^ref, :process, ^pid, _reason}, 1_000

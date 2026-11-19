@@ -110,7 +110,7 @@ defmodule Glific.Application do
     :telemetry.attach(
       "oban-job-log-context",
       [:oban, :job, :start],
-      &Glific.LogContext.handle_event/4,
+      &Glific.Appsignal.handle_event/4,
       []
     )
 

@@ -1171,13 +1171,13 @@ defmodule Glific.TemplatesTest do
       end
     end
 
-    test "delete_session_template/1 deletes an HSM at the BSP within the organization's context",
+    test "delete_session_template/1 deletes an HSM at the BSP with the caller's org_id metadata",
          attrs do
       session_template = %{session_template_fixture(attrs) | is_hsm: true}
 
       with_mock Glific.Providers.Gupshup.Template, [:passthrough],
         delete: fn organization_id, _attrs ->
-          {:ok, Repo.get_organization_id() == organization_id}
+          {:ok, Logger.metadata()[:org_id] == organization_id}
         end do
         assert {:ok, %SessionTemplate{}} = Templates.delete_session_template(session_template)
         assert_receive {_ref, {:ok, true}}, 1_000
