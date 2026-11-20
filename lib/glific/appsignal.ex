@@ -21,6 +21,7 @@ defmodule Glific.Appsignal do
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
 
+    record_inbound_hold_time(meta)
     @tracer.close_span(span, end_time: time)
   end
 
@@ -51,6 +52,8 @@ defmodule Glific.Appsignal do
         tags
       )
     end
+
+    record_inbound_hold_time(meta)
   end
 
   def handle_event([:tesla, :request, :stop], measurement, meta, _) do
@@ -134,6 +137,27 @@ defmodule Glific.Appsignal do
 
   def handle_event(_, _, _, _), do: nil
 
+  # Oban Pro emits no telemetry event for chain holds, so the hold time is derived here. A
+  # chained inbound job is parked with a far-future scheduled_at, and its release resets
+  # scheduled_at to now, so the hold never shows up in queue_time. Inbound jobs are never
+  # scheduled ahead, so scheduled_at - inserted_at is exactly the time spent held.
+  @spec record_inbound_hold_time(map()) :: :ok
+  defp record_inbound_hold_time(%{queue: "gupshup_inbound", job: %Oban.Job{} = job}) do
+    hold_ms = DateTime.diff(job.scheduled_at, job.inserted_at, :millisecond)
+
+    if hold_ms > 0,
+      do:
+        Appsignal.add_distribution_value(
+          "inbound_job_hold_time",
+          Float.ceil(hold_ms / 1_000, 2),
+          %{organization_id: organization_id_tag(job.args)}
+        )
+
+    :ok
+  end
+
+  defp record_inbound_hold_time(_meta), do: :ok
+
   @spec organization_id_tag(map() | nil) :: String.t()
   defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
     do: to_string(org_id)
@@ -160,6 +184,37 @@ defmodule Glific.Appsignal do
         organization_id: organization_id || "unknown"
       })
     end)
+  end
+
+  @doc """
+  Sends DB connection pool usage (connections in use, callers waiting for one) to Appsignal
+  """
+  @spec send_repo_pool_metrics :: :ok
+  def send_repo_pool_metrics do
+    Enum.each([{Repo, :repo}, {Glific.RepoReplica, :repo_replica}], fn {repo, tag} ->
+      send_repo_pool_metrics(repo, tag)
+    end)
+  end
+
+  @spec send_repo_pool_metrics(module(), atom()) :: :ok
+  defp send_repo_pool_metrics(repo, tag) do
+    %{pid: pool, opts: opts} = Ecto.Adapter.lookup_meta(repo)
+    metrics = DBConnection.get_connection_metrics(pool, opts)
+    ready = metrics |> Enum.map(& &1.ready_conn_count) |> Enum.sum()
+    waiting = metrics |> Enum.map(& &1.checkout_queue_length) |> Enum.sum()
+    in_use = opts |> Keyword.get(:pool_size, 0) |> Kernel.-(ready) |> max(0)
+
+    # Distributions rather than gauges: a gauge keeps only the last sample of the minute,
+    # which would hide the short spikes this is meant to catch.
+    Appsignal.add_distribution_value("glific.repo.pool.in_use", in_use, %{repo: tag})
+
+    Appsignal.add_distribution_value("glific.repo.pool.checkout_queue_length", waiting, %{
+      repo: tag
+    })
+  catch
+    # telemetry_poller drops a measurement for good once it raises, so a repo that is
+    # restarting must not take the metric down with it.
+    _kind, _reason -> :ok
   end
 
   @spec record_event(atom(), any(), any(), integer()) :: any()
