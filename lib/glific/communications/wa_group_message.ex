@@ -14,7 +14,9 @@ defmodule Glific.Communications.GroupMessage do
     Groups.WAGroupPhone,
     Groups.WAGroups,
     Messages,
+    Providers.Maytapi.Instrumentation,
     Repo,
+    WAGroup.PendingReactionWorker,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
     WAManagedPhones,
@@ -188,11 +190,53 @@ defmodule Glific.Communications.GroupMessage do
   @doc """
   Callback to update the provider status for a message
   """
-  @spec update_bsp_status(String.t(), atom(), non_neg_integer()) :: any()
-  def update_bsp_status(bsp_message_id, bsp_status, org_id) do
+  @spec update_bsp_status(String.t(), atom(), non_neg_integer(), String.t() | nil) :: any()
+  def update_bsp_status(bsp_message_id, bsp_status, org_id, whatsapp_id \\ nil) do
+    updates =
+      [bsp_status: bsp_status, updated_at: DateTime.utc_now()]
+      |> put_whatsapp_key_id(WAMessage.whatsapp_key_id(whatsapp_id))
+
     WAMessage
     |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
-    |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+    |> Repo.update_all(set: updates)
+  end
+
+  @spec put_whatsapp_key_id(keyword(), String.t() | nil) :: keyword()
+  defp put_whatsapp_key_id(updates, nil), do: updates
+  defp put_whatsapp_key_id(updates, key_id), do: Keyword.put(updates, :whatsapp_key_id, key_id)
+
+  @doc """
+  Fetches the group message a Maytapi event refers to by its WhatsApp message id
+  """
+  @spec fetch_by_whatsapp_id(String.t() | nil, non_neg_integer()) ::
+          {:ok, WAMessage.t()} | {:error, :not_found}
+  def fetch_by_whatsapp_id(whatsapp_id, org_id) when is_binary(whatsapp_id) do
+    WAMessage
+    |> where([wa_msg], wa_msg.organization_id == ^org_id)
+    |> match_whatsapp_id(whatsapp_id, WAMessage.whatsapp_key_id(whatsapp_id))
+    |> order_by([wa_msg], desc: wa_msg.id)
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, :not_found}
+      wa_message -> {:ok, wa_message}
+    end
+  end
+
+  def fetch_by_whatsapp_id(_whatsapp_id, _org_id), do: {:error, :not_found}
+
+  # The participant part of a WhatsApp id can switch between @c.us and @lid, so
+  # match on the key id; the bsp_id match covers rows stored before key ids existed.
+  @spec match_whatsapp_id(Ecto.Query.t(), String.t(), String.t() | nil) :: Ecto.Query.t()
+  defp match_whatsapp_id(query, whatsapp_id, nil),
+    do: where(query, [wa_msg], wa_msg.bsp_id == ^whatsapp_id)
+
+  defp match_whatsapp_id(query, whatsapp_id, key_id) do
+    where(
+      query,
+      [wa_msg],
+      wa_msg.whatsapp_key_id == ^key_id or wa_msg.bsp_id == ^whatsapp_id
+    )
   end
 
   @doc """
@@ -376,51 +420,78 @@ defmodule Glific.Communications.GroupMessage do
   @doc """
   handler for receiving the reaction message
   """
-  @spec receive_reaction_msg(map(), non_neg_integer()) :: any()
+  @spec receive_reaction_msg(map(), non_neg_integer()) ::
+          {:ok, WaReaction.t()} | {:error, Ecto.Changeset.t() | atom()}
   def receive_reaction_msg(params, org_id) do
-    contact = Map.get(params, "reactorId")
-    reaction = Map.get(params, "reaction")
-    msg_id = Map.get(params, "msgId")
-    bsp_msg_id = Map.get(params, "reactionId")
-    # splitting because we are getting the contact number like 919xxxx22555@c.us this
-    [phone | _] = String.split(contact, "@")
+    case save_reaction(params, org_id) do
+      {:ok, _reaction} = result ->
+        result
 
-    context_message =
-      WAMessage
-      |> where(
-        [wa_msg],
-        wa_msg.bsp_id == ^msg_id and
-          wa_msg.organization_id == ^org_id
-      )
-      |> Repo.one!()
+      # A reaction to a message Glific sent can arrive before the delivery ack that
+      # stores the message's WhatsApp key id, so the lookup is retried later.
+      {:error, :not_found} = error ->
+        PendingReactionWorker.enqueue(params, org_id)
+        error
 
-    contact_attrs = %{
-      phone: phone,
-      contact_type: "WA",
-      organization_id: org_id
-    }
+      {:error, reason} = error ->
+        skip_reaction(reason, org_id)
+        error
+    end
+  end
 
-    {:ok, contact} =
-      Contacts.maybe_create_contact(contact_attrs)
-
-    {:ok, _contact_wa_group} =
-      ContactWAGroups.create_contact_wa_group(%{
-        contact_id: contact.id,
-        wa_group_id: context_message.wa_group_id,
-        organization_id: org_id
-      })
-
-    attrs =
-      %{
-        reaction: reaction,
+  @doc """
+  Saves a reaction against the group message it refers to
+  """
+  @spec save_reaction(map(), non_neg_integer()) ::
+          {:ok, WaReaction.t()} | {:error, Ecto.Changeset.t() | atom()}
+  def save_reaction(params, org_id) do
+    with {:ok, phone} <- reactor_phone(params["reactorId"]),
+         {:ok, context_message} <- fetch_by_whatsapp_id(params["msgId"], org_id),
+         {:ok, contact} <-
+           Contacts.maybe_create_contact(%{
+             phone: phone,
+             contact_type: "WA",
+             organization_id: org_id
+           }),
+         {:ok, _contact_wa_group} <-
+           ContactWAGroups.create_contact_wa_group(%{
+             contact_id: contact.id,
+             wa_group_id: context_message.wa_group_id,
+             organization_id: org_id
+           }) do
+      WaReaction.create_wa_reaction(%{
+        reaction: params["reaction"],
         wa_message_id: context_message.id,
         contact_id: contact.id,
-        bsp_id: bsp_msg_id,
+        bsp_id: params["reactionId"],
         organization_id: org_id
-      }
-
-    WaReaction.create_wa_reaction(attrs)
+      })
+    end
   end
+
+  @doc """
+  Records a reaction that could not be saved
+  """
+  @spec skip_reaction(any(), non_neg_integer()) :: :ok
+  def skip_reaction(reason, org_id) do
+    Instrumentation.track_action("receive_reaction", :failure, org_id)
+
+    Logger.info(
+      "Skipping Maytapi reaction for org #{org_id}: #{Glific.SafeLog.safe_inspect(reason)}"
+    )
+  end
+
+  # reactorId arrives as "<phone>@c.us" in ack events and as a bare phone in message events
+  @spec reactor_phone(String.t() | nil) :: {:ok, String.t()} | {:error, :unresolved_reactor}
+  defp reactor_phone(reactor_id) when is_binary(reactor_id) do
+    case String.split(reactor_id, "@") do
+      [phone, domain] when phone != "" and domain != "lid" -> {:ok, phone}
+      [phone] when phone != "" -> {:ok, phone}
+      _ -> {:error, :unresolved_reactor}
+    end
+  end
+
+  defp reactor_phone(_reactor_id), do: {:error, :unresolved_reactor}
 
   @doc """
   Callback to update the poll response for a message

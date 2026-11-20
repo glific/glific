@@ -250,6 +250,21 @@ defmodule Glific.Providers.Maytapi.Message do
     }
   end
 
+  @doc """
+  Maps a message-format reaction event onto the fields of the legacy ack reaction event
+  """
+  @spec receive_reaction(map()) :: map()
+  def receive_reaction(params) do
+    payload = params["message"]
+
+    %{
+      "reactorId" => resolve_sender_phone(params),
+      "reaction" => payload["reaction"],
+      "msgId" => payload["parentMsgId"],
+      "reactionId" => payload["id"]
+    }
+  end
+
   # Maytapi delivers a blank `user.phone` for participants in privacy-enabled
   # (LID) WhatsApp groups. When the participant is a regular `@c.us` user the
   # real number is still present as the trailing segment of the message id, so
