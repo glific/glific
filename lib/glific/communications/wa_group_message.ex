@@ -16,6 +16,7 @@ defmodule Glific.Communications.GroupMessage do
     Messages,
     Providers.Maytapi.Instrumentation,
     Repo,
+    WAGroup.PendingReactionWorker,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
     WAManagedPhones,
@@ -422,6 +423,28 @@ defmodule Glific.Communications.GroupMessage do
   @spec receive_reaction_msg(map(), non_neg_integer()) ::
           {:ok, WaReaction.t()} | {:error, Ecto.Changeset.t() | atom()}
   def receive_reaction_msg(params, org_id) do
+    case save_reaction(params, org_id) do
+      {:ok, _reaction} = result ->
+        result
+
+      # A reaction to a message Glific sent can arrive before the delivery ack that
+      # stores the message's WhatsApp key id, so the lookup is retried later.
+      {:error, :not_found} = error ->
+        PendingReactionWorker.enqueue(params, org_id)
+        error
+
+      {:error, reason} = error ->
+        skip_reaction(reason, org_id)
+        error
+    end
+  end
+
+  @doc """
+  Saves a reaction against the group message it refers to
+  """
+  @spec save_reaction(map(), non_neg_integer()) ::
+          {:ok, WaReaction.t()} | {:error, Ecto.Changeset.t() | atom()}
+  def save_reaction(params, org_id) do
     with {:ok, phone} <- reactor_phone(params["reactorId"]),
          {:ok, context_message} <- fetch_by_whatsapp_id(params["msgId"], org_id),
          {:ok, contact} <-
@@ -443,16 +466,19 @@ defmodule Glific.Communications.GroupMessage do
         bsp_id: params["reactionId"],
         organization_id: org_id
       })
-    else
-      {:error, reason} = error ->
-        Instrumentation.track_action("receive_reaction", :failure, org_id)
-
-        Logger.info(
-          "Skipping Maytapi reaction for org #{org_id}: #{Glific.SafeLog.safe_inspect(reason)}"
-        )
-
-        error
     end
+  end
+
+  @doc """
+  Records a reaction that could not be saved
+  """
+  @spec skip_reaction(any(), non_neg_integer()) :: :ok
+  def skip_reaction(reason, org_id) do
+    Instrumentation.track_action("receive_reaction", :failure, org_id)
+
+    Logger.info(
+      "Skipping Maytapi reaction for org #{org_id}: #{Glific.SafeLog.safe_inspect(reason)}"
+    )
   end
 
   # reactorId arrives as "<phone>@c.us" in ack events and as a bare phone in message events

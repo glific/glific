@@ -1,5 +1,6 @@
 defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
   use GlificWeb.ConnCase
+  use Oban.Testing, repo: Glific.Repo, prefix: "global"
 
   import Ecto.Query
 
@@ -8,6 +9,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
     Fixtures,
     Providers.Maytapi.Message,
     Repo,
+    WAGroup.PendingReactionWorker,
     WAGroup.WAMessage,
     WAGroup.WaReaction
   }
@@ -104,18 +106,21 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
     |> Repo.all()
   end
 
-  defp wait_for_reactions(wa_message_id, expected_count, attempts \\ 50)
+  defp wait_for_reactions(wa_message_id, expected_count),
+    do: wait_for(wa_message_id, &(length(&1) == expected_count))
 
-  defp wait_for_reactions(wa_message_id, _expected_count, 0), do: reactions_for(wa_message_id)
+  defp wait_for(wa_message_id, done?, attempts \\ 50)
 
-  defp wait_for_reactions(wa_message_id, expected_count, attempts) do
-    case reactions_for(wa_message_id) do
-      reactions when length(reactions) == expected_count ->
-        reactions
+  defp wait_for(wa_message_id, _done?, 0), do: reactions_for(wa_message_id)
 
-      _ ->
-        Process.sleep(50)
-        wait_for_reactions(wa_message_id, expected_count, attempts - 1)
+  defp wait_for(wa_message_id, done?, attempts) do
+    reactions = reactions_for(wa_message_id)
+
+    if done?.(reactions) do
+      reactions
+    else
+      Process.sleep(50)
+      wait_for(wa_message_id, done?, attempts - 1)
     end
   end
 
@@ -196,20 +201,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
       post(conn, "/maytapi", message_format_reaction(@parent_whatsapp_id, "👍"))
       assert [%WaReaction{reaction: "👍"}] = wait_for_reactions(parent_message.id, 1)
 
-      post(build_conn(), "/maytapi", message_format_reaction(@parent_whatsapp_id, "❤️"))
+      post(conn, "/maytapi", message_format_reaction(@parent_whatsapp_id, "❤️"))
 
-      Enum.reduce_while(1..50, nil, fn _attempt, _acc ->
-        case reactions_for(parent_message.id) do
-          [%WaReaction{reaction: "❤️"}] ->
-            {:halt, :ok}
-
-          _ ->
-            Process.sleep(50)
-            {:cont, nil}
-        end
-      end)
-
-      assert [%WaReaction{reaction: "❤️"}] = reactions_for(parent_message.id)
+      assert [%WaReaction{reaction: "❤️"}] =
+               wait_for(parent_message.id, &match?([%WaReaction{reaction: "❤️"}], &1))
     end
 
     test "the same reaction in both formats is stored once",
@@ -222,7 +217,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
       assert [%WaReaction{reaction: "👍"}] = reactions_for(parent_message.id)
     end
 
-    test "a reaction to an unknown message is skipped without saving",
+    test "a reaction to an unknown message is not saved and is scheduled for a retry",
          %{organization_id: organization_id, parent_message: parent_message} do
       unknown_parent_id = "true_#{@group_bsp_id}_3EB0UNKNOWN0000000000_917834811114@c.us"
 
@@ -234,6 +229,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
                |> GroupMessage.receive_reaction_msg(organization_id)
 
       assert [] == reactions_for(parent_message.id)
+
+      assert_enqueued(
+        worker: PendingReactionWorker,
+        args: %{organization_id: organization_id, retry: 0}
+      )
     end
 
     test "a reaction from an unresolved @lid participant is skipped",
@@ -251,6 +251,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
                |> GroupMessage.receive_reaction_msg(organization_id)
 
       assert [] == reactions_for(parent_message.id)
+      refute_enqueued(worker: PendingReactionWorker)
     end
   end
 
