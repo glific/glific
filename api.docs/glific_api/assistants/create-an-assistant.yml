@@ -70,7 +70,7 @@ docs: |
   | `settings`               | `Json`   | Model parameters, such as `{"temperature": 0.7}` or `{"effort": "low"}`. When given and not empty, `temperature` and `effort` are ignored. |
   | `effort`                 | `String` | Reasoning effort for reasoning models. Used when `settings` is empty.       |
   | `temperature`            | `Float`  | Used when neither `settings` nor `effort` is given. Defaults to `1`.        |
-  | `inputGuardrails`        | `Json`   | List of validators run on the user's message. Each needs a non-empty `type`; see **Guardrails**. |
+  | `inputGuardrails`        | `Json`   | List of validators run on the user's message. Each needs a non-empty `type`; see **Guardrails**. Defaults to `[{"type": "pii_remover"}]` when omitted; send `[]` to create without it. |
   | `outputGuardrails`       | `Json`   | List of validators run on the model's reply. Same shape.                    |
   | `knowledgeBaseVersionId` | `String` | A `knowledgeBaseVersionId` from **Create a knowledge base version**.        |
 
