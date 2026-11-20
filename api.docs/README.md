@@ -9,8 +9,10 @@ later**.
 
 1. Install Bruno from [usebruno.com/downloads](https://www.usebruno.com/downloads).
 2. In Bruno, choose **Open Collection** and pick `api.docs/glific_api`.
-3. Pick the `local` or `staging` environment and set `phone` and `password`. The `local`
-   environment is prefilled with the seeded admin user.
+3. Pick the `local` or `production` environment and set `phone` and `password`. The `local`
+   environment is prefilled with the seeded admin user. In `production`, replace `shortcode`
+   in `base_url` and `api_url` with your organization's shortcode (for example,
+   `https://api.myorg.glific.com`) and save; Bruno keeps saved environment values.
 4. Run **Authentication › Login**. It stores the tokens in `auth_token` and `renewal_token`,
    and every other request sends `auth_token` automatically.
 
@@ -28,7 +30,7 @@ cd api.docs/glific_api && npx @usebruno/cli@4.3.0 run authentication/login.yml t
 ```
 glific_api/
 ├── opencollection.yml      # collection: name, shared auth, overview docs
-├── environments/           # local.yml, staging.yml
+├── environments/           # local.yml, production.yml
 └── <area>/                 # one folder per API area, such as contacts/ or flows/
     ├── folder.yml          # folder name, order and overview docs
     └── <request-name>.yml  # one file per operation
@@ -77,7 +79,7 @@ status codes in `## Errors`.
 The `API Docs Site` workflow publishes the collection as a single HTML page to
 [api.glific.com](https://api.glific.com/) whenever a change under
 `api.docs/` lands on `master`. It runs `npm run site` in `tools/`, which generates the page
-with Bruno CLI, includes only the `staging` environment and leaves out requests tagged
+with Bruno CLI, includes only the `production` environment and leaves out requests tagged
 `internal`. To preview it locally:
 
 ```bash
