@@ -7,6 +7,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   alias Glific.{
     Communications,
+    Providers.Maytapi,
     Providers.Maytapi.Instrumentation,
     Repo
   }
@@ -28,6 +29,24 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
       Repo.put_process_state(conn.assigns.organization_id)
       update_statuses(params, conn.assigns.organization_id)
+    end)
+
+    json(conn, nil)
+  end
+
+  @doc """
+  Handles reactions delivered as message events
+  """
+  @spec reaction(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def reaction(conn, params) do
+    organization_id = conn.assigns.organization_id
+
+    Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+      Repo.put_process_state(organization_id)
+
+      params
+      |> Maytapi.Message.receive_reaction()
+      |> handle_reactions(organization_id)
     end)
 
     json(conn, nil)
@@ -67,7 +86,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   defp do_update_status(params, ack_type, org_id) do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
-    Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
+
+    Communications.GroupMessage.update_bsp_status(
+      bsp_message_id,
+      status,
+      org_id,
+      params["rxid"]
+    )
+
     Instrumentation.track_status(status || :unknown, org_id)
   end
 
