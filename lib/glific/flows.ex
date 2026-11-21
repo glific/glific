@@ -29,6 +29,10 @@ defmodule Glific.Flows do
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
 
+  # Bounds how long a node keeps serving an old flow or keyword map if a cross-node cache update
+  # is lost.
+  @flow_cache_ttl :timer.hours(1)
+
   @doc """
   Returns the list of flows.
 
@@ -558,7 +562,7 @@ defmodule Glific.Flows do
 
     flow = Flow.get_loaded_flow(organization_id, status, args)
 
-    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow, ttl: @flow_cache_ttl)
     # We are setting the cache in the above statement with multiple keys
     # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
@@ -939,6 +943,9 @@ defmodule Glific.Flows do
             "Failed to retrieve flow_keywords_map, #{Glific.SafeLog.safe_inspect(organization_id)}, #{error}"
         )
 
+      {:commit, value, _opts} ->
+        value
+
       {_, value} ->
         value
     end
@@ -1046,7 +1053,7 @@ defmodule Glific.Flows do
       |> Map.put("org_default_new_contact", organization.newcontact_flow_id)
       |> Map.put("org_default_optin", organization.optin_flow_id)
 
-    {:commit, keyword_map}
+    {:commit, keyword_map, ttl: @flow_cache_ttl}
   end
 
   @spec add_default_flows(map(), map()) :: map()

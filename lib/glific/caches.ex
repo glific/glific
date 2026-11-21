@@ -2,6 +2,7 @@ defmodule Glific.Caches do
   @moduledoc """
   Glific Cache management
   """
+  alias Glific.Caches.Replicator
   alias Glific.SafeLog
 
   @cache_bucket :glific_cache
@@ -31,9 +32,10 @@ defmodule Glific.Caches do
     # also update the reload key for consumers to refresh caches
     keys = [{{organization_id, :cache_reload_key}, Ecto.UUID.generate()} | keys]
 
-    default_opts = [ttl: :timer.hours(@ttl_limit)]
+    opts = Keyword.merge([ttl: :timer.hours(@ttl_limit)], opts)
 
-    {:ok, true} = Cachex.put_many(@cache_bucket, keys, Keyword.merge(default_opts, opts))
+    {:ok, true} = Cachex.put_many(@cache_bucket, keys, opts)
+    Replicator.replicate({:put_many, keys, opts})
     {:ok, value}
   end
 
@@ -59,7 +61,7 @@ defmodule Glific.Caches do
   """
   @impl Glific.Caches.CacheBehaviour
   @spec fetch(non_neg_integer, any(), (any() -> any())) ::
-          {:ok | :error | :commit | :ignore, any()}
+          {:ok | :error | :commit | :ignore, any()} | {:commit, any(), Keyword.t()}
   def fetch(organization_id, key, fallback_fn) do
     Cachex.fetch(@cache_bucket, {organization_id, key}, &safe_fallback(fallback_fn, &1))
   end
@@ -86,11 +88,15 @@ defmodule Glific.Caches do
   """
   @impl Glific.Caches.CacheBehaviour
   @spec remove(non_neg_integer, list()) :: any()
-  def remove(organization_id, keys),
-    do:
-      Enum.map(keys, fn key ->
-        {:ok, _} = Cachex.del(@cache_bucket, {organization_id, key})
-      end)
+  def remove(organization_id, keys) do
+    cache_keys = Enum.map(keys, &{organization_id, &1})
+
+    result =
+      Enum.map(cache_keys, fn cache_key -> {:ok, _} = Cachex.del(@cache_bucket, cache_key) end)
+
+    Replicator.replicate({:delete, cache_keys})
+    result
+  end
 
   @doc """
   Set a global value, ttl is in number of hours

@@ -122,6 +122,9 @@ end
 - Org-scoped key: `{organization_id, key}`. Global key: `{:global, key}`.
 - API: `Glific.Caches.set/4`, `get/3`, `fetch/3` (fetch takes a fallback fn for cache-miss).
 - Default TTL 24h. Invalidate via the reload-key pattern (`{org_id, :cache_reload_key}`).
+- `set`/`remove` are copied to the other nodes of the cluster by `Glific.Caches.Replicator`;
+  `put_global` stays node-local. Never call `Cachex` directly — a write that skips
+  `Glific.Caches` leaves the other nodes stale.
 - Organization config is heavily cached — after changing partner/org data, expect to
   `Partners.fill_cache/1` (tests do this in setup).
 

@@ -58,6 +58,19 @@ config :glific, Glific.RepoReplica,
 
 config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
+# Comma separated "basename=hostname" pairs, one per app in the cluster. Gigalixir's own
+# DNS_CLUSTER_QUERY is not used because it only resolves the replicas of the current app.
+cluster_queries =
+  "CLUSTER_QUERIES"
+  |> env!(:string, "")
+  |> String.split(",", trim: true)
+  |> Enum.map(fn pair ->
+    [basename, hostname] = pair |> String.trim() |> String.split("=", parts: 2)
+    {basename, hostname}
+  end)
+
+config :glific, :dns_cluster_query, if(cluster_queries == [], do: :ignore, else: cluster_queries)
+
 default_origins = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
 check_origin =
@@ -77,6 +90,26 @@ config :glific, GlificWeb.Endpoint,
   render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Glific.PubSub,
   live_view: [signing_salt: env!("SIGNING_SALT", :string!)]
+
+# Splits the app into a web and a worker app, see plans/web-worker-node-split.md. Unset runs both.
+case env!("NODE_ROLE", :string, nil) do
+  unset when unset in [nil, ""] ->
+    :ok
+
+  "web" ->
+    # peer: false keeps a web node out of Oban leader election, since the leader runs the plugins
+    # (Cron, pruner, lifeline) and a web node starts none of them.
+    config :glific, Oban, queues: false, plugins: false, peer: false
+
+  "worker" ->
+    # The endpoint keeps running for PubSub and subscription publishing but is not served; the
+    # HTTP port answers GlificWeb.Plugs.HealthCheck alone.
+    config :glific, GlificWeb.Endpoint, server: false
+    config :glific, :health_check_port, http_port
+
+  other ->
+    raise "NODE_ROLE must be web, worker or unset, got \"#{other}\""
+end
 
 config :glific,
   auth_username: env!("AUTH_USERNAME", :string!),

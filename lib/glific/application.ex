@@ -21,6 +21,9 @@ defmodule Glific.Application do
       # Start the Telemetry supervisor
       GlificWeb.Telemetry,
 
+      # Connect to the other nodes of the cluster, :ignore when no query is configured
+      {DNSCluster, query: Application.get_env(:glific, :dns_cluster_query, :ignore)},
+
       # Start the PubSub system
       {Phoenix.PubSub, name: Glific.PubSub},
 
@@ -44,6 +47,9 @@ defmodule Glific.Application do
         id: :glific_cache_id,
         start: {Cachex, :start_link, [:glific_cache, []]}
       },
+
+      # Copies cache writes to the other nodes of the cluster
+      Glific.Caches.Replicator,
 
       # After Cachex, which it publishes the shortcode index into
       Glific.Partners.OrganizationIndex,
@@ -69,6 +75,8 @@ defmodule Glific.Application do
       # Dedicated hackney pool for Kaapi document uploads
       :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
     ]
+
+    children = children ++ health_check_listener()
 
     # Add this :telemetry.attach/4 for oban success/failure call:
     attach_oban_telemetry_event()
@@ -102,6 +110,20 @@ defmodule Glific.Application do
 
   defp oban_config do
     Application.get_env(:glific, Oban)
+  end
+
+  # Last in the tree, so a worker only reports healthy once everything else has started.
+  defp health_check_listener do
+    case Application.get_env(:glific, :health_check_port) do
+      nil ->
+        []
+
+      port ->
+        [
+          {Plug.Cowboy,
+           scheme: :http, plug: GlificWeb.Plugs.HealthCheck, options: [port: port, net: :inet6]}
+        ]
+    end
   end
 
   defp attach_oban_telemetry_event do
