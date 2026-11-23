@@ -11,7 +11,11 @@ defmodule GlificWeb.Telemetry do
   @impl true
   def init(_arg) do
     children = [
-      {:telemetry_poller, measurements: periodic_measurements(), period: 60_000}
+      {:telemetry_poller, measurements: periodic_measurements(), period: 60_000},
+      {:telemetry_poller,
+       name: :glific_repo_pool_poller,
+       measurements: [{Glific.Appsignal, :send_repo_pool_metrics, []}],
+       period: 10_000}
       # Add reporters as children of your supervision tree.
       # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
     ]
@@ -29,13 +33,6 @@ defmodule GlificWeb.Telemetry do
         tags: [:route],
         unit: {:native, :millisecond}
       ),
-
-      # Database Metrics
-      summary("glific.repo.query.total_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.decode_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.query_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.queue_time", unit: {:native, :millisecond}),
-      summary("glific.repo.query.idle_time", unit: {:native, :millisecond}),
 
       # VM Metrics
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
