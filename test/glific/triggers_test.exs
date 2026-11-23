@@ -381,6 +381,68 @@ defmodule Glific.TriggersTest do
     Triggers.execute_triggers(attrs.organization_id)
   end
 
+  test "create_trigger/1 defaults group_type to WABA when not given", attrs do
+    trigger = Fixtures.trigger_fixture(attrs)
+
+    assert trigger.group_type == "WABA"
+  end
+
+  test "create_trigger/1 keeps an explicit group_type", attrs do
+    {:ok, trigger} =
+      create_wa_group_trigger(attrs, %{organization_id: attrs.organization_id})
+
+    assert trigger.group_type == "WA"
+  end
+
+  test "update_trigger/2 keeps the existing group_type when it is not given", attrs do
+    {:ok, trigger} =
+      create_wa_group_trigger(attrs, %{organization_id: attrs.organization_id})
+
+    {:ok, updated_trigger} =
+      Triggers.update_trigger(trigger, %{
+        name: "renamed wa group trigger",
+        flow_id: trigger.flow_id,
+        start_at: trigger.start_at,
+        organization_id: attrs.organization_id
+      })
+
+    assert updated_trigger.name == "renamed wa group trigger"
+    assert updated_trigger.group_type == "WA"
+    assert Repo.get!(Trigger, trigger.id).group_type == "WA"
+  end
+
+  test "update_trigger/2 can change the group_type when it is given", attrs do
+    trigger = Fixtures.trigger_fixture(attrs)
+
+    {:ok, updated_trigger} =
+      Triggers.update_trigger(trigger, %{
+        group_type: "WA",
+        name: trigger.name,
+        flow_id: trigger.flow_id,
+        start_at: trigger.start_at,
+        organization_id: attrs.organization_id
+      })
+
+    assert updated_trigger.group_type == "WA"
+  end
+
+  test "update_trigger/2 computes start_at from start_date and start_time when it is not given",
+       attrs do
+    trigger = Fixtures.trigger_fixture(attrs)
+    start_date = Timex.shift(Date.utc_today(), days: 3)
+    start_time = ~T[10:30:00]
+
+    {:ok, updated_trigger} =
+      Triggers.update_trigger(trigger, %{
+        flow_id: trigger.flow_id,
+        start_date: start_date,
+        start_time: start_time,
+        organization_id: attrs.organization_id
+      })
+
+    assert updated_trigger.start_at == DateTime.new!(start_date, start_time)
+  end
+
   test "broadcast_per_minute count depending on high trigger tps enabled", attrs do
     FunWithFlags.enable(:high_trigger_tps_enabled,
       for_actor: %{organization_id: attrs.organization_id}
@@ -488,6 +550,8 @@ defmodule Glific.TriggersTest do
           organization_id: other_organization.id
         })
 
+      Repo.put_organization_id(attrs.organization_id)
+
       assert {:error, "Flow not found"} =
                Triggers.create_trigger(trigger_attrs(attrs, other_flow.id))
     end
@@ -509,6 +573,8 @@ defmodule Glific.TriggersTest do
         organization_id: attrs.organization_id,
         name: trigger.name
       }
+
+      Repo.put_organization_id(attrs.organization_id)
 
       assert {:error, "Flow not found"} = Triggers.update_trigger(trigger, update_attrs)
     end
