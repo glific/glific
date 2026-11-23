@@ -13,7 +13,8 @@ defmodule GlificWeb.WebChannel.Token do
 
   A token lives at most 24 hours, with 60 seconds of clock leeway. A Glific session token also
   carries `jti` (the session) and `sst` (when the session started): it lasts one hour, and
-  `renew/3` refreshes it only until the session is 24 hours old.
+  `renew/3` refreshes it, even after it has expired, until the session is 48 hours old. After
+  that the contact logs in again with a new one-time code.
   """
 
   alias Glific.{Contacts, WebChannel.JwtSecret}
@@ -23,7 +24,7 @@ defmodule GlificWeb.WebChannel.Token do
   @channel "web"
   @max_lifetime_seconds 86_400
   @session_ttl_seconds 3_600
-  @session_max_seconds 86_400
+  @session_max_age_seconds 172_800
   @leeway_seconds 60
   @max_length 255
 
@@ -42,12 +43,16 @@ defmodule GlificWeb.WebChannel.Token do
   """
   @spec verify(non_neg_integer(), String.t() | nil, integer()) ::
           {:ok, claims()} | {:error, :invalid}
-  def verify(organization_id, token, now \\ System.system_time(:second))
+  def verify(organization_id, token, now \\ System.system_time(:second)),
+    do: verify_token(organization_id, token, now, :live)
 
-  def verify(organization_id, token, now) when is_binary(token) and token != "" do
+  @spec verify_token(non_neg_integer(), String.t() | nil, integer(), :live | :renewable) ::
+          {:ok, claims()} | {:error, :invalid}
+  defp verify_token(organization_id, token, now, validity)
+       when is_binary(token) and token != "" do
     with {:ok, secret} <- JwtSecret.fetch(organization_id),
          {:ok, fields} <- verify_signature(secret, token),
-         :ok <- validate_timing(fields, now),
+         :ok <- validate_timing(fields, now, validity),
          {:ok, claims} <- extract_claims(fields),
          :ok <- validate_session(claims, now) do
       {:ok, claims}
@@ -56,7 +61,7 @@ defmodule GlificWeb.WebChannel.Token do
     end
   end
 
-  def verify(_organization_id, _token, _now), do: {:error, :invalid}
+  defp verify_token(_organization_id, _token, _now, _validity), do: {:error, :invalid}
 
   @doc """
   Signs a token for `claims` (`:sub`, optionally `:name`, `:phone`, `:optin`, `:session_id` and
@@ -93,7 +98,7 @@ defmodule GlificWeb.WebChannel.Token do
   end
 
   @doc """
-  Generates a one hour token for the contact's web identity `sub`, renewable for 24 hours.
+  Generates a one hour token for the contact's web identity `sub`, renewable for 48 hours.
   """
   @spec generate(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, :no_secret}
   def generate(organization_id, sub) do
@@ -105,17 +110,20 @@ defmodule GlificWeb.WebChannel.Token do
   end
 
   @doc """
-  Exchanges a valid Glific session token for a fresh one in the same session.
+  Exchanges a Glific session token for a fresh one in the same session, as long as the session
+  is under 48 hours old.
 
-  `jti` and `sst` carry over: a new `jti` would make every refresh look like a second login, and
-  a new `sst` would make renewal unbounded. A token with no session claims is refused, since
+  The token may have expired: a contact who closed the tab for longer than a token lives comes
+  back to a stale one, and the session, not the token, is what bounds how long they stay logged
+  in. `jti` and `sst` carry over: a new `jti` would make every refresh look like a second login,
+  and a new `sst` would make renewal unbounded. A token with no session claims is refused, since
   renewing an NGO's token is its backend's job.
   """
   @spec renew(non_neg_integer(), String.t() | nil, integer()) ::
           {:ok, String.t(), claims()} | {:error, :invalid}
   def renew(organization_id, token, now \\ System.system_time(:second)) do
     with {:ok, %{session_id: _, session_started_at: _} = claims} <-
-           verify(organization_id, token, now),
+           verify_token(organization_id, token, now, :renewable),
          {:ok, renewed} <- sign(organization_id, claims |> Map.delete(:exp) |> Map.put(:iat, now)) do
       {:ok, renewed, claims}
     else
@@ -141,16 +149,16 @@ defmodule GlificWeb.WebChannel.Token do
     _malformed -> :error
   end
 
-  @spec validate_timing(map(), integer()) :: :ok | :error
-  defp validate_timing(%{"iat" => iat, "exp" => exp}, now)
+  @spec validate_timing(map(), integer(), :live | :renewable) :: :ok | :error
+  defp validate_timing(%{"iat" => iat, "exp" => exp}, now, validity)
        when is_integer(iat) and is_integer(exp) do
     if exp - iat <= @max_lifetime_seconds and iat <= now + @leeway_seconds and
-         exp > now - @leeway_seconds,
+         (validity == :renewable or exp > now - @leeway_seconds),
        do: :ok,
        else: :error
   end
 
-  defp validate_timing(_fields, _now), do: :error
+  defp validate_timing(_fields, _now, _validity), do: :error
 
   @spec extract_claims(map()) :: {:ok, claims()} | :error
   defp extract_claims(%{"sub" => sub, "channel" => @channel} = fields)
@@ -190,7 +198,7 @@ defmodule GlificWeb.WebChannel.Token do
 
   @spec validate_session(claims(), integer()) :: :ok | :error
   defp validate_session(%{session_started_at: started_at}, now) do
-    if started_at <= now + @leeway_seconds and now - started_at < @session_max_seconds,
+    if started_at <= now + @leeway_seconds and now - started_at < @session_max_age_seconds,
       do: :ok,
       else: :error
   end

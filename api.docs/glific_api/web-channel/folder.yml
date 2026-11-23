@@ -20,8 +20,9 @@ docs:
        with the organization's secret. It lasts one hour.
     4. Use the token to connect to the chat socket (below), and as
        `authorization: Bearer <token>` for **Get a media upload URL**.
-    5. **Renew a web channel token** before it expires. A session can be renewed for up to
-       24 hours after sign-in.
+    5. **Renew a web channel token** before it expires, or when the beneficiary comes back with
+       an expired one. A session can be renewed for up to 48 hours after sign-in; after that the
+       beneficiary signs in again with a new OTP.
 
     An organization that manages its own users can skip steps 2, 3 and 5 and sign tokens on its
     own backend instead (see **Tokens signed by your backend**); step 4 is the same.

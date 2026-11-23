@@ -211,11 +211,26 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert {:error, :invalid} = verify(organization_id, %{"sst" => @now})
     end
 
-    test "a session older than 24 hours is rejected, however fresh the token", %{
+    test "a session is valid past 24 hours and rejected at 48 hours, however fresh the token", %{
       organization_id: organization_id
     } do
-      assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now - 86_399})
-      assert {:error, :invalid} = verify(organization_id, %{"jti" => "s", "sst" => @now - 86_400})
+      assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now - 86_400})
+      assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now - 172_799})
+
+      assert {:error, :invalid} =
+               verify(organization_id, %{"jti" => "s", "sst" => @now - 172_800})
+    end
+
+    test "an expired session token is not valid, however young its session", %{
+      organization_id: organization_id
+    } do
+      assert {:error, :invalid} =
+               verify(organization_id, %{
+                 "jti" => "s",
+                 "sst" => @now - 7_200,
+                 "iat" => @now - 7_200,
+                 "exp" => @now - 3_600
+               })
     end
 
     test "a session started in the future is rejected beyond the leeway", %{
@@ -279,15 +294,21 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert exp == @now + 3_600
     end
 
-    test "renewal is refused once the session is 24 hours old", %{
+    test "renewal works past 24 hours and is refused once the session is 48 hours old", %{
       organization_id: organization_id
     } do
-      token =
-        %{"jti" => "s1", "sst" => @now - 86_400}
-        |> WebChannelLoginHelpers.claims(@now)
-        |> WebChannelLoginHelpers.sign(@secret)
+      renew = fn started_at ->
+        token =
+          %{"jti" => "s1", "sst" => started_at}
+          |> WebChannelLoginHelpers.claims(@now)
+          |> WebChannelLoginHelpers.sign(@secret)
 
-      assert {:error, :invalid} = Token.renew(organization_id, token, @now)
+        Token.renew(organization_id, token, @now)
+      end
+
+      assert {:ok, _renewed, _claims} = renew.(@now - 86_400)
+      assert {:ok, _renewed, _claims} = renew.(@now - 172_799)
+      assert {:error, :invalid} = renew.(@now - 172_800)
     end
 
     test "renewal is refused for a token without a session", %{organization_id: organization_id} do
@@ -296,7 +317,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert {:error, :invalid} = Token.renew(organization_id, token, @now)
     end
 
-    test "renewal is refused for an expired token and for nil", %{
+    test "an expired token renews while its session is under 48 hours old", %{
       organization_id: organization_id
     } do
       expired =
@@ -304,8 +325,50 @@ defmodule GlificWeb.WebChannel.TokenTest do
         |> WebChannelLoginHelpers.claims(@now)
         |> WebChannelLoginHelpers.sign(@secret)
 
+      assert {:ok, renewed, %{session_id: "s1"}} = Token.renew(organization_id, expired, @now)
+
+      assert {:ok, %{session_id: "s1", session_started_at: started_at, exp: exp}} =
+               Token.verify(organization_id, renewed, @now)
+
+      assert started_at == @now - 7_200
+      assert exp == @now + 3_600
+    end
+
+    test "an expired token is refused once its session is 48 hours old", %{
+      organization_id: organization_id
+    } do
+      expired =
+        %{
+          "jti" => "s1",
+          "sst" => @now - 172_800,
+          "iat" => @now - 7_200,
+          "exp" => @now - 3_600
+        }
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:error, :invalid} = Token.renew(organization_id, expired, @now)
+    end
+
+    test "an expired NGO token and nil are refused", %{organization_id: organization_id} do
+      expired =
+        %{"iat" => @now - 7_200, "exp" => @now - 3_600}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
       assert {:error, :invalid} = Token.renew(organization_id, expired, @now)
       assert {:error, :invalid} = Token.renew(organization_id, nil, @now)
+    end
+
+    test "an expired token is still refused when its lifetime is over 24 hours", %{
+      organization_id: organization_id
+    } do
+      expired =
+        %{"jti" => "s1", "sst" => @now - 90_000, "iat" => @now - 90_000, "exp" => @now - 3_599}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:error, :invalid} = Token.renew(organization_id, expired, @now)
     end
   end
 
