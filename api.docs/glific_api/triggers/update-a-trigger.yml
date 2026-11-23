@@ -86,15 +86,19 @@ docs: |
 
   ## Errors
 
-  Every failure, whatever the cause, returns the same top-level error, with
-  `updateTrigger` set to `null`:
+  Validation failures come back in `errors` with `trigger` set to `null`, the same as
+  **Create a trigger**:
 
-  ```json
-  { "message": "Trigger start_at should always be greater than current time", "path": ["updateTrigger"] }
-  ```
+  - The start is not in the future:
+    `{ "key": "start_at", "message": "Start_at: Trigger start_at should always be greater than current time" }`.
+  - Invalid `days` or `hours`: a `frequency` error, as in **Create a trigger**.
+  - `flowId` changed to a web flow:
+    `{ "key": "flow_id", "message": "Flow_id: Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open" }`.
+    This is checked only when `flowId` changes, so a trigger already on a web flow can still
+    have its schedule edited.
 
-  That includes a start in the past, invalid `days` or `hours`, a trigger that doesn't exist
-  in the organization, and `isActive` in the input. Leaving out `flowId`, `startDate` or
-  `startTime` gives a top-level `Something unexpected has happened, please reach out to Glific
-  team over discord to get this resolved` instead. A user without the manager role gets a
-  top-level `Unauthorized` error.
+  A trigger that doesn't exist in the organization gives `Resource not found` in `errors`.
+  `isActive` in the input gives a top-level `Cannot modify read-only fields` error. Leaving out
+  `flowId`, `startDate` or `startTime` gives a top-level `Something unexpected has happened,
+  please reach out to Glific team over discord to get this resolved`. A user without the manager
+  role gets a top-level `Unauthorized` error.

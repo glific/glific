@@ -123,6 +123,8 @@ docs: |
     `{ "key": "frequency", "message": "Frequency: Cannot create Trigger with invalid days" }`.
   - `hourly` without valid `hours`:
     `{ "key": "frequency", "message": "Frequency: Cannot create Trigger with invalid hours" }`.
+  - `flowId` is a web flow:
+    `{ "key": "flow_id", "message": "Flow_id: Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open" }`.
 
   Leaving out `flowId`, `startDate` or `startTime` gives a top-level error, `Something unexpected has
   happened, please reach out to Glific team over discord to get this resolved`. A user without

@@ -72,8 +72,31 @@ docs: |
 
   This is a warning; **Create a trigger** still accepts the flow.
 
+  The flow cannot be used by a trigger at all:
+
+  ```json
+  {
+    "data": {
+      "validateTrigger": {
+        "success": false,
+        "errors": [
+          {
+            "key": "flow_id",
+            "message": "Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open"
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+  A `flow_id` error is one **Create a trigger** rejects, or a flow it cannot run. The messages are:
+
+  - `Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open`
+  - `The flow has not been published`
+  - `Flow not found` — no such flow in the caller's organization.
+
   ## Errors
 
-  A flow (or entered sub-flow) without a published revision gives a top-level error,
-  `Something unexpected has happened, please reach out to Glific team over discord to get this
-  resolved`. A user without the manager role gets a top-level `Unauthorized` error.
+  An entered sub-flow that can't be read is skipped rather than reported. A user without the
+  manager role gets a top-level `Unauthorized` error.

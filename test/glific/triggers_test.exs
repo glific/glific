@@ -9,8 +9,12 @@ defmodule Glific.TriggersTest do
     Fixtures,
     Flows,
     Flows.Broadcast,
+    Flows.FlowContext,
+    Flows.MessageBroadcast,
     Groups,
     Messages,
+    Notifications,
+    Notifications.Notification,
     Repo,
     Seeds.SeedsDev,
     Triggers,
@@ -424,5 +428,172 @@ defmodule Glific.TriggersTest do
       |> Map.put(:group_type, "WA")
 
     Triggers.create_trigger(valid_attrs)
+  end
+
+  describe "triggers on web flows" do
+    @web_flow_error "Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open"
+
+    defp web_flow_fixture,
+      do: Fixtures.flow_fixture(%{name: "Web Flow", keywords: [], channel: :web})
+
+    defp trigger_attrs(attrs, flow_id) do
+      [group | _] = Groups.list_groups(%{organization_id: attrs.organization_id})
+
+      %{
+        name: "web flow trigger",
+        flow_id: flow_id,
+        group_ids: [group.id],
+        organization_id: attrs.organization_id,
+        start_at: Timex.shift(DateTime.utc_now(), days: 1),
+        end_date: Timex.shift(Date.utc_today(), days: 5),
+        is_active: true,
+        is_repeating: false,
+        frequency: ["none"]
+      }
+    end
+
+    # Simulates a trigger saved before web flows were rejected: the row points at a web flow.
+    defp point_trigger_at_flow(trigger, flow_id, set) do
+      Trigger
+      |> where([t], t.id == ^trigger.id)
+      |> Repo.update_all(set: [flow_id: flow_id] ++ set)
+
+      Repo.get!(Trigger, trigger.id)
+    end
+
+    test "create_trigger/1 rejects a web flow", attrs do
+      web_flow = web_flow_fixture()
+
+      assert {:error, changeset} = Triggers.create_trigger(trigger_attrs(attrs, web_flow.id))
+      assert %{flow_id: [@web_flow_error]} = errors_on(changeset)
+    end
+
+    test "update_trigger/2 rejects switching a trigger to a web flow", attrs do
+      trigger = Fixtures.trigger_fixture(attrs)
+      web_flow = web_flow_fixture()
+
+      update_attrs = %{
+        flow_id: web_flow.id,
+        start_at: Timex.shift(DateTime.utc_now(), days: 2),
+        organization_id: attrs.organization_id,
+        name: trigger.name
+      }
+
+      assert {:error, changeset} = Triggers.update_trigger(trigger, update_attrs)
+      assert %{flow_id: [@web_flow_error]} = errors_on(changeset)
+    end
+
+    test "update_trigger/2 still edits the schedule of a trigger already on a web flow", attrs do
+      web_flow = web_flow_fixture()
+      trigger = attrs |> Fixtures.trigger_fixture() |> point_trigger_at_flow(web_flow.id, [])
+      new_start_at = DateTime.truncate(Timex.shift(DateTime.utc_now(), days: 3), :second)
+
+      assert {:ok, updated_trigger} =
+               Triggers.update_trigger(trigger, %{
+                 flow_id: web_flow.id,
+                 start_at: new_start_at,
+                 frequency: ["daily"],
+                 organization_id: attrs.organization_id,
+                 name: trigger.name
+               })
+
+      assert updated_trigger.start_at == new_start_at
+      assert updated_trigger.frequency == ["daily"]
+    end
+
+    test "execute_triggers/2 skips a web flow, notifies the org and keeps the scheduler running",
+         attrs do
+      web_flow = web_flow_fixture()
+      time = DateTime.truncate(DateTime.utc_now(), :second)
+
+      trigger =
+        attrs
+        |> Map.merge(%{
+          frequency: ["daily"],
+          is_repeating: true,
+          end_date: Timex.shift(Date.utc_today(), days: 5)
+        })
+        |> Fixtures.trigger_fixture()
+        |> point_trigger_at_flow(web_flow.id,
+          start_at: Timex.shift(time, days: -3),
+          last_trigger_at: Timex.shift(time, days: -3),
+          next_trigger_at: Timex.shift(time, days: -3)
+        )
+
+      flow_context_count = Repo.aggregate(FlowContext, :count)
+      message_broadcast_count = Repo.aggregate(MessageBroadcast, :count)
+
+      Triggers.execute_triggers(attrs.organization_id)
+
+      assert Repo.aggregate(FlowContext, :count) == flow_context_count
+      assert Repo.aggregate(MessageBroadcast, :count) == message_broadcast_count
+
+      fired_trigger = Repo.get!(Trigger, trigger.id)
+      assert fired_trigger.flow_id == web_flow.id
+      assert DateTime.compare(fired_trigger.next_trigger_at, time) == :gt
+
+      assert [notification] =
+               Notification
+               |> where([n], n.category == "Trigger")
+               |> Repo.all()
+
+      assert notification.message =~ trigger.name
+      assert notification.message =~ web_flow.name
+      assert notification.severity == Notifications.types().warning
+      assert notification.entity["trigger_id"] == trigger.id
+      assert notification.entity["flow_id"] == web_flow.id
+    end
+
+    test "execute_triggers/2 deactivates a one-off trigger on a web flow without starting it",
+         attrs do
+      web_flow = web_flow_fixture()
+      time = DateTime.truncate(DateTime.utc_now(), :second)
+
+      trigger =
+        attrs
+        |> Fixtures.trigger_fixture()
+        |> point_trigger_at_flow(web_flow.id,
+          start_at: Timex.shift(time, days: -1),
+          next_trigger_at: Timex.shift(time, days: -1)
+        )
+
+      flow_context_count = Repo.aggregate(FlowContext, :count)
+
+      Triggers.execute_triggers(attrs.organization_id)
+
+      assert Repo.aggregate(FlowContext, :count) == flow_context_count
+      refute Repo.get!(Trigger, trigger.id).is_active
+    end
+
+    test "validate_trigger/1 reports a web flow", attrs do
+      web_flow = web_flow_fixture()
+
+      assert {:error, @web_flow_error} =
+               Triggers.validate_trigger(%{
+                 flow_id: web_flow.id,
+                 organization_id: attrs.organization_id
+               })
+    end
+
+    test "validate_trigger/1 returns an error for an unpublished flow", attrs do
+      flow = Fixtures.flow_fixture(%{name: "Draft Flow", keywords: []})
+
+      assert {:error, "The flow has not been published"} =
+               Triggers.validate_trigger(%{
+                 flow_id: flow.id,
+                 organization_id: attrs.organization_id
+               })
+    end
+
+    test "validate_trigger/1 cannot read another organization's flow", attrs do
+      [flow | _] = Flows.list_flows(%{organization_id: attrs.organization_id})
+      other_organization = Fixtures.organization_fixture()
+
+      assert {:error, "Flow not found"} =
+               Triggers.validate_trigger(%{
+                 flow_id: flow.id,
+                 organization_id: other_organization.id
+               })
+    end
   end
 end

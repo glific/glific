@@ -14,6 +14,7 @@ defmodule Glific.Triggers do
     Flows.Flow,
     Flows.FlowRevision,
     Groups.Group,
+    Notifications,
     Partners,
     Repo,
     Triggers,
@@ -22,6 +23,8 @@ defmodule Glific.Triggers do
   }
 
   @max_trigger_limit 1000
+
+  @web_flow_error "Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open"
 
   @doc """
   Periodic call to execute the triggers outstanding for the day
@@ -129,9 +132,16 @@ defmodule Glific.Triggers do
   end
 
   @spec do_start_flow(Trigger.t()) :: any
-  defp do_start_flow(%{group_type: "WA"} = trigger) do
+  defp do_start_flow(trigger) do
     flow = Flows.get_flow!(trigger.flow_id)
 
+    if flow.channel == :web,
+      do: notify_web_flow_skipped(trigger, flow),
+      else: start_trigger_flow(trigger, flow)
+  end
+
+  @spec start_trigger_flow(Trigger.t(), Flow.t()) :: any
+  defp start_trigger_flow(%{group_type: "WA"} = trigger, flow) do
     Logger.info(
       "Starting flow: #{flow.name} trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at} for WA group"
     )
@@ -139,14 +149,31 @@ defmodule Glific.Triggers do
     Flows.start_wa_group_flow(flow, trigger.group_ids)
   end
 
-  defp do_start_flow(trigger) do
-    flow = Flows.get_flow!(trigger.flow_id)
-
+  defp start_trigger_flow(trigger, flow) do
     Logger.info(
       "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at}"
     )
 
     Flows.start_group_flow(flow, trigger.group_ids)
+  end
+
+  @spec notify_web_flow_skipped(Trigger.t(), Flow.t()) ::
+          {:ok, Glific.Notifications.Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp notify_web_flow_skipped(trigger, flow) do
+    Notifications.create_notification(%{
+      category: "Trigger",
+      message:
+        "Trigger \"#{trigger.name}\" did not start flow \"#{flow.name}\". #{@web_flow_error}. Point the trigger at a WhatsApp flow or delete it.",
+      severity: Notifications.types().warning,
+      organization_id: trigger.organization_id,
+      entity: %{
+        trigger_id: trigger.id,
+        trigger_name: trigger.name,
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        name: flow.name
+      }
+    })
   end
 
   @doc """
@@ -173,6 +200,7 @@ defmodule Glific.Triggers do
     with {:ok, trigger} <-
            %Trigger{}
            |> Trigger.changeset(fix_attrs(attrs))
+           |> validate_flow_channel()
            |> Repo.insert() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
@@ -181,14 +209,66 @@ defmodule Glific.Triggers do
   end
 
   @doc """
-  This function is to check the warning while creating the trigger
+  Pre-flight check of a trigger's flow: an error if it cannot be used, a warning if it may not deliver
   """
-  @spec validate_trigger(map()) :: :ok | {:warning, String.t()}
+  @spec validate_trigger(map()) :: :ok | {:warning, String.t()} | {:error, String.t()}
   def validate_trigger(attrs) do
-    {:ok, flow} =
-      Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
+    flow_id = Map.get(attrs, :flow_id)
+    organization_id = Map.fetch!(attrs, :organization_id)
 
-    handle_action(flow, attrs, 0)
+    with {:ok, flow} <- fetch_trigger_flow(flow_id, organization_id),
+         :ok <- check_flow_channel(flow),
+         {:ok, revision} <- fetch_published_revision(flow) do
+      handle_action(revision, attrs, 0)
+    end
+  end
+
+  @spec fetch_trigger_flow(any(), non_neg_integer()) :: {:ok, Flow.t()} | {:error, String.t()}
+  defp fetch_trigger_flow(nil, _organization_id), do: {:error, "Flow is required"}
+
+  defp fetch_trigger_flow(flow_id, organization_id) do
+    case Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id}) do
+      {:ok, flow} -> {:ok, flow}
+      {:error, _} -> {:error, "Flow not found"}
+    end
+  end
+
+  @spec check_flow_channel(Flow.t()) :: :ok | {:error, String.t()}
+  defp check_flow_channel(%Flow{channel: :web}), do: {:error, @web_flow_error}
+  defp check_flow_channel(_flow), do: :ok
+
+  @spec fetch_published_revision(Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
+  defp fetch_published_revision(flow) do
+    case Repo.fetch_by(FlowRevision, %{
+           flow_id: flow.id,
+           status: "published",
+           organization_id: flow.organization_id
+         }) do
+      {:ok, revision} -> {:ok, revision}
+      {:error, _} -> {:error, "The flow has not been published"}
+    end
+  end
+
+  # Runs only when the flow changes, so the scheduler's own updates to an existing trigger
+  # (`update_next/1` hard-matches `{:ok, _}`) can never be rejected by it.
+  @spec validate_flow_channel(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_flow_channel(changeset) do
+    with flow_id when not is_nil(flow_id) <- Ecto.Changeset.get_change(changeset, :flow_id),
+         organization_id when not is_nil(organization_id) <-
+           Ecto.Changeset.get_field(changeset, :organization_id),
+         true <- web_flow?(flow_id, organization_id) do
+      Ecto.Changeset.add_error(changeset, :flow_id, @web_flow_error)
+    else
+      _ -> changeset
+    end
+  end
+
+  @spec web_flow?(non_neg_integer(), non_neg_integer()) :: boolean()
+  defp web_flow?(flow_id, organization_id) do
+    Flow
+    |> where([f], f.id == ^flow_id and f.organization_id == ^organization_id)
+    |> where([f], f.channel == :web)
+    |> Repo.exists?()
   end
 
   @spec handle_action(map(), map(), integer()) :: :ok | {:warning, String.t()}
@@ -242,12 +322,14 @@ defmodule Glific.Triggers do
     # Note: Checking only one level of nested flows
     if nested_flow_level <= 1 do
       flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
-      flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
 
-      {:ok, entered_flow} =
-        Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
-
-      handle_action(entered_flow, attrs, nested_flow_level + 1)
+      with {:ok, flow} <-
+             Repo.fetch_by(Flow, %{uuid: flow_uuid, organization_id: attrs.organization_id}),
+           {:ok, entered_flow} <- fetch_published_revision(flow) do
+        handle_action(entered_flow, attrs, nested_flow_level + 1)
+      else
+        _ -> :ok
+      end
     else
       :ok
     end
@@ -287,6 +369,7 @@ defmodule Glific.Triggers do
     with {:ok, updated_trigger} <-
            trigger
            |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+           |> validate_flow_channel()
            |> Repo.update() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, updated_trigger),
