@@ -168,17 +168,7 @@ defmodule Glific.AIEvaluations do
 
   defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
 
-  defp handle_evaluation_status({:error, reason}, evaluation, org_id) do
-    Glific.log_exception(%Glific.ThirdParty.Kaapi.Error{
-      message:
-        "Failed to fetch AI Evaluation status: id=#{evaluation.id}, name=#{evaluation.name}, " <>
-          "org_id=#{org_id}",
-      organization_id: org_id,
-      reason: safe_inspect(reason)
-    })
-
-    :ok
-  end
+  defp handle_evaluation_status({:error, _reason}, _evaluation, _org_id), do: :ok
 
   @spec process_evaluation_status(AIEvaluation.t(), map()) ::
           {:ok, AIEvaluation.t()} | {:error, term()}
@@ -395,6 +385,8 @@ defmodule Glific.AIEvaluations do
         :ok
 
       {:error, reason} ->
+        # A callback for an evaluation we never created is a fault, not a Kaapi call failure.
+        # credo:disable-for-next-line GlificCredo.Checks.KaapiErrorReporting
         Glific.log_exception(%Kaapi.Error{
           message:
             "Evaluation run callback for unknown kaapi_evaluation_id=#{kaapi_evaluation_id}",
