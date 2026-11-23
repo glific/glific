@@ -612,11 +612,8 @@ defmodule GlificWeb.Schema.TriggerTest do
         )
 
       assert {:ok, query_data} = result
-      assert get_in(query_data, [:data, "createTrigger", "trigger"]) == nil
-
-      message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
-      assert message =~ @web_flow_error
-      refute message =~ "start_at"
+      assert get_in(query_data, [:data, "createTrigger"]) == nil
+      assert hd(query_data.errors).message == @web_flow_error
     end
 
     test "updateTrigger passes through the web flow error", %{manager: user} = attrs do
@@ -631,9 +628,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
       assert {:ok, query_data} = result
 
-      message = get_in(query_data, [:data, "updateTrigger", "errors", Access.at(0), "message"])
-      assert message =~ @web_flow_error
-      refute message =~ "start_at"
+      assert hd(query_data.errors).message == @web_flow_error
 
       assert Repo.get!(Glific.Triggers.Trigger, trigger.id).flow_id == trigger.flow_id
     end

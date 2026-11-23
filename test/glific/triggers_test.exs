@@ -460,8 +460,8 @@ defmodule Glific.TriggersTest do
     test "create_trigger/1 rejects a web flow", attrs do
       web_flow = web_flow_fixture()
 
-      assert {:error, changeset} = Triggers.create_trigger(trigger_attrs(attrs, web_flow.id))
-      assert %{flow_id: [@web_flow_error]} = errors_on(changeset)
+      assert {:error, @web_flow_error} =
+               Triggers.create_trigger(trigger_attrs(attrs, web_flow.id))
     end
 
     test "update_trigger/2 rejects switching a trigger to a web flow", attrs do
@@ -475,8 +475,7 @@ defmodule Glific.TriggersTest do
         name: trigger.name
       }
 
-      assert {:error, changeset} = Triggers.update_trigger(trigger, update_attrs)
-      assert %{flow_id: [@web_flow_error]} = errors_on(changeset)
+      assert {:error, @web_flow_error} = Triggers.update_trigger(trigger, update_attrs)
     end
 
     test "create_trigger/1 rejects another organization's flow", attrs do
@@ -489,8 +488,8 @@ defmodule Glific.TriggersTest do
           organization_id: other_organization.id
         })
 
-      assert {:error, changeset} = Triggers.create_trigger(trigger_attrs(attrs, other_flow.id))
-      assert %{flow_id: ["Flow not found"]} = errors_on(changeset)
+      assert {:error, "Flow not found"} =
+               Triggers.create_trigger(trigger_attrs(attrs, other_flow.id))
     end
 
     test "update_trigger/2 rejects switching a trigger to another organization's flow", attrs do
@@ -511,8 +510,7 @@ defmodule Glific.TriggersTest do
         name: trigger.name
       }
 
-      assert {:error, changeset} = Triggers.update_trigger(trigger, update_attrs)
-      assert %{flow_id: ["Flow not found"]} = errors_on(changeset)
+      assert {:error, "Flow not found"} = Triggers.update_trigger(trigger, update_attrs)
     end
 
     test "update_trigger/2 still edits the schedule of a trigger already on a web flow", attrs do

@@ -92,10 +92,11 @@ docs: |
   - The start is not in the future:
     `{ "key": "start_at", "message": "Start_at: Trigger start_at should always be greater than current time" }`.
   - Invalid `days` or `hours`: a `frequency` error, as in **Create a trigger**.
-  - `flowId` changed to a web flow:
-    `{ "key": "flow_id", "message": "Flow_id: Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open" }`.
-    This is checked only when `flowId` changes, so a trigger already on a web flow can still
-    have its schedule edited.
+
+  When `flowId` changes, the new flow is checked before the trigger is updated, and a bad flow
+  gives a top-level error, as in **Create a trigger**: `Triggers cannot start a web flow, …` for
+  a web flow, or `Flow not found` for a flow outside the caller's organization. An unchanged
+  `flowId` is not checked, so a trigger already on a web flow can still have its schedule edited.
 
   A trigger that doesn't exist in the organization gives `Resource not found` in `errors`.
   `isActive` in the input gives a top-level `Cannot modify read-only fields` error. Leaving out
