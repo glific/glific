@@ -188,30 +188,19 @@ defmodule Glific.Triggers do
   """
   @spec validate_trigger(map()) :: :ok | {:warning, String.t()} | {:error, String.t()}
   def validate_trigger(attrs) do
-    flow_id = Map.get(attrs, :flow_id)
-    organization_id = Map.fetch!(attrs, :organization_id)
-
-    with {:ok, flow} <- fetch_trigger_flow(flow_id, organization_id),
-         {:ok, revision} <- fetch_published_revision(flow) do
+    with {:ok, revision} <-
+           fetch_published_revision(Map.get(attrs, :flow_id), Map.fetch!(attrs, :organization_id)) do
       handle_action(revision, attrs, 0)
     end
   end
 
-  @spec fetch_trigger_flow(non_neg_integer(), non_neg_integer()) ::
-          {:ok, Flow.t()} | {:error, String.t()}
-  defp fetch_trigger_flow(flow_id, organization_id) do
-    case Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id}) do
-      {:ok, flow} -> {:ok, flow}
-      {:error, _} -> {:error, "Flow not found"}
-    end
-  end
-
-  @spec fetch_published_revision(Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
-  defp fetch_published_revision(flow) do
+  @spec fetch_published_revision(non_neg_integer(), non_neg_integer()) ::
+          {:ok, FlowRevision.t()} | {:error, String.t()}
+  defp fetch_published_revision(flow_id, organization_id) do
     case Repo.fetch_by(FlowRevision, %{
-           flow_id: flow.id,
+           flow_id: flow_id,
            status: "published",
-           organization_id: flow.organization_id
+           organization_id: organization_id
          }) do
       {:ok, revision} -> {:ok, revision}
       {:error, _} -> {:error, "The flow has not been published"}
@@ -292,7 +281,7 @@ defmodule Glific.Triggers do
 
       with {:ok, flow} <-
              Repo.fetch_by(Flow, %{uuid: flow_uuid, organization_id: attrs.organization_id}),
-           {:ok, entered_flow} <- fetch_published_revision(flow) do
+           {:ok, entered_flow} <- fetch_published_revision(flow.id, flow.organization_id) do
         handle_action(entered_flow, attrs, nested_flow_level + 1)
       else
         _ -> :ok

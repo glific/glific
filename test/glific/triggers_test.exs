@@ -511,7 +511,7 @@ defmodule Glific.TriggersTest do
       [flow | _] = Flows.list_flows(%{organization_id: attrs.organization_id})
       other_organization = Fixtures.organization_fixture()
 
-      assert {:error, "Flow not found"} =
+      assert {:error, "The flow has not been published"} =
                Triggers.validate_trigger(%{
                  flow_id: flow.id,
                  organization_id: other_organization.id

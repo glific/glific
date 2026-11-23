@@ -85,10 +85,8 @@ docs: |
   }
   ```
 
-  The `flow_id` messages are:
-
-  - `The flow has not been published`
-  - `Flow not found` — no such flow in the caller's organization.
+  The `flow_id` message is `The flow has not been published`, also returned for a flow that is
+  not in the caller's organization.
 
   ## Errors
 
