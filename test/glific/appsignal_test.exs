@@ -72,7 +72,7 @@ defmodule Glific.AppsignalTest do
         Appsignal.handle_event([:oban, :job, event], measurement, meta, nil)
 
         called(
-          Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", 3.0, %{
+          Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", 3000, %{
             organization_id: "1"
           })
         )
