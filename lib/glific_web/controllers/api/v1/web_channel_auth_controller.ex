@@ -352,8 +352,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         record_history(contact, :web_login_code_failed, "Web login code incorrect")
 
       {:error, _} ->
-        Appsignal.Logger.info(
-          "web_channel_auth",
+        Logger.info(
           "Web login code verify failed for a contact that does not exist in org #{organization_id}"
         )
     end
