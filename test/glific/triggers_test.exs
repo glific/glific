@@ -497,16 +497,6 @@ defmodule Glific.TriggersTest do
       assert updated_trigger.frequency == ["daily"]
     end
 
-    test "validate_trigger/1 reports a web flow", attrs do
-      web_flow = web_flow_fixture()
-
-      assert {:error, @web_flow_error} =
-               Triggers.validate_trigger(%{
-                 flow_id: web_flow.id,
-                 organization_id: attrs.organization_id
-               })
-    end
-
     test "validate_trigger/1 returns an error for an unpublished flow", attrs do
       flow = Fixtures.flow_fixture(%{name: "Draft Flow", keywords: []})
 

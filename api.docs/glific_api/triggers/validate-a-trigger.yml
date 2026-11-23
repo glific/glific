@@ -72,27 +72,21 @@ docs: |
 
   This is a warning; **Create a trigger** still accepts the flow.
 
-  The flow cannot be used by a trigger at all:
+  The flow cannot be read:
 
   ```json
   {
     "data": {
       "validateTrigger": {
         "success": false,
-        "errors": [
-          {
-            "key": "flow_id",
-            "message": "Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open"
-          }
-        ]
+        "errors": [{ "key": "flow_id", "message": "The flow has not been published" }]
       }
     }
   }
   ```
 
-  A `flow_id` error is one **Create a trigger** rejects, or a flow it cannot run. The messages are:
+  The `flow_id` messages are:
 
-  - `Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open`
   - `The flow has not been published`
   - `Flow not found` — no such flow in the caller's organization.
 

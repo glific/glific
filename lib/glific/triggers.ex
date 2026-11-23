@@ -184,7 +184,7 @@ defmodule Glific.Triggers do
   end
 
   @doc """
-  Pre-flight check of a trigger's flow: an error if it cannot be used, a warning if it may not deliver
+  Pre-flight check of a trigger's flow: an error if it cannot be read, a warning if it may not deliver
   """
   @spec validate_trigger(map()) :: :ok | {:warning, String.t()} | {:error, String.t()}
   def validate_trigger(attrs) do
@@ -192,7 +192,6 @@ defmodule Glific.Triggers do
     organization_id = Map.fetch!(attrs, :organization_id)
 
     with {:ok, flow} <- fetch_trigger_flow(flow_id, organization_id),
-         :ok <- check_flow_channel(flow),
          {:ok, revision} <- fetch_published_revision(flow) do
       handle_action(revision, attrs, 0)
     end
@@ -207,10 +206,6 @@ defmodule Glific.Triggers do
       {:error, _} -> {:error, "Flow not found"}
     end
   end
-
-  @spec check_flow_channel(Flow.t()) :: :ok | {:error, String.t()}
-  defp check_flow_channel(%Flow{channel: :web}), do: {:error, @web_flow_error}
-  defp check_flow_channel(_flow), do: :ok
 
   @spec fetch_published_revision(Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
   defp fetch_published_revision(flow) do

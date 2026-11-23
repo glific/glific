@@ -638,21 +638,6 @@ defmodule GlificWeb.Schema.TriggerTest do
       assert Repo.get!(Glific.Triggers.Trigger, trigger.id).flow_id == trigger.flow_id
     end
 
-    test "validateTrigger reports a web flow", %{manager: user} do
-      web_flow = web_flow_fixture()
-
-      result =
-        auth_query_gql_by(:validate, user, variables: %{"input" => %{"flowId" => web_flow.id}})
-
-      assert {:ok, query_data} = result
-      assert get_in(query_data, [:data, "validateTrigger", "success"]) == false
-
-      assert get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0)]) == %{
-               "key" => "flow_id",
-               "message" => @web_flow_error
-             }
-    end
-
     test "validateTrigger returns an error for an unpublished flow", %{manager: user} do
       flow = Fixtures.flow_fixture(%{name: "Draft Flow", keywords: []})
 
