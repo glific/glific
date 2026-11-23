@@ -223,14 +223,12 @@ defmodule Glific.Triggers do
   # (`update_next/1` hard-matches `{:ok, _}`) can never be rejected by it.
   @spec validate_flow_channel(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_flow_channel(changeset) do
-    with flow_id when not is_nil(flow_id) <- Ecto.Changeset.get_change(changeset, :flow_id),
-         organization_id when not is_nil(organization_id) <-
-           Ecto.Changeset.get_field(changeset, :organization_id),
-         true <- web_flow?(flow_id, organization_id) do
-      Ecto.Changeset.add_error(changeset, :flow_id, @web_flow_error)
-    else
-      _ -> changeset
-    end
+    flow_id = Ecto.Changeset.get_change(changeset, :flow_id)
+    organization_id = Ecto.Changeset.get_field(changeset, :organization_id)
+
+    if flow_id && web_flow?(flow_id, organization_id),
+      do: Ecto.Changeset.add_error(changeset, :flow_id, @web_flow_error),
+      else: changeset
   end
 
   @spec web_flow?(non_neg_integer(), non_neg_integer()) :: boolean()
