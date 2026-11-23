@@ -427,7 +427,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
     error_message = hd(query_data.errors).message
 
-    assert error_message =~ "Trigger start_at should always be greater than current time"
+    assert error_message =~ "Cannot modify read-only fields"
   end
 
   test "update a trigger with existing name and next_trigger_at", attrs do
@@ -580,5 +580,68 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "validateTrigger", "errors"]) == nil
+  end
+
+  describe "triggers on web flows" do
+    @web_flow_error "Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open"
+
+    defp web_flow_fixture,
+      do: Fixtures.flow_fixture(%{name: "Web Flow", keywords: [], channel: :web})
+
+    defp schedule_input(flow_id, group_id) do
+      start_date = Timex.shift(Date.utc_today(), days: 1)
+
+      %{
+        "flowId" => flow_id,
+        "groupIds" => [group_id],
+        "startDate" => Date.to_iso8601(start_date),
+        "startTime" => "13:15:00",
+        "endDate" => Date.to_iso8601(Timex.shift(start_date, days: 4)),
+        "isRepeating" => false,
+        "frequency" => ["none"]
+      }
+    end
+
+    test "createTrigger rejects a web flow with the web flow message", %{manager: user} = attrs do
+      web_flow = web_flow_fixture()
+      [group | _] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
+
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{"input" => schedule_input(web_flow.id, group.id)}
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:data, "createTrigger"]) == nil
+      assert hd(query_data.errors).message == @web_flow_error
+    end
+
+    test "updateTrigger passes through the web flow error", %{manager: user} = attrs do
+      trigger = Fixtures.trigger_fixture(attrs)
+      web_flow = web_flow_fixture()
+      [group | _] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{"id" => trigger.id, "input" => schedule_input(web_flow.id, group.id)}
+        )
+
+      assert {:ok, query_data} = result
+
+      assert hd(query_data.errors).message == @web_flow_error
+
+      assert Repo.get!(Glific.Triggers.Trigger, trigger.id).flow_id == trigger.flow_id
+    end
+
+    test "validateTrigger returns an error for an unpublished flow", %{manager: user} do
+      flow = Fixtures.flow_fixture(%{name: "Draft Flow", keywords: []})
+
+      result = auth_query_gql_by(:validate, user, variables: %{"input" => %{"flowId" => flow.id}})
+
+      assert {:ok, query_data} = result
+
+      assert get_in(query_data, [:data, "validateTrigger", "errors", Access.at(0), "message"]) ==
+               "The flow has not been published"
+    end
   end
 end
