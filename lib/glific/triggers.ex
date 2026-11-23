@@ -197,9 +197,8 @@ defmodule Glific.Triggers do
     end
   end
 
-  @spec fetch_trigger_flow(any(), non_neg_integer()) :: {:ok, Flow.t()} | {:error, String.t()}
-  defp fetch_trigger_flow(nil, _organization_id), do: {:error, "Flow is required"}
-
+  @spec fetch_trigger_flow(non_neg_integer(), non_neg_integer()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
   defp fetch_trigger_flow(flow_id, organization_id) do
     case Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id}) do
       {:ok, flow} -> {:ok, flow}
