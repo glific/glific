@@ -175,7 +175,7 @@ defmodule Glific.Triggers do
     with {:ok, trigger} <-
            %Trigger{}
            |> Trigger.changeset(fix_attrs(attrs))
-           |> validate_flow_channel()
+           |> validate_flow()
            |> Repo.insert() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
@@ -209,22 +209,26 @@ defmodule Glific.Triggers do
 
   # Runs only when the flow changes, so the scheduler's own updates to an existing trigger
   # (`update_next/1` hard-matches `{:ok, _}`) can never be rejected by it.
-  @spec validate_flow_channel(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_flow_channel(changeset) do
-    flow_id = Ecto.Changeset.get_change(changeset, :flow_id)
-    organization_id = Ecto.Changeset.get_field(changeset, :organization_id)
+  @spec validate_flow(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_flow(changeset) do
+    case Ecto.Changeset.get_change(changeset, :flow_id) do
+      nil ->
+        changeset
 
-    if flow_id && web_flow?(flow_id, organization_id),
-      do: Ecto.Changeset.add_error(changeset, :flow_id, @web_flow_error),
-      else: changeset
-  end
+      flow_id ->
+        organization_id = Ecto.Changeset.get_field(changeset, :organization_id)
 
-  @spec web_flow?(non_neg_integer(), non_neg_integer()) :: boolean()
-  defp web_flow?(flow_id, organization_id) do
-    Flow
-    |> where([f], f.id == ^flow_id and f.organization_id == ^organization_id)
-    |> where([f], f.channel == :web)
-    |> Repo.exists?()
+        case Repo.fetch_by(Flow, %{id: flow_id, organization_id: organization_id}) do
+          {:ok, %Flow{channel: :web}} ->
+            Ecto.Changeset.add_error(changeset, :flow_id, @web_flow_error)
+
+          {:ok, _flow} ->
+            changeset
+
+          {:error, _} ->
+            Ecto.Changeset.add_error(changeset, :flow_id, "Flow not found")
+        end
+    end
   end
 
   @spec handle_action(map(), map(), integer()) :: :ok | {:warning, String.t()}
@@ -325,7 +329,7 @@ defmodule Glific.Triggers do
     with {:ok, updated_trigger} <-
            trigger
            |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
-           |> validate_flow_channel()
+           |> validate_flow()
            |> Repo.update() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, updated_trigger),

@@ -479,6 +479,42 @@ defmodule Glific.TriggersTest do
       assert %{flow_id: [@web_flow_error]} = errors_on(changeset)
     end
 
+    test "create_trigger/1 rejects another organization's flow", attrs do
+      other_organization = Fixtures.organization_fixture()
+
+      other_flow =
+        Fixtures.flow_fixture(%{
+          name: "Other Org Flow",
+          keywords: [],
+          organization_id: other_organization.id
+        })
+
+      assert {:error, changeset} = Triggers.create_trigger(trigger_attrs(attrs, other_flow.id))
+      assert %{flow_id: ["Flow not found"]} = errors_on(changeset)
+    end
+
+    test "update_trigger/2 rejects switching a trigger to another organization's flow", attrs do
+      trigger = Fixtures.trigger_fixture(attrs)
+      other_organization = Fixtures.organization_fixture()
+
+      other_flow =
+        Fixtures.flow_fixture(%{
+          name: "Other Org Flow",
+          keywords: [],
+          organization_id: other_organization.id
+        })
+
+      update_attrs = %{
+        flow_id: other_flow.id,
+        start_at: Timex.shift(DateTime.utc_now(), days: 2),
+        organization_id: attrs.organization_id,
+        name: trigger.name
+      }
+
+      assert {:error, changeset} = Triggers.update_trigger(trigger, update_attrs)
+      assert %{flow_id: ["Flow not found"]} = errors_on(changeset)
+    end
+
     test "update_trigger/2 still edits the schedule of a trigger already on a web flow", attrs do
       web_flow = web_flow_fixture()
       trigger = attrs |> Fixtures.trigger_fixture() |> point_trigger_at_flow(web_flow.id, [])
