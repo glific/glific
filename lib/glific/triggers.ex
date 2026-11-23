@@ -14,7 +14,6 @@ defmodule Glific.Triggers do
     Flows.Flow,
     Flows.FlowRevision,
     Groups.Group,
-    Notifications,
     Partners,
     Repo,
     Triggers,
@@ -132,16 +131,9 @@ defmodule Glific.Triggers do
   end
 
   @spec do_start_flow(Trigger.t()) :: any
-  defp do_start_flow(trigger) do
+  defp do_start_flow(%{group_type: "WA"} = trigger) do
     flow = Flows.get_flow!(trigger.flow_id)
 
-    if flow.channel == :web,
-      do: notify_web_flow_skipped(trigger, flow),
-      else: start_trigger_flow(trigger, flow)
-  end
-
-  @spec start_trigger_flow(Trigger.t(), Flow.t()) :: any
-  defp start_trigger_flow(%{group_type: "WA"} = trigger, flow) do
     Logger.info(
       "Starting flow: #{flow.name} trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at} for WA group"
     )
@@ -149,31 +141,14 @@ defmodule Glific.Triggers do
     Flows.start_wa_group_flow(flow, trigger.group_ids)
   end
 
-  defp start_trigger_flow(trigger, flow) do
+  defp do_start_flow(trigger) do
+    flow = Flows.get_flow!(trigger.flow_id)
+
     Logger.info(
       "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at}"
     )
 
     Flows.start_group_flow(flow, trigger.group_ids)
-  end
-
-  @spec notify_web_flow_skipped(Trigger.t(), Flow.t()) ::
-          {:ok, Glific.Notifications.Notification.t()} | {:error, Ecto.Changeset.t()}
-  defp notify_web_flow_skipped(trigger, flow) do
-    Notifications.create_notification(%{
-      category: "Trigger",
-      message:
-        "Trigger \"#{trigger.name}\" did not start flow \"#{flow.name}\". #{@web_flow_error}. Point the trigger at a WhatsApp flow or delete it.",
-      severity: Notifications.types().warning,
-      organization_id: trigger.organization_id,
-      entity: %{
-        trigger_id: trigger.id,
-        trigger_name: trigger.name,
-        flow_id: flow.id,
-        flow_uuid: flow.uuid,
-        name: flow.name
-      }
-    })
   end
 
   @doc """
