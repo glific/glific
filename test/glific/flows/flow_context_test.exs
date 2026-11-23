@@ -230,7 +230,7 @@ defmodule Glific.Flows.FlowContextTest do
 
       FlowContext.mark_flows_complete(contact.id, false, source: "terminate_contact_flows")
 
-      assert stopped_history(contact) == [:whatsapp, :web]
+      assert Enum.sort(stopped_history(contact)) == [:web, :whatsapp]
     end
 
     test "stopping one channel's flows records that channel", %{flow: flow} do

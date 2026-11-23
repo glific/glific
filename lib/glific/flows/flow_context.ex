@@ -669,15 +669,10 @@ defmodule Glific.Flows.FlowContext do
     )
   end
 
-  # Which channels a "flows stopped" history entry is recorded on, so the profile's History tab can
-  # say which channel's flows stopped (#5877): one entry per channel that had a flow stopped. With
-  # none stopped there is still one entry, as before, on the channel asked for or else WhatsApp,
-  # which is what the column defaulted to when this was written without one.
+  # With nothing stopped there is still one entry, as before this recorded a channel.
   @spec history_channels(atom() | nil, [atom()]) :: [atom()]
   defp history_channels(requested, []), do: [requested || :whatsapp]
-
-  defp history_channels(_requested, stopped_channels),
-    do: stopped_channels |> Enum.uniq() |> Enum.sort_by(&(&1 != :whatsapp))
+  defp history_channels(_requested, stopped_channels), do: Enum.uniq(stopped_channels)
 
   @spec get_event_label(String.t(), DateTime.t() | nil) :: String.t()
   defp get_event_label(source, after_insert_date) do
