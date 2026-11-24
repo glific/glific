@@ -290,4 +290,26 @@ defmodule Glific.GcsWorkerTest do
     assert transient.id in eligible_ids
     refute permanent.id in eligible_ids
   end
+
+  test "download_file_to_temp/3 follows a provider redirect to the media file" do
+    path = Path.join(System.tmp_dir!(), "gcs_redirect_test.mp4")
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://cdn.example.com/api_media/abc"} ->
+        %Tesla.Env{
+          status: 302,
+          headers: [{"location", "https://cdn.example.com/content/hash"}],
+          body: "Found. Redirecting to https://cdn.example.com/content/hash"
+        }
+
+      %{method: :get, url: "https://cdn.example.com/content/hash"} ->
+        %Tesla.Env{status: 200, body: "fake-video-bytes"}
+    end)
+
+    assert {:ok, ^path} =
+             GcsWorker.download_file_to_temp("https://cdn.example.com/api_media/abc", path, 1)
+
+    assert File.read!(path) == "fake-video-bytes"
+    File.rm(path)
+  end
 end
