@@ -506,6 +506,27 @@ defmodule Glific.MessagesTest do
       assert {:error, _} = Repo.fetch(MessageMedia, message_media.id)
     end
 
+    test "clear_messages/2 on one channel keeps the other channel's messages and the counter",
+         attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      message_attrs = %{sender_id: contact.id, receiver_id: contact.id, contact_id: contact.id}
+      whatsapp = Fixtures.message_fixture(message_attrs)
+      web = Fixtures.message_fixture(Map.put(message_attrs, :channel, :web))
+      counter = Contacts.get_contact!(contact.id).last_message_number
+
+      assert :ok = Messages.clear_messages(contact, :web)
+
+      assert {:error, _} = Repo.fetch(Message, web.id)
+      assert {:ok, _} = Repo.fetch(Message, whatsapp.id)
+      assert Contacts.get_contact!(contact.id).last_message_number == counter
+
+      assert :ok = contact.id |> Contacts.get_contact!() |> Messages.clear_messages(:whatsapp)
+
+      assert {:error, _} = Repo.fetch(Message, whatsapp.id)
+      assert Contacts.get_contact!(contact.id).last_message_number == 0
+    end
+
     test "clear_messages/1 deletes messages for simulator and sends a message with default body",
          attrs do
       message = message_fixture(attrs)

@@ -547,7 +547,7 @@ defmodule Glific.Flows.FlowContext do
   defp add_date_clause(query, after_insert),
     do: query |> where([fc], fc.inserted_at > ^after_insert)
 
-  # nil completes every channel's flows (terminate/clear paths); a channel narrows it to that one.
+  # nil completes every channel's flows; a channel narrows it to that one.
   @spec maybe_scope_by_channel(Ecto.Queryable.t(), atom() | nil) :: Ecto.Queryable.t()
   defp maybe_scope_by_channel(query, nil), do: query
 

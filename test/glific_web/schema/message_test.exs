@@ -333,6 +333,29 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message == "Resource not found"
   end
 
+  test "clear messages of a contact on one channel", %{user: user} do
+    contact = Fixtures.contact_fixture()
+
+    [whatsapp, web] =
+      Enum.map([:whatsapp, :web], fn channel ->
+        Fixtures.message_fixture(%{
+          sender_id: contact.id,
+          receiver_id: contact.id,
+          contact_id: contact.id,
+          channel: channel
+        })
+      end)
+
+    result =
+      auth_query_gql_by(:clear, user, variables: %{"contactId" => contact.id, "channel" => "WEB"})
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "clearMessages", "success"]) == true
+
+    assert {:error, _} = Repo.fetch(Message, web.id)
+    assert {:ok, _} = Repo.fetch(Message, whatsapp.id)
+  end
+
   test "send message to a group", %{staff: user} = attrs do
     [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
 

@@ -1203,15 +1203,18 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Delete all messages of a contact
+  Delete a contact's messages on the given channel, or on every channel when it is nil
   """
-  @spec clear_messages(Contact.t()) :: :ok
-  def clear_messages(%Contact{} = contact) do
-    # get and delete all messages media
-    messages_media_ids =
+  @spec clear_messages(Contact.t(), atom() | nil) :: :ok
+  def clear_messages(%Contact{} = contact, channel \\ nil) do
+    messages =
       Message
       |> where([m], m.contact_id == ^contact.id)
       |> where([m], m.organization_id == ^contact.organization_id)
+      |> maybe_filter_channel(channel)
+
+    messages_media_ids =
+      messages
       |> select([m], m.media_id)
       |> Repo.all()
 
@@ -1219,30 +1222,32 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all(timeout: 900_000)
 
-    Message
-    |> where([m], m.contact_id == ^contact.id)
-    |> where([m], m.organization_id == ^contact.organization_id)
-    |> Repo.delete_all()
+    Repo.delete_all(messages)
 
-    reset_contact_fields(contact)
+    reset_contact_fields(contact, channel)
 
-    FlowContext.mark_flows_complete(contact.id, false, source: "clear_messages")
+    FlowContext.mark_flows_complete(contact.id, false, source: "clear_messages", channel: channel)
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     :ok
   end
 
-  @spec reset_contact_fields(Contact.t()) :: nil
-  defp reset_contact_fields(contact) do
-    simulator = Contacts.simulator_contact?(contact.phone)
+  @spec maybe_filter_channel(Ecto.Query.t(), atom() | nil) :: Ecto.Query.t()
+  defp maybe_filter_channel(query, nil), do: query
+  defp maybe_filter_channel(query, channel), do: where(query, [m], m.channel == ^channel)
 
-    values = %{
-      last_message_number: 0,
-      is_org_read: true,
-      is_org_replied: true,
-      is_contact_replied: true
-    }
+  @spec reset_contact_fields(Contact.t(), atom() | nil) :: nil
+  defp reset_contact_fields(contact, channel) do
+    simulator = channel in [nil, :whatsapp] && Contacts.simulator_contact?(contact.phone)
+
+    values =
+      %{
+        is_org_read: true,
+        is_org_replied: true,
+        is_contact_replied: true
+      }
+      |> maybe_reset_message_number(contact)
 
     values =
       if simulator,
@@ -1263,6 +1268,19 @@ defmodule Glific.Messages do
       do: {:ok, _last_message} = send_default_message(contact)
 
     nil
+  end
+
+  # message_number is one counter across channels, and conversations window on it, so it can
+  # only restart once the other channel has no messages left either.
+  @spec maybe_reset_message_number(map(), Contact.t()) :: map()
+  defp maybe_reset_message_number(values, contact) do
+    remaining? =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> where([m], m.organization_id == ^contact.organization_id)
+      |> Repo.exists?()
+
+    if remaining?, do: values, else: Map.put(values, :last_message_number, 0)
   end
 
   @spec send_default_message(Contact.t(), String.t()) ::
