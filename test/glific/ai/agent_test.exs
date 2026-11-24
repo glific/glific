@@ -296,6 +296,18 @@ defmodule Glific.AI.AgentTest do
     assert Repo.reload!(request).status == :failed
   end
 
+  test "a reply with no text is a failed run, not a blank answer", %{user: user} do
+    FakeProvider.script([
+      Map.merge(FakeProvider.answer(""), %{"content" => [], "stop_reason" => "max_tokens"})
+    ])
+
+    {_conversation, request} = ask("a question", user)
+
+    assert {:error, reason} = Agent.run(request, user, skill: "knowledge")
+    assert reason =~ "no answer"
+    assert Repo.reload!(request).status == :failed
+  end
+
   test "a provider failure is recorded, with the question still on record", %{user: user} do
     FakeProvider.stop()
 

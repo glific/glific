@@ -60,6 +60,26 @@ defmodule Glific.AITest do
     assert is_number(usage.cost)
   end
 
+  test "a model missing from req_llm's pricing is costed from configuration", %{opts: opts} do
+    FakeAnthropic.respond(
+      200,
+      FakeAnthropic.answer("ok", %{"input_tokens" => 1_000_000, "output_tokens" => 1_000_000})
+    )
+
+    assert {:ok, _reply, %{cost: cost}} = ask(opts)
+    assert_in_delta cost, 0.60, 0.0001
+  end
+
+  test "a prompt past the long-context threshold is costed at the higher rate", %{opts: opts} do
+    FakeAnthropic.respond(
+      200,
+      FakeAnthropic.answer("ok", %{"input_tokens" => 200_000, "output_tokens" => 100_000})
+    )
+
+    assert {:ok, _reply, %{cost: cost}} = ask(opts)
+    assert_in_delta cost, 0.35, 0.0001
+  end
+
   test "usage missing from the response does not crash", %{opts: opts} do
     FakeAnthropic.respond(200, FakeAnthropic.answer("hi", %{}))
 
