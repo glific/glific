@@ -253,11 +253,11 @@ config :mime, :types, %{
 }
 
 config :glific, Glific.AI,
-  model: "anthropic:claude-haiku-4-5",
+  model: "anthropic:claude-haiku-5-5",
   # Routing a question to a skill is a one-word answer, so it is pinned to the
   # cheapest model rather than following whatever answers the question. Without
   # this, upgrading `model` would silently make every classification cost more.
-  classifier_model: "anthropic:claude-haiku-4-5",
+  classifier_model: "anthropic:claude-haiku-5-5",
   max_tokens: 4_096,
   receive_timeout: 60_000
 
