@@ -32,6 +32,7 @@ defmodule Glific.Assistants do
   end
 
   @timeout_hours 1
+  @default_input_guardrails [%{"type" => "pii_remover"}]
 
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
   @assistant_supported_file_extensions [
@@ -491,6 +492,8 @@ defmodule Glific.Assistants do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(user_params) do
+    user_params = put_default_input_guardrails(user_params)
+
     with {:ok, knowledge_base_version} <-
            resolve_optional_knowledge_base(user_params),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
@@ -509,6 +512,14 @@ defmodule Glific.Assistants do
       end
     end
   end
+
+  @spec put_default_input_guardrails(map()) :: map()
+  defp put_default_input_guardrails(%{input_guardrails: guardrails} = user_params)
+       when is_list(guardrails),
+       do: user_params
+
+  defp put_default_input_guardrails(user_params),
+    do: Map.put(user_params, :input_guardrails, @default_input_guardrails)
 
   @spec create_config_without_knowledge_base(Assistant.t(), AssistantConfigVersion.t(), map()) ::
           {:ok, map()} | {:error, String.t()}

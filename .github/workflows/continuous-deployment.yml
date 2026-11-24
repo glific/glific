@@ -20,6 +20,10 @@ jobs:
         github.event_name == 'push' &&
         github.ref == 'refs/heads/master'
       )
+    # Every run deploys to the same Gigalixir app, so a newer deploy supersedes any older one.
+    concurrency:
+      group: staging-deploy
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -28,7 +32,7 @@ jobs:
           fetch-depth: 0 # Checkout the whole branch
 
       # setup  python
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.10"
 

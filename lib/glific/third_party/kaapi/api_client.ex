@@ -332,7 +332,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def list_guardrail_validators(org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.get("/api/v1/guardrails")
+    |> Tesla.get("/api/v1/guardrails", opts: [adapter: [recv_timeout: 10_000]])
     |> parse_kaapi_response()
   end
 

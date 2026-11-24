@@ -23,6 +23,11 @@ defmodule Glific.Triggers do
 
   @max_trigger_limit 1000
 
+  @web_flow_error "Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open"
+  @flow_not_found_error "Flow not found"
+  @flow_not_published_error "The flow has not been published"
+  @not_hsm_template_warning "The first message node is not an HSM template"
+
   @doc """
   Periodic call to execute the triggers outstanding for the day
   """
@@ -162,33 +167,63 @@ defmodule Glific.Triggers do
 
   """
 
-  @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t() | String.t()}
   def create_trigger(attrs) do
-    attrs =
-      attrs
-      |> Map.put_new(:start_at, nil)
-      # group_type WABA as default
-      |> Map.put_new(:group_type, "WABA")
-
-    with {:ok, trigger} <-
-           %Trigger{}
-           |> Trigger.changeset(fix_attrs(attrs))
-           |> Repo.insert() do
+    with :ok <- validate_flow(Map.get(attrs, :flow_id), nil),
+         attrs <- fix_attrs(attrs),
+         {:ok, trigger} <- insert_trigger(attrs) do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
         else: {:ok, append_group_labels(trigger)}
     end
   end
 
-  @doc """
-  This function is to check the warning while creating the trigger
-  """
-  @spec validate_trigger(map()) :: :ok | {:warning, String.t()}
-  def validate_trigger(attrs) do
-    {:ok, flow} =
-      Repo.fetch_by(FlowRevision, %{flow_id: Map.get(attrs, :flow_id), status: "published"})
+  @spec insert_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  defp insert_trigger(attrs) do
+    %Trigger{}
+    |> Trigger.changeset(attrs)
+    |> Repo.insert()
+  end
 
-    handle_action(flow, attrs, 0)
+  @doc """
+  Pre-flight check of a trigger's flow: an error if it cannot be read, a warning if it may not deliver
+  """
+  @spec validate_trigger(map()) :: :ok | {:warning, String.t()} | {:error, String.t()}
+  def validate_trigger(attrs) do
+    with {:ok, revision} <- fetch_published_revision(Map.get(attrs, :flow_id)) do
+      handle_action(revision, attrs, 0)
+    end
+  end
+
+  @spec fetch_published_revision(non_neg_integer()) ::
+          {:ok, FlowRevision.t()} | {:error, String.t()}
+  defp fetch_published_revision(flow_id) do
+    case Repo.fetch_by(FlowRevision, %{flow_id: flow_id, status: "published"}) do
+      {:ok, revision} -> {:ok, revision}
+      {:error, _} -> {:error, @flow_not_published_error}
+    end
+  end
+
+  # Skipped when the flow is unchanged, so the scheduler's own updates to an existing trigger
+  # (`update_next/1` passes the same `flow_id` and hard-matches `{:ok, _}`) are never rejected.
+  @spec validate_flow(any(), non_neg_integer() | nil) :: :ok | {:error, String.t()}
+  defp validate_flow(nil, _current_flow_id), do: :ok
+
+  defp validate_flow(flow_id, current_flow_id) do
+    case Glific.parse_maybe_integer(flow_id) do
+      {:ok, ^current_flow_id} -> :ok
+      {:ok, flow_id} -> check_flow(flow_id)
+      :error -> {:error, @flow_not_found_error}
+    end
+  end
+
+  @spec check_flow(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp check_flow(flow_id) do
+    case Repo.fetch_by(Flow, %{id: flow_id}) do
+      {:ok, %Flow{channel: :web}} -> {:error, @web_flow_error}
+      {:ok, _flow} -> :ok
+      {:error, _} -> {:error, @flow_not_found_error}
+    end
   end
 
   @spec handle_action(map(), map(), integer()) :: :ok | {:warning, String.t()}
@@ -224,14 +259,14 @@ defmodule Glific.Triggers do
   @spec handle_message_type(String.t(), map(), map(), integer()) ::
           {:ok, atom()} | {:warning, String.t()}
   defp handle_message_type("send_interactive_msg", _action, _attrs, _nested_flow_level) do
-    {:warning, "The first message node is not an HSM template"}
+    {:warning, @not_hsm_template_warning}
   end
 
   defp handle_message_type("send_msg", action, _attrs, _nested_flow_level) do
     template = action |> Map.get("templating")
 
     if template == nil do
-      {:warning, "The first message node is not an HSM template"}
+      {:warning, @not_hsm_template_warning}
     else
       :ok
     end
@@ -242,12 +277,13 @@ defmodule Glific.Triggers do
     # Note: Checking only one level of nested flows
     if nested_flow_level <= 1 do
       flow_uuid = enter_flow_action |> Map.get("flow") |> Map.get("uuid")
-      flow = Repo.one(from f0 in Flow, where: f0.uuid == ^flow_uuid, select: f0)
 
-      {:ok, entered_flow} =
-        Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "published"})
-
-      handle_action(entered_flow, attrs, nested_flow_level + 1)
+      with {:ok, flow} <- Repo.fetch_by(Flow, %{uuid: flow_uuid}),
+           {:ok, entered_flow} <- fetch_published_revision(flow.id) do
+        handle_action(entered_flow, attrs, nested_flow_level + 1)
+      else
+        _ -> :ok
+      end
     else
       :ok
     end
@@ -282,16 +318,25 @@ defmodule Glific.Triggers do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_trigger(Trigger.t(), map()) ::
+          {:ok, Trigger.t()} | {:error, Ecto.Changeset.t() | String.t()}
   def update_trigger(%Trigger{} = trigger, attrs) do
-    with {:ok, updated_trigger} <-
-           trigger
-           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
-           |> Repo.update() do
+    attrs = Map.put_new(attrs, :group_type, trigger.group_type)
+
+    with :ok <- validate_flow(Map.get(attrs, :flow_id), trigger.flow_id),
+         attrs <- fix_attrs(attrs),
+         {:ok, updated_trigger} <- persist_trigger(trigger, attrs) do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, updated_trigger),
         else: {:ok, append_group_labels(updated_trigger)}
     end
+  end
+
+  @spec persist_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  defp persist_trigger(trigger, attrs) do
+    trigger
+    |> Trigger.changeset(attrs)
+    |> Repo.update()
   end
 
   @doc """
@@ -393,8 +438,7 @@ defmodule Glific.Triggers do
   defp get_name(%{name: name} = _attrs) when not is_nil(name), do: name
 
   defp get_name(attrs) do
-    with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: attrs.flow_id}) do
       tz = Partners.organization_timezone(attrs.organization_id)
       time = DateTime.new!(attrs.start_date, attrs.start_time)
       org_time = DateTime.shift_zone!(time, tz)
@@ -428,6 +472,11 @@ defmodule Glific.Triggers do
 
   @spec fix_attrs(map()) :: map()
   defp fix_attrs(attrs) do
+    attrs =
+      attrs
+      |> Map.put_new(:start_at, nil)
+      |> Map.put_new(:group_type, "WABA")
+
     # compute start_at if not set
     start_at = start_at(attrs)
 
