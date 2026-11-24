@@ -124,6 +124,12 @@ docs: |
   - `hourly` without valid `hours`:
     `{ "key": "frequency", "message": "Frequency: Cannot create Trigger with invalid hours" }`.
 
+  The flow is checked before the trigger is built, and a bad flow gives a top-level error:
+
+  - `flowId` is a web flow: `Triggers cannot start a web flow, because a web contact can only be
+    reached while their chat window is open`.
+  - `flowId` is not a flow in the caller's organization: `Flow not found`.
+
   Leaving out `flowId`, `startDate` or `startTime` gives a top-level error, `Something unexpected has
   happened, please reach out to Glific team over discord to get this resolved`. A user without
   the manager role gets a top-level `Unauthorized` error.
