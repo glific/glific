@@ -669,7 +669,7 @@ defmodule Glific.Flows.FlowContext do
     )
   end
 
-  # With nothing stopped there is still one entry, as before this recorded a channel.
+  # A stop with nothing running still records one entry: on the requested channel, else WhatsApp.
   @spec history_channels(atom() | nil, [atom()]) :: [atom()]
   defp history_channels(requested, []), do: [requested || :whatsapp]
   defp history_channels(_requested, stopped_channels), do: Enum.uniq(stopped_channels)

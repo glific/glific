@@ -27,8 +27,9 @@ graphql:
 docs: |
   Ends the flows the contact is running on one channel, except background flows, and records
   a "flows ended" event on that channel in the contact's history. Without `channel` it ends
-  them on every channel, with one history event per channel that had a flow running. The runs are marked completed and killed, so the
-  contact's next message is matched against keywords afresh.
+  them on every channel, with one history event per channel that had a flow running. The runs
+  are marked completed and killed, so the contact's next message is matched against keywords
+  afresh.
 
   **Role:** staff
 

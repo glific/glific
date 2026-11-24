@@ -1241,13 +1241,7 @@ defmodule Glific.Messages do
   defp reset_contact_fields(contact, channel) do
     simulator = channel in [nil, :whatsapp] && Contacts.simulator_contact?(contact.phone)
 
-    values =
-      %{
-        is_org_read: true,
-        is_org_replied: true,
-        is_contact_replied: true
-      }
-      |> maybe_reset_message_number(contact)
+    values = conversation_reset_values(contact)
 
     values =
       if simulator,
@@ -1270,17 +1264,25 @@ defmodule Glific.Messages do
     nil
   end
 
-  # message_number is one counter across channels, and conversations window on it, so it can
-  # only restart once the other channel has no messages left either.
-  @spec maybe_reset_message_number(map(), Contact.t()) :: map()
-  defp maybe_reset_message_number(values, contact) do
+  # The message counter and the read/replied flags are shared by both channels: conversations
+  # window on the counter, and the inbox filters on the flags. While the other channel still has
+  # messages, resetting them would hide those messages or mark them read.
+  @spec conversation_reset_values(Contact.t()) :: map()
+  defp conversation_reset_values(contact) do
     remaining? =
       Message
       |> where([m], m.contact_id == ^contact.id)
       |> where([m], m.organization_id == ^contact.organization_id)
       |> Repo.exists?()
 
-    if remaining?, do: values, else: Map.put(values, :last_message_number, 0)
+    if remaining?,
+      do: %{},
+      else: %{
+        last_message_number: 0,
+        is_org_read: true,
+        is_org_replied: true,
+        is_contact_replied: true
+      }
   end
 
   @spec send_default_message(Contact.t(), String.t()) ::
