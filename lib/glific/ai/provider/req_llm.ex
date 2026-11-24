@@ -85,7 +85,7 @@ defmodule Glific.AI.Provider.ReqLLM do
          ReqLLM.Response.finish_reason(response) == :length do
       failed(spec, "response hit max_tokens before producing any text")
     else
-      {:ok, reply, usage(response)}
+      {:ok, reply, usage(spec, response)}
     end
   end
 
@@ -194,14 +194,34 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   defp arguments(_), do: %{}
 
-  @spec usage(struct()) :: Glific.AI.Provider.usage()
-  defp usage(response) do
+  @spec usage(String.t(), struct()) :: Glific.AI.Provider.usage()
+  defp usage(spec, response) do
     usage = ReqLLM.Response.usage(response) || %{}
+    input = Map.get(usage, :input_tokens) || 0
+    output = Map.get(usage, :output_tokens) || 0
 
     %{
-      input_tokens: Map.get(usage, :input_tokens) || 0,
-      output_tokens: Map.get(usage, :output_tokens) || 0,
-      cost: Map.get(usage, :total_cost) || 0
+      input_tokens: input,
+      output_tokens: output,
+      cost: Map.get(usage, :total_cost) || configured_cost(spec, input, output)
     }
+  end
+
+  # The pricing snapshot bundled with req_llm can lag a new model; without a
+  # fallback its cost is 0 and the per-run cost ceiling would never trip.
+  @spec configured_cost(String.t(), non_neg_integer(), non_neg_integer()) :: number()
+  defp configured_cost(spec, input, output) do
+    case config()[:pricing][spec] do
+      %{input: _} = price ->
+        {rate_in, rate_out} =
+          if input > price.long_prompt_threshold,
+            do: {price.long_input, price.long_output},
+            else: {price.input, price.output}
+
+        (input * rate_in + output * rate_out) / 1_000_000
+
+      _ ->
+        0
+    end
   end
 end

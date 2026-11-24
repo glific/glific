@@ -259,7 +259,18 @@ config :glific, Glific.AI,
   # this, upgrading `model` would silently make every classification cost more.
   classifier_model: "anthropic:claude-haiku-5-5",
   max_tokens: 4_096,
-  receive_timeout: 60_000
+  receive_timeout: 60_000,
+  # USD per million tokens, used only when the provider response carries no
+  # cost. Rates step up once the prompt passes `long_prompt_threshold`.
+  pricing: %{
+    "anthropic:claude-haiku-5-5" => %{
+      input: 0.10,
+      output: 0.50,
+      long_input: 0.50,
+      long_output: 2.50,
+      long_prompt_threshold: 100_000
+    }
+  }
 
 # What bounds one question. Nothing in a model's control flow stops it looping,
 # so these are the circuit breaker: whichever is reached first ends the run and
