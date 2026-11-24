@@ -1,0 +1,20 @@
+info:
+  name: Tags
+  type: folder
+  seq: 55
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Tags are labels an organization defines and attaches to contacts, messages and templates.
+    Tags can be nested through `parent`, and a tag's `keywords` let a flow match an incoming
+    message to it.
+
+    Reserved tags (`isReserved: true`) are created by Glific, such as `unread` and
+    `notReplied`. Reading tags needs the staff role; creating, changing or deleting them needs
+    the manager role.
+
+    To attach tags, see **Contact Tags**, **Message Tags** and **Template Tags**.
+  type: text/markdown

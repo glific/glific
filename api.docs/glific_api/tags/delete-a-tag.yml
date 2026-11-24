@@ -1,0 +1,57 @@
+info:
+  name: Delete a tag
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteTag($id: ID!) {
+        deleteTag(id: $id) {
+          tag {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "34"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a tag and removes it from every contact, message and template it was attached to.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description        |
+  | -------- | ----- | -------- | ------------------ |
+  | `id`     | `ID!` | Yes      | The tag to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteTag": {
+        "tag": { "id": "34", "label": "Young learner" },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The tag does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Tags.Tag", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

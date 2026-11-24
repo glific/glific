@@ -1,0 +1,17 @@
+info:
+  name: Message Tags
+  type: folder
+  seq: 22
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Message tags attach organization tags (see **Tags**) to individual messages, such as the
+    reserved `unread` tag or a label added by a flow. Adding and removing tags needs the staff
+    role. Each change is pushed to the subscriptions in this folder, so open inboxes update
+    without polling.
+
+    Related: **Tags** (the tags themselves), **Contact Tags**, **Messages**.
+  type: text/markdown

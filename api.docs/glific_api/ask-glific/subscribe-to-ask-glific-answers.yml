@@ -1,0 +1,73 @@
+info:
+  name: Subscribe to Ask Glific answers
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription askGlificResponse($organizationId: ID!) {
+        askGlificResponse(organizationId: $organizationId) {
+          requestId
+          answer
+          conversationId
+          conversationName
+          messageId
+          skill
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes the answer to each **Ask Glific a question** call once the bot has replied. Only
+  the user who asked receives it.
+
+  **Role:** any logged-in user. The subscription has no role check; it is scoped to the
+  user's organization and user ID.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                                    |
+  | ---------------- | ----- | -------- | ---------------------------------------------- |
+  | `organizationId` | `ID!` | Yes      | Must be the logged-in user's organization ID.  |
+
+  ## Example response
+
+  `requestId` is the value sent with the question. `conversationName` is set only for the
+  first answer of a new conversation. `messageId` is what **Send feedback on an Ask Glific
+  answer** takes. `skill` is the Glific AI skill that answered (`knowledge`, `draft_hsm`,
+  or `unresolved`); it is `null` with Dify.
+
+  ```json
+  {
+    "data": {
+      "askGlificResponse": {
+        "requestId": "tab-3-1763280409",
+        "answer": "Open the group, choose Send a message, pick Template and select an approved template.",
+        "conversationId": "5f0d9c1e-8b7a-4c6d-9e2f-3a1b0c9d8e7f",
+        "conversationName": null,
+        "messageId": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+        "skill": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `organizationId` is not the user's organization: subscribing fails with
+    `Auth Credentials mismatch`.
+  - Answering fails: `answer` and `conversationId` are `null` and `errors` holds
+    `[{ "key": "error", "message": "..." }]`, such as `Query is required` or
+    `Conversation not found`.

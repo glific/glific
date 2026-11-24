@@ -1,0 +1,26 @@
+info:
+  name: Prompt Generator
+  type: folder
+  seq: 83
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    The prompt generator drafts a system prompt for a WhatsApp assistant from nine short
+    answers about the organization's use case (persona, purpose, audience, language, tone,
+    format, topics to avoid, fallback message, escalation). Kaapi runs the generation with
+    OpenAI `gpt-4o`. Paste the result into an assistant's `instructions` (see **Assistants**).
+
+    Generation is asynchronous, and there is no subscription for it:
+
+    1. **Generate a system prompt** asks Kaapi to generate and returns at once with a
+       request `id` and `status: "in_progress"`.
+    2. Kaapi calls Glific back when it is done, and the request becomes `ready` (with
+       `generatedPrompt`) or `failed` (with `errorMessage`).
+    3. Poll **Get a prompt generation** with the `id` until the status changes.
+
+    Generating needs the `is_prompt_generator_enabled` flag on the organization and an
+    active Kaapi credential. Both operations need the staff role.
+  type: text/markdown

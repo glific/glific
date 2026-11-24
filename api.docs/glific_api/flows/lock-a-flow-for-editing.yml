@@ -1,0 +1,78 @@
+info:
+  name: Lock a flow for editing
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query flowGet($id: ID!, $isForced: Boolean) {
+        flowGet(id: $id, isForced: $isForced) {
+          flow {
+            id
+            uuid
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "isForced": false
+      }
+  auth: inherit
+
+docs: |
+  Takes the editing lock on a flow for the current user, so that only one person edits a flow
+  at a time. The flow editor calls it when it opens a flow and calls **Release the flow lock**
+  when it closes.
+
+  A lock is held per user and browser session. Taking a lock first releases any lock the same
+  session already holds, and locks older than 10 minutes are released automatically. Locks
+  live in server memory, not the database.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument   | Type      | Required | Description                                                            |
+  | ---------- | --------- | -------- | ---------------------------------------------------------------------- |
+  | `id`       | `ID!`     | Yes      | The flow to lock.                                                      |
+  | `isForced` | `Boolean` | No       | Defaults to `false`. `true` takes the lock even if someone else holds it. |
+
+  ## Example response
+
+  The lock was taken:
+
+  ```json
+  {
+    "data": {
+      "flowGet": {
+        "flow": {
+          "id": "3",
+          "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+          "name": "Help Workflow"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  When the lock can't be taken, `flow` is `null` and `errors` holds one entry with
+  `key: "error"`:
+
+  - Someone else holds it:
+    `{ "key": "error", "message": "This flow is being edited by Glific Admin right now!" }`.
+    Retry with `isForced: true` to take it over.
+  - The lock server timed out twice: `{ "key": "error", "message": "Something went wrong" }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,95 @@
+info:
+  name: Create a profile
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createProfile($input: ProfileInput!) {
+        createProfile(input: $input) {
+          profile {
+            id
+            name
+            type
+            isActive
+            isDefault
+            language {
+              id
+              label
+            }
+            contact {
+              id
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Aarav",
+          "type": "Child",
+          "contactId": "2",
+          "languageId": "2"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds a profile to a contact. The new profile is active and not the default, and it does not
+  become the contact's current profile.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description            |
+  | -------- | --------------- | -------- | ---------------------- |
+  | `input`  | `ProfileInput!` | Yes      | The profile to create. |
+
+  ### `ProfileInput`
+
+  | Field        | Type     | Required | Description                                          |
+  | ------------ | -------- | -------- | ---------------------------------------------------- |
+  | `contactId`  | `ID`     | Yes      | The contact the profile belongs to.                  |
+  | `languageId` | `ID`     | Yes      | The profile's language.                              |
+  | `name`       | `String` | No       | Name of the person.                                  |
+  | `type`       | `String` | No       | Free-text kind of profile, such as `Child` or `Parent`. |
+  | `fields`     | `Json`   | No       | Contact fields for this profile, as a JSON-encoded string. Defaults to `{}`. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createProfile": {
+        "profile": {
+          "id": "4",
+          "name": "Aarav",
+          "type": "Child",
+          "isActive": true,
+          "isDefault": false,
+          "language": { "id": "2", "label": "Hindi" },
+          "contact": { "id": "2" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `profile` set to `null`:
+
+  - A required field is missing: `{ "key": "contact_id", "message": "Contact_id: can't be blank" }`.
+  - The contact already has a profile with that name and type:
+    `{ "key": "name", "message": "Sorry, a profile with same name and type already exists" }`.
+
+  A user without the manager role gets a top-level `Unauthorized` error.

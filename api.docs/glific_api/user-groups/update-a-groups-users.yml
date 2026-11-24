@@ -1,0 +1,78 @@
+info:
+  name: Update a group's users
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateGroupUsers($input: GroupUsersInput!) {
+        updateGroupUsers(input: $input) {
+          numberDeleted
+          groupUsers {
+            id
+            user {
+              id
+              name
+            }
+            group {
+              id
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "groupId": "1",
+          "addUserIds": ["2", "3"],
+          "deleteUserIds": ["4"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds users to a group and removes others from it, in one call.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type               | Required | Description           |
+  | -------- | ------------------ | -------- | --------------------- |
+  | `input`  | `GroupUsersInput!` | Yes      | The changes to make.  |
+
+  ### `GroupUsersInput`
+
+  | Field           | Type    | Required | Description                                  |
+  | --------------- | ------- | -------- | -------------------------------------------- |
+  | `groupId`       | `ID!`   | Yes      | The group.                                   |
+  | `addUserIds`    | `[ID]!` | Yes      | Users to add. Send `[]` to add none.         |
+  | `deleteUserIds` | `[ID]!` | Yes      | Users to remove. Send `[]` to remove none.   |
+
+  ## Example response
+
+  `groupUsers` lists only the memberships this call created; `numberDeleted` counts those it
+  removed.
+
+  ```json
+  {
+    "data": {
+      "updateGroupUsers": {
+        "numberDeleted": 1,
+        "groupUsers": [
+          { "id": "9", "user": { "id": "3", "name": "NGO Manager" }, "group": { "id": "1" } },
+          { "id": "8", "user": { "id": "2", "name": "NGO Staff" }, "group": { "id": "1" } }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  None in the result: a user who is already in the group, or does not exist, is skipped and
+  left out of `groupUsers`. A user without the manager role gets a top-level `Unauthorized`
+  error.

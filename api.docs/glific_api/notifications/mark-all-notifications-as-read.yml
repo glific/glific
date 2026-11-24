@@ -1,0 +1,36 @@
+info:
+  name: Mark all notifications as read
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation markNotificationAsRead {
+        markNotificationAsRead
+      }
+  auth: inherit
+
+docs: |
+  Marks every unread notification of the organization as read. It takes no arguments: there
+  is no way to mark a single notification.
+
+  **Role:** manager
+
+  ## Example response
+
+  Always returns `true`.
+
+  ```json
+  {
+    "data": {
+      "markNotificationAsRead": true
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

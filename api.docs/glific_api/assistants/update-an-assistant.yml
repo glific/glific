@@ -1,0 +1,130 @@
+info:
+  name: Update an assistant
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateAssistant($id: ID!, $input: AssistantInput) {
+        updateAssistant(id: $id, input: $input) {
+          assistant {
+            id
+            name
+            model
+            instructions
+            settings
+            status
+            newVersionInProgress
+            liveVersionLabel
+            activeConfigVersionId
+            vectorStore {
+              id
+              knowledgeBaseVersionId
+              status
+            }
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "7",
+        "input": {
+          "name": "Maternal health helper",
+          "model": "gpt-5-mini",
+          "instructions": "You are a friendly assistant that answers questions about prenatal care. Keep replies short.",
+          "settings": "{\"effort\": \"low\"}",
+          "inputGuardrails": "[{\"type\": \"pii_remover\"}]",
+          "outputGuardrails": "[]",
+          "knowledgeBaseVersionId": "12"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Saves changes to an assistant as a new draft config version. The live version does not
+  change: publish the draft with **Set an assistant's live version**.
+
+  What happens depends on what changed, compared with the live version:
+
+  - Nothing: no new version; the assistant is returned as it is.
+  - Only `name`: the assistant is renamed; no new version.
+  - Anything else: a new minor version (such as `2.1` after `2.0`) is created. Send the full
+    configuration; omitted fields fall back to the defaults listed in **Create an
+    assistant**, not to the live version's values. Omitting `knowledgeBaseVersionId` keeps
+    the live version's knowledge base; sending it as `null` removes the knowledge base.
+    - If the knowledge base has finished indexing (or there is none), the version is
+      registered with Kaapi during the call and becomes `ready` or `failed`.
+    - If the knowledge base is still indexing, the call returns at once, the version stays
+      `in_progress` and `newVersionInProgress` is `true`. It is registered when indexing
+      completes.
+
+    Either way, **Subscribe to config version updates** reports the new version's `ready` or
+    `failed` status.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                             |
+  | -------- | ---------------- | -------- | ------------------------------------------------------- |
+  | `id`     | `ID!`            | Yes      | The assistant to update.                                |
+  | `input`  | `AssistantInput` | Yes      | The new configuration. Fields as in **Create an assistant**. |
+
+  ## Example response
+
+  The `assistant` still shows the live version. Here the new draft waits for its knowledge
+  base to finish indexing.
+
+  ```json
+  {
+    "data": {
+      "updateAssistant": {
+        "assistant": {
+          "id": "7",
+          "name": "Maternal health helper",
+          "model": "gpt-5-mini",
+          "instructions": "You are a friendly assistant that answers questions about prenatal care.",
+          "settings": "{\"effort\":\"low\"}",
+          "status": "ready",
+          "newVersionInProgress": true,
+          "liveVersionLabel": "2.0",
+          "activeConfigVersionId": "31",
+          "vectorStore": {
+            "id": "4",
+            "knowledgeBaseVersionId": "11",
+            "status": "completed"
+          },
+          "updatedAt": "2026-11-13T06:40:10Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `assistant` set to `null`:
+
+  - The assistant or the knowledge base version does not exist:
+    `{ "key": "Elixir.Glific.Assistants.Assistant", "message": "Resource not found" }`
+    (or `...KnowledgeBaseVersion`).
+  - The name is taken: `{ "key": "name", "message": "Name: has already been taken" }`.
+  - A guardrail has no `type`:
+    `{ "key": "input_guardrails", "message": "Input_guardrails: each guardrail needs a non-empty \"type\"" }`.
+
+  These come back in the top-level `errors` array:
+
+  - Another version of this assistant is still `in_progress`, or the assistant is not on
+    Kaapi yet: `Assistant setup is still in progress`.
+  - Kaapi rejects the new version: Kaapi's error. The new version is kept with status
+    `failed`.
+  - A user without the manager role gets `Unauthorized`.

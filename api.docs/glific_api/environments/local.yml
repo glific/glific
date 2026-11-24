@@ -1,0 +1,14 @@
+name: local
+variables:
+  - name: base_url
+    value: https://localhost:4001
+  - name: api_url
+    value: https://localhost:4001/api
+  - name: phone
+    value: "917834811114"
+  - name: password
+    value: Secret1234!
+  - secret: true
+    name: auth_token
+  - secret: true
+    name: renewal_token

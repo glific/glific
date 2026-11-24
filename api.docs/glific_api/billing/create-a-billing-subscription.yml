@@ -1,0 +1,85 @@
+info:
+  name: Create a billing subscription
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createBillingSubscription(
+        $stripePaymentMethodId: String
+        $couponCode: String
+        $billingPeriod: String
+      ) {
+        createBillingSubscription(
+          stripePaymentMethodId: $stripePaymentMethodId
+          couponCode: $couponCode
+          billingPeriod: $billingPeriod
+        ) {
+          subscription
+          errors
+        }
+      }
+    variables: |-
+      {
+        "stripePaymentMethodId": "pm_xxx",
+        "couponCode": "coupon_xxx",
+        "billingPeriod": "MONTHLY"
+      }
+  auth: inherit
+
+docs: |
+  Starts the Stripe subscription for the caller's organization, using its active billing
+  record. What happens depends on `billingPeriod`:
+
+  - `MONTHLY` (or no `billingPeriod`): attaches the payment method to the Stripe customer and
+    makes it the default, adds the one-time setup fee as an invoice item (with the coupon
+    applied, if given), creates and charges an invoice, then creates a metered monthly
+    subscription (users, messages and consulting hours) that starts on the first of next month.
+  - `QUARTERLY`: creates a quarterly subscription invoiced by email (due in 10 days), starting
+    on the first day of next quarter. The payment method and coupon are not used.
+  - Any other value, such as `MANUAL`: nothing is sent to Stripe.
+
+  On success the billing period is saved on the billing record. See **List billing periods**
+  for the accepted values.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument                | Type     | Required | Description                                                         |
+  | ----------------------- | -------- | -------- | ------------------------------------------------------------------- |
+  | `stripePaymentMethodId` | `String` | No       | Stripe payment method from Stripe Elements. Needed for `MONTHLY`.   |
+  | `couponCode`            | `String` | No       | Stripe coupon ID applied to the setup fee (`MONTHLY` only).          |
+  | `billingPeriod`         | `String` | No       | `MONTHLY`, `QUARTERLY` or `MANUAL`. Defaults to `MONTHLY`.           |
+
+  ## Example response
+
+  `subscription` is a JSON value. When the card needs extra authentication (common for
+  Indian cards), it has `"status": "pending"`, a `client_secret` to finish the setup intent
+  with Stripe.js, and the organization (left out below); otherwise it holds the updated
+  billing record.
+
+  ```json
+  {
+    "data": {
+      "createBillingSubscription": {
+        "subscription": "{\"status\":\"pending\",\"client_secret\":\"seti_xxx_secret_xxx\"}",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Failures come back as a top-level error, not in `errors`:
+
+  - The card could not be attached: `"Error while saving details"` or Stripe's message.
+  - Stripe rejects the subscription: the Stripe error.
+  - A user without the admin role gets a top-level `Unauthorized` error.
+
+  The organization must already have an active billing record (see **Create a billing
+  record**); without one the request fails with a top-level error.

@@ -1,0 +1,60 @@
+info:
+  name: Delete an interactive template
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteInteractiveTemplate($id: ID!) {
+        deleteInteractiveTemplate(id: $id) {
+          interactiveTemplate {
+            id
+            label
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "9"
+      }
+  auth: inherit
+
+docs: |
+  Deletes an interactive template. Flows that still reference it can no longer send it.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The template to delete. |
+
+  ## Example response
+
+  The resolver does not wrap the deleted template, so `interactiveTemplate` is always `null`;
+  an empty `errors` means the delete worked.
+
+  ```json
+  {
+    "data": {
+      "deleteInteractiveTemplate": {
+        "interactiveTemplate": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.InteractiveTemplate", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,23 @@
+info:
+  name: Contact Groups
+  type: folder
+  seq: 12
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A contact group is one contact's membership of one collection (a **Group**). Use these
+    operations to see who is in a collection and to add or remove contacts in bulk, either for
+    one collection (**Update a collection's contacts**) or for one contact (**Update a
+    contact's collections**).
+
+    Adding a contact that is already in the collection is not an error: the existing
+    membership is returned. Deleting a membership only removes the contact from the
+    collection.
+
+    Every operation here needs the staff role. To create or change the collections themselves,
+    see **Groups**. Contacts can also be added in bulk from a CSV with **Contacts › Import
+    contacts** and **Contacts › Move contacts**.
+  type: text/markdown

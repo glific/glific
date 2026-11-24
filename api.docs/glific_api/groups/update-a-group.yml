@@ -1,0 +1,76 @@
+info:
+  name: Update a group
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateGroup($id: ID!, $input: GroupInput) {
+        updateGroup(id: $id, input: $input) {
+          group {
+            id
+            label
+            description
+            roles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12",
+        "input": {
+          "label": "November 2026 cohort",
+          "addRoleIds": ["4"],
+          "deleteRoleIds": []
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a group (collection). Only the fields given in `input` change. To change access
+  roles, send `addRoleIds` (and `deleteRoleIds` with it); `roles` in the response then lists
+  the roles just added.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type         | Required | Description                                            |
+  | -------- | ------------ | -------- | ------------------------------------------------------ |
+  | `id`     | `ID!`        | Yes      | The group to change.                                   |
+  | `input`  | `GroupInput` | No       | Fields to change. See **Create a group** for the list. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateGroup": {
+        "group": {
+          "id": "12",
+          "label": "November 2026 cohort",
+          "description": "Learners who joined in November",
+          "roles": [{ "id": "4", "label": "Field coordinators" }]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The group does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.Group", "message": "Resource not found" }]`.
+  - The new label is already used: `{ "key": "label", "message": "Label: has already been taken" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

@@ -1,0 +1,73 @@
+info:
+  name: Send a message to a WhatsApp group collection
+  type: graphql
+  seq: 14
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation sendMessageToWaGroupCollection($groupId: ID!, $input: CollectionWaMessageInput!) {
+        sendMessageToWaGroupCollection(groupId: $groupId, input: $input) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "groupId": "6",
+        "input": {
+          "message": "Holiday notice: no classes on Monday.",
+          "type": "TEXT"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Posts the same message in every WhatsApp group of a WhatsApp group collection (a collection
+  with group type `WA`), through Maytapi. Glific records one collection message, pushed to
+  **Subscribe to sent WhatsApp group collection messages**, then sends to the groups in
+  parallel, each as in **Send a message in a WhatsApp group**. A group that fails is logged
+  and skipped; the mutation still returns `success: true`.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument  | Type                         | Required | Description                     |
+  | --------- | ---------------------------- | -------- | ------------------------------- |
+  | `groupId` | `ID!`                        | Yes      | The WhatsApp group collection.  |
+  | `input`   | `CollectionWaMessageInput!`  | Yes      | The message to post.            |
+
+  ### `CollectionWaMessageInput`
+
+  | Field     | Type              | Required | Description                                       |
+  | --------- | ----------------- | -------- | ------------------------------------------------- |
+  | `message` | `String`          | No       | Text of the message, or the caption for media.    |
+  | `type`    | `MessageTypeEnum` | No       | Defaults to `TEXT`. For media, also pass `mediaId`. |
+  | `mediaId` | `ID`              | No       | Message media to send.                            |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "sendMessageToWaGroupCollection": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The collection does not exist, or is not a WhatsApp group collection: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.Group", "message": "Resource not found" }]`.
+  - The collection has no WhatsApp groups: top-level error
+    `Cannot send message: No WhatsApp group found in the collection`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

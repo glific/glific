@@ -1,0 +1,60 @@
+info:
+  name: List flow revisions
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/revisions/:flowUuid"
+  params:
+    - name: flowUuid
+      value: 3fa22108-f464-41e5-81d9-d8a298854429
+      type: path
+  auth: inherit
+
+docs: |
+  Lists a flow's revisions for the editor's revision history: the currently published
+  revision first, then up to 14 other revisions (drafts and archived), newest first.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The path takes the flow's UUID.
+
+  | Parameter  | Description       |
+  | ---------- | ----------------- |
+  | `flowUuid` | UUID of the flow. |
+
+  ## Example response
+
+  `200`. `version` is always the editor spec version `13.0.0`; `revision` and `id` are both
+  the revision ID. A revision whose user was deleted shows `Unknown Glific User`.
+
+  ```json
+  {
+    "results": [
+      {
+        "id": 418,
+        "revision": 418,
+        "status": "published",
+        "version": "13.0.0",
+        "created_on": "2026-11-10T07:12:44Z",
+        "user": { "name": "Glific Admin" }
+      },
+      {
+        "id": 425,
+        "revision": 425,
+        "status": "draft",
+        "version": "13.0.0",
+        "created_on": "2026-11-14T11:03:09Z",
+        "user": { "name": "Glific Admin" }
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.
+  - An unknown UUID is not an error: `results` is empty.

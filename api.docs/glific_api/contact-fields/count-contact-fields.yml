@@ -1,0 +1,46 @@
+info:
+  name: Count contact fields
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countContactsFields($filter: ContactsFieldFilter) {
+        countContactsFields(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "scope": "CONTACT"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's contact fields that match a filter. Use it with **List contact
+  fields** to build pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                  | Required | Description                                                          |
+  | -------- | --------------------- | -------- | -------------------------------------------------------------------- |
+  | `filter` | `ContactsFieldFilter` | No       | Same fields as in **List contact fields**. Without it, counts all fields. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countContactsFields": 9
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error.

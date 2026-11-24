@@ -1,0 +1,71 @@
+info:
+  name: Subscribe to assistant chat replies
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription assistantChatResponse {
+        assistantChatResponse {
+          requestId
+          conversationId
+          answer
+          inputFromUser
+          inputToLlm
+          outputFromLlm
+          outputToUser
+          inputGuardrail
+          outputGuardrail
+          errors {
+            key
+            message
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Pushes the reply to each **Send a message to an assistant** call, once Kaapi's callback
+  reaches Glific. Only the user who sent the message receives it; use `requestId` to match
+  the reply to the request (for example when several tabs are open).
+
+  **Role:** any logged-in user. The subscription has no role check; it is scoped to the
+  user's organization and user ID.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  The guardrail fields are filled only when the organization has the
+  `is_ai_guardrail_enabled` flag and the version has guardrails: the text before and after
+  the input guardrail (`inputFromUser`, `inputToLlm`), before and after the output guardrail
+  (`outputFromLlm`, `outputToUser`), and the validators that ran on each side.
+
+  ```json
+  {
+    "data": {
+      "assistantChatResponse": {
+        "requestId": "e4b1d0c2-7a3f-4f6b-8d9e-2c1b0a9f8e7d",
+        "conversationId": "conv_8f7e6d5c4b3a",
+        "answer": "In the first trimester, eat small, frequent meals with plenty of fruit, vegetables, pulses and iron-rich foods.",
+        "inputFromUser": "I am pregnant, what should I eat during the first trimester?",
+        "inputToLlm": "I am at <PHONE_NUMBER>, what should I eat during the first trimester?",
+        "outputFromLlm": null,
+        "outputToUser": null,
+        "inputGuardrail": "[{\"name\":\"PIIRemover\",\"outcome\":\"FAIL\"}]",
+        "outputGuardrail": null,
+        "errors": []
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  When Kaapi reports a failure, `answer` and `conversationId` are `null` and `errors` holds
+  `[{ "key": "error", "message": "<Kaapi's error>" }]`.

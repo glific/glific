@@ -1,0 +1,55 @@
+info:
+  name: Validate a media URL
+  type: http
+  seq: 24
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/validate-media?url=https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg&type=image"
+  params:
+    - name: url
+      value: https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg
+      type: query
+    - name: type
+      value: image
+      type: query
+  auth: inherit
+
+docs: |
+  Checks that a media URL used in a "send message" attachment can be sent on WhatsApp:
+  Glific fetches its headers and checks the content type and size. Results are cached per
+  URL and type.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None. The query string takes:
+
+  | Parameter | Description                                                            |
+  | --------- | ---------------------------------------------------------------------- |
+  | `url`     | The media URL.                                                         |
+  | `type`    | `image` (up to 5 MB), `video` or `audio` (16 MB), `document` (100 MB) or `sticker` (100 KB). |
+
+  ## Example response
+
+  `200`, valid:
+
+  ```json
+  { "is_valid": true, "message": "success" }
+  ```
+
+  Not valid (still `200`), with one of these messages:
+
+  - `Please provide a media URL`
+  - `This media URL is invalid`
+  - `Media content-type is not valid`
+  - `Size is too big for the image. Maximum size limit is 5120KB`
+
+  ```json
+  { "is_valid": false, "message": "Media content-type is not valid" }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

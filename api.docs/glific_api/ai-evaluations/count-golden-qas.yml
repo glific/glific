@@ -1,0 +1,46 @@
+info:
+  name: Count golden QAs
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countGoldenQas($filter: GoldenQaFilter) {
+        countGoldenQas(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "prenatal"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's golden QA datasets that match a filter. Use it with **List
+  golden QAs** to build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                                     |
+  | -------- | ---------------- | -------- | --------------------------------------------------------------- |
+  | `filter` | `GoldenQaFilter` | No       | Same fields as in **List golden QAs**. Without it, counts all.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countGoldenQas": 2
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

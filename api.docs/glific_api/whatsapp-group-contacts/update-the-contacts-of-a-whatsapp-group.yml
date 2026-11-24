@@ -1,0 +1,92 @@
+info:
+  name: Update the contacts of a WhatsApp group
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateContactWaGroups($input: UpdateContactWaGroupsInput!) {
+        updateContactWaGroups(input: $input) {
+          numberDeleted
+          waGroupContacts {
+            id
+            isAdmin
+            contact {
+              id
+              name
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "waGroupId": "2",
+          "addWaContactIds": ["31", "32"],
+          "deleteWaContactIds": ["33"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Adds and removes several members of a WhatsApp group at once.
+
+  - **Adding** only records member rows in Glific (with `isAdmin: false`); nothing is sent to
+    WhatsApp. Contacts already in the group are returned unchanged.
+  - **Removing** calls Maytapi to remove each contact from the WhatsApp group, sending from
+    the group's primary phone, and deletes the row when Maytapi succeeds. A contact Maytapi
+    refuses to remove (for example because the primary phone isn't a group admin) is skipped
+    silently and not counted.
+
+  To remove one member from a phone that is a group admin, with a clear error when it fails,
+  use **Remove a contact from a WhatsApp group** instead.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                          | Required | Description          |
+  | -------- | ----------------------------- | -------- | -------------------- |
+  | `input`  | `UpdateContactWaGroupsInput!` | Yes      | The changes to make. |
+
+  ### `UpdateContactWaGroupsInput`
+
+  | Field                | Type    | Required | Description                                            |
+  | -------------------- | ------- | -------- | ------------------------------------------------------ |
+  | `waGroupId`          | `ID!`   | Yes      | The WhatsApp group.                                    |
+  | `addWaContactIds`    | `[ID]!` | Yes      | Contacts to record as members. Pass `[]` for none.     |
+  | `deleteWaContactIds` | `[ID]!` | Yes      | Contacts to remove from the group. Pass `[]` for none. |
+
+  ## Example response
+
+  `waGroupContacts` holds the member rows for the added contacts; `numberDeleted` counts the
+  contacts actually removed.
+
+  ```json
+  {
+    "data": {
+      "updateContactWaGroups": {
+        "numberDeleted": 1,
+        "waGroupContacts": [
+          { "id": "53", "isAdmin": false, "contact": { "id": "32", "name": "Ravi" } },
+          { "id": "52", "isAdmin": false, "contact": { "id": "31", "name": "Asha" } }
+        ]
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  The result has no `errors` field. Contacts that can't be added or removed are left out of
+  the result. These come back as the top-level error `Something unexpected has happened,
+  please reach out to Glific team over discord to get this resolved`:
+
+  - The WhatsApp group does not exist.
+  - A contact in `deleteWaContactIds` does not exist.
+  - `deleteWaContactIds` is not empty and the group has no active primary phone.
+
+  A user without the staff role gets a top-level `Unauthorized` error.

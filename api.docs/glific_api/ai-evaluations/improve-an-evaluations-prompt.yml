@@ -1,0 +1,73 @@
+info:
+  name: Improve an evaluation's prompt
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation improveEvaluationPrompt($evaluationId: ID!) {
+        improveEvaluationPrompt(evaluationId: $evaluationId) {
+          improvePrompt {
+            status
+          }
+          errors {
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "evaluationId": "21"
+      }
+  auth: inherit
+
+docs: |
+  Asks Kaapi to write a better prompt for the evaluated config version, based on a completed
+  evaluation's results.
+
+  This is asynchronous. The call returns `status: "pending"` once Kaapi accepts the request.
+  When Kaapi calls Glific back with the new prompt, Glific saves it as a new `ready` config
+  version of the assistant, taking the prompt, model, settings and knowledge base from
+  Kaapi's new config, and **Subscribe to improve-prompt updates** pushes it. Guardrails are
+  not copied to the new version. The new version is not made
+  live: review it and use **Set an assistant's live version**.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument       | Type  | Required | Description                          |
+  | -------------- | ----- | -------- | ------------------------------------ |
+  | `evaluationId` | `ID!` | Yes      | A `COMPLETED` AI evaluation.         |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "improveEvaluationPrompt": {
+        "improvePrompt": {
+          "status": "pending"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in `errors` as `{ "message": "..." }`, with `improvePrompt` set to
+  `null`:
+
+  - The evaluation does not exist in the organization: `Evaluation not found.`
+  - The evaluation is not completed:
+    `Evaluation is processing, must be completed before requesting prompt improvement.`
+  - Kaapi times out: `Timeout occurred, please try again.`; Kaapi rejects the request:
+    Kaapi's error.
+  - Any other failure: `An unknown error occurred, please contact Glific support.`
+
+  A user without the staff role gets a top-level `Unauthorized` error.

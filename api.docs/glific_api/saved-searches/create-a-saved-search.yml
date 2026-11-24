@@ -1,0 +1,84 @@
+info:
+  name: Create a saved search
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createSavedSearch($input: SavedSearchInput!) {
+        createSavedSearch(input: $input) {
+          savedSearch {
+            id
+            label
+            shortcode
+            args
+            isReserved
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "Parents asking about sessions",
+          "shortcode": "parent_sessions",
+          "args": "{\"filter\":{\"term\":\"session\",\"includeGroups\":[\"2\"]},\"contactOpts\":{\"limit\":25,\"offset\":0},\"messageOpts\":{\"limit\":20,\"offset\":0}}"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Saves a set of search arguments under a label and shortcode. A search can also be saved
+  while running it, with `saveSearchInput` on **Search › Search conversations**.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                | Required | Description              |
+  | -------- | ------------------- | -------- | ------------------------ |
+  | `input`  | `SavedSearchInput!` | Yes      | The saved search to create. |
+
+  ### `SavedSearchInput`
+
+  | Field       | Type     | Required | Description                                                          |
+  | ----------- | -------- | -------- | -------------------------------------------------------------------- |
+  | `label`     | `String` | Yes      | Display name.                                                        |
+  | `shortcode` | `String` | Yes      | Unique per organization.                                             |
+  | `args`      | `Json`   | Yes      | JSON-encoded string with `filter`, `contactOpts` and `messageOpts`, using the field names of **Search conversations**. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createSavedSearch": {
+        "savedSearch": {
+          "id": "9",
+          "label": "Parents asking about sessions",
+          "shortcode": "parent_sessions",
+          "args": "{\"messageOpts\":{\"offset\":0,\"limit\":20},\"filter\":{\"term\":\"session\",\"includeGroups\":[\"2\"]},\"contactOpts\":{\"offset\":0,\"limit\":25}}",
+          "isReserved": false
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `savedSearch` set to `null`:
+
+  - A required field is missing: `{ "key": "label", "message": "Label: can't be blank" }`.
+  - The shortcode is already used:
+    `{ "key": "shortcode", "message": "Shortcode: has already been taken" }`.
+
+  An `args` value that is not valid JSON is rejected before the mutation runs. A user without
+  the manager role gets a top-level `Unauthorized` error.

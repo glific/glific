@@ -1,0 +1,111 @@
+info:
+  name: Create a message
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createMessage($input: MessageInput!) {
+        createMessage(input: $input) {
+          message {
+            id
+            body
+            type
+            flow
+            status
+            messageNumber
+            sender {
+              id
+              name
+            }
+            receiver {
+              id
+              name
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "body": "Imported from the old helpline",
+          "type": "TEXT",
+          "flow": "INBOUND",
+          "senderId": "8",
+          "receiverId": "1"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Stores a message without sending it. Use it to record or import a message; to deliver a
+  message to a contact, use **Send a message**. `flow` defaults to `INBOUND` and `status` to
+  `enqueued`. The conversation contact is the sender for an inbound message and the receiver
+  for an outbound one.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description            |
+  | -------- | --------------- | -------- | ---------------------- |
+  | `input`  | `MessageInput!` | Yes      | The message to store.  |
+
+  ### `MessageInput`
+
+  The same input is used by **Update a message** and **Send a message**.
+
+  | Field                   | Type                 | Required | Description                                                       |
+  | ----------------------- | -------------------- | -------- | ----------------------------------------------------------------- |
+  | `type`                  | `MessageTypeEnum`    | Yes      | `TEXT`, `IMAGE`, `AUDIO`, `VIDEO`, `DOCUMENT`, `STICKER`, ...      |
+  | `senderId`              | `ID`                 | Yes      | Contact that sent the message. For outbound messages, the organization's own contact. |
+  | `receiverId`            | `ID`                 | Yes      | Contact that receives the message.                                |
+  | `body`                  | `String`             | No       | Text of the message, or the caption for media.                     |
+  | `flow`                  | `MessageFlowEnum`    | No       | `INBOUND` (default) or `OUTBOUND`.                                |
+  | `channel`               | `MessageChannelEnum` | No       | `WHATSAPP` (default) or `WEB`.                                    |
+  | `mediaId`               | `ID`                 | No       | Message media. Required for every type except `TEXT`, `LOCATION`, `LIST`, `QUICK_REPLY` and `LOCATION_REQUEST_MESSAGE`. |
+  | `sendAt`                | `DateTime`           | No       | When to send, for scheduled sends.                                |
+  | `isHsm`                 | `Boolean`            | No       | The message is an HSM template.                                   |
+  | `templateId`            | `Int`                | No       | Session template or HSM the message was made from.                |
+  | `params`                | `[String]`           | No       | Values for the template's `{{1}}`, `{{2}}`, ... placeholders.      |
+  | `interactiveTemplateId` | `Int`                | No       | Interactive template to send (used by **Send a message** only).   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createMessage": {
+        "message": {
+          "id": "1051",
+          "body": "Imported from the old helpline",
+          "type": "TEXT",
+          "flow": "INBOUND",
+          "status": "enqueued",
+          "messageNumber": 16,
+          "sender": { "id": "8", "name": "Chrissy Cron" },
+          "receiver": { "id": "1", "name": "Glific Admin" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `message` set to `null`:
+
+  - A required field is missing: `{ "key": "sender_id", "message": "Sender_id: can't be blank" }`.
+  - A media type without `mediaId`:
+    `{ "key": "type", "message": "Type: image message type should have a media id" }`.
+
+  A sender or receiver ID that does not exist fails the database constraint and returns a
+  top-level error. A user without the staff role gets a top-level `Unauthorized` error.

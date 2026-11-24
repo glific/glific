@@ -1,0 +1,68 @@
+info:
+  name: Update a role
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateAccessRole($id: ID!, $input: AccessRoleInput) {
+        updateAccessRole(id: $id, input: $input) {
+          accessRole {
+            id
+            label
+            description
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "6",
+        "input": {
+          "description": "Teachers and their assistants"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes an access role. Only the fields given in `input` change. Reserved roles can be
+  changed too; nothing stops it.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description                                             |
+  | -------- | ----------------- | -------- | ------------------------------------------------------- |
+  | `id`     | `ID!`             | Yes      | The role to change.                                     |
+  | `input`  | `AccessRoleInput` | No       | Fields to change. See **Create a role** for the list.   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateAccessRole": {
+        "accessRole": {
+          "id": "6",
+          "label": "Teacher",
+          "description": "Teachers and their assistants"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The role does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.AccessControl.Role", "message": "Resource not found" }]`.
+  - The new label is already used: `{ "key": "label", "message": "Label: has already been taken" }`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

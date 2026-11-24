@@ -1,0 +1,48 @@
+info:
+  name: Subscribe to BSP balance
+  type: graphql
+  seq: 20
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription bspBalance($organizationId: ID!) {
+        bspBalance(organizationId: $organizationId)
+      }
+    variables: |-
+      {
+        "organizationId": "1"
+      }
+  auth: inherit
+
+docs: |
+  Pushes the organization's Gupshup wallet balance each time the background balance check
+  fetches it. The same check mails low-balance warnings.
+
+  **Role:** none. The subscription only checks that `organizationId` is the logged-in user's
+  organization.
+
+  ## Arguments
+
+  | Argument         | Type  | Required | Description                          |
+  | ---------------- | ----- | -------- | ------------------------------------ |
+  | `organizationId` | `ID!` | Yes      | Must be the user's own organization. |
+
+  ## Example response
+
+  The pushed `Json` holds the balance in USD.
+
+  ```json
+  {
+    "data": {
+      "bspBalance": "{\"balance\":4.43}"
+    }
+  }
+  ```
+
+  ## Errors
+
+  An `organizationId` other than the user's own organization rejects the subscription with
+  `Auth Credentials mismatch`.

@@ -1,0 +1,17 @@
+info:
+  name: Analytics
+  type: folder
+  seq: 8
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Glific's analytics dashboards are Apache Superset dashboards embedded in the frontend. The
+    frontend asks Glific for a short-lived guest token and hands it to the Superset embed SDK,
+    so users never log in to Superset themselves.
+
+    Needs the `superset_enabled` feature flag for the organization, set by a Glific admin. Any
+    logged-in user can call it.
+  type: text/markdown

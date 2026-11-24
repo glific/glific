@@ -1,0 +1,87 @@
+info:
+  name: List providers
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query providers($filter: ProviderFilter, $opts: Opts) {
+        providers(filter: $filter, opts: $opts) {
+          id
+          name
+          shortcode
+          group
+          description
+          isRequired
+          keys
+          secrets
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "Gupshup"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the providers an organization can connect to, optionally filtered and paginated.
+  Sorted by `name` by default.
+
+  Internal providers (`goth`, `kaapi`, `gupshup_enterprise`, `navana_tech`, `google_asr`,
+  `dialogflow`, `open_ai`) are left out, and so is `google_cloud_storage` for a trial
+  organization. They are removed after the `limit` is applied, so a page can hold fewer rows
+  than `limit`.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                    |
+  | -------- | ---------------- | -------- | ---------------------------------------------- |
+  | `filter` | `ProviderFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`           | No       | Sorting and pagination.                        |
+
+  ### `ProviderFilter`
+
+  | Field       | Type     | Description                                 |
+  | ----------- | -------- | ------------------------------------------- |
+  | `name`      | `String` | Name contains this text (case-insensitive). |
+  | `shortcode` | `String` | Shortcode contains this text.               |
+
+  ## Example response
+
+  `keys` and `secrets` are JSON-encoded strings describing the form fields an organization
+  fills in. Shortened:
+
+  ```json
+  {
+    "data": {
+      "providers": [
+        {
+          "id": "1",
+          "name": "Gupshup",
+          "shortcode": "gupshup",
+          "group": "bsp",
+          "description": "Setup Gupshup for WhatsApp message",
+          "isRequired": true,
+          "keys": "{\"url\":{\"default\":\"https://gupshup.io/\",\"hide\":true,\"label\":\"BSP Home Page\",\"type\":\"string\",\"view_only\":true}}",
+          "secrets": "{\"api_key\":{\"default\":null,\"label\":\"API Key\",\"type\":\"string\",\"view_only\":false},\"app_name\":{\"default\":null,\"label\":\"App Name\",\"type\":\"string\",\"view_only\":false}}"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the admin role gets a top-level `Unauthorized` error.

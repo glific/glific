@@ -1,0 +1,96 @@
+info:
+  name: List WhatsApp group contacts
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query listContactWaGroup($filter: ContactWaGroupFilter, $opts: Opts) {
+        listContactWaGroup(filter: $filter, opts: $opts) {
+          id
+          isAdmin
+          contact {
+            id
+            name
+            phone
+          }
+          waGroup {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "waGroupId": "2",
+          "dateRange": {
+            "from": "2026-11-01T00:00:00Z",
+            "to": "2026-11-16T00:00:00Z"
+          }
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 25,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists WhatsApp group member rows, usually for one group. Sorted by `id` unless
+  `opts.orderWith` says otherwise.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type                   | Required | Description                                    |
+  | -------- | ---------------------- | -------- | ---------------------------------------------- |
+  | `filter` | `ContactWaGroupFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`                 | No       | Sorting and pagination.                        |
+
+  ### `ContactWaGroupFilter`
+
+  | Field       | Type             | Description                                       |
+  | ----------- | ---------------- | ------------------------------------------------- |
+  | `waGroupId` | `ID`             | Only members of this WhatsApp group.              |
+  | `dateRange` | `DateRangeInput` | Only rows whose date column falls in the range.   |
+
+  ### `DateRangeInput`
+
+  | Field    | Type       | Description                                                       |
+  | -------- | ---------- | ----------------------------------------------------------------- |
+  | `from`   | `DateTime` | Start of the range. Without it, the range is open at the start.   |
+  | `to`     | `DateTime` | End of the range, up to the end of that day.                      |
+  | `column` | `String`   | Column to compare, in snake_case. Defaults to `inserted_at`.      |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "listContactWaGroup": [
+        {
+          "id": "51",
+          "isAdmin": true,
+          "contact": { "id": "1", "name": "NGO Main Account", "phone": "910000000001" },
+          "waGroup": { "id": "2", "label": "Pune volunteers" }
+        },
+        {
+          "id": "52",
+          "isAdmin": false,
+          "contact": { "id": "31", "name": "Asha", "phone": "910000000007" },
+          "waGroup": { "id": "2", "label": "Pune volunteers" }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

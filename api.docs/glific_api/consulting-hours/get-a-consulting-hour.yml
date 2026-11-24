@@ -1,0 +1,85 @@
+info:
+  name: Get a consulting hour
+  type: graphql
+  seq: 2
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query consultingHour($id: ID!) {
+        consultingHour(id: $id) {
+          consultingHour {
+            id
+            participants
+            organizationName
+            staff
+            content
+            when
+            duration
+            isBillable
+            insertedAt
+            updatedAt
+            organization {
+              id
+              name
+              shortcode
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Returns one consulting hour entry by ID, from any organization.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The entry to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "consultingHour": {
+        "consultingHour": {
+          "id": "12",
+          "participants": "Asha, Ravi",
+          "organizationName": "Glific Foundation",
+          "staff": "Glific support team",
+          "content": "Walked through flow keywords and the WhatsApp opt-in flow",
+          "when": "2026-11-10T10:30:00Z",
+          "duration": 30,
+          "isBillable": true,
+          "insertedAt": "2026-11-10T12:02:41Z",
+          "updatedAt": "2026-11-10T12:02:41Z",
+          "organization": { "id": "1", "name": "Glific Foundation", "shortcode": "glific" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The entry does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Saas.ConsultingHour", "message": "Resource not found" }]` and
+    `consultingHour` is `null`.
+  - A user without the `glific_admin` role gets a top-level `Unauthorized` error.

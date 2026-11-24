@@ -1,0 +1,50 @@
+info:
+  name: List interactive templates
+  type: http
+  seq: 16
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/interactive-templates"
+  auth: inherit
+
+docs: |
+  Lists the organization's interactive message templates (quick replies, lists, location
+  requests) for the editor's "send interactive message" action.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. `interactive_content` is the WhatsApp payload the template sends, in its default
+  language.
+
+  ```json
+  {
+    "results": [
+      {
+        "id": 4,
+        "name": "Continue or stop",
+        "type": "quick_reply",
+        "interactive_content": {
+          "type": "quick_reply",
+          "content": { "type": "text", "text": "Do you want to continue?" },
+          "options": [
+            { "type": "text", "title": "Continue" },
+            { "type": "text", "title": "Stop" }
+          ]
+        },
+        "created_on": "2026-10-04T06:21:40Z",
+        "modified_on": "2026-10-04T06:21:40Z"
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

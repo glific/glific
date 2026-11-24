@@ -1,0 +1,72 @@
+info:
+  name: Get a contact by phone
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query contactByPhone($phone: String!) {
+        contactByPhone(phone: $phone) {
+          contact {
+            id
+            name
+            status
+            bspStatus
+            optinTime
+            language {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "phone": "910000000002"
+      }
+  auth: inherit
+
+docs: |
+  Returns the contact with this exact phone number. A contact that has no phone (a web-only
+  contact) can't be found this way; use **Get a contact by identity** instead.
+
+  **Role:** staff. A restricted staff user can only find contacts in their own collections.
+
+  ## Arguments
+
+  | Argument | Type      | Required | Description                                              |
+  | -------- | --------- | -------- | -------------------------------------------------------- |
+  | `phone`  | `String!` | Yes      | The phone as stored: country code and number, no `+`.    |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "contactByPhone": {
+        "contact": {
+          "id": "12",
+          "name": "Ravi Kumar",
+          "status": "VALID",
+          "bspStatus": "SESSION_AND_HSM",
+          "optinTime": "2026-10-02T06:15:00Z",
+          "language": { "id": "1", "label": "English" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - No contact has this phone, the phone is empty, or the user can't see the contact:
+    `errors` is `[{ "key": "Contact", "message": "Contact not found or permission denied." }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

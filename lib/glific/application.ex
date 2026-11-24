@@ -79,7 +79,7 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for Tesla success/failure call:
     attach_tesla_telemetry_event()
 
-    # Add this :telemetry.attach/4 for Ecto DB connection errors:
+    # Add this :telemetry.attach/4 for Ecto query timing:
     attach_repo_telemetry_event()
 
     Glific.ErrorLogCounter.attach()

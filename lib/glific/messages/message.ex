@@ -72,7 +72,7 @@ defmodule Glific.Messages.Message do
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           message_broadcast_id: non_neg_integer | nil,
           message_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
-          send_at: :utc_datetime | nil,
+          send_at: DateTime.t() | nil,
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
           inserted_at: :utc_datetime_usec | nil,

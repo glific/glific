@@ -1,0 +1,88 @@
+info:
+  name: List groups
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query groups($filter: GroupFilter, $opts: Opts) {
+        groups(filter: $filter, opts: $opts) {
+          id
+          label
+          description
+          isRestricted
+          lastCommunicationAt
+          contactsCount
+          usersCount
+          waGroupsCount
+          roles {
+            id
+            label
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "label": "cohort",
+          "groupType": "WABA"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's groups (collections), optionally filtered and paginated.
+
+  **Role:** staff. A restricted staff user only sees the groups they belong to. When roles and
+  permissions are on, a user with a custom access role only sees groups shared with that role.
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description                                       |
+  | -------- | ------------- | -------- | ------------------------------------------------- |
+  | `filter` | `GroupFilter` | No       | Narrows the list. All given fields must match.    |
+  | `opts`   | `Opts`        | No       | Sorting and pagination. Sorts on `label` by default. |
+
+  ### `GroupFilter`
+
+  | Field       | Type     | Description                                                     |
+  | ----------- | -------- | --------------------------------------------------------------- |
+  | `label`     | `String` | Label contains this text (case-insensitive).                    |
+  | `groupType` | `String` | `WABA` for contact collections, `WA` for WhatsApp group collections. |
+
+  ## Example response
+
+  `contactsCount`, `usersCount` and `waGroupsCount` each run a query per group, so leave them
+  out of large lists you don't need them for.
+
+  ```json
+  {
+    "data": {
+      "groups": [
+        {
+          "id": "7",
+          "label": "November cohort",
+          "description": "Learners who joined in November",
+          "isRestricted": false,
+          "lastCommunicationAt": "2026-11-15T11:02:43Z",
+          "contactsCount": 42,
+          "usersCount": 2,
+          "waGroupsCount": 0,
+          "roles": []
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

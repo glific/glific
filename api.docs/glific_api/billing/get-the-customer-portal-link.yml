@@ -1,0 +1,50 @@
+info:
+  name: Get the customer portal link
+  type: graphql
+  seq: 8
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query customerPortal {
+        customerPortal {
+          url
+          returnUrl
+        }
+      }
+    variables: |-
+      {}
+  auth: inherit
+
+docs: |
+  Creates a Stripe billing portal session for the organization's active billing record and
+  returns its link. In the portal the organization can see invoices and change its card.
+  The portal sends the user back to `https://<shortcode>.<base domain>/settings/billing`.
+
+  **Role:** admin
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "customerPortal": {
+        "url": "https://billing.stripe.com/session/test_session_xxx",
+        "returnUrl": "https://ngo.glific.com/settings/billing"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - Stripe refuses the session: a top-level `Invalid Stripe Key` error.
+  - The organization has no active billing record: `url` and `returnUrl` are `null` (the
+    result type has no `errors` field to report it in).
+  - A user without the admin role gets a top-level `Unauthorized` error.

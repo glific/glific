@@ -1,0 +1,63 @@
+info:
+  name: Get completion data
+  type: http
+  seq: 23
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/completion"
+  auth: inherit
+
+docs: |
+  Returns what the editor needs for expression autocomplete and webhook presets: the
+  variables available in a flow (`@contact`, `@results`, `@flow` and so on), the expression
+  functions, and Glific's built-in webhook functions. The content comes from static files
+  shipped with Glific.
+
+  The `speech_to_text` and `text_to_speech` webhook presets are only included when the
+  organization has the `unified_stt_tts` feature flag on.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`, shortened to one entry per list:
+
+  ```json
+  {
+    "context": {
+      "types": [
+        {
+          "name": "flow",
+          "key_source": "flow",
+          "properties": [
+            { "key": "uuid", "help": "the uuid of the flow", "type": "text" }
+          ]
+        }
+      ]
+    },
+    "functions": [
+      {
+        "signature": "abs(number)",
+        "summary": "Returns the absolute value of `number`.",
+        "detail": "",
+        "examples": [{ "template": "@(abs(-10))", "output": "10" }]
+      }
+    ],
+    "webhook": [
+      {
+        "name": "parse_via_chat_gpt",
+        "body": "{\n\"question_text\": \"\",\n\"gpt_model\": \"\",\n\"prompt\": \"\"\n}",
+        "headers": { "Content-Type": "application/json" }
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

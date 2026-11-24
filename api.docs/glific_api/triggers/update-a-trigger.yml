@@ -1,0 +1,105 @@
+info:
+  name: Update a trigger
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateTrigger($id: ID!, $input: TriggerInput!) {
+        updateTrigger(id: $id, input: $input) {
+          trigger {
+            id
+            name
+            startAt
+            nextTriggerAt
+            endDate
+            isRepeating
+            frequency
+            days
+            hours
+            groups
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "5",
+        "input": {
+          "flowId": "3",
+          "groupIds": [1, 2],
+          "startDate": "2026-11-18",
+          "startTime": "04:30:00",
+          "endDate": "2027-01-31",
+          "isRepeating": true,
+          "frequency": ["daily"]
+        }
+      }
+  auth: inherit
+
+docs: |
+  Reschedules or retargets a trigger. Send the whole schedule each time: the start is
+  recomputed from `startDate` and `startTime`, and the name, `nextTriggerAt` and last run are
+  reset from it, as in **Create a trigger**.
+
+  `isActive` is read-only here: including it, even with the current value, makes the update
+  fail.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                                                           |
+  | -------- | --------------- | -------- | ------------------------------------------------------------------------------------- |
+  | `id`     | `ID!`           | Yes      | The trigger to change.                                                                |
+  | `input`  | `TriggerInput!` | Yes      | The new settings. See **Create a trigger** for the fields; `flowId`, `startDate` and `startTime` are required and `isActive` is not allowed. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateTrigger": {
+        "trigger": {
+          "id": "5",
+          "name": "Help Workflow_18/11/2026_10:00AM",
+          "startAt": "2026-11-18T04:30:00Z",
+          "nextTriggerAt": "2026-11-18T04:30:00Z",
+          "endDate": "2027-01-31",
+          "isRepeating": true,
+          "frequency": "daily",
+          "days": [],
+          "hours": [],
+          "groups": ["Optin contacts", "Default Collection"]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `trigger` set to `null`, the same as
+  **Create a trigger**:
+
+  - The start is not in the future:
+    `{ "key": "start_at", "message": "Start_at: Trigger start_at should always be greater than current time" }`.
+  - Invalid `days` or `hours`: a `frequency` error, as in **Create a trigger**.
+
+  When `flowId` changes, the new flow is checked before the trigger is updated, and a bad flow
+  gives a top-level error, as in **Create a trigger**: `Triggers cannot start a web flow, …` for
+  a web flow, or `Flow not found` for a flow outside the caller's organization. An unchanged
+  `flowId` is not checked, so a trigger already on a web flow can still have its schedule edited.
+
+  A trigger that doesn't exist in the organization gives `Resource not found` in `errors`.
+  `isActive` in the input gives a top-level `Cannot modify read-only fields` error. Leaving out
+  `flowId`, `startDate` or `startTime` gives a top-level `Something unexpected has happened,
+  please reach out to Glific team over discord to get this resolved`. A user without the manager
+  role gets a top-level `Unauthorized` error.

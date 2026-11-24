@@ -1,0 +1,151 @@
+info:
+  name: Search conversations
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query search($filter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!, $saveSearchInput: SaveSearchInput) {
+        search(filter: $filter, contactOpts: $contactOpts, messageOpts: $messageOpts, saveSearchInput: $saveSearchInput) {
+          id
+          contact {
+            id
+            name
+            phone
+            bspStatus
+            lastMessageAt
+            isOrgRead
+            isOrgReplied
+            isContactReplied
+          }
+          group {
+            id
+            label
+          }
+          messages {
+            id
+            body
+            type
+            flow
+            bspStatus
+            insertedAt
+            tags {
+              id
+              label
+            }
+          }
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "term": "session",
+          "includeTags": ["6"],
+          "dateRange": {
+            "from": "2026-11-01",
+            "to": "2026-11-16"
+          }
+        },
+        "contactOpts": {
+          "limit": 25,
+          "offset": 0
+        },
+        "messageOpts": {
+          "limit": 20,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Returns the conversations that match a filter, most recently active first. Each conversation
+  is one contact (or, with `searchGroup: true`, one collection) and its latest messages, newest
+  first. This is the query behind the chat inbox.
+
+  Only contacts the user may see are searched: a restricted staff user sees only contacts in
+  their assigned collections. Blocked contacts are never returned.
+
+  Passing `saveSearchInput` also stores these arguments as a saved search (see **Saved
+  Searches**) before running the search.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument          | Type              | Required | Description                                                                 |
+  | ----------------- | ----------------- | -------- | --------------------------------------------------------------------------- |
+  | `filter`          | `SearchFilter!`   | Yes      | What to match. Pass `{}` for all conversations.                             |
+  | `contactOpts`     | `Opts!`           | Yes      | `limit` and `offset` over conversations. Give both.                         |
+  | `messageOpts`     | `Opts!`           | Yes      | `limit` and `offset` over the messages of each conversation; `limit` is capped at 250. Give both, or the search returns `[]`. |
+  | `saveSearchInput` | `SaveSearchInput` | No       | `label` and `shortcode` to save this search under.                          |
+  | `saveSearch`      | `Boolean`         | No       | Not used; `saveSearchInput` alone decides whether the search is saved.     |
+
+  ### `SearchFilter`
+
+  `id`, `ids` and `status` are exclusive: the first one given, in that order, picks the
+  contacts and the term, group and label filters are not applied. The other filters combine.
+
+  | Field            | Type                  | Description                                                                 |
+  | ---------------- | --------------------- | --------------------------------------------------------------------------- |
+  | `term`           | `String`              | Message body or contact name contains this text (case-insensitive), or it is the contact's whole phone number. Non-staff users also match web channel usernames starting with it. |
+  | `id`             | `Gid`                 | One contact's conversation. Returned even if it has no messages. With `searchGroup`, a collection ID. |
+  | `ids`            | `[Gid]`               | These contacts' conversations. Returned even if they have no messages. With `searchGroup`, collection IDs. |
+  | `status`         | `String`              | A built-in inbox view: `Unread`, `Not replied` (organization has not replied), `Not Responded` (contact has not replied), `Optin` or `Optout`. Case-sensitive; any other value fails with a top-level error. |
+  | `includeTags`    | `[Gid]`               | Only messages with one of these tags, or a parent of one of them.          |
+  | `includeLabels`  | `[Gid]`               | Contacts with a message whose flow label contains one of these flow labels' names. |
+  | `includeGroups`  | `[Gid]`               | Contacts in one of these collections.                                       |
+  | `includeUsers`   | `[Gid]`               | Only messages sent by one of these staff users.                             |
+  | `channel`        | `MessageChannelEnum`  | Only messages on this channel, `WHATSAPP` or `WEB`.                         |
+  | `dateRange`      | `DateInput`           | `from` and `to` dates (`YYYY-MM-DD`, both inclusive) on the message's `insertedAt`. Either may be omitted. |
+  | `dateExpression` | `DateExpressionInput` | `fromExpression` and `toExpression`: EEx expressions that evaluate to `YYYY-MM-DD`, for relative ranges such as `<%= Timex.shift(Date.utc_today(), days: -7) %>`. |
+  | `savedSearchId`  | `ID`                  | Run a saved search: its stored arguments replace all of these.              |
+  | `searchGroup`    | `Boolean`             | Return collection conversations (messages sent to whole collections) instead of contacts. Only `id`, `ids`, `includeGroups` and `groupLabel` apply. |
+  | `groupLabel`     | `String`              | With `searchGroup`, collections whose label contains this text.            |
+
+  ## Example response
+
+  `id` is `contact_<contact id>` for a contact conversation and `group_<collection id>` for a
+  collection one.
+
+  ```json
+  {
+    "data": {
+      "search": [
+        {
+          "id": "contact_8",
+          "contact": {
+            "id": "8",
+            "name": "Chrissy Cron",
+            "phone": "910000000001",
+            "bspStatus": "SESSION_AND_HSM",
+            "lastMessageAt": "2026-11-15T10:13:02Z",
+            "isOrgRead": false,
+            "isOrgReplied": true,
+            "isContactReplied": false
+          },
+          "group": null,
+          "messages": [
+            {
+              "id": "1042",
+              "body": "Hi, I want to know about the next session",
+              "type": "TEXT",
+              "flow": "INBOUND",
+              "bspStatus": "DELIVERED",
+              "insertedAt": "2026-11-15T10:12:44Z",
+              "tags": [{ "id": "6", "label": "Important" }]
+            }
+          ]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  If loading the conversations fails, the search returns `[]` rather than an error. Saving a search with a
+  shortcode that is already used does not fail the search; the search runs and nothing is
+  saved. A user without the staff role gets a top-level `Unauthorized` error.

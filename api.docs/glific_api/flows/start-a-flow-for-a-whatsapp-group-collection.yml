@@ -1,0 +1,61 @@
+info:
+  name: Start a flow for a WhatsApp group collection
+  type: graphql
+  seq: 19
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation startWaGroupCollectionFlow($flowId: ID!, $groupId: ID!) {
+        startWaGroupCollectionFlow(flowId: $flowId, groupId: $groupId) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "flowId": "12",
+        "groupId": "7"
+      }
+  auth: inherit
+
+docs: |
+  Starts the published revision of a flow in every WhatsApp group of a WhatsApp group
+  collection, and posts a `Starting flow: *<flow>* for group: *<collection>*` message for the
+  collection.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument  | Type  | Required | Description                                         |
+  | --------- | ----- | -------- | --------------------------------------------------- |
+  | `flowId`  | `ID!` | Yes      | The flow to start.                                  |
+  | `groupId` | `ID!` | Yes      | The collection (of `WA` type) whose WhatsApp groups to start it in. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "startWaGroupCollectionFlow": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The flow does not exist in the organization:
+    `[{ "key": "Elixir.Glific.Flows.Flow", "message": "Resource not found" }]`.
+  - The flow has never been published: `[{ "key": "Flow", "message": "Flow not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.
+
+  Unlike **Start a flow for a WhatsApp group**, this does not check that the flow is active.

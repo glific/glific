@@ -1,0 +1,21 @@
+info:
+  name: Extensions
+  type: folder
+  seq: 54
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Extensions are Elixir modules, stored as source code, that Glific compiles and loads at
+    runtime to add custom behaviour for one organization. Each extension belongs to an
+    organization, given as `clientId`.
+
+    When an extension is saved with `isActive: true`, Glific compiles its `code` on the
+    server: `isValid` and `module` record whether it compiled and the module name it defined.
+    An inactive extension is not compiled, and any module it loaded before is unloaded.
+
+    Every operation here needs the `glific_admin` role, because the code runs inside Glific.
+    See **Organizations** for the organizations that `clientId` refers to.
+  type: text/markdown

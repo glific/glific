@@ -1,0 +1,94 @@
+info:
+  name: Validate a trigger
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation validateTrigger($input: TriggerInput!) {
+        validateTrigger(input: $input) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "flowId": "3"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Checks whether a flow is safe to start from a trigger, without creating anything.
+  Triggers usually reach contacts outside WhatsApp's 24-hour session window, where only
+  template (HSM) messages are delivered, so the flow's first message should be a template.
+
+  It looks at the first action of the published revision's first node (the top-left node in
+  the editor). If that action enters another flow, it checks that flow's first action too,
+  up to two levels deep. Only `flowId` is read from the input.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type            | Required | Description                                                |
+  | -------- | --------------- | -------- | ---------------------------------------------------------- |
+  | `input`  | `TriggerInput!` | Yes      | The trigger being created. Only `flowId` is used.          |
+
+  ## Example response
+
+  The flow opens with a template:
+
+  ```json
+  {
+    "data": {
+      "validateTrigger": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  The flow opens with a session or interactive message:
+
+  ```json
+  {
+    "data": {
+      "validateTrigger": {
+        "success": false,
+        "errors": [{ "key": "warning", "message": "The first message node is not an HSM template" }]
+      }
+    }
+  }
+  ```
+
+  This is a warning; **Create a trigger** still accepts the flow.
+
+  The flow cannot be read:
+
+  ```json
+  {
+    "data": {
+      "validateTrigger": {
+        "success": false,
+        "errors": [{ "key": "flow_id", "message": "The flow has not been published" }]
+      }
+    }
+  }
+  ```
+
+  The `flow_id` message is `The flow has not been published`, also returned for a flow that is
+  not in the caller's organization.
+
+  ## Errors
+
+  An entered sub-flow that can't be read is skipped rather than reported. A user without the
+  manager role gets a top-level `Unauthorized` error.

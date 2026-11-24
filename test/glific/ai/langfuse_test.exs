@@ -319,6 +319,29 @@ defmodule Glific.AI.LangfuseTest do
       end
     end
 
+    test "keeps multibyte characters next to a masked value whole" do
+      for {text, masked} <- [
+            {"write to asha@example.org‼️ now", "write to [email]‼️ now"},
+            {"mail asha@example.in…", "mail [email]…"},
+            {"done asha@example.org✅", "done [email]✅"},
+            {"call 919000000001✅", "call [phone]✅"}
+          ] do
+        assert Langfuse.mask(text) == masked
+        assert {:ok, _json} = Jason.encode(Langfuse.mask(text))
+      end
+    end
+
+    test "masks a JSON-encoded tool result whose truncated text ends in an ellipsis" do
+      tool_result =
+        Jason.encode!(%{
+          type: "send_msg",
+          text:
+            "📄🖨️ Click on the link below to download and view the Lesson Plan for your next TaRL lesson.\n\n@results.lesson_plan.lesson_…"
+        })
+
+      assert {:ok, _json} = tool_result |> Langfuse.mask() |> Jason.encode()
+    end
+
     test "redacts the phone number a tool was called with", %{message: message} do
       tool = message.id |> spans() |> named("get_contact")
 

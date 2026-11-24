@@ -1,0 +1,99 @@
+info:
+  name: Create a golden QA
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createGoldenQa($input: GoldenQaInput!) {
+        createGoldenQa(input: $input) {
+          goldenQa {
+            id
+            name
+            duplicationFactor
+            datasetId
+            fileName
+            totalItems
+          }
+          errors {
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "prenatal_faq",
+          "file": "file",
+          "duplicationFactor": 1
+        }
+      }
+  auth: inherit
+
+docs: |
+  Uploads a CSV of questions and expected answers to Kaapi as an evaluation dataset and saves
+  it as a golden QA. The upload is synchronous.
+
+  The file travels as a GraphQL multipart request (`multipart/form-data`): a `query` part,
+  a `variables` part where `input.file` names the file part (here `"file"`), and the CSV in
+  a part with that name. Bruno's GraphQL body can't attach files, so send this from a client
+  that supports multipart GraphQL uploads.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description          |
+  | -------- | ---------------- | -------- | -------------------- |
+  | `input`  | `GoldenQaInput!` | Yes      | The dataset.         |
+
+  ### `GoldenQaInput`
+
+  | Field               | Type      | Required | Description                                                         |
+  | ------------------- | --------- | -------- | ------------------------------------------------------------------- |
+  | `name`              | `String!` | Yes      | Lowercase letters, digits and underscores only. Unique in the organization. |
+  | `file`              | `Upload!` | Yes      | The CSV, at most 1 MB. The header row must be exactly `question,answer`; at most 100 question rows. A UTF-8 byte-order mark is removed. |
+  | `duplicationFactor` | `Int!`    | Yes      | 1 to 5: how many times each question is asked in a run.             |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createGoldenQa": {
+        "goldenQa": {
+          "id": "3",
+          "name": "prenatal_faq",
+          "duplicationFactor": 1,
+          "datasetId": 58,
+          "fileName": "prenatal_faq.csv",
+          "totalItems": 25
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in `errors` as `{ "message": "..." }`, with `goldenQa` set to `null`:
+
+  - Bad name: `Name can only contain lowercase alphanumeric characters and underscores`.
+  - Bad factor: `Duplication factor must be between 1 and 5`.
+  - File too big: `File size must not exceed 1MB`.
+  - Wrong header: `CSV must have exactly two columns: 'question' and 'answer'`; empty file:
+    `The uploaded CSV file is empty`; too many rows:
+    `The CSV contains 140 questions, which exceeds the maximum allowed limit of 100 unique questions. Please reduce the number of questions in the CSV.`
+  - Malformed quoting: a message naming the row, such as
+    `Row 12 of the CSV has an unescaped " character inside a field...`; other unreadable
+    files: `Unable to parse the uploaded CSV file`.
+  - The name is already used: `organization_id: has already been taken`. The dataset just
+    uploaded to Kaapi is deleted again.
+  - Kaapi times out: `Timeout occurred, please try again.`; Kaapi rejects the file: Kaapi's
+    error.
+
+  A user without the staff role gets a top-level `Unauthorized` error.
