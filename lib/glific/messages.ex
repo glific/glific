@@ -1226,7 +1226,7 @@ defmodule Glific.Messages do
 
     reset_contact_fields(contact, channel)
 
-    FlowContext.mark_flows_complete(contact.id, false, source: "clear_messages", channel: channel)
+    FlowContext.mark_flows_complete(contact.id, false, channel, source: "clear_messages")
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 

@@ -1619,10 +1619,7 @@ defmodule Glific.Flows do
   """
   @spec terminate_contact_flows?(non_neg_integer, atom() | nil) :: :ok
   def terminate_contact_flows?(contact_id, channel \\ nil) do
-    FlowContext.mark_flows_complete(contact_id, false,
-      source: "terminate_contact_flows",
-      channel: channel
-    )
+    FlowContext.mark_flows_complete(contact_id, false, channel, source: "terminate_contact_flows")
 
     :ok
   end
