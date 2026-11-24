@@ -141,7 +141,7 @@ heading: 1. Flow Execution Engine › 1.3 FlowContext — Every Field › Init f
 ---
 
 1. Reject empty flow.
-2. If `parent_id` is nil (top-level): call `mark_flows_complete(contact_id, flow.is_background, source: "init_context")` — kills prior non-background flows.
+2. If `parent_id` is nil (top-level): call `mark_flows_complete(contact_id, flow.is_background, channel, source: "init_context")` — kills prior non-background flows on the same channel (a nil channel means every channel).
 3. `seed_context/2` — inserts DB row.
 4. `load_context/2` — loads the start node from uuid_map.
 5. `execute([])` — begins execution.
@@ -191,7 +191,7 @@ source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Backg
 📖 Source: https://glific.github.io/docs/docs/Product%20Features/Flows/Others/Background%20Flows/
 
 - Set by `Periodic.init_common_flow` and some broadcast operations.
-- `mark_flows_complete(contact_id, is_background=true)` is a no-op — so starting a new top-level flow does NOT kill background flows.
+- `mark_flows_complete(contact_id, is_background=true, channel)` is a no-op — so starting a new top-level flow does NOT kill background flows.
 - When a background flow wakes up, it kills all _other_ background flows for the same contact.
 
 --- entry
