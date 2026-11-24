@@ -57,6 +57,9 @@ defmodule GlificWeb.Resolvers.Triggers do
 
       {:warning, warning} ->
         {:ok, %{success: false, errors: [%{key: "warning", message: warning}]}}
+
+      {:error, error} ->
+        {:ok, %{success: false, errors: [%{key: "flow_id", message: error}]}}
     end
   end
 
@@ -71,10 +74,6 @@ defmodule GlificWeb.Resolvers.Triggers do
          {:ok, cleaned_params} <- validate_params(params),
          {:ok, trigger} <- Triggers.update_trigger(trigger, cleaned_params) do
       {:ok, %{trigger: trigger}}
-    else
-      _ ->
-        {:error,
-         dgettext("errors", "Trigger start_at should always be greater than current time")}
     end
   end
 

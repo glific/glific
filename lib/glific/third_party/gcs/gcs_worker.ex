@@ -437,7 +437,10 @@ defmodule Glific.GCS.GcsWorker do
   def download_file_to_temp(url, path, org_id) do
     Logger.info("GCSWORKER: Downloading file: org_id: #{org_id}, url: #{url}")
 
-    Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]])
+    # The provider CDN serves deduplicated media behind a 302 to a shared content URL.
+    [{Tesla.Middleware.FollowRedirects, max_redirects: 5}]
+    |> Tesla.client()
+    |> Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]])
     |> case do
       {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
         File.write!(path, body)
