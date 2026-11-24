@@ -214,12 +214,12 @@ defmodule Glific.Flows.FlowContextTest do
       refute is_nil(Repo.get!(FlowContext, web_context.id).completed_at)
     end
 
-    test "stopping every channel's flows records one history entry per channel that had one", %{
+    test "stopping with no channel ends every channel's flows and records one entry", %{
       flow: flow
     } do
       contact = Fixtures.contact_fixture()
 
-      {:ok, _whatsapp, _} =
+      {:ok, whatsapp, _} =
         FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
 
       {:ok, web, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
@@ -230,7 +230,9 @@ defmodule Glific.Flows.FlowContextTest do
 
       FlowContext.mark_flows_complete(contact.id, false, source: "terminate_contact_flows")
 
-      assert Enum.sort(stopped_history(contact)) == [:web, :whatsapp]
+      assert Repo.get!(FlowContext, whatsapp.id).completed_at != nil
+      assert Repo.get!(FlowContext, web.id).completed_at != nil
+      assert stopped_history(contact) == [:whatsapp]
     end
 
     test "stopping one channel's flows records that channel", %{flow: flow} do
