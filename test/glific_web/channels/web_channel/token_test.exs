@@ -350,6 +350,30 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert {:error, :invalid} = Token.renew(organization_id, expired, @now)
     end
 
+    test "a renewed token expires with its session when that comes before the hour", %{
+      organization_id: organization_id
+    } do
+      token =
+        %{"jti" => "s1", "sst" => @now - 172_000}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:ok, renewed, _claims} = Token.renew(organization_id, token, @now)
+      assert {:ok, %{exp: exp}} = Token.verify(organization_id, renewed, @now)
+      assert exp == @now - 172_000 + 172_800
+    end
+
+    test "an expired token signed with another secret is refused", %{
+      organization_id: organization_id
+    } do
+      expired =
+        %{"jti" => "s1", "sst" => @now - 7_200, "iat" => @now - 7_200, "exp" => @now - 3_600}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign("other-secret-other-secret-012345")
+
+      assert {:error, :invalid} = Token.renew(organization_id, expired, @now)
+    end
+
     test "an expired NGO token and nil are refused", %{organization_id: organization_id} do
       expired =
         %{"iat" => @now - 7_200, "exp" => @now - 3_600}
