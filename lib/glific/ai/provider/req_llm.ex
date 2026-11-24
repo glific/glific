@@ -59,7 +59,7 @@ defmodule Glific.AI.Provider.ReqLLM do
            request_opts(tools, opts)
          ) do
       {:ok, response} ->
-        completed(spec, response)
+        {:ok, reply(response), usage(spec, response)}
 
       {:error, error} ->
         failed(spec, Glific.SafeLog.safe_inspect(error))
@@ -71,22 +71,6 @@ defmodule Glific.AI.Provider.ReqLLM do
   catch
     :exit, reason ->
       failed(spec, Glific.SafeLog.safe_inspect(reason))
-  end
-
-  # A reasoning model can spend all of `max_tokens` thinking and return no text;
-  # recording that as an answer would hide the truncation.
-  @spec completed(String.t(), struct()) ::
-          {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
-          | {:error, Glific.AI.Provider.failure()}
-  defp completed(spec, response) do
-    reply = reply(response)
-
-    if reply.content == "" and reply.tool_calls == [] and
-         ReqLLM.Response.finish_reason(response) == :length do
-      failed(spec, "response hit max_tokens before producing any text")
-    else
-      {:ok, reply, usage(spec, response)}
-    end
   end
 
   @spec failed(String.t(), String.t()) :: {:error, Provider.failure()}
