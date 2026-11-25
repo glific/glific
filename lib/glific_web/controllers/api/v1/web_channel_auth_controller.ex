@@ -123,7 +123,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         resolve_contact_and_sign_in(conn, organization_id, normalized, optin?)
 
       # Distinguishing these would tell an attacker whether a code was ever issued for a number.
-      {:error, _reason} ->
+      {:error, reason} ->
+        if reason == :incorrect_code, do: record_failed_verify(organization_id, normalized)
         invalid_otp_error(conn)
     end
   end
@@ -138,6 +139,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
          {:ok, contact} <- Contacts.add_identity(contact, :web, contact.phone),
          {:ok, token} <- Token.generate(organization_id, contact.phone),
          :ok <- record_optin(optin?, contact.phone, organization_id) do
+      record_history(contact, :web_login_code_verified, "Logged into web")
+
       json(conn, %{
         data: %{
           token: token,
@@ -276,6 +279,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     build_context(organization_id)
 
     with {:ok, contact} <- ensure_contact(organization_id, phone),
+         :ok <- record_history(contact, :web_login_code_requested, "Web login code requested"),
          true <- can_send_message_to?(contact),
          code = mint_code(phone),
          {:ok, _message} <-
@@ -336,6 +340,49 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   defp ensure_contact(organization_id, phone),
     do:
       Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id}, :whatsapp)
+
+  # A wrong code only carries the phone, so the contact is looked up, never created: a typo must not
+  # make a contact. Nothing is recorded for a number the organization has never seen.
+  @spec record_failed_verify(non_neg_integer(), String.t()) :: :ok
+  defp record_failed_verify(organization_id, phone) do
+    build_context(organization_id)
+
+    case Contacts.fetch_by_identity(:whatsapp, phone) do
+      {:ok, contact} ->
+        record_history(contact, :web_login_code_failed, "Web login code incorrect")
+
+      {:error, _} ->
+        Logger.info(
+          "Web login code verify failed for a contact that does not exist in org #{organization_id}"
+        )
+    end
+  rescue
+    error ->
+      Glific.log_exception(error)
+      :ok
+  end
+
+  # For the contact's History tab on the profile (#5877). Never holds the code itself. Sign-in does
+  # not depend on it, so a failed write is logged and the request carries on.
+  @spec record_history(Contact.t(), atom(), String.t()) :: :ok
+  defp record_history(contact, event_type, event_label) do
+    case Contacts.capture_history(contact, event_type, %{event_label: event_label, channel: :web}) do
+      {:ok, _history} ->
+        :ok
+
+      {:error, error} ->
+        Glific.log_error(
+          "Web channel history not recorded: #{SafeLog.safe_inspect(error)}",
+          false
+        )
+
+        :ok
+    end
+  rescue
+    error ->
+      Glific.log_exception(error)
+      :ok
+  end
 
   @spec can_send_message_to?(Contact.t()) :: boolean()
   defp can_send_message_to?(contact) do
