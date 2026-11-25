@@ -381,6 +381,68 @@ defmodule Glific.TriggersTest do
     Triggers.execute_triggers(attrs.organization_id)
   end
 
+  test "create_trigger/1 defaults group_type to WABA when not given", attrs do
+    trigger = Fixtures.trigger_fixture(attrs)
+
+    assert trigger.group_type == "WABA"
+  end
+
+  test "create_trigger/1 keeps an explicit group_type", attrs do
+    {:ok, trigger} =
+      create_wa_group_trigger(attrs, %{organization_id: attrs.organization_id})
+
+    assert trigger.group_type == "WA"
+  end
+
+  test "update_trigger/2 keeps the existing group_type when it is not given", attrs do
+    {:ok, trigger} =
+      create_wa_group_trigger(attrs, %{organization_id: attrs.organization_id})
+
+    {:ok, updated_trigger} =
+      Triggers.update_trigger(trigger, %{
+        name: "renamed wa group trigger",
+        flow_id: trigger.flow_id,
+        start_at: trigger.start_at,
+        organization_id: attrs.organization_id
+      })
+
+    assert updated_trigger.name == "renamed wa group trigger"
+    assert updated_trigger.group_type == "WA"
+    assert Repo.get!(Trigger, trigger.id).group_type == "WA"
+  end
+
+  test "update_trigger/2 can change the group_type when it is given", attrs do
+    trigger = Fixtures.trigger_fixture(attrs)
+
+    {:ok, updated_trigger} =
+      Triggers.update_trigger(trigger, %{
+        group_type: "WA",
+        name: trigger.name,
+        flow_id: trigger.flow_id,
+        start_at: trigger.start_at,
+        organization_id: attrs.organization_id
+      })
+
+    assert updated_trigger.group_type == "WA"
+  end
+
+  test "update_trigger/2 computes start_at from start_date and start_time when it is not given",
+       attrs do
+    trigger = Fixtures.trigger_fixture(attrs)
+    start_date = Timex.shift(Date.utc_today(), days: 3)
+    start_time = ~T[10:30:00]
+
+    {:ok, updated_trigger} =
+      Triggers.update_trigger(trigger, %{
+        flow_id: trigger.flow_id,
+        start_date: start_date,
+        start_time: start_time,
+        organization_id: attrs.organization_id
+      })
+
+    assert updated_trigger.start_at == DateTime.new!(start_date, start_time)
+  end
+
   test "broadcast_per_minute count depending on high trigger tps enabled", attrs do
     FunWithFlags.enable(:high_trigger_tps_enabled,
       for_actor: %{organization_id: attrs.organization_id}
@@ -424,5 +486,136 @@ defmodule Glific.TriggersTest do
       |> Map.put(:group_type, "WA")
 
     Triggers.create_trigger(valid_attrs)
+  end
+
+  describe "triggers on web flows" do
+    @web_flow_error "Triggers cannot start a web flow, because a web contact can only be reached while their chat window is open"
+
+    defp web_flow_fixture,
+      do: Fixtures.flow_fixture(%{name: "Web Flow", keywords: [], channel: :web})
+
+    defp trigger_attrs(attrs, flow_id) do
+      [group | _] = Groups.list_groups(%{organization_id: attrs.organization_id})
+
+      %{
+        name: "web flow trigger",
+        flow_id: flow_id,
+        group_ids: [group.id],
+        organization_id: attrs.organization_id,
+        start_at: Timex.shift(DateTime.utc_now(), days: 1),
+        end_date: Timex.shift(Date.utc_today(), days: 5),
+        is_active: true,
+        is_repeating: false,
+        frequency: ["none"]
+      }
+    end
+
+    # Simulates a trigger saved before web flows were rejected: the row points at a web flow.
+    defp point_trigger_at_flow(trigger, flow_id, set) do
+      Trigger
+      |> where([t], t.id == ^trigger.id)
+      |> Repo.update_all(set: [flow_id: flow_id] ++ set)
+
+      Repo.get!(Trigger, trigger.id)
+    end
+
+    test "create_trigger/1 rejects a web flow", attrs do
+      web_flow = web_flow_fixture()
+
+      assert {:error, @web_flow_error} =
+               Triggers.create_trigger(trigger_attrs(attrs, web_flow.id))
+    end
+
+    test "update_trigger/2 rejects switching a trigger to a web flow", attrs do
+      trigger = Fixtures.trigger_fixture(attrs)
+      web_flow = web_flow_fixture()
+
+      update_attrs = %{
+        flow_id: web_flow.id,
+        start_at: Timex.shift(DateTime.utc_now(), days: 2),
+        organization_id: attrs.organization_id,
+        name: trigger.name
+      }
+
+      assert {:error, @web_flow_error} = Triggers.update_trigger(trigger, update_attrs)
+    end
+
+    test "create_trigger/1 rejects another organization's flow", attrs do
+      other_organization = Fixtures.organization_fixture()
+
+      other_flow =
+        Fixtures.flow_fixture(%{
+          name: "Other Org Flow",
+          keywords: [],
+          organization_id: other_organization.id
+        })
+
+      Repo.put_organization_id(attrs.organization_id)
+
+      assert {:error, "Flow not found"} =
+               Triggers.create_trigger(trigger_attrs(attrs, other_flow.id))
+    end
+
+    test "update_trigger/2 rejects switching a trigger to another organization's flow", attrs do
+      trigger = Fixtures.trigger_fixture(attrs)
+      other_organization = Fixtures.organization_fixture()
+
+      other_flow =
+        Fixtures.flow_fixture(%{
+          name: "Other Org Flow",
+          keywords: [],
+          organization_id: other_organization.id
+        })
+
+      update_attrs = %{
+        flow_id: other_flow.id,
+        start_at: Timex.shift(DateTime.utc_now(), days: 2),
+        organization_id: attrs.organization_id,
+        name: trigger.name
+      }
+
+      Repo.put_organization_id(attrs.organization_id)
+
+      assert {:error, "Flow not found"} = Triggers.update_trigger(trigger, update_attrs)
+    end
+
+    test "update_trigger/2 still edits the schedule of a trigger already on a web flow", attrs do
+      web_flow = web_flow_fixture()
+      trigger = attrs |> Fixtures.trigger_fixture() |> point_trigger_at_flow(web_flow.id, [])
+      new_start_at = DateTime.truncate(Timex.shift(DateTime.utc_now(), days: 3), :second)
+
+      assert {:ok, updated_trigger} =
+               Triggers.update_trigger(trigger, %{
+                 flow_id: web_flow.id,
+                 start_at: new_start_at,
+                 frequency: ["daily"],
+                 organization_id: attrs.organization_id,
+                 name: trigger.name
+               })
+
+      assert updated_trigger.start_at == new_start_at
+      assert updated_trigger.frequency == ["daily"]
+    end
+
+    test "validate_trigger/1 returns an error for an unpublished flow", attrs do
+      flow = Fixtures.flow_fixture(%{name: "Draft Flow", keywords: []})
+
+      assert {:error, "The flow has not been published"} =
+               Triggers.validate_trigger(%{
+                 flow_id: flow.id,
+                 organization_id: attrs.organization_id
+               })
+    end
+
+    test "validate_trigger/1 cannot read another organization's flow", attrs do
+      [flow | _] = Flows.list_flows(%{organization_id: attrs.organization_id})
+      other_organization = Fixtures.organization_fixture()
+
+      assert {:error, "The flow has not been published"} =
+               Triggers.validate_trigger(%{
+                 flow_id: flow.id,
+                 organization_id: other_organization.id
+               })
+    end
   end
 end

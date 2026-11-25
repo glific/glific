@@ -72,8 +72,23 @@ docs: |
 
   This is a warning; **Create a trigger** still accepts the flow.
 
+  The flow cannot be read:
+
+  ```json
+  {
+    "data": {
+      "validateTrigger": {
+        "success": false,
+        "errors": [{ "key": "flow_id", "message": "The flow has not been published" }]
+      }
+    }
+  }
+  ```
+
+  The `flow_id` message is `The flow has not been published`, also returned for a flow that is
+  not in the caller's organization.
+
   ## Errors
 
-  A flow (or entered sub-flow) without a published revision gives a top-level error,
-  `Something unexpected has happened, please reach out to Glific team over discord to get this
-  resolved`. A user without the manager role gets a top-level `Unauthorized` error.
+  An entered sub-flow that can't be read is skipped rather than reported. A user without the
+  manager role gets a top-level `Unauthorized` error.
