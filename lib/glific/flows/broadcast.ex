@@ -511,8 +511,13 @@ defmodule Glific.Flows.Broadcast do
           org_id: organization_id
         )
 
-      _result ->
+      {:ok, _result} ->
         :ok
+
+      result ->
+        Logger.error("Broadcast task failed: #{Glific.SafeLog.safe_inspect(result)}",
+          org_id: organization_id
+        )
     end)
   end
 
