@@ -96,34 +96,6 @@ defmodule Glific.AppsignalTest do
     end
   end
 
-  describe "handle_event [:oban, :job, :start]" do
-    test "tags the job process with the organization in its args" do
-      task =
-        Task.async(fn ->
-          Appsignal.handle_event(
-            [:oban, :job, :start],
-            %{},
-            %{args: %{"organization_id" => 7}},
-            nil
-          )
-
-          Logger.metadata()[:org_id]
-        end)
-
-      assert Task.await(task) == "7"
-    end
-
-    test "leaves metadata alone when the args carry no organization" do
-      task =
-        Task.async(fn ->
-          Appsignal.handle_event([:oban, :job, :start], %{}, %{args: %{"foo" => 1}}, nil)
-          Logger.metadata()[:org_id]
-        end)
-
-      assert Task.await(task) == nil
-    end
-  end
-
   describe "send_oban_queue_size/0" do
     test "executes without error" do
       assert Appsignal.send_oban_queue_size() == :ok

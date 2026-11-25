@@ -6,8 +6,6 @@ defmodule Glific.Appsignal do
   @tracer Appsignal.Tracer
   @span Appsignal.Span
 
-  require Logger
-
   alias Glific.Repo
 
   @doc """
@@ -135,13 +133,6 @@ defmodule Glific.Appsignal do
     maybe_add_distribution_metric(measurement, :queue_time, "glific.repo.queue_time", tags)
     maybe_track_repo_query_count(measurement, query_tags)
     maybe_track_db_connection_error(repo, meta[:result])
-  end
-
-  def handle_event([:oban, :job, :start], _measurement, %{args: args}, _) do
-    case organization_id_tag(args) do
-      "unknown" -> :ok
-      org_id -> Logger.metadata(org_id: org_id)
-    end
   end
 
   def handle_event(_, _, _, _), do: nil
