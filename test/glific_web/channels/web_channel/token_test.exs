@@ -138,9 +138,9 @@ defmodule GlificWeb.WebChannel.TokenTest do
   end
 
   describe "timing" do
-    test "the lifetime may be 24 hours and no more", %{organization_id: organization_id} do
-      assert {:ok, _} = verify(organization_id, %{"exp" => @now + 86_400})
-      assert {:error, :invalid} = verify(organization_id, %{"exp" => @now + 86_401})
+    test "the lifetime may be 7 days and no more", %{organization_id: organization_id} do
+      assert {:ok, _} = verify(organization_id, %{"exp" => @now + 604_800})
+      assert {:error, :invalid} = verify(organization_id, %{"exp" => @now + 604_801})
     end
 
     test "an expired token is rejected beyond the leeway", %{organization_id: organization_id} do
@@ -211,11 +211,13 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert {:error, :invalid} = verify(organization_id, %{"sst" => @now})
     end
 
-    test "a session older than 24 hours is rejected, however fresh the token", %{
+    test "a session older than 7 days is rejected, however fresh the token", %{
       organization_id: organization_id
     } do
-      assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now - 86_399})
-      assert {:error, :invalid} = verify(organization_id, %{"jti" => "s", "sst" => @now - 86_400})
+      assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now - 604_799})
+
+      assert {:error, :invalid} =
+               verify(organization_id, %{"jti" => "s", "sst" => @now - 604_800})
     end
 
     test "a session started in the future is rejected beyond the leeway", %{
@@ -233,7 +235,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert {:ok, %{sub: "ravi_12", name: "Ravi", exp: exp}} =
                Token.verify(organization_id, token)
 
-      assert_in_delta exp, System.system_time(:second) + 3_600, 5
+      assert_in_delta exp, System.system_time(:second) + 172_800, 5
     end
 
     test "fails without a secret", %{organization_id: organization_id} do
@@ -263,7 +265,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert first_id != second_id
     end
 
-    test "renewal keeps jti and sst and moves exp one hour out", %{
+    test "renewal keeps jti and sst and moves exp 48 hours out", %{
       organization_id: organization_id
     } do
       token =
@@ -276,14 +278,29 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert {:ok, claims} = Token.verify(organization_id, renewed, @now)
       assert %{sub: "919876543210", session_id: "s1", exp: exp} = claims
       assert claims.session_started_at == @now - 1_000
-      assert exp == @now + 3_600
+      assert exp == @now + 172_800
     end
 
-    test "renewal is refused once the session is 24 hours old", %{
+    test "a renewed token expires with its session when that comes first", %{
+      organization_id: organization_id
+    } do
+      started_at = @now - 604_800 + 3_600
+
+      token =
+        %{"jti" => "s1", "sst" => started_at}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:ok, renewed, _claims} = Token.renew(organization_id, token, @now)
+      assert {:ok, %{exp: exp}} = Token.verify(organization_id, renewed, @now)
+      assert exp == started_at + 604_800
+    end
+
+    test "renewal is refused once the session is 7 days old", %{
       organization_id: organization_id
     } do
       token =
-        %{"jti" => "s1", "sst" => @now - 86_400}
+        %{"jti" => "s1", "sst" => @now - 604_800}
         |> WebChannelLoginHelpers.claims(@now)
         |> WebChannelLoginHelpers.sign(@secret)
 
