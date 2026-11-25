@@ -22,7 +22,7 @@ const SCHEMA_JSON = process.env.SCHEMA_JSON || path.join(__dirname, 'schema.json
 
 // Root fields deliberately left out of the public collection.
 const UNDOCUMENTED = {
-  query: ['organizationGroups'],
+  query: [],
   mutation: [],
   subscription: []
 };
