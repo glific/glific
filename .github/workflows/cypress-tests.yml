@@ -96,6 +96,9 @@ jobs:
           sudo sysctl -p
           cat /proc/sys/fs/inotify/max_user_watches
           yarn setup
+          # vite-plugin-mkcert otherwise downloads mkcert from the GitHub API on every
+          # dev-server start; when that call is rate-limited the server never comes up.
+          sudo apt-get install -y mkcert
 
       - name: Install cloudflared
         run: |
@@ -139,7 +142,7 @@ jobs:
       - name: Run glific frontend
         run: |
           cd glific-frontend
-          yarn dev &
+          yarn dev > ../frontend-server.log 2>&1 &
 
       - name: Run glific backend
         run: |
@@ -150,6 +153,12 @@ jobs:
         uses: iFaxity/wait-on-action@a7d13170ec542bdca4ef8ac4b15e9c6aa00a6866 # v1.2.1
         with:
           resource: https-get://glific.test:4001
+          timeout: 180000
+
+      - name: Wait for frontend to be ready
+        uses: iFaxity/wait-on-action@a7d13170ec542bdca4ef8ac4b15e9c6aa00a6866 # v1.2.1
+        with:
+          resource: https-get://glific.test:3000
           timeout: 180000
 
       - name: Cypress run (shard ${{ matrix.shard }}/3)
@@ -170,6 +179,7 @@ jobs:
           name: phoenix-server-log-shard-${{ matrix.shard }}
           path: |
             phoenix-server.log
+            frontend-server.log
             cloudflared.log
           if-no-files-found: warn
           retention-days: 7

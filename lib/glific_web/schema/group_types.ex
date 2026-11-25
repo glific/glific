@@ -113,14 +113,6 @@ defmodule GlificWeb.Schema.GroupTypes do
       resolve(&Resolvers.Groups.groups/3)
     end
 
-    field :organization_groups, list_of(:group) do
-      arg(:id, non_null(:id))
-      arg(:filter, :group_filter)
-      arg(:opts, :opts)
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Groups.organization_groups/3)
-    end
-
     field :export_collection, :export_collection_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
