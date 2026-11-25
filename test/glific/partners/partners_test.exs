@@ -267,6 +267,32 @@ defmodule Glific.PartnersTest do
       assert Agent.get(attempts, & &1) == 2
     end
 
+    test "get_templates/1 waits one second before retrying a rate limited page without a retry header" do
+      org = SeedsDev.seed_organizations()
+      {:ok, attempts} = Agent.start_link(fn -> 0 end)
+
+      mock_template_pages(fn 1 ->
+        case Agent.get_and_update(attempts, &{&1, &1 + 1}) do
+          0 ->
+            %Tesla.Env{
+              status: 429,
+              headers: [{"content-type", "application/json"}],
+              body: Jason.encode!(%{status: "error"})
+            }
+
+          _ ->
+            template_page_response(1..3)
+        end
+      end)
+
+      {elapsed_microseconds, result} = :timer.tc(fn -> PartnerAPI.get_templates(org.id) end)
+
+      assert {:ok, templates} = result
+      assert length(templates) == 3
+      assert Agent.get(attempts, & &1) == 2
+      assert elapsed_microseconds >= :timer.seconds(1) * 1000
+    end
+
     test "get_templates/1 fails when a page is rate limited twice" do
       org = SeedsDev.seed_organizations()
 
