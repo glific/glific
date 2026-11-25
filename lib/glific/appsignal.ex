@@ -8,6 +8,8 @@ defmodule Glific.Appsignal do
 
   alias Glific.Repo
 
+  @messaging_queues ~w(gupshup_inbound gupshup gupshup_high_tps)
+
   @doc """
   Telemetry callback for the Oban, Tesla and Ecto repo events attached in `Glific.Application`.
   """
@@ -21,6 +23,7 @@ defmodule Glific.Appsignal do
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
 
+    record_messaging_queue_latency(measurement, meta)
     record_inbound_hold_time(meta)
     @tracer.close_span(span, end_time: time)
   end
@@ -53,6 +56,7 @@ defmodule Glific.Appsignal do
       )
     end
 
+    record_messaging_queue_latency(measurement, meta)
     record_inbound_hold_time(meta)
   end
 
@@ -136,6 +140,19 @@ defmodule Glific.Appsignal do
   end
 
   def handle_event(_, _, _, _), do: nil
+
+  # Unsampled and tagged by queue only, so it stays cheap while counting every messaging job.
+  @spec record_messaging_queue_latency(map(), map()) :: :ok
+  defp record_messaging_queue_latency(%{queue_time: queue_time}, %{queue: queue})
+       when queue in @messaging_queues do
+    queue_time_ms = System.convert_time_unit(queue_time, :native, :millisecond)
+
+    Appsignal.add_distribution_value("oban_messaging_queue_latency", queue_time_ms, %{
+      queue: queue
+    })
+  end
+
+  defp record_messaging_queue_latency(_measurement, _meta), do: :ok
 
   # Oban Pro emits no telemetry event for chain holds, so the hold time is derived here. A
   # chained inbound job is parked with a far-future scheduled_at, and its release resets
