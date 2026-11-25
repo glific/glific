@@ -82,8 +82,6 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for Ecto query timing:
     attach_repo_telemetry_event()
 
-    Glific.ErrorLogCounter.attach()
-
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
