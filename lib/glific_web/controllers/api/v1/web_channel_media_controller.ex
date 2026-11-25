@@ -20,8 +20,6 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
     RateLimit
   }
 
-  alias Glific.WebChannel.Metrics, as: WebChannelMetrics
-
   alias GlificWeb.Tenants
   alias Plug.Conn
 
@@ -54,7 +52,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
              content_type,
              @expires_in_seconds
            ) do
-      WebChannelMetrics.count(:media_upload_issued, organization_id)
+      Glific.Metrics.increment("Web Media Upload Issued", organization_id)
 
       json(conn, %{
         data: %{

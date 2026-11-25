@@ -22,8 +22,6 @@ defmodule Glific.Communications.WebMessage do
     Repo
   }
 
-  alias Glific.WebChannel.Metrics, as: WebChannelMetrics
-
   # Shared web-channel switch — using it here rather than re-implementing keeps one source of truth.
   alias GlificWeb.WebChannel.Flag
 
@@ -64,11 +62,11 @@ defmodule Glific.Communications.WebMessage do
   # A received media message is an upload that completed, so it pairs with the URLs issued for it.
   @spec count_received({:ok, Message.t()} | {:error, any()}, atom(), non_neg_integer()) :: :ok
   defp count_received({:ok, _message}, type, organization_id) when type in [:text, :location],
-    do: WebChannelMetrics.count_received(type, organization_id)
+    do: Glific.Metrics.increment("Web Message Received: #{type}", organization_id)
 
   defp count_received({:ok, _message}, type, organization_id) do
-    WebChannelMetrics.count_received(type, organization_id)
-    WebChannelMetrics.count(:media_upload_completed, organization_id)
+    Glific.Metrics.increment("Web Message Received: #{type}", organization_id)
+    Glific.Metrics.increment("Web Media Upload Completed", organization_id)
   end
 
   defp count_received(_error, _type, _organization_id), do: :ok

@@ -33,8 +33,6 @@ defmodule Glific.Contacts do
     Users.User
   }
 
-  alias Glific.WebChannel.Metrics, as: WebChannelMetrics
-
   @delete_timeout 400_000
 
   @type web_claims :: %{
@@ -810,7 +808,7 @@ defmodule Glific.Contacts do
   @spec record_optin_events(:whatsapp | :web, Contact.t(), Keyword.t()) :: any()
   defp record_optin_events(:web, contact, opts) do
     capture_optin_history(:web, contact, opts)
-    WebChannelMetrics.count(:optin_recorded, contact.organization_id)
+    Glific.Metrics.increment("Web Opt-in Recorded", contact.organization_id)
   end
 
   defp record_optin_events(channel, contact, opts),

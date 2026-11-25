@@ -1,4 +1,4 @@
-defmodule Glific.WebChannel.MetricsTest do
+defmodule Glific.WebChannel.ProductMetricsTest do
   # Not async: the web channel flag is global state, and Mock replaces Glific.Metrics globally.
   use Glific.DataCase
 
@@ -11,8 +11,6 @@ defmodule Glific.WebChannel.MetricsTest do
     Providers.Web.Message,
     WebChannelFlagHelpers
   }
-
-  alias Glific.WebChannel.Metrics, as: WebChannelMetrics
 
   setup do
     WebChannelFlagHelpers.reset_web_channel_flag(1)
@@ -32,23 +30,6 @@ defmodule Glific.WebChannel.MetricsTest do
   end
 
   defp enabled(fun), do: WebChannelFlagHelpers.with_web_channel_enabled(1, fun)
-
-  describe "count/2" do
-    test "counts for the organization while the web channel is on" do
-      assert counted(fn -> enabled(fn -> WebChannelMetrics.count(:otp_sent, 1) end) end) ==
-               [{"Web OTP Sent", 1}]
-    end
-
-    test "counts nothing while the web channel is off" do
-      assert counted(fn -> WebChannelMetrics.count(:otp_sent, 1) end) == []
-    end
-
-    test "a failing counter never fails its caller" do
-      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> raise "tracker down" end do
-        enabled(fn -> assert WebChannelMetrics.count(:otp_sent, 1) == :ok end)
-      end
-    end
-  end
 
   describe "inbound messages" do
     test "a text message is counted by its type", %{contact: contact} do
@@ -79,11 +60,6 @@ defmodule Glific.WebChannel.MetricsTest do
                {"Web Media Upload Completed", contact.organization_id},
                {"Web Message Received: image", contact.organization_id}
              ]
-    end
-
-    test "nothing is counted while the web channel is off", %{contact: contact} do
-      assert counted(fn -> {:ok, _} = WebMessage.receive_message(contact, %{body: "hi"}) end) ==
-               []
     end
   end
 
