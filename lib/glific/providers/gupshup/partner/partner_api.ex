@@ -42,6 +42,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # Returns the raw media bytes directly (one-step, no decryption).
   @filemanager_url "https://filemanager.gupshup.io/wa/"
   @library_templates_recv_timeout 30_000
+  @page_size 100
+  @max_pages 100
+  @max_retry_after_seconds 10
 
   @modes [
     "ENQUEUED",
@@ -353,15 +356,83 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Fetch HSM templates using partner token (Gupshup partner API)
+  Fetch every HSM template of the organization's app, page by page; fails if any page fails
   """
-  @spec get_templates(non_neg_integer()) :: {:ok, any()} | {:error, String.t()}
+  @spec get_templates(non_neg_integer()) :: {:ok, list(map())} | {:error, String.t()}
   def get_templates(org_id) do
     with {:ok, %{partner_app_token: token}} <- get_partner_app_token(org_id) do
-      url = app_url!(org_id) <> "/templates"
-      headers = [{"Authorization", token}]
-      get(url, headers: headers)
+      url = app_url!(org_id) <> "/template/list"
+      fetch_template_pages(url, [{"Authorization", token}], 1, [])
     end
+  end
+
+  @spec fetch_template_pages(String.t(), list(), pos_integer(), list()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  defp fetch_template_pages(_url, _headers, page_no, _pages) when page_no > @max_pages,
+    do: {:error, "Template list has more than #{@max_pages} pages"}
+
+  defp fetch_template_pages(url, headers, page_no, pages) do
+    with {:ok, templates} <- fetch_template_page(url, headers, page_no, true) do
+      pages = [templates | pages]
+
+      if length(templates) < @page_size do
+        # Pages are ordered by last modified time, so a template edited mid-sync can repeat
+        all_templates =
+          pages
+          |> Enum.reverse()
+          |> List.flatten()
+          |> Enum.uniq_by(& &1["id"])
+
+        {:ok, all_templates}
+      else
+        fetch_template_pages(url, headers, page_no + 1, pages)
+      end
+    end
+  end
+
+  @spec fetch_template_page(String.t(), list(), pos_integer(), boolean()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  defp fetch_template_page(url, headers, page_no, retry?) do
+    url
+    |> get(headers: headers, query: [pageNo: page_no, pageSize: @page_size])
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        decode_templates(body, page_no)
+
+      {:ok, %Tesla.Env{status: 429} = env} when retry? ->
+        env
+        |> retry_after_seconds()
+        |> :timer.seconds()
+        |> Process.sleep()
+
+        fetch_template_page(url, headers, page_no, false)
+
+      error ->
+        {:error,
+         "Fetching templates page #{page_no} failed: #{Glific.SafeLog.safe_inspect(error)}"}
+    end
+  end
+
+  @spec decode_templates(String.t(), pos_integer()) :: {:ok, list(map())} | {:error, String.t()}
+  defp decode_templates(body, page_no) do
+    case Jason.decode(body) do
+      {:ok, %{"templates" => templates}} when is_list(templates) -> {:ok, templates}
+      _ -> {:error, "Invalid templates response for page #{page_no}"}
+    end
+  end
+
+  @spec retry_after_seconds(Tesla.Env.t()) :: non_neg_integer()
+  defp retry_after_seconds(%Tesla.Env{headers: headers}) do
+    Enum.find_value(headers, 1, fn {name, value} ->
+      with "x-rate-limit-retry-after-seconds" <- String.downcase(name),
+           {seconds, _} <- Integer.parse(value) do
+        seconds
+        |> max(0)
+        |> min(@max_retry_after_seconds)
+      else
+        _ -> nil
+      end
+    end)
   end
 
   @doc """
@@ -660,11 +731,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec fetch_app_details_by_app_name(String.t()) :: map() | String.t()
   defp fetch_app_details_by_app_name(app_name) do
-    with {:ok, %{"partnerAppsList" => list}} <-
-           get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token),
-         [app | _] <- Enum.filter(list, fn app -> app["name"] == app_name end) do
-      app
-    else
+    case find_partner_app(app_name, 1) do
+      {:ok, nil} ->
+        "Invalid Gupshup App"
+
+      {:ok, app} ->
+        app
+
       {:error, error} ->
         Glific.log_exception(%Error{
           message: "Fetching app details for app #{app_name} failed",
@@ -672,11 +745,39 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         })
 
         "Fetching app details failed, please double check App name and API key are correct"
-
-      _ ->
-        "Invalid Gupshup App"
     end
   end
+
+  @spec find_partner_app(String.t(), pos_integer()) :: {:ok, map() | nil} | {:error, any()}
+  defp find_partner_app(_app_name, page) when page > @max_pages, do: {:ok, nil}
+
+  defp find_partner_app(app_name, page) do
+    query = URI.encode_query(page: page, pageSize: @page_size, searchTerm: app_name)
+
+    (@partner_url <> "/api/partnerApps?" <> query)
+    |> get_request(token_type: :partner_token)
+    |> case do
+      {:ok, %{"partnerAppsList" => apps} = response} ->
+        app = Enum.find(apps, &(&1["name"] == app_name))
+
+        # searchTerm matches substrings, so the exact name can sit on a later page
+        if is_nil(app) and more_pages?(response, page),
+          do: find_partner_app(app_name, page + 1),
+          else: {:ok, app}
+
+      {:ok, _response} ->
+        {:ok, nil}
+
+      error ->
+        error
+    end
+  end
+
+  @spec more_pages?(map(), pos_integer()) :: boolean()
+  defp more_pages?(%{"totalPages" => total_pages}, page) when is_integer(total_pages),
+    do: page < total_pages
+
+  defp more_pages?(_response, _page), do: false
 
   @spec fetch_app_details_by_app_id(String.t()) :: map() | String.t()
   defp fetch_app_details_by_app_id(app_id) do

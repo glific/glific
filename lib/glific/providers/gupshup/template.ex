@@ -474,17 +474,15 @@ defmodule Glific.Providers.Gupshup.Template do
   def update_hsm_templates(org_id) do
     organization = Partners.organization(org_id)
 
-    with {:ok, response} <-
-           PartnerAPI.get_templates(org_id),
-         {:ok, response_data} <- Jason.decode(response.body),
-         false <- is_nil(response_data["templates"]) do
-      response_data["templates"]
-      |> Enum.reduce([], &(&2 ++ [Map.put(&1, "bsp_id", &1["id"])]))
-      |> Templates.update_hsms(organization)
+    case PartnerAPI.get_templates(org_id) do
+      {:ok, templates} ->
+        templates
+        |> Enum.map(&Map.put(&1, "bsp_id", &1["id"]))
+        |> Templates.update_hsms(organization)
 
-      Instrumentation.track_action("hsm_sync", :success, org_id)
-      :ok
-    else
+        Instrumentation.track_action("hsm_sync", :success, org_id)
+        :ok
+
       _ ->
         Instrumentation.track_action("hsm_sync", :failure, org_id)
         {:error, "BSP Couldn't connect"}

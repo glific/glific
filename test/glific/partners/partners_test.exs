@@ -174,52 +174,155 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
-    test "successfully fetches HSM templates" do
+    test "get_templates/1 fetches every page until a short page" do
       org = SeedsDev.seed_organizations()
+      test_pid = self()
 
-      Tesla.Mock.mock(fn
-        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                status: "success",
-                data: %{
-                  token: "sk_test_partner_token"
-                }
-              })
-          }
+      mock_template_pages(fn page_no ->
+        send(test_pid, {:template_page, page_no})
 
-        %{method: :get, url: url} ->
-          cond do
-            String.contains?(url, "/token") ->
-              %Tesla.Env{
-                status: 200,
-                body:
-                  Jason.encode!(%{
-                    partner_app_token: "sk_test_partner_app_token"
-                  })
-              }
-
-            String.contains?(url, "/templates") ->
-              %Tesla.Env{
-                status: 200,
-                body:
-                  Jason.encode!(%{
-                    status: "success",
-                    templates: []
-                  })
-              }
-
-            true ->
-              raise "Unexpected GET request to: #{url}"
-          end
+        case page_no do
+          1 -> template_page_response(1..100)
+          2 -> template_page_response(101..200)
+          3 -> template_page_response(201..203)
+        end
       end)
 
-      {:ok, response} = PartnerAPI.get_templates(org.id)
-      decoded_body = Jason.decode!(response.body)
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 203
+      assert Enum.map(templates, & &1["id"]) == Enum.map(1..203, &"template-#{&1}")
+      assert_received {:template_page, 1}
+      assert_received {:template_page, 2}
+      assert_received {:template_page, 3}
+      refute_received {:template_page, 4}
+    end
 
-      assert decoded_body["status"] == "success"
+    test "get_templates/1 stops on an empty page when the last page is full" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn
+        1 -> template_page_response(1..100)
+        2 -> template_page_response([])
+      end)
+
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 100
+    end
+
+    test "get_templates/1 drops templates repeated across pages" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn
+        1 -> template_page_response(1..100)
+        2 -> template_page_response([100, 101])
+      end)
+
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 101
+    end
+
+    test "get_templates/1 fails when a page after the first fails" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn
+        1 -> template_page_response(1..100)
+        2 -> %Tesla.Env{status: 500, body: Jason.encode!(%{status: "error"})}
+      end)
+
+      assert {:error, message} = PartnerAPI.get_templates(org.id)
+      assert message =~ "Fetching templates page 2 failed"
+    end
+
+    test "get_templates/1 fails when a page has no template list" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn 1 -> %Tesla.Env{status: 200, body: Jason.encode!(%{})} end)
+
+      assert {:error, "Invalid templates response for page 1"} =
+               PartnerAPI.get_templates(org.id)
+    end
+
+    test "get_templates/1 retries a rate limited page once" do
+      org = SeedsDev.seed_organizations()
+      {:ok, attempts} = Agent.start_link(fn -> 0 end)
+
+      mock_template_pages(fn 1 ->
+        case Agent.get_and_update(attempts, &{&1, &1 + 1}) do
+          0 ->
+            %Tesla.Env{
+              status: 429,
+              headers: [{"X-Rate-Limit-Retry-After-Seconds", "0"}],
+              body: Jason.encode!(%{status: "error"})
+            }
+
+          _ ->
+            template_page_response(1..3)
+        end
+      end)
+
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 3
+      assert Agent.get(attempts, & &1) == 2
+    end
+
+    test "get_templates/1 fails when a page is rate limited twice" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn 1 ->
+        %Tesla.Env{
+          status: 429,
+          headers: [{"x-rate-limit-retry-after-seconds", "0"}],
+          body: Jason.encode!(%{status: "error"})
+        }
+      end)
+
+      assert {:error, message} = PartnerAPI.get_templates(org.id)
+      assert message =~ "Fetching templates page 1 failed"
+    end
+
+    test "get_templates/1 fails when every page is full up to the page limit" do
+      org = SeedsDev.seed_organizations()
+      full_page = template_page_response(1..100)
+
+      mock_template_pages(fn _page_no -> full_page end)
+
+      assert {:error, "Template list has more than 100 pages"} = PartnerAPI.get_templates(org.id)
+    end
+
+    test "fetch_gupshup_app_details/1 pages through apps until the exact name is found" do
+      test_pid = self()
+
+      mock_partner_apps(fn params ->
+        send(test_pid, {:partner_apps_params, params})
+
+        case params["page"] do
+          "1" -> partner_apps_response(["glific app staging"], 2)
+          "2" -> partner_apps_response(["glific app"], 2)
+        end
+      end)
+
+      assert %{"name" => "glific app", "id" => "glific app-id"} =
+               PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+
+      assert_received {:partner_apps_params,
+                       %{"page" => "1", "pageSize" => "100", "searchTerm" => "glific app"}}
+
+      assert_received {:partner_apps_params, %{"page" => "2"}}
+    end
+
+    test "fetch_gupshup_app_details/1 rejects an app name with only partial matches" do
+      mock_partner_apps(fn %{"page" => "1"} ->
+        partner_apps_response(["glific app staging"], 1)
+      end)
+
+      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+    end
+
+    test "fetch_gupshup_app_details/1 reports a failed app lookup" do
+      mock_partner_apps(fn _params -> %Tesla.Env{status: 500, body: "error"} end)
+
+      assert "Fetching app details failed, please double check App name and API key are correct" ==
+               PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
     end
 
     test "recharge_partner/2 should transfer balance from ISV partner to app" do
@@ -2245,5 +2348,69 @@ defmodule Glific.PartnersTest do
       assert body ==
                JSON.encode!(state.error)
     end
+  end
+
+  defp mock_template_pages(page_response) do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{status: "success", data: %{token: "sk_test_partner_token"}})
+        }
+
+      %{method: :get, url: url, query: query} ->
+        cond do
+          String.ends_with?(url, "/token") ->
+            %Tesla.Env{
+              status: 200,
+              body: Jason.encode!(%{token: %{token: "sk_test_partner_app_token"}})
+            }
+
+          String.ends_with?(url, "/template/list") ->
+            assert query[:pageSize] == 100
+            page_response.(query[:pageNo])
+
+          true ->
+            raise "Unexpected GET request to: #{url}"
+        end
+    end)
+  end
+
+  defp template_page_response(template_numbers) do
+    templates =
+      Enum.map(template_numbers, fn number ->
+        %{"id" => "template-#{number}", "elementName" => "template_#{number}"}
+      end)
+
+    %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success", templates: templates})}
+  end
+
+  defp mock_partner_apps(page_response) do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{status: "success", data: %{token: "sk_test_partner_token"}})
+        }
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/account/api/partnerApps?" <> query} ->
+        query
+        |> URI.decode_query()
+        |> page_response.()
+    end)
+  end
+
+  defp partner_apps_response(app_names, total_pages) do
+    apps = Enum.map(app_names, &%{"name" => &1, "id" => "#{&1}-id"})
+
+    %Tesla.Env{
+      status: 200,
+      body:
+        Jason.encode!(%{
+          status: "success",
+          partnerAppsList: apps,
+          totalPages: total_pages
+        })
+    }
   end
 end
