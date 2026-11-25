@@ -23,10 +23,9 @@ runtime:
         }
 
 docs: |
-  Exchanges a web channel token for a new one-hour token in the same session. Renewal works
-  until the session is 48 hours old, even if the token has expired, so a beneficiary who comes
-  back to the widget within 48 hours of signing in stays signed in. After that they must sign in
-  again with a new OTP. This request updates `web_channel_token`.
+  Exchanges a still-valid web channel token for a new 48-hour token in the same session.
+  Renewal works until the session is 7 days old; after that the beneficiary must sign in
+  again. An expired token cannot be renewed. This request updates `web_channel_token`.
 
   The token goes in the body, not in a header. Only tokens issued by **Verify a web channel
   OTP** can be renewed; tokens an organization's own backend signed cannot.
@@ -54,7 +53,7 @@ docs: |
 
   All as `{ "error": { "status": <code>, "message": "..." } }`:
 
-  - `401`: the token is invalid, past the 48-hour session limit or not renewable:
+  - `401`: the token is invalid, expired, past the 7-day limit or not renewable:
     `Invalid or expired session`.
   - `422`: no `token` in the body: `Token is required`.
   - `404`: the web channel is not enabled for the organization.

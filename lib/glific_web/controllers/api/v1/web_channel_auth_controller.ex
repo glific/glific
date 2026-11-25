@@ -183,12 +183,13 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   end
 
   @doc """
-  Exchange a session token for a fresh one, so a one hour TTL does not end a conversation the
-  beneficiary is still having, or make them log in again after closing the tab.
+  Exchange a still-valid token for a fresh one, so a 48 hour TTL does not end a conversation the
+  beneficiary is still having.
 
-  The token must be signed for this host's organization and carry a session, but it may have
-  expired: the session, not the token's `exp`, bounds renewal. Once the session is 48 hours old
-  renewal is refused and the contact logs in again — see `GlificWeb.WebChannel.Token.renew/3`.
+  Requires the current token to be valid for this host's organization: an expired one is refused
+  rather than resurrected, which is what keeps expiry meaningful. Renewal is also bounded in
+  total — see `GlificWeb.WebChannel.Token` — so refreshing indefinitely does not grant an
+  indefinite session.
   """
   @spec renew_token(Conn.t(), map()) :: Conn.t()
   def renew_token(conn, %{"token" => token}) when is_binary(token) and token != "" do

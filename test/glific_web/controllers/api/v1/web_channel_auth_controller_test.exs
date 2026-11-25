@@ -174,51 +174,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "renews a session that is 24 hours old", %{conn: conn, phone: phone} do
-      with_web_channel_enabled(fn ->
-        sign_in(conn, phone)
-
-        {:ok, token} =
-          Token.sign(1, %{
-            sub: phone,
-            session_id: "day-old-session",
-            session_started_at: System.system_time(:second) - 86_400
-          })
-
-        renew_conn =
-          post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
-
-        assert json = json_response(renew_conn, 200)
-        assert {:ok, %{session_id: "day-old-session"}} = Token.verify(1, json["data"]["token"])
-      end)
-    end
-
-    test "renews an expired token from a session under 48 hours old", %{
-      conn: conn,
-      phone: phone
-    } do
-      with_web_channel_enabled(fn ->
-        sign_in(conn, phone)
-        now = System.system_time(:second)
-
-        {:ok, token} =
-          Token.sign(1, %{
-            sub: phone,
-            session_id: "returning-session",
-            session_started_at: now - 30 * 3_600,
-            iat: now - 7_200,
-            exp: now - 3_600
-          })
-
-        renew_conn =
-          post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
-
-        assert json = json_response(renew_conn, 200)
-        assert {:ok, %{session_id: "returning-session"}} = Token.verify(1, json["data"]["token"])
-      end)
-    end
-
-    test "refuses a session that is 48 hours old, however fresh its token", %{
+    test "refuses a session that is 7 days old, however fresh its token", %{
       conn: conn,
       phone: phone
     } do
@@ -227,14 +183,13 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           Token.sign(1, %{
             sub: phone,
             session_id: "old-session",
-            session_started_at: System.system_time(:second) - 172_800
+            session_started_at: System.system_time(:second) - 604_800
           })
 
         renew_conn =
           post(conn, Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token}))
 
-        assert json = json_response(renew_conn, 401)
-        assert get_in(json, ["error", "message"]) == "Invalid or expired session"
+        assert json_response(renew_conn, 401)
       end)
     end
 

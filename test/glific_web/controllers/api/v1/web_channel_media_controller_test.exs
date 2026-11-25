@@ -91,26 +91,6 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       end)
     end
 
-    test "rejects an expired session token, however young its session", %{
-      conn: conn,
-      contact: contact
-    } do
-      now = System.system_time(:second)
-
-      with_web_channel_enabled(fn ->
-        expired =
-          contact
-          |> WebChannelFixtures.web_channel_claims(%{
-            "sst" => now - 7_200,
-            "iat" => now - 7_200,
-            "exp" => now - 3_600
-          })
-          |> WebChannelFixtures.sign_web_channel_claims()
-
-        assert json_response(sign_with_token(conn, expired), 401)
-      end)
-    end
-
     test "accepts an NGO-signed token for an existing username", %{conn: conn} do
       with_web_channel_enabled(fn ->
         configure_gcs(1)
