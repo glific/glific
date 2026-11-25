@@ -19,10 +19,6 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Kept out of request and socket logs, and out of AppSignal (its MapFilter reads this list). A
-# web channel token is renewable for 48 hours, so one copied from a log would be a login.
-config :phoenix, :filter_parameters, ["password", "token", "otp", "secret"]
-
 # Configure to use UTC timestamp in tables
 config :glific, Glific.Repo, migration_timestamps: [type: :utc_datetime]
 

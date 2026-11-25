@@ -145,7 +145,6 @@ config :appsignal, :config,
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
   ecto_repos: [],
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
-  filter_parameters: ["password", "token", "otp", "secret"],
   instrument_oban: false,
   log_level: env!("APPSIGNAL_LOG_LEVEL", :string!, "info")
 
