@@ -176,202 +176,6 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
-    test "get_templates/1 fetches every page until a short page" do
-      org = SeedsDev.seed_organizations()
-      test_pid = self()
-
-      mock_template_pages(fn page_no ->
-        send(test_pid, {:template_page, page_no})
-
-        case page_no do
-          1 -> template_page_response(1..100)
-          2 -> template_page_response(101..200)
-          3 -> template_page_response(201..203)
-        end
-      end)
-
-      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
-      assert length(templates) == 203
-      assert Enum.map(templates, & &1["id"]) == Enum.map(1..203, &"template-#{&1}")
-      assert_received {:template_page, 1}
-      assert_received {:template_page, 2}
-      assert_received {:template_page, 3}
-      refute_received {:template_page, 4}
-    end
-
-    test "get_templates/1 stops on an empty page when the last page is full" do
-      org = SeedsDev.seed_organizations()
-
-      mock_template_pages(fn
-        1 -> template_page_response(1..100)
-        2 -> template_page_response([])
-      end)
-
-      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
-      assert length(templates) == 100
-    end
-
-    test "get_templates/1 drops templates repeated across pages" do
-      org = SeedsDev.seed_organizations()
-
-      mock_template_pages(fn
-        1 -> template_page_response(1..100)
-        2 -> template_page_response([100, 101])
-      end)
-
-      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
-      assert length(templates) == 101
-    end
-
-    test "get_templates/1 fails when a page after the first fails" do
-      org = SeedsDev.seed_organizations()
-
-      mock_template_pages(fn
-        1 -> template_page_response(1..100)
-        2 -> %Tesla.Env{status: 500, body: Jason.encode!(%{status: "error"})}
-      end)
-
-      assert {:error, message} = PartnerAPI.get_templates(org.id)
-      assert message =~ "Fetching templates page 2 failed"
-    end
-
-    test "get_templates/1 fails when a page has no template list" do
-      org = SeedsDev.seed_organizations()
-
-      mock_template_pages(fn 1 -> %Tesla.Env{status: 200, body: Jason.encode!(%{})} end)
-
-      assert {:error, "Invalid templates response for page 1"} =
-               PartnerAPI.get_templates(org.id)
-    end
-
-    test "get_templates/1 retries a rate limited page once" do
-      org = SeedsDev.seed_organizations()
-      {:ok, attempts} = Agent.start_link(fn -> 0 end)
-
-      mock_template_pages(fn 1 ->
-        case Agent.get_and_update(attempts, &{&1, &1 + 1}) do
-          0 ->
-            %Tesla.Env{
-              status: 429,
-              headers: [{"X-Rate-Limit-Retry-After-Seconds", "0"}],
-              body: Jason.encode!(%{status: "error"})
-            }
-
-          _ ->
-            template_page_response(1..3)
-        end
-      end)
-
-      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
-      assert length(templates) == 3
-      assert Agent.get(attempts, & &1) == 2
-    end
-
-    test "get_templates/1 waits one second before retrying a rate limited page without a retry header" do
-      org = SeedsDev.seed_organizations()
-      {:ok, attempts} = Agent.start_link(fn -> 0 end)
-
-      mock_template_pages(fn 1 ->
-        case Agent.get_and_update(attempts, &{&1, &1 + 1}) do
-          0 ->
-            %Tesla.Env{
-              status: 429,
-              headers: [{"content-type", "application/json"}],
-              body: Jason.encode!(%{status: "error"})
-            }
-
-          _ ->
-            template_page_response(1..3)
-        end
-      end)
-
-      {elapsed_microseconds, result} = :timer.tc(fn -> PartnerAPI.get_templates(org.id) end)
-
-      assert {:ok, templates} = result
-      assert length(templates) == 3
-      assert Agent.get(attempts, & &1) == 2
-      assert elapsed_microseconds >= :timer.seconds(1) * 1000
-    end
-
-    test "get_templates/1 fails when a page is rate limited twice" do
-      org = SeedsDev.seed_organizations()
-
-      mock_template_pages(fn 1 ->
-        %Tesla.Env{
-          status: 429,
-          headers: [{"x-rate-limit-retry-after-seconds", "0"}],
-          body: Jason.encode!(%{status: "error"})
-        }
-      end)
-
-      assert {:error, message} = PartnerAPI.get_templates(org.id)
-      assert message =~ "Fetching templates page 1 failed"
-    end
-
-    test "get_templates/1 fails when every page is full up to the page limit" do
-      org = SeedsDev.seed_organizations()
-      full_page = template_page_response(1..100)
-
-      mock_template_pages(fn _page_no -> full_page end)
-
-      assert {:error, "Template list has more than 100 pages"} = PartnerAPI.get_templates(org.id)
-    end
-
-    test "fetch_gupshup_app_details/1 pages through apps until the exact name is found" do
-      test_pid = self()
-
-      mock_partner_apps(fn params ->
-        send(test_pid, {:partner_apps_params, params})
-
-        case params["page"] do
-          "1" -> partner_apps_response(["glific app staging"], 2)
-          "2" -> partner_apps_response(["glific app"], 2)
-        end
-      end)
-
-      assert %{"name" => "glific app", "id" => "glific app-id"} =
-               PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
-
-      assert_received {:partner_apps_params,
-                       %{"page" => "1", "pageSize" => "100", "searchTerm" => "glific app"}}
-
-      assert_received {:partner_apps_params, %{"page" => "2"}}
-    end
-
-    test "fetch_gupshup_app_details/1 rejects an app name with only partial matches" do
-      mock_partner_apps(fn %{"page" => "1"} ->
-        partner_apps_response(["glific app staging"], 1)
-      end)
-
-      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
-    end
-
-    test "fetch_gupshup_app_details/1 stops when the response has no page count" do
-      mock_partner_apps(fn %{"page" => "1"} ->
-        %Tesla.Env{
-          status: 200,
-          body: Jason.encode!(%{partnerAppsList: [%{"name" => "glific app staging"}]})
-        }
-      end)
-
-      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
-    end
-
-    test "fetch_gupshup_app_details/1 rejects a response without an app list" do
-      mock_partner_apps(fn %{"page" => "1"} ->
-        %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success"})}
-      end)
-
-      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
-    end
-
-    test "fetch_gupshup_app_details/1 reports a failed app lookup" do
-      mock_partner_apps(fn _params -> %Tesla.Env{status: 500, body: "error"} end)
-
-      assert "Fetching app details failed, please double check App name and API key are correct" ==
-               PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
-    end
-
     test "recharge_partner/2 should transfer balance from ISV partner to app" do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -415,6 +219,206 @@ defmodule Glific.PartnersTest do
     test "ensure that creating providers with same name give an error" do
       provider_fixture(@valid_attrs)
       assert {:error, %Ecto.Changeset{}} = Partners.create_provider(@valid_attrs)
+    end
+  end
+
+  describe "get_templates/1" do
+    test "fetches every page until a short page" do
+      org = SeedsDev.seed_organizations()
+      test_pid = self()
+
+      mock_template_pages(fn page_no ->
+        send(test_pid, {:template_page, page_no})
+
+        case page_no do
+          1 -> template_page_response(1..100)
+          2 -> template_page_response(101..200)
+          3 -> template_page_response(201..203)
+        end
+      end)
+
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 203
+      assert Enum.map(templates, & &1["id"]) == Enum.map(1..203, &"template-#{&1}")
+      assert_received {:template_page, 1}
+      assert_received {:template_page, 2}
+      assert_received {:template_page, 3}
+      refute_received {:template_page, 4}
+    end
+
+    test "stops on an empty page when the last page is full" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn
+        1 -> template_page_response(1..100)
+        2 -> template_page_response([])
+      end)
+
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 100
+    end
+
+    test "drops templates repeated across pages" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn
+        1 -> template_page_response(1..100)
+        2 -> template_page_response([100, 101])
+      end)
+
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 101
+    end
+
+    test "fails when a page after the first fails" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn
+        1 -> template_page_response(1..100)
+        2 -> %Tesla.Env{status: 500, body: Jason.encode!(%{status: "error"})}
+      end)
+
+      assert {:error, message} = PartnerAPI.get_templates(org.id)
+      assert message =~ "Fetching templates page 2 failed"
+    end
+
+    test "fails when a page has no template list" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn 1 -> %Tesla.Env{status: 200, body: Jason.encode!(%{})} end)
+
+      assert {:error, "Invalid templates response for page 1"} =
+               PartnerAPI.get_templates(org.id)
+    end
+
+    test "retries a rate limited page once" do
+      org = SeedsDev.seed_organizations()
+      {:ok, attempts} = Agent.start_link(fn -> 0 end)
+
+      mock_template_pages(fn 1 ->
+        case Agent.get_and_update(attempts, &{&1, &1 + 1}) do
+          0 ->
+            %Tesla.Env{
+              status: 429,
+              headers: [{"X-Rate-Limit-Retry-After-Seconds", "0"}],
+              body: Jason.encode!(%{status: "error"})
+            }
+
+          _ ->
+            template_page_response(1..3)
+        end
+      end)
+
+      assert {:ok, templates} = PartnerAPI.get_templates(org.id)
+      assert length(templates) == 3
+      assert Agent.get(attempts, & &1) == 2
+    end
+
+    test "waits one second before retrying a rate limited page without a retry header" do
+      org = SeedsDev.seed_organizations()
+      {:ok, attempts} = Agent.start_link(fn -> 0 end)
+
+      mock_template_pages(fn 1 ->
+        case Agent.get_and_update(attempts, &{&1, &1 + 1}) do
+          0 ->
+            %Tesla.Env{
+              status: 429,
+              headers: [{"content-type", "application/json"}],
+              body: Jason.encode!(%{status: "error"})
+            }
+
+          _ ->
+            template_page_response(1..3)
+        end
+      end)
+
+      {elapsed_microseconds, result} = :timer.tc(fn -> PartnerAPI.get_templates(org.id) end)
+
+      assert {:ok, templates} = result
+      assert length(templates) == 3
+      assert Agent.get(attempts, & &1) == 2
+      assert elapsed_microseconds >= :timer.seconds(1) * 1000
+    end
+
+    test "fails when a page is rate limited twice" do
+      org = SeedsDev.seed_organizations()
+
+      mock_template_pages(fn 1 ->
+        %Tesla.Env{
+          status: 429,
+          headers: [{"x-rate-limit-retry-after-seconds", "0"}],
+          body: Jason.encode!(%{status: "error"})
+        }
+      end)
+
+      assert {:error, message} = PartnerAPI.get_templates(org.id)
+      assert message =~ "Fetching templates page 1 failed"
+    end
+
+    test "fails when every page is full up to the page limit" do
+      org = SeedsDev.seed_organizations()
+      full_page = template_page_response(1..100)
+
+      mock_template_pages(fn _page_no -> full_page end)
+
+      assert {:error, "Template list has more than 100 pages"} = PartnerAPI.get_templates(org.id)
+    end
+  end
+
+  describe "fetch_gupshup_app_details/1" do
+    test "pages through apps until the exact name is found" do
+      test_pid = self()
+
+      mock_partner_apps(fn params ->
+        send(test_pid, {:partner_apps_params, params})
+
+        case params["page"] do
+          "1" -> partner_apps_response(["glific app staging"], 2)
+          "2" -> partner_apps_response(["glific app"], 2)
+        end
+      end)
+
+      assert %{"name" => "glific app", "id" => "glific app-id"} =
+               PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+
+      assert_received {:partner_apps_params,
+                       %{"page" => "1", "pageSize" => "100", "searchTerm" => "glific app"}}
+
+      assert_received {:partner_apps_params, %{"page" => "2"}}
+    end
+
+    test "rejects an app name with only partial matches" do
+      mock_partner_apps(fn %{"page" => "1"} ->
+        partner_apps_response(["glific app staging"], 1)
+      end)
+
+      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+    end
+
+    test "stops when the response has no page count" do
+      mock_partner_apps(fn %{"page" => "1"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{partnerAppsList: [%{"name" => "glific app staging"}]})
+        }
+      end)
+
+      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+    end
+
+    test "rejects a response without an app list" do
+      mock_partner_apps(fn %{"page" => "1"} ->
+        %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success"})}
+      end)
+
+      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+    end
+
+    test "reports a failed app lookup" do
+      mock_partner_apps(fn _params -> %Tesla.Env{status: 500, body: "error"} end)
+
+      assert "Fetching app details failed, please double check App name and API key are correct" ==
+               PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
     end
   end
 
