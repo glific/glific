@@ -318,18 +318,18 @@ defmodule GlificWeb.WebChannelSocketTest do
       end)
     end
 
-    test "accepts a lifetime of exactly 24 hours and refuses a longer one" do
+    test "accepts a lifetime of exactly 7 days and refuses a longer one" do
       with_signature_secret(fn ->
         now = System.system_time(:second)
 
         assert {:ok, _socket} =
                  WebChannelFixtures.connect_with_token(
-                   ngo_token(%{"iat" => now, "exp" => now + 86_400})
+                   ngo_token(%{"iat" => now, "exp" => now + 604_800})
                  )
 
         assert :error =
                  WebChannelFixtures.connect_with_token(
-                   ngo_token(%{"iat" => now, "exp" => now + 86_401})
+                   ngo_token(%{"iat" => now, "exp" => now + 604_801})
                  )
       end)
     end

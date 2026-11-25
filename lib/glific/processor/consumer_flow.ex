@@ -66,9 +66,8 @@ defmodule Glific.Processor.ConsumerFlow do
 
   # Scoped to the channel the keyword arrived on, so a browser keyword completes only web flows.
   defp mark_flows_complete(contact_id, channel, event_meta) do
-    FlowContext.mark_flows_complete(contact_id, false,
+    FlowContext.mark_flows_complete(contact_id, false, channel,
       source: "process_message",
-      channel: channel,
       event_meta: event_meta
     )
   end
@@ -258,9 +257,8 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
   defp start_optin_flow(message, state) do
     ## remove all the previous flow context
-    FlowContext.mark_flows_complete(message.contact_id, false,
+    FlowContext.mark_flows_complete(message.contact_id, false, message.channel,
       source: "start_optin_flow",
-      channel: message.channel,
       event_meta: %{
         message_id: message.id
       }

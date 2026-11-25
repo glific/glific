@@ -6,6 +6,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   use GlificWeb.ConnCase
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     Contacts,
@@ -174,7 +175,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "refuses a session that is 24 hours old, however fresh its token", %{
+    test "refuses a session that is 7 days old, however fresh its token", %{
       conn: conn,
       phone: phone
     } do
@@ -183,7 +184,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           Token.sign(1, %{
             sub: phone,
             session_id: "old-session",
-            session_started_at: System.system_time(:second) - 86_400
+            session_started_at: System.system_time(:second) - 604_800
           })
 
         renew_conn =
@@ -867,6 +868,250 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
     )
     |> json_response(200)
     |> get_in(["data", "contact_id"])
+  end
+
+  describe "login history on the contact profile (#5877)" do
+    test "requesting a code records it on the web channel", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => @reachable_phone})
+        )
+
+        assert login_history(@reachable_phone) == [
+                 {"web_login_code_requested", "Web login code requested", :web}
+               ]
+      end)
+    end
+
+    test "a request is recorded even when the code cannot be delivered", %{conn: conn} do
+      with_web_channel_enabled(fn ->
+        undeliverable = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{
+            "phone" => undeliverable.phone
+          })
+        )
+
+        assert [{"web_login_code_requested", _label, :web}] = login_history(undeliverable.phone)
+      end)
+    end
+
+    test "a correct code records a verified login", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+            "phone" => phone,
+            "otp" => code
+          })
+        )
+
+        assert login_history(phone) == [
+                 {"web_login_code_verified", "Logged into web", :web}
+               ]
+      end)
+    end
+
+    test "a wrong code for a known contact records the failure", %{conn: conn} do
+      contact = Fixtures.contact_fixture(%{phone: unique_phone()})
+
+      with_web_channel_enabled(fn ->
+        OTP.generate_code(:web_channel, contact.phone)
+
+        conn
+        |> post(
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+            "phone" => contact.phone,
+            "otp" => "000000"
+          })
+        )
+        |> json_response(401)
+
+        assert login_history(contact.phone) == [
+                 {"web_login_code_failed", "Web login code incorrect", :web}
+               ]
+      end)
+    end
+
+    test "a request refused by the phone rate limit records nothing", %{conn: conn} do
+      contact = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+      rate_limit_key = "web_channel_send_otp:#{contact.phone}"
+      original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+
+      Application.put_env(:glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1)
+      ExRated.delete_bucket(rate_limit_key)
+
+      on_exit(fn ->
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone, original_config)
+        ExRated.delete_bucket(rate_limit_key)
+      end)
+
+      with_web_channel_enabled(fn ->
+        request = fn ->
+          post(
+            conn,
+            Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => contact.phone})
+          )
+        end
+
+        assert json_response(request.(), 200)
+        assert json_response(request.(), 429)
+
+        assert [{"web_login_code_requested", _label, :web}] = login_history(contact.phone)
+      end)
+    end
+
+    test "wrong codes past the attempt limit record nothing more", %{conn: conn} do
+      contact = Fixtures.contact_fixture(%{phone: unique_phone()})
+
+      with_web_channel_enabled(fn ->
+        OTP.generate_code(:web_channel, contact.phone)
+
+        for _attempt <- 1..8 do
+          conn
+          |> post(
+            Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+              "phone" => contact.phone,
+              "otp" => "000000"
+            })
+          )
+          |> json_response(401)
+        end
+
+        attempts = Application.fetch_env!(:passwordless_auth, :num_attempts_before_timeout)
+        assert length(login_history(contact.phone)) == attempts
+      end)
+    end
+
+    test "a verify with no code issued records nothing", %{conn: conn} do
+      contact = Fixtures.contact_fixture(%{phone: unique_phone()})
+
+      with_web_channel_enabled(fn ->
+        conn
+        |> post(
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+            "phone" => contact.phone,
+            "otp" => "000000"
+          })
+        )
+        |> json_response(401)
+
+        assert login_history(contact.phone) == []
+      end)
+    end
+
+    test "a wrong code for an unknown phone creates no contact", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        conn
+        |> post(
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+            "phone" => phone,
+            "otp" => "000000"
+          })
+        )
+        |> json_response(401)
+
+        refute Repo.exists?(from(c in Contact, where: c.phone == ^phone),
+                 skip_organization_id: true
+               )
+      end)
+    end
+
+    test "a login still succeeds when its history write returns an error", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        with_mock(Contacts, [:passthrough],
+          capture_history: fn _contact, _event_type, _attrs ->
+            {:error, "history write failed"}
+          end
+        ) do
+          response =
+            conn
+            |> post(
+              Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                "phone" => phone,
+                "otp" => code
+              })
+            )
+            |> json_response(200)
+
+          assert response["data"]["token"]
+        end
+
+        assert login_history(phone) == []
+      end)
+    end
+
+    test "a login still succeeds when its history write raises", %{conn: conn} do
+      phone = unique_phone()
+
+      with_web_channel_enabled(fn ->
+        code = OTP.generate_code(:web_channel, phone)
+
+        with_mock(Contacts, [:passthrough],
+          capture_history: fn _contact, _event_type, _attrs -> raise "history write failed" end
+        ) do
+          response =
+            conn
+            |> post(
+              Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+                "phone" => phone,
+                "otp" => code
+              })
+            )
+            |> json_response(200)
+
+          assert response["data"]["token"]
+        end
+
+        assert login_history(phone) == []
+      end)
+    end
+
+    test "a wrong code still returns 401 when looking up its contact raises", %{conn: conn} do
+      contact = Fixtures.contact_fixture(%{phone: unique_phone()})
+
+      with_web_channel_enabled(fn ->
+        OTP.generate_code(:web_channel, contact.phone)
+
+        with_mock(Contacts, [:passthrough],
+          fetch_by_identity: fn _channel, _identifier -> raise "lookup failed" end
+        ) do
+          conn
+          |> post(
+            Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{
+              "phone" => contact.phone,
+              "otp" => "000000"
+            })
+          )
+          |> json_response(401)
+        end
+
+        assert login_history(contact.phone) == []
+      end)
+    end
+  end
+
+  defp login_history(phone) do
+    Glific.Contacts.ContactHistory
+    |> join(:inner, [h], c in Contact, on: c.id == h.contact_id)
+    |> where([_h, c], c.phone == ^phone)
+    |> where([h], like(h.event_type, "web_login_code_%"))
+    |> order_by([h], h.id)
+    |> select([h], {h.event_type, h.event_label, h.channel})
+    |> Repo.all(skip_organization_id: true)
   end
 
   describe "verify_otp/2" do
