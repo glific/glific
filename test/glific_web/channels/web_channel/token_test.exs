@@ -281,6 +281,21 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert exp == @now + 172_800
     end
 
+    test "a renewed token expires with its session when that comes first", %{
+      organization_id: organization_id
+    } do
+      started_at = @now - 604_800 + 3_600
+
+      token =
+        %{"jti" => "s1", "sst" => started_at}
+        |> WebChannelLoginHelpers.claims(@now)
+        |> WebChannelLoginHelpers.sign(@secret)
+
+      assert {:ok, renewed, _claims} = Token.renew(organization_id, token, @now)
+      assert {:ok, %{exp: exp}} = Token.verify(organization_id, renewed, @now)
+      assert exp == started_at + 604_800
+    end
+
     test "renewal is refused once the session is 7 days old", %{
       organization_id: organization_id
     } do

@@ -109,13 +109,18 @@ defmodule GlificWeb.WebChannel.Token do
   `jti` and `sst` carry over: a new `jti` would make every refresh look like a second login, and
   a new `sst` would make renewal unbounded. A token with no session claims is refused, since
   renewing an NGO's token is its backend's job.
+
+  The new token expires when the session does if that comes first, so a socket kept open by it
+  cannot outlive the session.
   """
   @spec renew(non_neg_integer(), String.t() | nil, integer()) ::
           {:ok, String.t(), claims()} | {:error, :invalid}
   def renew(organization_id, token, now \\ System.system_time(:second)) do
-    with {:ok, %{session_id: _, session_started_at: _} = claims} <-
+    with {:ok, %{session_id: _, session_started_at: started_at} = claims} <-
            verify(organization_id, token, now),
-         {:ok, renewed} <- sign(organization_id, claims |> Map.delete(:exp) |> Map.put(:iat, now)) do
+         exp = min(now + @token_expiry_duration, started_at + @session_expiry_duration),
+         {:ok, renewed} <-
+           sign(organization_id, claims |> Map.put(:exp, exp) |> Map.put(:iat, now)) do
       {:ok, renewed, claims}
     else
       _refused -> {:error, :invalid}
