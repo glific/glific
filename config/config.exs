@@ -150,7 +150,8 @@ config :glific, Oban,
 
 # Smart engine fetches only local_limit * multiplier partition keys per refresh; orgs beyond that
 # wait a full cache cycle, so the multiplier must cover every org with queued jobs.
-config :oban_pro, Oban.Pro.Partition, keys_limit_multiplier: 7
+# An org whose jobs become available after a refresh waits up to keys_cache_ttl to be fetched.
+config :oban_pro, Oban.Pro.Partition, keys_limit_multiplier: 7, keys_cache_ttl: 1_000
 
 # Adding ssl_options to fix #3037. However I dont understand this or the implications
 # We will revisit it once we build a better understanding
