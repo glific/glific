@@ -5,6 +5,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
   # `web_channel_auth_controller_test.exs`.
   use GlificWeb.ConnCase
 
+  import Mock
+
   alias Glific.{
     Contacts,
     Fixtures,
@@ -385,6 +387,27 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
         assert json = json_response(conn, 503)
         assert get_in(json, ["error", "code"]) == "storage_unavailable"
       end)
+    end
+
+    test "counts an issued upload, and nothing for a refused one", %{
+      conn: conn,
+      contact: contact
+    } do
+      with_mock Glific.Metrics, [:passthrough],
+        increment: fn _event, _organization_id -> :ok end do
+        with_web_channel_enabled(fn ->
+          conn |> sign_upload(contact) |> json_response(503)
+          configure_gcs(contact.organization_id)
+          conn |> sign_upload(contact) |> json_response(200)
+        end)
+
+        issued =
+          for {_pid, {Glific.Metrics, :increment, ["Web Media Upload Issued", organization_id]},
+               _result} <- call_history(Glific.Metrics),
+              do: organization_id
+
+        assert issued == [contact.organization_id]
+      end
     end
   end
 end

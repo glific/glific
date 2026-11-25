@@ -33,6 +33,8 @@ defmodule Glific.Contacts do
     Users.User
   }
 
+  alias Glific.WebChannel.Metrics, as: WebChannelMetrics
+
   @delete_timeout 400_000
 
   @type web_claims :: %{
@@ -724,7 +726,7 @@ defmodule Glific.Contacts do
 
     with {:ok, contact} <- find_or_create_contact(channel, identifier, attrs),
          {:ok, contact, recorded?} <- write_optin(channel, contact, identifier, attrs, opts) do
-      if recorded?, do: capture_optin_history(channel, contact, opts)
+      if recorded?, do: record_optin_events(channel, contact, opts)
       {:ok, contact}
     end
   end
@@ -804,6 +806,15 @@ defmodule Glific.Contacts do
 
     with {:ok, contact} <- update_contact(contact, optin_attrs), do: {:ok, contact, true}
   end
+
+  @spec record_optin_events(:whatsapp | :web, Contact.t(), Keyword.t()) :: any()
+  defp record_optin_events(:web, contact, opts) do
+    capture_optin_history(:web, contact, opts)
+    WebChannelMetrics.count(:optin_recorded, contact.organization_id)
+  end
+
+  defp record_optin_events(channel, contact, opts),
+    do: capture_optin_history(channel, contact, opts)
 
   @spec capture_optin_history(:whatsapp | :web, Contact.t(), Keyword.t()) ::
           {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}

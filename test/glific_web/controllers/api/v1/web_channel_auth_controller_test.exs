@@ -1545,4 +1545,112 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
   end
+
+  describe "sign-in funnel counters (#5721)" do
+    # The web channel counters bumped while `fun` runs, in order.
+    defp counted(fun) do
+      with_mock Glific.Metrics, [:passthrough],
+        increment: fn _event, _organization_id -> :ok end do
+        fun.()
+
+        for {_pid, {Glific.Metrics, :increment, [event, 1]}, _result} <-
+              call_history(Glific.Metrics),
+            String.starts_with?(event, "Web "),
+            do: event
+      end
+    end
+
+    defp request_otp(conn, phone),
+      do: post(conn, Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => phone}))
+
+    defp verify_otp(conn, phone, otp),
+      do:
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{"phone" => phone, "otp" => otp})
+        )
+
+    test "a delivered code is requested and sent", %{conn: conn} do
+      events =
+        counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, @reachable_phone) end) end)
+
+      assert events == ["Web OTP Requested", "Web OTP Sent"]
+    end
+
+    test "a code that cannot be delivered is refused as undeliverable", %{conn: conn} do
+      blocked = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+
+      events =
+        counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, blocked.phone) end) end)
+
+      assert events == ["Web OTP Requested", "Web OTP Refused: Undeliverable"]
+    end
+
+    test "an invalid phone is refused as invalid", %{conn: conn} do
+      events = counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, "12") end) end)
+
+      assert events == ["Web OTP Requested", "Web OTP Refused: Invalid Phone"]
+    end
+
+    test "a request over the phone limit is refused as rate limited", %{conn: conn} do
+      phone = unique_phone()
+      rate_limit_key = "web_channel_send_otp:#{phone}"
+      original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+      Application.put_env(:glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1)
+      ExRated.delete_bucket(rate_limit_key)
+
+      on_exit(fn ->
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone, original_config)
+        ExRated.delete_bucket(rate_limit_key)
+      end)
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            request_otp(conn, phone)
+            request_otp(conn, phone)
+          end)
+        end)
+
+      assert [
+               "Web OTP Requested",
+               _first_outcome,
+               "Web OTP Requested",
+               "Web OTP Refused: Rate Limited"
+             ] =
+               events
+    end
+
+    test "a correct code is verified", %{conn: conn} do
+      phone = unique_phone()
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            code = OTP.generate_code(:web_channel, phone)
+            conn |> verify_otp(phone, code) |> json_response(200)
+          end)
+        end)
+
+      assert events == ["Web OTP Verified"]
+    end
+
+    test "a wrong code fails verification", %{conn: conn} do
+      phone = unique_phone()
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            OTP.generate_code(:web_channel, phone)
+            conn |> verify_otp(phone, "000000") |> json_response(401)
+          end)
+        end)
+
+      assert events == ["Web OTP Verification Failed"]
+    end
+
+    test "nothing is counted while the web channel is off", %{conn: conn} do
+      assert counted(fn -> request_otp(conn, @reachable_phone) end) == []
+    end
+  end
 end

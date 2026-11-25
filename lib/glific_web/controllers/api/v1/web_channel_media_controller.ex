@@ -12,7 +12,16 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
 
   use GlificWeb, :controller
 
-  alias Glific.{GCS, GCS.SignedUrl, Messages, Providers.Web.Upload, RateLimit}
+  alias Glific.{
+    GCS,
+    GCS.SignedUrl,
+    Messages,
+    Providers.Web.Upload,
+    RateLimit
+  }
+
+  alias Glific.WebChannel.Metrics, as: WebChannelMetrics
+
   alias GlificWeb.Tenants
   alias Plug.Conn
 
@@ -45,6 +54,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
              content_type,
              @expires_in_seconds
            ) do
+      WebChannelMetrics.count(:media_upload_issued, organization_id)
+
       json(conn, %{
         data: %{
           upload_url: signed_url,
