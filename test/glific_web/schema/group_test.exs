@@ -15,7 +15,6 @@ defmodule GlificWeb.Schema.GroupTest do
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/groups/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/groups/list.gql")
-  load_gql(:organization_list, GlificWeb.Schema, "assets/gql/groups/organization_list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/groups/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/groups/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/groups/update.gql")
@@ -46,15 +45,13 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(group, ["label"]) == "STARTED_AB"
   end
 
-  test "organizations groups field returns list of groups in desc order", %{staff: user} do
-    result =
-      auth_query_gql_by(:organization_list, user,
-        variables: %{"opts" => %{"order" => "DESC"}, "id" => user.organization_id}
-      )
+  test "organization groups query is not part of the schema", %{glific_admin: user} do
+    query = "query { organizationGroups { id } }"
 
-    assert {:ok, query_data} = result
-    groups = get_in(query_data, [:data, "organization_groups"])
-    assert length(groups) > 0
+    assert {:ok, %{errors: [%{message: message}]}} =
+             Absinthe.run(query, GlificWeb.Schema, context: %{current_user: user})
+
+    assert message =~ ~s(Cannot query field "organizationGroups")
   end
 
   test "groups field doesn't return not mapped groups", %{staff: user} do
