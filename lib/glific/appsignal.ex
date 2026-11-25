@@ -138,8 +138,8 @@ defmodule Glific.Appsignal do
   end
 
   def handle_event([:oban, :job, :start], _measurement, %{args: args}, _) do
-    case job_organization_id(args) do
-      nil -> :ok
+    case organization_id_tag(args) do
+      "unknown" -> :ok
       org_id -> Logger.metadata(org_id: org_id)
     end
   end
@@ -167,25 +167,18 @@ defmodule Glific.Appsignal do
 
   defp record_inbound_hold_time(_meta), do: :ok
 
-  @doc "Returns the organization id carried in Oban job args, or nil."
-  @spec job_organization_id(map() | nil) :: non_neg_integer() | String.t() | nil
-  def job_organization_id(%{"organization_id" => org_id}) when not is_nil(org_id), do: org_id
-
-  def job_organization_id(%{"message" => %{"organization_id" => org_id}}) when not is_nil(org_id),
-    do: org_id
-
-  def job_organization_id(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
-    do: org_id
-
-  def job_organization_id(_args), do: nil
-
   @spec organization_id_tag(map() | nil) :: String.t()
-  defp organization_id_tag(args) do
-    case job_organization_id(args) do
-      nil -> "unknown"
-      org_id -> to_string(org_id)
-    end
-  end
+  defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
+    do: to_string(org_id)
+
+  defp organization_id_tag(%{"message" => %{"organization_id" => org_id}})
+       when not is_nil(org_id),
+       do: to_string(org_id)
+
+  defp organization_id_tag(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
+    do: to_string(org_id)
+
+  defp organization_id_tag(_), do: "unknown"
 
   @doc """
   Sends oban queue size metric to Appsignal

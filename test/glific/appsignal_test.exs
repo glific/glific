@@ -110,7 +110,7 @@ defmodule Glific.AppsignalTest do
           Logger.metadata()[:org_id]
         end)
 
-      assert Task.await(task) == 7
+      assert Task.await(task) == "7"
     end
 
     test "leaves metadata alone when the args carry no organization" do
