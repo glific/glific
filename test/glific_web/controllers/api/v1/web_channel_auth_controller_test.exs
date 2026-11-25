@@ -175,7 +175,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
-    test "refuses a session that is 24 hours old, however fresh its token", %{
+    test "refuses a session that is 7 days old, however fresh its token", %{
       conn: conn,
       phone: phone
     } do
@@ -184,7 +184,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           Token.sign(1, %{
             sub: phone,
             session_id: "old-session",
-            session_started_at: System.system_time(:second) - 86_400
+            session_started_at: System.system_time(:second) - 604_800
           })
 
         renew_conn =

@@ -186,7 +186,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   end
 
   @doc """
-  Exchange a still-valid token for a fresh one, so a one hour TTL does not end a conversation the
+  Exchange a still-valid token for a fresh one, so a 48 hour TTL does not end a conversation the
   beneficiary is still having.
 
   Requires the current token to be valid for this host's organization: an expired one is refused
