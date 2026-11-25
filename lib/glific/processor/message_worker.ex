@@ -39,19 +39,7 @@ defmodule Glific.Processor.MessageWorker do
     }
     |> __MODULE__.new()
     |> Oban.insert()
-    |> tap(&count_held_job(&1, message.organization_id))
   end
-
-  # Oban Pro emits no telemetry event when a chain holds a job, so the hold is counted here
-  # from the inserted job's meta.
-  @spec count_held_job({:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}, non_neg_integer()) ::
-          :ok
-  defp count_held_job({:ok, %Oban.Job{meta: %{"on_hold" => true}}}, organization_id) do
-    Appsignal.increment_counter("inbound_job_held_count", 1, %{organization_id: organization_id})
-    :ok
-  end
-
-  defp count_held_job(_insert_result, _organization_id), do: :ok
 
   @doc """
   Process one inbound message through the tagger and flow pipeline.
