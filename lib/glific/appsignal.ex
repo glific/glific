@@ -145,6 +145,7 @@ defmodule Glific.Appsignal do
   end
 
   def handle_event(_, _, _, _), do: nil
+
   # Oban Pro emits no telemetry event for chain holds, so the hold time is derived here. A
   # chained inbound job is parked with a far-future scheduled_at, and its release resets
   # scheduled_at to now, so the hold never shows up in queue_time. Inbound jobs are never
@@ -177,6 +178,7 @@ defmodule Glific.Appsignal do
     do: org_id
 
   def job_organization_id(_args), do: nil
+
   @spec organization_id_tag(map() | nil) :: String.t()
   defp organization_id_tag(args) do
     case job_organization_id(args) do
