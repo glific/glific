@@ -320,6 +320,25 @@ defmodule Glific.PartnersTest do
       assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
     end
 
+    test "fetch_gupshup_app_details/1 stops when the response has no page count" do
+      mock_partner_apps(fn %{"page" => "1"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{partnerAppsList: [%{"name" => "glific app staging"}]})
+        }
+      end)
+
+      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+    end
+
+    test "fetch_gupshup_app_details/1 rejects a response without an app list" do
+      mock_partner_apps(fn %{"page" => "1"} ->
+        %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success"})}
+      end)
+
+      assert "Invalid Gupshup App" == PartnerAPI.fetch_gupshup_app_details(app_name: "glific app")
+    end
+
     test "fetch_gupshup_app_details/1 reports a failed app lookup" do
       mock_partner_apps(fn _params -> %Tesla.Env{status: 500, body: "error"} end)
 

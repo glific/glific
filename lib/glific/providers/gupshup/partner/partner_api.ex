@@ -749,8 +749,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @spec find_partner_app(String.t(), pos_integer()) :: {:ok, map() | nil} | {:error, any()}
-  defp find_partner_app(_app_name, page) when page > @max_pages, do: {:ok, nil}
-
   defp find_partner_app(app_name, page) do
     query = URI.encode_query(page: page, pageSize: @page_size, searchTerm: app_name)
 
