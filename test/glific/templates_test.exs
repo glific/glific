@@ -29,7 +29,7 @@ defmodule Glific.TemplatesTest do
     active_language_ids = Partners.organization(organization.id).active_language_ids
     Caches.remove(organization.id, [{:template_library, active_language_ids}])
 
-    :ok
+    Fixtures.set_bsp_partner_tokens(organization.id)
   end
 
   describe "session_template" do

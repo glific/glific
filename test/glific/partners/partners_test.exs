@@ -146,6 +146,7 @@ defmodule Glific.PartnersTest do
 
     test "set business profile" do
       org = SeedsDev.seed_organizations()
+      Fixtures.set_bsp_partner_tokens(org.id)
 
       Tesla.Mock.mock(fn
         %{method: :put} ->
@@ -161,6 +162,7 @@ defmodule Glific.PartnersTest do
 
     test "enable template messaging for an app" do
       org = SeedsDev.seed_organizations()
+      Fixtures.set_bsp_partner_tokens(org.id)
 
       Tesla.Mock.mock(fn
         %{method: :put} ->
@@ -2157,6 +2159,10 @@ defmodule Glific.PartnersTest do
   end
 
   describe "test gupshup error handling on applying for template/3" do
+    setup do
+      Fixtures.set_bsp_partner_tokens()
+    end
+
     test "successfull gupshup error handling for HSM template" do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -2174,6 +2180,10 @@ defmodule Glific.PartnersTest do
   end
 
   describe "test sucessful response on the api: applying for template/3" do
+    setup do
+      Fixtures.set_bsp_partner_tokens()
+    end
+
     test "successfull response for applying for HSM template" do
       Tesla.Mock.mock(fn
         %{method: :get} ->
