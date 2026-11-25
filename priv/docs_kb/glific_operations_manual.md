@@ -141,7 +141,7 @@ heading: 1. Flow Execution Engine › 1.3 FlowContext — Every Field › Init f
 ---
 
 1. Reject empty flow.
-2. If `parent_id` is nil (top-level): call `mark_flows_complete(contact_id, flow.is_background, channel, source: "init_context")` — kills prior non-background flows on the same channel (a nil channel means every channel).
+2. If `parent_id` is nil (top-level): call `mark_flows_complete(contact_id, flow.is_background, channel, source: "init_context")` — kills prior non-background flows on the same channel.
 3. `seed_context/2` — inserts DB row.
 4. `load_context/2` — loads the start node from uuid_map.
 5. `execute([])` — begins execution.

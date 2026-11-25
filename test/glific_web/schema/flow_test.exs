@@ -722,6 +722,35 @@ defmodule GlificWeb.Schema.FlowTest do
     assert is_nil(Repo.get!(FlowContext, whatsapp.id).completed_at)
   end
 
+  test "terminating a contact's flows without a channel leaves the web flows running",
+       %{manager: user} = attrs do
+    contact = Fixtures.contact_fixture()
+
+    [whatsapp, web] =
+      Enum.map([:whatsapp, :web], fn channel ->
+        {:ok, context} =
+          FlowContext.create_flow_context(%{
+            contact_id: contact.id,
+            flow_id: 1,
+            flow_uuid: Ecto.UUID.generate(),
+            uuid_map: %{},
+            channel: channel,
+            organization_id: attrs.organization_id
+          })
+
+        context
+      end)
+
+    result =
+      auth_query_gql_by(:terminate_contact_flows, user, variables: %{"contactId" => contact.id})
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "terminateContactFlows", "success"]) == true
+
+    assert Repo.get!(FlowContext, whatsapp.id).completed_at != nil
+    assert is_nil(Repo.get!(FlowContext, web.id).completed_at)
+  end
+
   test "Reset all the counts for a flows", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})

@@ -1203,15 +1203,15 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Delete a contact's messages on the given channel, or on every channel when it is nil
+  Delete a contact's messages on the given channel
   """
-  @spec clear_messages(Contact.t(), atom() | nil) :: :ok
-  def clear_messages(%Contact{} = contact, channel \\ nil) do
+  @spec clear_messages(Contact.t(), atom()) :: :ok
+  def clear_messages(%Contact{} = contact, channel) do
     messages =
       Message
       |> where([m], m.contact_id == ^contact.id)
       |> where([m], m.organization_id == ^contact.organization_id)
-      |> maybe_filter_channel(channel)
+      |> where([m], m.channel == ^channel)
 
     messages_media_ids =
       messages
@@ -1233,13 +1233,9 @@ defmodule Glific.Messages do
     :ok
   end
 
-  @spec maybe_filter_channel(Ecto.Query.t(), atom() | nil) :: Ecto.Query.t()
-  defp maybe_filter_channel(query, nil), do: query
-  defp maybe_filter_channel(query, channel), do: where(query, [m], m.channel == ^channel)
-
-  @spec reset_contact_fields(Contact.t(), atom() | nil) :: nil
+  @spec reset_contact_fields(Contact.t(), atom()) :: nil
   defp reset_contact_fields(contact, channel) do
-    simulator = channel in [nil, :whatsapp] && Contacts.simulator_contact?(contact.phone)
+    simulator = channel == :whatsapp && Contacts.simulator_contact?(contact.phone)
 
     values = conversation_reset_values(contact)
 

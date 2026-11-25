@@ -305,7 +305,7 @@ defmodule GlificWeb.Resolvers.Flows do
           {:ok, any} | {:error, any}
   def terminate_contact_flows(_, %{contact_id: contact_id} = args, _context) do
     with {:ok, contact_id} <- Glific.parse_maybe_integer(contact_id),
-         :ok <- Flows.terminate_contact_flows?(contact_id, Map.get(args, :channel)) do
+         :ok <- Flows.terminate_contact_flows?(contact_id, args[:channel] || :whatsapp) do
       {:ok, %{success: true}}
     end
   end

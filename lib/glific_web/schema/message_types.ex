@@ -329,7 +329,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :clear_messages, :clear_messages_result do
       arg(:contact_id, non_null(:id))
-      arg(:channel, :message_channel_enum)
+      arg(:channel, :message_channel_enum, description: "Defaults to WhatsApp")
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.clear_messages/3)
     end

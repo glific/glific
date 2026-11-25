@@ -214,9 +214,7 @@ defmodule Glific.Flows.FlowContextTest do
       refute is_nil(Repo.get!(FlowContext, web_context.id).completed_at)
     end
 
-    test "stopping with no channel ends every channel's flows and records one entry", %{
-      flow: flow
-    } do
+    test "stopping WhatsApp's flows leaves the web flows running", %{flow: flow} do
       contact = Fixtures.contact_fixture()
 
       {:ok, whatsapp, _} =
@@ -228,10 +226,12 @@ defmodule Glific.Flows.FlowContextTest do
       # Starting a flow completes the contact's older ones, which records an entry of its own.
       clear_stopped_history(contact)
 
-      FlowContext.mark_flows_complete(contact.id, false, nil, source: "terminate_contact_flows")
+      FlowContext.mark_flows_complete(contact.id, false, :whatsapp,
+        source: "terminate_contact_flows"
+      )
 
       assert Repo.get!(FlowContext, whatsapp.id).completed_at != nil
-      assert Repo.get!(FlowContext, web.id).completed_at != nil
+      assert is_nil(Repo.get!(FlowContext, web.id).completed_at)
       assert stopped_history(contact) == [:whatsapp]
     end
 
@@ -249,10 +249,10 @@ defmodule Glific.Flows.FlowContextTest do
       assert stopped_history(contact) == [:web]
     end
 
-    test "with nothing running there is still one entry, on the channel asked for or WhatsApp" do
+    test "with nothing running there is still one entry, on the channel asked for" do
       contact = Fixtures.contact_fixture()
 
-      FlowContext.mark_flows_complete(contact.id, false, nil)
+      FlowContext.mark_flows_complete(contact.id, false, :whatsapp)
       FlowContext.mark_flows_complete(contact.id, false, :web)
 
       assert stopped_history(contact) == [:whatsapp, :web]

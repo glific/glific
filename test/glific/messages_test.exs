@@ -494,7 +494,7 @@ defmodule Glific.MessagesTest do
 
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
       message = message |> Repo.preload(:contact)
-      assert :ok = Messages.clear_messages(message.contact)
+      assert :ok = Messages.clear_messages(message.contact, :whatsapp)
 
       assert {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
                Repo.fetch_by(Message, %{
@@ -531,7 +531,7 @@ defmodule Glific.MessagesTest do
       assert %{last_message_number: 0, is_org_read: true} = Contacts.get_contact!(contact.id)
     end
 
-    test "clear_messages/1 deletes messages for simulator and sends a message with default body",
+    test "clear_messages/2 deletes messages for simulator and sends a message with default body",
          attrs do
       message = message_fixture(attrs)
 
@@ -541,7 +541,7 @@ defmodule Glific.MessagesTest do
           organization_id: message.organization_id
         })
 
-      assert :ok = Messages.clear_messages(contact)
+      assert :ok = Messages.clear_messages(contact, :whatsapp)
 
       {:ok, message} =
         Repo.fetch_by(Message, %{

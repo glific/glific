@@ -26,7 +26,7 @@ graphql:
 
 docs: |
   Permanently deletes a contact's messages on one channel, and their media, and ends the
-  contact's flows on that channel. Without `channel` it does this on every channel. Once the
+  contact's flows on that channel. Without `channel` it clears WhatsApp. Once the
   contact has no messages left on any channel, its conversation state (message counter,
   unread and replied flags) is reset too. This cannot be undone.
 
@@ -41,7 +41,7 @@ docs: |
   | Argument    | Type                 | Required | Description                                                  |
   | ----------- | -------------------- | -------- | ------------------------------------------------------------ |
   | `contactId` | `ID!`                | Yes      | The contact whose messages to clear.                         |
-  | `channel`   | `MessageChannelEnum` | No       | `WHATSAPP` or `WEB`. Leave it out to clear every channel.    |
+  | `channel`   | `MessageChannelEnum` | No       | `WHATSAPP` or `WEB`. Defaults to `WHATSAPP`.                 |
 
   ## Example response
 

@@ -259,7 +259,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     field :terminate_contact_flows, :common_flow_result do
       arg(:contact_id, non_null(:id))
-      arg(:channel, :message_channel_enum)
+      arg(:channel, :message_channel_enum, description: "Defaults to WhatsApp")
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.terminate_contact_flows/3)
     end

@@ -27,7 +27,7 @@ graphql:
 docs: |
   Ends the flows the contact is running on one channel, except background flows, and records
   a "flows ended" event on that channel in the contact's history. Without `channel` it ends
-  them on every channel, with one history event per channel that had a flow running. The runs
+  the WhatsApp flows. The runs
   are marked completed and killed, so the contact's next message is matched against keywords
   afresh.
 
@@ -38,7 +38,7 @@ docs: |
   | Argument    | Type                 | Required | Description                                             |
   | ----------- | -------------------- | -------- | ------------------------------------------------------- |
   | `contactId` | `ID!`                | Yes      | The contact whose flows to end.                         |
-  | `channel`   | `MessageChannelEnum` | No       | `WHATSAPP` or `WEB`. Leave it out to end every channel. |
+  | `channel`   | `MessageChannelEnum` | No       | `WHATSAPP` or `WEB`. Defaults to `WHATSAPP`.            |
 
   ## Example response
 

@@ -546,13 +546,6 @@ defmodule Glific.Flows.FlowContext do
   defp add_date_clause(query, after_insert),
     do: query |> where([fc], fc.inserted_at > ^after_insert)
 
-  # nil completes every channel's flows; a channel narrows it to that one.
-  @spec maybe_scope_by_channel(Ecto.Queryable.t(), atom() | nil) :: Ecto.Queryable.t()
-  defp maybe_scope_by_channel(query, nil), do: query
-
-  defp maybe_scope_by_channel(query, channel),
-    do: query |> where([fc], fc.channel == ^channel)
-
   @doc """
   Set all other flows for the same wa_group as completed on waking up
   """
@@ -610,9 +603,9 @@ defmodule Glific.Flows.FlowContext do
   def mark_flows_complete(%Flow{is_active: true}, _opts), do: nil
 
   @doc """
-  Set a contact's flows on the given channel to be completed, or on every channel when it is nil
+  Set a contact's flows on the given channel to be completed
   """
-  @spec mark_flows_complete(non_neg_integer, boolean(), atom() | nil, Keyword.t()) :: nil
+  @spec mark_flows_complete(non_neg_integer, boolean(), atom(), Keyword.t()) :: nil
   def mark_flows_complete(_contact_id, _is_background_flow, _channel, opts \\ [])
   def mark_flows_complete(_contact_id, true, _channel, _opts), do: nil
 
@@ -629,7 +622,7 @@ defmodule Glific.Flows.FlowContext do
     FlowContext
     |> where([fc], fc.contact_id == ^contact_id)
     |> where([fc], is_nil(fc.completed_at))
-    |> maybe_scope_by_channel(channel)
+    |> where([fc], fc.channel == ^channel)
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.is_background_flow == false)
@@ -640,7 +633,7 @@ defmodule Glific.Flows.FlowContext do
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
         event_label: event_label,
-        channel: channel || :whatsapp,
+        channel: channel,
         event_meta:
           %{
             after_insert_date: after_insert_date,

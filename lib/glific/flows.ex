@@ -1615,10 +1615,10 @@ defmodule Glific.Flows do
     do: type in [:audio, :document, :image, :video]
 
   @doc """
-  Terminate a contact's flows on the given channel, or on every channel when it is nil
+  Terminate a contact's flows on the given channel
   """
-  @spec terminate_contact_flows?(non_neg_integer, atom() | nil) :: :ok
-  def terminate_contact_flows?(contact_id, channel \\ nil) do
+  @spec terminate_contact_flows?(non_neg_integer, atom()) :: :ok
+  def terminate_contact_flows?(contact_id, channel) do
     FlowContext.mark_flows_complete(contact_id, false, channel, source: "terminate_contact_flows")
 
     :ok
