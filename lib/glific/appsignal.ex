@@ -166,7 +166,7 @@ defmodule Glific.Appsignal do
       do:
         Appsignal.add_distribution_value(
           "inbound_job_hold_time",
-          Float.ceil(hold_ms / 1_000, 2),
+          hold_ms,
           %{organization_id: organization_id_tag(job.args)}
         )
 
