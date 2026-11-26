@@ -12,7 +12,7 @@ defmodule Glific.Providers.Web.Instrumentation do
       or storage failed).
 
   The steps of the web sign-in funnel and conversation that the provider counters do not cover
-  are counted in `web_channel_event_count`, tagged `event` (see `track_event/2` for the set).
+  are counted in `web_channel_event_count`, tagged `event`.
   Every `otp_requested` ends as exactly one `otp_sent` or `otp_refused_*`.
 
   Web sessions are tracked in their own counter, `web_channel_token_count`, tagged `event`:
@@ -26,16 +26,9 @@ defmodule Glific.Providers.Web.Instrumentation do
 
   use Glific.Providers.Instrumentation, provider: "web"
 
-  @token_events ~w(renewed renew_refused_token_expired renew_refused_session_expired renew_refused_invalid expired)
-
-  @events ~w(otp_requested otp_sent otp_refused_invalid_phone otp_refused_rate_limited
-              otp_refused_undeliverable otp_verified otp_verification_failed sign_in_failed
-              message_sent_staff message_sent_flow opt_in_recorded media_upload_issued
-              media_upload_completed)
-
   @doc "Record a web channel funnel or conversation event in AppSignal."
   @spec track_event(String.t(), non_neg_integer()) :: :ok
-  def track_event(event, organization_id) when event in @events do
+  def track_event(event, organization_id) do
     Appsignal.increment_counter("web_channel_event_count", 1, %{
       event: event,
       organization_id: to_string(organization_id)
@@ -46,7 +39,7 @@ defmodule Glific.Providers.Web.Instrumentation do
 
   @doc "Record a web session token event in AppSignal."
   @spec track_token(String.t(), non_neg_integer()) :: :ok
-  def track_token(event, organization_id) when event in @token_events do
+  def track_token(event, organization_id) do
     Appsignal.increment_counter("web_channel_token_count", 1, %{
       event: event,
       organization_id: to_string(organization_id)
