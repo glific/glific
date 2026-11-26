@@ -18,8 +18,8 @@ jobs:
 
     strategy:
       matrix:
-        elixir: [1.18.3]
-        otp: [27.3.3]
+        elixir: [1.19.7]
+        otp: [28.5.0.9]
 
     steps:
       - name: Checkout the code
@@ -85,8 +85,8 @@ jobs:
 
     strategy:
       matrix:
-        elixir: [1.18.3]
-        otp: [27.3.3]
+        elixir: [1.19.7]
+        otp: [28.5.0.9]
 
     steps:
       - name: Checkout the code
@@ -160,8 +160,8 @@ jobs:
 
     strategy:
       matrix:
-        elixir: [1.18.3]
-        otp: [27.3.3]
+        elixir: [1.19.7]
+        otp: [28.5.0.9]
 
     steps:
       - name: Checkout the code
@@ -206,8 +206,8 @@ jobs:
 
     strategy:
       matrix:
-        elixir: [1.18.3]
-        otp: [27.3.3]
+        elixir: [1.19.7]
+        otp: [28.5.0.9]
 
     steps:
       - name: Checkout the code
@@ -245,8 +245,8 @@ jobs:
 
     strategy:
       matrix:
-        elixir: [1.18.3]
-        otp: [27.3.3]
+        elixir: [1.19.7]
+        otp: [28.5.0.9]
 
     defaults:
       run:

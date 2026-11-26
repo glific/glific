@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ELIXIR_VERSION: "1.18.3-otp-27"
-      OTP_VERSION: "27.3.3"
+      ELIXIR_VERSION: "1.19.7-otp-28"
+      OTP_VERSION: "28.5.0.9"
 
     services:
       postgres:

@@ -48,8 +48,8 @@ sudo apt install inotify-tools
 
 We tested and developed against the following versions (please check `.tool-versions` in the repository for the latest version we are using):
 
-- erlang : 27.3.3
-- elixir : 1.18.3-otp-27
+- erlang : 28.5.0.9
+- elixir : 1.19.7-otp-28
 
 After installing the `asdf` core, install the Erlang and Elixir plugins:
 

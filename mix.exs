@@ -14,7 +14,7 @@ defmodule Glific.MixProject do
     [
       app: :glific,
       version: "8.19.2",
-      elixir: "~> 1.18.3",
+      elixir: "~> 1.19.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
@@ -40,13 +40,6 @@ defmodule Glific.MixProject do
         main: "readme",
         extras: ["README.md", "CHANGELOG.md"]
       ],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.html": :test,
-        "coveralls.json": :test,
-        test_full: :test,
-        "test.watch": :test
-      ],
       # Lets add meta information on project
       name: "Glific",
       description: "An open source two way communication platform for the social sector",
@@ -59,6 +52,18 @@ defmodule Glific.MixProject do
           "GitHub" => @github_url
         },
         exclude_patterns: ["priv/plts", "build_scripts/*", "assets/*"]
+      ]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test,
+        test_full: :test,
+        "test.watch": :test
       ]
     ]
   end
