@@ -2305,7 +2305,33 @@ defmodule Glific.PartnersTest do
 
     test "set_whatsapp_forms_subscription/1 subscribes the app to form replies over V3" do
       org = SeedsDev.seed_organizations()
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{status: 200, body: JSON.encode!(%{"token" => "token"})}
+
+        %{method: :post, body: body} ->
+          send(test_pid, {:subscription, URI.decode_query(body)})
+          %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success"})}
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{partner_app_token: "sk_test_partner_app_token"})
+          }
+      end)
+
       assert :ok == PartnerAPI.set_whatsapp_forms_subscription(org.id)
+
+      shortcode = org.shortcode
+
+      assert_received {:subscription,
+                       %{
+                         "version" => "3",
+                         "modes" => "FLOW_MESSAGE",
+                         "tag" => "whatsapp_forms_webhook_" <> ^shortcode
+                       }}
     end
 
     test "set_whatsapp_forms_subscription/1 treats an existing subscription as success" do
