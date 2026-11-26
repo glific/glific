@@ -1,6 +1,5 @@
-
-mutation clearMessages($contactId: ID!) {
-  clearMessages(contactId: $contactId) {
+mutation clearMessages($contactId: ID!, $channel: MessageChannelEnum) {
+  clearMessages(contactId: $contactId, channel: $channel) {
     success
     errors {
       key

@@ -26,7 +26,7 @@ runtime:
 
 docs: |
   Checks a code from **Request a web channel OTP** and signs the beneficiary in: adds a web
-  identity to their contact and returns a web channel token, valid for one hour. This request
+  identity to their contact and returns a web channel token, valid for 48 hours. This request
   stores the token in the runtime variable `web_channel_token`.
 
   With `optin: true` (the widget's consent checkbox) it also records the contact's opt-in to

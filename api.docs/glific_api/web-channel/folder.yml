@@ -17,11 +17,11 @@ docs:
     1. **Get the web channel branding** (public) to paint the widget.
     2. **Request a web channel OTP** (public): a code goes to the phone over WhatsApp.
     3. **Verify a web channel OTP** (public): returns a web channel `token`, an HS256 JWT signed
-       with the organization's secret. It lasts one hour.
+       with the organization's secret. It lasts 48 hours.
     4. Use the token to connect to the chat socket (below), and as
        `authorization: Bearer <token>` for **Get a media upload URL**.
     5. **Renew a web channel token** before it expires. A session can be renewed for up to
-       24 hours after sign-in.
+       7 days after sign-in.
 
     An organization that manages its own users can skip steps 2, 3 and 5 and sign tokens on its
     own backend instead (see **Tokens signed by your backend**); step 4 is the same.
@@ -45,7 +45,7 @@ docs:
     | `sub`     | Yes      | Your stable ID for the user: 1 to 255 characters from `a-z`, `0-9`, `_`, `@` and `.`. It is lowercased, and it names one contact for good, so never reuse it, and don't use a phone number. |
     | `channel` | Yes      | Always `"web"`. |
     | `iat`     | Yes      | Issued at, in Unix seconds. |
-    | `exp`     | Yes      | Expiry, in Unix seconds. At most 24 hours after `iat`; 60 seconds of clock leeway apply. |
+    | `exp`     | Yes      | Expiry, in Unix seconds. At most 7 days after `iat`; 60 seconds of clock leeway apply. |
     | `name`    | No       | Up to 255 characters; the contact's name when the contact is created. Without it the name is `sub`. |
     | `phone`   | No       | The user's phone, used only on the first connect with a new `sub`; later tokens never re-link the contact. The web identity is added to the organization's existing contact with that phone if that contact has a WhatsApp identity or has messaged before, and is not the organization's own contact. Any other existing contact with that phone is left alone, and a new web contact is created without a phone. If no contact has the phone, the new contact gets it. An invalid phone is ignored. |
     | `optin`   | No       | `true` records that the user agreed to be messaged on the web channel (method `NGO`). Any value that is not a boolean makes the token invalid. |
