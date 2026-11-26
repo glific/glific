@@ -194,6 +194,48 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
+    test "records each renewal outcome in AppSignal", %{conn: conn, phone: phone} do
+      now = System.system_time(:second)
+
+      with_web_channel_enabled(fn ->
+        {:ok, expired} =
+          Token.sign(1, %{
+            sub: phone,
+            session_id: "s",
+            session_started_at: now - 7_200,
+            iat: now - 7_200,
+            exp: now - 3_600
+          })
+
+        {:ok, session_over} =
+          Token.sign(1, %{sub: phone, session_id: "s", session_started_at: now - 604_800})
+
+        with_mock Appsignal, [:passthrough],
+          increment_counter: fn _metric, _count, _tags -> :ok end do
+          for token <- [sign_in(conn, phone), expired, session_over, "garbage"] do
+            post(
+              conn,
+              Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token})
+            )
+          end
+
+          events =
+            for {_pid,
+                 {Appsignal, :increment_counter,
+                  ["web_channel_token_count", 1, %{event: event, organization_id: "1"}]},
+                 _result} <- call_history(Appsignal),
+                do: event
+
+          assert events == [
+                   "renewed",
+                   "renew_refused_token_expired",
+                   "renew_refused_session_expired",
+                   "renew_refused_invalid"
+                 ]
+        end
+      end)
+    end
+
     test "refuses to renew an NGO-signed token", %{conn: conn, phone: phone} do
       with_web_channel_enabled(fn ->
         {:ok, token} = Token.sign(1, %{sub: phone})
@@ -1543,6 +1585,242 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         assert get_in(json_response(conn, 200), ["data", "name"]) == nil
       end)
+    end
+  end
+
+  describe "sign-in funnel counters (#5721)" do
+    # The `web_channel_event_count` events recorded while `fun` runs, in order.
+    defp counted(fun) do
+      with_mock Appsignal, [:passthrough],
+        increment_counter: fn _metric, _count, _tags -> :ok end do
+        fun.()
+
+        for {_pid,
+             {Appsignal, :increment_counter,
+              ["web_channel_event_count", 1, %{event: event, organization_id: "1"}]},
+             _result} <- call_history(Appsignal),
+            do: event
+      end
+    end
+
+    # The AppSignal counters the web provider records while `fun` runs, as {metric, tags}.
+    defp provider_counted(fun) do
+      with_mock Appsignal, [:passthrough],
+        increment_counter: fn _metric, _count, _tags -> :ok end do
+        fun.()
+
+        for {_pid, {Appsignal, :increment_counter, [metric, 1, %{provider: "web"} = tags]},
+             _result} <-
+              call_history(Appsignal),
+            do: {metric, Map.drop(tags, [:provider, :organization_id])}
+      end
+    end
+
+    defp request_otp(conn, phone),
+      do: post(conn, Routes.api_v1_web_channel_auth_path(conn, :request_otp, %{"phone" => phone}))
+
+    defp verify_otp(conn, phone, otp),
+      do:
+        post(
+          conn,
+          Routes.api_v1_web_channel_auth_path(conn, :verify_otp, %{"phone" => phone, "otp" => otp})
+        )
+
+    test "a delivered code is requested and sent", %{conn: conn} do
+      events =
+        counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, @reachable_phone) end) end)
+
+      assert events == ["otp_requested", "otp_sent"]
+    end
+
+    test "a code that cannot be delivered is refused as undeliverable", %{conn: conn} do
+      blocked = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+
+      events =
+        counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, blocked.phone) end) end)
+
+      assert events == ["otp_requested", "otp_refused_undeliverable"]
+    end
+
+    test "an invalid phone is refused as invalid", %{conn: conn} do
+      events = counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, "12") end) end)
+
+      assert events == ["otp_requested", "otp_refused_invalid_phone"]
+    end
+
+    test "a request over the phone limit is refused as rate limited", %{conn: conn} do
+      phone = unique_phone()
+      rate_limit_key = "web_channel_send_otp:#{phone}"
+      original_config = Application.get_env(:glific, :rate_limit_web_channel_otp_phone)
+      Application.put_env(:glific, :rate_limit_web_channel_otp_phone, scale_ms: 30_000, count: 1)
+      ExRated.delete_bucket(rate_limit_key)
+
+      on_exit(fn ->
+        Application.put_env(:glific, :rate_limit_web_channel_otp_phone, original_config)
+        ExRated.delete_bucket(rate_limit_key)
+      end)
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            request_otp(conn, phone)
+            request_otp(conn, phone)
+          end)
+        end)
+
+      assert [
+               "otp_requested",
+               _first_outcome,
+               "otp_requested",
+               "otp_refused_rate_limited"
+             ] =
+               events
+    end
+
+    test "a correct code is verified", %{conn: conn} do
+      phone = unique_phone()
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            code = OTP.generate_code(:web_channel, phone)
+            conn |> verify_otp(phone, code) |> json_response(200)
+          end)
+        end)
+
+      assert events == ["otp_verified"]
+    end
+
+    test "a wrong code fails verification", %{conn: conn} do
+      phone = unique_phone()
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            OTP.generate_code(:web_channel, phone)
+            conn |> verify_otp(phone, "000000") |> json_response(401)
+          end)
+        end)
+
+      assert events == ["otp_verification_failed"]
+    end
+
+    test "a verified code that cannot be turned into a sign in fails the sign in", %{conn: conn} do
+      phone = unique_phone()
+
+      events =
+        counted(fn ->
+          with_mock Token, [:passthrough],
+            generate: fn _organization_id, _sub -> {:error, :no_secret} end do
+            with_web_channel_enabled(fn ->
+              code = OTP.generate_code(:web_channel, phone)
+              conn |> verify_otp(phone, code) |> json_response(500)
+            end)
+          end
+        end)
+
+      assert events == ["sign_in_failed"]
+    end
+
+    test "every request ends as exactly one sent or refused", %{conn: conn} do
+      blocked = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            for phone <- [@reachable_phone, blocked.phone, "12", unique_phone()],
+                do: request_otp(conn, phone)
+          end)
+        end)
+
+      outcomes =
+        Enum.count(
+          events,
+          &(&1 == "otp_sent" or String.starts_with?(&1, "otp_refused_"))
+        )
+
+      assert Enum.count(events, &(&1 == "otp_requested")) == 4
+      assert outcomes == 4
+    end
+
+    test "nothing is counted while the web channel is off", %{conn: conn} do
+      assert counted(fn -> request_otp(conn, @reachable_phone) end) == []
+    end
+
+    test "a delivered code is a successful otp_send in AppSignal", %{conn: conn} do
+      counters =
+        provider_counted(fn ->
+          with_web_channel_enabled(fn -> request_otp(conn, @reachable_phone) end)
+        end)
+
+      assert counters == [{"provider_action_count", %{action: "otp_send", status: "success"}}]
+    end
+
+    test "a contact we may not message is not an otp_send failure", %{conn: conn} do
+      blocked = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+
+      counters =
+        provider_counted(fn ->
+          with_web_channel_enabled(fn -> request_otp(conn, blocked.phone) end)
+        end)
+
+      assert counters == []
+    end
+
+    test "a send error is an otp_send failure", %{conn: conn} do
+      counters =
+        provider_counted(fn ->
+          with_mock Glific.Messages, [:passthrough],
+            create_and_send_otp_verification_message: fn _contact, _code, _exemption ->
+              {:error, "send failed"}
+            end do
+            with_web_channel_enabled(fn -> request_otp(conn, unique_phone()) end)
+          end
+        end)
+
+      assert counters == [{"provider_action_count", %{action: "otp_send", status: "failure"}}]
+    end
+
+    test "a sign in is a success, and a verified code without a session a failure", %{
+      conn: conn
+    } do
+      phone = unique_phone()
+
+      signed_in =
+        provider_counted(fn ->
+          with_web_channel_enabled(fn ->
+            code = OTP.generate_code(:web_channel, phone)
+            conn |> verify_otp(phone, code) |> json_response(200)
+          end)
+        end)
+
+      failed =
+        provider_counted(fn ->
+          with_mock Token, [:passthrough],
+            generate: fn _organization_id, _sub -> {:error, :no_secret} end do
+            with_web_channel_enabled(fn ->
+              code = OTP.generate_code(:web_channel, phone)
+              conn |> verify_otp(phone, code) |> json_response(500)
+            end)
+          end
+        end)
+
+      assert signed_in == [{"provider_action_count", %{action: "sign_in", status: "success"}}]
+      assert failed == [{"provider_action_count", %{action: "sign_in", status: "failure"}}]
+    end
+
+    test "a wrong code is not a sign_in failure", %{conn: conn} do
+      phone = unique_phone()
+
+      counters =
+        provider_counted(fn ->
+          with_web_channel_enabled(fn ->
+            OTP.generate_code(:web_channel, phone)
+            conn |> verify_otp(phone, "000000") |> json_response(401)
+          end)
+        end)
+
+      assert counters == []
     end
   end
 end
