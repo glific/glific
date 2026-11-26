@@ -11,10 +11,27 @@ defmodule Glific.Providers.Web.Instrumentation do
       (a verified code became a session or not) and `media_upload_url` (an upload URL was signed
       or storage failed).
 
+  Web sessions are tracked in their own counter, `web_channel_token_count`, tagged `event`:
+  `renewed`, `renew_refused_token_expired`, `renew_refused_session_expired`,
+  `renew_refused_invalid`, and `expired` (an open conversation closed because its token ran out).
+
   A send has no delivery receipt on the web channel, so `track_status/3` is not used. User
   errors (a wrong code, an invalid phone, a rate limit) are not recorded as failures, so a
   failure count only moves when something on our side is wrong.
   """
 
   use Glific.Providers.Instrumentation, provider: "web"
+
+  @token_events ~w(renewed renew_refused_token_expired renew_refused_session_expired renew_refused_invalid expired)
+
+  @doc "Record a web session token event in AppSignal."
+  @spec track_token(String.t(), non_neg_integer()) :: :ok
+  def track_token(event, organization_id) when event in @token_events do
+    Appsignal.increment_counter("web_channel_token_count", 1, %{
+      event: event,
+      organization_id: to_string(organization_id)
+    })
+
+    :ok
+  end
 end

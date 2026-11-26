@@ -226,8 +226,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
   @spec renew_token_for(Conn.t(), non_neg_integer(), String.t()) :: Conn.t()
   defp renew_token_for(conn, organization_id, token) do
-    with {:ok, renewed, claims} <- Token.renew(organization_id, token),
+    with {:ok, renewed, claims} <- renew(organization_id, token),
          {:ok, contact} <- Contacts.fetch_by_identity(:web, claims.sub) do
+      Instrumentation.track_token("renewed", organization_id)
+
       json(conn, %{
         data: %{
           token: renewed,
@@ -244,6 +246,20 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         |> json(%{error: %{status: 401, message: "Invalid or expired session"}})
     end
   end
+
+  @spec renew(non_neg_integer(), String.t()) ::
+          {:ok, String.t(), Token.claims()} | {:error, Token.refusal()}
+  defp renew(organization_id, token) do
+    with {:error, reason} = refused <- Token.renew(organization_id, token) do
+      Instrumentation.track_token(renew_refusal_event(reason), organization_id)
+      refused
+    end
+  end
+
+  @spec renew_refusal_event(Token.refusal()) :: String.t()
+  defp renew_refusal_event(:expired), do: "renew_refused_token_expired"
+  defp renew_refusal_event(:session_expired), do: "renew_refused_session_expired"
+  defp renew_refusal_event(:invalid), do: "renew_refused_invalid"
 
   # Two buckets, because neither dimension is sufficient alone and they fail in opposite
   # directions. Keying only on IP is wrong for this audience: beneficiaries reach the internet

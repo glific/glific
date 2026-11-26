@@ -194,6 +194,48 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       end)
     end
 
+    test "records each renewal outcome in AppSignal", %{conn: conn, phone: phone} do
+      now = System.system_time(:second)
+
+      with_web_channel_enabled(fn ->
+        {:ok, expired} =
+          Token.sign(1, %{
+            sub: phone,
+            session_id: "s",
+            session_started_at: now - 7_200,
+            iat: now - 7_200,
+            exp: now - 3_600
+          })
+
+        {:ok, session_over} =
+          Token.sign(1, %{sub: phone, session_id: "s", session_started_at: now - 604_800})
+
+        with_mock Appsignal, [:passthrough],
+          increment_counter: fn _metric, _count, _tags -> :ok end do
+          for token <- [sign_in(conn, phone), expired, session_over, "garbage"] do
+            post(
+              conn,
+              Routes.api_v1_web_channel_auth_path(conn, :renew_token, %{"token" => token})
+            )
+          end
+
+          events =
+            for {_pid,
+                 {Appsignal, :increment_counter,
+                  ["web_channel_token_count", 1, %{event: event, organization_id: "1"}]},
+                 _result} <- call_history(Appsignal),
+                do: event
+
+          assert events == [
+                   "renewed",
+                   "renew_refused_token_expired",
+                   "renew_refused_session_expired",
+                   "renew_refused_invalid"
+                 ]
+        end
+      end)
+    end
+
     test "refuses to renew an NGO-signed token", %{conn: conn, phone: phone} do
       with_web_channel_enabled(fn ->
         {:ok, token} = Token.sign(1, %{sub: phone})
