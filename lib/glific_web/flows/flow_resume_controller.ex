@@ -32,6 +32,10 @@ defmodule GlificWeb.Flows.FlowResumeController do
       not Webhook.valid_callback?(organization_id, parsed) ->
         json(conn, "")
 
+      # A redelivered final callback would resume whichever node the contact is parked at now.
+      KaapiChain.ended?(parsed) ->
+        json(conn, "")
+
       KaapiChain.intermediate?(result, parsed) ->
         KaapiChain.record_intermediate(parsed, callback_received_ts)
         json(conn, "")

@@ -57,13 +57,15 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   def outputs(log_id), do: log_id |> logged_steps() |> steps_outputs()
 
   @doc """
-  A chain that opted in with `chain_fallback: "text"` and failed after a block produced text
-  resumes as a success carrying that text (`chain_degraded: true`) instead of dropping it.
+  A chain that names a fallback block (`chain_fallback: "llm"`) and failed after that block
+  succeeded resumes as a success carrying the block's output (`chain_degraded: true`) instead of
+  dropping it. A failure before that block stays a failure.
   """
   @spec fallback_to_text(map(), map()) :: map()
-  def fallback_to_text(%{"success" => false}, %{"chain_fallback" => "text"} = response) do
+  def fallback_to_text(%{"success" => false}, %{"chain_fallback" => component} = response)
+      when is_binary(component) do
     case outputs(response["webhook_log_id"]) do
-      %{"text" => text} when is_binary(text) and text != "" ->
+      %{"blocks" => %{^component => text}} when is_binary(text) and text != "" ->
         Map.merge(response, %{
           "success" => true,
           "chain_degraded" => true,
@@ -77,6 +79,13 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   end
 
   def fallback_to_text(_result, response), do: response
+
+  @doc "True when the block that ended this chain is already logged, so a redelivery is ignored."
+  @spec ended?(map()) :: boolean()
+  def ended?(%{"chain_blocks" => blocks, "webhook_log_id" => log_id}) when is_list(blocks),
+    do: log_id |> logged_steps() |> Enum.any?(& &1["final"])
+
+  def ended?(_response), do: false
 
   @doc """
   Adds the chain's steps and outputs to the callback log message that replaces the log, so the
@@ -199,7 +208,9 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
     })
   end
 
-  @spec logged_steps(non_neg_integer()) :: [map()]
+  @spec logged_steps(non_neg_integer() | nil) :: [map()]
+  defp logged_steps(nil), do: []
+
   defp logged_steps(log_id) do
     case Repo.get(WebhookLog, log_id) do
       %{response_json: %{@steps_key => steps}} when is_list(steps) -> steps

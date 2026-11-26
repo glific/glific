@@ -1222,7 +1222,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "call_type" => "voice_sts",
         "webhook_name" => "voice-filesearch-gpt",
         "chain_blocks" => ["stt", "llm", "tts"],
-        "chain_fallback" => "text",
+        "chain_fallback" => "llm",
         "result_name" => "response",
         "kaapi_dispatch_ts" => DateTime.utc_now() |> DateTime.to_unix(:microsecond)
       }
@@ -1367,6 +1367,45 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
                logged_steps(webhook_log)
 
       assert error =~ "missing transcribed text"
+    end
+
+    test "a redelivered final callback does not resume the flow again", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      text: text
+    } do
+      failure =
+        nil
+        |> chain_callback.(false, %{body: nil})
+        |> Map.put("error", "STT failed")
+
+      capture_resume(fn -> post(conn, "/webhook/flow_resume", failure) end)
+      assert_received {:resumed, _results, "Failure"}
+
+      capture_resume(fn ->
+        post(conn, "/webhook/flow_resume", failure)
+        post(conn, "/webhook/flow_resume", chain_callback.(2, true, text.("late answer")))
+      end)
+
+      refute_received {:resumed, _results, _message}
+    end
+
+    test "an LLM failure after the transcript resumes Failure, not the transcript", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      text: text
+    } do
+      llm_failure =
+        nil
+        |> chain_callback.(false, %{body: nil})
+        |> Map.put("error", "llm down")
+
+      capture_resume(fn ->
+        post(conn, "/webhook/flow_resume", chain_callback.(1, true, text.("namaste")))
+        post(conn, "/webhook/flow_resume", llm_failure)
+      end)
+
+      assert_received {:resumed, _results, "Failure"}
     end
 
     test "a TTS failure after the answer resumes Success with text and no audio", %{

@@ -66,7 +66,7 @@ defmodule Glific.Flows.Webhooks.VoiceSts do
           call_type: "voice_sts",
           webhook_name: @webhook_name,
           chain_blocks: @chain_blocks,
-          chain_fallback: "text",
+          chain_fallback: "llm",
           audio_size_bucket: Instrumentation.size_bucket(audio.byte_size),
           kaapi_dispatch_ts: DateTime.utc_now() |> DateTime.to_unix(:microsecond)
         })

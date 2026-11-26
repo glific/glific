@@ -144,7 +144,7 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
                "call_type" => "voice_sts",
                "webhook_name" => "voice-filesearch-gpt",
                "chain_blocks" => ["stt", "llm", "tts"],
-               "chain_fallback" => "text",
+               "chain_fallback" => "llm",
                "audio_size_bucket" => "0-1MB"
              } = metadata
 
@@ -346,10 +346,11 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
     test "with the flag off the node never calls speech-to-speech",
          %{fields: fields, actor: actor, organization_id: organization_id} do
       FunWithFlags.disable(:voice_sts_enabled, for_actor: actor)
-      Tesla.Mock.mock(fn _request -> %Tesla.Env{status: 404, body: ""} end)
+      # The audio downloads fine and the STS endpoint answers, so only the flag keeps the node
+      # off speech-to-speech; the legacy Gemini STT call is the one that fails.
+      mock_kaapi()
 
-      assert {:error, _error_type, _reason} =
-               VoiceFilesearchGpt.call(fields, %{organization_id: organization_id})
+      VoiceFilesearchGpt.call(fields, %{organization_id: organization_id})
 
       refute_received {:sts, _body}
     end

@@ -261,7 +261,7 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
   end
 
   describe "fallback_to_text/2" do
-    defp failed_final(log), do: Map.merge(callback(log, nil, nil), %{"chain_fallback" => "text"})
+    defp failed_final(log), do: Map.merge(callback(log, nil, nil), %{"chain_fallback" => "llm"})
 
     test "resumes an opted-in chain with the last text when a later block fails",
          %{log: log} do
@@ -274,6 +274,14 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
                "message" => "the answer",
                "output_type" => "text"
              } = KaapiChain.fallback_to_text(%{"success" => false}, failed_final(log))
+    end
+
+    test "an LLM failure after a successful STT stays a failure, not the transcript",
+         %{log: log} do
+      KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
+      response = failed_final(log)
+
+      assert KaapiChain.fallback_to_text(%{"success" => false}, response) == response
     end
 
     test "stays a failure when no block produced text", %{log: log} do
@@ -293,6 +301,24 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
       response = Map.put(failed_final(log), "success", false)
 
       assert KaapiChain.fallback_to_text(%{"success" => true}, response) == response
+    end
+  end
+
+  describe "ended?/1" do
+    test "is true once the block that ended the chain is logged", %{log: log} do
+      KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
+      refute KaapiChain.ended?(callback(log, nil, nil))
+
+      KaapiChain.record_final(
+        %{"success" => false, "error" => "boom"},
+        callback(log, nil, nil, %{"callback_received_ts" => 2_000_000})
+      )
+
+      assert KaapiChain.ended?(callback(log, nil, nil))
+    end
+
+    test "is false for a response that is not part of a chain", %{log: log} do
+      refute KaapiChain.ended?(%{"webhook_log_id" => log.id})
     end
   end
 
