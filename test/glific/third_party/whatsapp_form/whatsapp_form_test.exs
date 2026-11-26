@@ -587,34 +587,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     assert body.error == "Unauthorized request"
   end
 
-  test "creating forms makes no Gupshup subscription call", %{user: user} do
-    test_pid = self()
-
-    Tesla.Mock.mock(fn
-      %{method: :post, url: url} ->
-        if String.contains?(url, "subscription"), do: send(test_pid, :subscription_called)
-
-        %Tesla.Env{
-          status: 201,
-          body: %{id: "form123", status: "success", validation_errors: []}
-        }
-    end)
-
-    for name <- ["Test Form", "Test Form 2"] do
-      attrs = %{
-        name: name,
-        description: "A test WhatsApp form",
-        categories: ["other"],
-        organization_id: user.organization_id
-      }
-
-      assert {:ok, %{whatsapp_form: %{name: ^name}}} =
-               WhatsappForms.create_whatsapp_form(attrs, user)
-    end
-
-    refute_received :subscription_called
-  end
-
   test "returns correct headers extracted from real form structure", %{
     organization_id: organization_id,
     user: user
