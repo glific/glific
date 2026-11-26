@@ -587,46 +587,32 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     assert body.error == "Unauthorized request"
   end
 
-  test "creates a second form", %{user: user} do
-    valid_attrs1 = %{
-      name: "Test Form",
-      description: "A test WhatsApp form",
-      categories: ["other"],
-      organization_id: user.organization_id
-    }
-
-    valid_attrs2 = %{
-      name: "Test Form 2",
-      description: "Another test WhatsApp form",
-      categories: ["other"],
-      organization_id: user.organization_id
-    }
+  test "creating forms makes no Gupshup subscription call", %{user: user} do
+    test_pid = self()
 
     Tesla.Mock.mock(fn
       %{method: :post, url: url} ->
-        cond do
-          String.contains?(url, "/flows") ->
-            %Tesla.Env{
-              status: 201,
-              body: %{id: "form123", status: "success", validation_errors: []}
-            }
+        if String.contains?(url, "subscription"), do: send(test_pid, :subscription_called)
 
-          String.contains?(url, "subscription") ->
-            %Tesla.Env{
-              status: 200,
-              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
-            }
-        end
+        %Tesla.Env{
+          status: 201,
+          body: %{id: "form123", status: "success", validation_errors: []}
+        }
     end)
 
-    result = WhatsappForms.create_whatsapp_form(valid_attrs1, user)
-    assert {:ok, %{whatsapp_form: whatsapp_form}} = result
-    assert whatsapp_form.name == "Test Form"
+    for name <- ["Test Form", "Test Form 2"] do
+      attrs = %{
+        name: name,
+        description: "A test WhatsApp form",
+        categories: ["other"],
+        organization_id: user.organization_id
+      }
 
-    result2 = WhatsappForms.create_whatsapp_form(valid_attrs2, user)
-    # Should still succeed and create the form
-    assert {:ok, %{whatsapp_form: whatsapp_form2}} = result2
-    assert whatsapp_form2.name == "Test Form 2"
+      assert {:ok, %{whatsapp_form: %{name: ^name}}} =
+               WhatsappForms.create_whatsapp_form(attrs, user)
+    end
+
+    refute_received :subscription_called
   end
 
   test "returns correct headers extracted from real form structure", %{

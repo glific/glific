@@ -1053,6 +1053,57 @@ defmodule Glific.PartnersTest do
                        }}
     end
 
+    test "update_credential/2 for gupshup sets the form reply subscription even when an earlier step fails",
+         %{organization_id: organization_id} = _attrs do
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/token"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/details"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: Jason.encode!(%{appDetails: %{name: "some_app", id: "some_id"}})
+           }}
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        # The OTP template already exists, so the steps inside the try stop here
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/some_id/templates"} ->
+          {:ok, %Tesla.Env{status: 400, body: Jason.encode!(%{status: "error"})}}
+
+        %{
+          method: :post,
+          url: "https://partner.gupshup.io/partner/app/some_id/subscription",
+          body: body
+        } ->
+          send(test_pid, {:subscription, URI.decode_query(body)})
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success"})}}
+      end)
+
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      valid_update_attrs = %{
+        keys: %{},
+        shortcode: provider.shortcode,
+        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "some_id"},
+        organization_id: organization_id
+      }
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+      end
+
+      assert_received {:subscription, %{"version" => "3", "modes" => "FLOW_MESSAGE"}}
+      refute_received {:subscription, %{"version" => "2"}}
+    end
+
     test "update_credential/2 for gupshup with mismatched App Name and App ID should give proper error" <>
            "should give proper error and reset secrets",
          %{organization_id: organization_id} = _attrs do
@@ -2304,6 +2355,31 @@ defmodule Glific.PartnersTest do
                  "Failed to set the WhatsApp Forms webhook subscription for org #{org.id}: \"Invalid mode\""
 
         assert called(Appsignal.send_error(:error, message, :_))
+      end
+    end
+
+    test "set_whatsapp_forms_subscription/1 reports a server error to AppSignal" do
+      org = SeedsDev.seed_organizations()
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{status: 200, body: JSON.encode!(%{"token" => "token"})}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: "Internal Server Error"}
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{partner_app_token: "sk_test_partner_app_token"})
+          }
+      end)
+
+      with_mock Appsignal, [:passthrough], send_error: fn _, _, _ -> nil end do
+        assert {:error, "Failed to set the WhatsApp Forms webhook subscription for org " <> _} =
+                 PartnerAPI.set_whatsapp_forms_subscription(org.id)
+
+        assert called(Appsignal.send_error(:error, :_, :_))
       end
     end
 
