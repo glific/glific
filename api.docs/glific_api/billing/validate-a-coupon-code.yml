@@ -1,0 +1,55 @@
+info:
+  name: Validate a coupon code
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query getCouponCode($code: String!) {
+        getCouponCode(code: $code) {
+          id
+          code
+          metadata
+        }
+      }
+    variables: |-
+      {
+        "code": "WELCOME50"
+      }
+  auth: inherit
+
+docs: |
+  Looks up a customer-facing promotion code in Stripe and returns the coupon behind it. Pass
+  the returned `id` as `couponCode` to **Create a billing subscription**.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type      | Required | Description                                  |
+  | -------- | --------- | -------- | -------------------------------------------- |
+  | `code`   | `String!` | Yes      | The promotion code the customer typed in.    |
+
+  ## Example response
+
+  `id` is the Stripe coupon ID and `metadata` is the coupon's metadata, as JSON.
+
+  ```json
+  {
+    "data": {
+      "getCouponCode": {
+        "id": "coupon_xxx",
+        "code": "WELCOME50",
+        "metadata": "{\"description\":\"50% off the setup fee\"}"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - No promotion code matches: a top-level `Invalid coupon code` error.
+  - A user without the admin role gets a top-level `Unauthorized` error.

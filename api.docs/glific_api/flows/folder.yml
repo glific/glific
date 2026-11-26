@@ -1,0 +1,55 @@
+info:
+  name: Flows
+  type: folder
+  seq: 30
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Flows are the conversations Glific runs with contacts: a graph of nodes (send a message,
+    wait for a reply, split on the answer, call a webhook, enter another flow) built in the
+    flow editor. A flow runs on one channel, `WHATSAPP` (the default) or `WEB`, fixed when the
+    flow is created.
+
+    ## Revisions and publishing
+
+    A flow's definition lives in its revisions. The editor saves a new revision each time it
+    autosaves (see **Flow Editor › Save a flow revision**); the newest one is the draft.
+    Contacts only ever run the **published** revision. **Publish a flow** validates the draft
+    and marks it published, archives the previously published revision and bumps the version.
+    Older draft revisions from before the previous publish are deleted after two days. The
+    simulator runs the draft.
+
+    ## Keywords
+
+    A flow's `keywords` start it when a contact sends one as a message. Keywords are lowercased
+    and cleaned of spaces and punctuation, and each keyword can belong to only one flow in the
+    organization. A contact who is in a flow with `ignoreKeywords: true` stays in it even when
+    they send another flow's keyword.
+
+    ## Starting and stopping
+
+    A flow can start from a keyword, a trigger (see **Triggers**), another flow, or the API:
+    for one contact, for every contact in a collection, or for WhatsApp groups. Starting a
+    non-background flow for a contact ends the flow they are in; a background flow
+    (`isBackground: true`) runs alongside it. Deactivating a flow (`isActive: false`) ends
+    every run of it.
+
+    ## Editing lock
+
+    Only one user can edit a flow at a time. The editor takes a lock with **Lock a flow for
+    editing** and gives it back with **Release the flow lock**. A lock lapses after 10
+    minutes.
+
+    ## Roles
+
+    Listing, reading and starting a flow for one contact need the staff role; everything else
+    needs the manager role. When the organization has role-based access control turned on,
+    users without the Admin, Manager or Staff access role only see the flows assigned to their
+    roles.
+
+    Related: **Flow Editor** (the REST endpoints the editor calls), **Flow Labels**,
+    **Triggers**, **Sheets**.
+  type: text/markdown

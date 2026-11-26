@@ -232,9 +232,10 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
           assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
-                   "gemini-3.1-flash-tts-preview"
+                   "gemini-3.8-flash-lite-tts"
 
-          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
+          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) ==
+                   "en-in-csagent-9"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
                    "hindi"
@@ -249,6 +250,105 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
       end)
 
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "sends google-native as google and leaves the language for Kaapi to normalize", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "google"
+          assert completion["params"]["language"] == "Hindi"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-789"}}
+      end)
+
+      tts_request = Map.merge(fields, %{"provider" => "google-native", "language" => "Hindi"})
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "keeps any other provider as sent", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          completion = get_in(Jason.decode!(body), ["config", "blob", "completion"])
+          assert completion["provider"] == "sarvamai"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-790"}}
+      end)
+
+      tts_request = Map.put(fields, "provider", "sarvamai")
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "sends empty model and voice for a non-google provider without overrides", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
+          assert params["model"] == ""
+          assert params["voice"] == ""
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-791"}}
+      end)
+
+      tts_request = Map.put(fields, "provider", "sarvamai")
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "keeps model and voice overrides for a non-google provider", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
+          assert params["model"] == "bulbul:v3"
+          assert params["voice"] == "shubh"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-792"}}
+      end)
+
+      tts_request =
+        Map.merge(fields, %{"provider" => "sarvamai", "model" => "bulbul:v3", "voice" => "shubh"})
+
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "uses the google default voice when the flow sends a blank voice", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          params = get_in(Jason.decode!(body), ["config", "blob", "completion", "params"])
+          assert params["voice"] == "en-in-csagent-9"
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-793"}}
+      end)
+
+      tts_request = Map.merge(fields, %{"provider" => "google-native", "voice" => ""})
+      assert {:ok, %{success: true}} = TextToSpeech.call(tts_request, %{})
+    end
+
+    test "keeps a supported 3.8 TTS model sent by the flow", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          assert body
+                 |> Jason.decode!()
+                 |> get_in(["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.8-flash-tts"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-457"}}
+      end)
+
+      fields = Map.put(fields, "model", "gemini-3.8-flash-tts")
+      assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
+    end
+
+    test "replaces an unsupported TTS model with the default", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          assert body
+                 |> Jason.decode!()
+                 |> get_in(["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.8-flash-lite-tts"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-458"}}
+      end)
+
+      fields = Map.put(fields, "model", "gemini-3.1-flash-tts-preview")
       assert {:ok, %{success: true}} = TextToSpeech.call(fields, %{})
     end
 

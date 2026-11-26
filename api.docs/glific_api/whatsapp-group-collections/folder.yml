@@ -1,0 +1,28 @@
+info:
+  name: WhatsApp Group Collections
+  type: folder
+  seq: 72
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A WhatsApp group collection is a collection (a `Group`, see **Groups**) that holds
+    WhatsApp groups instead of contacts, so one action can reach many groups. Such collections
+    are created with `groupType: "WA"` and can be listed with the `groupType` filter. A
+    WhatsApp group can be in several collections.
+
+    The requests here link WhatsApp groups to collections. They only change Glific; nothing
+    is sent to WhatsApp. Linking needs the staff role.
+
+    **Set the primary phone across a collection** makes one managed phone the primary phone of
+    every WhatsApp group in a collection, in a background job. Groups where the phone can't be
+    made primary are skipped, and **Get a collection primary-phone report** returns the
+    skipped groups as CSV. Both need the admin role. For the primary phone itself, see
+    **WhatsApp Groups**.
+
+    To list the WhatsApp groups in a collection, use **WhatsApp Groups › List WhatsApp groups**
+    with `includeGroups`, or the `waGroups` field of a `Group`. Sending messages and starting
+    flows across a collection are in **Messages** and **Flows**.
+  type: text/markdown

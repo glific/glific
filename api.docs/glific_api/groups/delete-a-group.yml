@@ -1,0 +1,56 @@
+info:
+  name: Delete a group
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteGroup($id: ID!) {
+        deleteGroup(id: $id) {
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a group (collection). Its contacts and users are not deleted, but everything tied
+  to the group is: its memberships, the messages sent to it, its flow broadcasts, the
+  triggers that start a flow for it and its role assignments. This can't be undone.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description          |
+  | -------- | ----- | -------- | -------------------- |
+  | `id`     | `ID!` | Yes      | The group to delete. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "deleteGroup": {
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  The result's `group` is always `null`, so it is not selected here.
+
+  ## Errors
+
+  - The group does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Groups.Group", "message": "Resource not found" }]`.
+  - A user without the manager role gets a top-level `Unauthorized` error.

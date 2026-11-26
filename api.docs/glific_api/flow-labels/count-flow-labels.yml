@@ -1,0 +1,46 @@
+info:
+  name: Count flow labels
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countFlowLabels($filter: FlowLabelFilter) {
+        countFlowLabels(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "follow"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's flow labels that match a filter. Use it with **List flow labels**
+  to build pagination.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type              | Required | Description                                                           |
+  | -------- | ----------------- | -------- | --------------------------------------------------------------------- |
+  | `filter` | `FlowLabelFilter` | No       | Same fields as in **List flow labels**. Without it, counts all labels. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countFlowLabels": 4
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

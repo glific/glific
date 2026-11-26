@@ -1,0 +1,129 @@
+info:
+  name: Get a session template
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query sessionTemplate($id: ID!) {
+        sessionTemplate(id: $id) {
+          sessionTemplate {
+            id
+            bspId
+            label
+            shortcode
+            body
+            footer
+            example
+            type
+            isHsm
+            status
+            reason
+            quality
+            category
+            isActive
+            isReserved
+            isSource
+            numberParameters
+            hasButtons
+            buttonType
+            buttons
+            translations
+            insertedAt
+            updatedAt
+            language {
+              id
+              label
+            }
+            messageMedia {
+              id
+              url
+              caption
+            }
+            tag {
+              id
+              label
+            }
+            parent {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "12"
+      }
+  auth: inherit
+
+docs: |
+  Returns one session or HSM template by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description              |
+  | -------- | ----- | -------- | ------------------------ |
+  | `id`     | `ID!` | Yes      | The template to return.  |
+
+  ## Example response
+
+  `buttons` and `translations` are `Json` values, returned as JSON-encoded strings.
+  `translations` maps a language ID to that language's version of the template. `bspId` is
+  the template's ID at the BSP; `reason` is set when Meta rejects the template, and `quality`
+  is Meta's quality rating.
+
+  ```json
+  {
+    "data": {
+      "sessionTemplate": {
+        "sessionTemplate": {
+          "id": "12",
+          "bspId": "8f2b51a4-3c1e-4d7a-9a51-1f0e6c2b9d10",
+          "label": "Order update",
+          "shortcode": "order_update",
+          "body": "Hi {{1}}, your order {{2}} has shipped.",
+          "footer": "Reply STOP to opt out",
+          "example": "Hi [Asha], your order [#4521] has shipped.",
+          "type": "TEXT",
+          "isHsm": true,
+          "status": "APPROVED",
+          "reason": null,
+          "quality": "GREEN",
+          "category": "UTILITY",
+          "isActive": true,
+          "isReserved": false,
+          "isSource": false,
+          "numberParameters": 2,
+          "hasButtons": true,
+          "buttonType": "QUICK_REPLY",
+          "buttons": "[{\"type\":\"QUICK_REPLY\",\"text\":\"Track order\"}]",
+          "translations": "{}",
+          "insertedAt": "2026-11-02T09:41:12Z",
+          "updatedAt": "2026-11-03T06:10:44Z",
+          "language": { "id": "1", "label": "English" },
+          "messageMedia": null,
+          "tag": null,
+          "parent": null
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.SessionTemplate", "message": "Resource not found" }]`
+    and `sessionTemplate` is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

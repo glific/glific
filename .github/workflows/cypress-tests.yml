@@ -96,16 +96,9 @@ jobs:
           sudo sysctl -p
           cat /proc/sys/fs/inotify/max_user_watches
           yarn setup
-
-      - name: Install cloudflared
-        run: |
-          wget -q -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-          chmod +x cloudflared
-          sudo mv cloudflared /usr/local/bin/
-          cloudflared --version
-
-      - name: Start Cloudflare tunnel (quick tunnel, sets GLIFIC_API_HOST_OVERRIDE)
-        run: .github/scripts/cloudflare-tunnel.sh
+          # vite-plugin-mkcert otherwise downloads mkcert from the GitHub API on every
+          # dev-server start; when that call is rate-limited the server never comes up.
+          sudo apt-get install -y mkcert
 
       - name: Cache Elixir deps and build
         uses: actions/cache@v4
@@ -139,7 +132,7 @@ jobs:
       - name: Run glific frontend
         run: |
           cd glific-frontend
-          yarn dev &
+          yarn dev > ../frontend-server.log 2>&1 &
 
       - name: Run glific backend
         run: |
@@ -152,24 +145,32 @@ jobs:
           resource: https-get://glific.test:4001
           timeout: 180000
 
+      - name: Wait for frontend to be ready
+        uses: iFaxity/wait-on-action@a7d13170ec542bdca4ef8ac4b15e9c6aa00a6866 # v1.2.1
+        with:
+          resource: https-get://glific.test:3000
+          timeout: 180000
+
+      # No public tunnel here: Kaapi callback specs (AssistantEndToEnd) run in glific-frontend's
+      # label-gated e2e-tests-slow.yml, so this run excludes them.
       - name: Cypress run (shard ${{ matrix.shard }}/3)
         run: |
           cd glific-frontend
           yarn run cypress run \
-            --config '{"excludeSpecPattern":["cypress/e2e/filesearch/Filesearch.spec.ts","cypress/e2e/smoke.spec.ts"]}' \
+            --config '{"excludeSpecPattern":["cypress/e2e/aiAssistant/AssistantEndToEnd.spec.ts","cypress/e2e/smoke.spec.ts"]}' \
             --record \
             --key ${{ secrets.CYPRESS_DASHBOARD_KEY }}
         env:
           SPLIT: 3
           SPLIT_INDEX: ${{ matrix.shard }}
 
-      - name: Upload Phoenix server & cloudflared logs (shard ${{ matrix.shard }})
+      - name: Upload Phoenix server & frontend logs (shard ${{ matrix.shard }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phoenix-server-log-shard-${{ matrix.shard }}
           path: |
             phoenix-server.log
-            cloudflared.log
+            frontend-server.log
           if-no-files-found: warn
           retention-days: 7

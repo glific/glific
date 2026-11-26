@@ -1,0 +1,47 @@
+info:
+  name: Count certificate templates
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query countCertificateTemplates($filter: CertificateTemplateFilter) {
+        countCertificateTemplates(filter: $filter)
+      }
+    variables: |-
+      {
+        "filter": {
+          "label": "course"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Counts the organization's certificate templates that match a filter. Use it with **List
+  certificate templates** to build pagination.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                        | Required | Description                                                           |
+  | -------- | --------------------------- | -------- | --------------------------------------------------------------------- |
+  | `filter` | `CertificateTemplateFilter` | No       | Same fields as in **List certificate templates**. Without it, counts all. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "countCertificateTemplates": 4
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the manager role gets a top-level `Unauthorized` error. Note that listing
+  needs only the staff role.

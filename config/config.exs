@@ -14,7 +14,7 @@ config :glific,
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time [$level] $metadata$message\n",
-  metadata: [:request_id, :remote_ip, :user_id, :org_id, :params]
+  metadata: [:request_id, :remote_ip, :user_agent, :user_id, :org_id, :params]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
@@ -88,10 +88,10 @@ oban_queues = [
       partition: [args: :organization_id]
     ]
   ],
-  gupshup_high_tps: 10,
+  gupshup_high_tps: 20,
   clone_assistant: 5,
   gupshup_inbound: [
-    local_limit: 30,
+    local_limit: 40,
     global_limit: [
       allowed: 10,
       burst: false,
@@ -147,6 +147,11 @@ config :glific, Oban,
   queues: oban_queues,
   plugins: oban_plugins,
   shutdown_grace_period: :timer.seconds(60)
+
+# Smart engine fetches only local_limit * multiplier partition keys per refresh; orgs beyond that
+# wait a full cache cycle, so the multiplier must cover every org with queued jobs.
+# An org whose jobs become available after a refresh waits up to keys_cache_ttl to be fetched.
+config :oban_pro, Oban.Pro.Partition, keys_limit_multiplier: 7, keys_cache_ttl: 1_000
 
 # Adding ssl_options to fix #3037. However I dont understand this or the implications
 # We will revisit it once we build a better understanding

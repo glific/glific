@@ -1,0 +1,61 @@
+info:
+  name: Export an interactive template
+  type: graphql
+  seq: 9
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation exportInteractiveTemplate($id: ID!, $addTranslation: Boolean) {
+        exportInteractiveTemplate(id: $id, addTranslation: $addTranslation) {
+          exportData
+        }
+      }
+    variables: |-
+      {
+        "id": "1",
+        "addTranslation": false
+      }
+  auth: inherit
+
+docs: |
+  Exports a template's translations as CSV, one column per active language of the
+  organization, so they can be reviewed and brought back with **Import interactive template
+  translations**.
+
+  With `addTranslation` `true` (the default), Glific first runs **Translate an interactive
+  template**, which overwrites and saves the stored translations, and exports the result.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument         | Type      | Required | Description                                                     |
+  | ---------------- | --------- | -------- | --------------------------------------------------------------- |
+  | `id`             | `ID!`     | Yes      | The template to export.                                         |
+  | `addTranslation` | `Boolean` | No       | Machine-translate and save before exporting. Defaults to `true`. |
+
+  ## Example response
+
+  The first row is `Attribute` followed by language locales. The rows depend on the type:
+
+  - Quick reply: `Footer` (media with a caption only), `Header`, `Text`, `OptionTitle 1`, ...
+  - List: `Title`, `Body`, `GlobalButtonTitle`, then rows for each item and its options.
+  - Location request: `Body`.
+
+  ```json
+  {
+    "data": {
+      "exportInteractiveTemplate": {
+        "exportData": "Attribute,en,hi\nHeader,Quick Reply Text,त्वरित उत्तर पाठ\nText,Glific is a two way communication platform,ग्लिफ़िक एक दो-तरफ़ा संचार मंच है\nOptionTitle 1,Excited,उत्साहित\nOptionTitle 2,Very Excited,बहुत उत्साहित\n"
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  This mutation's result has no `errors` field, so failures are top-level errors: the template
+  does not exist, Google Translate fails, or the user lacks the manager role (`Unauthorized`).

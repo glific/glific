@@ -3,7 +3,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   Client for interacting with Gemini via APIs.
   """
   require Logger
-  alias Glific.Metrics
+  alias Glific.{Metrics, SafeLog}
 
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -43,7 +43,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   Convert text to speech using Gemini API.
   """
   @spec text_to_speech(String.t(), non_neg_integer()) ::
-          {:ok, binary()} | {:error, integer() | atom() | nil}
+          {:ok, binary()} | {:error, {integer(), String.t()} | atom()}
   def text_to_speech(text, organization_id) do
     body = tts_request_body(text)
     path = "/#{gemini_config(:tts_model)}:generateContent"
@@ -67,11 +67,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
           _ -> {:error, :missing_audio_data}
         end
 
-      {:ok, %Tesla.Env{status: status}} ->
-        {:error, status}
-
-      {:error, %Tesla.Env{status: status}} ->
-        {:error, status}
+      {:ok, %Tesla.Env{status: status, body: body}} ->
+        {:error, {status, error_message(body)}}
 
       {:error, reason} ->
         {:error, reason}
@@ -79,6 +76,10 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   end
 
   # Private
+  @spec error_message(any()) :: String.t()
+  defp error_message(%{error: %{message: message}}) when is_binary(message), do: message
+  defp error_message(body), do: SafeLog.safe_inspect(body)
+
   @spec gemini_config() :: map()
   defp gemini_config, do: Application.fetch_env!(:glific, __MODULE__)
 
@@ -143,8 +144,11 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         %{
           "parts" => [
             %{
-              "text" =>
-                "Read aloud in warm and friendly tone, considering audience listening to you is based in India: #{text}"
+              "text" => text,
+              "speechMetadata" => %{
+                "style" =>
+                  "Warm and friendly tone, considering audience listening to you is based in India"
+              }
             }
           ]
         }
@@ -154,7 +158,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         "speechConfig" => %{
           "voiceConfig" => %{
             "prebuiltVoiceConfig" => %{
-              "voiceName" => "Kore"
+              "voiceName" => "en-in-csagent-9"
             }
           }
         }

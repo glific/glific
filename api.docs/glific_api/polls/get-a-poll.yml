@@ -1,0 +1,71 @@
+info:
+  name: Get a poll
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waPoll($id: ID!) {
+        waPoll(id: $id) {
+          waPoll {
+            id
+            uuid
+            label
+            pollContent
+            allowMultipleAnswer
+            insertedAt
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "4"
+      }
+  auth: inherit
+
+docs: |
+  Returns one poll by ID.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description         |
+  | -------- | ----- | -------- | ------------------- |
+  | `id`     | `ID!` | Yes      | The poll to return. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waPoll": {
+        "waPoll": {
+          "id": "4",
+          "uuid": "b5c2a5e0-8d1f-4c41-9a7e-2f6c1d9e3a77",
+          "label": "Next session day",
+          "pollContent": "{\"text\":\"Which day suits the next session?\",\"options\":[{\"votes\":0,\"voters\":[],\"name\":\"Saturday\",\"id\":0},{\"votes\":0,\"voters\":[],\"name\":\"Sunday\",\"id\":1}]}",
+          "allowMultipleAnswer": false,
+          "insertedAt": "2026-11-10T07:15:00Z",
+          "updatedAt": "2026-11-10T07:15:00Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The poll does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.WAGroup.WaPoll", "message": "Resource not found" }]` and `waPoll`
+    is `null`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

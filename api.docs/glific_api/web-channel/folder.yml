@@ -1,0 +1,145 @@
+info:
+  name: Web Channel
+  type: folder
+  seq: 6
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    REST endpoints and the chat socket for the web channel widget: a chat window an organization
+    embeds on its own website, where beneficiaries talk to it from a browser instead of WhatsApp.
+
+    These endpoints authenticate a **contact**, not a staff user, and do not use the staff
+    `auth_token`. The organization is taken from the request host. The flow is:
+
+    1. **Get the web channel branding** (public) to paint the widget.
+    2. **Request a web channel OTP** (public): a code goes to the phone over WhatsApp.
+    3. **Verify a web channel OTP** (public): returns a web channel `token`, an HS256 JWT signed
+       with the organization's secret. It lasts 48 hours.
+    4. Use the token to connect to the chat socket (below), and as
+       `authorization: Bearer <token>` for **Get a media upload URL**.
+    5. **Renew a web channel token** before it expires. A session can be renewed for up to
+       7 days after sign-in.
+
+    An organization that manages its own users can skip steps 2, 3 and 5 and sign tokens on its
+    own backend instead (see **Tokens signed by your backend**); step 4 is the same.
+
+    The verify and renew requests store the token in the runtime variable
+    `web_channel_token`, which **Get a media upload URL** sends.
+
+    The web channel has to be on for the organization: the `web_channel_enabled` feature flag
+    set by a Glific admin, and an active `web_channel` credential set by the organization.
+    Otherwise every endpoint except branding answers `404` with
+    `Web channel is not enabled for this organization`. These endpoints have their own rate
+    limit per IP address, more generous than the staff one; over it the response is `429`.
+
+    ## Tokens signed by your backend
+
+    Instead of the OTP login, the organization's backend can sign the token itself, as an HS256
+    JWT with the organization's web channel secret. Glific verifies both kinds the same way.
+
+    | Claim     | Required | Description |
+    | --------- | -------- | ----------- |
+    | `sub`     | Yes      | Your stable ID for the user: 1 to 255 characters from `a-z`, `0-9`, `_`, `@` and `.`. It is lowercased, and it names one contact for good, so never reuse it, and don't use a phone number. |
+    | `channel` | Yes      | Always `"web"`. |
+    | `iat`     | Yes      | Issued at, in Unix seconds. |
+    | `exp`     | Yes      | Expiry, in Unix seconds. At most 7 days after `iat`; 60 seconds of clock leeway apply. |
+    | `name`    | No       | Up to 255 characters; the contact's name when the contact is created. Without it the name is `sub`. |
+    | `phone`   | No       | The user's phone, used only on the first connect with a new `sub`; later tokens never re-link the contact. The web identity is added to the organization's existing contact with that phone if that contact has a WhatsApp identity or has messaged before, and is not the organization's own contact. Any other existing contact with that phone is left alone, and a new web contact is created without a phone. If no contact has the phone, the new contact gets it. An invalid phone is ignored. |
+    | `optin`   | No       | `true` records that the user agreed to be messaged on the web channel (method `NGO`). Any value that is not a boolean makes the token invalid. |
+
+    Don't send `jti` or `sst`: they mark Glific's own OTP session tokens, and a token with only
+    one of them is refused. Other claims are ignored. The first connect with a new `sub` creates the contact. Your
+    backend renews its own tokens: **Renew a web channel token** only renews tokens from the OTP
+    login.
+
+    The secret is generated when the web channel is switched on, and the organization sees it
+    in its web channel settings. There is one secret of at least 32 characters. It can be
+    replaced but not removed, and replacing it invalidates every token already issued.
+
+    ## Chat socket
+
+    The chat runs over a [Phoenix Channels](https://hexdocs.pm/phoenix/channels.html) websocket.
+    A Phoenix client library handles the framing, heartbeat and replies for you.
+
+    **Connect** to `wss://<api host>/web_socket/websocket?token=<token>&vsn=2.0.0`. The
+    organization comes from the host, not the token. Frames are JSON arrays,
+    `[join_ref, ref, topic, event, payload]`. Send a `heartbeat` on the `phoenix` topic at least
+    every 30 seconds, or the server closes the connection after 60. A refused connection gets
+    HTTP `403` with no reason, whether the token is bad, the web channel is off or the address
+    is over its connect limit. `503` means the server is taking too many connections; try again
+    later.
+
+    **Join** the topic `web_channel:conversation`. It always means the token's own contact; any
+    other topic is refused with reason `unauthorized`, and so is a join with an expired token.
+    The join reply is `{ "contact_id": 42, "messages": [...] }` with up to the 100 latest
+    messages, oldest first. Messages sent while the browser was closed arrive here.
+
+    **Events you push** on the joined topic. Each gets a reply of `ok`, or `error` with
+    `{ "reason": "..." }`:
+
+    | Event                  | Payload | Notes |
+    | ---------------------- | ------- | ----- |
+    | `new_message`          | `{ "body": "Hi" }` | Trimmed; 1 to 4096 characters. To answer a quick reply or list, send the chosen option's `title` as `body`. |
+    | `new_location_message` | `{ "latitude": 12.97, "longitude": 77.59 }` | Latitude -90 to 90, longitude -180 to 180. Also the answer to a `location_request_message`. |
+    | `new_media_message`    | `{ "type": "image", "url": "...", "content_type": "image/jpeg", "caption": "..." }` | `type` is `image`, `audio`, `video` or `document`. `url` is the one **Get a media upload URL** returned. The uploaded file's real content type must equal `content_type` and suit `type`, and its size must be within the limit. `caption` is optional. |
+    | `load_more`            | `{ "offset": 100 }` | Replies `{ "messages": [...] }`: the next 100 older messages, oldest first. `offset` is the number of messages you already have. |
+    | `renew_token`          | `{ "token": "..." }` | A new token for the same contact; it extends the open session. |
+
+    Error reasons:
+
+    | Reason                   | When |
+    | ------------------------ | ---- |
+    | `blank_body`             | `body` is missing, not text or empty after trimming. |
+    | `body_too_long`          | `body` is over 4096 characters. |
+    | `invalid_location`       | Missing or out-of-range coordinates. |
+    | `unsupported media type` | `type` is missing or not one of the four media types. |
+    | `invalid_media_url`      | `url` was not issued for this organization, or the uploaded file does not match `content_type` and `type`. |
+    | `media_too_large`        | The uploaded file is over the size limit for `type`. |
+    | `invalid_offset`         | `offset` is missing, not an integer or negative. |
+    | `invalid_token`          | The renewal token is invalid or belongs to another contact. |
+    | `rate_limited`           | More than 20 events in 10 seconds from this contact, counting `load_more`. |
+    | `contact_blocked`        | The contact was blocked; checked on every send. |
+    | `send_failed`            | The message could not be saved. |
+
+    **Events the server pushes:**
+
+    - `new_message`: a message to the contact, as soon as it is sent. Glific doesn't wait for a
+      flow's delays, and there is no delivery receipt.
+    - `token_expiring`: about 10 minutes before the token expires. Get a new token and push
+      `renew_token`.
+    - `session_expired`: about a minute after the token expired without renewal. The channel
+      closes.
+    - `web_channel_disabled`: the organization switched the web channel off. The channel
+      closes.
+
+    A message, in `new_message` pushes and in the join and `load_more` replies:
+
+    ```json
+    {
+      "id": 5012,
+      "type": "quick_reply",
+      "flow": "outbound",
+      "body": "Did this help?",
+      "inserted_at": "2026-11-16T09:15:02Z",
+      "interactive_content": {
+        "type": "quick_reply",
+        "content": { "type": "text", "text": "Did this help?" },
+        "options": [{ "type": "text", "title": "Yes" }, { "type": "text", "title": "No" }]
+      },
+      "media": null
+    }
+    ```
+
+    - `flow`: `outbound` for messages to the contact, `inbound` for the contact's own (these
+      appear only in history).
+    - `type`: `text`, `image`, `audio`, `video`, `document`, `sticker`, `location`,
+      `quick_reply`, `list` or `location_request_message`.
+    - `interactive_content`: for `quick_reply`, `list` and `location_request_message`, the same
+      JSON as an interactive template's `interactiveContent` (see **Interactive templates**);
+      otherwise `{}`.
+    - `body`: the text, or a media message's caption.
+    - `media`: `{ "url": "..." }` for media messages, otherwise `null`.
+  type: text/markdown

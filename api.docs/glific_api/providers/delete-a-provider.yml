@@ -1,0 +1,67 @@
+info:
+  name: Delete a provider
+  type: graphql
+  seq: 6
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation deleteProvider($id: ID!) {
+        deleteProvider(id: $id) {
+          provider {
+            id
+            name
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "25"
+      }
+  auth: inherit
+
+docs: |
+  Deletes a provider. A provider that is an organization's BSP, or that has a credential, cannot
+  be deleted.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type  | Required | Description             |
+  | -------- | ----- | -------- | ----------------------- |
+  | `id`     | `ID!` | Yes      | The provider to delete. |
+
+  ## Example response
+
+  The resolver returns the deleted provider without wrapping it in the result object, so on
+  success both fields come back `null`.
+
+  ```json
+  {
+    "data": {
+      "deleteProvider": {
+        "provider": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The provider does not exist: `errors` is
+    `[{ "key": "Elixir.Glific.Partners.Provider", "message": "Resource not found" }]`.
+  - An organization uses it as its BSP:
+    `{ "key": "organizations", "message": "Organizations: are still associated with this entry" }`.
+  - An organization has a credential for it:
+    `{ "key": "credential", "message": "Credential: is still associated with this entry" }`.
+  - A user without the glific_admin role gets a top-level `Unauthorized` error.

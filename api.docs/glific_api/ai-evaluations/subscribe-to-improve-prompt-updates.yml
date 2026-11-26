@@ -1,0 +1,76 @@
+info:
+  name: Subscribe to improve-prompt updates
+  type: graphql
+  seq: 11
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      subscription improvePromptUpdated {
+        improvePromptUpdated {
+          status
+          error
+          configVersion {
+            id
+            majorVersion
+            minorVersion
+            versionLabel
+            description
+            model
+            prompt
+            settings
+            status
+            insertedAt
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Pushes the outcome of **Improve an evaluation's prompt** when Kaapi's callback arrives:
+  either the new config version Glific saved, or the failure.
+
+  **Role:** staff. Events are scoped to the user's organization.
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  `status` is `success` or `failed`. On success, `configVersion` is the new draft version
+  (`ready`, not live; Kaapi's commit message is its `description`) and `error` is `null`. The
+  payload has no evaluation or assistant ID.
+
+  ```json
+  {
+    "data": {
+      "improvePromptUpdated": {
+        "status": "success",
+        "error": null,
+        "configVersion": {
+          "id": "35",
+          "majorVersion": 2,
+          "minorVersion": 2,
+          "versionLabel": "2.2",
+          "description": "[AI Generated] improved prompt",
+          "model": "gpt-5-mini",
+          "prompt": "You are a friendly assistant that answers questions about prenatal care. Answer only from the knowledge base and keep replies to three sentences.",
+          "settings": "{\"effort\":\"low\"}",
+          "status": "ready",
+          "insertedAt": "2026-11-13T07:20:03Z"
+        }
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  When Kaapi reports a failure, the event has `status: "failed"`, `configVersion: null` and
+  `error` set to Kaapi's message (or `Improve prompt failed`). If Glific can't save the new
+  version, for example because the assistant no longer exists, no event is sent.
+
+  A user without the staff role gets an `Unauthorized` error when subscribing.

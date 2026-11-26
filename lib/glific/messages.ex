@@ -1203,15 +1203,18 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Delete all messages of a contact
+  Delete a contact's messages on the given channel
   """
-  @spec clear_messages(Contact.t()) :: :ok
-  def clear_messages(%Contact{} = contact) do
-    # get and delete all messages media
-    messages_media_ids =
+  @spec clear_messages(Contact.t(), atom()) :: :ok
+  def clear_messages(%Contact{} = contact, channel) do
+    messages =
       Message
       |> where([m], m.contact_id == ^contact.id)
       |> where([m], m.organization_id == ^contact.organization_id)
+      |> where([m], m.channel == ^channel)
+
+    messages_media_ids =
+      messages
       |> select([m], m.media_id)
       |> Repo.all()
 
@@ -1219,30 +1222,22 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all(timeout: 900_000)
 
-    Message
-    |> where([m], m.contact_id == ^contact.id)
-    |> where([m], m.organization_id == ^contact.organization_id)
-    |> Repo.delete_all()
+    Repo.delete_all(messages)
 
-    reset_contact_fields(contact)
+    reset_contact_fields(contact, channel)
 
-    FlowContext.mark_flows_complete(contact.id, false, source: "clear_messages")
+    FlowContext.mark_flows_complete(contact.id, false, channel, source: "clear_messages")
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     :ok
   end
 
-  @spec reset_contact_fields(Contact.t()) :: nil
-  defp reset_contact_fields(contact) do
-    simulator = Contacts.simulator_contact?(contact.phone)
+  @spec reset_contact_fields(Contact.t(), atom()) :: nil
+  defp reset_contact_fields(contact, channel) do
+    simulator = channel == :whatsapp && Contacts.simulator_contact?(contact.phone)
 
-    values = %{
-      last_message_number: 0,
-      is_org_read: true,
-      is_org_replied: true,
-      is_contact_replied: true
-    }
+    values = conversation_reset_values(contact)
 
     values =
       if simulator,
@@ -1263,6 +1258,27 @@ defmodule Glific.Messages do
       do: {:ok, _last_message} = send_default_message(contact)
 
     nil
+  end
+
+  # The message counter and the read/replied flags are shared by both channels: conversations
+  # window on the counter, and the inbox filters on the flags. While the other channel still has
+  # messages, resetting them would hide those messages or mark them read.
+  @spec conversation_reset_values(Contact.t()) :: map()
+  defp conversation_reset_values(contact) do
+    remaining? =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> where([m], m.organization_id == ^contact.organization_id)
+      |> Repo.exists?()
+
+    if remaining?,
+      do: %{},
+      else: %{
+        last_message_number: 0,
+        is_org_read: true,
+        is_org_replied: true,
+        is_contact_replied: true
+      }
   end
 
   @spec send_default_message(Contact.t(), String.t()) ::

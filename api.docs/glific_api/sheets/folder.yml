@@ -1,0 +1,32 @@
+info:
+  name: Sheets
+  type: folder
+  seq: 33
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Sheets link Google Sheets to the organization so flows can use them. A sheet's `type` says
+    how flows use it:
+
+    - `READ`: Glific copies the rows into its database (a **sync**), and a flow's "link
+      Google Sheet" node looks a row up by its `key` column and puts the row's values in the
+      flow's results.
+    - `WRITE`: flows append rows to the sheet. Nothing is synced.
+    - `ALL`: both.
+
+    The first row of the sheet holds the column headers, and each header must be unique.
+    Every sync replaces the stored rows. Sheets with `autoSync: true` are synced once a day; a
+    failed sync sets `syncStatus` to `FAILED` with a `failureReason` and posts a notification.
+
+    Access: `WRITE` and `ALL` sheets need the organization's Google Sheets credentials
+    (Settings › Google Sheets) and the service account must be an editor of the sheet. `READ`
+    sheets use the credentials if they are set up, and otherwise need the sheet shared as
+    "Anyone with the link can view".
+
+    All sheet operations need the manager role.
+
+    Related: **Flows**, **Flow Editor › List sheets**.
+  type: text/markdown

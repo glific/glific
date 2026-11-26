@@ -1,0 +1,18 @@
+info:
+  name: Locations
+  type: folder
+  seq: 15
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A location is a point (latitude and longitude) a contact shared, saved when a contact
+    sends a WhatsApp location message. Locations are read-only through the API.
+
+    **Get a contact's location** returns the latest point a contact shared and needs the
+    manager role. Listing locations and reading one by ID need the staff role.
+
+    See also **Contacts** and **Messages** (a location message's `location` field).
+  type: text/markdown

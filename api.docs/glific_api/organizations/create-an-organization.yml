@@ -1,0 +1,149 @@
+info:
+  name: Create an organization
+  type: graphql
+  seq: 4
+  tags:
+    - internal
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createOrganization($input: OrganizationInput!) {
+        createOrganization(input: $input) {
+          organization {
+            id
+            name
+            shortcode
+            email
+            timezone
+            isActive
+            isApproved
+            defaultLanguage {
+              id
+              label
+            }
+            bsp {
+              id
+              shortcode
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "name": "Sample NGO",
+          "shortcode": "sample-ngo",
+          "email": "admin@sample-ngo.example.org",
+          "bspId": "1",
+          "defaultLanguageId": "1",
+          "activeLanguageIds": ["1", "2"],
+          "timezone": "Asia/Kolkata"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Inserts an organization row. Unlike onboarding (**SaaS › Set up an organization**), it does not
+  create the main contact, the admin user, credentials or seed data.
+
+  **Role:** glific_admin
+
+  ## Arguments
+
+  | Argument | Type                 | Required | Description                 |
+  | -------- | -------------------- | -------- | --------------------------- |
+  | `input`  | `OrganizationInput!` | Yes      | The organization to create. |
+
+  ### `OrganizationInput`
+
+  | Field                 | Type                     | Required | Description                                                                 |
+  | --------------------- | ------------------------ | -------- | --------------------------------------------------------------------------- |
+  | `name`                | `String`                 | Yes      | Display name.                                                               |
+  | `shortcode`           | `String`                 | Yes      | Unique across the server. Used as the subdomain.                            |
+  | `bspId`               | `ID`                     | Yes      | The BSP provider, such as Gupshup. See **Providers**.                       |
+  | `defaultLanguageId`   | `ID`                     | Yes      | Must be one of `activeLanguageIds`.                                         |
+  | `activeLanguageIds`   | `[ID]`                   | No       | Languages the organization uses.                                            |
+  | `email`               | `String`                 | No       | Contact email of the organization.                                          |
+  | `contactId`           | `ID`                     | No       | The organization's own contact (the "NGO Main Account").                    |
+  | `timezone`            | `String`                 | No       | An IANA timezone from **List timezones**.                                   |
+  | `sessionLimit`        | `Int`                    | No       | Session length in minutes.                                                  |
+  | `isActive`            | `Boolean`                | No       | Whether the organization is active.                                         |
+  | `status`              | `OrganizationStatusEnum` | No       | See **List organization statuses**.                                         |
+  | `newcontactFlowId`    | `ID`                     | No       | Flow started for a new contact.                                             |
+  | `optinFlowId`         | `ID`                     | No       | Flow started when a contact opts in.                                        |
+  | `outOfOffice`         | `OutOfOfficeInput`       | No       | Office hours and the flow to run outside them.                              |
+  | `setting`             | `SettingInput`           | No       | Report frequency and balance alert settings.                                |
+  | `regxFlow`            | `RegxFlowInput`          | No       | A flow started when an incoming message matches a regular expression.       |
+  | `signaturePhrase`     | `String`                 | No       | Secret used to sign outgoing webhook payloads.                              |
+  | `fields`              | `Json`                   | No       | Organization-level variables, available in flows as `@organization.fields`. |
+  | `lastCommunicationAt` | `DateTime`               | No       | Time of the last message.                                                   |
+  | `phone`               | `String`                 | No       | Only used by **Update the current organization**.                           |
+
+  ### `OutOfOfficeInput`
+
+  | Field           | Type                | Description                                                 |
+  | --------------- | ------------------- | ----------------------------------------------------------- |
+  | `enabled`       | `Boolean`           | Turns office hours on.                                      |
+  | `startTime`     | `Time`              | Start of office hours, such as `09:00:00`.                  |
+  | `endTime`       | `Time`              | End of office hours.                                        |
+  | `enabledDays`   | `[EnabledDayInput]` | `{ id, enabled }` for each weekday, `1` (Monday) to `7`.    |
+  | `flowId`        | `ID`                | Flow run outside office hours.                              |
+  | `defaultFlowId` | `ID`                | Flow run during office hours when no keyword matches.       |
+
+  ### `SettingInput`
+
+  | Field                      | Type      | Description                                               |
+  | -------------------------- | --------- | --------------------------------------------------------- |
+  | `reportFrequency`          | `String`  | How often reports are mailed. Defaults to `WEEKLY`.       |
+  | `runFlowEachTime`          | `Boolean` | Run the default flow on every message, not once a session. |
+  | `lowBalanceThreshold`      | `String`  | Gupshup balance, in USD, that triggers a warning.         |
+  | `criticalBalanceThreshold` | `String`  | Gupshup balance, in USD, that triggers a critical alert.  |
+  | `sendWarningMail`          | `Boolean` | Mail the team when the balance is low.                    |
+
+  ### `RegxFlowInput`
+
+  | Field     | Type     | Description                                |
+  | --------- | -------- | ------------------------------------------ |
+  | `flowId`  | `ID`     | Flow to start.                             |
+  | `regx`    | `String` | Regular expression matched on the message. |
+  | `regxOpt` | `String` | Regular expression options, such as `i`.   |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createOrganization": {
+        "organization": {
+          "id": "2",
+          "name": "Sample NGO",
+          "shortcode": "sample-ngo",
+          "email": "admin@sample-ngo.example.org",
+          "timezone": "Asia/Kolkata",
+          "isActive": false,
+          "isApproved": false,
+          "defaultLanguage": { "id": "1", "label": "English" },
+          "bsp": { "id": "1", "shortcode": "gupshup" }
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `organization` set to `null`:
+
+  - A required field is missing: `{ "key": "name", "message": "Name: can't be blank" }`.
+  - The shortcode is taken: `{ "key": "shortcode", "message": "Shortcode: has already been taken" }`.
+  - The timezone is unknown: `{ "key": "timezone", "message": "Timezone: is invalid" }`.
+
+  A user without the glific_admin role gets a top-level `Unauthorized` error.

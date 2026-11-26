@@ -1,0 +1,58 @@
+info:
+  name: List templates
+  type: http
+  seq: 15
+
+http:
+  method: GET
+  url: "{{base_url}}/flow-editor/templates"
+  auth: inherit
+
+docs: |
+  Lists the organization's approved WhatsApp templates (HSMs) for the editor's "send message"
+  action, with every language they are translated into.
+
+  **Auth:** any logged-in user.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  `200`. The first translation is the template's own language; the rest come from its
+  translations. `variable_count` is the number of `{{n}}` placeholders.
+
+  ```json
+  {
+    "results": [
+      {
+        "uuid": "9381b1b9-1b9b-45a6-81f4-f91306959619",
+        "name": "Account Balance",
+        "type": "text",
+        "created_on": "2026-10-04T06:21:40Z",
+        "modified_on": "2026-10-04T06:21:40Z",
+        "translations": [
+          {
+            "language": "en",
+            "content": "You are now ready to begin. Your account balance is {{1}}.",
+            "variable_count": 1,
+            "status": "approved",
+            "channel": { "uuid": "", "name": "WhatsApp" }
+          },
+          {
+            "language": "hi",
+            "content": "अब आप शुरू करने के लिए तैयार हैं। आपके खाते की शेष राशि {{1}} है।",
+            "variable_count": 1,
+            "status": "approved",
+            "channel": { "uuid": "", "name": "WhatsApp" }
+          }
+        ]
+      }
+    ]
+  }
+  ```
+
+  ## Errors
+
+  - `401`: missing or invalid access token.

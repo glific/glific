@@ -1,0 +1,105 @@
+opencollection: 1.0.0
+
+info:
+  name: Glific API
+  version: "1"
+
+request:
+  auth:
+    type: apikey
+    key: authorization
+    value: "{{auth_token}}"
+    placement: header
+
+docs:
+  content: |-
+    # Glific API
+
+    Glific's API is mostly GraphQL. A few REST endpoints handle login, registration, the web
+    channel, the simulator and the flow editor.
+
+    ## Getting started
+
+    Use the Bruno app (v4.3 or later) to run these requests. Click **Open in Bruno** at the
+    top of this page, or open `api.docs/glific_api` from the Glific repository. The web
+    playground can't run GraphQL requests.
+
+    1. Pick an environment: `local` (`https://localhost:4001/api`) or `production`.
+    2. In `production`, replace `shortcode` in `base_url` and `api_url` with your
+       organization's shortcode, then save. For example, the shortcode `myorg` gives
+       `https://api.myorg.glific.com` and `https://api.myorg.glific.com/api`. Bruno keeps
+       saved environment values, so you only need to do this once.
+    3. Set `phone` and `password` in the environment.
+    4. Run **Authentication › Login**. It saves the access and renewal tokens into
+       `auth_token` and `renewal_token`.
+    5. Run any other request. The collection sends `authorization: {{auth_token}}` on every
+       request whose auth is set to inherit.
+
+    ## Endpoints
+
+    | Kind    | URL                          | Notes                                         |
+    | ------- | ---------------------------- | --------------------------------------------- |
+    | GraphQL | `POST {{api_url}}`           | Queries and mutations. Body is JSON.          |
+    | GraphQL | `wss://<host>/socket`        | Subscriptions, over the `graphql-transport-ws` protocol. |
+    | REST    | `{{api_url}}/v1/...`         | Login, registration, web channel, simulator.  |
+    | REST    | `{{base_url}}/flow-editor/...` | Endpoints the flow editor calls.            |
+
+    The `authorization` header carries the bare access token, with no `Bearer` prefix.
+    Subscriptions send it instead in the `connection_init` payload, as
+    `{ "authToken": "<access token>" }`. The subscription requests in this collection are for
+    reference: run them from a GraphQL client that speaks `graphql-transport-ws`.
+    Access tokens expire (see `token_expiry_time` in the login response); use
+    **Authentication › Renew a session** to get new ones.
+
+    ## Roles
+
+    Each operation states the lowest role allowed to call it. Roles, highest first:
+    `glific_admin` > `admin` > `manager` > `staff` > `none`. A higher role can call anything
+    a lower one can. Operations that need `glific_admin` are for the Glific team and are tagged
+    `internal`, which keeps them off the published docs page. Calling an operation without the
+    role returns a top-level error:
+
+    ```json
+    { "data": { "createTag": null }, "errors": [{ "message": "Unauthorized", "path": ["createTag"] }] }
+    ```
+
+    Every request is scoped to the organization of the logged-in user. IDs from another
+    organization behave as if they do not exist.
+
+    ## Errors
+
+    GraphQL operations report errors in two ways:
+
+    - **Validation and not-found errors** come back inside the result object, in its
+      `errors` list, as `{ "key": "...", "message": "..." }`. The entity field is `null`.
+      A mutation's validation message starts with the capitalized field name, such as
+      `{ "key": "label", "message": "Label: can't be blank" }`.
+    - **Authorization and unexpected errors** come back in the top-level `errors` array, and
+      the operation's field in `data` is `null`.
+
+    An invalid query (an unknown field, a wrong argument type) is rejected before it runs, with
+    a top-level error naming the problem.
+
+    ## Lists and pagination
+
+    List queries take an optional `filter` and an `opts` argument:
+
+    | `opts` field | Type        | Default | Description                       |
+    | ------------ | ----------- | ------- | --------------------------------- |
+    | `order`      | `SortOrder` | `ASC`   | `ASC` or `DESC`.                  |
+    | `orderWith`  | `String`    | varies  | Field to sort on, in snake_case.  |
+    | `limit`      | `Int`       | none    | Maximum number of rows.           |
+    | `offset`     | `Int`       | `0`     | Rows to skip.                     |
+
+    Most list queries have a matching `count...` query that takes the same `filter`.
+
+    ## Scalars
+
+    | Scalar     | Format                                                        |
+    | ---------- | ------------------------------------------------------------- |
+    | `ID`       | String or integer database ID.                                |
+    | `Gid`      | Like `ID`, but also accepts an integer.                       |
+    | `DateTime` | ISO 8601 in UTC, such as `2026-11-16T09:30:00Z`.              |
+    | `Date`     | `YYYY-MM-DD`.                                                 |
+    | `Json`     | A JSON value, sent as a JSON-encoded string.                  |
+  type: text/markdown

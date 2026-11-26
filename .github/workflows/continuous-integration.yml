@@ -5,6 +5,9 @@ on:
     branches: [master]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -31,7 +34,7 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: elixir-mix-cache
         with:
           path: deps
@@ -48,7 +51,7 @@ jobs:
           mix deps.get
 
       - name: Retrieve Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: elixir-build-cache
         with:
           path: _build
@@ -61,7 +64,7 @@ jobs:
         run: mix deps.compile
 
       - name: Retrieve PLT Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: elixir-plt-cache
         with:
           path: priv/plts
@@ -96,13 +99,13 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: deps
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -110,7 +113,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
 
       - name: Retrieve PLT Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: priv/plts
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -171,13 +174,13 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: deps
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -217,6 +220,49 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
+        uses: actions/cache@v5
+        with:
+          path: deps
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Retrieve Build Cache
+        uses: actions/cache@v5
+        with:
+          path: _build
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
+
+      - name: Compile
+        run: mix compile --warnings-as-errors
+
+  api-docs:
+    runs-on: ubuntu-latest
+    needs: setup
+
+    env:
+      MIX_ENV: test
+
+    strategy:
+      matrix:
+        elixir: [1.18.3]
+        otp: [27.3.3]
+
+    defaults:
+      run:
+        working-directory: api.docs/tools
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v7
+
+      - name: Setup elixir
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v4
         with:
           path: deps
@@ -230,5 +276,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.4-build-
 
-      - name: Compile
-        run: mix compile --warnings-as-errors
+      # The schema is dumped from compiled modules, so a cached build of another commit
+      # would validate the collection against a stale schema.
+      - name: Discard stale build artifacts for this app
+        working-directory: .
+        run: rm -rf _build/${MIX_ENV}/lib/glific
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api.docs/tools/package-lock.json
+
+      - name: Install validator dependencies
+        run: npm ci
+
+      - name: Dump the GraphQL schema
+        run: npm run schema
+
+      - name: Validate the Bruno collection
+        run: npm run validate

@@ -208,10 +208,54 @@ defmodule Glific.Flows.FlowContextTest do
 
       {:ok, web_context, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
 
-      FlowContext.mark_flows_complete(contact.id, false, channel: :web)
+      FlowContext.mark_flows_complete(contact.id, false, :web)
 
       assert is_nil(Repo.get!(FlowContext, whatsapp_context.id).completed_at)
       refute is_nil(Repo.get!(FlowContext, web_context.id).completed_at)
+    end
+
+    test "stopping WhatsApp's flows leaves the web flows running", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, whatsapp, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, web, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+      # The web flow runs to its end at once here; reopen it, so both channels have one running.
+      reopen(web)
+      # Starting a flow completes the contact's older ones, which records an entry of its own.
+      clear_stopped_history(contact)
+
+      FlowContext.mark_flows_complete(contact.id, false, :whatsapp,
+        source: "terminate_contact_flows"
+      )
+
+      assert Repo.get!(FlowContext, whatsapp.id).completed_at != nil
+      assert is_nil(Repo.get!(FlowContext, web.id).completed_at)
+      assert stopped_history(contact) == [:whatsapp]
+    end
+
+    test "stopping one channel's flows records that channel", %{flow: flow} do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, _whatsapp, _} =
+        FlowContext.init_context(flow, contact, "published", channel: :whatsapp)
+
+      {:ok, _web, _} = FlowContext.init_context(flow, contact, "published", channel: :web)
+      clear_stopped_history(contact)
+
+      FlowContext.mark_flows_complete(contact.id, false, :web)
+
+      assert stopped_history(contact) == [:web]
+    end
+
+    test "with nothing running there is still one entry, on the channel asked for" do
+      contact = Fixtures.contact_fixture()
+
+      FlowContext.mark_flows_complete(contact.id, false, :whatsapp)
+      FlowContext.mark_flows_complete(contact.id, false, :web)
+
+      assert stopped_history(contact) == [:whatsapp, :web]
     end
 
     # An async webhook (e.g. TTS) parks a web flow and resumes it via wakeup_one, which completes
@@ -951,5 +995,25 @@ defmodule Glific.Flows.FlowContextTest do
 
     {:ok, context} = FlowContext.create_flow_context(context_attrs)
     {context, contact, node_uuid}
+  end
+
+  defp stopped_history(contact) do
+    Glific.Contacts.ContactHistory
+    |> where([h], h.contact_id == ^contact.id and h.event_type == "contact_flow_ended_all")
+    |> order_by([h], h.id)
+    |> select([h], h.channel)
+    |> Repo.all()
+  end
+
+  defp reopen(context) do
+    FlowContext
+    |> where([fc], fc.id == ^context.id)
+    |> Repo.update_all(set: [completed_at: nil, is_killed: false])
+  end
+
+  defp clear_stopped_history(contact) do
+    Glific.Contacts.ContactHistory
+    |> where([h], h.contact_id == ^contact.id and h.event_type == "contact_flow_ended_all")
+    |> Repo.delete_all()
   end
 end

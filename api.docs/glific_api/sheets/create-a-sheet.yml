@@ -1,0 +1,111 @@
+info:
+  name: Create a sheet
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation createSheet($input: SheetInput!) {
+        createSheet(input: $input) {
+          sheet {
+            id
+            label
+            url
+            type
+            isActive
+            autoSync
+            lastSyncedAt
+            syncStatus
+            failureReason
+            sheetDataCount
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "input": {
+          "label": "School directory",
+          "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+          "type": "READ",
+          "autoSync": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Links a Google Sheet. Glific first checks it can reach the sheet (see the folder docs for
+  the access each type needs), saves it, and then syncs `READ` and `ALL` sheets straight away.
+  A sync that fails doesn't stop the sheet being created: it comes back with
+  `syncStatus: "FAILED"` and a `failureReason`, and a notification is posted.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type          | Required | Description          |
+  | -------- | ------------- | -------- | -------------------- |
+  | `input`  | `SheetInput!` | Yes      | The sheet to create. |
+
+  ### `SheetInput`
+
+  | Field      | Type      | Required | Description                                                                  |
+  | ---------- | --------- | -------- | ---------------------------------------------------------------------------- |
+  | `label`    | `String`  | Yes      | Display name. Flows refer to the sheet by it.                                |
+  | `url`      | `String`  | Yes      | The sheet's `https://docs.google.com/spreadsheets/...` URL. Keep the `#gid=` part to pick a tab other than the first. Unique in the organization. |
+  | `type`     | `String`  | Yes      | `READ`, `WRITE` or `ALL`. Without it the call fails with `Invalid sheet URL`. |
+  | `autoSync` | `Boolean` | No       | Defaults to `false`. `true` re-syncs the sheet once a day.                   |
+  | `isActive` | `Boolean` | No       | Defaults to `true`. Only active sheets are offered in the flow editor and auto-synced. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "createSheet": {
+        "sheet": {
+          "id": "2",
+          "label": "School directory",
+          "url": "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+          "type": "READ",
+          "isActive": true,
+          "autoSync": true,
+          "lastSyncedAt": "2026-11-16T09:30:00Z",
+          "syncStatus": "SUCCESS",
+          "failureReason": null,
+          "sheetDataCount": 248
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Validation failures come back in `errors` with `sheet` set to `null`:
+
+  - Not a Google Sheets URL: `{ "key": "url", "message": "Url: Sheet URL is invalid" }`.
+  - The URL is already linked: `{ "key": "url", "message": "Url: has already been taken" }`.
+  - `label` is missing: `{ "key": "label", "message": "Label: can't be blank" }`.
+
+  Access problems come back as a top-level error with `createSheet` set to `null`:
+
+  - `url` or `type` is missing: `Invalid sheet URL`.
+  - `WRITE` or `ALL` without credentials:
+    `Please add the credentials for google sheet from the settings menu`.
+  - The service account can't edit or read the sheet:
+    `No edit access to the Google Sheet. Please ensure the service account has editor permissions.`
+    or the read-access equivalent.
+  - The sheet doesn't exist or isn't shared with the service account:
+    `Google Sheet not found. Please ensure the URL is correct and the service account has access.`
+  - A `READ` sheet without credentials that isn't public:
+    `Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view.`
+
+  A user without the manager role gets a top-level `Unauthorized` error.

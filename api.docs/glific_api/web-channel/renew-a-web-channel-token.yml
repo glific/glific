@@ -1,0 +1,59 @@
+info:
+  name: Renew a web channel token
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/web_channel/renew-token"
+  body:
+    type: json
+    data: |-
+      {
+        "token": "{{web_channel_token}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        if (body && body.data) {
+          bru.setVar("web_channel_token", body.data.token);
+        }
+
+docs: |
+  Exchanges a still-valid web channel token for a new 48-hour token in the same session.
+  Renewal works until the session is 7 days old; after that the beneficiary must sign in
+  again. An expired token cannot be renewed. This request updates `web_channel_token`.
+
+  The token goes in the body, not in a header. Only tokens issued by **Verify a web channel
+  OTP** can be renewed; tokens an organization's own backend signed cannot.
+
+  ## Request body
+
+  | Field   | Type   | Required | Description                 |
+  | ------- | ------ | -------- | --------------------------- |
+  | `token` | String | Yes      | The current web channel token. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "token": "eyJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsIjoid2ViIiwic3ViIjoiOTE5ODc2NTAwMDAxIn0.Qm9vX2Ff1z",
+      "contact_id": 42,
+      "name": "Priya",
+      "phone": "910000000005"
+    }
+  }
+  ```
+
+  ## Errors
+
+  All as `{ "error": { "status": <code>, "message": "..." } }`:
+
+  - `401`: the token is invalid, expired, past the 7-day limit or not renewable:
+    `Invalid or expired session`.
+  - `422`: no `token` in the body: `Token is required`.
+  - `404`: the web channel is not enabled for the organization.

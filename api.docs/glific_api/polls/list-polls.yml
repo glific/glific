@@ -1,0 +1,74 @@
+info:
+  name: List polls
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query waPolls($filter: WaPollFilter, $opts: Opts) {
+        waPolls(filter: $filter, opts: $opts) {
+          id
+          uuid
+          label
+          pollContent
+          allowMultipleAnswer
+          insertedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "label": "session"
+        },
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's polls, optionally filtered and paginated.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                    |
+  | -------- | -------------- | -------- | ---------------------------------------------- |
+  | `filter` | `WaPollFilter` | No       | Narrows the list. All given fields must match. |
+  | `opts`   | `Opts`         | No       | Sorting and pagination. Sorts on `label` by default. |
+
+  ### `WaPollFilter`
+
+  | Field                 | Type      | Description                                  |
+  | --------------------- | --------- | -------------------------------------------- |
+  | `label`               | `String`  | Label contains this text (case-insensitive). |
+  | `allowMultipleAnswer` | `Boolean` | Only multiple-answer or single-answer polls. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "waPolls": [
+        {
+          "id": "4",
+          "uuid": "b5c2a5e0-8d1f-4c41-9a7e-2f6c1d9e3a77",
+          "label": "Next session day",
+          "pollContent": "{\"text\":\"Which day suits the next session?\",\"options\":[{\"votes\":0,\"voters\":[],\"name\":\"Saturday\",\"id\":0},{\"votes\":0,\"voters\":[],\"name\":\"Sunday\",\"id\":1}]}",
+          "allowMultipleAnswer": false,
+          "insertedAt": "2026-11-10T07:15:00Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

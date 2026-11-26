@@ -1,0 +1,80 @@
+info:
+  name: List golden QAs
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query goldenQas($filter: GoldenQaFilter, $opts: Opts) {
+        goldenQas(filter: $filter, opts: $opts) {
+          id
+          name
+          duplicationFactor
+          datasetId
+          fileName
+          totalItems
+          insertedAt
+          updatedAt
+        }
+      }
+    variables: |-
+      {
+        "filter": {
+          "name": "prenatal"
+        },
+        "opts": {
+          "order": "DESC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's golden QA datasets.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type             | Required | Description                                                |
+  | -------- | ---------------- | -------- | ---------------------------------------------------------- |
+  | `filter` | `GoldenQaFilter` | No       | Narrows the list.                                          |
+  | `opts`   | `Opts`           | No       | Sorting and pagination. Sorts on `inserted_at` by default. |
+
+  ### `GoldenQaFilter`
+
+  | Field  | Type     | Description                                 |
+  | ------ | -------- | ------------------------------------------- |
+  | `name` | `String` | Name contains this text (case-insensitive). |
+
+  ## Example response
+
+  `datasetId` is the dataset's ID on Kaapi. `totalItems` is the number of questions in the
+  CSV. `signedUrl` is only filled by **Get a golden QA**.
+
+  ```json
+  {
+    "data": {
+      "goldenQas": [
+        {
+          "id": "3",
+          "name": "prenatal_faq",
+          "duplicationFactor": 1,
+          "datasetId": 58,
+          "fileName": "prenatal_faq.csv",
+          "totalItems": 25,
+          "insertedAt": "2026-11-12T10:00:00Z",
+          "updatedAt": "2026-11-12T10:00:00Z"
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

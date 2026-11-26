@@ -1,0 +1,71 @@
+info:
+  name: Update a message
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateMessage($id: ID!, $input: MessageInput) {
+        updateMessage(id: $id, input: $input) {
+          message {
+            id
+            body
+            type
+            updatedAt
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "1051",
+        "input": {
+          "body": "Imported from the old helpline (corrected)"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes a stored message. Only the fields given in `input` change. This edits Glific's copy
+  only: a message already delivered to the contact is not changed on their phone.
+
+  **Role:** admin
+
+  ## Arguments
+
+  | Argument | Type           | Required | Description                                                 |
+  | -------- | -------------- | -------- | ----------------------------------------------------------- |
+  | `id`     | `ID!`          | Yes      | The message to change.                                      |
+  | `input`  | `MessageInput` | No       | Fields to change. See **Create a message** for the list.    |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateMessage": {
+        "message": {
+          "id": "1051",
+          "body": "Imported from the old helpline (corrected)",
+          "type": "TEXT",
+          "updatedAt": "2026-11-16T08:02:11Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The message does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Messages.Message", "message": "Resource not found" }]`.
+  - Changing `type` to a media type on a message with no media:
+    `{ "key": "type", "message": "Type: image message type should have a media id" }`.
+  - A user without the admin role gets a top-level `Unauthorized` error.

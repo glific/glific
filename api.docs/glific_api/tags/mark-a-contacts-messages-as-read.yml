@@ -1,0 +1,47 @@
+info:
+  name: Mark a contact's messages as read
+  type: graphql
+  seq: 7
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation markContactMessagesAsRead($contactId: Gid!) {
+        markContactMessagesAsRead(contactId: $contactId)
+      }
+    variables: |-
+      {
+        "contactId": "26"
+      }
+  auth: inherit
+
+docs: |
+  Removes the reserved `unread` tag from every message the contact sent, so the conversation
+  no longer shows as unread in the inbox.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type   | Required | Description                         |
+  | ----------- | ------ | -------- | ----------------------------------- |
+  | `contactId` | `Gid!` | Yes      | The contact whose messages to mark. |
+
+  ## Example response
+
+  Returns the contact ID that was passed in.
+
+  ```json
+  {
+    "data": {
+      "markContactMessagesAsRead": "26"
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error. An unknown contact ID is
+  not an error: nothing changes and the ID is still returned.

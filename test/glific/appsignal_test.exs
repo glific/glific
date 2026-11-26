@@ -43,6 +43,115 @@ defmodule Glific.AppsignalTest do
     end
   end
 
+  describe "handle_event [:oban, :job, _] inbound hold time" do
+    defp job_event(event, queue, held_seconds) do
+      inserted_at = DateTime.utc_now()
+
+      job = %Oban.Job{
+        args: %{"organization_id" => 1},
+        inserted_at: inserted_at,
+        scheduled_at: DateTime.add(inserted_at, held_seconds)
+      }
+
+      meta = %{
+        id: 1,
+        queue: queue,
+        worker: "TestWorker",
+        args: job.args,
+        job: job,
+        attempt: 1,
+        max_attempts: 1,
+        kind: :error,
+        error: %RuntimeError{message: "boom"},
+        stacktrace: []
+      }
+
+      measurement = %{queue_time: 0, duration: 0}
+
+      with_mock Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end do
+        Appsignal.handle_event([:oban, :job, event], measurement, meta, nil)
+
+        called(
+          Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", 3000, %{
+            organization_id: "1"
+          })
+        )
+      end
+    end
+
+    test "records the hold time of a held inbound job that completes" do
+      assert job_event(:stop, "gupshup_inbound", 3)
+    end
+
+    test "records the hold time of a held inbound job that fails" do
+      assert job_event(:exception, "gupshup_inbound", 3)
+    end
+
+    test "records nothing for an inbound job that was never held" do
+      refute job_event(:stop, "gupshup_inbound", 0)
+    end
+
+    test "records nothing for jobs on other queues" do
+      refute job_event(:stop, "default", 3)
+    end
+  end
+
+  describe "handle_event [:oban, :job, _] messaging queue latency" do
+    setup do
+      sampling_rate = Application.get_env(:glific, :appsignal_sampling_rate)
+      Application.put_env(:glific, :appsignal_sampling_rate, 0)
+      on_exit(fn -> Application.put_env(:glific, :appsignal_sampling_rate, sampling_rate) end)
+    end
+
+    defp queue_latency_event(event, queue) do
+      job = %Oban.Job{
+        args: %{"organization_id" => 1},
+        inserted_at: DateTime.utc_now(),
+        scheduled_at: DateTime.utc_now()
+      }
+
+      meta = %{
+        id: 1,
+        queue: queue,
+        worker: "TestWorker",
+        args: job.args,
+        job: job,
+        attempt: 1,
+        max_attempts: 1,
+        kind: :error,
+        error: %RuntimeError{message: "boom"},
+        stacktrace: []
+      }
+
+      queue_time = System.convert_time_unit(250, :millisecond, :native)
+      measurement = %{queue_time: queue_time, duration: 0}
+
+      with_mock Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end do
+        Appsignal.handle_event([:oban, :job, event], measurement, meta, nil)
+
+        called(
+          Elixir.Appsignal.add_distribution_value("oban_messaging_queue_latency", 250, %{
+            queue: queue
+          })
+        )
+      end
+    end
+
+    test "records queue latency for every messaging queue, unsampled" do
+      for queue <- ["gupshup_inbound", "gupshup", "gupshup_high_tps"] do
+        assert queue_latency_event(:stop, queue)
+      end
+    end
+
+    test "records queue latency for a messaging job that fails" do
+      assert queue_latency_event(:exception, "gupshup")
+    end
+
+    test "records nothing for jobs on other queues" do
+      refute queue_latency_event(:stop, "default")
+    end
+  end
+
   describe "send_oban_queue_size/0" do
     test "executes without error" do
       assert Appsignal.send_oban_queue_size() == :ok
@@ -160,6 +269,82 @@ defmodule Glific.AppsignalTest do
         refute called(
                  Elixir.Appsignal.increment_counter("glific.repo.db_connection_error", 1, :_)
                )
+      end
+    end
+  end
+
+  describe "send_repo_pool_metrics/0" do
+    test "reports connections in use and waiting callers per repo, summed across pool sources" do
+      pool_size = Ecto.Adapter.lookup_meta(Glific.Repo).opts[:pool_size]
+      replica_pool_size = Ecto.Adapter.lookup_meta(Glific.RepoReplica).opts[:pool_size]
+
+      with_mocks([
+        {Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end},
+        {DBConnection, [:passthrough],
+         get_connection_metrics: fn _, _ ->
+           [
+             %{source: {:pool, self()}, ready_conn_count: 2, checkout_queue_length: 3},
+             %{source: {:proxy, self()}, ready_conn_count: 1, checkout_queue_length: 1}
+           ]
+         end}
+      ]) do
+        assert Appsignal.send_repo_pool_metrics() == :ok
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.in_use",
+                   pool_size - 3,
+                   %{repo: :repo}
+                 )
+               )
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.in_use",
+                   replica_pool_size - 3,
+                   %{repo: :repo_replica}
+                 )
+               )
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.checkout_queue_length",
+                   4,
+                   %{repo: :repo}
+                 )
+               )
+
+        assert called(
+                 Elixir.Appsignal.add_distribution_value(
+                   "glific.repo.pool.checkout_queue_length",
+                   4,
+                   %{repo: :repo_replica}
+                 )
+               )
+      end
+    end
+
+    test "never reports a negative in_use count" do
+      with_mocks([
+        {Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end},
+        {DBConnection, [:passthrough],
+         get_connection_metrics: fn _, _ ->
+           [%{source: {:pool, self()}, ready_conn_count: 10_000, checkout_queue_length: 0}]
+         end}
+      ]) do
+        assert Appsignal.send_repo_pool_metrics() == :ok
+
+        assert called(Elixir.Appsignal.add_distribution_value("glific.repo.pool.in_use", 0, :_))
+      end
+    end
+
+    test "returns :ok without reporting when the pool cannot be reached" do
+      with_mocks([
+        {Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end},
+        {DBConnection, [:passthrough], get_connection_metrics: fn _, _ -> exit(:noproc) end}
+      ]) do
+        assert Appsignal.send_repo_pool_metrics() == :ok
+        refute called(Elixir.Appsignal.add_distribution_value(:_, :_, :_))
       end
     end
   end

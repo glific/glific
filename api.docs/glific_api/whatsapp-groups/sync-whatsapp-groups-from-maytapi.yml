@@ -1,0 +1,68 @@
+info:
+  name: Sync WhatsApp groups from Maytapi
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation syncWaGroupContacts {
+        syncWaGroupContacts {
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+  auth: inherit
+
+docs: |
+  Pulls the organization's managed phones, groups and group members from Maytapi into Glific.
+  Runs while the request waits, so it can take a while for large accounts.
+
+  1. Fetches the phones on the Maytapi account. New connected phones are added as managed
+     phones (with a contact for each); known phones get their latest status.
+  2. For each phone whose status is `active`, fetches the groups it is in. Groups without a
+     name are skipped.
+  3. Creates groups Glific doesn't have yet (the phone that found it becomes primary) and
+     updates the label of groups renamed on WhatsApp.
+  4. Reconciles each group's members: creates contacts for new participants, adds and removes
+     member rows, and updates `isAdmin`.
+  5. Reconciles phone memberships: a managed phone that is a participant is marked active,
+     one that has left is marked inactive. The primary phone is never changed.
+
+  Groups no longer returned by Maytapi are not deleted. Failures for a single phone's groups
+  are skipped, and the sync still reports success.
+
+  **Role:** staff
+
+  ## Arguments
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "syncWaGroupContacts": {
+        "message": "successfully synced",
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  These come back as a top-level error, before any group is synced:
+
+  - Maytapi is not set up for the organization: `Maytapi is not active`.
+  - None of the Maytapi phones is `active`: `No active phones available`. Managed phones and
+    their statuses are still refreshed.
+  - Maytapi fails to list the phones: its message, or `WhatsApp couldn't complete this action
+    right now. Please try again in a moment.`
+  - A user without the staff role gets `Unauthorized`.

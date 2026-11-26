@@ -1,0 +1,53 @@
+info:
+  name: Assistants
+  type: folder
+  seq: 80
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    AI assistants that flows use to answer contacts. Glific stores each assistant and its
+    history; the model calls run on Kaapi, Glific's AI platform. The organization needs an
+    active Kaapi credential: operations that call Kaapi fail with `Kaapi is not active`
+    without one.
+
+    Key concepts:
+
+    - **Assistant**: a name plus a list of config versions. `assistantId` is the assistant's
+      Kaapi config UUID, and is `null` until Kaapi has registered it.
+    - **Config version**: the prompt (`instructions` or `prompt`), model, `settings`
+      (`temperature` for classic models, `effort` for reasoning models), guardrails and
+      knowledge base. Versions are labelled `major.minor`. Editing an assistant adds a draft
+      (minor) version; **Set an assistant's live version** publishes it as a new major
+      version. A version's `status` is `in_progress`, `ready` or `failed`.
+    - **Knowledge base** (`vectorStore` in responses): the files the assistant searches. Each
+      change of files creates a new knowledge base version, which Kaapi indexes in the
+      background. Its `status` is `in_progress`, `completed` or `failed`. Versions still
+      indexing after an hour are marked `failed` and a notification is created.
+
+    Building an assistant with files is asynchronous:
+
+    1. **Upload a knowledge base file** for each file. This is synchronous and returns a Kaapi
+       file ID.
+    2. **Create a knowledge base version** with the uploaded files. It returns at once with
+       `status: "in_progress"`. Kaapi calls Glific back when indexing ends, and
+       **Subscribe to knowledge base version updates** reports `completed` or `failed`.
+    3. **Create an assistant** or **Update an assistant** with that `knowledgeBaseVersionId`.
+       While the knowledge base is indexing, the new config version stays `in_progress`.
+       When indexing completes, Glific registers the version with Kaapi and
+       **Subscribe to config version updates** reports `ready` or `failed`. Without a
+       knowledge base, or with one already indexed, the version is registered with Kaapi
+       during the mutation itself and the subscription fires straight away.
+
+    **Clone an assistant** also runs in the background, as a job; it reports through
+    `cloneStatus` and a notification rather than a subscription.
+
+    Every operation here needs the manager role, except the two subscriptions, which need
+    staff.
+
+    Related folders: **Assistant Chat** (try an assistant out), **AI Evaluations** (score a
+    config version against a golden QA set), **Guardrails** (validators to put in
+    `inputGuardrails` and `outputGuardrails`) and **Prompt Generator** (draft a prompt).
+  type: text/markdown

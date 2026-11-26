@@ -1,0 +1,63 @@
+info:
+  name: Clear a contact's messages
+  type: graphql
+  seq: 12
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation clearMessages($contactId: ID!, $channel: MessageChannelEnum) {
+        clearMessages(contactId: $contactId, channel: $channel) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "contactId": "8",
+        "channel": "WHATSAPP"
+      }
+  auth: inherit
+
+docs: |
+  Permanently deletes a contact's messages on one channel, and their media, and ends the
+  contact's flows on that channel. Without `channel` it clears WhatsApp. Once the
+  contact has no messages left on any channel, its conversation state (message counter,
+  unread and replied flags) is reset too. This cannot be undone.
+
+  When WhatsApp is cleared for the simulator contact, it also clears the contact's fields,
+  reopens the 24-hour window and sends a fresh `Default message body` message, so the
+  simulator starts clean.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type                 | Required | Description                                                  |
+  | ----------- | -------------------- | -------- | ------------------------------------------------------------ |
+  | `contactId` | `ID!`                | Yes      | The contact whose messages to clear.                         |
+  | `channel`   | `MessageChannelEnum` | No       | `WHATSAPP` or `WEB`. Defaults to `WHATSAPP`.                 |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "clearMessages": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The contact does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Contacts.Contact", "message": "Resource not found" }]`.
+  - A user without the staff role gets a top-level `Unauthorized` error.

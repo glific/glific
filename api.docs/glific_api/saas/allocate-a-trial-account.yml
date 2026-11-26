@@ -1,0 +1,56 @@
+info:
+  name: Allocate a trial account
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/trial/allocate-account"
+  body:
+    type: json
+    data: |-
+      {
+        "phone": "910000000001",
+        "otp": "123456",
+        "username": "Asha Rao",
+        "password": "a-strong-test-password",
+        "email": "asha@sample-ngo.example.org",
+        "organization_name": "Sample NGO"
+      }
+
+docs: |
+  Checks the code from **Request a trial account** and gives the visitor the next free trial
+  organization for 14 days. In one transaction it sets the organization's trial expiry, creates
+  a contact and an admin user for the visitor with `password`, and marks the code as used. It
+  then mails the visitor a welcome and the Glific team a notice.
+
+  ## Request body
+
+  | Field               | Type   | Required | Description                                                       |
+  | ------------------- | ------ | -------- | ----------------------------------------------------------------- |
+  | `phone`             | String | Yes      | The phone sent to **Request a trial account**, in the same format. |
+  | `otp`               | String | Yes      | The code from the mail.                                           |
+  | `username`          | String | Yes      | Name of the new user and contact.                                 |
+  | `password`          | String | Yes      | Password of the new admin user.                                   |
+  | `email`             | String | No       | Used in the mail to the team when no trial account is free.       |
+  | `organization_name` | String | No       | Used in the mail to the team when no trial account is free.       |
+
+  ## Example response
+
+  ```json
+  {
+    "success": true,
+    "data": {
+      "login_url": "https://trial-3.glific.com/login"
+    }
+  }
+  ```
+
+  ## Errors
+
+  - `400`: the code is wrong, expired, already used or blocked after too many attempts:
+    `{ "success": false, "error": "Invalid OTP" }`.
+  - `200` with `success: false`: every trial organization is taken. The team is mailed, and
+    `error` says the sales team will reach out.
+  - `500`: a step failed, for example because the password is invalid. The body is
+    `{ "success": false, "error": "Something went wrong" }`. Nothing is saved.

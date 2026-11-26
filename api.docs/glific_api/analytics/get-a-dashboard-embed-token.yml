@@ -1,0 +1,34 @@
+info:
+  name: Get a dashboard embed token
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{api_url}}/v1/get-embed-token"
+  auth: inherit
+
+docs: |
+  Returns a Superset guest token for embedding the organization's analytics dashboard.
+  Needs the `superset_enabled` feature flag.
+
+  ## Request body
+
+  None.
+
+  ## Example response
+
+  ```json
+  {
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjp7InVzZXJuYW1lIjoiZ2xpZmljIn19.r8sD1kq0"
+  }
+  ```
+
+  ## Errors
+
+  All as `{ "error": { "status": <code>, "message": "..." } }`:
+
+  - `403`: the flag is off: `Superset is not enabled for your organization.`
+  - `503`: Superset could not issue a token:
+    `Something went wrong loading the dashboard. Please retry, or contact support if the issue persists.`
+  - `401` without a valid access token, as `{ "error": { "code": 401, "message": "Not authenticated" } }`.

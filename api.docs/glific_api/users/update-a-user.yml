@@ -1,0 +1,101 @@
+info:
+  name: Update a user
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateUser($id: ID!, $input: UserInput!) {
+        updateUser(id: $id, input: $input) {
+          user {
+            id
+            name
+            roles
+            isRestricted
+            groups {
+              id
+              label
+            }
+            accessRoles {
+              id
+              label
+            }
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "2",
+        "input": {
+          "name": "NGO Staff",
+          "roles": ["Staff"],
+          "groupIds": ["1"],
+          "isRestricted": true
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes another user's name, roles, groups or restriction. Changing `roles`,
+  `isRestricted`, `addRoleIds` or `deleteRoleIds` ends all of the user's sessions, so they
+  must log in again with the new permissions.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type         | Required | Description          |
+  | -------- | ------------ | -------- | -------------------- |
+  | `id`     | `ID!`        | Yes      | The user to change.  |
+  | `input`  | `UserInput!` | Yes      | Fields to change.    |
+
+  ### `UserInput`
+
+  | Field           | Type          | Description                                                                 |
+  | --------------- | ------------- | --------------------------------------------------------------------------- |
+  | `name`          | `String`      | Display name.                                                               |
+  | `email`         | `String`      | Email address.                                                              |
+  | `roles`         | `[RoleLabel]` | Built-in roles: `Admin`, `Manager`, `Staff`, `No access`.                   |
+  | `groupIds`      | `[ID]`        | The complete set of groups the user belongs to. Groups not listed are removed. |
+  | `isRestricted`  | `Boolean`     | Limit the user to contacts in their groups.                                 |
+  | `languageId`    | `ID`          | The user's interface language.                                             |
+  | `addRoleIds`    | `[ID]`        | Access roles to attach. `roles` is then set to the highest built-in role among them, or `No access` if none is built in. |
+  | `deleteRoleIds` | `[ID]`        | Access roles to detach.                                                     |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "updateUser": {
+        "user": {
+          "id": "2",
+          "name": "NGO Staff",
+          "roles": ["Staff"],
+          "isRestricted": true,
+          "groups": [{ "id": "1", "label": "Default Group" }],
+          "accessRoles": [{ "id": "2", "label": "Staff" }]
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The user does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Users.User", "message": "Resource not found" }]`.
+  - Top-level errors, with `updateUser` set to `null`:
+    - the target user has a higher role than the caller: `Does not have access to the user`;
+    - `roles` or `addRoleIds` asks for a role above the caller's:
+      `Does not have access to assign this role`;
+    - an ID in `addRoleIds` is not an access role of the organization: `Resource not found`;
+    - the caller lacks the manager role: `Unauthorized`.

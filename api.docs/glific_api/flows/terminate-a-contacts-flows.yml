@@ -1,0 +1,61 @@
+info:
+  name: Terminate a contact's flows
+  type: graphql
+  seq: 21
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation terminateContactFlows($contactId: ID!, $channel: MessageChannelEnum) {
+        terminateContactFlows(contactId: $contactId, channel: $channel) {
+          success
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "contactId": "26",
+        "channel": "WEB"
+      }
+  auth: inherit
+
+docs: |
+  Ends the flows the contact is running on one channel, except background flows, and records
+  a "flows ended" event on that channel in the contact's history. Without `channel` it ends
+  the WhatsApp flows. The runs
+  are marked completed and killed, so the contact's next message is matched against keywords
+  afresh.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type                 | Required | Description                                             |
+  | ----------- | -------------------- | -------- | ------------------------------------------------------- |
+  | `contactId` | `ID!`                | Yes      | The contact whose flows to end.                         |
+  | `channel`   | `MessageChannelEnum` | No       | `WHATSAPP` or `WEB`. Defaults to `WHATSAPP`.            |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "terminateContactFlows": {
+        "success": true,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  A contact with no running flows is not an error. A contact ID that doesn't exist in the
+  organization gives a top-level error, `Something unexpected has happened, please reach out
+  to Glific team over discord to get this resolved`. A user without the staff role gets a
+  top-level `Unauthorized` error.

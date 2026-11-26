@@ -1,0 +1,82 @@
+info:
+  name: Get a golden QA
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query goldenQa($id: ID!, $includeSignedUrl: Boolean) {
+        goldenQa(id: $id, includeSignedUrl: $includeSignedUrl) {
+          goldenQa {
+            id
+            name
+            duplicationFactor
+            datasetId
+            fileName
+            totalItems
+            signedUrl
+            insertedAt
+            updatedAt
+          }
+          errors {
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "3",
+        "includeSignedUrl": true
+      }
+  auth: inherit
+
+docs: |
+  Returns one golden QA dataset, optionally with a signed URL to download its CSV from
+  Kaapi.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument           | Type      | Required | Description                                                               |
+  | ------------------ | --------- | -------- | ------------------------------------------------------------------------- |
+  | `id`               | `ID!`     | Yes      | The golden QA to return.                                                  |
+  | `includeSignedUrl` | `Boolean` | No       | Fetch a download URL from Kaapi. Defaults to `false`, which skips Kaapi.  |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "goldenQa": {
+        "goldenQa": {
+          "id": "3",
+          "name": "prenatal_faq",
+          "duplicationFactor": 1,
+          "datasetId": 58,
+          "fileName": "prenatal_faq.csv",
+          "totalItems": 25,
+          "signedUrl": "https://kaapi-datasets.s3.amazonaws.com/58/prenatal_faq.csv?X-Amz-Expires=3600&X-Amz-Signature=9c2e1f",
+          "insertedAt": "2026-11-12T10:00:00Z",
+          "updatedAt": "2026-11-12T10:00:00Z"
+        },
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors come back in `errors` as `{ "message": "..." }` (this result has no `key`), with
+  `goldenQa` set to `null`:
+
+  - The golden QA does not exist in the organization: `Golden QA not found.`
+  - Kaapi times out: `Timeout occurred, please try again.`
+  - Kaapi rejects the call: Kaapi's error.
+  - Any other failure: `An unknown error occurred, please contact Glific support.`
+
+  A user without the staff role gets a top-level `Unauthorized` error.

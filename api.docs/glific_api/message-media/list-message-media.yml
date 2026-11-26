@@ -1,0 +1,66 @@
+info:
+  name: List message media
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      query messagesMedia($opts: Opts) {
+        messagesMedia(opts: $opts) {
+          id
+          url
+          sourceUrl
+          thumbnail
+          gcsUrl
+          caption
+          isTemplateMedia
+        }
+      }
+    variables: |-
+      {
+        "opts": {
+          "order": "ASC",
+          "limit": 10,
+          "offset": 0
+        }
+      }
+  auth: inherit
+
+docs: |
+  Lists the organization's message media. There is no filter. Returns at most 50 rows per
+  call: without `opts.limit` it returns 25, and a larger limit is lowered to 50.
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument | Type   | Required | Description                                                                 |
+  | -------- | ------ | -------- | --------------------------------------------------------------------------- |
+  | `opts`   | `Opts` | No       | Pagination. `order` sorts by caption; `orderWith` is ignored. Without `order` the rows come in no set order. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "messagesMedia": [
+        {
+          "id": "57",
+          "url": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "sourceUrl": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e.png",
+          "thumbnail": null,
+          "gcsUrl": null,
+          "caption": "Session schedule",
+          "isTemplateMedia": false
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Errors
+
+  A user without the staff role gets a top-level `Unauthorized` error.

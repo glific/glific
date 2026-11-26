@@ -1,0 +1,72 @@
+info:
+  name: Upload a media file
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation uploadMedia($media: Upload!, $extension: String!, $maxSizeKb: Int, $folder: String) {
+        uploadMedia(media: $media, extension: $extension, maxSizeKb: $maxSizeKb, folder: $folder)
+      }
+    variables: |-
+      {
+        "media": "file",
+        "extension": "png",
+        "maxSizeKb": 5120
+      }
+  auth: inherit
+
+docs: |
+  Uploads a file to the organization's Google Cloud Storage bucket and returns its public URL.
+  By default the file is stored as `outbound/<year>-<week>/<user name>/<uuid>.<extension>`.
+
+  `media` is an `Upload`, so this request must be sent as a `multipart/form-data` POST (the
+  GraphQL multipart convention Absinthe supports), not as JSON. Bruno's GraphQL mode cannot
+  attach a file; use curl or a client that supports uploads. The form has three parts:
+  `query`, `variables`, and the file, whose part name is the value given for `media`:
+
+  ```bash
+  curl -X POST "$API_URL" \
+    -H "authorization: $AUTH_TOKEN" \
+    -F 'query=mutation uploadMedia($media: Upload!, $extension: String!) { uploadMedia(media: $media, extension: $extension) }' \
+    -F 'variables={"media": "file", "extension": "png"}' \
+    -F 'file=@schedule.png'
+  ```
+
+  The server accepts request bodies up to 20 MB. To send the uploaded file in a message, create
+  a message media with the returned URL (**Message Media › Create a message media**).
+
+  **Role:** staff
+
+  ## Arguments
+
+  | Argument    | Type      | Required | Description                                                                  |
+  | ----------- | --------- | -------- | ---------------------------------------------------------------------------- |
+  | `media`     | `Upload!` | Yes      | Name of the multipart part that holds the file.                              |
+  | `extension` | `String!` | Yes      | File extension for the stored name, such as `png` or `pdf`.                  |
+  | `maxSizeKb` | `Int`     | No       | Reject files larger than this many kilobytes. Omit for no limit beyond 20 MB. |
+  | `folder`    | `String`  | No       | Store the file as `<folder>/<organization id>/<uuid>.<extension>` instead. Lowercase letters, digits, `-` and `_`, with `/` between segments; no dots. |
+
+  ## Example response
+
+  ```json
+  {
+    "data": {
+      "uploadMedia": "https://storage.googleapis.com/org-media/outbound/2026-46/admin/0b6a5d9e-6f1c-4b7e-9a51-2f8d4c3b1e07.png"
+    }
+  }
+  ```
+
+  ## Errors
+
+  Errors are top-level, and `uploadMedia` is `null`:
+
+  - `File is 6200KB. The limit is 5120KB.`: the file is over `maxSizeKb`.
+  - `max_size_kb must be greater than zero.`
+  - `folder may only contain lowercase letters, digits, dashes and slashes.`
+  - `Something went wrong ...`: the upload to Google Cloud Storage failed, for example because
+    the organization has no storage configured.
+  - A user without the staff role gets `Unauthorized`.

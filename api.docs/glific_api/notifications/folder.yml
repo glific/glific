@@ -1,0 +1,18 @@
+info:
+  name: Notifications
+  type: folder
+  seq: 26
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Notifications are alerts Glific records for the organization when something needs
+    attention: a message that could not be sent, a flow or webhook failure, a template status
+    change, and so on. Each has a `category` (such as `Message` or `Flow`), a `severity`
+    (`Critical`, `Warning` or `Information`), a human-readable `message` and an `entity` JSON
+    object with the details of what failed.
+
+    All operations need the manager role.
+  type: text/markdown

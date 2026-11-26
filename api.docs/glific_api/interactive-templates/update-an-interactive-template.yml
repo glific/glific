@@ -1,0 +1,90 @@
+info:
+  name: Update an interactive template
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{api_url}}"
+  body:
+    query: |-
+      mutation updateInteractiveTemplate($id: ID!, $input: InteractiveTemplateInput) {
+        updateInteractiveTemplate(id: $id, input: $input) {
+          interactiveTemplate {
+            id
+            label
+            interactiveContent
+            translations
+          }
+          message
+          errors {
+            key
+            message
+          }
+        }
+      }
+    variables: |-
+      {
+        "id": "6",
+        "input": {
+          "label": "Share location",
+          "interactiveContent": "{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"Please share your location\"},\"action\":{\"name\":\"send_location\"}}",
+          "translations": "{\"1\":{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"Please share your location\"},\"action\":{\"name\":\"send_location\"}}}"
+        }
+      }
+  auth: inherit
+
+docs: |
+  Changes an interactive template. Only the fields given in `input` change.
+
+  Every translation (the given `translations`, or the stored ones) is trimmed to WhatsApp's
+  limits before saving, and `message` names the languages that were trimmed:
+
+  | Type             | Limits                                                                   |
+  | ---------------- | ------------------------------------------------------------------------ |
+  | Quick reply      | Header 60 (set to the label when missing), text 1024, option title 20.  |
+  | List             | Body 1024, global button 20, item title and subtitle 24, option title 24, option description 72. |
+  | Location request | Body text 1024.                                                          |
+
+  The markdown check from **Create an interactive template** applies; the 1024-character
+  total check does not.
+
+  **Role:** manager
+
+  ## Arguments
+
+  | Argument | Type                       | Required | Description                                                         |
+  | -------- | -------------------------- | -------- | ------------------------------------------------------------------- |
+  | `id`     | `ID!`                      | Yes      | The template to change.                                             |
+  | `input`  | `InteractiveTemplateInput` | No       | Fields to change. See **Create an interactive template** for the list. |
+
+  ## Example response
+
+  When nothing was trimmed, `message` is `null`. Otherwise it reads
+  `Trimming has been done for the following languages due to exceeding character limits: Hindi. Please verify the content before saving.`
+
+  ```json
+  {
+    "data": {
+      "updateInteractiveTemplate": {
+        "interactiveTemplate": {
+          "id": "6",
+          "label": "Share location",
+          "interactiveContent": "{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"Please share your location\"},\"action\":{\"name\":\"send_location\"}}",
+          "translations": "{\"1\":{\"type\":\"location_request_message\",\"body\":{\"type\":\"text\",\"text\":\"Please share your location\"},\"action\":{\"name\":\"send_location\"}}}"
+        },
+        "message": null,
+        "errors": null
+      }
+    }
+  }
+  ```
+
+  ## Errors
+
+  - The template does not exist in the organization: `errors` is
+    `[{ "key": "Elixir.Glific.Templates.InteractiveTemplate", "message": "Resource not found" }]`.
+  - The new label is already used: `{ "key": "label", "message": "Label: has already been taken" }`.
+  - Markdown in a button or option: top-level error
+    `Button text cannot contain any markdown characters (e.g., **bold**, _italics_, etc).`
+  - A user without the manager role gets a top-level `Unauthorized` error.
