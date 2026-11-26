@@ -382,6 +382,36 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
     }
   end
 
+  describe "filesearch-gpt dispatch — blank question" do
+    setup do
+      test_pid = self()
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        send(test_pid, :kaapi_called)
+        %Tesla.Env{status: 200, body: %{"success" => true}}
+      end)
+
+      :ok
+    end
+
+    test "rejects an empty, whitespace-only or missing question without calling Kaapi", %{
+      assistant: assistant
+    } do
+      fields = lookup_fields(assistant.assistant_display_id)
+
+      for blank_fields <- [
+            Map.put(fields, "question", ""),
+            Map.put(fields, "question", "  \n "),
+            Map.delete(fields, "question")
+          ] do
+        assert {:error, :invalid_input, "Question is empty"} =
+                 FilesearchGpt.call(blank_fields, %{})
+      end
+
+      refute_received :kaapi_called
+    end
+  end
+
   describe "filesearch-gpt dispatch — lookup_kaapi_config" do
     test "returns error when assistant_id is nil" do
       assert {:error, :invalid_input, "assistant_id is required"} =
