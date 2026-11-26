@@ -6,7 +6,10 @@ defmodule GlificWeb.WebChannel.Token do
   Both are HS256 tokens signed with the organization's own secret (`Glific.WebChannel.JwtSecret`)
   and both name the contact by `sub`, the contact's web identity. The organization is the
   request's, never the token's, and an organization without a secret verifies nothing. The
-  token's own `alg` is never trusted. Every way a token can be wrong gives `{:error, :invalid}`.
+  token's own `alg` is never trusted. A token past its expiry gives `{:error, :expired}`, a session
+  past 7 days `{:error, :session_expired}`, and every other way a token can be wrong
+  `{:error, :invalid}`. Callers must answer all three the same way, so a caller cannot probe which;
+  the reason is only for metrics.
 
   An NGO's token may carry `optin`, a boolean: `true` is the NGO vouching that the user consented
   to be messaged on the web channel. Any other type makes the token invalid.
@@ -39,8 +42,10 @@ defmodule GlificWeb.WebChannel.Token do
   @doc """
   The claims of a token signed with the organization's secret, if it is valid now.
   """
+  @type refusal :: :expired | :session_expired | :invalid
+
   @spec verify(non_neg_integer(), String.t() | nil, integer()) ::
-          {:ok, claims()} | {:error, :invalid}
+          {:ok, claims()} | {:error, refusal()}
   def verify(organization_id, token, now \\ System.system_time(:second))
 
   def verify(organization_id, token, now) when is_binary(token) and token != "" do
@@ -51,6 +56,7 @@ defmodule GlificWeb.WebChannel.Token do
          :ok <- validate_session(claims, now) do
       {:ok, claims}
     else
+      reason when reason in [:expired, :session_expired] -> {:error, reason}
       _invalid -> {:error, :invalid}
     end
   end
@@ -114,7 +120,7 @@ defmodule GlificWeb.WebChannel.Token do
   cannot outlive the session.
   """
   @spec renew(non_neg_integer(), String.t() | nil, integer()) ::
-          {:ok, String.t(), claims()} | {:error, :invalid}
+          {:ok, String.t(), claims()} | {:error, refusal()}
   def renew(organization_id, token, now \\ System.system_time(:second)) do
     with {:ok, %{session_id: _, session_started_at: started_at} = claims} <-
            verify(organization_id, token, now),
@@ -123,6 +129,7 @@ defmodule GlificWeb.WebChannel.Token do
            sign(organization_id, claims |> Map.put(:exp, exp) |> Map.put(:iat, now)) do
       {:ok, renewed, claims}
     else
+      {:error, reason} when reason in [:expired, :session_expired] -> {:error, reason}
       _refused -> {:error, :invalid}
     end
   end
@@ -145,13 +152,14 @@ defmodule GlificWeb.WebChannel.Token do
     _malformed -> :error
   end
 
-  @spec validate_token_expiry(map(), integer()) :: :ok | :error
+  @spec validate_token_expiry(map(), integer()) :: :ok | :expired | :error
   defp validate_token_expiry(%{"iat" => iat, "exp" => exp}, now)
        when is_integer(iat) and is_integer(exp) do
-    if exp - iat <= @session_expiry_duration and iat <= now + @leeway_seconds and
-         exp > now - @leeway_seconds,
-       do: :ok,
-       else: :error
+    cond do
+      exp - iat > @session_expiry_duration or iat > now + @leeway_seconds -> :error
+      exp <= now - @leeway_seconds -> :expired
+      true -> :ok
+    end
   end
 
   defp validate_token_expiry(_fields, _now), do: :error
@@ -192,11 +200,13 @@ defmodule GlificWeb.WebChannel.Token do
 
   defp session_claims(_fields), do: :error
 
-  @spec validate_session(claims(), integer()) :: :ok | :error
+  @spec validate_session(claims(), integer()) :: :ok | :session_expired | :error
   defp validate_session(%{session_started_at: started_at}, now) do
-    if started_at <= now + @leeway_seconds and now - started_at < @session_expiry_duration,
-      do: :ok,
-      else: :error
+    cond do
+      started_at > now + @leeway_seconds -> :error
+      now - started_at >= @session_expiry_duration -> :session_expired
+      true -> :ok
+    end
   end
 
   defp validate_session(_claims, _now), do: :ok

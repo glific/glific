@@ -5,6 +5,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
   # `web_channel_auth_controller_test.exs`.
   use GlificWeb.ConnCase
 
+  import Mock
+
   alias Glific.{
     Contacts,
     Fixtures,
@@ -385,6 +387,58 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
         assert json = json_response(conn, 503)
         assert get_in(json, ["error", "code"]) == "storage_unavailable"
       end)
+    end
+
+    test "counts an issued upload, and nothing for a refused one", %{
+      conn: conn,
+      contact: contact
+    } do
+      with_mock Appsignal, [:passthrough],
+        increment_counter: fn _metric, _count, _tags -> :ok end do
+        with_web_channel_enabled(fn ->
+          conn |> sign_upload(contact) |> json_response(503)
+          configure_gcs(contact.organization_id)
+          conn |> sign_upload(contact) |> json_response(200)
+        end)
+
+        issued =
+          for {_pid,
+               {Appsignal, :increment_counter,
+                [
+                  "web_channel_event_count",
+                  1,
+                  %{event: "media_upload_issued", organization_id: organization_id}
+                ]}, _result} <- call_history(Appsignal),
+              do: organization_id
+
+        assert issued == [to_string(contact.organization_id)]
+      end
+    end
+
+    test "records a signed URL as a success and missing storage as a failure in AppSignal", %{
+      conn: conn,
+      contact: contact
+    } do
+      with_mock Appsignal, [:passthrough],
+        increment_counter: fn _metric, _count, _tags -> :ok end do
+        with_web_channel_enabled(fn ->
+          conn |> sign_upload(contact) |> json_response(503)
+          configure_gcs(contact.organization_id)
+          conn |> sign_upload(contact) |> json_response(200)
+        end)
+
+        statuses =
+          for {_pid,
+               {Appsignal, :increment_counter,
+                [
+                  "provider_action_count",
+                  1,
+                  %{provider: "web", action: "media_upload_url", status: status}
+                ]}, _result} <- call_history(Appsignal),
+              do: status
+
+        assert statuses == ["failure", "success"]
+      end
     end
   end
 end
