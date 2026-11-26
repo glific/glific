@@ -19,6 +19,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     Contacts,
     Contacts.Contact,
     Messages,
+    Metrics,
     OTP,
     Partners,
     Repo,
@@ -54,14 +55,14 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     organization_id = conn.assigns[:organization_id]
 
     if Flag.web_channel_enabled?(organization_id) do
-      Glific.Metrics.increment("Web OTP Requested", organization_id)
+      Metrics.increment("Web OTP Requested", organization_id)
 
       case Contacts.parse_phone_number(phone) do
         {:ok, normalized} ->
           request_otp_for(conn, organization_id, normalized)
 
         {:error, message} ->
-          Glific.Metrics.increment("Web OTP Refused: Invalid Phone", organization_id)
+          Metrics.increment("Web OTP Refused: Invalid Phone", organization_id)
           unprocessable_entity_error(conn, message)
       end
     else
@@ -80,7 +81,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         json(conn, %{data: %{phone: normalized, message: @request_otp_message}})
 
       {:error, message} ->
-        Glific.Metrics.increment("Web OTP Refused: Rate Limited", organization_id)
+        Metrics.increment("Web OTP Refused: Rate Limited", organization_id)
 
         conn
         |> put_status(429)
@@ -132,7 +133,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
 
       # Distinguishing these would tell an attacker whether a code was ever issued for a number.
       {:error, reason} ->
-        Glific.Metrics.increment("Web OTP Verification Failed", organization_id)
+        Metrics.increment("Web OTP Verification Failed", organization_id)
         if reason == :incorrect_code, do: record_failed_verify(organization_id, normalized)
         invalid_otp_error(conn)
     end
@@ -149,7 +150,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
          {:ok, token} <- Token.generate(organization_id, contact.phone),
          :ok <- record_optin(optin?, contact.phone, organization_id) do
       record_history(contact, :web_login_code_verified, "Logged into web")
-      Glific.Metrics.increment("Web OTP Verified", organization_id)
+      Metrics.increment("Web OTP Verified", organization_id)
 
       json(conn, %{
         data: %{
@@ -161,7 +162,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       })
     else
       {:error, error} ->
-        Glific.Metrics.increment("Web Sign In Failed", organization_id)
+        Metrics.increment("Web Sign In Failed", organization_id)
 
         Glific.log_error(
           "Verified a web channel OTP but could not resolve the contact for #{normalized}: " <>
@@ -296,10 +297,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
          code = mint_code(phone),
          {:ok, _message} <-
            Messages.create_and_send_otp_verification_message(contact, code, @otp_exemption) do
-      Glific.Metrics.increment("Web OTP Sent", organization_id)
+      Metrics.increment("Web OTP Sent", organization_id)
     else
       error ->
-        Glific.Metrics.increment("Web OTP Refused: Undeliverable", organization_id)
+        Metrics.increment("Web OTP Refused: Undeliverable", organization_id)
 
         # send_appsignal? false: a contact who is opted out or simply not on WhatsApp is ordinary
         # traffic for a public login form, so paging would scale the noise with usage. safe_inspect
@@ -314,7 +315,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     end
   rescue
     exception ->
-      Glific.Metrics.increment("Web OTP Refused: Undeliverable", organization_id)
+      Metrics.increment("Web OTP Refused: Undeliverable", organization_id)
 
       # Unlike the routine failures above, a raise is a real misconfiguration worth paging on.
       Glific.log_error(

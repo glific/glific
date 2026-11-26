@@ -1649,6 +1649,44 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       assert events == ["Web OTP Verification Failed"]
     end
 
+    test "a verified code that cannot be turned into a sign in fails the sign in", %{conn: conn} do
+      phone = unique_phone()
+
+      events =
+        counted(fn ->
+          with_mock Token, [:passthrough],
+            generate: fn _organization_id, _sub -> {:error, :no_secret} end do
+            with_web_channel_enabled(fn ->
+              code = OTP.generate_code(:web_channel, phone)
+              conn |> verify_otp(phone, code) |> json_response(500)
+            end)
+          end
+        end)
+
+      assert events == ["Web Sign In Failed"]
+    end
+
+    test "every request ends as exactly one sent or refused", %{conn: conn} do
+      blocked = Fixtures.contact_fixture(%{status: :blocked, phone: unique_phone()})
+
+      events =
+        counted(fn ->
+          with_web_channel_enabled(fn ->
+            for phone <- [@reachable_phone, blocked.phone, "12", unique_phone()],
+                do: request_otp(conn, phone)
+          end)
+        end)
+
+      outcomes =
+        Enum.count(
+          events,
+          &(&1 == "Web OTP Sent" or String.starts_with?(&1, "Web OTP Refused: "))
+        )
+
+      assert Enum.count(events, &(&1 == "Web OTP Requested")) == 4
+      assert outcomes == 4
+    end
+
     test "nothing is counted while the web channel is off", %{conn: conn} do
       assert counted(fn -> request_otp(conn, @reachable_phone) end) == []
     end

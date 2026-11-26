@@ -25,6 +25,7 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.UserGroup,
+    Metrics,
     Partners,
     Partners.Provider,
     Profiles,
@@ -805,14 +806,16 @@ defmodule Glific.Contacts do
     with {:ok, contact} <- update_contact(contact, optin_attrs), do: {:ok, contact, true}
   end
 
-  @spec record_optin_events(:whatsapp | :web, Contact.t(), Keyword.t()) :: any()
+  @spec record_optin_events(:whatsapp | :web, Contact.t(), Keyword.t()) :: :ok
   defp record_optin_events(:web, contact, opts) do
     capture_optin_history(:web, contact, opts)
-    Glific.Metrics.increment("Web Opt-in Recorded", contact.organization_id)
+    Metrics.increment("Web Opt-in Recorded", contact.organization_id)
   end
 
-  defp record_optin_events(channel, contact, opts),
-    do: capture_optin_history(channel, contact, opts)
+  defp record_optin_events(channel, contact, opts) do
+    capture_optin_history(channel, contact, opts)
+    :ok
+  end
 
   @spec capture_optin_history(:whatsapp | :web, Contact.t(), Keyword.t()) ::
           {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}

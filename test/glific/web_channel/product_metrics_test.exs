@@ -41,25 +41,32 @@ defmodule Glific.WebChannel.ProductMetricsTest do
       assert events == [{"Web Message Received: text", contact.organization_id}]
     end
 
-    test "a media message also counts as a completed upload", %{contact: contact} do
-      url = "https://storage.googleapis.com/test-bucket/some/image.png"
+    for {type, content_type} <- [
+          image: "image/png",
+          audio: "audio/ogg",
+          video: "video/mp4",
+          document: "application/pdf"
+        ] do
+      test "a #{type} message also counts as a completed upload", %{contact: contact} do
+        url = "https://storage.googleapis.com/test-bucket/some/file"
 
-      events =
-        counted(fn ->
-          enabled(fn ->
-            {:ok, _} =
-              WebMessage.receive_message(
-                contact,
-                %{url: url, source_url: url, content_type: "image/png", body: ""},
-                :image
-              )
+        events =
+          counted(fn ->
+            enabled(fn ->
+              {:ok, _} =
+                WebMessage.receive_message(
+                  contact,
+                  %{url: url, source_url: url, content_type: unquote(content_type), body: ""},
+                  unquote(type)
+                )
+            end)
           end)
-        end)
 
-      assert Enum.sort(events) == [
-               {"Web Media Upload Completed", contact.organization_id},
-               {"Web Message Received: image", contact.organization_id}
-             ]
+        assert Enum.sort(events) == [
+                 {"Web Media Upload Completed", contact.organization_id},
+                 {"Web Message Received: #{unquote(type)}", contact.organization_id}
+               ]
+      end
     end
   end
 
