@@ -281,17 +281,18 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @doc """
-  Emit the gap between consecutive callbacks of a multi-block Kaapi chain (`stt` | `llm` | `tts`)
-  as an AppSignal distribution. Observational — an emit failure is logged, never raised.
+  Emit the gap between consecutive callbacks of a Kaapi chain call as the `kaapi_chain_latency`
+  distribution, tagged by chain (the call type), block component and status. Observational — an
+  emit failure is logged, never raised.
   """
-  @spec track_chain_block(String.t() | nil, String.t(), number(), String.t() | nil, String.t()) ::
-          :ok
-  def track_chain_block(webhook_name, component, duration_ms, size_bucket, status) do
-    Appsignal.add_distribution_value("kaapi_sts_chain_latency", duration_ms, %{
-      webhook_name: webhook_name || "unknown",
-      component: component,
-      size_bucket: size_bucket || "unknown",
-      status: status
+  @spec track_chain_block(number(), map()) :: :ok
+  def track_chain_block(duration_ms, tags) do
+    Appsignal.add_distribution_value("kaapi_chain_latency", duration_ms, %{
+      chain: tags[:chain] || "unknown",
+      webhook_name: tags[:webhook_name] || "unknown",
+      component: tags[:component] || "unknown",
+      size_bucket: tags[:size_bucket] || "unknown",
+      status: tags[:status] || "success"
     })
 
     :ok

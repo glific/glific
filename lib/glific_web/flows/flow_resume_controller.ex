@@ -8,7 +8,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   use Publicist
 
-  alias Glific.{Flows.Webhook, Flows.Webhooks.ChainProgress, Repo}
+  alias Glific.{Flows.Webhook, Flows.Webhooks.KaapiChain, Repo}
 
   @doc """
   Resume a flow after any async webhook calls back. Every Kaapi node (STT, TTS, filesearch-gpt,
@@ -32,8 +32,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
       not Webhook.valid_callback?(organization_id, parsed) ->
         json(conn, "")
 
-      ChainProgress.intermediate?(result, parsed) ->
-        ChainProgress.record_intermediate(organization_id, parsed, callback_received_ts)
+      KaapiChain.intermediate?(result, parsed) ->
+        KaapiChain.record_intermediate(parsed, callback_received_ts)
         json(conn, "")
 
       true ->
@@ -56,8 +56,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
         |> Webhook.maybe_upload_tts_audio()
         |> Map.put("callback_received_ts", callback_received_ts)
 
-      ChainProgress.record_final(result, response)
-      response = ChainProgress.fallback_to_text(result, response)
+      KaapiChain.record_final(result, response)
+      response = KaapiChain.fallback_to_text(result, response)
       Webhook.resume(organization_id, result, response)
     end)
 

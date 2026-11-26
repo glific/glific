@@ -2,19 +2,20 @@ defmodule Glific.Flows.Webhooks.VoiceSts do
   @moduledoc """
   Speech-to-speech path of the `voice-filesearch-gpt` node (behind `voice_sts_enabled`): downloads
   the incoming audio and hands it to Kaapi's STT -> LLM -> TTS chain. Kaapi sends one callback per
-  block; `ChainProgress` keeps the intermediate ones and the final (audio) one resumes the flow.
+  block; `KaapiChain` logs the intermediate ones and the final (audio) one resumes the flow.
   """
 
   alias Glific.Flows.Webhooks.Behaviour
-  alias Glific.Flows.Webhooks.ChainProgress
   alias Glific.Flows.Webhooks.ErrorReporter
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiWebhook
+  alias Glific.Flows.Webhooks.KaapiChain
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Kaapi
 
   @webhook_name "voice-filesearch-gpt"
+  @chain_blocks ["stt", "llm", "tts"]
 
   @doc """
   Fires the voice pipeline: downloads the audio, then the async Kaapi speech-to-speech call.
@@ -64,6 +65,8 @@ defmodule Glific.Flows.Webhooks.VoiceSts do
         Map.merge(request_metadata, %{
           call_type: "voice_sts",
           webhook_name: @webhook_name,
+          chain_blocks: @chain_blocks,
+          chain_fallback: "text",
           audio_size_bucket: Instrumentation.size_bucket(audio.byte_size),
           kaapi_dispatch_ts: DateTime.utc_now() |> DateTime.to_unix(:microsecond)
         })
@@ -94,30 +97,35 @@ defmodule Glific.Flows.Webhooks.VoiceSts do
 
   @doc "Shapes the final callback: answer, transcript and conversation id from the webhook log."
   @spec handle_callback(map(), map(), Behaviour.ctx()) :: map()
-  def handle_callback(%{"success" => true}, %{"success" => false} = response, _ctx) do
+  def handle_callback(%{"success" => true}, %{"success" => false} = response, _ctx), do: response
+
+  def handle_callback(%{"success" => true}, response, ctx),
+    do: shape(response, response["message"], ctx)
+
+  def handle_callback(_result, %{"chain_degraded" => true} = response, ctx) do
     response
+    |> shape(nil, ctx)
+    |> Map.put("tts_failed", true)
   end
 
-  def handle_callback(%{"success" => true}, response, %{organization_id: organization_id}) do
-    {:ok, organization_id} = Glific.parse_maybe_integer(organization_id)
-    stash = ChainProgress.take(organization_id, response["webhook_log_id"])
-    answer = stash["text"] || ""
-    media_url = response["message"]
+  def handle_callback(_result, response, _ctx), do: response
 
-    if answer == "", do: report_empty_answer(organization_id)
+  @spec shape(map(), String.t() | nil, Behaviour.ctx()) :: map()
+  defp shape(response, media_url, %{organization_id: organization_id}) do
+    outputs = KaapiChain.outputs(response["webhook_log_id"])
+    answer = outputs["text"] || ""
+
+    if answer == "" do
+      {:ok, organization_id} = Glific.parse_maybe_integer(organization_id)
+      report_empty_answer(organization_id)
+    end
 
     response
     |> Map.put("message", answer)
     |> Map.put("translated_text", answer)
-    |> Map.put("transcript", stash["stt"])
-    |> Map.put("thread_id", stash["thread_id"] || response["thread_id"])
+    |> Map.put("transcript", outputs["blocks"]["stt"])
+    |> Map.put("thread_id", outputs["thread_id"] || response["thread_id"])
     |> Map.put("media_url", media_url)
-  end
-
-  def handle_callback(_result, %{"tts_failed" => true} = response, _ctx), do: response
-
-  def handle_callback(_result, response, _ctx) do
-    response
   end
 
   @spec report_empty_answer(non_neg_integer()) :: :ok

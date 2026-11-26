@@ -19,9 +19,9 @@ defmodule Glific.Flows.Webhook do
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
 
   alias Glific.Flows.Webhooks.{
-    ChainProgress,
     Dispatcher,
     Instrumentation,
+    KaapiChain,
     Registry,
     Request
   }
@@ -563,7 +563,7 @@ defmodule Glific.Flows.Webhook do
   defp resume_flow(organization_id, result, response, contact) do
     maybe_update_log(
       response["webhook_log_id"],
-      ChainProgress.keep_steps(response["webhook_log_id"], callback_log_message(result, response))
+      KaapiChain.keep_steps(response["webhook_log_id"], callback_log_message(result, response))
     )
 
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
