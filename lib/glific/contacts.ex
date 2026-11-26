@@ -25,10 +25,10 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.ContactWAGroup,
     Groups.UserGroup,
-    Metrics,
     Partners,
     Partners.Provider,
     Profiles,
+    Providers.Web.Instrumentation,
     Repo,
     Tags.ContactTag,
     Users.User
@@ -809,7 +809,7 @@ defmodule Glific.Contacts do
   @spec record_optin_events(:whatsapp | :web, Contact.t(), Keyword.t()) :: :ok
   defp record_optin_events(:web, contact, opts) do
     capture_optin_history(:web, contact, opts)
-    Metrics.increment("Web Opt-in Recorded", contact.organization_id)
+    Instrumentation.track_event("opt_in_recorded", contact.organization_id)
   end
 
   defp record_optin_events(channel, contact, opts) do

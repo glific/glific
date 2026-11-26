@@ -393,8 +393,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
       conn: conn,
       contact: contact
     } do
-      with_mock Glific.Metrics, [:passthrough],
-        increment: fn _event, _organization_id -> :ok end do
+      with_mock Appsignal, [:passthrough],
+        increment_counter: fn _metric, _count, _tags -> :ok end do
         with_web_channel_enabled(fn ->
           conn |> sign_upload(contact) |> json_response(503)
           configure_gcs(contact.organization_id)
@@ -402,11 +402,16 @@ defmodule GlificWeb.API.V1.WebChannelMediaControllerTest do
         end)
 
         issued =
-          for {_pid, {Glific.Metrics, :increment, ["Web Media Upload Issued", organization_id]},
-               _result} <- call_history(Glific.Metrics),
+          for {_pid,
+               {Appsignal, :increment_counter,
+                [
+                  "web_channel_event_count",
+                  1,
+                  %{event: "media_upload_issued", organization_id: organization_id}
+                ]}, _result} <- call_history(Appsignal),
               do: organization_id
 
-        assert issued == [contact.organization_id]
+        assert issued == [to_string(contact.organization_id)]
       end
     end
 

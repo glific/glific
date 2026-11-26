@@ -1,5 +1,5 @@
 defmodule Glific.WebChannel.ProductMetricsTest do
-  # Not async: the web channel flag is global state, and Mock replaces Glific.Metrics globally.
+  # Not async: the web channel flag is global state, and Mock replaces Appsignal globally.
   use Glific.DataCase
 
   import Mock
@@ -17,15 +17,17 @@ defmodule Glific.WebChannel.ProductMetricsTest do
     %{contact: Fixtures.contact_fixture()}
   end
 
-  # The web channel counters bumped while `fun` runs, as {name, organization_id}.
+  # The `web_channel_event_count` events recorded while `fun` runs, as {event, organization_id}.
   defp counted(fun) do
-    with_mock Glific.Metrics, [:passthrough], increment: fn _event, _organization_id -> :ok end do
+    with_mock Appsignal, [:passthrough],
+      increment_counter: fn _metric, _count, _tags -> :ok end do
       fun.()
 
-      for {_pid, {Glific.Metrics, :increment, [event, organization_id]}, _result} <-
-            call_history(Glific.Metrics),
-          String.starts_with?(event, "Web "),
-          do: {event, organization_id}
+      for {_pid,
+           {Appsignal, :increment_counter,
+            ["web_channel_event_count", 1, %{event: event, organization_id: organization_id}]},
+           _result} <- call_history(Appsignal),
+          do: {event, String.to_integer(organization_id)}
     end
   end
 
@@ -44,13 +46,13 @@ defmodule Glific.WebChannel.ProductMetricsTest do
   end
 
   describe "inbound messages" do
-    test "a text message is counted by its type", %{contact: contact} do
+    test "a text message is not an upload", %{contact: contact} do
       events =
         counted(fn ->
           enabled(fn -> {:ok, _} = WebMessage.receive_message(contact, %{body: "hi"}) end)
         end)
 
-      assert events == [{"Web Message Received: text", contact.organization_id}]
+      assert events == []
     end
 
     for {type, content_type} <- [
@@ -74,10 +76,7 @@ defmodule Glific.WebChannel.ProductMetricsTest do
             end)
           end)
 
-        assert Enum.sort(events) == [
-                 {"Web Media Upload Completed", contact.organization_id},
-                 {"Web Message Received: #{unquote(type)}", contact.organization_id}
-               ]
+        assert events == [{"media_upload_completed", contact.organization_id}]
       end
     end
   end
@@ -102,14 +101,14 @@ defmodule Glific.WebChannel.ProductMetricsTest do
       message = outbound(contact, %{})
 
       assert counted(fn -> enabled(fn -> {:ok, _} = Message.send_text(message) end) end) ==
-               [{"Web Message Sent: Staff", contact.organization_id}]
+               [{"message_sent_staff", contact.organization_id}]
     end
 
     test "a message sent by a flow is counted as flow", %{contact: contact} do
       message = outbound(contact, %{flow_id: 1})
 
       assert counted(fn -> enabled(fn -> {:ok, _} = Message.send_text(message) end) end) ==
-               [{"Web Message Sent: Flow", contact.organization_id}]
+               [{"message_sent_flow", contact.organization_id}]
     end
   end
 
@@ -127,7 +126,7 @@ defmodule Glific.WebChannel.ProductMetricsTest do
           end)
         end)
 
-      assert events == [{"Web Opt-in Recorded", 1}]
+      assert events == [{"opt_in_recorded", 1}]
     end
 
     test "a WhatsApp opt-in is not counted", %{contact: contact} do

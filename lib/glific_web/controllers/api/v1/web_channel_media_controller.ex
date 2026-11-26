@@ -16,7 +16,6 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
     GCS,
     GCS.SignedUrl,
     Messages,
-    Metrics,
     Providers.Web.Instrumentation,
     Providers.Web.Upload,
     RateLimit
@@ -54,7 +53,7 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
              content_type,
              @expires_in_seconds
            ) do
-      Metrics.increment("Web Media Upload Issued", organization_id)
+      Instrumentation.track_event("media_upload_issued", organization_id)
       Instrumentation.track_action("media_upload_url", :success, organization_id)
 
       json(conn, %{

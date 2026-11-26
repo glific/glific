@@ -24,7 +24,6 @@ defmodule Glific.Providers.Web.Message do
   alias Glific.{
     Messages,
     Messages.Message,
-    Metrics,
     Providers.Web.Instrumentation,
     Repo
   }
@@ -79,10 +78,10 @@ defmodule Glific.Providers.Web.Message do
 
   @spec count_sent(Message.t()) :: :ok
   defp count_sent(%{flow_id: nil} = message),
-    do: Metrics.increment("Web Message Sent: Staff", message.organization_id)
+    do: Instrumentation.track_event("message_sent_staff", message.organization_id)
 
   defp count_sent(message),
-    do: Metrics.increment("Web Message Sent: Flow", message.organization_id)
+    do: Instrumentation.track_event("message_sent_flow", message.organization_id)
 
   # `:sent`, not `:delivered`: nothing here acknowledges receipt, and the inbox would show the
   # claim to staff.

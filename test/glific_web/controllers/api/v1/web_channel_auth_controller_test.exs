@@ -1589,15 +1589,16 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   end
 
   describe "sign-in funnel counters (#5721)" do
-    # The web channel counters bumped while `fun` runs, in order.
+    # The `web_channel_event_count` events recorded while `fun` runs, in order.
     defp counted(fun) do
-      with_mock Glific.Metrics, [:passthrough],
-        increment: fn _event, _organization_id -> :ok end do
+      with_mock Appsignal, [:passthrough],
+        increment_counter: fn _metric, _count, _tags -> :ok end do
         fun.()
 
-        for {_pid, {Glific.Metrics, :increment, [event, 1]}, _result} <-
-              call_history(Glific.Metrics),
-            String.starts_with?(event, "Web "),
+        for {_pid,
+             {Appsignal, :increment_counter,
+              ["web_channel_event_count", 1, %{event: event, organization_id: "1"}]},
+             _result} <- call_history(Appsignal),
             do: event
       end
     end
@@ -1629,7 +1630,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       events =
         counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, @reachable_phone) end) end)
 
-      assert events == ["Web OTP Requested", "Web OTP Sent"]
+      assert events == ["otp_requested", "otp_sent"]
     end
 
     test "a code that cannot be delivered is refused as undeliverable", %{conn: conn} do
@@ -1638,13 +1639,13 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       events =
         counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, blocked.phone) end) end)
 
-      assert events == ["Web OTP Requested", "Web OTP Refused: Undeliverable"]
+      assert events == ["otp_requested", "otp_refused_undeliverable"]
     end
 
     test "an invalid phone is refused as invalid", %{conn: conn} do
       events = counted(fn -> with_web_channel_enabled(fn -> request_otp(conn, "12") end) end)
 
-      assert events == ["Web OTP Requested", "Web OTP Refused: Invalid Phone"]
+      assert events == ["otp_requested", "otp_refused_invalid_phone"]
     end
 
     test "a request over the phone limit is refused as rate limited", %{conn: conn} do
@@ -1668,10 +1669,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
         end)
 
       assert [
-               "Web OTP Requested",
+               "otp_requested",
                _first_outcome,
-               "Web OTP Requested",
-               "Web OTP Refused: Rate Limited"
+               "otp_requested",
+               "otp_refused_rate_limited"
              ] =
                events
     end
@@ -1687,7 +1688,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           end)
         end)
 
-      assert events == ["Web OTP Verified"]
+      assert events == ["otp_verified"]
     end
 
     test "a wrong code fails verification", %{conn: conn} do
@@ -1701,7 +1702,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           end)
         end)
 
-      assert events == ["Web OTP Verification Failed"]
+      assert events == ["otp_verification_failed"]
     end
 
     test "a verified code that cannot be turned into a sign in fails the sign in", %{conn: conn} do
@@ -1718,7 +1719,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           end
         end)
 
-      assert events == ["Web Sign In Failed"]
+      assert events == ["sign_in_failed"]
     end
 
     test "every request ends as exactly one sent or refused", %{conn: conn} do
@@ -1735,10 +1736,10 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
       outcomes =
         Enum.count(
           events,
-          &(&1 == "Web OTP Sent" or String.starts_with?(&1, "Web OTP Refused: "))
+          &(&1 == "otp_sent" or String.starts_with?(&1, "otp_refused_"))
         )
 
-      assert Enum.count(events, &(&1 == "Web OTP Requested")) == 4
+      assert Enum.count(events, &(&1 == "otp_requested")) == 4
       assert outcomes == 4
     end
 
