@@ -195,6 +195,20 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
                List.last(steps(log))
     end
 
+    test "a retried index-less failure is logged once", %{log: log} do
+      KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
+
+      failed =
+        log
+        |> callback(nil, nil, %{"callback_received_ts" => 2_000_000})
+        |> Map.delete("block_index")
+
+      KaapiChain.record_final(%{"success" => false, "error" => "llm down"}, failed)
+      KaapiChain.record_final(%{"success" => false, "error" => "llm down"}, failed)
+
+      assert [%{"component" => "stt"}, %{"component" => "llm", "final" => true}] = steps(log)
+    end
+
     test "ignores a response that is not part of a chain", %{log: log} do
       assert :ok =
                KaapiChain.record_final(%{"success" => true}, %{"webhook_log_id" => log.id})
@@ -282,7 +296,7 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
     end
   end
 
-  describe "keep_steps/2" do
+  describe "append_callback_result/2" do
     test "adds the steps, answer, media_url and conversation id to a successful log message",
          %{log: log} do
       KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
@@ -300,7 +314,8 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
         })
       )
 
-      message = KaapiChain.keep_steps(log.id, %{success: true, message: "https://x/a.ogg"})
+      message =
+        KaapiChain.append_callback_result(log.id, %{success: true, message: "https://x/a.ogg"})
 
       assert %{
                message: "answer",
@@ -316,14 +331,18 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
       KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
 
       message =
-        KaapiChain.keep_steps(log.id, %{success: false, message: nil, reason: "GCS upload failed"})
+        KaapiChain.append_callback_result(log.id, %{
+          success: false,
+          message: nil,
+          reason: "GCS upload failed"
+        })
 
       assert %{message: nil, media_url: nil, reason: "GCS upload failed"} = message
     end
 
     test "returns the message untouched without steps or a log", %{log: log} do
-      assert KaapiChain.keep_steps(log.id, %{success: true}) == %{success: true}
-      assert KaapiChain.keep_steps(nil, %{success: true}) == %{success: true}
+      assert KaapiChain.append_callback_result(log.id, %{success: true}) == %{success: true}
+      assert KaapiChain.append_callback_result(nil, %{success: true}) == %{success: true}
     end
   end
 end

@@ -25,7 +25,7 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   @doc "Appends a successful non-final block to the webhook log and emits its latency."
   @spec record_intermediate(map(), integer()) :: :ok
   def record_intermediate(response, received_ts),
-    do: record_block(response, received_ts, "success")
+    do: record_block(response, received_ts, status: "success")
 
   @doc """
   Appends the block that ended the chain (its last output, or a failure) to the log and emits its
@@ -34,10 +34,15 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   @spec record_final(map(), map()) :: :ok
   def record_final(result, %{"chain_blocks" => blocks} = response) when is_list(blocks) do
     if result["success"] == true and response["success"] != false do
-      record_block(response, response["callback_received_ts"], "success")
+      record_block(response, response["callback_received_ts"], status: "success", final: true)
     else
       error = response["reason"] || result["error"] || response["message"]
-      record_block(response, response["callback_received_ts"], "failure", error)
+
+      record_block(response, response["callback_received_ts"],
+        status: "failure",
+        error: error,
+        final: true
+      )
     end
   end
 
@@ -77,10 +82,10 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   Adds the chain's steps and outputs to the callback log message that replaces the log, so the
   final log row shows the whole result: the answer, `media_url`, `thread_id` and each block.
   """
-  @spec keep_steps(non_neg_integer() | nil, map()) :: map()
-  def keep_steps(nil, message), do: message
+  @spec append_callback_result(non_neg_integer() | nil, map()) :: map()
+  def append_callback_result(nil, message), do: message
 
-  def keep_steps(log_id, message) do
+  def append_callback_result(log_id, message) do
     case logged_steps(log_id) do
       [] ->
         message
@@ -122,15 +127,17 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   defp put_output(acc, _type, _message), do: acc
 
   # Kaapi's final and failure callbacks carry no block index: they belong to the block after the
-  # last one logged. A repeated delivery of a logged block is ignored (no second step or metric).
-  @spec record_block(map(), integer() | nil, String.t(), String.t() | nil) :: :ok
-  defp record_block(response, received_ts, status, error \\ nil)
-
-  defp record_block(%{"webhook_log_id" => log_id} = response, received_ts, status, error)
+  # last one logged. Once the chain has ended, and for a block already logged, a repeated delivery
+  # is ignored (no second step or metric), so a retried index-less callback is not counted twice.
+  @spec record_block(map(), integer() | nil, keyword()) :: :ok
+  defp record_block(%{"webhook_log_id" => log_id} = response, received_ts, opts)
        when is_integer(log_id) do
+    status = Keyword.fetch!(opts, :status)
+
     with %WebhookLog{} = log <- Repo.get(WebhookLog, log_id),
          json = log.response_json || %{},
          steps = Map.get(json, @steps_key, []),
+         false <- Enum.any?(steps, & &1["final"]),
          index = response["block_index"] || length(steps) + 1,
          false <- Enum.any?(steps, &(&1["block_index"] == index)) do
       component = component(response, index)
@@ -143,7 +150,8 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
         "status" => status,
         "output_type" => response["output_type"],
         "message" => if(status == "success", do: response["message"]),
-        "error" => error,
+        "error" => opts[:error],
+        "final" => Keyword.get(opts, :final, false),
         "thread_id" => response["thread_id"],
         "latency_ms" => latency_ms,
         "received_ts" => received_ts,
@@ -158,7 +166,7 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
     :ok
   end
 
-  defp record_block(_response, _received_ts, _status, _error), do: :ok
+  defp record_block(_response, _received_ts, _opts), do: :ok
 
   @spec component(map(), pos_integer()) :: String.t()
   defp component(%{"chain_blocks" => blocks}, index) when is_list(blocks),
