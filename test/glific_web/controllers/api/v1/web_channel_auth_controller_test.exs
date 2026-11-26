@@ -222,8 +222,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
           events =
             for {_pid,
                  {Appsignal, :increment_counter,
-                  ["web_channel_token_count", 1, %{event: event, organization_id: "1"}]},
-                 _result} <- call_history(Appsignal),
+                  ["web_channel_token_count", 1, %{event: event, organization_id: "1"}]}, _result} <-
+                  call_history(Appsignal),
                 do: event
 
           assert events == [
@@ -1597,8 +1597,8 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
         for {_pid,
              {Appsignal, :increment_counter,
-              ["web_channel_event_count", 1, %{event: event, organization_id: "1"}]},
-             _result} <- call_history(Appsignal),
+              ["web_channel_event_count", 1, %{event: event, organization_id: "1"}]}, _result} <-
+              call_history(Appsignal),
             do: event
       end
     end

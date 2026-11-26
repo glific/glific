@@ -4,7 +4,7 @@ An open source two-way communication platform for the social sector (WhatsApp-ba
 
 ## Tech Stack
 
-- **Elixir** ~> 1.18.3 / **Phoenix** 1.7 / **PostgreSQL** 15
+- **Elixir** ~> 1.19.7 / **Phoenix** 1.7 / **PostgreSQL** 15
 - **GraphQL API** via Absinthe (primary API) + REST endpoints for auth & webhooks
 - **Background Jobs**: Oban with 11+ specialized queues
 - **Deployment**: Gigalixir, CI/CD via GitHub Actions
