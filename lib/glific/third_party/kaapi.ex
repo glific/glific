@@ -618,6 +618,22 @@ defmodule Glific.ThirdParty.Kaapi do
   defp tts_model("google", _model), do: model_config(:tts_model)
   defp tts_model(_provider, model), do: model || ""
 
+  @doc """
+  TTS step for the speech-to-speech chain: Gemini flash-lite TTS with the voice the
+  `text_to_speech` node uses (the node's `voice`, else the Google default), as WhatsApp-ready ogg.
+  """
+  @spec sts_tts_step(String.t() | nil) :: map()
+  def sts_tts_step(voice) do
+    %{
+      provider: "google",
+      params: %{
+        model: "gemini-3.8-flash-lite-tts",
+        voice: tts_voice("google", voice),
+        response_format: "ogg"
+      }
+    }
+  end
+
   @spec tts_voice(String.t(), String.t() | nil) :: String.t()
   defp tts_voice("google", voice) when voice in [nil, ""], do: @default_google_tts_voice
   defp tts_voice(_provider, voice), do: voice || ""

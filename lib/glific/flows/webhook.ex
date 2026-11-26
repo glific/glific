@@ -19,6 +19,7 @@ defmodule Glific.Flows.Webhook do
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
 
   alias Glific.Flows.Webhooks.{
+    ChainProgress,
     Dispatcher,
     Instrumentation,
     Registry,
@@ -560,7 +561,10 @@ defmodule Glific.Flows.Webhook do
 
   @spec resume_flow(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume_flow(organization_id, result, response, contact) do
-    maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
+    maybe_update_log(
+      response["webhook_log_id"],
+      ChainProgress.keep_steps(response["webhook_log_id"], callback_log_message(result, response))
+    )
 
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
 
@@ -637,6 +641,9 @@ defmodule Glific.Flows.Webhook do
     |> Map.put("thread_id", conversation_id)
     |> Map.put("output_type", output_type)
     |> Map.put("message", message)
+    |> Map.put("mime_type", get_in(output, ["content", "mime_type"]))
+    |> Map.put("block_index", data["block_index"])
+    |> Map.put("total_blocks", data["total_blocks"])
   end
 
   # Fallback for unexpected formats
@@ -679,7 +686,7 @@ defmodule Glific.Flows.Webhook do
   def maybe_upload_tts_audio(%{"output_type" => "audio", "message" => base64_audio} = response) do
     {:ok, organization_id} = response["organization_id"] |> Glific.parse_maybe_integer()
 
-    case upload_tts_audio(base64_audio, organization_id) do
+    case upload_tts_audio(base64_audio, organization_id, response["mime_type"]) do
       {:ok, media_url} ->
         Map.put(response, "message", media_url)
 
@@ -697,14 +704,16 @@ defmodule Glific.Flows.Webhook do
 
   def maybe_upload_tts_audio(response), do: response
 
-  @spec upload_tts_audio(String.t() | nil, non_neg_integer()) ::
+  @spec upload_tts_audio(String.t() | nil, non_neg_integer(), String.t() | nil) ::
           {:ok, String.t()} | {:error, String.t()}
-  defp upload_tts_audio(nil, _organization_id), do: {:error, "No TTS audio content received"}
+  defp upload_tts_audio(nil, _organization_id, _mime_type),
+    do: {:error, "No TTS audio content received"}
 
-  defp upload_tts_audio(base64_audio, organization_id) do
+  defp upload_tts_audio(base64_audio, organization_id, mime_type) do
     uuid = Ecto.UUID.generate()
-    remote_name = "Kaapi/outbound/#{uuid}.mp3"
-    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
+    extension = audio_extension(mime_type)
+    remote_name = "Kaapi/outbound/#{uuid}.#{extension}"
+    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.#{extension}")
 
     with {:ok, decoded_audio} <- Base.decode64(base64_audio),
          :ok <- File.write(mp3_file, decoded_audio),
@@ -724,6 +733,13 @@ defmodule Glific.Flows.Webhook do
         {:error, message}
     end
   end
+
+  @spec audio_extension(String.t() | nil) :: String.t()
+  defp audio_extension(mime_type) when is_binary(mime_type) do
+    if mime_type =~ ~r/ogg|opus/i, do: "ogg", else: "mp3"
+  end
+
+  defp audio_extension(_mime_type), do: "mp3"
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(_new_organization_id, fields) when map_size(fields) == 0,

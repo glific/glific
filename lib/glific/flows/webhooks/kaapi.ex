@@ -112,19 +112,48 @@ defmodule Glific.Flows.Webhooks.Kaapi do
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
       Kaapi.normalize_kaapi_body(body)
     else
-      {:error, error_type, reason} when is_atom(error_type) ->
-        %{success: false, reason: reason, error_type: error_type}
-
-      {:error, %{status: status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body), http_status: status, error_type: :unknown}
-
-      {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason, error_type: :unknown}
-
-      {:error, reason} ->
-        %{success: false, reason: SafeLog.safe_inspect(reason), error_type: :unknown}
+      error -> dispatch_failure(error)
     end
   end
+
+  @doc """
+  Dispatches the async speech-to-speech chain (`/api/v1/llm/chain/sts`): STT, RAG against the
+  assistant's stored config, and TTS in one call. Kaapi POSTs one callback per block.
+  """
+  @spec call_sts(map(), list(), String.t(), map(), map()) :: map()
+  def call_sts(fields, headers, callback_url, request_metadata, audio) do
+    {_, org_api_key} = Enum.find(headers, {nil, nil}, fn {key, _v} -> key == "X-API-KEY" end)
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+
+    with {:ok, {kaapi_uuid, version_number}} <-
+           lookup_kaapi_config(fields["assistant_id"], organization_id),
+         payload =
+           build_sts_payload(
+             fields,
+             {kaapi_uuid, version_number},
+             audio,
+             callback_url,
+             request_metadata
+           ),
+         {:ok, body} <- ApiClient.call_sts(payload, org_api_key) do
+      Kaapi.normalize_kaapi_body(body)
+    else
+      error -> dispatch_failure(error)
+    end
+  end
+
+  @spec dispatch_failure(tuple()) :: map()
+  defp dispatch_failure({:error, error_type, reason}) when is_atom(error_type),
+    do: %{success: false, reason: reason, error_type: error_type}
+
+  defp dispatch_failure({:error, %{status: status, body: body}}),
+    do: %{success: false, reason: Jason.encode!(body), http_status: status, error_type: :unknown}
+
+  defp dispatch_failure({:error, reason}) when is_binary(reason),
+    do: %{success: false, reason: reason, error_type: :unknown}
+
+  defp dispatch_failure({:error, reason}),
+    do: %{success: false, reason: SafeLog.safe_inspect(reason), error_type: :unknown}
 
   # Upstream busy/overloaded/rate-limited → :service_unavailable (system), not config. Kept
   # specific — a bare "try again" also appears in plenty of 4xx config errors.
@@ -320,6 +349,61 @@ defmodule Glific.Flows.Webhooks.Kaapi do
       request_metadata: request_metadata
     }
   end
+
+  @spec build_sts_payload(map(), {String.t(), non_neg_integer()}, map(), String.t(), map()) ::
+          map()
+  defp build_sts_payload(
+         fields,
+         {kaapi_uuid, version_number},
+         audio,
+         callback_url,
+         request_metadata
+       ) do
+    %{
+      query: %{
+        input: %{
+          type: "audio",
+          content: %{format: "base64", value: audio.base64, mime_type: audio.mime_type}
+        }
+      },
+      config: %{
+        stt: sts_stt_step(fields),
+        llm: %{
+          id: kaapi_uuid,
+          version: version_number,
+          conversation: build_conversation(resolved(fields["thread_id"]))
+        },
+        tts: Kaapi.sts_tts_step(resolved(fields["voice"]))
+      },
+      callback_url: callback_url,
+      request_metadata: request_metadata
+    }
+  end
+
+  @spec sts_stt_step(map()) :: map()
+  defp sts_stt_step(fields) do
+    params =
+      %{}
+      |> put_present(:input_language, resolved(fields["input_language"]))
+      |> put_present(:output_language, resolved(fields["target_language"]))
+      |> put_present(:instructions, resolved(fields["instructions"]))
+
+    if params == %{}, do: %{provider: "google"}, else: %{provider: "google", params: params}
+  end
+
+  @spec put_present(map(), atom(), String.t() | nil) :: map()
+  defp put_present(map, _key, nil), do: map
+  defp put_present(map, key, value), do: Map.put(map, key, value)
+
+  # A flow variable with no value reaches us as its literal expression (`@results.x.thread_id`
+  # on a first turn); sending it on makes Kaapi reject the whole chain.
+  @spec resolved(any()) :: String.t() | nil
+  defp resolved(value) when is_binary(value) do
+    value = String.trim(value)
+    if value == "" or String.starts_with?(value, "@"), do: nil, else: value
+  end
+
+  defp resolved(_value), do: nil
 
   @spec build_conversation(String.t() | nil) :: map()
   defp build_conversation(nil), do: %{auto_create: true}

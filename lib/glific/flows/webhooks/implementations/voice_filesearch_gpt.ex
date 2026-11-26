@@ -7,23 +7,43 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
   use Glific.Flows.Webhooks.Async, name: "voice-filesearch-gpt"
 
+  alias Glific.Flags
   alias Glific.Flows.Webhooks.Behaviour
   alias Glific.Flows.Webhooks.ErrorReporter
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiWebhook
+  alias Glific.Flows.Webhooks.VoiceSts
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
   alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.Kaapi
 
+  # The speech-to-speech chain runs STT inside the await window; staging runs took up to 40s for
+  # a 3s note, leaving too little headroom under the 60s async default.
+  @doc "Default timeout in seconds while awaiting the voice callback."
+  @impl true
+  @spec wait_time_default() :: non_neg_integer()
+  def wait_time_default, do: 120
+
   @doc """
   Fires the voice LLM pipeline: synchronous Gemini STT, then the async Kaapi LLM call.
   """
   @impl true
   @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
-  def call(fields, _ctx) do
+  def call(fields, ctx) do
+    if sts_enabled?(ctx), do: VoiceSts.call(fields, ctx), else: call_legacy(fields)
+  end
+
+  @spec sts_enabled?(map()) :: boolean()
+  defp sts_enabled?(%{organization_id: organization_id}) when is_integer(organization_id),
+    do: Flags.get_flag_enabled(:voice_sts_enabled, Partners.organization(organization_id))
+
+  defp sts_enabled?(_ctx), do: false
+
+  @spec call_legacy(map()) :: Behaviour.result()
+  defp call_legacy(fields) do
     with {:ok, {organization_id, flow_id, contact_id}} <- KaapiWebhook.parse_flow_fields(fields),
          {:ok, %{"api_key" => api_key}} when is_binary(api_key) <-
            Kaapi.fetch_kaapi_creds(organization_id) do
@@ -154,6 +174,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   """
   @impl true
   @spec handle_callback(map(), map(), Behaviour.ctx()) :: map()
+  def handle_callback(result, %{"call_type" => "voice_sts"} = response, ctx),
+    do: VoiceSts.handle_callback(result, response, ctx)
+
   def handle_callback(%{"success" => true}, response, %{organization_id: organization_id}) do
     tts_start = System.monotonic_time()
 

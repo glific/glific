@@ -83,6 +83,19 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Starts the async speech-to-speech chain (STT -> RAG -> TTS) in Kaapi.
+  """
+  @spec call_sts(map(), binary()) :: {:ok, any()} | {:error, any()}
+  def call_sts(payload, org_api_key) do
+    opts = [adapter: [recv_timeout: 60_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/llm/chain/sts", payload, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Create an assistant in Kaapi
   """
   @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, String.t()}
