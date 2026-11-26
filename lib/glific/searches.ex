@@ -502,15 +502,15 @@ defmodule Glific.Searches do
     # Temporarily using a runtime configurable repo module as a failsafe
     # so we can switch between the replica and primary database in case of a failure.
     search_item_tasks = [
-      Task.async(fn ->
+      Glific.Task.Supervisor.async(fn ->
         repo().put_process_state(org_id)
         get_filtered_contacts(term, args, user)
       end),
-      Task.async(fn ->
+      Glific.Task.Supervisor.async(fn ->
         repo().put_process_state(org_id)
         get_filtered_messages_with_term(term, args)
       end),
-      Task.async(fn ->
+      Glific.Task.Supervisor.async(fn ->
         repo().put_process_state(org_id)
         get_filtered_labeled_message(term, args)
       end)
@@ -532,11 +532,11 @@ defmodule Glific.Searches do
     org_id = Repo.get_organization_id()
 
     search_item_tasks = [
-      Task.async(fn ->
+      Glific.Task.Supervisor.async(fn ->
         Repo.put_process_state(org_id)
         get_filtered_wa_groups_with_term(term, args)
       end),
-      Task.async(fn ->
+      Glific.Task.Supervisor.async(fn ->
         Repo.put_process_state(org_id)
         get_filtered_wa_messages_with_term(term, args)
       end)

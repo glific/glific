@@ -449,6 +449,9 @@ defmodule Glific.Erase do
   def delete_benefeciary_data(org_id, channel, identifier) do
     get_value =
       if Application.get_env(:glific, :environment) in [:prod, :dev] do
+        # A supervised task does not inherit this console's group leader, so IO.gets would read
+        # the node's stdin instead.
+        # credo:disable-for-next-line GlificCredo.Checks.SupervisedTask
         Task.async(fn ->
           IO.gets(
             "Are you sure want to delete data for #{identifier} of org_id #{org_id}\nPress Y or y to continue, auto aborts if idle for 10s\n"

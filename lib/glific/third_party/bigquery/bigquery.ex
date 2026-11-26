@@ -466,7 +466,7 @@ defmodule Glific.BigQuery do
         organization_id
         |> bigquery_tables()
         |> Enum.each(fn {table_id, schema_fn} ->
-          Task.async(fn ->
+          Glific.Task.Supervisor.async(fn ->
             Repo.put_process_state(organization_id)
 
             Schema

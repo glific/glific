@@ -202,7 +202,7 @@ defmodule Glific.WhatsappFormsResponses do
   @spec save_media_list([map()], non_neg_integer()) :: [map()]
   defp save_media_list(media_list, organization_id) do
     media_list
-    |> Task.async_stream(
+    |> Glific.Task.Supervisor.async_stream(
       fn media ->
         Repo.put_process_state(organization_id)
         save_one_media(media, organization_id)

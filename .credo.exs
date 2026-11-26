@@ -41,7 +41,11 @@
       # If you create your own checks, you must specify the source files for
       # them here, so they can be loaded by Credo before running the analysis.
       #
-      requires: ["./.credo/checks/no_raw_inspect.ex", "./.credo/checks/contact_phone_lookup.ex"],
+      requires: [
+        "./.credo/checks/no_raw_inspect.ex",
+        "./.credo/checks/contact_phone_lookup.ex",
+        "./.credo/checks/supervised_task.ex"
+      ],
       #
       # If you want to enforce a style guide and need a more traditional linting
       # experience, you can change `strict` to `true` below:
@@ -169,7 +173,10 @@
           {GlificCredo.Checks.NoRawInspect, []},
           # Forbid looking a contact up by phone outside `Glific.Contacts`; use
           # `Contacts.fetch_by_identity/2` so a nil phone never reaches the query.
-          {GlificCredo.Checks.ContactPhoneLookup, []}
+          {GlificCredo.Checks.ContactPhoneLookup, []},
+          # Forbid starting tasks with `Task`/`Task.Supervisor` directly; use
+          # `Glific.Task.Supervisor` so the task keeps the caller's Logger metadata (org_id).
+          {GlificCredo.Checks.SupervisedTask, []}
         ],
         disabled: [
           #

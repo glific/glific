@@ -21,7 +21,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.StatusController do
   def status(conn, %{"status" => status, "phone_id" => phone_id} = params) do
     organization_id = Repo.get_organization_id()
 
-    Task.start(fn ->
+    Glific.Task.Supervisor.start_child(fn ->
       Repo.put_process_state(organization_id)
       WAManagedPhones.status(status, phone_id)
     end)

@@ -306,7 +306,7 @@ defmodule Glific.Saas.Onboard do
     org_id = Saas.organization_id()
 
     task =
-      Task.async(fn ->
+      Glific.Task.Supervisor.async(fn ->
         Repo.put_process_state(org_id)
 
         Partners.get_credential(%{

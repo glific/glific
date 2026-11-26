@@ -483,7 +483,7 @@ defmodule Glific.Contacts do
       "DELETE FROM flow_contexts #{where}"
     ]
     |> Enum.map(
-      &Task.async(fn ->
+      &Glific.Task.Supervisor.async(fn ->
         Repo.query!(&1, [], timeout: @delete_timeout, skip_organization_id: true)
       end)
     )

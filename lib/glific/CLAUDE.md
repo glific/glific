@@ -110,6 +110,17 @@ end
   call is only for events you are _not_ also reporting to AppSignal.
 - Bang functions raise; non-bang return tagged tuples. Don't mix the two contracts in one fn.
 
+- **Start every background task through `Glific.Task.Supervisor`, never `Task` or
+  `Task.Supervisor` directly.** A spawned process starts with empty Logger metadata, so its logs
+  and crash report lose `org_id`/`user_id`/`request_id`; the wrapper copies the caller's metadata
+  in. Use `start_child/1` (fire-and-forget), `async/1` (linked, awaited), `async_nolink/1`,
+  `async_stream/3` or `async_stream_nolink/3`; pass `supervisor:` to the stream functions to run
+  under another supervisor (e.g. `Glific.Broadcast.Supervisor`). It copies **only Logger
+  metadata** — a task that queries the DB still calls `Repo.put_process_state/1` itself. The
+  `GlificCredo.Checks.SupervisedTask` Credo check enforces this; the one exception is a task that
+  must use the console's IO (`IO.gets`/`IO.puts` from IEx), since supervised tasks don't inherit
+  the caller's group leader — disable the check on that line with a comment saying why.
+
 - **Never `inspect/1` a `%Tesla.Env{}` (or any value that may hold one) into a log/error
   string — use `Glific.SafeLog.safe_inspect/1` instead.** A Tesla.Env's `__client__` carries the
   middleware chain, including live `Authorization: Bearer …` tokens; plain `inspect` leaks them

@@ -16,7 +16,7 @@ defmodule GlificWeb.Resolvers.AskGlific do
     # response is its own when multiple tabs share the same user topic.
     request_id = Map.get(params, :request_id)
 
-    Task.start(fn ->
+    Glific.Task.Supervisor.start_child(fn ->
       Glific.Repo.put_process_state(user.organization_id)
 
       topic = "#{user.organization_id}:#{user.id}"

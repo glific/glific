@@ -531,7 +531,9 @@ defmodule Glific.BigQueryTest do
     test_pid = self()
     contacts_url = dataset_url <> "/tables/contacts"
 
-    Tesla.Mock.mock(fn
+    # The table updates run in supervised tasks, whose ancestor is the task supervisor rather than
+    # this test, so they only see a global mock.
+    refused_contacts_update = fn
       %Tesla.Env{method: :get, url: ^dataset_url} ->
         %Tesla.Env{status: 200, body: "{}"}
 
@@ -545,7 +547,10 @@ defmodule Glific.BigQueryTest do
 
       %Tesla.Env{method: :put} ->
         %Tesla.Env{status: 200, body: "{}"}
-    end)
+    end
+
+    Tesla.Mock.mock(refused_contacts_update)
+    Tesla.Mock.mock_global(refused_contacts_update)
 
     log =
       ExUnit.CaptureLog.capture_log(fn ->

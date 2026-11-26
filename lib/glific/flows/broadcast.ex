@@ -95,7 +95,7 @@ defmodule Glific.Flows.Broadcast do
   """
   @spec broadcast_flow_to_wa_group(Flow.t(), list()) :: :ok
   def broadcast_flow_to_wa_group(flow, group_ids) do
-    Task.async_stream(group_ids, fn group_id ->
+    Glific.Task.Supervisor.async_stream(group_ids, fn group_id ->
       Repo.put_process_state(flow.organization_id)
 
       wa_group_collections =
@@ -404,8 +404,7 @@ defmodule Glific.Flows.Broadcast do
   @spec flow_tasks(Flow.t(), Contact.t(), Keyword.t()) :: :ok
   defp flow_tasks(flow, contacts, opts) do
     stream =
-      Task.Supervisor.async_stream_nolink(
-        Glific.Broadcast.Supervisor,
+      Glific.Task.Supervisor.async_stream_nolink(
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
@@ -426,6 +425,7 @@ defmodule Glific.Flows.Broadcast do
 
           :ok
         end,
+        supervisor: Glific.Broadcast.Supervisor,
         ordered: false,
         timeout: 11_000,
         on_timeout: :kill_task,
@@ -438,14 +438,14 @@ defmodule Glific.Flows.Broadcast do
   @spec wa_group_tasks(Flow.t(), [non_neg_integer()], Keyword.t()) :: :ok
   defp wa_group_tasks(flow, wa_group_ids, opts) do
     stream =
-      Task.Supervisor.async_stream_nolink(
-        Glific.Broadcast.Supervisor,
+      Glific.Task.Supervisor.async_stream_nolink(
         wa_group_ids,
         fn wa_group_id ->
           Repo.put_process_state(flow.organization_id)
           FlowContext.init_wa_group_context(flow, wa_group_id, @status, opts)
           :ok
         end,
+        supervisor: Glific.Broadcast.Supervisor,
         ordered: false,
         timeout: 5_000,
         on_timeout: :kill_task,
@@ -458,8 +458,7 @@ defmodule Glific.Flows.Broadcast do
   @spec message_tasks(map(), Contact.t(), Keyword.t()) :: :ok
   defp message_tasks(message_params, contacts, opts) do
     stream =
-      Task.Supervisor.async_stream_nolink(
-        Glific.Broadcast.Supervisor,
+      Glific.Task.Supervisor.async_stream_nolink(
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
@@ -487,6 +486,7 @@ defmodule Glific.Flows.Broadcast do
 
           :ok
         end,
+        supervisor: Glific.Broadcast.Supervisor,
         ordered: false,
         timeout: 5_000,
         on_timeout: :kill_task,
