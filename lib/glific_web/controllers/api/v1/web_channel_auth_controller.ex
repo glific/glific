@@ -22,6 +22,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     Metrics,
     OTP,
     Partners,
+    Providers.Web.Instrumentation,
     Repo,
     SafeLog
   }
@@ -151,6 +152,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
          :ok <- record_optin(optin?, contact.phone, organization_id) do
       record_history(contact, :web_login_code_verified, "Logged into web")
       Metrics.increment("Web OTP Verified", organization_id)
+      Instrumentation.track_action("sign_in", :success, organization_id)
 
       json(conn, %{
         data: %{
@@ -163,6 +165,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
     else
       {:error, error} ->
         Metrics.increment("Web Sign In Failed", organization_id)
+        Instrumentation.track_action("sign_in", :failure, organization_id)
 
         Glific.log_error(
           "Verified a web channel OTP but could not resolve the contact for #{normalized}: " <>
@@ -298,9 +301,11 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
          {:ok, _message} <-
            Messages.create_and_send_otp_verification_message(contact, code, @otp_exemption) do
       Metrics.increment("Web OTP Sent", organization_id)
+      Instrumentation.track_action("otp_send", :success, organization_id)
     else
       error ->
         Metrics.increment("Web OTP Refused: Undeliverable", organization_id)
+        track_otp_send_failure(error, organization_id)
 
         # send_appsignal? false: a contact who is opted out or simply not on WhatsApp is ordinary
         # traffic for a public login form, so paging would scale the noise with usage. safe_inspect
@@ -316,6 +321,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   rescue
     exception ->
       Metrics.increment("Web OTP Refused: Undeliverable", organization_id)
+      Instrumentation.track_action("otp_send", :failure, organization_id)
 
       # Unlike the routine failures above, a raise is a real misconfiguration worth paging on.
       Glific.log_error(
@@ -400,6 +406,13 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
       Glific.log_exception(error)
       :ok
   end
+
+  # A contact we may not message (opted out, outside the window) is ordinary traffic, not a failure.
+  @spec track_otp_send_failure(any(), non_neg_integer()) :: :ok
+  defp track_otp_send_failure(false, _organization_id), do: :ok
+
+  defp track_otp_send_failure(_error, organization_id),
+    do: Instrumentation.track_action("otp_send", :failure, organization_id)
 
   @spec can_send_message_to?(Contact.t()) :: boolean()
   defp can_send_message_to?(contact) do

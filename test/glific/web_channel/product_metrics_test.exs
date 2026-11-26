@@ -31,6 +31,18 @@ defmodule Glific.WebChannel.ProductMetricsTest do
 
   defp enabled(fun), do: WebChannelFlagHelpers.with_web_channel_enabled(1, fun)
 
+  # The AppSignal counters the web provider records while `fun` runs, as {metric, tags}.
+  defp provider_counted(fun) do
+    with_mock Appsignal, [:passthrough],
+      increment_counter: fn _metric, _count, _tags -> :ok end do
+      fun.()
+
+      for {_pid, {Appsignal, :increment_counter, [metric, 1, %{provider: "web"} = tags]}, _result} <-
+            call_history(Appsignal),
+          do: {metric, Map.drop(tags, [:provider, :organization_id])}
+    end
+  end
+
   describe "inbound messages" do
     test "a text message is counted by its type", %{contact: contact} do
       events =
@@ -130,6 +142,41 @@ defmodule Glific.WebChannel.ProductMetricsTest do
         end)
 
       assert events == []
+    end
+  end
+
+  describe "AppSignal provider counters" do
+    test "an inbound message is received under the web provider", %{contact: contact} do
+      counters =
+        provider_counted(fn ->
+          enabled(fn -> {:ok, _} = WebMessage.receive_message(contact, %{body: "hi"}) end)
+        end)
+
+      assert counters == [{"provider_receive_count", %{type: "text"}}]
+    end
+
+    test "a delivered outbound message is a successful send", %{contact: contact} do
+      message = outbound(contact, %{})
+
+      counters =
+        provider_counted(fn -> enabled(fn -> {:ok, _} = Message.send_text(message) end) end)
+
+      assert counters == [{"provider_send_count", %{status: "success", type: "session"}}]
+    end
+
+    test "an outbound message that cannot be marked sent is a failed send", %{contact: contact} do
+      message = outbound(contact, %{})
+      changeset = Ecto.Changeset.add_error(Ecto.Changeset.change(message), :status, "is invalid")
+
+      counters =
+        provider_counted(fn ->
+          with_mock Glific.Messages, [:passthrough],
+            update_message: fn _message, _attrs -> {:error, changeset} end do
+            enabled(fn -> {:error, _} = Message.send_text(message) end)
+          end
+        end)
+
+      assert counters == [{"provider_send_count", %{status: "error", type: "session"}}]
     end
   end
 end

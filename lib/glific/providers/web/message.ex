@@ -25,6 +25,7 @@ defmodule Glific.Providers.Web.Message do
     Messages,
     Messages.Message,
     Metrics,
+    Providers.Web.Instrumentation,
     Repo
   }
 
@@ -60,13 +61,19 @@ defmodule Glific.Providers.Web.Message do
 
   @spec deliver(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
   defp deliver(message) do
-    with {:ok, sent} <- mark_sent(message) do
-      sent
-      |> Repo.preload(:media)
-      |> broadcast()
+    case mark_sent(message) do
+      {:ok, sent} ->
+        sent
+        |> Repo.preload(:media)
+        |> broadcast()
 
-      count_sent(sent)
-      {:ok, sent}
+        count_sent(sent)
+        Instrumentation.track_send(:success, organization_id: sent.organization_id)
+        {:ok, sent}
+
+      {:error, _reason} = error ->
+        Instrumentation.track_send(:error, organization_id: message.organization_id)
+        error
     end
   end
 
