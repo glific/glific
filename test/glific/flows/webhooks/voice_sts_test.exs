@@ -94,6 +94,18 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
     end)
   end
 
+  # The flag cache outlives the test's DB sandbox (on_exit runs too late to clear it), so the flag
+  # is switched back off here even when the body raises.
+  defp with_sts_flag(actor, fun) do
+    FunWithFlags.enable(:voice_sts_enabled, for_actor: actor)
+
+    try do
+      fun.()
+    after
+      FunWithFlags.disable(:voice_sts_enabled, for_actor: actor)
+    end
+  end
+
   defp sts_request(fields) do
     assert {:ok, _ack} = VoiceSts.call(fields, %{})
     assert_received {:sts, body}
@@ -362,12 +374,12 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
 
     test "with voice_sts_enabled the node dispatches to Kaapi speech-to-speech",
          %{fields: fields, actor: actor, organization_id: organization_id} do
-      FunWithFlags.enable(:voice_sts_enabled, for_actor: actor)
       mock_kaapi()
 
-      result = VoiceFilesearchGpt.call(fields, %{organization_id: organization_id})
-      # The flag cache outlives the test's DB sandbox, so switch it back off here.
-      FunWithFlags.disable(:voice_sts_enabled, for_actor: actor)
+      result =
+        with_sts_flag(actor, fn ->
+          VoiceFilesearchGpt.call(fields, %{organization_id: organization_id})
+        end)
 
       assert {:ok, _ack} = result
       assert_received {:sts, _body}
@@ -395,9 +407,7 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
 
     test "waits up to 120 seconds for the callback with the flag on, 60 with it off",
          %{actor: actor} do
-      FunWithFlags.enable(:voice_sts_enabled, for_actor: actor)
-      sts_wait = VoiceFilesearchGpt.wait_time_default()
-      FunWithFlags.disable(:voice_sts_enabled, for_actor: actor)
+      sts_wait = with_sts_flag(actor, &VoiceFilesearchGpt.wait_time_default/0)
 
       assert sts_wait == 120
       assert VoiceFilesearchGpt.wait_time_default() == 60
