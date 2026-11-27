@@ -205,7 +205,7 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
              ]
     end
 
-    test "fills missing tags with unknown and a success status" do
+    test "fills missing tags, including status, with unknown" do
       %{distributions: [{"kaapi_chain_latency", 10, tags}]} =
         capture(fn -> Instrumentation.track_chain_block(10, %{}) end)
 
@@ -214,7 +214,7 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
                webhook_name: "unknown",
                component: "unknown",
                size_bucket: "unknown",
-               status: "success"
+               status: "unknown"
              }
     end
 

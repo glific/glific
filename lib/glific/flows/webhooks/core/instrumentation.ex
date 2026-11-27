@@ -292,7 +292,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       webhook_name: tags[:webhook_name] || "unknown",
       component: tags[:component] || "unknown",
       size_bucket: tags[:size_bucket] || "unknown",
-      status: tags[:status] || "success"
+      status: tags[:status] || "unknown"
     })
 
     :ok
