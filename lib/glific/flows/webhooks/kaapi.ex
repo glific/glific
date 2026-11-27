@@ -91,7 +91,8 @@ defmodule Glific.Flows.Webhooks.Kaapi do
     {_, org_api_key} = Enum.find(headers, {nil, nil}, fn {key, _v} -> key == "X-API-KEY" end)
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
 
-    with {:ok, {kaapi_uuid, version_number}} <-
+    with :ok <- validate_question(fields["question"]),
+         {:ok, {kaapi_uuid, version_number}} <-
            lookup_kaapi_config(fields["assistant_id"], organization_id),
          payload =
            build_unified_llm_payload(
@@ -248,6 +249,16 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   end
 
   def validate_media(_), do: {:error, :invalid_media_url, "Media URL is needed"}
+
+  # OpenAI rejects an empty input with a 400, so a blank question never leaves Glific.
+  @spec validate_question(any()) :: :ok | {:error, ErrorType.t(), String.t()}
+  defp validate_question(question) when is_binary(question) do
+    if String.trim(question) == "",
+      do: {:error, :invalid_input, "Question is empty"},
+      else: :ok
+  end
+
+  defp validate_question(_), do: {:error, :invalid_input, "Question is empty"}
 
   # An unresolvable assistant is a flow-author/config mistake → config.
   @spec lookup_kaapi_config(String.t() | nil, non_neg_integer()) ::

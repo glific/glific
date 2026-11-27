@@ -497,7 +497,7 @@ defmodule Glific.MessagesTest do
 
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
       message = message |> Repo.preload(:contact)
-      assert :ok = Messages.clear_messages(message.contact)
+      assert :ok = Messages.clear_messages(message.contact, :whatsapp)
 
       assert {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
                Repo.fetch_by(Message, %{
@@ -509,7 +509,32 @@ defmodule Glific.MessagesTest do
       assert {:error, _} = Repo.fetch(MessageMedia, message_media.id)
     end
 
-    test "clear_messages/1 deletes messages for simulator and sends a message with default body",
+    test "clear_messages/2 on one channel keeps the other channel's messages and unread state",
+         attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      message_attrs = %{sender_id: contact.id, receiver_id: contact.id, contact_id: contact.id}
+      whatsapp = Fixtures.message_fixture(message_attrs)
+      web = Fixtures.message_fixture(Map.put(message_attrs, :channel, :web))
+
+      {:ok, contact} =
+        contact.id |> Contacts.get_contact!() |> Contacts.update_contact(%{is_org_read: false})
+
+      assert :ok = Messages.clear_messages(contact, :web)
+
+      assert {:error, _} = Repo.fetch(Message, web.id)
+      assert {:ok, _} = Repo.fetch(Message, whatsapp.id)
+      after_web = Contacts.get_contact!(contact.id)
+      assert after_web.last_message_number == contact.last_message_number
+      assert after_web.is_org_read == false
+
+      assert :ok = contact.id |> Contacts.get_contact!() |> Messages.clear_messages(:whatsapp)
+
+      assert {:error, _} = Repo.fetch(Message, whatsapp.id)
+      assert %{last_message_number: 0, is_org_read: true} = Contacts.get_contact!(contact.id)
+    end
+
+    test "clear_messages/2 deletes messages for simulator and sends a message with default body",
          attrs do
       message = message_fixture(attrs)
 
@@ -519,7 +544,7 @@ defmodule Glific.MessagesTest do
           organization_id: message.organization_id
         })
 
-      assert :ok = Messages.clear_messages(contact)
+      assert :ok = Messages.clear_messages(contact, :whatsapp)
 
       {:ok, message} =
         Repo.fetch_by(Message, %{

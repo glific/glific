@@ -72,7 +72,7 @@ defmodule Glific.AppsignalTest do
         Appsignal.handle_event([:oban, :job, event], measurement, meta, nil)
 
         called(
-          Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", 3.0, %{
+          Elixir.Appsignal.add_distribution_value("inbound_job_hold_time", 3000, %{
             organization_id: "1"
           })
         )
@@ -93,6 +93,62 @@ defmodule Glific.AppsignalTest do
 
     test "records nothing for jobs on other queues" do
       refute job_event(:stop, "default", 3)
+    end
+  end
+
+  describe "handle_event [:oban, :job, _] messaging queue latency" do
+    setup do
+      sampling_rate = Application.get_env(:glific, :appsignal_sampling_rate)
+      Application.put_env(:glific, :appsignal_sampling_rate, 0)
+      on_exit(fn -> Application.put_env(:glific, :appsignal_sampling_rate, sampling_rate) end)
+    end
+
+    defp queue_latency_event(event, queue) do
+      job = %Oban.Job{
+        args: %{"organization_id" => 1},
+        inserted_at: DateTime.utc_now(),
+        scheduled_at: DateTime.utc_now()
+      }
+
+      meta = %{
+        id: 1,
+        queue: queue,
+        worker: "TestWorker",
+        args: job.args,
+        job: job,
+        attempt: 1,
+        max_attempts: 1,
+        kind: :error,
+        error: %RuntimeError{message: "boom"},
+        stacktrace: []
+      }
+
+      queue_time = System.convert_time_unit(250, :millisecond, :native)
+      measurement = %{queue_time: queue_time, duration: 0}
+
+      with_mock Elixir.Appsignal, [:passthrough], add_distribution_value: fn _, _, _ -> :ok end do
+        Appsignal.handle_event([:oban, :job, event], measurement, meta, nil)
+
+        called(
+          Elixir.Appsignal.add_distribution_value("oban_messaging_queue_latency", 250, %{
+            queue: queue
+          })
+        )
+      end
+    end
+
+    test "records queue latency for every messaging queue, unsampled" do
+      for queue <- ["gupshup_inbound", "gupshup", "gupshup_high_tps"] do
+        assert queue_latency_event(:stop, queue)
+      end
+    end
+
+    test "records queue latency for a messaging job that fails" do
+      assert queue_latency_event(:exception, "gupshup")
+    end
+
+    test "records nothing for jobs on other queues" do
+      refute queue_latency_event(:stop, "default")
     end
   end
 

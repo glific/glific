@@ -18,6 +18,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     Contacts.Contact,
     GCS.ObjectMetadata,
     Messages,
+    Providers.Web.Instrumentation,
     Providers.Web.Upload,
     Repo,
     WebChannel.Rooms
@@ -83,6 +84,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
     cond do
       now >= exp + @grace_seconds ->
+        Instrumentation.track_token("expired", socket.assigns.organization_id)
         push(socket, "session_expired", %{})
         {:stop, :normal, socket}
 

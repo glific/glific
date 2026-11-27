@@ -1,5 +1,5 @@
-mutation terminateContactFlows($contactId: ID!) {
-  terminateContactFlows(contactId: $contactId) {
+mutation terminateContactFlows($contactId: ID!, $channel: MessageChannelEnum) {
+  terminateContactFlows(contactId: $contactId, channel: $channel) {
 	success
 	errors {
 		key
