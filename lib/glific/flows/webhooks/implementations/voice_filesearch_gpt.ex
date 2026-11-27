@@ -16,16 +16,20 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   alias Glific.Flows.Webhooks.VoiceSts
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
+  alias Glific.Repo
   alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.Kaapi
 
   # The speech-to-speech chain runs STT inside the await window; staging runs took up to 40s for
-  # a 3s note, leaving too little headroom under the 60s async default.
-  @doc "Default timeout in seconds while awaiting the voice callback."
+  # a 3s note, leaving too little headroom under the 60s async default. The legacy path runs STT
+  # before parking, so it keeps 60s.
+  @doc "Default timeout in seconds while awaiting the voice callback: 120 with voice_sts_enabled, else 60."
   @impl true
   @spec wait_time_default() :: non_neg_integer()
-  def wait_time_default, do: 120
+  def wait_time_default do
+    if sts_enabled?(%{organization_id: Repo.get_organization_id()}), do: 120, else: 60
+  end
 
   @doc """
   Fires the voice LLM pipeline: synchronous Gemini STT, then the async Kaapi LLM call.

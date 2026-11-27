@@ -363,8 +363,14 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
              }) == response
     end
 
-    test "waits up to 120 seconds for the callback by default" do
-      assert VoiceFilesearchGpt.wait_time_default() == 120
+    test "waits up to 120 seconds for the callback with the flag on, 60 with it off",
+         %{actor: actor} do
+      FunWithFlags.enable(:voice_sts_enabled, for_actor: actor)
+      sts_wait = VoiceFilesearchGpt.wait_time_default()
+      FunWithFlags.disable(:voice_sts_enabled, for_actor: actor)
+
+      assert sts_wait == 120
+      assert VoiceFilesearchGpt.wait_time_default() == 60
     end
   end
 end
