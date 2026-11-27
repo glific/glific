@@ -113,7 +113,7 @@ defmodule Glific.Flows.Webhooks.VoiceSts do
   @spec shape(map(), String.t() | nil, Behaviour.ctx()) :: map()
   defp shape(response, media_url, %{organization_id: organization_id}) do
     outputs = KaapiChain.outputs(response["webhook_log_id"])
-    answer = outputs["text"] || ""
+    answer = outputs["blocks"]["llm"] || ""
 
     if answer == "" do
       {:ok, organization_id} = Glific.parse_maybe_integer(organization_id)

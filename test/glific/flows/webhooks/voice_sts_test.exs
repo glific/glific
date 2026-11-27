@@ -293,6 +293,36 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
              } = VoiceSts.handle_callback(%{"success" => true}, response, ctx)
     end
 
+    test "the answer comes from the LLM block even when the transcript is logged after it",
+         %{ctx: ctx, organization_id: organization_id} do
+      log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+
+      block = %{
+        "webhook_log_id" => log.id,
+        "organization_id" => organization_id,
+        "call_type" => "voice_sts",
+        "chain_blocks" => ["stt", "llm", "tts"],
+        "total_blocks" => 3,
+        "output_type" => "text",
+        "kaapi_dispatch_ts" => 1_000_000
+      }
+
+      KaapiChain.record_intermediate(
+        Map.merge(block, %{"block_index" => 2, "message" => "the answer"}),
+        1_500_000
+      )
+
+      KaapiChain.record_intermediate(
+        Map.merge(block, %{"block_index" => 1, "message" => "hello"}),
+        2_000_000
+      )
+
+      response = %{"webhook_log_id" => log.id, "message" => "https://x/a.ogg"}
+
+      assert %{"message" => "the answer", "transcript" => "hello"} =
+               VoiceSts.handle_callback(%{"success" => true}, response, ctx)
+    end
+
     test "a degraded chain resumes with the text answer and no audio", %{base: base, ctx: ctx} do
       response = Map.merge(base, %{"chain_degraded" => true, "success" => true})
 
