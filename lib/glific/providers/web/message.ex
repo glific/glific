@@ -24,6 +24,7 @@ defmodule Glific.Providers.Web.Message do
   alias Glific.{
     Messages,
     Messages.Message,
+    Providers.Web.Instrumentation,
     Repo
   }
 
@@ -59,14 +60,28 @@ defmodule Glific.Providers.Web.Message do
 
   @spec deliver(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
   defp deliver(message) do
-    with {:ok, sent} <- mark_sent(message) do
-      sent
-      |> Repo.preload(:media)
-      |> broadcast()
+    case mark_sent(message) do
+      {:ok, sent} ->
+        sent
+        |> Repo.preload(:media)
+        |> broadcast()
 
-      {:ok, sent}
+        count_sent(sent)
+        Instrumentation.track_send(:success, organization_id: sent.organization_id)
+        {:ok, sent}
+
+      {:error, _reason} = error ->
+        Instrumentation.track_send(:error, organization_id: message.organization_id)
+        error
     end
   end
+
+  @spec count_sent(Message.t()) :: :ok
+  defp count_sent(%{flow_id: nil} = message),
+    do: Instrumentation.track_event("message_sent_staff", message.organization_id)
+
+  defp count_sent(message),
+    do: Instrumentation.track_event("message_sent_flow", message.organization_id)
 
   # `:sent`, not `:delivered`: nothing here acknowledges receipt, and the inbox would show the
   # claim to staff.

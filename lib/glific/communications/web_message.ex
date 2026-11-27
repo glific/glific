@@ -19,6 +19,7 @@ defmodule Glific.Communications.WebMessage do
     Messages.Message,
     Partners,
     Processor.MessageWorker,
+    Providers.Web.Instrumentation,
     Repo
   }
 
@@ -55,8 +56,23 @@ defmodule Glific.Communications.WebMessage do
       end
 
     hand_to_flow_engine(result, contact.organization_id)
+    count_received(result, type, contact.organization_id)
     result
   end
+
+  # A received media message is an upload that completed, so it pairs with the URLs issued for it.
+  # The types are listed so that the `type` tag stays a fixed set.
+  @spec count_received({:ok, Message.t()} | {:error, any()}, atom(), non_neg_integer()) :: :ok
+  defp count_received({:ok, _message}, type, organization_id) when type in [:text, :location],
+    do: Instrumentation.track_receive(type, organization_id)
+
+  defp count_received({:ok, _message}, type, organization_id)
+       when type in [:image, :audio, :video, :document] do
+    Instrumentation.track_receive(type, organization_id)
+    Instrumentation.track_event("media_upload_completed", organization_id)
+  end
+
+  defp count_received(_result, _type, _organization_id), do: :ok
 
   # Flag-gated: with the web channel off, a web message is still persisted and shown in the
   # inbox, but never enters the flow engine.

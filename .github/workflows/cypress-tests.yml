@@ -100,16 +100,6 @@ jobs:
           # dev-server start; when that call is rate-limited the server never comes up.
           sudo apt-get install -y mkcert
 
-      - name: Install cloudflared
-        run: |
-          wget -q -O cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-          chmod +x cloudflared
-          sudo mv cloudflared /usr/local/bin/
-          cloudflared --version
-
-      - name: Start Cloudflare tunnel (quick tunnel, sets GLIFIC_API_HOST_OVERRIDE)
-        run: .github/scripts/cloudflare-tunnel.sh
-
       - name: Cache Elixir deps and build
         uses: actions/cache@v4
         with:
@@ -161,6 +151,8 @@ jobs:
           resource: https-get://glific.test:3000
           timeout: 180000
 
+      # No public tunnel here: Kaapi callback specs (AssistantEndToEnd) run in glific-frontend's
+      # label-gated e2e-tests-slow.yml, so this run excludes them.
       - name: Cypress run (shard ${{ matrix.shard }}/3)
         run: |
           cd glific-frontend
@@ -172,7 +164,7 @@ jobs:
           SPLIT: 3
           SPLIT_INDEX: ${{ matrix.shard }}
 
-      - name: Upload Phoenix server & cloudflared logs (shard ${{ matrix.shard }})
+      - name: Upload Phoenix server & frontend logs (shard ${{ matrix.shard }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -180,6 +172,5 @@ jobs:
           path: |
             phoenix-server.log
             frontend-server.log
-            cloudflared.log
           if-no-files-found: warn
           retention-days: 7

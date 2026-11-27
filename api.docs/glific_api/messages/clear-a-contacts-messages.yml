@@ -8,8 +8,8 @@ graphql:
   url: "{{api_url}}"
   body:
     query: |-
-      mutation clearMessages($contactId: ID!) {
-        clearMessages(contactId: $contactId) {
+      mutation clearMessages($contactId: ID!, $channel: MessageChannelEnum) {
+        clearMessages(contactId: $contactId, channel: $channel) {
           success
           errors {
             key
@@ -19,25 +19,29 @@ graphql:
       }
     variables: |-
       {
-        "contactId": "8"
+        "contactId": "8",
+        "channel": "WHATSAPP"
       }
   auth: inherit
 
 docs: |
-  Permanently deletes every message of a contact, and their media, and resets the contact's
-  conversation state (message counter, unread and replied flags). Any flow the contact is in
-  is ended. This cannot be undone.
+  Permanently deletes a contact's messages on one channel, and their media, and ends the
+  contact's flows on that channel. Without `channel` it clears WhatsApp. Once the
+  contact has no messages left on any channel, its conversation state (message counter,
+  unread and replied flags) is reset too. This cannot be undone.
 
-  For the simulator contact it also clears the contact's fields, reopens the 24-hour window
-  and sends a fresh `Default message body` message, so the simulator starts clean.
+  When WhatsApp is cleared for the simulator contact, it also clears the contact's fields,
+  reopens the 24-hour window and sends a fresh `Default message body` message, so the
+  simulator starts clean.
 
   **Role:** staff
 
   ## Arguments
 
-  | Argument    | Type  | Required | Description                         |
-  | ----------- | ----- | -------- | ----------------------------------- |
-  | `contactId` | `ID!` | Yes      | The contact whose messages to clear. |
+  | Argument    | Type                 | Required | Description                                                  |
+  | ----------- | -------------------- | -------- | ------------------------------------------------------------ |
+  | `contactId` | `ID!`                | Yes      | The contact whose messages to clear.                         |
+  | `channel`   | `MessageChannelEnum` | No       | `WHATSAPP` or `WEB`. Defaults to `WHATSAPP`.                 |
 
   ## Example response
 
