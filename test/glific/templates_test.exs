@@ -708,7 +708,6 @@ defmodule Glific.TemplatesTest do
         )
         |> Repo.one()
 
-      # a success response without "handleId" is not a usable upload
       body =
         Jason.encode!(%{
           "status" => "success",

@@ -92,8 +92,6 @@ defmodule Glific do
     end
   end
 
-  # Decoding first means a segment that is already escaped (SAAS%20Admin) comes out the same
-  # instead of double-encoded; a stray "%" that is not an escape (50%.jpg) is encoded as text.
   @spec encode_path_segment(String.t()) :: String.t()
   defp encode_path_segment(segment) do
     decoded =

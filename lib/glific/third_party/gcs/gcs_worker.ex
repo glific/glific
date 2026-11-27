@@ -377,9 +377,6 @@ defmodule Glific.GCS.GcsWorker do
     "outbound/#{year}-#{week}/#{user_folder(user)}/#{uuid}.#{extension}"
   end
 
-  # The folder ends up in the public media URL, so every run of characters that is not a letter
-  # (with its combining marks, as in Devanagari) or digit becomes one "_": a space, "/", "?", "#"
-  # or "%" in a name would otherwise break the URL.
   @spec user_folder(Glific.Users.User.t()) :: String.t()
   defp user_folder(user) do
     folder =

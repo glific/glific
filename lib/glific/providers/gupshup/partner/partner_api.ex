@@ -710,7 +710,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  # Unique per call, so two orgs submitting the same shortcode at once never share (or delete) a file.
   @spec local_media_path(String.t(), String.t()) :: String.t()
   defp local_media_path(resource_url, media_name) do
     file_format =
