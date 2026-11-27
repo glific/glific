@@ -45,7 +45,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
         bsp_id: @parent_api_id
       })
 
-    %{parent_message: parent_message, wa_group: wa_group}
+    %{parent_message: parent_message, wa_group: wa_group, wa_managed_phone: wa_managed_phone}
   end
 
   defp message_format_reaction(parent_whatsapp_id, reaction \\ "🙏") do
@@ -280,6 +280,72 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
                |> GroupMessage.receive_reaction_msg(organization_id)
 
       assert [] == reactions_for(parent_message.id)
+      refute_enqueued(worker: PendingReactionWorker)
+    end
+
+    test "a reaction delivered to a managed phone that is not the group's primary is skipped",
+         %{
+           organization_id: organization_id,
+           parent_message: parent_message,
+           wa_group: wa_group,
+           wa_managed_phone: primary_phone
+         } do
+      secondary_phone =
+        Fixtures.wa_managed_phone_fixture(%{
+          organization_id: organization_id,
+          phone: "919000000077",
+          phone_id: 243
+        })
+
+      Fixtures.wa_group_phone_fixture(%{
+        wa_group_id: wa_group.id,
+        wa_managed_phone_id: primary_phone.id,
+        organization_id: organization_id,
+        is_primary: true
+      })
+
+      reaction = message_format_reaction(@parent_whatsapp_id, "👍")
+
+      assert {:ok, :non_primary_receiver} =
+               reaction
+               |> Map.put("receiver", secondary_phone.phone)
+               |> Message.receive_reaction()
+               |> GroupMessage.receive_reaction_msg(organization_id)
+
+      assert [] == reactions_for(parent_message.id)
+      assert {:error, :not_found} = Contacts.fetch_by_identity(:whatsapp, @reactor_phone)
+
+      assert {:ok, %WaReaction{reaction: "👍"}} =
+               reaction
+               |> Map.put("receiver", primary_phone.phone)
+               |> Message.receive_reaction()
+               |> GroupMessage.receive_reaction_msg(organization_id)
+    end
+
+    test "a reaction made by another of the organization's managed phones is skipped",
+         %{organization_id: organization_id, parent_message: parent_message} do
+      other_managed_phone =
+        Fixtures.wa_managed_phone_fixture(%{
+          organization_id: organization_id,
+          phone: "919000000088",
+          phone_id: 244
+        })
+
+      assert {:ok, :managed_phone_reactor} =
+               @parent_whatsapp_id
+               |> message_format_reaction()
+               |> put_in(["user"], %{
+                 "id" => "#{other_managed_phone.phone}@c.us",
+                 "phone" => other_managed_phone.phone
+               })
+               |> Message.receive_reaction()
+               |> GroupMessage.receive_reaction_msg(organization_id)
+
+      assert [] == reactions_for(parent_message.id)
+
+      assert {:error, :not_found} =
+               Contacts.fetch_by_identity(:whatsapp, other_managed_phone.phone)
+
       refute_enqueued(worker: PendingReactionWorker)
     end
 

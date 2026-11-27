@@ -422,8 +422,44 @@ defmodule Glific.Communications.GroupMessage do
   handler for receiving the reaction message
   """
   @spec receive_reaction_msg(map(), non_neg_integer()) ::
-          {:ok, WaReaction.t() | :removed} | {:error, Ecto.Changeset.t() | atom()}
+          {:ok, WaReaction.t() | :removed | :non_primary_receiver | :managed_phone_reactor}
+          | {:error, Ecto.Changeset.t() | atom()}
   def receive_reaction_msg(params, org_id) do
+    cond do
+      non_primary_reaction_receiver?(params, org_id) ->
+        {:ok, :non_primary_receiver}
+
+      # another managed phone in the same group reports our own phone's reaction with
+      # fromMe false, and saving it would add the org's own number as a group member
+      managed_phone_reactor?(params["reactorId"]) ->
+        Instrumentation.track_receive("reaction_from_managed_phone", org_id)
+        {:ok, :managed_phone_reactor}
+
+      true ->
+        save_or_retry_reaction(params, org_id)
+    end
+  end
+
+  @spec non_primary_reaction_receiver?(map(), non_neg_integer()) :: boolean()
+  defp non_primary_reaction_receiver?(%{"receiver" => receiver, "chatId" => group_bsp_id}, org_id)
+       when is_binary(group_bsp_id),
+       do: non_primary_receiver?(%{receiver: receiver, wa_group_bsp_id: group_bsp_id}, org_id)
+
+  defp non_primary_reaction_receiver?(_params, _org_id), do: false
+
+  @spec managed_phone_reactor?(String.t() | nil) :: boolean()
+  defp managed_phone_reactor?(reactor_id) do
+    with {:ok, phone} <- reactor_phone(reactor_id),
+         {:ok, _managed_phone} <- WAManagedPhones.fetch_by_phone(phone) do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  @spec save_or_retry_reaction(map(), non_neg_integer()) ::
+          {:ok, WaReaction.t() | :removed} | {:error, Ecto.Changeset.t() | atom()}
+  defp save_or_retry_reaction(params, org_id) do
     case save_reaction(params, org_id) do
       {:ok, _reaction} = result ->
         result

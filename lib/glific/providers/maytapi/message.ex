@@ -261,7 +261,9 @@ defmodule Glific.Providers.Maytapi.Message do
       "reactorId" => resolve_sender_phone(params),
       "reaction" => payload["reaction"],
       "msgId" => payload["parentMsgId"],
-      "reactionId" => payload["id"]
+      "reactionId" => payload["id"],
+      "chatId" => params["conversation"],
+      "receiver" => params["receiver"]
     }
   end
 
