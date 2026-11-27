@@ -12,7 +12,15 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
 
   use GlificWeb, :controller
 
-  alias Glific.{GCS, GCS.SignedUrl, Messages, Providers.Web.Upload, RateLimit}
+  alias Glific.{
+    GCS,
+    GCS.SignedUrl,
+    Messages,
+    Providers.Web.Instrumentation,
+    Providers.Web.Upload,
+    RateLimit
+  }
+
   alias GlificWeb.Tenants
   alias Plug.Conn
 
@@ -45,6 +53,9 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
              content_type,
              @expires_in_seconds
            ) do
+      Instrumentation.track_event("media_upload_issued", organization_id)
+      Instrumentation.track_action("media_upload_url", :success, organization_id)
+
       json(conn, %{
         data: %{
           upload_url: signed_url,
@@ -55,6 +66,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
       })
     else
       {:error, :gcs_not_configured} ->
+        Instrumentation.track_action("media_upload_url", :failure, organization_id)
+
         Glific.log_error(
           "Web channel upload-url is unavailable for organization #{organization_id}: " <>
             "no Google Cloud Storage credential. Configure GCS before enabling the web " <>
@@ -67,6 +80,8 @@ defmodule GlificWeb.API.V1.WebChannelMediaController do
         typed_error(conn, 429, "rate_limited", "Too many uploads. Please wait and try again.")
 
       {:error, :signing_failed} ->
+        Instrumentation.track_action("media_upload_url", :failure, organization_id)
+
         Glific.log_error(
           "Web channel upload-url signing failed for organization #{organization_id}"
         )
