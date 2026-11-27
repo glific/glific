@@ -53,7 +53,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
     with {:ok, app_id} <- PartnerAPI.app_id(attrs.organization_id),
          {:ok, _app_id} <- validate_app_id(app_id),
-         body when is_map(body) <- body(attrs, organization),
+         {:ok, body} <- body(attrs, organization),
          {:ok, %{"template" => template} = _response} <-
            PartnerAPI.apply_for_template(
              attrs.organization_id,
@@ -491,48 +491,50 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  @spec body(map(), Organization.t()) :: map()
+  @spec body(map(), Organization.t()) :: {:ok, map()} | {:error, String.t()}
   defp body(attrs, organization) do
     language =
       Enum.find(organization.languages, fn language ->
         to_string(language.id) == to_string(attrs.language_id)
       end)
 
-    %{
-      elementName: attrs.shortcode,
-      languageCode: language.locale,
-      category: attrs.category,
-      vertical: attrs.label,
-      templateType: String.upcase(Atom.to_string(attrs.type)),
-      content: attrs.body,
-      example: attrs.example,
-      enableSample: true
-    }
-    |> attach_footer(attrs)
-    |> attach_media_params(attrs)
-    |> attach_button_param(attrs)
-    |> attach_otp_params(attrs)
+    payload =
+      %{
+        elementName: attrs.shortcode,
+        languageCode: language.locale,
+        category: attrs.category,
+        vertical: attrs.label,
+        templateType: String.upcase(Atom.to_string(attrs.type)),
+        content: attrs.body,
+        example: attrs.example,
+        enableSample: true
+      }
+      |> attach_footer(attrs)
+
+    with {:ok, payload} <- attach_media_params(payload, attrs) do
+      {:ok,
+       payload
+       |> attach_button_param(attrs)
+       |> attach_otp_params(attrs)}
+    end
   end
 
-  defp attach_media_params(template_payload, %{type: :text} = _attrs), do: template_payload
+  @spec attach_media_params(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp attach_media_params(template_payload, %{type: :text} = _attrs), do: {:ok, template_payload}
 
   defp attach_media_params(template_payload, %{type: _type, shortcode: short_code} = attrs) do
     media_id = Glific.parse_maybe_integer!(attrs[:message_media_id])
     {:ok, media} = Repo.fetch_by(MessageMedia, %{id: media_id})
 
-    media_handle_id =
-      PartnerAPI.get_media_handle_id(
-        attrs.organization_id,
-        media.url,
-        short_code
-      )
-
-    template_payload
-    |> Map.merge(%{
-      enableSample: true,
-      exampleMedia: media_handle_id,
-      media_url: media.url
-    })
+    with {:ok, media_handle_id} <-
+           PartnerAPI.get_media_handle_id(attrs.organization_id, media.url, short_code) do
+      {:ok,
+       Map.merge(template_payload, %{
+         enableSample: true,
+         exampleMedia: media_handle_id,
+         media_url: media.url
+       })}
+    end
   end
 
   @spec attach_button_param(map(), map()) :: map()

@@ -759,21 +759,78 @@ defmodule Glific.TemplatesTest do
         message_media_id: msg_id
       }
 
-      resp =
-        try do
-          Templates.create_session_template(attrs)
-        rescue
-          _ ->
-            "Invalid response"
-        end
+      assert {:error,
+              ["BSP", "Couldn't submit for approval: Could not upload the template media" <> _]} =
+               Templates.create_session_template(attrs)
 
-      assert resp == "Invalid response"
+      refute File.exists?("template-asset-#{attrs.shortcode}.jpeg")
+    end
 
-      # need explicit cleanup, since the test raises error (and should be), so auto cleanup won't happen
-      PartnerAPI.delete_local_resource(
-        "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg",
-        attrs.shortcode
-      )
+    test "create_session_template/1 for HSM media returns the Gupshup error when the media upload is rejected",
+         attrs do
+      media_url = "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            headers: %{"content-type" => "image", "content-length" => "1232"}
+          }
+      end)
+
+      data =
+        "Language,Title,Message,Sample Message,Element Name,Category,Attachment Type,Attachment URL,Has Buttons,Button Type,CTA Button 1 Type,CTA Button 1 Title,CTA Button 1 Value,CTA Button 2 Type,CTA Button 2 Title,CTA Button 2 Value,Quick Reply 1 Title,Quick Reply 2 Title,Quick Reply 3 Title\r\nEnglish,Activity,\"Hi {{1}},\nLook at this image.\",\"Hi [Akhilesh],\nLook at this image.\",activity,UTILITY,image,#{media_url},FALSE,,,,,,,,,,"
+
+      {:ok, %{csv_rows: _csv_rows}} =
+        Gupshup.Template.bulk_apply_templates(attrs.organization_id, data)
+
+      %{id: msg_id} =
+        MessageMedia
+        |> where([msg], msg.url == ^media_url)
+        |> Repo.one()
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.ends_with?(url, "/upload/media"),
+            do: %Tesla.Env{
+              status: 400,
+              body:
+                Jason.encode!(%{
+                  "status" => "error",
+                  "message" => "The template media contents do not match its .jpeg extension."
+                })
+            },
+            else: %Tesla.Env{status: 200, body: Jason.encode!(%{"status" => "success"})}
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :image,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        message_media_id: msg_id
+      }
+
+      assert {:error,
+              [
+                "BSP",
+                "Couldn't submit for approval: Could not upload the template media: The template media contents do not match its .jpeg extension."
+              ]} = Templates.create_session_template(attrs)
+
+      refute File.exists?("template-asset-#{attrs.shortcode}.jpeg")
     end
 
     test "create_session_template/1 for HSM button template should submit it for approval",

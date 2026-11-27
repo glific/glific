@@ -2097,6 +2097,37 @@ defmodule Glific.PartnersTest do
 
       assert {:error, _} = PartnerAPI.get_resource_local_path("sample.png", "sample")
     end
+
+    test "returns an error and writes no file when the download is not successful" do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 404, body: "<Error><Code>NoSuchKey</Code></Error>"}
+      end)
+
+      assert {:error, "Could not download the template media, status 404"} =
+               PartnerAPI.get_resource_local_path("sample.png", "sample")
+
+      refute File.exists?("template-asset-sample.png")
+    end
+
+    test "encodes spaces and non-ASCII characters in the url, but not existing escapes" do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: url} ->
+          send(self(), {:requested_url, url})
+          %Tesla.Env{status: 200, body: "sample data"}
+      end)
+
+      assert {:ok, "template-asset-sample.mp4"} =
+               PartnerAPI.get_resource_local_path(
+                 "https://storage.googleapis.com/bucket/outbound/SAAS Admin/अंकित/a%20b.mp4",
+                 "sample"
+               )
+
+      assert_received {:requested_url,
+                       "https://storage.googleapis.com/bucket/outbound/SAAS%20Admin/%E0%A4%85%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4/a%20b.mp4"}
+
+      File.rm("template-asset-sample.mp4")
+    end
   end
 
   describe "delete_local_resource/1" do

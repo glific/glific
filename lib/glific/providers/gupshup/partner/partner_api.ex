@@ -116,7 +116,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
    Get Gupshup media handle id based on giving org id and the URL. media_name is used as a label for the resource
   """
-  @spec get_media_handle_id(non_neg_integer, binary, String.t()) :: String.t() | term()
+  @spec get_media_handle_id(non_neg_integer, binary, String.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def get_media_handle_id(org_id, url, media_name) do
     with {:ok, path} <- get_resource_local_path(url, media_name) do
       data =
@@ -130,13 +131,31 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       )
       |> case do
         {:ok, %{"status" => "success", "handleId" => %{"message" => handle_id}} = _res} ->
-          handle_id
+          {:ok, handle_id}
+
+        {:ok, response} ->
+          File.rm(path)
+
+          {:error,
+           "Could not upload the template media: #{Glific.SafeLog.safe_inspect(response)}"}
 
         {:error, error} ->
-          raise(error)
+          File.rm(path)
+          {:error, "Could not upload the template media: #{media_upload_error(error)}"}
       end
     end
   end
+
+  @spec media_upload_error(any()) :: String.t()
+  defp media_upload_error(%Tesla.Env{status: status, body: body}) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"message" => message}} when is_binary(message) -> message
+      _ -> "status #{status}"
+    end
+  end
+
+  defp media_upload_error(%Tesla.Env{status: status}), do: "status #{status}"
+  defp media_upload_error(error), do: Glific.SafeLog.safe_inspect(error)
 
   @doc """
     Transfer balance from ISV partner to app
@@ -272,11 +291,15 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
   @spec get_resource_local_path(String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def get_resource_local_path(resource_url, media_name) do
-    case Tesla.get(resource_url) do
-      {:ok, %Tesla.Env{body: body}} ->
+    case Tesla.get(encode_url(resource_url)) do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         file_name = get_filename_from_resource_url(resource_url, media_name)
         :ok = File.write!(file_name, body)
         {:ok, file_name}
+
+      {:ok, %Tesla.Env{status: status}} ->
+        Logger.error("Error downloading file #{resource_url}, status: #{status}")
+        {:error, "Could not download the template media, status #{status}"}
 
       {:error, err} ->
         Logger.error("Error downloading file due to #{Glific.SafeLog.safe_inspect(err)}")
@@ -682,6 +705,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, @app_url <> app_id}
     end
   end
+
+  # Upload paths contain the uploader's name, so a stored URL can hold raw spaces or non-ASCII
+  # characters; existing %-escapes are kept so an already encoded URL is not encoded twice.
+  @spec encode_url(String.t()) :: String.t()
+  defp encode_url(url), do: URI.encode(url, &(URI.char_unescaped?(&1) or &1 == ?%))
 
   @spec get_filename_from_resource_url(String.t(), String.t()) :: String.t()
   defp get_filename_from_resource_url(resource_url, media_name) do
