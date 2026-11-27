@@ -308,8 +308,16 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "", extra: %{contact_groups: []}) == false
   end
 
-  test "test exceptions" do
+  test "test the execute function for has_text" do
+    c = %Case{type: "has_text", arguments: []}
+    assert wrap_execute(c, nil, "hello") == true
+    assert wrap_execute(c, nil, "   ") == false
+    assert wrap_execute(c, nil, "") == false
+    assert wrap_execute(c, nil, nil, [{:type, :image}]) == false
+  end
+
+  test "unsupported case type returns false instead of raising" do
     c = %Case{type: "no_such_function", arguments: ["only phrase"]}
-    assert_raise UndefinedFunctionError, fn -> wrap_execute(c, nil, "only phrase 1") end
+    assert wrap_execute(c, nil, "only phrase 1") == false
   end
 end

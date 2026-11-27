@@ -2,6 +2,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   @moduledoc false
   use GlificWeb.ChannelCase
 
+  import Mock
+
   alias Glific.{
     Contacts,
     Contacts.Location,
@@ -659,6 +661,27 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
   end
 
   describe "the mid-session sweep" do
+    test "records an expired session in AppSignal when it closes the socket" do
+      with_mock Appsignal, [:passthrough],
+        increment_counter: fn _metric, _count, _tags -> :ok end do
+        with_ngo_socket(%{}, fn socket, _contact ->
+          :sys.replace_state(socket.channel_pid, fn state ->
+            %{state | assigns: %{state.assigns | token_exp: System.system_time(:second) - 120}}
+          end)
+
+          send(socket.channel_pid, :sweep_token)
+          assert_push "session_expired", %{}
+
+          assert_called(
+            Appsignal.increment_counter("web_channel_token_count", 1, %{
+              event: "expired",
+              organization_id: to_string(socket.assigns.organization_id)
+            })
+          )
+        end)
+      end
+    end
+
     test "pushes token_expiring once within the warning window, then session_expired past grace",
          %{contact: contact} do
       with_web_channel_enabled(fn ->
