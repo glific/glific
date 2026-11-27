@@ -149,7 +149,13 @@ defmodule Glific.GCS.GcsWorker do
       GCS.base_query(organization_id)
       |> where([m], m.id >= ^min_id and m.id <= ^max_id)
       |> where([m, _msg], is_nil(m.gcs_url))
-      |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
+      |> select([m, msg: msg, wa_msg: wm], [
+        m.id,
+        m.url,
+        coalesce(msg.type, wm.type),
+        coalesce(msg.contact_id, wm.contact_id),
+        msg.flow_id
+      ])
 
     query
     |> RepoReplica.all()
