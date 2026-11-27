@@ -147,7 +147,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
       assert {:ok, _} =
                verify(organization_id, %{"iat" => @now - 120, "exp" => @now - 59})
 
-      assert {:error, :invalid} =
+      assert {:error, :expired} =
                verify(organization_id, %{"iat" => @now - 120, "exp" => @now - 60})
     end
 
@@ -216,7 +216,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
     } do
       assert {:ok, _} = verify(organization_id, %{"jti" => "s", "sst" => @now - 604_799})
 
-      assert {:error, :invalid} =
+      assert {:error, :session_expired} =
                verify(organization_id, %{"jti" => "s", "sst" => @now - 604_800})
     end
 
@@ -304,7 +304,7 @@ defmodule GlificWeb.WebChannel.TokenTest do
         |> WebChannelLoginHelpers.claims(@now)
         |> WebChannelLoginHelpers.sign(@secret)
 
-      assert {:error, :invalid} = Token.renew(organization_id, token, @now)
+      assert {:error, :session_expired} = Token.renew(organization_id, token, @now)
     end
 
     test "renewal is refused for a token without a session", %{organization_id: organization_id} do
@@ -321,9 +321,20 @@ defmodule GlificWeb.WebChannel.TokenTest do
         |> WebChannelLoginHelpers.claims(@now)
         |> WebChannelLoginHelpers.sign(@secret)
 
-      assert {:error, :invalid} = Token.renew(organization_id, expired, @now)
+      assert {:error, :expired} = Token.renew(organization_id, expired, @now)
       assert {:error, :invalid} = Token.renew(organization_id, nil, @now)
     end
+  end
+
+  test "an expired token with a bad signature is invalid, not expired", %{
+    organization_id: organization_id
+  } do
+    token =
+      %{"iat" => @now - 7_200, "exp" => @now - 3_600}
+      |> WebChannelLoginHelpers.claims(@now)
+      |> WebChannelLoginHelpers.sign(String.duplicate("x", 32))
+
+    assert {:error, :invalid} = Token.verify(organization_id, token, @now)
   end
 
   test "a token signed with a key derived from secret_key_base is refused", %{
