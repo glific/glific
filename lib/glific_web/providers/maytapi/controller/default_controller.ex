@@ -3,6 +3,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.DefaultController do
 
   use GlificWeb, :controller
 
+  require Logger
+
   alias Glific.Providers.Maytapi.Instrumentation
 
   @doc false
@@ -14,9 +16,12 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.DefaultController do
   @doc false
   @spec unknown(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def unknown(conn, params) do
-    Instrumentation.track_receive(
-      "unhandled:" <> Enum.join(List.wrap(params["unknown"]), "/"),
-      conn.assigns[:organization_id]
+    organization_id = conn.assigns[:organization_id]
+    # the path comes from the webhook body, so it goes to the log and not into a metric tag
+    Instrumentation.track_receive("unhandled_event", organization_id)
+
+    Logger.info(
+      "Unhandled Maytapi event #{Enum.join(List.wrap(params["unknown"]), "/")} for org #{organization_id}"
     )
 
     handler(conn, params, "unknown handler")

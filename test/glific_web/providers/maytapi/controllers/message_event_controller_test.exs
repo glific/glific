@@ -3,6 +3,9 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
   use Oban.Testing, repo: Glific.Repo, prefix: "global"
 
   import Ecto.Query
+  import ExUnit.CaptureLog
+
+  require Logger
 
   alias Glific.{
     Communications.GroupMessage,
@@ -388,11 +391,20 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
         |> message_format_reaction()
         |> put_in(["message", "type"], "pollVoteUpdate")
 
-      conn = post(conn, "/maytapi", poll_vote)
+      level = Logger.level()
+      Logger.configure(level: :info)
+      on_exit(fn -> Logger.configure(level: level) end)
 
-      assert conn.private.phoenix_controller == DefaultController
-      assert conn.params["unknown"] == ["message", "pollVoteUpdate"]
-      assert json_response(conn, 200) == nil
+      log =
+        capture_log(fn ->
+          conn = post(conn, "/maytapi", poll_vote)
+
+          assert conn.private.phoenix_controller == DefaultController
+          assert conn.params["unknown"] == ["message", "pollVoteUpdate"]
+          assert json_response(conn, 200) == nil
+        end)
+
+      assert log =~ "Unhandled Maytapi event message/pollVoteUpdate"
     end
   end
 end
