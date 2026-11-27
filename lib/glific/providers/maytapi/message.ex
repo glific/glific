@@ -94,7 +94,7 @@ defmodule Glific.Providers.Maytapi.Message do
 
         # Using Async instead of going with the route of message broadcast as the number of WA groups
         #  per collection will be way less than contacts in a collection
-        Task.async_stream(
+        Glific.Task.Supervisor.async_stream(
           wa_group_collections,
           fn wa_group_collection ->
             Repo.put_process_state(wa_group_collection.organization_id)

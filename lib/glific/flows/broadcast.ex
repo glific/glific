@@ -95,7 +95,7 @@ defmodule Glific.Flows.Broadcast do
   """
   @spec broadcast_flow_to_wa_group(Flow.t(), list()) :: :ok
   def broadcast_flow_to_wa_group(flow, group_ids) do
-    Task.async_stream(group_ids, fn group_id ->
+    Glific.Task.Supervisor.async_stream(group_ids, fn group_id ->
       Repo.put_process_state(flow.organization_id)
 
       wa_group_collections =
@@ -404,8 +404,7 @@ defmodule Glific.Flows.Broadcast do
   @spec flow_tasks(Flow.t(), Contact.t(), Keyword.t()) :: :ok
   defp flow_tasks(flow, contacts, opts) do
     stream =
-      Task.Supervisor.async_stream_nolink(
-        Glific.Broadcast.Supervisor,
+      Glific.Task.Supervisor.async_stream_nolink(
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
@@ -426,38 +425,40 @@ defmodule Glific.Flows.Broadcast do
 
           :ok
         end,
+        supervisor: Glific.Broadcast.Supervisor,
         ordered: false,
         timeout: 11_000,
-        on_timeout: :kill_task
+        on_timeout: :kill_task,
+        zip_input_on_exit: true
       )
 
-    Stream.run(stream)
+    log_task_timeouts(stream, flow.organization_id)
   end
 
   @spec wa_group_tasks(Flow.t(), [non_neg_integer()], Keyword.t()) :: :ok
   defp wa_group_tasks(flow, wa_group_ids, opts) do
     stream =
-      Task.Supervisor.async_stream_nolink(
-        Glific.Broadcast.Supervisor,
+      Glific.Task.Supervisor.async_stream_nolink(
         wa_group_ids,
         fn wa_group_id ->
           Repo.put_process_state(flow.organization_id)
           FlowContext.init_wa_group_context(flow, wa_group_id, @status, opts)
           :ok
         end,
+        supervisor: Glific.Broadcast.Supervisor,
         ordered: false,
         timeout: 5_000,
-        on_timeout: :kill_task
+        on_timeout: :kill_task,
+        zip_input_on_exit: true
       )
 
-    Stream.run(stream)
+    log_task_timeouts(stream, flow.organization_id)
   end
 
   @spec message_tasks(map(), Contact.t(), Keyword.t()) :: :ok
   defp message_tasks(message_params, contacts, opts) do
     stream =
-      Task.Supervisor.async_stream_nolink(
-        Glific.Broadcast.Supervisor,
+      Glific.Task.Supervisor.async_stream_nolink(
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
@@ -485,12 +486,39 @@ defmodule Glific.Flows.Broadcast do
 
           :ok
         end,
+        supervisor: Glific.Broadcast.Supervisor,
         ordered: false,
         timeout: 5_000,
-        on_timeout: :kill_task
+        on_timeout: :kill_task,
+        zip_input_on_exit: true
       )
 
-    Stream.run(stream)
+    log_task_timeouts(stream, message_params.organization_id)
+  end
+
+  # A task killed by `on_timeout: :kill_task` logs nothing itself, so its exit is the only trace
+  # that the contact or group was never processed. Crashes are left to the task's own crash report.
+  @spec log_task_timeouts(Enumerable.t(), non_neg_integer()) :: :ok
+  defp log_task_timeouts(stream, organization_id) do
+    Enum.each(stream, fn
+      {:exit, {%Contact{id: contact_id}, :timeout}} ->
+        Logger.error("Broadcast task timed out for contact_id: #{contact_id}",
+          org_id: organization_id
+        )
+
+      {:exit, {wa_group_id, :timeout}} ->
+        Logger.error("Broadcast task timed out for wa_group_id: #{wa_group_id}",
+          org_id: organization_id
+        )
+
+      {:ok, _result} ->
+        :ok
+
+      result ->
+        Logger.error("Broadcast task failed: #{Glific.SafeLog.safe_inspect(result)}",
+          org_id: organization_id
+        )
+    end)
   end
 
   @spec init_msg_broadcast(map(), Messages.Message.t(), list(), boolean()) ::

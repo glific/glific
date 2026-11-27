@@ -25,7 +25,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   """
   @spec handler(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def handler(conn, params) do
-    Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+    Glific.Task.Supervisor.start_child(fn ->
       Repo.put_process_state(conn.assigns.organization_id)
       update_statuses(params, conn.assigns.organization_id)
     end)

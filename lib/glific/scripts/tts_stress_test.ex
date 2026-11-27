@@ -123,6 +123,9 @@ defmodule Glific.Scripts.TtsStressTest do
     {micros, results} =
       :timer.tc(fn ->
         1..concurrency
+        # A supervised task does not inherit this console's group leader, so its output would go to
+        # the node's stdout instead.
+        # credo:disable-for-next-line GlificCredo.Checks.SupervisedTask
         |> Task.async_stream(
           fn i ->
             text = "Parallel call #{i}. #{@medium_text}"

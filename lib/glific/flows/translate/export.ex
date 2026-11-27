@@ -159,7 +159,7 @@ defmodule Glific.Flows.Translate.Export do
     {:ok, organization} = Repo.fetch_by(Organization, %{organization_id: organization_id})
 
     strings
-    |> Task.async_stream(
+    |> Glific.Task.Supervisor.async_stream(
       fn {{src, dst}, values} ->
         Repo.put_process_state(organization_id)
         {src, dst, values, Translate.translate(values, src, dst, organization)}

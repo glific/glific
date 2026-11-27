@@ -56,7 +56,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
   @spec run_supervised((-> any())) :: :ok
   defp run_supervised(fun) do
-    case Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+    case Glific.Task.Supervisor.start_child(fn ->
            run_supervised_task(fun)
          end) do
       {:ok, _pid} ->
