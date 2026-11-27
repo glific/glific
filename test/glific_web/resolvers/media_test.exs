@@ -81,6 +81,19 @@ defmodule GlificWeb.Resolvers.MediaTest do
       end
     end
 
+    test "names the attachment folder after the user in snake case, without URL-unsafe characters",
+         %{user: user, organization_id: organization_id} do
+      {:ok, user} = Glific.Users.update_user(user, %{name: " SAAS Admin #1/?% "})
+
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, remote, _org -> {:ok, %{url: remote, type: :image}} end do
+        assert {:ok, remote} = file_of(1) |> args(organization_id) |> upload(user)
+
+        assert [_week, "saas_admin_1", _file] =
+                 remote |> String.trim_leading("outbound/") |> Path.split()
+      end
+    end
+
     test "refuses a folder that could climb out of its prefix", %{
       user: user,
       organization_id: organization_id

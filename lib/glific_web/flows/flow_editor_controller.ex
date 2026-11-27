@@ -669,10 +669,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @spec remote_name(User.t() | nil, String.t(), Ecto.UUID.t()) :: String.t()
-  defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()) do
-    {year, week} = Timex.iso_week(Timex.now())
-    "outbound/#{year}-#{week}/#{user.name}/#{uuid}.#{extension}"
-  end
+  defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()),
+    do: GcsWorker.outbound_media_path(user, extension, uuid)
 
   @spec add_scope_filter(map()) :: map()
   defp add_scope_filter(%{"scope" => scope}), do: %{scope: scope}

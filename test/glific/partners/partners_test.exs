@@ -2074,7 +2074,7 @@ defmodule Glific.PartnersTest do
   end
 
   describe "get_resource_local_path/2" do
-    test "successfull file download to local" do
+    test "downloads to a unique file in the temp dir" do
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -2083,10 +2083,16 @@ defmodule Glific.PartnersTest do
           }
       end)
 
-      assert {:ok, "template-asset-sample.png"} =
-               PartnerAPI.get_resource_local_path("sample.png", "sample")
+      assert {:ok, first_path} = PartnerAPI.get_resource_local_path("sample.png", "sample")
+      assert {:ok, second_path} = PartnerAPI.get_resource_local_path("sample.png", "sample")
 
-      File.rm("template-asset-sample.png")
+      assert Path.dirname(first_path) == Path.expand(System.tmp_dir!())
+      assert Path.extname(first_path) == ".png"
+      assert File.read!(first_path) == "sample data"
+      refute first_path == second_path
+
+      File.rm(first_path)
+      File.rm(second_path)
     end
 
     test "file download to local failed" do
@@ -2095,28 +2101,55 @@ defmodule Glific.PartnersTest do
           {:error, "error"}
       end)
 
-      assert {:error, _} = PartnerAPI.get_resource_local_path("sample.png", "sample")
+      assert {:error, "Could not download the template media" <> _} =
+               PartnerAPI.get_resource_local_path("sample.png", "sample")
     end
-  end
 
-  describe "delete_local_resource/1" do
-    test "successfull file delete from local" do
+    test "returns an error and writes no file when the download is not successful" do
       Tesla.Mock.mock(fn
         %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body: "sample data"
-          }
+          %Tesla.Env{status: 404, body: "<Error><Code>NoSuchKey</Code></Error>"}
       end)
 
-      assert {:ok, "template-asset-sample.png"} =
-               PartnerAPI.get_resource_local_path("sample.png", "sample")
+      assert {:error, "Could not download the template media, status 404"} =
+               PartnerAPI.get_resource_local_path("sample.png", "no_file")
 
-      assert :ok = PartnerAPI.delete_local_resource("sample.png", "sample")
+      assert Path.wildcard(Path.join(System.tmp_dir!(), "template-asset-no_file-*")) == []
     end
 
-    test "local file deletion failed" do
-      assert {:error, :enoent} = PartnerAPI.delete_local_resource("sample2.png", "sample2")
+    test "follows a redirect to the media" do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://example.com/moved.png"} ->
+          %Tesla.Env{status: 302, headers: [{"location", "https://cdn.example.com/media.png"}]}
+
+        %{method: :get, url: "https://cdn.example.com/media.png"} ->
+          %Tesla.Env{status: 200, body: "sample data"}
+      end)
+
+      assert {:ok, path} =
+               PartnerAPI.get_resource_local_path("https://example.com/moved.png", "sample")
+
+      assert File.read!(path) == "sample data"
+      File.rm(path)
+    end
+
+    test "encodes spaces and non-ASCII characters in the url, but not existing escapes" do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: url} ->
+          send(self(), {:requested_url, url})
+          %Tesla.Env{status: 200, body: "sample data"}
+      end)
+
+      assert {:ok, path} =
+               PartnerAPI.get_resource_local_path(
+                 "https://storage.googleapis.com/bucket/outbound/SAAS Admin/अंकित/a%20b.mp4",
+                 "sample"
+               )
+
+      assert_received {:requested_url,
+                       "https://storage.googleapis.com/bucket/outbound/SAAS%20Admin/%E0%A4%85%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4/a%20b.mp4"}
+
+      File.rm(path)
     end
   end
 

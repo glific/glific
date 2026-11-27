@@ -76,6 +76,39 @@ defmodule Glific do
   end
 
   @doc """
+  Percent-encodes each path segment of a URL, keeping valid existing escapes; the query and fragment are left as is.
+  """
+  @spec encode_url_path(String.t()) :: String.t()
+  def encode_url_path(url) do
+    uri = URI.parse(url)
+
+    case uri.path do
+      nil ->
+        url
+
+      path ->
+        encoded_path = path |> String.split("/") |> Enum.map_join("/", &encode_path_segment/1)
+        URI.to_string(%{uri | path: encoded_path})
+    end
+  end
+
+  @spec encode_path_segment(String.t()) :: String.t()
+  defp encode_path_segment(segment) do
+    decoded =
+      try do
+        URI.decode(segment)
+      rescue
+        ArgumentError -> segment
+      end
+
+    URI.encode(decoded, &path_segment_char?/1)
+  end
+
+  @spec path_segment_char?(char()) :: boolean()
+  defp path_segment_char?(char),
+    do: URI.char_unreserved?(char) or char in ~c"!$&'()*+,;=:@"
+
+  @doc """
   parse and integer and die if parse fails
   """
   @spec parse_maybe_integer!(String.t() | integer) :: integer

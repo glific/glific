@@ -94,10 +94,8 @@ defmodule GlificWeb.Resolvers.Media do
     do: "#{System.tmp_dir!()}/#{uuid}.#{extension}"
 
   @spec remote_name(User.t(), String.t(), Ecto.UUID.t() | nil) :: String.t()
-  defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()) do
-    {year, week} = Timex.iso_week(Timex.now())
-    "outbound/#{year}-#{week}/#{user.name}/#{uuid}.#{extension}"
-  end
+  defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()),
+    do: GcsWorker.outbound_media_path(user, extension, uuid)
 
   @spec handle_response(any()) :: {:ok, String.t()} | {:error, String.t()}
   defp handle_response(response) do

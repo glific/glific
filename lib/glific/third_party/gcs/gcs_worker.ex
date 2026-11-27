@@ -369,6 +369,26 @@ defmodule Glific.GCS.GcsWorker do
   end
 
   @doc """
+  Remote path for a file a user uploads: the ISO week, then the user's name in snake case.
+  """
+  @spec outbound_media_path(Glific.Users.User.t(), String.t(), Ecto.UUID.t()) :: String.t()
+  def outbound_media_path(user, extension, uuid \\ Ecto.UUID.generate()) do
+    {year, week} = Timex.iso_week(Timex.now())
+    "outbound/#{year}-#{week}/#{user_folder(user)}/#{uuid}.#{extension}"
+  end
+
+  @spec user_folder(Glific.Users.User.t()) :: String.t()
+  defp user_folder(user) do
+    folder =
+      (user.name || "")
+      |> String.downcase()
+      |> String.replace(~r/[^\p{L}\p{M}\p{N}]+/u, "_")
+      |> String.trim("_")
+
+    if folder == "", do: "user_#{user.id}", else: folder
+  end
+
+  @doc """
   Public interface to upload a file provided by the org at local name to gcs as remote name
   """
   @spec upload_media(String.t(), String.t(), non_neg_integer) ::
