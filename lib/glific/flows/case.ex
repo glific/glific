@@ -144,6 +144,7 @@ defmodule Glific.Flows.Case do
     "has_email",
     "has_pattern",
     "has_beginning",
+    "has_text",
     "has_intent",
     "has_top_intent"
   ]
@@ -275,6 +276,10 @@ defmodule Glific.Flows.Case do
       else: msg.extra.intent == intent && msg.extra.confidence >= confidence
   end
 
+  defp do_execute(%{type: "has_text"}, _context, %{type: type} = msg)
+       when type in @text_types,
+       do: strip(msg) != ""
+
   # for all the above functions, if we encounter in a non-text context, return false
   defp do_execute(%{type: ctype}, _context, %{type: type})
        when ctype in @text_fns and type not in @text_types,
@@ -305,12 +310,14 @@ defmodule Glific.Flows.Case do
   defp do_execute(%{type: "has_file"}, _context, msg),
     do: msg.type == :document
 
-  defp do_execute(c, _context, msg),
-    do:
-      raise(UndefinedFunctionError,
-        message:
-          "Function not implemented for cases of case type: #{c.type}, message type: #{msg.type}"
-      )
+  defp do_execute(c, context, msg) do
+    Glific.log_error(
+      "Unsupported case type: #{c.type}, message type: #{msg.type}, " <>
+        "org_id: #{context.organization_id}, flow_uuid: #{context.flow_uuid}, node_uuid: #{context.node_uuid}"
+    )
+
+    false
+  end
 
   @spec create_regex_failure_notification(FlowContext.t()) :: any()
   defp create_regex_failure_notification(context) do
