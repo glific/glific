@@ -35,6 +35,7 @@ defmodule Glific.WAGroup.WAMessage do
           body: String.t() | nil,
           bsp_status: String.t() | nil,
           bsp_id: String.t() | nil,
+          whatsapp_key_id: String.t() | nil,
           errors: map() | nil,
           message_number: integer(),
           contact_id: non_neg_integer | nil,
@@ -91,7 +92,8 @@ defmodule Glific.WAGroup.WAMessage do
     :is_dm,
     :flow_label,
     :poll_content,
-    :poll_id
+    :poll_id,
+    :whatsapp_key_id
   ]
 
   schema "wa_messages" do
@@ -107,6 +109,7 @@ defmodule Glific.WAGroup.WAMessage do
     field(:sent_at, :utc_datetime)
     field(:context_id, :string)
     field(:bsp_id, :string)
+    field(:whatsapp_key_id, :string)
     field(:is_dm, :boolean)
     field(:flow_label, :string)
     field(:poll_content, :map, default: %{})
@@ -151,6 +154,43 @@ defmodule Glific.WAGroup.WAMessage do
     |> cast(attrs, @required_fields ++ @optional_fields, empty_values: [[], nil])
     |> validate_required(@required_fields)
     |> validate_media(message)
+    |> put_whatsapp_key_id()
+  end
+
+  @doc """
+  Extracts the key id from a WhatsApp message id, or nil when the id is not in WhatsApp form.
+
+  ## Examples
+
+      iex> Glific.WAGroup.WAMessage.whatsapp_key_id("false_120363@g.us_3EB0A1B2_919876543210@c.us")
+      "3EB0A1B2"
+
+      iex> Glific.WAGroup.WAMessage.whatsapp_key_id("false_120363@g.us_3EB0A1B2_143851234@lid")
+      "3EB0A1B2"
+
+      iex> Glific.WAGroup.WAMessage.whatsapp_key_id("a3ff8460-c710-11ee-a8e7-5fbaaf152c1d")
+      nil
+  """
+  @spec whatsapp_key_id(String.t() | nil) :: String.t() | nil
+  def whatsapp_key_id(whatsapp_id) when is_binary(whatsapp_id) do
+    case String.split(whatsapp_id, "_") do
+      [from_me, _chat_id, key_id | _participant] when from_me in ["true", "false"] -> key_id
+      _ -> nil
+    end
+  end
+
+  def whatsapp_key_id(_whatsapp_id), do: nil
+
+  # Inbound messages are stored with their WhatsApp id as bsp_id, so the key id is
+  # known on insert. Outbound messages get it later from the delivery ack's rxid.
+  @spec put_whatsapp_key_id(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp put_whatsapp_key_id(changeset) do
+    with nil <- get_field(changeset, :whatsapp_key_id),
+         key_id when is_binary(key_id) <- whatsapp_key_id(get_change(changeset, :bsp_id)) do
+      put_change(changeset, :whatsapp_key_id, key_id)
+    else
+      _ -> changeset
+    end
   end
 
   @doc false

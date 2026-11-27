@@ -7,6 +7,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   alias Glific.{
     Communications,
+    Providers.Maytapi,
     Providers.Maytapi.Instrumentation,
     Repo
   }
@@ -33,6 +34,31 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     json(conn, nil)
   end
 
+  @doc """
+  Handles reactions delivered as message events
+  """
+  @spec reaction(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def reaction(conn, %{"message" => %{"fromMe" => true}}) do
+    # the managed phone is the organization itself, not a group member,
+    # so its reactions must not create a contact or a group membership
+    Instrumentation.track_receive("reaction_from_me", conn.assigns.organization_id)
+    json(conn, nil)
+  end
+
+  def reaction(conn, params) do
+    organization_id = conn.assigns.organization_id
+
+    Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+      Repo.put_process_state(organization_id)
+
+      params
+      |> Maytapi.Message.receive_reaction()
+      |> handle_reactions(organization_id)
+    end)
+
+    json(conn, nil)
+  end
+
   @spec update_statuses(map(), non_neg_integer()) :: any()
   defp update_statuses(%{"type" => "error"} = params, org_id) do
     do_update_error_status(params, org_id)
@@ -45,8 +71,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
         %{"options" => _options} ->
           update_poll_response(response, org_id)
 
+        # Maytapi sends every reaction both here and as a message event; saving both copies
+        # lets a late copy overwrite a newer reaction, so only the message event is saved
         %{"reaction" => _reaction} ->
-          handle_reactions(response, org_id)
+          Instrumentation.track_receive("reaction_ack_skipped", org_id)
 
         %{"ackType" => ack_type} ->
           do_update_status(response, ack_type, org_id)
@@ -67,7 +95,14 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   defp do_update_status(params, ack_type, org_id) do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
-    Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
+
+    Communications.GroupMessage.update_bsp_status(
+      bsp_message_id,
+      status,
+      org_id,
+      params["rxid"]
+    )
+
     Instrumentation.track_status(status || :unknown, org_id)
   end
 
