@@ -85,9 +85,11 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
                  "block_index" => 2,
                  "component" => "llm",
                  "thread_id" => "conv_1",
-                 "latency_ms" => 1000
+                 "latency_ms" => llm_latency
                }
              ] = steps(log)
+
+      assert llm_latency == 1000
     end
 
     test "a repeated delivery of a block is logged once", %{log: log} do
@@ -209,6 +211,13 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
       assert [%{"component" => "stt"}, %{"component" => "llm", "final" => true}] = steps(log)
     end
 
+    test "logs Kaapi's top-level reason when the failure carries no error", %{log: log} do
+      failed = callback(log, nil, nil, %{"callback_received_ts" => 2_000_000})
+      KaapiChain.record_final(%{"success" => false, "reason" => "quota exceeded"}, failed)
+
+      assert [%{"status" => "failure", "error" => "quota exceeded"}] = steps(log)
+    end
+
     test "ignores a response that is not part of a chain", %{log: log} do
       assert :ok =
                KaapiChain.record_final(%{"success" => true}, %{"webhook_log_id" => log.id})
@@ -241,6 +250,16 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
                "thread_id" => "conv_1",
                "blocks" => %{"stt" => "hello", "llm" => "answer", "tts" => "https://x/a.ogg"}
              } = KaapiChain.outputs(log.id)
+    end
+
+    test "follows chain order, not arrival order", %{log: log} do
+      KaapiChain.record_intermediate(callback(log, 2, "answer"), 1_500_000)
+      KaapiChain.record_intermediate(callback(log, 1, "hello"), 2_000_000)
+
+      assert %{"text" => "answer"} = KaapiChain.outputs(log.id)
+
+      assert %{message: "answer"} =
+               KaapiChain.append_callback_result(log.id, %{success: true, message: nil})
     end
 
     test "leaves failed blocks out", %{log: log} do
@@ -334,9 +353,16 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
                  "status" => "success",
                  "final" => true,
                  "message" => "https://x/a.ogg",
-                 "latency_ms" => 1000
+                 "latency_ms" => tts_latency
                }
              ] = steps(log)
+
+      assert tts_latency == 1000
+    end
+
+    test "a claim on a missing webhook log is an error, not a go-ahead", %{log: log} do
+      missing = Map.put(callback(log, nil, nil), "webhook_log_id", log.id + 1_000_000)
+      assert :error = KaapiChain.claim_final(missing)
     end
 
     test "an intermediate block after the claim does not fill the claimed block", %{log: log} do

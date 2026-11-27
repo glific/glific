@@ -25,16 +25,16 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   def intermediate?(_result, _response), do: false
 
   @doc "Appends a successful non-final block to the webhook log and emits its latency."
-  @spec record_intermediate(map(), integer()) :: :ok | :duplicate
+  @spec record_intermediate(map(), integer()) :: :ok | :duplicate | :error
   def record_intermediate(response, received_ts),
     do: record_block(response, received_ts, status: "success")
 
   @doc """
   Claims the block that ends the chain before any side effect (upload, resume): `:duplicate` when
-  the chain already ended, so a repeated or concurrent final callback is dropped. A response that
-  is not part of a chain is never a duplicate.
+  the chain already ended, so a repeated or concurrent final callback is dropped, and `:error` when
+  the claim could not be saved. A response that is not part of a chain is always `:ok`.
   """
-  @spec claim_final(map()) :: :ok | :duplicate
+  @spec claim_final(map()) :: :ok | :duplicate | :error
   def claim_final(%{"chain_blocks" => blocks, "webhook_log_id" => log_id} = response)
       when is_list(blocks) and is_integer(log_id) do
     update_steps(log_id, fn steps ->
@@ -63,12 +63,12 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   Fills in the block that ended the chain (its last output, or a failure) and emits its latency
   tagged with its status. A response that is not part of a chain is ignored.
   """
-  @spec record_final(map(), map()) :: :ok | :duplicate
+  @spec record_final(map(), map()) :: :ok | :duplicate | :error
   def record_final(result, %{"chain_blocks" => blocks} = response) when is_list(blocks) do
     if result["success"] == true and response["success"] != false do
       record_block(response, response["callback_received_ts"], status: "success", final: true)
     else
-      error = response["reason"] || result["error"] || response["message"]
+      error = response["reason"] || result["error"] || result["reason"] || response["message"]
 
       record_block(response, response["callback_received_ts"],
         status: "failure",
@@ -144,8 +144,10 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
 
   @spec steps_outputs([map()]) :: map()
   defp steps_outputs(steps) do
+    # Chain order, not arrival order: the last text output must be the last text block.
     steps
     |> Enum.filter(&(&1["status"] == "success"))
+    |> Enum.sort_by(& &1["block_index"])
     |> Enum.reduce(%{"blocks" => %{}}, fn step, acc ->
       acc
       |> put_in(["blocks", step["component"]], step["message"])
@@ -164,7 +166,7 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   # last one logged. A block claimed by `claim_final/1` is filled in place; otherwise, once the
   # chain has ended or the block is logged, a repeated delivery is ignored (no second step or
   # metric), so a retried index-less callback is not counted twice.
-  @spec record_block(map(), integer() | nil, keyword()) :: :ok | :duplicate
+  @spec record_block(map(), integer() | nil, keyword()) :: :ok | :duplicate | :error
   defp record_block(%{"webhook_log_id" => log_id} = response, received_ts, opts)
        when is_integer(log_id) do
     final? = Keyword.get(opts, :final, false)
@@ -217,23 +219,35 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   # The row lock serialises concurrent callbacks of one chain, so two deliveries can't both read
   # the steps before either writes.
   @spec update_steps(non_neg_integer(), ([map()] -> {:ok, [map()]} | :duplicate)) ::
-          :ok | :duplicate
+          :ok | :duplicate | :error
   defp update_steps(log_id, fun) do
     Repo.transaction(fn ->
       with %WebhookLog{} = log <-
              WebhookLog |> where([l], l.id == ^log_id) |> lock("FOR UPDATE") |> Repo.one(),
            json = log.response_json || %{},
-           {:ok, steps} <- fun.(Map.get(json, @steps_key, [])) do
-        WebhookLog.update_webhook_log(log, %{response_json: Map.put(json, @steps_key, steps)})
+           {:ok, steps} <- fun.(Map.get(json, @steps_key, [])),
+           {:ok, _log} <-
+             WebhookLog.update_webhook_log(log, %{
+               response_json: Map.put(json, @steps_key, steps)
+             }) do
         :ok
       else
-        nil -> :ok
         :duplicate -> :duplicate
+        nil -> Repo.rollback(:webhook_log_not_found)
+        {:error, reason} -> Repo.rollback(reason)
       end
     end)
     |> case do
-      {:ok, outcome} -> outcome
-      {:error, _reason} -> :ok
+      {:ok, outcome} ->
+        outcome
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Kaapi chain step not saved for webhook_log_id=#{log_id}: " <>
+            Glific.SafeLog.safe_inspect(reason)
+        )
+
+        :error
     end
   end
 

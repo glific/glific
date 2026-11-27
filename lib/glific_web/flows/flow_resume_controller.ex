@@ -37,8 +37,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
         json(conn, "")
 
       # Claimed before the upload and resume: a repeated final callback would upload again and
-      # resume whichever node the contact is parked at now.
-      KaapiChain.claim_final(parsed) == :duplicate ->
+      # resume whichever node the contact is parked at now. An unsaved claim can't guard that.
+      KaapiChain.claim_final(parsed) != :ok ->
         json(conn, "")
 
       true ->

@@ -256,7 +256,18 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
       assert reason =~ "bad config"
     end
 
-    test "an organization without Kaapi credentials fails", %{fields: fields} do
+    test "an organization without Kaapi credentials fails with missing_api_key",
+         %{fields: fields} do
+      mock_kaapi()
+      organization = Fixtures.organization_fixture()
+
+      assert {:error, :missing_api_key, _reason} =
+               VoiceSts.call(Map.put(fields, "organization_id", organization.id), %{})
+
+      refute_received {:sts, _body}
+    end
+
+    test "an unparseable organization id fails before any lookup", %{fields: fields} do
       assert {:error, _error_type, _reason} =
                VoiceSts.call(Map.put(fields, "organization_id", "not-a-number"), %{})
     end
@@ -398,11 +409,31 @@ defmodule Glific.Flows.Webhooks.VoiceStsTest do
     end
 
     test "speech-to-speech callbacks are shaped by VoiceSts", %{organization_id: organization_id} do
-      response = %{"call_type" => "voice_sts", "reason" => "boom"}
+      log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
-      assert VoiceFilesearchGpt.handle_callback(%{"success" => false}, response, %{
-               organization_id: organization_id
-             }) == response
+      KaapiChain.record_intermediate(
+        %{
+          "webhook_log_id" => log.id,
+          "chain_blocks" => ["stt", "llm", "tts"],
+          "block_index" => 2,
+          "total_blocks" => 3,
+          "message" => "the answer",
+          "output_type" => "text"
+        },
+        1_500_000
+      )
+
+      degraded = %{
+        "call_type" => "voice_sts",
+        "webhook_log_id" => log.id,
+        "chain_degraded" => true,
+        "success" => true
+      }
+
+      assert %{"message" => "the answer", "tts_failed" => true} =
+               VoiceFilesearchGpt.handle_callback(%{"success" => false}, degraded, %{
+                 organization_id: organization_id
+               })
     end
 
     test "waits up to 120 seconds for the callback with the flag on, 60 with it off",

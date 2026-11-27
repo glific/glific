@@ -1260,7 +1260,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
     end
 
-    defp capture_resume(fun) do
+    # `after_tasks` runs once the supervised tasks have finished, while the mocks are still live.
+    defp capture_resume(fun, after_tasks \\ fn -> :ok end) do
       test_pid = self()
 
       with_mocks([
@@ -1280,6 +1281,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       ]) do
         fun.()
         await_supervised_tasks()
+        after_tasks.()
       end
     end
 
@@ -1401,10 +1403,17 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "chain_blocks" => ["stt", "llm", "tts"]
       })
 
-      capture_resume(fn ->
-        post(conn, "/webhook/flow_resume", chain_callback.(nil, true, %{body: nil}))
-        refute called(GcsWorker.upload_media(:_, :_, :_))
-      end)
+      audio = %{
+        body: %{
+          "type" => "audio",
+          "content" => %{"value" => Base.encode64("ogg-bytes"), "mime_type" => "audio/ogg"}
+        }
+      }
+
+      capture_resume(
+        fn -> post(conn, "/webhook/flow_resume", chain_callback.(nil, true, audio)) end,
+        fn -> refute called(GcsWorker.upload_media(:_, :_, :_)) end
+      )
 
       refute_received {:resumed, _results, _message}
       assert [%{"status" => "pending"}] = logged_steps(webhook_log)
