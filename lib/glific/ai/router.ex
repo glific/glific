@@ -48,6 +48,9 @@ defmodule Glific.AI.Router do
     |> Keyword.take([:base_url, :api_key])
     |> Keyword.put(:model, classifier_model())
     |> Keyword.put(:max_tokens, 16)
+    # Thinking is on by default for Haiku 5.5 and would consume the 16-token
+    # ceiling before the skill name is written.
+    |> Keyword.put(:thinking, %{type: "disabled"})
   end
 
   # `:classifier_model` is separate from the model that answers questions, so

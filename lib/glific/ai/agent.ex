@@ -192,6 +192,12 @@ defmodule Glific.AI.Agent do
           run(),
           map()
         ) :: outcome()
+  # A reasoning model can spend all of `max_tokens` thinking and return no text.
+  # The call is already billed into `run`, so stop rather than record a blank answer.
+  defp handle_reply(_message, _user, _messages, %ChatMessage{tool_calls: []} = reply, run, _ctx)
+       when reply.content in [nil, ""],
+       do: {:stopped, "The model returned no answer.", run}
+
   defp handle_reply(message, _user, _messages, %ChatMessage{tool_calls: []} = reply, run, _ctx) do
     event =
       run
