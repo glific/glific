@@ -291,6 +291,43 @@ defmodule Glific.GcsWorkerTest do
     refute permanent.id in eligible_ids
   end
 
+  test "queue_urls/4 takes type and contact from messages or wa_messages, whichever links the media",
+       attrs do
+    organization_id = attrs.organization_id
+
+    message_media = Fixtures.message_media_fixture(%{organization_id: organization_id})
+
+    message =
+      Fixtures.message_fixture(%{
+        organization_id: organization_id,
+        type: :audio,
+        media_id: message_media.id
+      })
+
+    wa_media = Fixtures.message_media_fixture(%{organization_id: organization_id})
+
+    wa_message =
+      Fixtures.wa_message_fixture(%{
+        organization_id: organization_id,
+        type: :video,
+        media_id: wa_media.id
+      })
+
+    GcsWorker.queue_urls(organization_id, message_media.id, wa_media.id, "incremental")
+
+    jobs =
+      all_enqueued(worker: GcsWorker, prefix: "global")
+      |> Map.new(fn job -> {job.args["media"]["id"], job.args["media"]} end)
+
+    assert %{"type" => "audio", "contact_id" => contact_id} = jobs[message_media.id]
+    assert contact_id == message.contact_id
+
+    assert %{"type" => "video", "contact_id" => wa_contact_id, "flow_id" => 0} =
+             jobs[wa_media.id]
+
+    assert wa_contact_id == wa_message.contact_id
+  end
+
   test "download_file_to_temp/3 follows a provider redirect to the media file" do
     path = Path.join(System.tmp_dir!(), "gcs_redirect_test.mp4")
 

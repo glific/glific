@@ -19,7 +19,8 @@ defmodule Glific.GCS do
     Partners.Organization,
     Partners.Saas,
     Repo,
-    RepoReplica
+    RepoReplica,
+    WAGroup.WAMessage
   }
 
   @endpoint "https://storage.googleapis.com/storage/v1/b"
@@ -130,6 +131,8 @@ defmodule Glific.GCS do
   def base_query(organization_id) do
     MessageMedia
     |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
+    # WhatsApp group media is linked from wa_messages, not messages.
+    |> join(:left, [m], wm in WAMessage, as: :wa_msg, on: m.id == wm.media_id)
     |> where([m, _msg], m.organization_id == ^organization_id)
     |> where([m, _msg], m.flow == :inbound)
     # Meta/Gupshup expire media after 7 days, so anything older is already gone on
