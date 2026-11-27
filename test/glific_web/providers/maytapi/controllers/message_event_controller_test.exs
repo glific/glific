@@ -208,6 +208,33 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
                wait_for(parent_message.id, &match?([%WaReaction{reaction: "❤️"}], &1))
     end
 
+    test "a removed reaction deletes the existing row",
+         %{conn: conn, organization_id: organization_id, parent_message: parent_message} do
+      post(conn, "/maytapi", message_format_reaction(@parent_whatsapp_id, "👍"))
+      assert [%WaReaction{reaction: "👍"}] = wait_for_reactions(parent_message.id, 1)
+
+      assert {:ok, :removed} =
+               @parent_whatsapp_id
+               |> message_format_reaction("")
+               |> Message.receive_reaction()
+               |> GroupMessage.receive_reaction_msg(organization_id)
+
+      assert [] == reactions_for(parent_message.id)
+    end
+
+    test "removing a reaction that was never stored creates nothing and is not retried",
+         %{organization_id: organization_id, parent_message: parent_message} do
+      assert {:ok, :removed} =
+               @parent_whatsapp_id
+               |> message_format_reaction("")
+               |> Message.receive_reaction()
+               |> GroupMessage.receive_reaction_msg(organization_id)
+
+      assert [] == reactions_for(parent_message.id)
+      assert {:error, :not_found} = Contacts.fetch_by_identity(:whatsapp, @reactor_phone)
+      refute_enqueued(worker: PendingReactionWorker)
+    end
+
     test "the same reaction in both formats is stored once",
          %{conn: conn, organization_id: organization_id, parent_message: parent_message} do
       post(conn, "/maytapi", message_format_reaction(@parent_whatsapp_id, "👍"))
@@ -277,6 +304,15 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
   end
 
   describe "ack-format reaction" do
+    test "an empty reaction removes the row saved in the ack format",
+         %{organization_id: organization_id, parent_message: parent_message} do
+      MessageEventController.update_statuses(ack_format_reaction("👍"), organization_id)
+      assert [%WaReaction{reaction: "👍"}] = reactions_for(parent_message.id)
+
+      MessageEventController.update_statuses(ack_format_reaction(""), organization_id)
+      assert [] == reactions_for(parent_message.id)
+    end
+
     test "is still saved against the sent message",
          %{organization_id: organization_id, parent_message: parent_message} do
       MessageEventController.update_statuses(ack_format_reaction("😮"), organization_id)

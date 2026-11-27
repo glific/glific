@@ -96,14 +96,20 @@ defmodule Glific.Communications.GroupMessageTest do
                )
     end
 
-    test "returns not found for an unknown or missing id", %{organization_id: organization_id} do
+    test "returns not found for an unknown id", %{organization_id: organization_id} do
       assert {:error, :not_found} =
                GroupMessage.fetch_by_whatsapp_id(
                  "true_120363238104@g.us_3EB0MISSING_919876500000@c.us",
                  organization_id
                )
+    end
 
-      assert {:error, :not_found} = GroupMessage.fetch_by_whatsapp_id(nil, organization_id)
+    test "returns missing parent id when there is no id to look up",
+         %{organization_id: organization_id} do
+      assert {:error, :missing_parent_id} =
+               GroupMessage.fetch_by_whatsapp_id(nil, organization_id)
+
+      assert {:error, :missing_parent_id} = GroupMessage.fetch_by_whatsapp_id("", organization_id)
     end
   end
 end

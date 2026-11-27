@@ -209,8 +209,9 @@ defmodule Glific.Communications.GroupMessage do
   Fetches the group message a Maytapi event refers to by its WhatsApp message id
   """
   @spec fetch_by_whatsapp_id(String.t() | nil, non_neg_integer()) ::
-          {:ok, WAMessage.t()} | {:error, :not_found}
-  def fetch_by_whatsapp_id(whatsapp_id, org_id) when is_binary(whatsapp_id) do
+          {:ok, WAMessage.t()} | {:error, :not_found | :missing_parent_id}
+  def fetch_by_whatsapp_id(whatsapp_id, org_id)
+      when is_binary(whatsapp_id) and whatsapp_id != "" do
     WAMessage
     |> where([wa_msg], wa_msg.organization_id == ^org_id)
     |> match_whatsapp_id(whatsapp_id, WAMessage.whatsapp_key_id(whatsapp_id))
@@ -223,7 +224,7 @@ defmodule Glific.Communications.GroupMessage do
     end
   end
 
-  def fetch_by_whatsapp_id(_whatsapp_id, _org_id), do: {:error, :not_found}
+  def fetch_by_whatsapp_id(_whatsapp_id, _org_id), do: {:error, :missing_parent_id}
 
   # The participant part of a WhatsApp id can switch between @c.us and @lid, so
   # match on the key id; the bsp_id match covers rows stored before key ids existed.
@@ -421,7 +422,7 @@ defmodule Glific.Communications.GroupMessage do
   handler for receiving the reaction message
   """
   @spec receive_reaction_msg(map(), non_neg_integer()) ::
-          {:ok, WaReaction.t()} | {:error, Ecto.Changeset.t() | atom()}
+          {:ok, WaReaction.t() | :removed} | {:error, Ecto.Changeset.t() | atom()}
   def receive_reaction_msg(params, org_id) do
     case save_reaction(params, org_id) do
       {:ok, _reaction} = result ->
@@ -440,11 +441,19 @@ defmodule Glific.Communications.GroupMessage do
   end
 
   @doc """
-  Saves a reaction against the group message it refers to
+  Saves a reaction against the group message it refers to, or removes it when the reaction is empty
   """
   @spec save_reaction(map(), non_neg_integer()) ::
-          {:ok, WaReaction.t()} | {:error, Ecto.Changeset.t() | atom()}
+          {:ok, WaReaction.t() | :removed} | {:error, Ecto.Changeset.t() | atom()}
   def save_reaction(params, org_id) do
+    if params["reaction"] in [nil, ""],
+      do: remove_reaction(params, org_id),
+      else: add_reaction(params, org_id)
+  end
+
+  @spec add_reaction(map(), non_neg_integer()) ::
+          {:ok, WaReaction.t()} | {:error, Ecto.Changeset.t() | atom()}
+  defp add_reaction(params, org_id) do
     with {:ok, phone} <- reactor_phone(params["reactorId"]),
          {:ok, context_message} <- fetch_by_whatsapp_id(params["msgId"], org_id),
          {:ok, contact} <-
@@ -466,6 +475,25 @@ defmodule Glific.Communications.GroupMessage do
         bsp_id: params["reactionId"],
         organization_id: org_id
       })
+    end
+  end
+
+  @spec remove_reaction(map(), non_neg_integer()) :: {:ok, :removed} | {:error, atom()}
+  defp remove_reaction(params, org_id) do
+    with {:ok, phone} <- reactor_phone(params["reactorId"]),
+         {:ok, context_message} <- fetch_by_whatsapp_id(params["msgId"], org_id) do
+      delete_contact_reaction(context_message.id, phone)
+      Instrumentation.track_receive("reaction_removed", org_id)
+      {:ok, :removed}
+    end
+  end
+
+  # a reactor we have never stored cannot have a reaction to delete
+  @spec delete_contact_reaction(non_neg_integer(), String.t()) :: {non_neg_integer(), nil}
+  defp delete_contact_reaction(wa_message_id, phone) do
+    case Contacts.fetch_by_identity(:whatsapp, phone) do
+      {:ok, contact} -> WaReaction.delete_wa_reaction(wa_message_id, contact.id)
+      {:error, _reason} -> {0, nil}
     end
   end
 

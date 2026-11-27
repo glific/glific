@@ -73,10 +73,32 @@ defmodule Glific.WAGroup.PendingReactionWorkerTest do
 
   test "schedules the next retry while the parent message is still missing",
        %{organization_id: organization_id, parent_message: parent_message} do
+    assert {:ok, _job} = PendingReactionWorker.enqueue(@reaction_params, organization_id)
     assert :ok = perform_job(PendingReactionWorker, job_args(organization_id, 0))
 
     assert_enqueued(worker: PendingReactionWorker, args: job_args(organization_id, 1))
     assert [] == reactions_for(parent_message.id)
+  end
+
+  test "the same reaction failing more than once starts a single retry chain",
+       %{organization_id: organization_id} do
+    assert {:error, :not_found} =
+             GroupMessage.receive_reaction_msg(@reaction_params, organization_id)
+
+    assert {:error, :not_found} =
+             GroupMessage.receive_reaction_msg(@reaction_params, organization_id)
+
+    assert [_job] = all_enqueued(worker: PendingReactionWorker)
+  end
+
+  test "a reaction without a parent message id is skipped without a retry",
+       %{organization_id: organization_id} do
+    assert {:error, :missing_parent_id} =
+             @reaction_params
+             |> Map.put("msgId", nil)
+             |> GroupMessage.receive_reaction_msg(organization_id)
+
+    refute_enqueued(worker: PendingReactionWorker)
   end
 
   test "gives up after the last retry",

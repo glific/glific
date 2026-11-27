@@ -6,11 +6,16 @@ defmodule Glific.WAGroup.PendingReactionWorker do
   message's WhatsApp key id. The ack and the reaction webhooks are processed independently, so the
   reaction can be handled first. Each retry is scheduled as a new job after the next delay in
   `@retry_delays`; once they are used up the reaction is recorded as skipped.
+
+  The same reaction can fail more than once: Maytapi sends it in both the message and the ack
+  format and may redeliver a webhook. Jobs are unique per reaction id and retry step, so those
+  collapse into a single retry chain.
   """
 
   use Oban.Worker,
     queue: :wa_group,
-    max_attempts: 3
+    max_attempts: 3,
+    unique: [keys: [:reaction_id, :organization_id, :retry], period: 900]
 
   alias Glific.{
     Communications.GroupMessage,
@@ -25,7 +30,13 @@ defmodule Glific.WAGroup.PendingReactionWorker do
   @spec enqueue(map(), non_neg_integer(), non_neg_integer()) ::
           {:ok, Oban.Job.t()} | {:error, any()}
   def enqueue(reaction_params, org_id, retry \\ 0) do
-    %{reaction: reaction_params, organization_id: org_id, retry: retry}
+    %{
+      reaction: reaction_params,
+      # without an id the reaction cannot be told apart from others, so it gets its own chain
+      reaction_id: reaction_params["reactionId"] || Ecto.UUID.generate(),
+      organization_id: org_id,
+      retry: retry
+    }
     |> new(schedule_in: Enum.at(@retry_delays, retry))
     |> Oban.insert()
   end

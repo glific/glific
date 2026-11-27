@@ -2,6 +2,7 @@ defmodule Glific.WAGroup.WaReaction do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,
@@ -70,5 +71,15 @@ defmodule Glific.WAGroup.WaReaction do
       conflict_target: [:wa_message_id, :contact_id],
       returning: true
     )
+  end
+
+  @doc """
+  Deletes the reaction a contact left on a message, if there is one
+  """
+  @spec delete_wa_reaction(non_neg_integer(), non_neg_integer()) :: {non_neg_integer(), nil}
+  def delete_wa_reaction(wa_message_id, contact_id) do
+    WaReaction
+    |> where([r], r.wa_message_id == ^wa_message_id and r.contact_id == ^contact_id)
+    |> Repo.delete_all()
   end
 end
