@@ -312,4 +312,35 @@ defmodule Glific.GcsWorkerTest do
     assert File.read!(path) == "fake-video-bytes"
     File.rm(path)
   end
+
+  describe "outbound_media_path/3" do
+    test "puts the user's name in snake case, then the uuid and extension" do
+      user = %Glific.Users.User{id: 7, name: "SAAS Admin"}
+      {year, week} = Timex.iso_week(Timex.now())
+
+      assert GcsWorker.outbound_media_path(user, "mp4", "abc") ==
+               "outbound/#{year}-#{week}/saas_admin/abc.mp4"
+    end
+
+    test "drops characters that would break the URL and keeps non-Latin letters" do
+      assert GcsWorker.outbound_media_path(
+               %Glific.Users.User{id: 7, name: "Ankit/K #1?%"},
+               "png",
+               "abc"
+             )
+             |> String.ends_with?("/ankit_k_1/abc.png")
+
+      assert GcsWorker.outbound_media_path(
+               %Glific.Users.User{id: 7, name: "अंकित शर्मा"},
+               "png",
+               "abc"
+             )
+             |> String.ends_with?("/अंकित_शर्मा/abc.png")
+    end
+
+    test "falls back to the user id when nothing of the name is left" do
+      assert GcsWorker.outbound_media_path(%Glific.Users.User{id: 7, name: "?? !!"}, "png", "abc")
+             |> String.ends_with?("/user_7/abc.png")
+    end
+  end
 end
