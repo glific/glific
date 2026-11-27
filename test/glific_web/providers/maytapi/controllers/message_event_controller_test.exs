@@ -6,6 +6,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
 
   alias Glific.{
     Communications.GroupMessage,
+    Contacts,
     Fixtures,
     Providers.Maytapi.Message,
     Repo,
@@ -251,6 +252,26 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
                |> GroupMessage.receive_reaction_msg(organization_id)
 
       assert [] == reactions_for(parent_message.id)
+      refute_enqueued(worker: PendingReactionWorker)
+    end
+
+    test "a reaction from the managed phone itself creates no contact, membership or reaction",
+         %{conn: conn, parent_message: parent_message} do
+      managed_phone = "919000000099"
+
+      own_reaction =
+        @parent_whatsapp_id
+        |> message_format_reaction()
+        |> Map.put("receiver", managed_phone)
+        |> put_in(["message", "fromMe"], true)
+        |> put_in(["user"], %{"id" => "#{managed_phone}@c.us", "phone" => managed_phone})
+
+      conn = post(conn, "/maytapi", own_reaction)
+
+      assert conn.private.phoenix_action == :reaction
+      assert json_response(conn, 200) == nil
+      assert [] == reactions_for(parent_message.id)
+      assert {:error, :not_found} = Contacts.fetch_by_identity(:whatsapp, managed_phone)
       refute_enqueued(worker: PendingReactionWorker)
     end
   end

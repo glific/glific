@@ -38,6 +38,13 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
   Handles reactions delivered as message events
   """
   @spec reaction(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def reaction(conn, %{"message" => %{"fromMe" => true}}) do
+    # the managed phone is the organization itself, not a group member,
+    # so its reactions must not create a contact or a group membership
+    Instrumentation.track_receive("reaction_from_me", conn.assigns.organization_id)
+    json(conn, nil)
+  end
+
   def reaction(conn, params) do
     organization_id = conn.assigns.organization_id
 
