@@ -96,7 +96,7 @@ defmodule GlificWeb.Resolvers.Media do
   @spec remote_name(User.t(), String.t(), Ecto.UUID.t() | nil) :: String.t()
   defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()) do
     {year, week} = Timex.iso_week(Timex.now())
-    "outbound/#{year}-#{week}/#{user.name}/#{uuid}.#{extension}"
+    "outbound/#{year}-#{week}/#{user.id}/#{uuid}.#{extension}"
   end
 
   @spec handle_response(any()) :: {:ok, String.t()} | {:error, String.t()}

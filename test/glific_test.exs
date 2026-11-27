@@ -94,6 +94,28 @@ defmodule GlificTest do
     end
   end
 
+  describe "encode_url_path/1" do
+    test "encodes spaces and non-ASCII characters in the path" do
+      assert Glific.encode_url_path("https://storage.googleapis.com/b/outbound/SAAS Admin/अ.mp4") ==
+               "https://storage.googleapis.com/b/outbound/SAAS%20Admin/%E0%A4%85.mp4"
+    end
+
+    test "does not encode an already encoded path twice" do
+      url = "https://storage.googleapis.com/b/outbound/SAAS%20Admin/x.mp4"
+      assert Glific.encode_url_path(url) == url
+    end
+
+    test "encodes a stray percent sign that is not an escape" do
+      assert Glific.encode_url_path("https://example.com/offer 50%.jpg") ==
+               "https://example.com/offer%2050%25.jpg"
+    end
+
+    test "leaves valid path characters and the query string unchanged" do
+      url = "https://example.com/a+b(1).jpg?token=abc&x=1"
+      assert Glific.encode_url_path(url) == url
+    end
+  end
+
   describe "mask_phone_number/1" do
     test "masks the last five digits" do
       assert "9198*****" == Glific.mask_phone_number("919876543")

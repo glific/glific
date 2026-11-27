@@ -671,7 +671,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec remote_name(User.t() | nil, String.t(), Ecto.UUID.t()) :: String.t()
   defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()) do
     {year, week} = Timex.iso_week(Timex.now())
-    "outbound/#{year}-#{week}/#{user.name}/#{uuid}.#{extension}"
+    "outbound/#{year}-#{week}/#{user.id}/#{uuid}.#{extension}"
   end
 
   @spec add_scope_filter(map()) :: map()

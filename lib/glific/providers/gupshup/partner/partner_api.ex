@@ -120,33 +120,43 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
           {:ok, String.t()} | {:error, String.t()}
   def get_media_handle_id(org_id, url, media_name) do
     with {:ok, path} <- get_resource_local_path(url, media_name) do
-      data =
-        Multipart.new()
-        |> Multipart.add_file(path, name: "file")
-        |> Multipart.add_field("file_type", MIME.from_path(url))
-
-      (app_url!(org_id) <> "/upload/media")
-      |> post_request(data,
-        org_id: org_id
-      )
-      |> case do
-        {:ok, %{"status" => "success", "handleId" => %{"message" => handle_id}} = _res} ->
-          {:ok, handle_id}
-
-        {:ok, response} ->
-          File.rm(path)
-
-          {:error,
-           "Could not upload the template media: #{Glific.SafeLog.safe_inspect(response)}"}
-
-        {:error, error} ->
-          File.rm(path)
-          {:error, "Could not upload the template media: #{media_upload_error(error)}"}
+      try do
+        upload_media(org_id, url, path)
+      after
+        File.rm(path)
       end
     end
   end
 
+  @spec upload_media(non_neg_integer, String.t(), String.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp upload_media(org_id, url, path) do
+    data =
+      Multipart.new()
+      |> Multipart.add_file(path, name: "file")
+      |> Multipart.add_field("file_type", MIME.from_path(url))
+
+    (app_url!(org_id) <> "/upload/media")
+    |> post_request(data, org_id: org_id)
+    |> case do
+      {:ok, %{"status" => "success", "handleId" => %{"message" => handle_id}} = _res} ->
+        {:ok, handle_id}
+
+      {:ok, response} ->
+        Logger.error(
+          "Unexpected template media upload response: #{SafeLog.safe_inspect(response)}"
+        )
+
+        {:error, "Could not upload the template media: #{media_upload_error(response)}"}
+
+      {:error, error} ->
+        {:error, "Could not upload the template media: #{media_upload_error(error)}"}
+    end
+  end
+
   @spec media_upload_error(any()) :: String.t()
+  defp media_upload_error(%{"message" => message}) when is_binary(message), do: message
+
   defp media_upload_error(%Tesla.Env{status: status, body: body}) when is_binary(body) do
     case Jason.decode(body) do
       {:ok, %{"message" => message}} when is_binary(message) -> message
@@ -155,7 +165,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   defp media_upload_error(%Tesla.Env{status: status}), do: "status #{status}"
-  defp media_upload_error(error), do: Glific.SafeLog.safe_inspect(error)
+  defp media_upload_error(%{}), do: "unexpected response from Gupshup"
+  defp media_upload_error(error), do: SafeLog.safe_inspect(error)
 
   @doc """
     Transfer balance from ISV partner to app
@@ -287,36 +298,26 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Downloads the resource from the given url and returns the local path
+  Downloads the resource from the given url to a unique temporary file and returns its path
   """
-  @spec get_resource_local_path(String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  @spec get_resource_local_path(String.t(), String.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def get_resource_local_path(resource_url, media_name) do
-    case Tesla.get(encode_url(resource_url)) do
+    [{Tesla.Middleware.FollowRedirects, max_redirects: 5}]
+    |> Tesla.client()
+    |> Tesla.get(Glific.encode_url_path(resource_url))
+    |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        file_name = get_filename_from_resource_url(resource_url, media_name)
-        :ok = File.write!(file_name, body)
-        {:ok, file_name}
+        path = local_media_path(resource_url, media_name)
+        :ok = File.write!(path, body)
+        {:ok, path}
 
       {:ok, %Tesla.Env{status: status}} ->
-        Logger.error("Error downloading file #{resource_url}, status: #{status}")
         {:error, "Could not download the template media, status #{status}"}
 
       {:error, err} ->
-        Logger.error("Error downloading file due to #{Glific.SafeLog.safe_inspect(err)}")
-        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
+        {:error, "Could not download the template media: #{SafeLog.safe_inspect(err)}"}
     end
-  end
-
-  @doc """
-  Deletes the file, that has been downloaded locally by the `get_resource_local_path/2`
-  """
-  @spec delete_local_resource(nil | String.t(), String.t()) :: :ok | {:error, atom()}
-  def delete_local_resource(nil, _media_name), do: :ok
-
-  def delete_local_resource(resource_url, media_name) do
-    resource_url
-    |> get_filename_from_resource_url(media_name)
-    |> File.rm()
   end
 
   @doc """
@@ -549,8 +550,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     post(url, data, headers: req_headers)
     |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, Jason.decode!(body)}
+      {:ok, %Tesla.Env{status: status, body: body} = resp} when status in 200..299 ->
+        case Jason.decode(body) do
+          {:ok, decoded} -> {:ok, decoded}
+          {:error, _} -> {:error, resp}
+        end
 
       {:ok, resp} ->
         {:error, resp}
@@ -706,19 +710,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  # Upload paths contain the uploader's name, so a stored URL can hold raw spaces or non-ASCII
-  # characters; existing %-escapes are kept so an already encoded URL is not encoded twice.
-  @spec encode_url(String.t()) :: String.t()
-  defp encode_url(url), do: URI.encode(url, &(URI.char_unescaped?(&1) or &1 == ?%))
-
-  @spec get_filename_from_resource_url(String.t(), String.t()) :: String.t()
-  defp get_filename_from_resource_url(resource_url, media_name) do
+  # Unique per call, so two orgs submitting the same shortcode at once never share (or delete) a file.
+  @spec local_media_path(String.t(), String.t()) :: String.t()
+  defp local_media_path(resource_url, media_name) do
     file_format =
       MIME.from_path(resource_url)
       |> String.split("/")
       |> List.last()
 
-    "template-asset-#{media_name}.#{file_format}"
+    Path.join(
+      System.tmp_dir!(),
+      "template-asset-#{media_name}-#{Ecto.UUID.generate()}.#{file_format}"
+    )
   end
 
   @spec fetch_app_details_by_app_name(String.t()) :: map() | String.t()

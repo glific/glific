@@ -55,11 +55,7 @@ defmodule Glific.Providers.Gupshup.Template do
          {:ok, _app_id} <- validate_app_id(app_id),
          {:ok, body} <- body(attrs, organization),
          {:ok, %{"template" => template} = _response} <-
-           PartnerAPI.apply_for_template(
-             attrs.organization_id,
-             # we don't need media_url for further processing
-             Map.delete(body, :media_url)
-           ) do
+           PartnerAPI.apply_for_template(attrs.organization_id, body) do
       attrs
       |> Map.merge(%{
         number_parameters: Templates.template_parameters_count(attrs),
@@ -70,7 +66,6 @@ defmodule Glific.Providers.Gupshup.Template do
       })
       |> append_buttons(attrs)
       |> Templates.do_create_session_template()
-      |> tap(fn _resp -> PartnerAPI.delete_local_resource(body[:media_url], attrs.shortcode) end)
     else
       {:error, error} ->
         Logger.error(error)
@@ -523,17 +518,15 @@ defmodule Glific.Providers.Gupshup.Template do
   defp attach_media_params(template_payload, %{type: :text} = _attrs), do: {:ok, template_payload}
 
   defp attach_media_params(template_payload, %{type: _type, shortcode: short_code} = attrs) do
-    media_id = Glific.parse_maybe_integer!(attrs[:message_media_id])
-    {:ok, media} = Repo.fetch_by(MessageMedia, %{id: media_id})
-
-    with {:ok, media_handle_id} <-
+    with {:ok, media_id} when is_integer(media_id) <-
+           Glific.parse_maybe_integer(attrs[:message_media_id]),
+         {:ok, media} <- Repo.fetch_by(MessageMedia, %{id: media_id}),
+         {:ok, media_handle_id} <-
            PartnerAPI.get_media_handle_id(attrs.organization_id, media.url, short_code) do
-      {:ok,
-       Map.merge(template_payload, %{
-         enableSample: true,
-         exampleMedia: media_handle_id,
-         media_url: media.url
-       })}
+      {:ok, Map.merge(template_payload, %{enableSample: true, exampleMedia: media_handle_id})}
+    else
+      {:error, message} when is_binary(message) -> {:error, message}
+      _ -> {:error, "Template media not found"}
     end
   end
 

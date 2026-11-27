@@ -81,6 +81,20 @@ defmodule GlificWeb.Resolvers.MediaTest do
       end
     end
 
+    test "names the attachment folder by user id, so the URL never carries the user's name", %{
+      user: user,
+      organization_id: organization_id
+    } do
+      {:ok, user} = Glific.Users.update_user(user, %{name: "SAAS Admin #1"})
+
+      with_mock GcsWorker, [:passthrough],
+        upload_media: fn _local, remote, _org -> {:ok, %{url: remote, type: :image}} end do
+        assert {:ok, remote} = file_of(1) |> args(organization_id) |> upload(user)
+        assert [_week, folder, _file] = remote |> String.trim_leading("outbound/") |> Path.split()
+        assert folder == "#{user.id}"
+      end
+    end
+
     test "refuses a folder that could climb out of its prefix", %{
       user: user,
       organization_id: organization_id
