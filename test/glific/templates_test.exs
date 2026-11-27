@@ -29,7 +29,7 @@ defmodule Glific.TemplatesTest do
     active_language_ids = Partners.organization(organization.id).active_language_ids
     Caches.remove(organization.id, [{:template_library, active_language_ids}])
 
-    :ok
+    Fixtures.set_bsp_partner_tokens(organization.id)
   end
 
   describe "session_template" do
@@ -2415,7 +2415,7 @@ defmodule Glific.TemplatesTest do
             })
         }
 
-      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/template/list"} ->
         %Tesla.Env{
           status: 200,
           body:
@@ -2484,7 +2484,7 @@ defmodule Glific.TemplatesTest do
             })
         }
 
-      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/template/list"} ->
         %Tesla.Env{
           status: 500,
           body: "Internal Server Error"
@@ -2518,6 +2518,43 @@ defmodule Glific.TemplatesTest do
 
     severities = Enum.map(notifications, & &1.severity)
     assert Notifications.types().critical in severities
+  end
+
+  test "sync_hsms_from_bsp/1 syncs templates from every page" do
+    mock_paged_templates(fn
+      1 -> paged_templates_response(1..100)
+      2 -> paged_templates_response(101..102)
+    end)
+
+    assert :ok = Templates.sync_hsms_from_bsp(@org_id)
+    assert synced_template_count(1..102) == 102
+  end
+
+  test "sync_hsms_from_bsp/1 leaves templates untouched when a later page fails" do
+    [existing_template | _] = Templates.list_session_templates(%{filter: %{is_hsm: true}})
+    existing_status = existing_template.status
+
+    mock_paged_templates(fn
+      1 ->
+        changed_template = %{
+          "id" => existing_template.bsp_id,
+          "elementName" => existing_template.shortcode,
+          "languageCode" => "en",
+          "category" => "MARKETING",
+          "status" => "REJECTED",
+          "templateType" => "TEXT",
+          "data" => existing_template.body
+        }
+
+        paged_templates_response(1..99, [changed_template])
+
+      2 ->
+        %Tesla.Env{status: 500, body: "Internal Server Error"}
+    end)
+
+    assert {:error, "BSP Couldn't connect"} = Templates.sync_hsms_from_bsp(@org_id)
+    assert synced_template_count(1..99) == 0
+    assert Repo.get!(SessionTemplate, existing_template.id).status == existing_status
   end
 
   test "submit_otp_template_for_org/1 should submit verify_otp template for approval", attrs do
@@ -2649,7 +2686,7 @@ defmodule Glific.TemplatesTest do
     whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
 
     Tesla.Mock.mock(fn
-      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/templates"} ->
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/template/list"} ->
         %Tesla.Env{
           status: 200,
           body:
@@ -3064,5 +3101,62 @@ defmodule Glific.TemplatesTest do
     # the metalibrary endpoint must only be hit once - the second identical
     # call is served from the {:ok, templates} -> {:ok, templates} cache branch
     assert Agent.get(counter, & &1) == 1
+  end
+
+  defp mock_paged_templates(page_response) do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+        %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => "sk_test_partner_token"})}
+
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "sk_test_partner_app_token"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/list",
+        query: query
+      } ->
+        page_response.(query[:pageNo])
+    end)
+  end
+
+  defp paged_templates_response(template_numbers, extra_templates \\ []) do
+    templates =
+      Enum.map(template_numbers, fn number ->
+        %{
+          "id" => paged_template_id(number),
+          "elementName" => "paged_template_#{number}",
+          "languageCode" => "en",
+          "category" => "UTILITY",
+          "status" => "APPROVED",
+          "templateType" => "TEXT",
+          "data" => "Paged template #{number} for {{1}}"
+        }
+      end)
+
+    %Tesla.Env{
+      status: 200,
+      body: Jason.encode!(%{"status" => "success", "templates" => templates ++ extra_templates})
+    }
+  end
+
+  defp synced_template_count(template_numbers) do
+    bsp_ids = Enum.map(template_numbers, &paged_template_id/1)
+
+    SessionTemplate
+    |> where([template], template.bsp_id in ^bsp_ids)
+    |> Repo.aggregate(:count)
+  end
+
+  defp paged_template_id(number) do
+    suffix =
+      number
+      |> Integer.to_string()
+      |> String.pad_leading(12, "0")
+
+    "00000000-0000-4000-8000-" <> suffix
   end
 end
