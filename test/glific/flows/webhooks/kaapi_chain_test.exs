@@ -304,21 +304,60 @@ defmodule Glific.Flows.Webhooks.KaapiChainTest do
     end
   end
 
-  describe "ended?/1" do
-    test "is true once the block that ended the chain is logged", %{log: log} do
+  describe "claim_final/1" do
+    test "claims the final block once; a repeat is a duplicate", %{log: log} do
       KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
-      refute KaapiChain.ended?(callback(log, nil, nil))
+      final = callback(log, nil, nil)
 
-      KaapiChain.record_final(
-        %{"success" => false, "error" => "boom"},
-        callback(log, nil, nil, %{"callback_received_ts" => 2_000_000})
-      )
+      assert :ok = KaapiChain.claim_final(final)
+      assert :duplicate = KaapiChain.claim_final(final)
 
-      assert KaapiChain.ended?(callback(log, nil, nil))
+      assert [_, %{"block_index" => 2, "component" => "llm", "status" => "pending"}] =
+               steps(log)
     end
 
-    test "is false for a response that is not part of a chain", %{log: log} do
-      refute KaapiChain.ended?(%{"webhook_log_id" => log.id})
+    test "record_final fills the claimed block in place, timed from the previous block",
+         %{log: log} do
+      KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
+      KaapiChain.record_intermediate(callback(log, 2, "answer"), 2_000_000)
+      final = callback(log, nil, "https://x/a.ogg", %{"callback_received_ts" => 3_000_000})
+
+      assert :ok = KaapiChain.claim_final(final)
+      assert :ok = KaapiChain.record_final(%{"success" => true}, final)
+      assert :duplicate = KaapiChain.record_final(%{"success" => true}, final)
+
+      assert [
+               _,
+               _,
+               %{
+                 "block_index" => 3,
+                 "status" => "success",
+                 "final" => true,
+                 "message" => "https://x/a.ogg",
+                 "latency_ms" => 1000
+               }
+             ] = steps(log)
+    end
+
+    test "an intermediate block after the claim does not fill the claimed block", %{log: log} do
+      KaapiChain.claim_final(callback(log, nil, nil))
+
+      assert :duplicate =
+               KaapiChain.record_intermediate(callback(log, 2, "late answer"), 2_000_000)
+
+      assert [%{"block_index" => 1, "status" => "pending"}] = steps(log)
+    end
+
+    test "a pending claim is not an output", %{log: log} do
+      KaapiChain.record_intermediate(callback(log, 1, "hello"), 1_500_000)
+      KaapiChain.claim_final(callback(log, nil, nil))
+
+      assert %{"blocks" => %{"stt" => "hello"}} = KaapiChain.outputs(log.id)
+    end
+
+    test "a response that is not part of a chain is never a duplicate", %{log: log} do
+      assert :ok = KaapiChain.claim_final(%{"webhook_log_id" => log.id})
+      assert :ok = KaapiChain.claim_final(%{"webhook_log_id" => log.id})
     end
   end
 

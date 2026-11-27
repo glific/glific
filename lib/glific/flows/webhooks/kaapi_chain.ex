@@ -9,6 +9,8 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   nodes. The gap between consecutive callbacks is emitted as `kaapi_chain_latency`.
   """
 
+  import Ecto.Query
+
   alias Glific.{Flows.WebhookLog, Repo}
   alias Glific.Flows.Webhooks.Instrumentation
 
@@ -23,15 +25,45 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   def intermediate?(_result, _response), do: false
 
   @doc "Appends a successful non-final block to the webhook log and emits its latency."
-  @spec record_intermediate(map(), integer()) :: :ok
+  @spec record_intermediate(map(), integer()) :: :ok | :duplicate
   def record_intermediate(response, received_ts),
     do: record_block(response, received_ts, status: "success")
 
   @doc """
-  Appends the block that ended the chain (its last output, or a failure) to the log and emits its
-  latency tagged with its status. A response that is not part of a chain is ignored.
+  Claims the block that ends the chain before any side effect (upload, resume): `:duplicate` when
+  the chain already ended, so a repeated or concurrent final callback is dropped. A response that
+  is not part of a chain is never a duplicate.
   """
-  @spec record_final(map(), map()) :: :ok
+  @spec claim_final(map()) :: :ok | :duplicate
+  def claim_final(%{"chain_blocks" => blocks, "webhook_log_id" => log_id} = response)
+      when is_list(blocks) and is_integer(log_id) do
+    update_steps(log_id, fn steps ->
+      index = response["block_index"] || length(steps) + 1
+
+      if ended_or_logged?(steps, index) do
+        :duplicate
+      else
+        {:ok,
+         steps ++
+           [
+             %{
+               "block_index" => index,
+               "component" => component(response, index),
+               "status" => "pending",
+               "final" => true
+             }
+           ]}
+      end
+    end)
+  end
+
+  def claim_final(_response), do: :ok
+
+  @doc """
+  Fills in the block that ended the chain (its last output, or a failure) and emits its latency
+  tagged with its status. A response that is not part of a chain is ignored.
+  """
+  @spec record_final(map(), map()) :: :ok | :duplicate
   def record_final(result, %{"chain_blocks" => blocks} = response) when is_list(blocks) do
     if result["success"] == true and response["success"] != false do
       record_block(response, response["callback_received_ts"], status: "success", final: true)
@@ -80,13 +112,6 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
 
   def fallback_to_text(_result, response), do: response
 
-  @doc "True when the block that ended this chain is already logged, so a redelivery is ignored."
-  @spec ended?(map()) :: boolean()
-  def ended?(%{"chain_blocks" => blocks, "webhook_log_id" => log_id}) when is_list(blocks),
-    do: log_id |> logged_steps() |> Enum.any?(& &1["final"])
-
-  def ended?(_response), do: false
-
   @doc """
   Adds the chain's steps and outputs to the callback log message that replaces the log, so the
   final log row shows the whole result: the answer, `media_url`, `thread_id` and each block.
@@ -120,7 +145,7 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   @spec steps_outputs([map()]) :: map()
   defp steps_outputs(steps) do
     steps
-    |> Enum.reject(&(&1["status"] == "failure"))
+    |> Enum.filter(&(&1["status"] == "success"))
     |> Enum.reduce(%{"blocks" => %{}}, fn step, acc ->
       acc
       |> put_in(["blocks", step["component"]], step["message"])
@@ -136,46 +161,81 @@ defmodule Glific.Flows.Webhooks.KaapiChain do
   defp put_output(acc, _type, _message), do: acc
 
   # Kaapi's final and failure callbacks carry no block index: they belong to the block after the
-  # last one logged. Once the chain has ended, and for a block already logged, a repeated delivery
-  # is ignored (no second step or metric), so a retried index-less callback is not counted twice.
-  @spec record_block(map(), integer() | nil, keyword()) :: :ok
+  # last one logged. A block claimed by `claim_final/1` is filled in place; otherwise, once the
+  # chain has ended or the block is logged, a repeated delivery is ignored (no second step or
+  # metric), so a retried index-less callback is not counted twice.
+  @spec record_block(map(), integer() | nil, keyword()) :: :ok | :duplicate
   defp record_block(%{"webhook_log_id" => log_id} = response, received_ts, opts)
        when is_integer(log_id) do
-    status = Keyword.fetch!(opts, :status)
+    final? = Keyword.get(opts, :final, false)
 
-    with %WebhookLog{} = log <- Repo.get(WebhookLog, log_id),
-         json = log.response_json || %{},
-         steps = Map.get(json, @steps_key, []),
-         false <- Enum.any?(steps, & &1["final"]),
-         index = response["block_index"] || length(steps) + 1,
-         false <- Enum.any?(steps, &(&1["block_index"] == index)) do
-      component = component(response, index)
-      latency_ms = block_latency_ms(steps, response, received_ts)
-      track(response, component, latency_ms, status)
+    update_steps(log_id, fn steps ->
+      case final? && Enum.find_index(steps, &(&1["status"] == "pending")) do
+        claimed when not is_integer(claimed) ->
+          index = response["block_index"] || length(steps) + 1
 
-      step = %{
-        "block_index" => index,
-        "component" => component,
-        "status" => status,
-        "output_type" => response["output_type"],
-        "message" => if(status == "success", do: response["message"]),
-        "error" => opts[:error],
-        "final" => Keyword.get(opts, :final, false),
-        "thread_id" => response["thread_id"],
-        "latency_ms" => latency_ms,
-        "received_ts" => received_ts,
-        "received_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-      }
+          if ended_or_logged?(steps, index),
+            do: :duplicate,
+            else: {:ok, steps ++ [build_step(response, index, steps, received_ts, opts)]}
 
-      WebhookLog.update_webhook_log(log, %{
-        response_json: Map.put(json, @steps_key, steps ++ [step])
-      })
-    end
-
-    :ok
+        position ->
+          {before, [claimed | _rest]} = Enum.split(steps, position)
+          step = build_step(response, claimed["block_index"], before, received_ts, opts)
+          {:ok, before ++ [step]}
+      end
+    end)
   end
 
   defp record_block(_response, _received_ts, _opts), do: :ok
+
+  @spec build_step(map(), pos_integer(), [map()], integer() | nil, keyword()) :: map()
+  defp build_step(response, index, previous_steps, received_ts, opts) do
+    status = Keyword.fetch!(opts, :status)
+    component = component(response, index)
+    latency_ms = block_latency_ms(previous_steps, response, received_ts)
+    track(response, component, latency_ms, status)
+
+    %{
+      "block_index" => index,
+      "component" => component,
+      "status" => status,
+      "output_type" => response["output_type"],
+      "message" => if(status == "success", do: response["message"]),
+      "error" => opts[:error],
+      "final" => Keyword.get(opts, :final, false),
+      "thread_id" => response["thread_id"],
+      "latency_ms" => latency_ms,
+      "received_ts" => received_ts,
+      "received_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
+
+  @spec ended_or_logged?([map()], pos_integer()) :: boolean()
+  defp ended_or_logged?(steps, index),
+    do: Enum.any?(steps, &(&1["final"] == true or &1["block_index"] == index))
+
+  # The row lock serialises concurrent callbacks of one chain, so two deliveries can't both read
+  # the steps before either writes.
+  @spec update_steps(non_neg_integer(), ([map()] -> {:ok, [map()]} | :duplicate)) ::
+          :ok | :duplicate
+  defp update_steps(log_id, fun) do
+    Repo.transaction(fn ->
+      with %WebhookLog{} = log <-
+             WebhookLog |> where([l], l.id == ^log_id) |> lock("FOR UPDATE") |> Repo.one(),
+           json = log.response_json || %{},
+           {:ok, steps} <- fun.(Map.get(json, @steps_key, [])) do
+        WebhookLog.update_webhook_log(log, %{response_json: Map.put(json, @steps_key, steps)})
+        :ok
+      else
+        nil -> :ok
+        :duplicate -> :duplicate
+      end
+    end)
+    |> case do
+      {:ok, outcome} -> outcome
+      {:error, _reason} -> :ok
+    end
+  end
 
   @spec component(map(), pos_integer()) :: String.t()
   defp component(%{"chain_blocks" => blocks}, index) when is_list(blocks),

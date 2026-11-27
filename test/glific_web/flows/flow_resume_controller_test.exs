@@ -10,6 +10,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Flows.Webhook,
     Flows.WebhookLog,
     Flows.Webhooks.Errors.SystemError,
+    Flows.Webhooks.KaapiChain,
     GCS.GcsWorker,
     Repo,
     Seeds.SeedsDev
@@ -1388,6 +1389,25 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       end)
 
       refute_received {:resumed, _results, _message}
+    end
+
+    test "a final callback while the first is still uploading neither uploads nor resumes", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      webhook_log: webhook_log
+    } do
+      KaapiChain.claim_final(%{
+        "webhook_log_id" => webhook_log.id,
+        "chain_blocks" => ["stt", "llm", "tts"]
+      })
+
+      capture_resume(fn ->
+        post(conn, "/webhook/flow_resume", chain_callback.(nil, true, %{body: nil}))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
+      end)
+
+      refute_received {:resumed, _results, _message}
+      assert [%{"status" => "pending"}] = logged_steps(webhook_log)
     end
 
     test "an LLM failure after the transcript resumes Failure, not the transcript", %{
