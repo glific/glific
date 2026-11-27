@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
   alias Faker.Phone
 
   alias Glific.{
+    Communications.GroupMessage,
     Contacts.Contact,
     Fixtures,
     Groups.ContactWAGroup,
@@ -62,7 +63,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
         "type" => "ack"
       }
 
-    MessageEventController.update_statuses(reaction_response, user.organization_id)
+    GroupMessage.receive_reaction_msg(hd(reaction_response["data"]), user.organization_id)
 
     message =
       WAMessage
@@ -93,7 +94,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
         "type" => "ack"
       }
 
-    MessageEventController.update_statuses(reaction_response, user.organization_id)
+    GroupMessage.receive_reaction_msg(hd(reaction_response["data"]), user.organization_id)
 
     message =
       WAMessage
@@ -181,7 +182,7 @@ defmodule GlificWeb.Schema.WaReactionTest do
         "type" => "ack"
       }
 
-    assert :ok = MessageEventController.update_statuses(payload, org_id)
+    assert {:ok, _reaction} = GroupMessage.receive_reaction_msg(hd(payload["data"]), org_id)
     contact = Repo.get_by(Contact, %{phone: contact_phone})
     contact_wa_group = Repo.get_by(ContactWAGroup, %{contact_id: contact.id})
 

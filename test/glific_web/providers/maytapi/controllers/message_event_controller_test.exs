@@ -235,14 +235,15 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
       refute_enqueued(worker: PendingReactionWorker)
     end
 
-    test "the same reaction in both formats is stored once",
+    test "a late ack copy does not overwrite the reaction saved from the message event",
          %{conn: conn, organization_id: organization_id, parent_message: parent_message} do
-      post(conn, "/maytapi", message_format_reaction(@parent_whatsapp_id, "👍"))
-      assert [_reaction] = wait_for_reactions(parent_message.id, 1)
+      post(conn, "/maytapi", message_format_reaction(@parent_whatsapp_id, "❤️"))
+      assert [%WaReaction{reaction: "❤️"}] = wait_for_reactions(parent_message.id, 1)
 
       MessageEventController.update_statuses(ack_format_reaction("👍"), organization_id)
+      MessageEventController.update_statuses(ack_format_reaction(""), organization_id)
 
-      assert [%WaReaction{reaction: "👍"}] = reactions_for(parent_message.id)
+      assert [%WaReaction{reaction: "❤️"}] = reactions_for(parent_message.id)
     end
 
     test "a reaction to an unknown message is not saved and is scheduled for a retry",
@@ -304,20 +305,13 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventControllerTest do
   end
 
   describe "ack-format reaction" do
-    test "an empty reaction removes the row saved in the ack format",
-         %{organization_id: organization_id, parent_message: parent_message} do
-      MessageEventController.update_statuses(ack_format_reaction("👍"), organization_id)
-      assert [%WaReaction{reaction: "👍"}] = reactions_for(parent_message.id)
-
-      MessageEventController.update_statuses(ack_format_reaction(""), organization_id)
-      assert [] == reactions_for(parent_message.id)
-    end
-
-    test "is still saved against the sent message",
+    test "is acknowledged without saving a reaction or creating the reactor",
          %{organization_id: organization_id, parent_message: parent_message} do
       MessageEventController.update_statuses(ack_format_reaction("😮"), organization_id)
 
-      assert [%WaReaction{reaction: "😮"}] = reactions_for(parent_message.id)
+      assert [] == reactions_for(parent_message.id)
+      assert {:error, :not_found} = Contacts.fetch_by_identity(:whatsapp, @reactor_phone)
+      refute_enqueued(worker: PendingReactionWorker)
     end
   end
 

@@ -71,8 +71,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
         %{"options" => _options} ->
           update_poll_response(response, org_id)
 
+        # Maytapi sends every reaction both here and as a message event; saving both copies
+        # lets a late copy overwrite a newer reaction, so only the message event is saved
         %{"reaction" => _reaction} ->
-          handle_reactions(response, org_id)
+          Instrumentation.track_receive("reaction_ack_skipped", org_id)
 
         %{"ackType" => ack_type} ->
           do_update_status(response, ack_type, org_id)
