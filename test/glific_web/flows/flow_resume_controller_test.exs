@@ -10,6 +10,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Flows.Webhook,
     Flows.WebhookLog,
     Flows.Webhooks.Errors.SystemError,
+    Flows.Webhooks.KaapiChain,
     GCS.GcsWorker,
     Repo,
     Seeds.SeedsDev
@@ -1197,6 +1198,265 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       end
 
     {exception, tags}
+  end
+
+  describe "speech-to-speech chain callbacks" do
+    setup %{conn: %{assigns: %{organization_id: organization_id}}} do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      [node | _tail] = flow.nodes
+
+      {:ok, _context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      chain_metadata = %{
+        "call_type" => "voice_sts",
+        "webhook_name" => "voice-filesearch-gpt",
+        "chain_blocks" => ["stt", "llm", "tts"],
+        "chain_fallback" => "llm",
+        "result_name" => "response",
+        "kaapi_dispatch_ts" => DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      }
+
+      # Builds a signed chain callback; `block_index` nil mimics Kaapi's final/failure callbacks.
+      chain_callback = fn block_index, success, output ->
+        params =
+          Glific.WebhookTestHelpers.build_unified_callback_params(
+            organization_id,
+            flow.id,
+            contact.id,
+            webhook_log.id,
+            success,
+            nil,
+            chain_metadata
+          )
+
+        data = %{
+          "block_index" => block_index,
+          "total_blocks" => 3,
+          "response" => %{"conversation_id" => output[:conversation_id], "output" => output.body}
+        }
+
+        Map.put(params, "data", data)
+      end
+
+      text = fn value -> %{body: %{"type" => "text", "content" => %{"value" => value}}} end
+
+      %{
+        webhook_log: webhook_log,
+        chain_callback: chain_callback,
+        text: text,
+        organization_id: organization_id
+      }
+    end
+
+    # `after_tasks` runs once the supervised tasks have finished, while the mocks are still live.
+    defp capture_resume(fun, after_tasks \\ fn -> :ok end) do
+      test_pid = self()
+
+      with_mocks([
+        {FlowContext, [:passthrough],
+         [
+           resume_contact_flow: fn _contact, _flow_id, results, message ->
+             send(test_pid, {:resumed, results, message && message.body})
+             {:ok, nil, []}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _file, _remote, _org ->
+             {:ok, %{url: "https://storage.googleapis.com/bucket/Kaapi/outbound/answer.ogg"}}
+           end
+         ]}
+      ]) do
+        fun.()
+        await_supervised_tasks()
+        after_tasks.()
+      end
+    end
+
+    defp logged_steps(webhook_log),
+      do: Repo.get!(WebhookLog, webhook_log.id).response_json["intermediate_callbacks"]
+
+    test "an intermediate block is logged and does not resume the flow", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      text: text,
+      webhook_log: webhook_log
+    } do
+      capture_resume(fn ->
+        conn = post(conn, "/webhook/flow_resume", chain_callback.(1, true, text.("namaste")))
+        assert json_response(conn, 200) == ""
+      end)
+
+      refute_received {:resumed, _results, _message}
+
+      assert [%{"block_index" => 1, "component" => "stt", "message" => "namaste"}] =
+               logged_steps(webhook_log)
+    end
+
+    test "the final audio block resumes Success with the answer, transcript and audio", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      text: text,
+      webhook_log: webhook_log
+    } do
+      audio = %{
+        body: %{
+          "type" => "audio",
+          "content" => %{"value" => Base.encode64("ogg-bytes"), "mime_type" => "audio/ogg"}
+        }
+      }
+
+      capture_resume(fn ->
+        post(conn, "/webhook/flow_resume", chain_callback.(1, true, text.("namaste")))
+
+        post(
+          conn,
+          "/webhook/flow_resume",
+          chain_callback.(2, true, Map.put(text.("the answer"), :conversation_id, "conv_1"))
+        )
+
+        post(conn, "/webhook/flow_resume", chain_callback.(nil, true, audio))
+      end)
+
+      assert_received {:resumed, %{"response" => response}, "Success"}
+
+      assert %{
+               "message" => "the answer",
+               "transcript" => "namaste",
+               "thread_id" => "conv_1",
+               "media_url" => "https://storage.googleapis.com/bucket/Kaapi/outbound/answer.ogg"
+             } = response
+
+      refute_received {:resumed, _results, _message}
+
+      log = Repo.get!(WebhookLog, webhook_log.id)
+
+      assert %{
+               "message" => "the answer",
+               "media_url" => "https://storage.googleapis.com/bucket/Kaapi/outbound/answer.ogg",
+               "thread_id" => "conv_1"
+             } = log.response_json
+
+      assert ["stt", "llm", "tts"] = Enum.map(logged_steps(webhook_log), & &1["component"])
+    end
+
+    test "a failed block resumes the Failure branch and is logged with its error", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      webhook_log: webhook_log
+    } do
+      failure =
+        nil
+        |> chain_callback.(false, %{body: nil})
+        |> Map.put("error", "STT response is missing transcribed text")
+
+      capture_resume(fn -> post(conn, "/webhook/flow_resume", failure) end)
+
+      assert_received {:resumed, _results, "Failure"}
+
+      assert [%{"component" => "stt", "status" => "failure", "error" => error}] =
+               logged_steps(webhook_log)
+
+      assert error =~ "missing transcribed text"
+    end
+
+    test "a redelivered final callback does not resume the flow again", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      text: text
+    } do
+      failure =
+        nil
+        |> chain_callback.(false, %{body: nil})
+        |> Map.put("error", "STT failed")
+
+      capture_resume(fn -> post(conn, "/webhook/flow_resume", failure) end)
+      assert_received {:resumed, _results, "Failure"}
+
+      capture_resume(fn ->
+        post(conn, "/webhook/flow_resume", failure)
+        post(conn, "/webhook/flow_resume", chain_callback.(2, true, text.("late answer")))
+      end)
+
+      refute_received {:resumed, _results, _message}
+    end
+
+    test "a final callback while the first is still uploading neither uploads nor resumes", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      webhook_log: webhook_log
+    } do
+      KaapiChain.claim_final(%{
+        "webhook_log_id" => webhook_log.id,
+        "chain_blocks" => ["stt", "llm", "tts"]
+      })
+
+      audio = %{
+        body: %{
+          "type" => "audio",
+          "content" => %{"value" => Base.encode64("ogg-bytes"), "mime_type" => "audio/ogg"}
+        }
+      }
+
+      capture_resume(
+        fn -> post(conn, "/webhook/flow_resume", chain_callback.(nil, true, audio)) end,
+        fn -> refute called(GcsWorker.upload_media(:_, :_, :_)) end
+      )
+
+      refute_received {:resumed, _results, _message}
+      assert [%{"status" => "pending"}] = logged_steps(webhook_log)
+    end
+
+    test "an LLM failure after the transcript resumes Failure, not the transcript", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      text: text
+    } do
+      llm_failure =
+        nil
+        |> chain_callback.(false, %{body: nil})
+        |> Map.put("error", "llm down")
+
+      capture_resume(fn ->
+        post(conn, "/webhook/flow_resume", chain_callback.(1, true, text.("namaste")))
+        post(conn, "/webhook/flow_resume", llm_failure)
+      end)
+
+      assert_received {:resumed, _results, "Failure"}
+    end
+
+    test "a TTS failure after the answer resumes Success with text and no audio", %{
+      conn: conn,
+      chain_callback: chain_callback,
+      text: text
+    } do
+      tts_failure =
+        nil
+        |> chain_callback.(false, %{body: nil})
+        |> Map.put("error", "invalid voice")
+
+      capture_resume(fn ->
+        post(conn, "/webhook/flow_resume", chain_callback.(1, true, text.("namaste")))
+        post(conn, "/webhook/flow_resume", chain_callback.(2, true, text.("the answer")))
+        post(conn, "/webhook/flow_resume", tts_failure)
+      end)
+
+      assert_received {:resumed, %{"response" => response}, "Success"}
+
+      assert %{"message" => "the answer", "media_url" => nil, "tts_failed" => true} = response
+    end
   end
 
   # Without this, the assertion races the supervised task and passes for the wrong reason.

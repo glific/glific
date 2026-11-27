@@ -281,6 +281,28 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @doc """
+  Emit the gap between consecutive callbacks of a Kaapi chain call as the `kaapi_chain_latency`
+  distribution, tagged by chain (the call type), block component and status. Observational — an
+  emit failure is logged, never raised.
+  """
+  @spec track_chain_block(number(), map()) :: :ok
+  def track_chain_block(duration_ms, tags) do
+    Appsignal.add_distribution_value("kaapi_chain_latency", duration_ms, %{
+      chain: tags[:chain] || "unknown",
+      webhook_name: tags[:webhook_name] || "unknown",
+      component: tags[:component] || "unknown",
+      size_bucket: tags[:size_bucket] || "unknown",
+      status: tags[:status] || "unknown"
+    })
+
+    :ok
+  rescue
+    exception ->
+      Glific.log_exception(exception)
+      :ok
+  end
+
+  @doc """
   Emit the voice-filesearch callback component latencies — `filesearch` and `tts` — tagged by
   file-size bucket. STT is emitted earlier, in the worker; the end-to-end total is
   `kaapi_llm_latency{call_type=voice_llm}` (which also includes queue + controller overhead).

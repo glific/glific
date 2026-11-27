@@ -179,4 +179,50 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
       end
     end
   end
+
+  describe "track_chain_block/2" do
+    test "emits kaapi_chain_latency tagged by chain, component, status and size" do
+      %{distributions: distributions} =
+        capture(fn ->
+          Instrumentation.track_chain_block(1234.5, %{
+            chain: "voice_sts",
+            webhook_name: "voice-filesearch-gpt",
+            component: "llm",
+            size_bucket: "1-5MB",
+            status: "failure"
+          })
+        end)
+
+      assert distributions == [
+               {"kaapi_chain_latency", 1234.5,
+                %{
+                  chain: "voice_sts",
+                  webhook_name: "voice-filesearch-gpt",
+                  component: "llm",
+                  size_bucket: "1-5MB",
+                  status: "failure"
+                }}
+             ]
+    end
+
+    test "fills missing tags, including status, with unknown" do
+      %{distributions: [{"kaapi_chain_latency", 10, tags}]} =
+        capture(fn -> Instrumentation.track_chain_block(10, %{}) end)
+
+      assert tags == %{
+               chain: "unknown",
+               webhook_name: "unknown",
+               component: "unknown",
+               size_bucket: "unknown",
+               status: "unknown"
+             }
+    end
+
+    test "a failing AppSignal emit is logged, never raised" do
+      with_mock Appsignal, [:passthrough],
+        add_distribution_value: fn _name, _value, _tags -> raise "appsignal down" end do
+        assert :ok = Instrumentation.track_chain_block(10, %{component: "stt"})
+      end
+    end
+  end
 end

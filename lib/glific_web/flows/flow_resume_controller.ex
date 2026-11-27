@@ -8,7 +8,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   use Publicist
 
-  alias Glific.{Flows.Webhook, Repo}
+  alias Glific.{Flows.Webhook, Flows.Webhooks.KaapiChain, Repo}
 
   @doc """
   Resume a flow after any async webhook calls back. Every Kaapi node (STT, TTS, filesearch-gpt,
@@ -28,9 +28,22 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     # Validate before spawning: an unsigned callback must not reach the base64 decode or GCS.
     # Rejections answer 200 — the caller learns nothing and Kaapi has no retry to trigger.
-    if Webhook.valid_callback?(organization_id, parsed),
-      do: resume(conn, organization_id, result, parsed, callback_received_ts),
-      else: json(conn, "")
+    cond do
+      not Webhook.valid_callback?(organization_id, parsed) ->
+        json(conn, "")
+
+      KaapiChain.intermediate?(result, parsed) ->
+        KaapiChain.record_intermediate(parsed, callback_received_ts)
+        json(conn, "")
+
+      # Claimed before the upload and resume: a repeated final callback would upload again and
+      # resume whichever node the contact is parked at now. An unsaved claim can't guard that.
+      KaapiChain.claim_final(parsed) != :ok ->
+        json(conn, "")
+
+      true ->
+        resume(conn, organization_id, result, parsed, callback_received_ts)
+    end
   end
 
   # The GCS round trip blocked the response and Kaapi timed out waiting on it.
@@ -48,6 +61,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
         |> Webhook.maybe_upload_tts_audio()
         |> Map.put("callback_received_ts", callback_received_ts)
 
+      KaapiChain.record_final(result, response)
+      response = KaapiChain.fallback_to_text(result, response)
       Webhook.resume(organization_id, result, response)
     end)
 
