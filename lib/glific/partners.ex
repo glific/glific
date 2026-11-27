@@ -913,7 +913,7 @@ defmodule Glific.Partners do
   defp perform_handler(handler, handler_args, org_id, org_name) do
     Repo.put_process_state(org_id)
     RepoReplica.put_process_state(org_id)
-    Logger.info("Starting processes for org id: #{org_id}")
+    Logger.debug("Starting #{Glific.SafeLog.safe_inspect(handler)} for org id: #{org_id}")
 
     if is_nil(handler_args) do
       handler.(org_id)
