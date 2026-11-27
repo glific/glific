@@ -462,10 +462,11 @@ defmodule Glific.Communications.GroupMessage do
   defp save_or_retry_reaction(params, org_id) do
     case save_reaction(params, org_id) do
       {:ok, _reaction} = result ->
+        # this event is newer than any retry still waiting for the same reactor and message
+        PendingReactionWorker.cancel_pending(params, org_id)
         result
 
-      # A reaction to a message Glific sent can arrive before the delivery ack that
-      # stores the message's WhatsApp key id, so the lookup is retried later.
+      # the parent message can be stored after its reaction arrives, so the lookup is retried later
       {:error, :not_found} = error ->
         PendingReactionWorker.enqueue(params, org_id)
         error

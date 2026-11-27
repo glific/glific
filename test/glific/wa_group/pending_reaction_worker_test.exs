@@ -73,7 +73,6 @@ defmodule Glific.WAGroup.PendingReactionWorkerTest do
 
   test "schedules the next retry while the parent message is still missing",
        %{organization_id: organization_id, parent_message: parent_message} do
-    assert {:ok, _job} = PendingReactionWorker.enqueue(@reaction_params, organization_id)
     assert :ok = perform_job(PendingReactionWorker, job_args(organization_id, 0))
 
     assert_enqueued(worker: PendingReactionWorker, args: job_args(organization_id, 1))
@@ -89,6 +88,73 @@ defmodule Glific.WAGroup.PendingReactionWorkerTest do
              GroupMessage.receive_reaction_msg(@reaction_params, organization_id)
 
     assert [_job] = all_enqueued(worker: PendingReactionWorker)
+  end
+
+  defp waiting_reactions do
+    PendingReactionWorker
+    |> then(&all_enqueued(worker: &1))
+    |> Enum.map(& &1.args["reaction"]["reaction"])
+  end
+
+  test "a removal replaces the reaction still waiting for the same reactor and message",
+       %{organization_id: organization_id} do
+    assert {:error, :not_found} =
+             GroupMessage.receive_reaction_msg(@reaction_params, organization_id)
+
+    assert {:error, :not_found} =
+             @reaction_params
+             |> Map.merge(%{"reaction" => "", "reactionId" => "false_#{@group_bsp_id}_REMOVAL"})
+             |> GroupMessage.receive_reaction_msg(organization_id)
+
+    assert [""] == waiting_reactions()
+  end
+
+  test "a changed reaction with the same reaction id replaces the waiting emoji",
+       %{organization_id: organization_id} do
+    assert {:error, :not_found} =
+             GroupMessage.receive_reaction_msg(@reaction_params, organization_id)
+
+    assert {:error, :not_found} =
+             @reaction_params
+             |> Map.put("reaction", "❤️")
+             |> GroupMessage.receive_reaction_msg(organization_id)
+
+    assert ["❤️"] == waiting_reactions()
+  end
+
+  test "a reaction saved directly cancels the retry waiting for the same reactor and message",
+       %{organization_id: organization_id, parent_message: parent_message} do
+    assert {:error, :not_found} =
+             @reaction_params
+             |> Map.put("reaction", "")
+             |> GroupMessage.receive_reaction_msg(organization_id)
+
+    GroupMessage.update_bsp_status(
+      @parent_api_id,
+      :delivered,
+      organization_id,
+      @parent_whatsapp_id
+    )
+
+    assert {:ok, %WaReaction{reaction: "❤️"}} =
+             @reaction_params
+             |> Map.put("reaction", "❤️")
+             |> GroupMessage.receive_reaction_msg(organization_id)
+
+    refute_enqueued(worker: PendingReactionWorker)
+    assert [%WaReaction{reaction: "❤️"}] = reactions_for(parent_message.id)
+  end
+
+  test "a retry step does not overwrite a newer reaction waiting for the same reactor",
+       %{organization_id: organization_id} do
+    assert {:ok, _job} =
+             @reaction_params
+             |> Map.put("reaction", "❤️")
+             |> PendingReactionWorker.enqueue(organization_id)
+
+    assert :ok = perform_job(PendingReactionWorker, job_args(organization_id, 0))
+
+    assert ["❤️"] == waiting_reactions()
   end
 
   test "a reaction without a parent message id is skipped without a retry",
