@@ -122,6 +122,7 @@ defmodule Glific.MixProject do
       {:oban, "~> 2.19"},
       {:oban_web, "~> 2.11", only: @oban_envs},
       {:oban_pro, "~> 1.5", repo: "oban", only: @oban_envs},
+      {:dns_cluster, "~> 0.3 and >= 0.3.1"},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.15", only: @test_envs},
